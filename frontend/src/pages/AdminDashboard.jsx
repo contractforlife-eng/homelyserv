@@ -17,7 +17,6 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    // Check if user is admin
     if (user?.role !== 'ADMIN') {
       navigate('/');
       return;
@@ -27,12 +26,10 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Get all hires (in a real app, this would be an admin endpoint)
-      const res = await api.get('/hires/my');
+      const res = await api.get('/hires/all');
       const allHires = res.data || [];
       setHires(allHires);
 
-      // Calculate stats
       const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
       const active = allHires.filter(h => h.status === 'active').length;
       const revenue = allHires
@@ -62,6 +59,17 @@ export default function AdminDashboard() {
     }
   };
 
+  const rejectPayment = async (hireId) => {
+    if (!window.confirm('Reject this payment?')) return;
+    try {
+      await api.put(`/hires/${hireId}/payment`, { paymentStatus: 'rejected' });
+      toast.success('Payment rejected');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to reject payment');
+    }
+  };
+
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading dashboard...</div>;
 
   if (user?.role !== 'ADMIN') {
@@ -70,7 +78,6 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      {/* Header */}
       <div style={{ background: '#2C3E50', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Admin Dashboard</h1>
@@ -93,16 +100,16 @@ export default function AdminDashboard() {
             <div style={{ fontSize: '11px', color: '#888' }}>Active Hires</div>
           </div>
           <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#C0392B' }}>EGP {stats.totalRevenue.toFixed(0)}</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: '#C0392B' }}>EGP {stats.totalRevenue.toFixed(0)}</div>
             <div style={{ fontSize: '11px', color: '#888' }}>Revenue</div>
           </div>
         </div>
 
         {/* Pending Payments */}
         <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', marginBottom: '12px' }}>Pending Payments</h2>
-        
+
         {hires.filter(h => h.paymentStatus === 'pending').length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '20px', textAlign: 'center', color: '#888' }}>
+          <div style={{ background: '#fff', borderRadius: '10px', padding: '20px', textAlign: 'center', color: '#888', marginBottom: '20px' }}>
             ✅ No pending payments
           </div>
         ) : (
@@ -113,22 +120,26 @@ export default function AdminDashboard() {
                   <div style={{ fontWeight: '600', color: '#1A1A1A' }}>{hire.worker?.user?.fullName}</div>
                   <div style={{ fontSize: '12px', color: '#888' }}>{hire.worker?.category} · {hire.worker?.user?.city}</div>
                   <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                    Employer: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.employer?.fullName}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+                    Method: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.paymentMethod}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
                     Reference: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.paymentReference}</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B' }}>EGP {hire.totalDue?.toFixed(0)}</div>
-                  <div style={{ fontSize: '11px', color: '#E67E22', fontWeight: '500' }}>⏳ Pending verification</div>
+                  <div style={{ fontSize: '11px', color: '#E67E22', fontWeight: '500' }}>⏳ Pending</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button 
-                  onClick={() => confirmPayment(hire.id)}
+                <button onClick={() => confirmPayment(hire.id)}
                   style={{ flex: 1, padding: '8px', background: '#27AE60', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
                   ✅ Confirm Payment
                 </button>
-                <button 
-                  onClick={() => toast.error('Rejection reason: You must confirm or reject with reason')}
+                <button onClick={() => rejectPayment(hire.id)}
                   style={{ flex: 1, padding: '8px', background: '#E74C3C', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
                   ❌ Reject
                 </button>
@@ -138,29 +149,27 @@ export default function AdminDashboard() {
         )}
 
         {/* All Hires */}
-        <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', margin: '20px 0 12px' }}>All Hires</h2>
-        
+        <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', margin: '20px 0 12px' }}>All Hires ({hires.length})</h2>
+
         {hires.map(hire => (
           <div key={hire.id} style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '8px', border: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '14px', fontWeight: '500', color: '#1A1A1A' }}>{hire.worker?.user?.fullName}</div>
-              <div style={{ fontSize: '11px', color: '#888' }}>EGP {hire.agreedSalary} · {hire.paymentReference}</div>
+              <div style={{ fontSize: '11px', color: '#888' }}>{hire.employer?.fullName} · EGP {hire.agreedSalary} · {hire.paymentReference}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ 
-                fontSize: '11px', 
-                fontWeight: '500',
-                color: hire.paymentStatus === 'confirmed' ? '#27AE60' : 
-                       hire.paymentStatus === 'pending' ? '#E67E22' : '#888'
+              <span style={{
+                fontSize: '11px', fontWeight: '500',
+                color: hire.paymentStatus === 'confirmed' ? '#27AE60' :
+                  hire.paymentStatus === 'pending' ? '#E67E22' : '#888'
               }}>
-                {hire.paymentStatus === 'confirmed' ? '✅' : 
-                 hire.paymentStatus === 'pending' ? '⏳' : '⚪'} {hire.paymentStatus || 'Not started'}
+                {hire.paymentStatus === 'confirmed' ? '✅' :
+                  hire.paymentStatus === 'pending' ? '⏳' : '⚪'} {hire.paymentStatus || 'Not started'}
               </span>
-              <span style={{ 
-                fontSize: '11px', 
-                fontWeight: '500',
-                color: hire.status === 'active' ? '#27AE60' : 
-                       hire.status === 'offer_sent' ? '#F39C12' : '#888'
+              <span style={{
+                fontSize: '11px', fontWeight: '500',
+                color: hire.status === 'active' ? '#27AE60' :
+                  hire.status === 'offer_sent' ? '#F39C12' : '#888'
               }}>
                 ● {hire.status?.replace('_', ' ')}
               </span>

@@ -10,7 +10,6 @@ const sendOffer = async (req, res) => {
     const vat = commission * 0.14;
     const total = commission + vat;
 
-    // Generate unique reference
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const hire = await prisma.hire.create({
@@ -68,6 +67,25 @@ const getMyHires = async (req, res) => {
   }
 };
 
+// GET ALL HIRES (admin only)
+const getAllHires = async (req, res) => {
+  try {
+    const hires = await prisma.hire.findMany({
+      include: {
+        worker: {
+          include: { user: { select: { fullName: true, phone: true, city: true } } }
+        },
+        employer: { select: { fullName: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(hires);
+  } catch (error) {
+    console.error('Get all hires error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // CONFIRM PAYMENT (admin)
 const confirmPayment = async (req, res) => {
   try {
@@ -95,4 +113,4 @@ const submitPayment = async (req, res) => {
   }
 };
 
-module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment };
+module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment, getAllHires };
