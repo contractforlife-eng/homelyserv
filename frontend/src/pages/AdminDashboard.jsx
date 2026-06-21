@@ -25,28 +25,30 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchData = async () => {
-    try {
-      const res = await api.get('/hires/all');
-      const allHires = res.data || [];
-      setHires(allHires);
+  try {
+    // Get all hires (admin endpoint)
+    const res = await api.get('/hires/all');
+    const allHires = res.data || [];
+    setHires(allHires);
 
-      const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
-const active = allHires.filter(h => h.status === 'active' || h.status === 'confirmed').length;
-const revenue = allHires
-  .filter(h => h.paymentStatus === 'confirmed' || h.status === 'active')
-  .reduce((sum, h) => sum + h.totalDue, 0);
+    // Calculate stats
+    const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
+    const active = allHires.filter(h => h.status === 'active' || h.status === 'confirmed').length;
+    const revenue = allHires
+      .filter(h => h.paymentStatus === 'confirmed' || h.status === 'active')
+      .reduce((sum, h) => sum + h.totalDue, 0);
 
-      setStats({
-        totalHires: allHires.length,
-        pendingPayments: pending,
-        activeHires: active,
-        totalRevenue: revenue
-      });
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    }
-    setLoading(false);
-  };
+    setStats({
+      totalHires: allHires.length,
+      pendingPayments: pending,
+      activeHires: active,
+      totalRevenue: revenue
+    });
+  } catch (err) {
+    console.error('Failed to fetch data:', err);
+  }
+  setLoading(false);
+};
 
   const confirmPayment = async (hireId) => {
     if (!window.confirm('Confirm this payment?')) return;

@@ -101,6 +101,29 @@ const submitPayment = async (req, res) => {
     console.error('Payment submission error:', error);
     res.status(500).json({ message: 'Failed to submit payment: ' + error.message });
   }
+};// GET ALL HIRES (admin only)
+const getAllHires = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const hires = await prisma.hire.findMany({
+      include: {
+        worker: {
+          include: { user: { select: { fullName: true, phone: true, city: true } } }
+        },
+        employer: { select: { fullName: true, email: true, phone: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(hires);
+  } catch (error) {
+    console.error('Get all hires error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment };
