@@ -10,10 +10,11 @@ export default function Payment() {
   const [method, setMethod] = useState('instapay');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState(1); // 1=choose, 2=instructions, 3=success
+  const [step, setStep] = useState(1);
+  const [receiptFile, setReceiptFile] = useState(null);
 
   useEffect(() => {
-    api.get(`/hires/my`).then(res => {
+    api.get('/hires/my').then(res => {
       const found = res.data.find(h => h.id === id);
       setHire(found);
       setLoading(false);
@@ -21,26 +22,29 @@ export default function Payment() {
   }, [id]);
 
   const submitPayment = async () => {
+    if (!receiptFile) {
+      toast.error('Please upload your payment screenshot first');
+      return;
+    }
     setSubmitting(true);
     try {
-      const response = await api.put(`/hires/${id}/payment`, {
-        paymentMethod: method,
-        paymentProofUrl: 'pending_upload'
+      const formData = new FormData();
+      formData.append('paymentMethod', method);
+      formData.append('receipt', receiptFile);
+      await api.put(`/hires/${id}/payment`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      console.log('Payment response:', response.data);
       setStep(3);
       toast.success('Payment submitted!');
     } catch (err) {
-      console.error('Payment error:', err);
       toast.error(err.response?.data?.message || 'Failed to submit payment');
     }
     setSubmitting(false);
   };
 
-  // Copy to clipboard function
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    toast.success(`${label} copied!`);
   };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading...</div>;
@@ -50,14 +54,14 @@ export default function Payment() {
     { id: 'instapay', label: 'InstaPay', desc: 'Transfer via any Egyptian bank app', color: '#1A3C8F', short: 'IP' },
     { id: 'vodafone', label: 'Vodafone Cash', desc: 'Pay from your Vodafone wallet', color: '#E2001A', short: 'VC' },
     { id: 'bank', label: 'Bank Transfer', desc: 'QNB Al Ahli · IBAN supported', color: '#1A6B3C', short: 'BK' },
-    { id: 'bitcoin', label: 'Bitcoin (BTC)', desc: 'Send BTC via Bitcoin Network', color: '#F7931A', short: '₿' },
-    { id: 'usdc', label: 'USDC (Solana)', desc: 'Send USDC on Solana Network', color: '#9945FF', short: '◈' }
+    { id: 'btc', label: 'Bitcoin (BTC)', desc: 'Pay with Bitcoin on Bitcoin network', color: '#F7931A', short: '₿' },
+    { id: 'usdc', label: 'USDC (Solana)', desc: 'Pay with USDC on Solana network', color: '#2775CA', short: '$' },
   ];
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       {/* Header */}
-      <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '0' }}>
+      <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Pay Commission</h1>
         <div style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.2)', fontSize: '12px', color: '#fff', padding: '3px 12px', borderRadius: '20px' }}>
@@ -92,19 +96,17 @@ export default function Payment() {
                 <span style={{ fontSize: '14px', fontWeight: '600' }}>Total due</span>
                 <span style={{ fontSize: '16px', fontWeight: '700', color: '#C0392B' }}>EGP {hire.totalDue?.toFixed(0)}</span>
               </div>
-              <div style={{ marginTop: '8px', padding: '8px', background: '#F5F5F5', borderRadius: '6px', fontSize: '11px', color: '#888' }}>
-                💡 Crypto payments: Send exact USD equivalent (calculate using current exchange rate)
-              </div>
             </div>
           </div>
 
-          {/* Payment methods */}
           <div style={{ fontSize: '12px', fontWeight: '600', color: '#888', marginBottom: '8px', letterSpacing: '0.4px' }}>SELECT PAYMENT METHOD</div>
 
-          {paymentMethods.map(m => (
+          {/* Egyptian methods */}
+          <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: '500' }}>🇪🇬 Egyptian payments</div>
+          {paymentMethods.slice(0, 3).map(m => (
             <div key={m.id} onClick={() => setMethod(m.id)}
               style={{ background: '#fff', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: method === m.id ? '1.5px solid #C0392B' : '1.5px solid #E0E0E0' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '13px', flexShrink: 0 }}>
                 {m.short}
               </div>
               <div style={{ flex: 1 }}>
@@ -117,7 +119,25 @@ export default function Payment() {
             </div>
           ))}
 
-          <div style={{ fontSize: '12px', color: '#888', padding: '4px 0 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Crypto methods */}
+          <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: '500', marginTop: '8px' }}>🌍 International crypto payments</div>
+          {paymentMethods.slice(3).map(m => (
+            <div key={m.id} onClick={() => setMethod(m.id)}
+              style={{ background: '#fff', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: method === m.id ? '1.5px solid #C0392B' : '1.5px solid #E0E0E0' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '18px', flexShrink: 0 }}>
+                {m.short}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: '#1A1A1A' }}>{m.label}</div>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{m.desc}</div>
+              </div>
+              <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: method === m.id ? '2px solid #C0392B' : '2px solid #E0E0E0', background: method === m.id ? '#C0392B' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {method === m.id && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#fff' }} />}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ fontSize: '12px', color: '#888', padding: '4px 0 16px' }}>
             🔒 Payment verified by HomelyServ admin within 2 hours
           </div>
 
@@ -131,53 +151,26 @@ export default function Payment() {
       {/* STEP 2 - Instructions */}
       {step === 2 && (
         <div style={{ maxWidth: '540px', margin: '0 auto', padding: '16px' }}>
-          {/* Amount box */}
-          <div style={{ background: method === 'vodafone' ? '#E2001A' : method === 'bank' ? '#1A6B3C' : method === 'bitcoin' ? '#F7931A' : method === 'usdc' ? '#9945FF' : '#1A3C8F', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '16px', color: '#fff' }}>
+          <div style={{ background: method === 'vodafone' ? '#E2001A' : method === 'bank' ? '#1A6B3C' : method === 'btc' ? '#F7931A' : method === 'usdc' ? '#2775CA' : '#1A3C8F', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '16px', color: '#fff' }}>
             <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>Amount to transfer</div>
             <div style={{ fontSize: '32px', fontWeight: '700' }}>EGP {hire.totalDue?.toFixed(0)}</div>
-            {method === 'bitcoin' && (
-              <div style={{ fontSize: '14px', opacity: 0.85, marginTop: '4px' }}>
-                ≈ ${(hire.totalDue / 50).toFixed(2)} USD (check current BTC rate)
-              </div>
-            )}
-            {method === 'usdc' && (
-              <div style={{ fontSize: '14px', opacity: 0.85, marginTop: '4px' }}>
-                ≈ ${(hire.totalDue / 50).toFixed(2)} USDC (1 USDC ≈ 1 USD)
-              </div>
-            )}
-            <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '4px' }}>Commission · {hire.worker?.user?.fullName}</div>
+            <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '4px' }}>
+              {(method === 'btc' || method === 'usdc') ? 'Send equivalent amount in crypto' : `Commission · ${hire.worker?.user?.fullName}`}
+            </div>
           </div>
 
-          {/* InstaPay & Vodafone steps */}
-          {(method === 'instapay' || method === 'vodafone') && (
+          {/* InstaPay */}
+          {method === 'instapay' && (
             <>
               {[
-                {
-                  n: 1,
-                  title: method === 'instapay' ? 'Open your bank app' : 'Open Vodafone Cash',
-                  body: method === 'instapay' ? 'Open the InstaPay section in your bank app (CIB, Banque Misr, NBE, QNB, or any participating bank).' : 'Dial *9# from your Vodafone number or open My Vodafone app → Vodafone Cash → Send Money.'
-                },
-                {
-                  n: 2,
-                  title: 'Send to this number',
-                  body: null,
-                  number: '01009189851'
-                },
-                {
-                  n: 3,
-                  title: 'Add reference code',
-                  body: null,
-                  ref: hire.paymentReference
-                },
-                {
-                  n: 4,
-                  title: `Transfer exactly EGP ${hire.totalDue?.toFixed(0)}`,
-                  body: 'Send the exact amount shown. Partial payments are not accepted.'
-                }
+                { n: 1, title: 'Open your bank app', body: 'Open the InstaPay section in your bank app (CIB, Banque Misr, NBE, QNB, or any participating bank).' },
+                { n: 2, title: 'Send to this number', number: '01009189851' },
+                { n: 3, title: 'Add reference code', ref: hire.paymentReference },
+                { n: 4, title: `Transfer exactly EGP ${hire.totalDue?.toFixed(0)}`, body: 'Send the exact amount. Partial payments are not accepted.' }
               ].map(s => (
                 <div key={s.n} style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#C0392B', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: '0' }}>{s.n}</div>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#C0392B', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>{s.n}</div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>{s.title}</div>
                   </div>
                   {s.body && <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>{s.body}</div>}
@@ -185,14 +178,18 @@ export default function Payment() {
                     <div style={{ background: '#F5F5F5', borderRadius: '8px', padding: '12px 14px', marginTop: '8px' }}>
                       <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>HomelyServ recipient number</div>
                       <div style={{ fontSize: '20px', fontWeight: '700', color: '#1A1A1A', letterSpacing: '1px' }}>{s.number}</div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>HomelyServ Payments</div>
+                      <button onClick={() => copyToClipboard(s.number, 'Number')} style={{ marginTop: '8px', fontSize: '12px', color: '#C0392B', fontWeight: '500', cursor: 'pointer', border: '1px solid #C0392B', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                        📋 Copy number
+                      </button>
                     </div>
                   )}
                   {s.ref && (
                     <div style={{ background: '#FDECEA', borderRadius: '8px', padding: '12px 14px', marginTop: '8px' }}>
                       <div style={{ fontSize: '11px', color: '#C0392B', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
                       <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B', letterSpacing: '2px' }}>{s.ref}</div>
-                      <div style={{ fontSize: '11px', color: '#C0392B', marginTop: '4px', opacity: 0.8 }}>Add this in the note/description field</div>
+                      <button onClick={() => copyToClipboard(s.ref, 'Reference')} style={{ marginTop: '8px', fontSize: '12px', color: '#C0392B', fontWeight: '500', cursor: 'pointer', border: '1px solid #C0392B', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                        📋 Copy reference
+                      </button>
                     </div>
                   )}
                 </div>
@@ -200,7 +197,45 @@ export default function Payment() {
             </>
           )}
 
-          {/* Bank transfer steps */}
+          {/* Vodafone Cash */}
+          {method === 'vodafone' && (
+            <>
+              {[
+                { n: 1, title: 'Open Vodafone Cash', body: 'Dial *9# from your Vodafone number or open My Vodafone app → Send Money.' },
+                { n: 2, title: 'Send to this number', number: '01009189851' },
+                { n: 3, title: 'Add reference code', ref: hire.paymentReference },
+                { n: 4, title: `Transfer exactly EGP ${hire.totalDue?.toFixed(0)}`, body: 'Enter your Vodafone Cash PIN to complete.' }
+              ].map(s => (
+                <div key={s.n} style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#E2001A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>{s.n}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>{s.title}</div>
+                  </div>
+                  {s.body && <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>{s.body}</div>}
+                  {s.number && (
+                    <div style={{ background: '#F5F5F5', borderRadius: '8px', padding: '12px 14px', marginTop: '8px' }}>
+                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>HomelyServ wallet number</div>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#1A1A1A', letterSpacing: '1px' }}>{s.number}</div>
+                      <button onClick={() => copyToClipboard(s.number, 'Number')} style={{ marginTop: '8px', fontSize: '12px', color: '#C0392B', fontWeight: '500', cursor: 'pointer', border: '1px solid #C0392B', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                        📋 Copy number
+                      </button>
+                    </div>
+                  )}
+                  {s.ref && (
+                    <div style={{ background: '#FDE8EA', borderRadius: '8px', padding: '12px 14px', marginTop: '8px' }}>
+                      <div style={{ fontSize: '11px', color: '#E2001A', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#E2001A', letterSpacing: '2px' }}>{s.ref}</div>
+                      <button onClick={() => copyToClipboard(s.ref, 'Reference')} style={{ marginTop: '8px', fontSize: '12px', color: '#E2001A', fontWeight: '500', cursor: 'pointer', border: '1px solid #E2001A', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                        📋 Copy reference
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Bank Transfer */}
           {method === 'bank' && (
             <>
               <div style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
@@ -213,109 +248,128 @@ export default function Payment() {
                   { label: 'Swift / BIC', value: 'QNBAEGCXXXX' },
                   { label: 'Currency', value: 'Egyptian Pound (EGP)' },
                 ].map(row => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F5F5F5' }}>
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F5F5F5' }}>
                     <span style={{ fontSize: '12px', color: '#888' }}>{row.label}</span>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A1A', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-all' }}>{row.value}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A1A', textAlign: 'right', maxWidth: '55%', wordBreak: 'break-all' }}>{row.value}</span>
+                      <button onClick={() => copyToClipboard(row.value, row.label)} style={{ fontSize: '10px', color: '#C0392B', cursor: 'pointer', border: 'none', background: 'none', padding: '2px' }}>📋</button>
+                    </div>
                   </div>
                 ))}
               </div>
               <div style={{ background: '#FDECEA', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
                 <div style={{ fontSize: '11px', color: '#C0392B', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
                 <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B', letterSpacing: '2px' }}>{hire.paymentReference}</div>
-                <div style={{ fontSize: '11px', color: '#C0392B', marginTop: '4px', opacity: 0.8 }}>Include this in the transfer description</div>
-              </div>
-              <div style={{ background: '#FEF9E7', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', fontSize: '12px', color: '#7D6608' }}>
-                ℹ️ Bank transfers are verified within 24 hours on business days.
+                <button onClick={() => copyToClipboard(hire.paymentReference, 'Reference')} style={{ marginTop: '8px', fontSize: '12px', color: '#C0392B', fontWeight: '500', cursor: 'pointer', border: '1px solid #C0392B', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                  📋 Copy reference
+                </button>
               </div>
             </>
           )}
 
-          {/* Bitcoin steps */}
-          {method === 'bitcoin' && (
+          {/* Bitcoin */}
+          {method === 'btc' && (
             <>
               <div style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A', marginBottom: '12px' }}>
-                  Send BTC (Bitcoin)
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#F7931A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>1</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>Open your Bitcoin wallet</div>
                 </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Network</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1A1A1A' }}>BITCOIN (BTC)</div>
+                <div style={{ fontSize: '13px', color: '#666' }}>Open any Bitcoin wallet app (Trust Wallet, Coinbase, Binance, etc.) and go to Send.</div>
+              </div>
+
+              <div style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#F7931A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>2</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>Send BTC to this address</div>
                 </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <div style={{ fontSize: '11px', color: '#888' }}>Wallet Address</div>
-                    <button 
-                      onClick={() => copyToClipboard('bc1qvgm3ypfv9zhzgp7wxet5ap4uxmxs3jetnaghdt6mfqeez0kfzhqs3uerph')}
-                      style={{ background: 'none', border: 'none', color: '#C0392B', cursor: 'pointer', fontSize: '12px' }}
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-                  <div style={{ background: '#F5F5F5', borderRadius: '8px', padding: '12px', wordBreak: 'break-all', fontSize: '13px', fontFamily: 'monospace' }}>
+                <div style={{ background: '#FFF8F0', borderRadius: '8px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '11px', color: '#F7931A', fontWeight: '600', marginBottom: '6px' }}>₿ Bitcoin Address (BTC Network)</div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1A1A1A', wordBreak: 'break-all', letterSpacing: '0.5px', lineHeight: '1.6' }}>
                     bc1qvgm3ypfv9zhzgp7wxet5ap4uxmxs3jetnaghdt6mfqeez0kfzhqs3uerph
                   </div>
+                  <button onClick={() => copyToClipboard('bc1qvgm3ypfv9zhzgp7wxet5ap4uxmxs3jetnaghdt6mfqeez0kfzhqs3uerph', 'BTC Address')}
+                    style={{ marginTop: '8px', fontSize: '12px', color: '#F7931A', fontWeight: '500', cursor: 'pointer', border: '1px solid #F7931A', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                    📋 Copy BTC address
+                  </button>
                 </div>
               </div>
 
-              <div style={{ background: '#FDECEA', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '11px', color: '#C0392B', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B', letterSpacing: '2px' }}>{hire.paymentReference}</div>
-                <div style={{ fontSize: '11px', color: '#C0392B', marginTop: '4px', opacity: 0.8 }}>Include this in the memo/note field</div>
+              <div style={{ background: '#FFF8F0', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#F7931A', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#F7931A', letterSpacing: '2px' }}>{hire.paymentReference}</div>
+                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>Include this in the memo/note field of your transfer</div>
               </div>
 
               <div style={{ background: '#FEF9E7', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', fontSize: '12px', color: '#7D6608' }}>
-                ⚠️ Send the exact USD equivalent of EGP {hire.totalDue?.toFixed(0)} using current BTC exchange rate.
-                Allow 1-3 confirmations (approx 30-60 minutes) for verification.
+                ⚠️ Make sure to send on the <strong>BITCOIN network only</strong>. Sending on wrong network will result in loss of funds.
               </div>
             </>
           )}
 
-          {/* USDC (Solana) steps */}
+          {/* USDC Solana */}
           {method === 'usdc' && (
             <>
               <div style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A', marginBottom: '12px' }}>
-                  Send USDC (Solana)
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2775CA', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>1</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>Open your Solana wallet</div>
                 </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Network</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1A1A1A' }}>SOLANA (SPL)</div>
+                <div style={{ fontSize: '13px', color: '#666' }}>Open any Solana wallet (Phantom, Trust Wallet, Coinbase, etc.) and go to Send USDC.</div>
+              </div>
+
+              <div style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2775CA', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>2</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>Send USDC to this address</div>
                 </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <div style={{ fontSize: '11px', color: '#888' }}>Wallet Address</div>
-                    <button 
-                      onClick={() => copyToClipboard('6vRak8Jumw2QjgMKJCnvZxYxKW4hPvUceBGM5Zxqq4or')}
-                      style={{ background: 'none', border: 'none', color: '#C0392B', cursor: 'pointer', fontSize: '12px' }}
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-                  <div style={{ background: '#F5F5F5', borderRadius: '8px', padding: '12px', wordBreak: 'break-all', fontSize: '13px', fontFamily: 'monospace' }}>
+                <div style={{ background: '#EEF4FF', borderRadius: '8px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '11px', color: '#2775CA', fontWeight: '600', marginBottom: '6px' }}>💵 USDC Address (Solana Network)</div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1A1A1A', wordBreak: 'break-all', letterSpacing: '0.5px', lineHeight: '1.6' }}>
                     6vRak8Jumw2QjgMKJCnvZxYxKW4hPvUceBGM5Zxqq4or
                   </div>
-                </div>
-                <div style={{ marginTop: '8px', fontSize: '11px', color: '#888' }}>
-                  💡 Make sure to use the Solana network (SPL) - sending on other networks will result in loss of funds.
+                  <button onClick={() => copyToClipboard('6vRak8Jumw2QjgMKJCnvZxYxKW4hPvUceBGM5Zxqq4or', 'USDC Address')}
+                    style={{ marginTop: '8px', fontSize: '12px', color: '#2775CA', fontWeight: '500', cursor: 'pointer', border: '1px solid #2775CA', padding: '4px 12px', borderRadius: '20px', background: '#fff' }}>
+                    📋 Copy USDC address
+                  </button>
                 </div>
               </div>
 
-              <div style={{ background: '#FDECEA', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '11px', color: '#C0392B', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B', letterSpacing: '2px' }}>{hire.paymentReference}</div>
-                <div style={{ fontSize: '11px', color: '#C0392B', marginTop: '4px', opacity: 0.8 }}>Include this in the memo field</div>
+              <div style={{ background: '#EEF4FF', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#2775CA', fontWeight: '600', marginBottom: '4px' }}>🏷 Payment reference</div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#2775CA', letterSpacing: '2px' }}>{hire.paymentReference}</div>
+                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>Include this in the memo field of your transfer</div>
               </div>
 
               <div style={{ background: '#FEF9E7', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', fontSize: '12px', color: '#7D6608' }}>
-                ⚠️ Send the exact USD equivalent of EGP {hire.totalDue?.toFixed(0)} USDC.
-                1 USDC ≈ 1 USD. Transactions confirm within seconds on Solana network.
+                ⚠️ Make sure to send <strong>USDC on the SOLANA network only</strong>. Sending on wrong network will result in loss of funds.
               </div>
             </>
           )}
 
+          {/* Screenshot Upload */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A', marginBottom: '8px' }}>
+              📎 Upload payment screenshot <span style={{ color: '#C0392B' }}>*required</span>
+            </div>
+            <label style={{
+              display: 'block', border: `1.5px dashed ${receiptFile ? '#27AE60' : '#E0E0E0'}`,
+              borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: 'pointer',
+              background: receiptFile ? '#E9F7EF' : '#fff'
+            }}>
+              <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
+                onChange={(e) => setReceiptFile(e.target.files[0])} />
+              <div style={{ fontSize: '28px', marginBottom: '6px' }}>{receiptFile ? '✅' : '📤'}</div>
+              <div style={{ fontSize: '13px', fontWeight: '500', color: receiptFile ? '#27AE60' : '#1A1A1A' }}>
+                {receiptFile ? receiptFile.name : 'Tap to upload screenshot'}
+              </div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '3px' }}>JPG, PNG or PDF · Max 5MB</div>
+            </label>
+          </div>
+
           <button onClick={submitPayment} disabled={submitting}
-            style={{ width: '100%', padding: '14px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '6px' }}>
-            {submitting ? 'Submitting...' : "I've completed the transfer"}
+            style={{ width: '100%', padding: '14px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>
+            {submitting ? 'Uploading & submitting...' : "I've completed the transfer"}
           </button>
         </div>
       )}
@@ -324,14 +378,9 @@ export default function Payment() {
       {step === 3 && (
         <div style={{ maxWidth: '540px', margin: '0 auto', padding: '16px' }}>
           <div style={{ background: '#1E8449', borderRadius: '12px', padding: '28px 20px', textAlign: 'center', color: '#fff', marginBottom: '16px' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '32px' }}>⏰</div>
+            <div style={{ fontSize: '48px', marginBottom: '8px' }}>⏰</div>
             <h2 style={{ fontSize: '20px', fontWeight: '700' }}>Payment submitted!</h2>
             <p style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>We're verifying your transfer — usually within 2 hours</p>
-            {['bitcoin', 'usdc'].includes(method) && (
-              <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-                Crypto payments may take 1-3 confirmations (approx 10-60 minutes)
-              </p>
-            )}
           </div>
 
           <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
@@ -345,8 +394,9 @@ export default function Payment() {
             <div style={{ padding: '14px 16px' }}>
               {[
                 { label: 'Worker', value: hire.worker?.user?.fullName },
-                { label: 'Payment method', value: method === 'instapay' ? 'InstaPay' : method === 'vodafone' ? 'Vodafone Cash' : method === 'bank' ? 'Bank Transfer' : method === 'bitcoin' ? 'Bitcoin (BTC)' : 'USDC (Solana)' },
+                { label: 'Payment method', value: method === 'instapay' ? 'InstaPay' : method === 'vodafone' ? 'Vodafone Cash' : method === 'bank' ? 'Bank Transfer' : method === 'btc' ? 'Bitcoin (BTC)' : 'USDC (Solana)' },
                 { label: 'Amount paid', value: `EGP ${hire.totalDue?.toFixed(0)}` },
+                { label: 'Receipt', value: '✅ Uploaded' },
               ].map(row => (
                 <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #F5F5F5' }}>
                   <span style={{ fontSize: '13px', color: '#888' }}>{row.label}</span>
@@ -357,7 +407,7 @@ export default function Payment() {
           </div>
 
           <div style={{ background: '#FEF9E7', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px', color: '#7D6608' }}>
-            ℹ️ Admin will verify your payment and activate the hire. You'll be notified once confirmed.
+            ℹ️ Admin will review your payment screenshot and activate the hire within 2 hours.
           </div>
 
           <button onClick={() => navigate('/')}
