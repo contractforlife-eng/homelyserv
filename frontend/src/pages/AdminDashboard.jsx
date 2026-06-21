@@ -31,10 +31,10 @@ export default function AdminDashboard() {
       setHires(allHires);
 
       const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
-      const active = allHires.filter(h => h.status === 'active').length;
-      const revenue = allHires
-        .filter(h => h.paymentStatus === 'confirmed')
-        .reduce((sum, h) => sum + h.totalDue, 0);
+const active = allHires.filter(h => h.status === 'active' || h.status === 'confirmed').length;
+const revenue = allHires
+  .filter(h => h.paymentStatus === 'confirmed' || h.status === 'active')
+  .reduce((sum, h) => sum + h.totalDue, 0);
 
       setStats({
         totalHires: allHires.length,
@@ -62,7 +62,10 @@ export default function AdminDashboard() {
   const rejectPayment = async (hireId) => {
     if (!window.confirm('Reject this payment?')) return;
     try {
-      await api.put(`/hires/${hireId}/payment`, { paymentStatus: 'rejected' });
+      await api.put(`/hires/${hireId}/payment`, {
+        paymentMethod: 'rejected',
+        paymentProofUrl: 'rejected'
+      });
       toast.success('Payment rejected');
       fetchData();
     } catch (err) {
@@ -128,6 +131,14 @@ export default function AdminDashboard() {
                   <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
                     Reference: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.paymentReference}</span>
                   </div>
+                  {hire.paymentProofUrl && (
+                    <div style={{ marginTop: '8px' }}>
+                      <a href={hire.paymentProofUrl} target="_blank" rel="noreferrer"
+                        style={{ color: '#C0392B', fontSize: '12px', fontWeight: '600', textDecoration: 'none', background: '#FDECEA', padding: '4px 12px', borderRadius: '20px' }}>
+                        📎 View payment screenshot
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B' }}>EGP {hire.totalDue?.toFixed(0)}</div>
