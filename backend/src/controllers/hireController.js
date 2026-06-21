@@ -102,13 +102,24 @@ const confirmPayment = async (req, res) => {
 // SUBMIT PAYMENT PROOF
 const submitPayment = async (req, res) => {
   try {
-    const { paymentMethod, paymentProofUrl } = req.body;
+    const { paymentMethod } = req.body;
+    const paymentProofUrl = req.file ? req.file.path : null;
+
+    if (!paymentProofUrl) {
+      return res.status(400).json({ message: 'Payment receipt is required' });
+    }
+
     const hire = await prisma.hire.update({
       where: { id: req.params.id },
-      data: { paymentMethod, paymentProofUrl, paymentStatus: 'pending' }
+      data: {
+        paymentMethod,
+        paymentProofUrl,
+        paymentStatus: 'pending'
+      }
     });
     res.json({ message: 'Payment submitted', hire });
   } catch (error) {
+    console.error('Submit payment error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
