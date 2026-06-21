@@ -23,14 +23,16 @@ export default function Payment() {
   const submitPayment = async () => {
     setSubmitting(true);
     try {
-      await api.put(`/hires/${id}/payment`, {
+      const response = await api.put(`/hires/${id}/payment`, {
         paymentMethod: method,
         paymentProofUrl: 'pending_upload'
       });
+      console.log('Payment response:', response.data);
       setStep(3);
       toast.success('Payment submitted!');
     } catch (err) {
-      toast.error('Failed to submit payment');
+      console.error('Payment error:', err);
+      toast.error(err.response?.data?.message || 'Failed to submit payment');
     }
     setSubmitting(false);
   };

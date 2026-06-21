@@ -10,6 +10,7 @@ const sendOffer = async (req, res) => {
     const vat = commission * 0.14;
     const total = commission + vat;
 
+    // Generate unique reference
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const hire = await prisma.hire.create({
@@ -67,25 +68,6 @@ const getMyHires = async (req, res) => {
   }
 };
 
-// GET ALL HIRES (admin only)
-const getAllHires = async (req, res) => {
-  try {
-    const hires = await prisma.hire.findMany({
-      include: {
-        worker: {
-          include: { user: { select: { fullName: true, phone: true, city: true } } }
-        },
-        employer: { select: { fullName: true, email: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(hires);
-  } catch (error) {
-    console.error('Get all hires error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 // CONFIRM PAYMENT (admin)
 const confirmPayment = async (req, res) => {
   try {
@@ -95,6 +77,7 @@ const confirmPayment = async (req, res) => {
     });
     res.json({ message: 'Payment confirmed', hire });
   } catch (error) {
+    console.error('Confirm payment error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -102,26 +85,22 @@ const confirmPayment = async (req, res) => {
 // SUBMIT PAYMENT PROOF
 const submitPayment = async (req, res) => {
   try {
-    const { paymentMethod } = req.body;
-    const paymentProofUrl = req.file ? req.file.path : null;
-
-    if (!paymentProofUrl) {
-      return res.status(400).json({ message: 'Payment receipt is required' });
-    }
-
+    const { paymentMethod, paymentProofUrl } = req.body;
+    
     const hire = await prisma.hire.update({
       where: { id: req.params.id },
-      data: {
-        paymentMethod,
-        paymentProofUrl,
-        paymentStatus: 'pending'
+      data: { 
+        paymentMethod, 
+        paymentProofUrl: paymentProofUrl || 'pending_upload',
+        paymentStatus: 'pending' 
       }
     });
-    res.json({ message: 'Payment submitted', hire });
+    
+    res.json({ message: 'Payment submitted successfully', hire });
   } catch (error) {
-    console.error('Submit payment error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Payment submission error:', error);
+    res.status(500).json({ message: 'Failed to submit payment: ' + error.message });
   }
 };
 
-module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment, getAllHires };
+module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment };
