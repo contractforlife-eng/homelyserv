@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import { countries } from '../utils/countries';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function Register() {
     email: '',
     password: '',
     phone: '',
+    country: '',
     city: '',
     role: 'WORKER'
   });
@@ -19,9 +21,21 @@ export default function Register() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleCountryChange = (e) => {
+    const countryName = e.target.value;
+    setForm({
+      ...form,
+      country: countryName,
+      city: ''
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await register(form);
+    const result = await register({
+      ...form,
+      city: form.city
+    });
     if (result.success) {
       toast.success('Account created successfully!');
       navigate('/');
@@ -34,13 +48,11 @@ export default function Register() {
     <div style={{ minHeight: '100vh', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', width: '100%', maxWidth: '460px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
         
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#C0392B' }}>HomelyServ</h1>
           <p style={{ color: '#888', marginTop: '4px' }}>Create your account</p>
         </div>
 
-        {/* Role Toggle */}
         <div style={{ display: 'flex', border: '1.5px solid #C0392B', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
           <button
             type="button"
@@ -78,10 +90,40 @@ export default function Register() {
           </div>
 
           <div style={{ marginBottom: '14px' }}>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '5px' }}>City</label>
-            <input name="city" value={form.city} onChange={handleChange} placeholder="Cairo"
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '5px' }}>Country</label>
+            <select 
+              name="country" 
+              value={form.country} 
+              onChange={handleCountryChange}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+            >
+              <option value="">Select your country</option>
+              {countries.map(country => (
+                <option key={country.code} value={country.name}>
+                  {country.flag} {country.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {form.country && (
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '5px' }}>City</label>
+              <select 
+                name="city" 
+                value={form.city} 
+                onChange={handleChange}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              >
+                <option value="">Select your city</option>
+                {countries.find(c => c.name === form.country)?.cities.map(city => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '12px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '5px' }}>Password</label>
