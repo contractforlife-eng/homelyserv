@@ -126,4 +126,10 @@ const getAllHires = async (req, res) => {
   }
 };
 
-module.exports = { sendOffer, getMyHires, confirmPayment, submitPayment };
+module.exports = { 
+  sendOffer, 
+  getMyHires, 
+  confirmPayment, 
+  submitPayment, 
+  getAllHires 
+};
