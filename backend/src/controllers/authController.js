@@ -2,10 +2,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
 
-// REGISTER
+// REGISTER - PUBLIC (no auth required)
 const register = async (req, res) => {
   try {
     const { email, password, fullName, phone, city, role } = req.body;
+
+    // Validate input
+    if (!email || !password || !fullName) {
+      return res.status(400).json({ message: 'Email, password and full name are required' });
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -31,7 +36,7 @@ const register = async (req, res) => {
     // Generate token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
       { expiresIn: '30d' }
     );
 
@@ -47,36 +52,36 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
-// LOGIN
+// LOGIN - PUBLIC
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Check if suspended
     if (user.isSuspended) {
       return res.status(403).json({ message: 'Account suspended. Contact support.' });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Generate token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
       { expiresIn: '30d' }
     );
 
@@ -93,11 +98,11 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
-// GET CURRENT USER
+// GET CURRENT USER - PROTECTED
 const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -113,6 +118,9 @@ const getMe = async (req, res) => {
         createdAt: true
       }
     });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
