@@ -8,8 +8,8 @@ import WorkerProfile from './pages/WorkerProfile';
 import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
-import MyHires from './pages/MyHires';
 import AdminDashboard from './pages/AdminDashboard';
+import './i18n';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuthStore();
@@ -28,7 +28,6 @@ export default function App() {
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
         <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-        <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
