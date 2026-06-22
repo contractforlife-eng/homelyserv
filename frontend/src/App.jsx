@@ -9,7 +9,6 @@ import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
 import AdminDashboard from './pages/AdminDashboard';
-import './i18n';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuthStore();
