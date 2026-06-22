@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
+import { countries } from '../utils/countries';
 
 const CATEGORIES = ['All', 'Nanny', 'Baby-Sitter', 'Elderly Caregiver', 'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse'];
 
@@ -13,6 +14,7 @@ export default function Search() {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
+  const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [availability, setAvailability] = useState('');
 
@@ -38,6 +40,12 @@ export default function Search() {
   const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const getColor = (name) => COLORS[name?.charCodeAt(0) % COLORS.length];
 
+  const handleCountryChange = (e) => {
+    const countryName = e.target.value;
+    setCountry(countryName);
+    setCity(''); // Reset city when country changes
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       {/* Header */}
@@ -50,12 +58,34 @@ export default function Search() {
       </div>
 
       {/* Search bar */}
-      <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '1px solid #E0E0E0', display: 'flex', gap: '8px' }}>
-        <input
-          value={city} onChange={e => setCity(e.target.value)}
-          placeholder="Search by city..."
-          style={{ flex: 1, padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
-        />
+      <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '1px solid #E0E0E0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <select
+          value={country}
+          onChange={handleCountryChange}
+          style={{ flex: 2, padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', minWidth: '120px' }}
+        >
+          <option value="">All Countries</option>
+          {countries.map(country => (
+            <option key={country.code} value={country.name}>
+              {country.flag} {country.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={city}
+          onChange={e => setCity(e.target.value)}
+          style={{ flex: 1, padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', minWidth: '120px' }}
+          disabled={!country}
+        >
+          <option value="">All Cities</option>
+          {country && countries.find(c => c.name === country)?.cities.map(city => (
+            <option key={city} value={city}>
+              {city}
+            </option>
+          ))}
+        </select>
+
         <button onClick={fetchWorkers}
           style={{ padding: '9px 18px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
           Search
@@ -112,7 +142,9 @@ export default function Search() {
                 {/* Info */}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600', color: '#1A1A1A', fontSize: '15px' }}>{worker.user?.fullName}</div>
-                  <div style={{ fontSize: '12px', color: '#888', margin: '2px 0 6px' }}>{worker.category} · {worker.experienceYears} yrs exp · {worker.user?.city}</div>
+                  <div style={{ fontSize: '12px', color: '#888', margin: '2px 0 6px' }}>
+                    {worker.category} · {worker.experienceYears} yrs exp · {worker.user?.city}
+                  </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {worker.skills?.slice(0, 3).map(skill => (
                       <span key={skill} style={{ background: '#F5F5F5', color: '#444', fontSize: '11px', padding: '2px 8px', borderRadius: '20px' }}>{skill}</span>

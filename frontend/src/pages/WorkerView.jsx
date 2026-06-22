@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import { countries } from '../utils/countries';
 
 const COLORS = ['#C0392B', '#2C3E50', '#8E44AD', '#16A085', '#E67E22', '#2980B9', '#27AE60', '#D35400'];
 
@@ -26,18 +27,24 @@ export default function WorkerView() {
   const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const getColor = (name) => COLORS[name?.charCodeAt(0) % COLORS.length];
 
+  const getCountryFromCity = (cityName) => {
+    if (!cityName) return null;
+    const country = countries.find(c => c.cities.includes(cityName));
+    return country;
+  };
+
   const sendOffer = async () => {
     if (!offer.agreedSalary) return toast.error('Please enter the agreed salary');
     setOffering(true);
     try {
-      await api.post('/hires', {
+      const res = await api.post('/hires', {
         workerId: id,
         agreedSalary: parseFloat(offer.agreedSalary),
         startDate: offer.startDate
       });
       toast.success('Job offer sent successfully!');
       setShowOffer(false);
-      navigate('/');
+      navigate(`/payment/${res.data.hire.id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send offer');
     }
@@ -50,6 +57,10 @@ export default function WorkerView() {
   const commission = (parseFloat(offer.agreedSalary) * 0.065) || 0;
   const vat = commission * 0.14;
   const total = commission + vat;
+  const workerCountry = getCountryFromCity(worker.user?.city);
+  const locationDisplay = worker.user?.city 
+    ? `${worker.user.city}${workerCountry ? `, ${workerCountry.flag} ${workerCountry.name}` : ''}`
+    : 'Not specified';
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
@@ -66,13 +77,18 @@ export default function WorkerView() {
         </div>
         <div style={{ color: '#fff', fontSize: '20px', fontWeight: '700' }}>{worker.user?.fullName}</div>
         <div style={{ color: '#ffcdd2', fontSize: '13px', margin: '4px 0 10px' }}>{worker.category}</div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '12px', padding: '3px 12px', borderRadius: '20px' }}>
             ★ {worker.ratingAvg > 0 ? worker.ratingAvg.toFixed(1) : 'New'} · {worker.ratingCount} reviews
           </span>
           <span style={{ background: worker.availability === 'available' ? 'rgba(39,174,96,0.3)' : 'rgba(230,126,34,0.3)', color: '#fff', fontSize: '12px', padding: '3px 12px', borderRadius: '20px' }}>
             ● {worker.availability}
           </span>
+          {workerCountry && (
+            <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '12px', padding: '3px 12px', borderRadius: '20px' }}>
+              {workerCountry.flag} {workerCountry.name}
+            </span>
+          )}
         </div>
       </div>
 
@@ -90,7 +106,7 @@ export default function WorkerView() {
             </div>
             <div>
               <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>Location</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1A1A1A' }}>{worker.user?.city || 'Not specified'}</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1A1A1A' }}>{locationDisplay}</div>
             </div>
             <div>
               <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>Work type</div>

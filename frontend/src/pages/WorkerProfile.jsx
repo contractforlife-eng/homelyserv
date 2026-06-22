@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import { countries } from '../utils/countries';
 
 const CATEGORIES = [
   'Nanny', 'Baby-Sitter', 'Elderly Caregiver',
@@ -25,6 +26,7 @@ export default function WorkerProfile() {
     expectedSalary: '',
     availability: 'available',
     workType: 'full-time',
+    country: '',
     city: '',
     bioEn: '',
     bioAr: '',
@@ -32,16 +34,29 @@ export default function WorkerProfile() {
   });
 
   useEffect(() => {
-    // Load existing profile if any
     api.get('/workers/me').then(res => {
       if (res.data) {
-        setForm(f => ({ ...f, ...res.data, city: res.data.user?.city || '' }));
+        setForm(f => ({
+          ...f,
+          ...res.data,
+          country: res.data.user?.city || '',
+          city: res.data.user?.city || ''
+        }));
       }
     }).catch(() => {});
   }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleCountryChange = (e) => {
+    const countryName = e.target.value;
+    setForm({
+      ...form,
+      country: countryName,
+      city: ''
+    });
   };
 
   const toggleSkill = (skill) => {
@@ -57,7 +72,11 @@ export default function WorkerProfile() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/workers/profile', form);
+      // Use city as the location
+      await api.post('/workers/profile', {
+        ...form,
+        city: form.city || form.country
+      });
       toast.success('Profile saved!');
       navigate('/');
     } catch (err) {
@@ -127,11 +146,47 @@ export default function WorkerProfile() {
                 </select>
               </div>
             </div>
-            <div style={{ marginTop: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Preferred city</label>
-              <input name="city" value={form.city} onChange={handleChange} placeholder="Cairo"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+          </div>
+
+          {/* Location - Country & City */}
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Location</h3>
+            
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Country</label>
+              <select 
+                name="country" 
+                value={form.country} 
+                onChange={handleCountryChange}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+              >
+                <option value="">Select your country</option>
+                {countries.map(country => (
+                  <option key={country.code} value={country.name}>
+                    {country.flag} {country.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {form.country && (
+              <div>
+                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>City</label>
+                <select 
+                  name="city" 
+                  value={form.city} 
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                >
+                  <option value="">Select your city</option>
+                  {countries.find(c => c.name === form.country)?.cities.map(city => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Skills */}
