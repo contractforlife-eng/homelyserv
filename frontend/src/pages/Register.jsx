@@ -23,10 +23,11 @@ export default function Register() {
 
   const handleCountryChange = (e) => {
     const countryName = e.target.value;
+    console.log('Country selected:', countryName); // Debug log
     setForm({
       ...form,
       country: countryName,
-      city: ''
+      city: '' // Reset city when country changes
     });
   };
 
@@ -44,6 +45,9 @@ export default function Register() {
     }
   };
 
+  // Find the selected country to get its cities
+  const selectedCountry = countries.find(c => c.name === form.country);
+
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', width: '100%', maxWidth: '460px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
@@ -53,6 +57,7 @@ export default function Register() {
           <p style={{ color: '#888', marginTop: '4px' }}>Create your account</p>
         </div>
 
+        {/* Role Toggle */}
         <div style={{ display: 'flex', border: '1.5px solid #C0392B', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
           <button
             type="button"
@@ -106,7 +111,7 @@ export default function Register() {
             </select>
           </div>
 
-          {form.country && (
+          {selectedCountry && selectedCountry.cities && selectedCountry.cities.length > 0 && (
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', fontWeight: '600', color: '#444', display: 'block', marginBottom: '5px' }}>City</label>
               <select 
@@ -116,7 +121,7 @@ export default function Register() {
                 style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               >
                 <option value="">Select your city</option>
-                {countries.find(c => c.name === form.country)?.cities.map(city => (
+                {selectedCountry.cities.map(city => (
                   <option key={city} value={city}>
                     {city}
                   </option>
