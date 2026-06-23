@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
+// Simple translations
 const resources = {
   en: {
     translation: {
@@ -56,7 +56,6 @@ const resources = {
   ar: {
     translation: {
       "app_name": "هوملي سيرف",
-      "welcome": "مرحباً",
       "login": "تسجيل الدخول",
       "register": "إنشاء حساب",
       "logout": "تسجيل الخروج",
@@ -66,7 +65,6 @@ const resources = {
       "phone": "رقم الهاتف",
       "country": "الدولة",
       "city": "المدينة",
-      "role": "الدور",
       "worker": "موظف",
       "employer": "صاحب عمل",
       "admin": "مدير",
@@ -106,7 +104,6 @@ const resources = {
   ru: {
     translation: {
       "app_name": "ХоумлиСерв",
-      "welcome": "Добро пожаловать",
       "login": "Вход",
       "register": "Регистрация",
       "logout": "Выйти",
@@ -116,7 +113,6 @@ const resources = {
       "phone": "Номер телефона",
       "country": "Страна",
       "city": "Город",
-      "role": "Роль",
       "worker": "Работник",
       "employer": "Работодатель",
       "admin": "Админ",
@@ -156,7 +152,6 @@ const resources = {
   fr: {
     translation: {
       "app_name": "HomelyServ",
-      "welcome": "Bienvenue",
       "login": "Connexion",
       "register": "S'inscrire",
       "logout": "Déconnexion",
@@ -166,7 +161,6 @@ const resources = {
       "phone": "Numéro de téléphone",
       "country": "Pays",
       "city": "Ville",
-      "role": "Rôle",
       "worker": "Travailleur",
       "employer": "Employeur",
       "admin": "Admin",
@@ -206,7 +200,6 @@ const resources = {
   de: {
     translation: {
       "app_name": "HomelyServ",
-      "welcome": "Willkommen",
       "login": "Anmelden",
       "register": "Registrieren",
       "logout": "Abmelden",
@@ -216,7 +209,6 @@ const resources = {
       "phone": "Telefonnummer",
       "country": "Land",
       "city": "Stadt",
-      "role": "Rolle",
       "worker": "Arbeitnehmer",
       "employer": "Arbeitgeber",
       "admin": "Admin",
@@ -256,15 +248,11 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: 'en', // Set default language
     fallbackLng: 'en',
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage']
-    },
     interpolation: {
       escapeValue: false
     }

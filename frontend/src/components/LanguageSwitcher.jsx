@@ -10,7 +10,7 @@ const languages = [
 ];
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
 
   const changeLanguage = (code) => {
@@ -19,7 +19,6 @@ export default function LanguageSwitcher() {
     setShowMenu(false);
   };
 
-  // Get current language code, default to 'en'
   const currentLang = i18n.language || 'en';
 
   return (
@@ -27,13 +26,13 @@ export default function LanguageSwitcher() {
       <button
         onClick={() => setShowMenu(!showMenu)}
         style={{
-          background: '#F5F5F5',
-          color: '#1A1A1A',
-          border: '1px solid #E0E0E0',
+          background: 'rgba(255,255,255,0.15)',
+          color: '#fff',
+          border: 'none',
           padding: '6px 10px',
           borderRadius: '20px',
           cursor: 'pointer',
-          fontSize: '12px'
+          fontSize: '13px'
         }}
       >
         🌐 {currentLang.toUpperCase()}
@@ -43,7 +42,7 @@ export default function LanguageSwitcher() {
         <div
           style={{
             position: 'absolute',
-            top: '35px',
+            top: '40px',
             right: '0',
             background: '#fff',
             borderRadius: '10px',
