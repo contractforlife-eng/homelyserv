@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { StatusBar, Style } from '@capacitor/status-bar'; // استيراد متحكم شريط الحالة
+import { Capacitor } from '@capacitor/core'; // للتحقق من أن التطبيق يعمل على الموبايل وليس المتصفح
 import useAuthStore from './store/authStore';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -17,6 +20,26 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  
+  // دالة لتهيئة إعدادات الشاشة الكاملة عند فتح التطبيق
+  useEffect(() => {
+    const setupStatusBar = async () => {
+      // نتحقق أولاً أن التطبيق يعمل كـ Native (أندرويد أو iOS) وليس مجرد متصفح كمبيوتر
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // جعل التطبيق يتمدد خلف شريط الحالة العلوي تماماً
+          await StatusBar.setOverlaysWebView({ overlay: true });
+          // جعل أيقونات شريط الحالة باللون الداكن لأن خلفية تطبيقك بيضاء
+          await StatusBar.setStyle({ style: Style.Light });
+        } catch (error) {
+          console.log('StatusBar is not available or failed to load:', error);
+        }
+      }
+    };
+
+    setupStatusBar();
+  }, []);
+
   return (
     <BrowserRouter>
       <Toaster position="top-center" />
