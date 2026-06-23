@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import useAuthStore from './store/authStore';
 import Home from './pages/Home';
@@ -9,6 +9,7 @@ import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
 import AdminDashboard from './pages/AdminDashboard';
+import './i18n';  
 
 function ProtectedRoute({ children }) {
   const { user } = useAuthStore();
@@ -17,7 +18,7 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -29,6 +30,6 @@ export default function App() {
         <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
