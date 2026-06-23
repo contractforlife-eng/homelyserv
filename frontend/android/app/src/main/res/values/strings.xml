@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HomelyServ</string>
+    <string name="title_activity_main">HomelyServ</string>
+    <string name="package_name">com.homelyserv.app</string>
+    <string name="custom_url_scheme">com.homelyserv.app</string>
+</resources>
