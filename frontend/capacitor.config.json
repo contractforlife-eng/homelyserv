@@ -3,25 +3,19 @@
   "appName": "HomelyServ",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": ["*"],
+    "cleartext": true
   },
   "android": {
     "allowMixedContent": true,
     "captureInput": true,
-    "webContentsDebuggingEnabled": true
-  },
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 2000,
-      "launchAutoHide": true,
-      "backgroundColor": "#C0392B",
-      "androidSplashResourceName": "splash",
-      "androidScaleType": "CENTER_CROP"
-    },
-    "StatusBar": {
-      "style": "LIGHT",
-      "backgroundColor": "#C0392B",
-      "overlaysWebView": false
+    "webContentsDebuggingEnabled": true,
+    "buildOptions": {
+      "keystorePath": "",
+      "keystorePassword": "",
+      "keyAlias": "",
+      "keyPassword": ""
     }
   }
 }
