@@ -4,14 +4,24 @@ const { register, login, getMe } = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
 const prisma = require('../utils/prisma');
 
-// PUBLIC routes - no auth required
+// ============================================
+// PUBLIC ROUTES - No authentication required
+// ============================================
+
+// Register new user
 router.post('/register', register);
+
+// Login user
 router.post('/login', login);
 
-// PROTECTED routes - auth required
+// ============================================
+// PROTECTED ROUTES - Authentication required
+// ============================================
+
+// Get current user profile
 router.get('/me', authMiddleware, getMe);
 
-// Switch role - PROTECTED
+// Switch user role (Worker <-> Employer)
 router.put('/switch-role', authMiddleware, async (req, res) => {
   try {
     const { role } = req.body;
@@ -30,6 +40,129 @@ router.put('/switch-role', authMiddleware, async (req, res) => {
     res.json({ message: 'Role updated successfully', role });
   } catch (error) {
     console.error('Switch role error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+});
+
+// ============================================
+// ADMIN ONLY ROUTES
+// ============================================
+
+// Get all users (admin only)
+router.get('/users', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        city: true,
+        role: true,
+        isVerified: true,
+        isSuspended: true,
+        createdAt: true,
+        workerProfile: {
+          select: {
+            category: true,
+            ratingAvg: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Suspend or unsuspend a user (admin only)
+router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const { suspended } = req.body;
+    const { userId } = req.params;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent admin from suspending themselves
+    if (userId === req.userId) {
+      return res.status(400).json({ message: 'You cannot suspend your own account' });
+    }
+
+    // Update user suspension status
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isSuspended: suspended }
+    });
+
+    res.json({ 
+      message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`, 
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        isSuspended: user.isSuspended
+      }
+    });
+  } catch (error) {
+    console.error('Suspend user error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+});
+
+// Delete a user (admin only) - Optional
+router.delete('/users/:userId', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const { userId } = req.params;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent admin from deleting themselves
+    if (userId === req.userId) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+
+    // Delete user (cascade will handle related records)
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
