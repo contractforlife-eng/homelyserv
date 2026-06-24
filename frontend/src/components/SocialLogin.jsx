@@ -38,31 +38,34 @@ export default function SocialLogin() {
 
   // Facebook Login (mock for now)
   const handleFacebookLogin = () => {
+    toast.info('Facebook login is in demo mode. Using mock account.');
     const mockFacebookData = {
       id: 'fb_' + Date.now(),
-      email: 'user_' + Date.now() + '@facebook.com',
+      email: 'facebook_user_' + Date.now() + '@facebook.com',
       name: 'Facebook User',
-      picture: 'https://ui-avatars.com/api/?name=F&background=1877F2&color=fff'
+      picture: 'https://ui-avatars.com/api/?name=FB&background=1877F2&color=fff'
     };
     handleSocialLogin('facebook', mockFacebookData);
   };
 
   // Twitter Login (mock for now)
   const handleTwitterLogin = () => {
+    toast.info('Twitter login is in demo mode. Using mock account.');
     const mockTwitterData = {
       id: 'tw_' + Date.now(),
-      email: 'user_' + Date.now() + '@twitter.com',
+      email: 'twitter_user_' + Date.now() + '@twitter.com',
       name: 'Twitter User',
-      picture: 'https://ui-avatars.com/api/?name=T&background=1DA1F2&color=fff'
+      picture: 'https://ui-avatars.com/api/?name=TW&background=1DA1F2&color=fff'
     };
     handleSocialLogin('twitter', mockTwitterData);
   };
 
   // Telegram Login (mock for now)
   const handleTelegramLogin = () => {
+    toast.info('Telegram login is in demo mode. Using mock account.');
     const mockTelegramData = {
       id: 'tg_' + Date.now(),
-      email: 'user_' + Date.now() + '@telegram.com',
+      email: 'telegram_user_' + Date.now() + '@telegram.com',
       name: 'Telegram User',
       picture: 'https://ui-avatars.com/api/?name=TL&background=0088CC&color=fff'
     };
@@ -71,11 +74,12 @@ export default function SocialLogin() {
 
   // Signal Login (mock for now)
   const handleSignalLogin = () => {
+    toast.info('Signal login is in demo mode. Using mock account.');
     const mockSignalData = {
       id: 'sg_' + Date.now(),
-      email: 'user_' + Date.now() + '@signal.com',
+      email: 'signal_user_' + Date.now() + '@signal.com',
       name: 'Signal User',
-      picture: 'https://ui-avatars.com/api/?name=S&background=3A76F0&color=fff'
+      picture: 'https://ui-avatars.com/api/?name=SG&background=3A76F0&color=fff'
     };
     handleSocialLogin('signal', mockSignalData);
   };
