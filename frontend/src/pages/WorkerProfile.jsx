@@ -6,14 +6,24 @@ import useAuthStore from '../store/authStore';
 import { countries } from '../utils/countries';
 
 const CATEGORIES = [
-  'Nanny', 'Baby-Sitter', 'Elderly Caregiver',
-  'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse'
+  'Nanny', 
+  'Baby-Sitter', 
+  'Elderly Caregiver',
+  'Driver', 
+  'Cook', 
+  'House Manager', 
+  'Gardener', 
+  'Nurse',
+  'Security Guard', 
+  'Bodyguard'
 ];
 
 const SKILLS = [
   'First Aid', 'Newborn Care', 'Cooking', 'Driving License',
   'Medical Training', 'Bilingual (AR/EN)', 'Educational Games',
-  'Meal Prep', 'Elderly Care', 'Sleep Training', 'Gardening', 'Housekeeping'
+  'Meal Prep', 'Elderly Care', 'Sleep Training', 'Gardening', 'Housekeeping',
+  'Security Training', 'Surveillance', 'Self Defense', 'Risk Assessment',
+  'Firearms Training', 'First Responder', 'Crowd Control', 'Close Protection'
 ];
 
 export default function WorkerProfile() {
@@ -72,7 +82,6 @@ export default function WorkerProfile() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Use city as the location
       await api.post('/workers/profile', {
         ...form,
         city: form.city || form.country

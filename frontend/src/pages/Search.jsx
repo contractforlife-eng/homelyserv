@@ -4,7 +4,11 @@ import api from '../utils/api';
 import useAuthStore from '../store/authStore';
 import { countries } from '../utils/countries';
 
-const CATEGORIES = ['All', 'Nanny', 'Baby-Sitter', 'Elderly Caregiver', 'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse'];
+const CATEGORIES = [
+  'All', 'Nanny', 'Baby-Sitter', 'Elderly Caregiver',
+  'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse',
+  'Security Guard', 'Bodyguard'
+];
 
 const COLORS = ['#C0392B', '#2C3E50', '#8E44AD', '#16A085', '#E67E22', '#2980B9', '#27AE60', '#D35400'];
 
@@ -43,7 +47,7 @@ export default function Search() {
   const handleCountryChange = (e) => {
     const countryName = e.target.value;
     setCountry(countryName);
-    setCity(''); // Reset city when country changes
+    setCity('');
   };
 
   return (
