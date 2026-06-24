@@ -1,7 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// Simple translations
 const resources = {
   en: {
     translation: {
@@ -56,6 +55,7 @@ const resources = {
   ar: {
     translation: {
       "app_name": "هوملي سيرف",
+      "welcome": "مرحباً",
       "login": "تسجيل الدخول",
       "register": "إنشاء حساب",
       "logout": "تسجيل الخروج",
@@ -65,6 +65,7 @@ const resources = {
       "phone": "رقم الهاتف",
       "country": "الدولة",
       "city": "المدينة",
+      "role": "الدور",
       "worker": "موظف",
       "employer": "صاحب عمل",
       "admin": "مدير",
@@ -104,6 +105,7 @@ const resources = {
   ru: {
     translation: {
       "app_name": "ХоумлиСерв",
+      "welcome": "Добро пожаловать",
       "login": "Вход",
       "register": "Регистрация",
       "logout": "Выйти",
@@ -113,6 +115,7 @@ const resources = {
       "phone": "Номер телефона",
       "country": "Страна",
       "city": "Город",
+      "role": "Роль",
       "worker": "Работник",
       "employer": "Работодатель",
       "admin": "Админ",
@@ -152,6 +155,7 @@ const resources = {
   fr: {
     translation: {
       "app_name": "HomelyServ",
+      "welcome": "Bienvenue",
       "login": "Connexion",
       "register": "S'inscrire",
       "logout": "Déconnexion",
@@ -161,6 +165,7 @@ const resources = {
       "phone": "Numéro de téléphone",
       "country": "Pays",
       "city": "Ville",
+      "role": "Rôle",
       "worker": "Travailleur",
       "employer": "Employeur",
       "admin": "Admin",
@@ -200,6 +205,7 @@ const resources = {
   de: {
     translation: {
       "app_name": "HomelyServ",
+      "welcome": "Willkommen",
       "login": "Anmelden",
       "register": "Registrieren",
       "logout": "Abmelden",
@@ -209,6 +215,7 @@ const resources = {
       "phone": "Telefonnummer",
       "country": "Land",
       "city": "Stadt",
+      "role": "Rolle",
       "worker": "Arbeitnehmer",
       "employer": "Arbeitgeber",
       "admin": "Admin",
@@ -244,6 +251,56 @@ const resources = {
       "sign_in_to_account": "Melden Sie sich bei Ihrem Konto an",
       "dont_have_account": "Kein Konto?"
     }
+  },
+  tr: {
+    translation: {
+      "app_name": "HomelyServ",
+      "welcome": "Hoş Geldiniz",
+      "login": "Giriş Yap",
+      "register": "Kayıt Ol",
+      "logout": "Çıkış Yap",
+      "email": "E-posta Adresi",
+      "password": "Şifre",
+      "full_name": "Ad Soyad",
+      "phone": "Telefon Numarası",
+      "country": "Ülke",
+      "city": "Şehir",
+      "role": "Rol",
+      "worker": "Çalışan",
+      "employer": "İşveren",
+      "admin": "Yönetici",
+      "find_workers": "Çalışan Bul",
+      "my_profile": "Profilim",
+      "my_hires": "İşe Alımlarım",
+      "search": "Ara",
+      "send_offer": "İş Teklifi Gönder",
+      "payment": "Ödeme",
+      "commission": "Komisyon",
+      "vat": "KDV",
+      "total": "Toplam",
+      "available": "Müsait",
+      "busy": "Meşgul",
+      "experience": "Deneyim",
+      "salary": "Maaş",
+      "skills": "Yetenekler",
+      "about": "Hakkımda",
+      "reviews": "Değerlendirmeler",
+      "switch_role": "Hesap Türünü Değiştir",
+      "dashboard": "Kontrol Paneli",
+      "pending_payments": "Bekleyen Ödemeler",
+      "active_hires": "Aktif İşe Alımlar",
+      "revenue": "Gelir",
+      "confirm": "Onayla",
+      "reject": "Reddet",
+      "create_account": "Hesap Oluştur",
+      "already_have_account": "Zaten hesabınız var mı?",
+      "sign_in": "Giriş Yap",
+      "create_one": "Hesap Oluştur",
+      "select_country": "Ülkenizi Seçin",
+      "select_city": "Şehrinizi Seçin",
+      "sign_in_to_account": "Hesabınıza Giriş Yapın",
+      "dont_have_account": "Hesabınız yok mu?"
+    }
   }
 };
 
@@ -251,7 +308,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en', // Set default language
+    lng: 'en',
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false

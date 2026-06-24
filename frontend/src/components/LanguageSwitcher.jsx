@@ -6,11 +6,12 @@ const languages = [
   { code: 'ar', label: '🇸🇦 العربية' },
   { code: 'ru', label: '🇷🇺 Русский' },
   { code: 'fr', label: '🇫🇷 Français' },
-  { code: 'de', label: '🇩🇪 Deutsch' }
+  { code: 'de', label: '🇩🇪 Deutsch' },
+  { code: 'tr', label: '🇹🇷 Türkçe' }
 ];
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
 
   const changeLanguage = (code) => {

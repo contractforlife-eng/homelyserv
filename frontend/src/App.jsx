@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// التعديل هنا: استيراد HashRouter بدلاً من BrowserRouter
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { StatusBar, Style } from '@capacitor/status-bar'; // استيراد متحكم شريط الحالة
-import { Capacitor } from '@capacitor/core'; // للتحقق من أن التطبيق يعمل على الموبايل وليس المتصفح
+import { StatusBar, Style } from '@capacitor/status-bar'; 
+import { Capacitor } from '@capacitor/core'; 
 import useAuthStore from './store/authStore';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -16,23 +17,19 @@ import './i18n';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuthStore();
-  return user ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" replace />; // إضافة replace لضمان التوجيه النظيف
 }
 
 export default function App() {
   
-  // دالة لتهيئة إعدادات الشاشة الكاملة عند فتح التطبيق
   useEffect(() => {
     const setupStatusBar = async () => {
-      // نتحقق أولاً أن التطبيق يعمل كـ Native (أندرويد أو iOS) وليس مجرد متصفح كمبيوتر
       if (Capacitor.isNativePlatform()) {
         try {
-          // جعل التطبيق يتمدد خلف شريط الحالة العلوي تماماً
           await StatusBar.setOverlaysWebView({ overlay: true });
-          // جعل أيقونات شريط الحالة باللون الداكن لأن خلفية تطبيقك بيضاء
           await StatusBar.setStyle({ style: Style.Light });
         } catch (error) {
-          console.log('StatusBar is not available or failed to load:', error);
+          console.log('StatusBar error:', error);
         }
       }
     };
@@ -41,7 +38,8 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    // التعديل هنا: استخدام HashRouter
+    <HashRouter>
       <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -52,7 +50,9 @@ export default function App() {
         <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
         <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        {/* مسار احتياطي في حال لم يتعرف على المسار الرئيسي ليعيد توجيهه فوراً */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
