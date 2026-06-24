@@ -30,6 +30,7 @@ export default function WorkerProfile() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     category: 'Nanny',
     experienceYears: '',
@@ -40,7 +41,8 @@ export default function WorkerProfile() {
     city: '',
     bioEn: '',
     bioAr: '',
-    skills: []
+    skills: [],
+    profilePhotoUrl: ''
   });
 
   useEffect(() => {
@@ -78,6 +80,37 @@ export default function WorkerProfile() {
     }));
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const res = await api.post('/workers/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setForm({ ...form, profilePhotoUrl: res.data.url });
+      toast.success('Photo uploaded successfully!');
+    } catch (err) {
+      toast.error('Failed to upload photo');
+    }
+    setUploading(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -96,7 +129,6 @@ export default function WorkerProfile() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      {/* Header */}
       <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>My Worker Profile</h1>
@@ -104,6 +136,31 @@ export default function WorkerProfile() {
 
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
         <form onSubmit={handleSubmit}>
+
+          {/* Profile Photo */}
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Profile Photo</h3>
+            
+            <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#F5F5F5', margin: '0 auto 12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #C0392B' }}>
+              {form.profilePhotoUrl ? (
+                <img src={form.profilePhotoUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '48px', color: '#888' }}>📷</span>
+              )}
+            </div>
+
+            <label style={{ display: 'inline-block', padding: '8px 20px', background: '#C0392B', color: '#fff', borderRadius: '20px', cursor: 'pointer', fontSize: '13px' }}>
+              {uploading ? 'Uploading...' : '📸 Upload Photo'}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handlePhotoUpload} 
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>JPG, PNG · Max 5MB</p>
+          </div>
 
           {/* Category */}
           <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
@@ -157,7 +214,7 @@ export default function WorkerProfile() {
             </div>
           </div>
 
-          {/* Location - Country & City */}
+          {/* Location */}
           <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Location</h3>
             
@@ -239,4 +296,4 @@ export default function WorkerProfile() {
       </div>
     </div>
   );
-}" " 
+}
