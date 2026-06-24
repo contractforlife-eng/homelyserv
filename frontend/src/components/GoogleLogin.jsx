@@ -4,9 +4,8 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 
-// Replace with your actual Google Client ID
-// Get it from: https://console.cloud.google.com/apis/credentials
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+// Your Google Client ID from Google Cloud Console
+const GOOGLE_CLIENT_ID = '559915954281-60dus88msec2ic1ebst0tfuk7oebpj9e.apps.googleusercontent.com';
 
 function GoogleLoginComponent() {
   const navigate = useNavigate();
@@ -14,6 +13,7 @@ function GoogleLoginComponent() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
+      // Send the credential to your backend
       const response = await api.post('/auth/google-login', {
         credential: credentialResponse.credential
       });
