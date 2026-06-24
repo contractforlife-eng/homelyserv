@@ -129,6 +129,7 @@ export default function WorkerProfile() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+      {/* Header */}
       <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>My Worker Profile</h1>
@@ -137,7 +138,7 @@ export default function WorkerProfile() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
         <form onSubmit={handleSubmit}>
 
-          {/* Profile Photo */}
+          {/* Profile Photo - NEW SECTION */}
           <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Profile Photo</h3>
             
