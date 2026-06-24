@@ -340,52 +340,58 @@ body {
    ============================================ */
 
 .social-login {
-  margin-top: 24px;
-  width: 100%;
-}
-
-/* Google Login - Centered with tech feel */
-.google-login-section {
+  margin-top: 20px;
   width: 100%;
   display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
+  flex-direction: column;
+  align-items: center;
 }
 
-.google-login-wrapper {
+/* Google Button - Centered */
+.google-btn-container {
   width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
 }
 
-.google-login-wrapper > div {
+.google-btn-container > div {
   width: 100% !important;
-  max-width: 400px;
 }
 
-.google-login-wrapper button {
+.google-btn-container button {
   width: 100% !important;
-  border-radius: 12px !important;
-  padding: 14px !important;
-  border: 1.5px solid #E9ECEF !important;
+  border-radius: 50px !important;
+  padding: 14px 20px !important;
+  border: 2px solid #E9ECEF !important;
   background: #fff !important;
   transition: all 0.3s ease !important;
   font-size: 15px !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.google-login-wrapper button:hover {
+.google-btn-container button:hover {
   transform: translateY(-3px) !important;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
   border-color: #C0392B !important;
 }
 
-/* Social Divider */
+.google-btn-container button:active {
+  transform: scale(0.98) !important;
+}
+
+/* Social Divider - Tech Style */
 .social-divider {
   display: flex;
   align-items: center;
   gap: 16px;
+  width: 100%;
+  max-width: 380px;
   margin: 20px 0 16px;
 }
 
@@ -399,10 +405,11 @@ body {
 
 .social-divider span {
   color: #6C757D;
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 
 /* Social Buttons - Tech Grid */
@@ -410,12 +417,14 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  width: 100%;
+  max-width: 380px;
 }
 
 .social-btn {
-  padding: 12px;
-  border: 1.5px solid #E9ECEF;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border: 2px solid #E9ECEF;
+  border-radius: 50px;
   background: #fff;
   cursor: pointer;
   font-size: 13px;
@@ -433,6 +442,7 @@ body {
   transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(0,0,0,0.08);
   border-color: #C0392B;
+  background: #f8f9fa;
 }
 
 .social-btn:disabled {
@@ -441,7 +451,7 @@ body {
 }
 
 .social-icon {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .social-loading {
@@ -466,43 +476,6 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-/* ============================================
-   HOME PAGE
-   ============================================ */
-
-.home-page {
-  min-height: 100vh;
-  background: #F8F9FA;
-}
-
-.home-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 20px;
-}
-
-.home-container {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.welcome-section {
-  margin-bottom: 32px;
-}
-
-.welcome-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1A1A2E;
-  margin-bottom: 4px;
-}
-
-.welcome-subtitle {
-  color: #6C757D;
-  font-size: 16px;
-}
-
 /* ============================================
    DASHBOARD CARDS
    ============================================ */

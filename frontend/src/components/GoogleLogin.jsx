@@ -34,7 +34,7 @@ function GoogleLoginComponent() {
   };
 
   return (
-    <div className="google-login-wrapper">
+    <div className="google-btn-container">
       <GoogleLoginButton
         onSuccess={handleGoogleSuccess}
         onError={handleGoogleError}
