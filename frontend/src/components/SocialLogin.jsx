@@ -97,12 +97,16 @@ export default function SocialLogin() {
         <span>Or continue with</span>
       </div>
 
-      {/* Google Login - Full integration */}
+      {/* Google Login - Centered and Full Width */}
       <div className="google-login-section">
         <GoogleLogin />
       </div>
 
-      {/* Other social logins */}
+      <div className="social-divider">
+        <span>Other providers</span>
+      </div>
+
+      {/* Other social logins - Centered grid */}
       <div className="social-buttons">
         {socialButtons.map((btn) => (
           <button
