@@ -4,7 +4,6 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 
-// Your Google Client ID from Google Cloud Console
 const GOOGLE_CLIENT_ID = '559915954281-60dus88msec2ic1ebst0tfuk7oebpj9e.apps.googleusercontent.com';
 
 function GoogleLoginComponent() {
@@ -13,7 +12,6 @@ function GoogleLoginComponent() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      // Send the credential to your backend
       const response = await api.post('/auth/google-login', {
         credential: credentialResponse.credential
       });
@@ -40,7 +38,6 @@ function GoogleLoginComponent() {
       <GoogleLoginButton
         onSuccess={handleGoogleSuccess}
         onError={handleGoogleError}
-        useOneTap
         theme="outline"
         size="large"
         width="100%"

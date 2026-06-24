@@ -336,19 +336,57 @@ body {
 }
 
 /* ============================================
-   SOCIAL LOGIN STYLES - UPDATED
+   SOCIAL LOGIN - MODERN TECH STYLES
    ============================================ */
 
 .social-login {
-  margin-top: 20px;
+  margin-top: 24px;
   width: 100%;
 }
 
+/* Google Login - Centered with tech feel */
+.google-login-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.google-login-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.google-login-wrapper > div {
+  width: 100% !important;
+  max-width: 400px;
+}
+
+.google-login-wrapper button {
+  width: 100% !important;
+  border-radius: 12px !important;
+  padding: 14px !important;
+  border: 1.5px solid #E9ECEF !important;
+  background: #fff !important;
+  transition: all 0.3s ease !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+
+.google-login-wrapper button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+  border-color: #C0392B !important;
+}
+
+/* Social Divider */
 .social-divider {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin: 16px 0;
+  margin: 20px 0 16px;
 }
 
 .social-divider::before,
@@ -356,76 +394,45 @@ body {
   content: '';
   flex: 1;
   height: 1px;
-  background: #E9ECEF;
+  background: linear-gradient(to right, transparent, #E9ECEF, transparent);
 }
 
 .social-divider span {
   color: #6C757D;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Google Login - Centered */
-.google-login-section {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin: 8px 0;
-}
-
-.google-login-wrapper {
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  justify-content: center;
-}
-
-.google-login-wrapper > div {
-  width: 100% !important;
-}
-
-.google-login-wrapper button {
-  width: 100% !important;
-  border-radius: 10px !important;
-  padding: 12px !important;
-  border: 1.5px solid #E9ECEF !important;
-  background: #fff !important;
-  transition: all 0.2s ease !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-}
-
-.google-login-wrapper button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* Social Buttons - Centered Grid */
+/* Social Buttons - Tech Grid */
 .social-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 8px;
 }
 
 .social-btn {
-  padding: 11px 12px;
+  padding: 12px;
   border: 1.5px solid #E9ECEF;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  color: #1A1A2E;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .social-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  border-color: #C0392B;
 }
 
 .social-btn:disabled {
@@ -434,7 +441,7 @@ body {
 }
 
 .social-icon {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .social-loading {
@@ -724,6 +731,11 @@ body {
   
   .google-login-wrapper {
     max-width: 100%;
+  }
+  
+  .google-login-wrapper button {
+    padding: 12px !important;
+    font-size: 14px !important;
   }
 }
 

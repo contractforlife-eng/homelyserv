@@ -10,7 +10,6 @@ export default function SocialLogin() {
   const { setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
 
-  // Generic social login handler for mock providers
   const handleSocialLogin = async (provider, providerData) => {
     setLoading(true);
     try {
@@ -36,7 +35,6 @@ export default function SocialLogin() {
     setLoading(false);
   };
 
-  // Facebook Login (mock for now)
   const handleFacebookLogin = () => {
     toast.info('Facebook login is in demo mode. Using mock account.');
     const mockFacebookData = {
@@ -48,7 +46,6 @@ export default function SocialLogin() {
     handleSocialLogin('facebook', mockFacebookData);
   };
 
-  // Twitter Login (mock for now)
   const handleTwitterLogin = () => {
     toast.info('Twitter login is in demo mode. Using mock account.');
     const mockTwitterData = {
@@ -60,7 +57,6 @@ export default function SocialLogin() {
     handleSocialLogin('twitter', mockTwitterData);
   };
 
-  // Telegram Login (mock for now)
   const handleTelegramLogin = () => {
     toast.info('Telegram login is in demo mode. Using mock account.');
     const mockTelegramData = {
@@ -72,7 +68,6 @@ export default function SocialLogin() {
     handleSocialLogin('telegram', mockTelegramData);
   };
 
-  // Signal Login (mock for now)
   const handleSignalLogin = () => {
     toast.info('Signal login is in demo mode. Using mock account.');
     const mockSignalData = {
@@ -93,20 +88,15 @@ export default function SocialLogin() {
 
   return (
     <div className="social-login">
-      <div className="social-divider">
-        <span>Or continue with</span>
-      </div>
-
-      {/* Google Login - Centered and Full Width */}
+      {/* Google Login - Centered */}
       <div className="google-login-section">
         <GoogleLogin />
       </div>
 
       <div className="social-divider">
-        <span>Other providers</span>
+        <span>Or continue with</span>
       </div>
 
-      {/* Other social logins - Centered grid */}
       <div className="social-buttons">
         {socialButtons.map((btn) => (
           <button
