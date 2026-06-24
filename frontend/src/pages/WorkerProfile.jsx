@@ -19,11 +19,30 @@ const CATEGORIES = [
 ];
 
 const SKILLS = [
-  'First Aid', 'Newborn Care', 'Cooking', 'Driving License',
-  'Medical Training', 'Bilingual (AR/EN)', 'Educational Games',
-  'Meal Prep', 'Elderly Care', 'Sleep Training', 'Gardening', 'Housekeeping',
-  'Security Training', 'Surveillance', 'Self Defense', 'Risk Assessment',
-  'Firearms Training', 'First Responder', 'Crowd Control', 'Close Protection'
+  'First Aid', 
+  'Newborn Care', 
+  'Cooking', 
+  'Driving License',
+  'Medical Training', 
+  'Bilingual (AR/EN)', 
+  'Educational Games',
+  'Meal Prep', 
+  'Elderly Care', 
+  'Sleep Training', 
+  'Gardening', 
+  'Housekeeping',
+  'Security Training', 
+  'Surveillance', 
+  'Self Defense', 
+  'Risk Assessment',
+  'Firearms Training', 
+  'First Responder', 
+  'Crowd Control', 
+  'Close Protection',
+  'Child Care',
+  'Pet Care',
+  'Swimming',
+  'CPR Certified'
 ];
 
 export default function WorkerProfile() {
@@ -138,7 +157,7 @@ export default function WorkerProfile() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
         <form onSubmit={handleSubmit}>
 
-          {/* Profile Photo - NEW SECTION */}
+          {/* Profile Photo */}
           <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Profile Photo</h3>
             
