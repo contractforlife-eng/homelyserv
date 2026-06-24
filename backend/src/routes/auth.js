@@ -1,57 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const { register, login, getMe } = require('../controllers/authController');
+const { socialLogin } = require('../controllers/socialAuthController');
+const { googleLogin } = require('../controllers/googleAuthController');
 const authMiddleware = require('../middleware/auth');
 const prisma = require('../utils/prisma');
 
-// ============================================
-// PUBLIC ROUTES - No authentication required
-// ============================================
-
-// Register new user
+// PUBLIC routes - no auth required
 router.post('/register', register);
-
-// Login user
 router.post('/login', login);
+router.post('/social-login', socialLogin);
+router.post('/google-login', googleLogin);
 
-// ============================================
-// PROTECTED ROUTES - Authentication required
-// ============================================
-
-// Get current user profile
+// PROTECTED routes - auth required
 router.get('/me', authMiddleware, getMe);
 
-// Switch user role (Worker <-> Employer)
-router.put('/switch-role', authMiddleware, async (req, res) => {
-  try {
-    const { role } = req.body;
-    
-    // Validate role
-    if (!['WORKER', 'EMPLOYER'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role. Must be WORKER or EMPLOYER' });
-    }
-    
-    // Update user role
-    await prisma.user.update({
-      where: { id: req.userId },
-      data: { role: role }
-    });
-    
-    res.json({ message: 'Role updated successfully', role });
-  } catch (error) {
-    console.error('Switch role error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
-  }
-});
-
-// ============================================
-// ADMIN ONLY ROUTES
-// ============================================
-
-// Get all users (admin only)
+// GET ALL USERS (admin only)
 router.get('/users', authMiddleware, async (req, res) => {
   try {
-    // Check if user is admin
     if (req.userRole !== 'ADMIN') {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
@@ -86,10 +52,9 @@ router.get('/users', authMiddleware, async (req, res) => {
   }
 });
 
-// Suspend or unsuspend a user (admin only)
+// Suspend/Unsuspend user (admin only)
 router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
   try {
-    // Check if user is admin
     if (req.userRole !== 'ADMIN') {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
@@ -97,7 +62,6 @@ router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
     const { suspended } = req.body;
     const { userId } = req.params;
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -106,12 +70,10 @@ router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Prevent admin from suspending themselves
     if (userId === req.userId) {
       return res.status(400).json({ message: 'You cannot suspend your own account' });
     }
 
-    // Update user suspension status
     const user = await prisma.user.update({
       where: { id: userId },
       data: { isSuspended: suspended }
@@ -131,38 +93,23 @@ router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete a user (admin only) - Optional
-router.delete('/users/:userId', authMiddleware, async (req, res) => {
+// Switch role
+router.put('/switch-role', authMiddleware, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.userRole !== 'ADMIN') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    const { role } = req.body;
+    
+    if (!['WORKER', 'EMPLOYER'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be WORKER or EMPLOYER' });
     }
-
-    const { userId } = req.params;
-
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
+    
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { role: role }
     });
-
-    if (!existingUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Prevent admin from deleting themselves
-    if (userId === req.userId) {
-      return res.status(400).json({ message: 'You cannot delete your own account' });
-    }
-
-    // Delete user (cascade will handle related records)
-    await prisma.user.delete({
-      where: { id: userId }
-    });
-
-    res.json({ message: 'User deleted successfully' });
+    
+    res.json({ message: 'Role updated successfully', role });
   } catch (error) {
-    console.error('Delete user error:', error);
+    console.error('Switch role error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });

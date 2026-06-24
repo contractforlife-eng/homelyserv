@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import Logo from '../components/Logo';
+import SocialLogin from '../components/SocialLogin';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ export default function Login() {
             {loading ? 'Signing in...' : t('login')}
           </button>
         </form>
+
+        {/* Social Login Section */}
+        <SocialLogin />
 
         <p className="auth-footer">
           {t('dont_have_account')} <Link to="/register">{t('create_one')}</Link>

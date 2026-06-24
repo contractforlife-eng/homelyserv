@@ -1,0 +1,124 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import toast from 'react-hot-toast';
+import useAuthStore from '../store/authStore';
+import GoogleLogin from './GoogleLogin';
+
+export default function SocialLogin() {
+  const navigate = useNavigate();
+  const { setUser, setToken } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+
+  // Generic social login handler for mock providers
+  const handleSocialLogin = async (provider, providerData) => {
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/social-login', {
+        provider: provider,
+        providerId: providerData.id || providerData.sub,
+        email: providerData.email,
+        fullName: providerData.name || providerData.fullName,
+        avatar: providerData.picture || providerData.avatar
+      });
+
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        setUser(response.data.user);
+        setToken(response.data.token);
+        toast.success(`Welcome ${response.data.user.fullName}!`);
+        navigate('/');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Social login failed');
+    }
+    setLoading(false);
+  };
+
+  // Facebook Login (mock for now)
+  const handleFacebookLogin = () => {
+    const mockFacebookData = {
+      id: 'fb_' + Date.now(),
+      email: 'user_' + Date.now() + '@facebook.com',
+      name: 'Facebook User',
+      picture: 'https://ui-avatars.com/api/?name=F&background=1877F2&color=fff'
+    };
+    handleSocialLogin('facebook', mockFacebookData);
+  };
+
+  // Twitter Login (mock for now)
+  const handleTwitterLogin = () => {
+    const mockTwitterData = {
+      id: 'tw_' + Date.now(),
+      email: 'user_' + Date.now() + '@twitter.com',
+      name: 'Twitter User',
+      picture: 'https://ui-avatars.com/api/?name=T&background=1DA1F2&color=fff'
+    };
+    handleSocialLogin('twitter', mockTwitterData);
+  };
+
+  // Telegram Login (mock for now)
+  const handleTelegramLogin = () => {
+    const mockTelegramData = {
+      id: 'tg_' + Date.now(),
+      email: 'user_' + Date.now() + '@telegram.com',
+      name: 'Telegram User',
+      picture: 'https://ui-avatars.com/api/?name=TL&background=0088CC&color=fff'
+    };
+    handleSocialLogin('telegram', mockTelegramData);
+  };
+
+  // Signal Login (mock for now)
+  const handleSignalLogin = () => {
+    const mockSignalData = {
+      id: 'sg_' + Date.now(),
+      email: 'user_' + Date.now() + '@signal.com',
+      name: 'Signal User',
+      picture: 'https://ui-avatars.com/api/?name=S&background=3A76F0&color=fff'
+    };
+    handleSocialLogin('signal', mockSignalData);
+  };
+
+  const socialButtons = [
+    { provider: 'Facebook', icon: '🔷', color: '#1877F2', onClick: handleFacebookLogin },
+    { provider: 'Twitter', icon: '🐦', color: '#1DA1F2', onClick: handleTwitterLogin },
+    { provider: 'Telegram', icon: '✈️', color: '#0088CC', onClick: handleTelegramLogin },
+    { provider: 'Signal', icon: '📱', color: '#3A76F0', onClick: handleSignalLogin },
+  ];
+
+  return (
+    <div className="social-login">
+      <div className="social-divider">
+        <span>Or continue with</span>
+      </div>
+
+      {/* Google Login - Full integration */}
+      <div className="google-login-section">
+        <GoogleLogin />
+      </div>
+
+      {/* Other social logins */}
+      <div className="social-buttons">
+        {socialButtons.map((btn) => (
+          <button
+            key={btn.provider}
+            onClick={btn.onClick}
+            disabled={loading}
+            className="social-btn"
+            style={{ borderColor: btn.color }}
+          >
+            <span className="social-icon">{btn.icon}</span>
+            {btn.provider}
+          </button>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="social-loading">
+          <span className="spinner"></span> Logging in...
+        </div>
+      )}
+    </div>
+  );
+}
