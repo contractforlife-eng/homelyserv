@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
@@ -8,6 +8,8 @@ import Layout from '../components/Layout';
 export default function Home() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Auto-redirect admin to admin panel
   useEffect(() => {
@@ -15,6 +17,138 @@ export default function Home() {
       navigate('/admin');
     }
   }, [user, navigate]);
+
+  // Fetch real activity data
+  useEffect(() => {
+    if (user && user?.role !== 'ADMIN') {
+      fetchRecentActivity();
+    }
+  }, [user]);
+
+  const fetchRecentActivity = async () => {
+    setLoading(true);
+    try {
+      // Try to get real data from the backend
+      const [hiresRes, userRes] = await Promise.all([
+        api.get('/hires/my').catch(() => ({ data: [] })),
+        api.get('/auth/me').catch(() => ({ data: null }))
+      ]);
+
+      const hires = hiresRes.data || [];
+      const currentUser = userRes.data || user;
+
+      // Build real activity items
+      const activities = [];
+
+      // Add hire-related activities
+      hires.slice(0, 5).forEach(hire => {
+        const date = new Date(hire.createdAt);
+        const timeAgo = getTimeAgo(date);
+        
+        if (hire.status === 'active') {
+          activities.push({
+            id: `hire-${hire.id}`,
+            text: `Hire confirmed with ${hire.worker?.user?.fullName || 'a worker'}`,
+            time: timeAgo,
+            type: 'hire',
+            date: date,
+            icon: '✅',
+            color: '#2e7d32'
+          });
+        } else if (hire.paymentStatus === 'pending') {
+          activities.push({
+            id: `payment-${hire.id}`,
+            text: `Payment pending for ${hire.worker?.user?.fullName || 'hire'}`,
+            time: timeAgo,
+            type: 'payment',
+            date: date,
+            icon: '⏳',
+            color: '#f39c12'
+          });
+        } else if (hire.paymentStatus === 'confirmed') {
+          activities.push({
+            id: `payment-confirmed-${hire.id}`,
+            text: `Payment received from ${hire.employer?.fullName || 'employer'}`,
+            time: timeAgo,
+            type: 'payment_confirmed',
+            date: date,
+            icon: '💰',
+            color: '#2e7d32'
+          });
+        }
+      });
+
+      // Add user profile activities
+      if (currentUser?.createdAt) {
+        const date = new Date(currentUser.createdAt);
+        const timeAgo = getTimeAgo(date);
+        activities.push({
+          id: 'user-created',
+          text: `Account created on HomelyServ`,
+          time: timeAgo,
+          type: 'user',
+          date: date,
+          icon: '👤',
+          color: '#1976d2'
+        });
+      }
+
+      // Sort by date (newest first)
+      activities.sort((a, b) => b.date - a.date);
+      
+      // Take the 5 most recent
+      setRecentActivity(activities.slice(0, 5));
+
+      // If no activities, show default message
+      if (activities.length === 0) {
+        setRecentActivity([
+          {
+            id: 'empty',
+            text: 'No activity yet. Start hiring or apply for jobs!',
+            time: 'Now',
+            type: 'empty',
+            date: new Date(),
+            icon: '📋',
+            color: '#8aaa8a'
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activity:', err);
+      // Show default activities if API fails
+      setRecentActivity([
+        {
+          id: 'default1',
+          text: 'Welcome to HomelyServ! Start exploring.',
+          time: 'Just now',
+          type: 'welcome',
+          date: new Date(),
+          icon: '👋',
+          color: '#2e7d32'
+        }
+      ]);
+    }
+    setLoading(false);
+  };
+
+  // Helper function to get time ago
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const diffMonth = Math.floor(diffDay / 30);
+    const diffYear = Math.floor(diffDay / 365);
+
+    if (diffYear > 0) return `${diffYear} year${diffYear > 1 ? 's' : ''} ago`;
+    if (diffMonth > 0) return `${diffMonth} month${diffMonth > 1 ? 's' : ''} ago`;
+    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
 
   const switchRole = async () => {
     const newRole = user?.role === 'WORKER' ? 'EMPLOYER' : 'WORKER';
@@ -56,12 +190,6 @@ export default function Home() {
 
     return [];
   };
-
-  const recentActivity = [
-    { text: 'Profile approved by admin', time: '12 minutes ago' },
-    { text: 'Payment received from Homely Serv Corp', time: '10 minutes ago' },
-    { text: 'New message from hiring manager', time: '3 days ago' },
-  ];
 
   const dashboardCards = getDashboardCards();
 
@@ -137,6 +265,7 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Recent Activity - Real Data */}
       <div style={{
         background: '#ffffff',
         borderRadius: '16px',
@@ -147,33 +276,71 @@ export default function Home() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <span style={{ fontSize: '20px' }}>📋</span>
           <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a' }}>Recent Activity</h3>
+          {!loading && recentActivity.length > 0 && (
+            <span style={{ fontSize: '12px', color: '#8aaa8a', marginLeft: 'auto' }}>
+              {recentActivity.length} items
+            </span>
+          )}
         </div>
-        {recentActivity.map((activity, index) => (
-          <div 
-            key={index} 
-            style={{ 
-              padding: '14px 0',
-              borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f7f0' : 'none',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: index === 0 ? '#2e7d32' : index === 1 ? '#1976d2' : '#f39c12',
-              }} />
-              <span style={{ fontSize: '14px', color: '#1a3a1a', fontWeight: '500' }}>
-                {activity.text}
-              </span>
-            </div>
-            <span style={{ fontSize: '12px', color: '#8aaa8a' }}>{activity.time}</span>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#5a7a5a' }}>
+            Loading activities...
           </div>
-        ))}
+        ) : recentActivity.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#5a7a5a' }}>
+            No recent activity found.
+          </div>
+        ) : (
+          recentActivity.map((activity, index) => (
+            <div 
+              key={activity.id || index} 
+              style={{ 
+                padding: '14px 0',
+                borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f7f0' : 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.paddingLeft = '8px';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.paddingLeft = '0';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: activity.color || '#8aaa8a',
+                  flexShrink: 0,
+                }} />
+                <div>
+                  <span style={{ fontSize: '14px', color: '#1a3a1a', fontWeight: '500' }}>
+                    {activity.text}
+                  </span>
+                  {activity.type && (
+                    <span style={{ 
+                      fontSize: '10px', 
+                      color: '#8aaa8a', 
+                      marginLeft: '8px',
+                      background: '#f0f7f0',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      textTransform: 'capitalize'
+                    }}>
+                      {activity.type}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span style={{ fontSize: '12px', color: '#8aaa8a' }}>{activity.time}</span>
+            </div>
+          ))
+        )}
       </div>
     </Layout>
   );
