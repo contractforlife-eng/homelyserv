@@ -199,8 +199,16 @@ export default function AdminDashboard() {
           className="card" 
           style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('users')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.borderColor = '#2e7d32'; 
+            e.currentTarget.style.transform = 'translateY(-4px)'; 
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.borderColor = '#d4e8d4'; 
+            e.currentTarget.style.transform = 'translateY(0)'; 
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>👥</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Manage Users</h4>
@@ -211,8 +219,16 @@ export default function AdminDashboard() {
           className="card" 
           style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('hires')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.borderColor = '#2e7d32'; 
+            e.currentTarget.style.transform = 'translateY(-4px)'; 
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.borderColor = '#d4e8d4'; 
+            e.currentTarget.style.transform = 'translateY(0)'; 
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>View Hires</h4>
@@ -223,8 +239,16 @@ export default function AdminDashboard() {
           className="card" 
           style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('payments')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.borderColor = '#2e7d32'; 
+            e.currentTarget.style.transform = 'translateY(-4px)'; 
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.borderColor = '#d4e8d4'; 
+            e.currentTarget.style.transform = 'translateY(0)'; 
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Payments</h4>
@@ -235,8 +259,16 @@ export default function AdminDashboard() {
           className="card" 
           style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => navigate('/')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          onMouseEnter={(e) => { 
+            e.currentTarget.style.borderColor = '#2e7d32'; 
+            e.currentTarget.style.transform = 'translateY(-4px)'; 
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => { 
+            e.currentTarget.style.borderColor = '#d4e8d4'; 
+            e.currentTarget.style.transform = 'translateY(0)'; 
+            e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Dashboard</h4>
