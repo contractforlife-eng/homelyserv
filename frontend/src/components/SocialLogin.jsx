@@ -1,15 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import GoogleLogin from './GoogleLogin';
 
+// Facebook App ID - Your actual App ID
+const FACEBOOK_APP_ID = '1813816306257010';
+
 export default function SocialLogin() {
   const navigate = useNavigate();
   const { setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [fbLoaded, setFbLoaded] = useState(false);
 
+  // Load Facebook SDK
+  useEffect(() => {
+    if (window.FB) {
+      setFbLoaded(true);
+      return;
+    }
+
+    window.fbAsyncInit = function() {
+      window.FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v18.0'
+      });
+      setFbLoaded(true);
+    };
+
+    // Load SDK
+    const script = document.createElement('script');
+    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      const script = document.querySelector('script[src="https://connect.facebook.net/en_US/sdk.js"]');
+      if (script) script.remove();
+    };
+  }, []);
+
+  // Generic social login handler
   const handleSocialLogin = async (provider, providerData) => {
     setLoading(true);
     try {
@@ -35,17 +70,31 @@ export default function SocialLogin() {
     setLoading(false);
   };
 
+  // Facebook Login
   const handleFacebookLogin = () => {
-    toast.info('Facebook login is in demo mode. Using mock account.');
-    const mockFacebookData = {
-      id: 'fb_' + Date.now(),
-      email: 'facebook_user_' + Date.now() + '@facebook.com',
-      name: 'Facebook User',
-      picture: 'https://ui-avatars.com/api/?name=FB&background=1877F2&color=fff'
-    };
-    handleSocialLogin('facebook', mockFacebookData);
+    if (!fbLoaded) {
+      toast.info('Facebook SDK is loading. Please try again.');
+      return;
+    }
+
+    window.FB.login(function(response) {
+      if (response.authResponse) {
+        // Get user info
+        window.FB.api('/me', { fields: 'id,name,email,picture' }, function(userInfo) {
+          handleSocialLogin('facebook', {
+            id: userInfo.id,
+            email: userInfo.email || `fb_${userInfo.id}@facebook.com`,
+            name: userInfo.name,
+            picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=FB&background=1877F2&color=fff`
+          });
+        });
+      } else {
+        toast.error('Facebook login cancelled or failed');
+      }
+    }, { scope: 'email,public_profile' });
   };
 
+  // Twitter Login (mock for now)
   const handleTwitterLogin = () => {
     toast.info('Twitter login is in demo mode. Using mock account.');
     const mockTwitterData = {
@@ -57,6 +106,7 @@ export default function SocialLogin() {
     handleSocialLogin('twitter', mockTwitterData);
   };
 
+  // Telegram Login (mock for now)
   const handleTelegramLogin = () => {
     toast.info('Telegram login is in demo mode. Using mock account.');
     const mockTelegramData = {
@@ -68,6 +118,7 @@ export default function SocialLogin() {
     handleSocialLogin('telegram', mockTelegramData);
   };
 
+  // Signal Login (mock for now)
   const handleSignalLogin = () => {
     toast.info('Signal login is in demo mode. Using mock account.');
     const mockSignalData = {
@@ -88,26 +139,28 @@ export default function SocialLogin() {
 
   return (
     <div className="social-login">
-      {/* Google Login - Centered */}
-      <div className="google-login-section">
-        <GoogleLogin />
-      </div>
-
       <div className="social-divider">
         <span>Or continue with</span>
       </div>
 
+      {/* Google Login - Full integration */}
+      <div className="google-login-section">
+        <GoogleLogin />
+      </div>
+
+      {/* Other social logins */}
       <div className="social-buttons">
         {socialButtons.map((btn) => (
           <button
             key={btn.provider}
             onClick={btn.onClick}
-            disabled={loading}
+            disabled={loading || (btn.provider === 'Facebook' && !fbLoaded)}
             className="social-btn"
             style={{ borderColor: btn.color }}
           >
             <span className="social-icon">{btn.icon}</span>
             {btn.provider}
+            {btn.provider === 'Facebook' && !fbLoaded && ' (Loading...)'}
           </button>
         ))}
       </div>
