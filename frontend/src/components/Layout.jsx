@@ -30,14 +30,11 @@ export default function Layout({ children, activeTab }) {
     }
   };
 
-  // Navigation items based on user role
   const getNavItems = () => {
     if (user?.role === 'ADMIN') {
       return [
         { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
-        { icon: '👥', label: 'Users', path: '/admin', key: 'users' },
-        { icon: '📋', label: 'Hires', path: '/admin', key: 'hires' },
-        { icon: '💰', label: 'Payments', path: '/admin', key: 'payments' },
+        { icon: '⚙️', label: 'Admin', path: '/admin', key: 'admin' },
       ];
     }
 
@@ -64,7 +61,6 @@ export default function Layout({ children, activeTab }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
-      {/* Top Navigation Bar */}
       <nav className="top-nav">
         <div className="top-nav-content">
           <div className="top-nav-left">
@@ -86,7 +82,6 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
-      {/* Navigation Items */}
       <div className="nav-tabs">
         {navItems.map((item) => (
           <button
@@ -98,19 +93,14 @@ export default function Layout({ children, activeTab }) {
             <span className="nav-tab-label">{item.label}</span>
           </button>
         ))}
-        {/* Switch Role Button - Always visible for non-admin */}
         {user?.role !== 'ADMIN' && (
-          <button 
-            className="nav-tab switch-role" 
-            onClick={handleSwitchRole}
-          >
+          <button className="nav-tab switch-role" onClick={handleSwitchRole}>
             <span className="nav-tab-icon">🔄</span>
             <span className="nav-tab-label">Switch Role</span>
           </button>
         )}
       </div>
 
-      {/* Page Content */}
       <main className="page-content">
         {children}
       </main>

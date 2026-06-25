@@ -8,7 +8,7 @@ import WorkerProfile from './pages/WorkerProfile';
 import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
-import NewAdminDashboard from './pages/NewAdminDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import MyHires from './pages/MyHires';
 import './i18n';
 import './index.css';
@@ -57,7 +57,7 @@ export default function App() {
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
           <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><NewAdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />
         </Routes>
       </div>
