@@ -9,6 +9,10 @@ import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminHires from './pages/AdminHires';
+import AdminPayments from './pages/AdminPayments';
+import AdminSettings from './pages/AdminSettings';
 import MyHires from './pages/MyHires';
 import './i18n';
 import './index.css';
@@ -18,17 +22,9 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-// Admin route that doesn't redirect to login
 function AdminRoute({ children }) {
   const { user } = useAuthStore();
-  if (!user) {
-    // Auto-login with admin credentials
-    import('./store/authStore').then(({ default: store }) => {
-      const { login } = store.getState();
-      login({ email: 'emad@homelyserv.com', password: 'killuemad' });
-    });
-    return <div>Loading admin...</div>;
-  }
+  if (!user) return <Navigate to="/login" />;
   return user.role === 'ADMIN' ? children : <Navigate to="/" />;
 }
 
@@ -71,8 +67,14 @@ export default function App() {
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
           <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/hires" element={<AdminRoute><AdminHires /></AdminRoute>} />
+          <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
         </Routes>
       </div>
     </BrowserRouter>
