@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState(null);
+  const [creatingTest, setCreatingTest] = useState(false);
   const [stats, setStats] = useState({
     totalHires: 0,
     pendingPayments: 0,
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
         setHires(allHires);
       } catch (err) {
         console.error('Failed to fetch hires:', err);
+        // If no hires, use empty array
       }
 
       let allUsers = [];
@@ -79,6 +81,18 @@ export default function AdminDashboard() {
       setError('Failed to load admin data. Please try again.');
     }
     setLoading(false);
+  };
+
+  const createTestData = async () => {
+    setCreatingTest(true);
+    try {
+      const res = await api.post('/hires/test');
+      toast.success(res.data.message);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create test data');
+    }
+    setCreatingTest(false);
   };
 
   const confirmPayment = async (hireId) => {
@@ -153,8 +167,31 @@ export default function AdminDashboard() {
   return (
     <Layout activeTab="admin">
       <div className="page-header">
-        <h1 className="page-title">Admin Control Panel</h1>
-        <p className="page-subtitle">Manage all aspects of the HomelyServ platform</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 className="page-title">Admin Control Panel</h1>
+            <p className="page-subtitle">Manage all aspects of the HomelyServ platform</p>
+          </div>
+          <button
+            onClick={createTestData}
+            disabled={creatingTest}
+            style={{
+              padding: '8px 20px',
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          >
+            {creatingTest ? 'Creating...' : '📊 Create Test Data'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -413,6 +450,23 @@ export default function AdminDashboard() {
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
                 <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Hires Yet</h3>
                 <p style={{ color: '#5a7a5a' }}>No hiring activity has been recorded yet.</p>
+                <button
+                  onClick={createTestData}
+                  disabled={creatingTest}
+                  style={{
+                    marginTop: '12px',
+                    padding: '8px 20px',
+                    background: '#1976d2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                  }}
+                >
+                  {creatingTest ? 'Creating...' : '📊 Create Test Data'}
+                </button>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -470,6 +524,23 @@ export default function AdminDashboard() {
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
                 <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Pending Payments</h3>
                 <p style={{ color: '#5a7a5a' }}>All payments have been processed.</p>
+                <button
+                  onClick={createTestData}
+                  disabled={creatingTest}
+                  style={{
+                    marginTop: '12px',
+                    padding: '8px 20px',
+                    background: '#1976d2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                  }}
+                >
+                  {creatingTest ? 'Creating...' : '📊 Create Test Data'}
+                </button>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
