@@ -131,36 +131,77 @@ export default function SocialLogin() {
   };
 
   const socialButtons = [
-    { provider: 'Facebook', icon: '🔷', color: '#1877F2', onClick: handleFacebookLogin },
-    { provider: 'Twitter', icon: '🐦', color: '#1DA1F2', onClick: handleTwitterLogin },
-    { provider: 'Telegram', icon: '✈️', color: '#0088CC', onClick: handleTelegramLogin },
-    { provider: 'Signal', icon: '📱', color: '#3A76F0', onClick: handleSignalLogin },
+    { 
+      provider: 'Google', 
+      icon: 'G', 
+      color: '#4285F4',
+      bgColor: '#ffffff',
+      textColor: '#757575',
+      onClick: () => document.querySelector('.google-btn-wrapper button')?.click()
+    },
+    { 
+      provider: 'Facebook', 
+      icon: 'f', 
+      color: '#1877F2', 
+      bgColor: '#1877F2',
+      textColor: '#ffffff',
+      onClick: handleFacebookLogin 
+    },
+    { 
+      provider: 'Twitter', 
+      icon: '🐦', 
+      color: '#1DA1F2', 
+      bgColor: '#1DA1F2',
+      textColor: '#ffffff',
+      onClick: handleTwitterLogin 
+    },
+    { 
+      provider: 'Telegram', 
+      icon: '✈️', 
+      color: '#0088CC', 
+      bgColor: '#0088CC',
+      textColor: '#ffffff',
+      onClick: handleTelegramLogin 
+    },
+    { 
+      provider: 'Signal', 
+      icon: '📱', 
+      color: '#3A76F0', 
+      bgColor: '#3A76F0',
+      textColor: '#ffffff',
+      onClick: handleSignalLogin 
+    },
   ];
 
   return (
     <div className="social-login">
       <div className="social-divider">
-        <span>Or continue with</span>
+        <span>OR CONTINUE WITH</span>
       </div>
 
-      {/* Google Login - Full integration */}
-      <div className="google-login-section">
+      {/* Google Login */}
+      <div className="social-btn-wrapper google-btn-wrapper">
         <GoogleLogin />
       </div>
 
       {/* Other social logins */}
-      <div className="social-buttons">
-        {socialButtons.map((btn) => (
+      <div className="social-buttons-grid">
+        {socialButtons.slice(1).map((btn) => (
           <button
             key={btn.provider}
             onClick={btn.onClick}
             disabled={loading || (btn.provider === 'Facebook' && !fbLoaded)}
-            className="social-btn"
-            style={{ borderColor: btn.color }}
+            className="social-btn professional"
+            style={{
+              backgroundColor: btn.bgColor,
+              borderColor: btn.color,
+              color: btn.textColor,
+            }}
           >
-            <span className="social-icon">{btn.icon}</span>
-            {btn.provider}
-            {btn.provider === 'Facebook' && !fbLoaded && ' (Loading...)'}
+            <span className="social-icon professional-icon" style={{ color: btn.color }}>
+              {btn.icon}
+            </span>
+            <span className="social-btn-text">{btn.provider}</span>
           </button>
         ))}
       </div>
