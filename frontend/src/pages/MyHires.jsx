@@ -32,7 +32,7 @@ export default function MyHires() {
   const handleAccept = async (hireId) => {
     setProcessingId(hireId);
     try {
-      const res = await api.put(`/hires/${hireId}/accept`);
+      await api.put(`/hires/${hireId}/accept`);
       toast.success('Offer accepted! Please complete payment to reveal contact details.');
       fetchHires();
     } catch (err) {
@@ -107,38 +107,96 @@ export default function MyHires() {
   // Worker view - My Offers
   const renderWorkerView = () => (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">My Offers</h1>
-        <p className="page-subtitle">Job offers from employers</p>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ 
+          fontSize: '24px', 
+          fontWeight: '700', 
+          color: '#1a3a1a',
+          marginBottom: '4px',
+        }}>
+          My Offers
+        </h1>
+        <p style={{ 
+          color: '#5a7a5a', 
+          fontSize: '14px',
+        }}>
+          Job offers from employers
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-label">Total Offers</div>
+      {/* Stats Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '24px',
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>{stats.total}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Offers</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#f39c12' }}>{stats.pending}</div>
-          <div className="stat-label">Pending</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#f39c12' }}>{stats.pending}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#1976d2' }}>{stats.accepted}</div>
-          <div className="stat-label">Accepted</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1976d2' }}>{stats.accepted}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Accepted</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#2e7d32' }}>{stats.active}</div>
-          <div className="stat-label">Active</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#2e7d32' }}>{stats.active}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Active</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="nav-tabs" style={{ borderBottom: '2px solid #d4e8d4', marginBottom: '20px', padding: '0 0 12px 0' }}>
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '2px solid #d4e8d4',
+        marginBottom: '20px',
+        paddingBottom: '12px',
+        flexWrap: 'wrap',
+      }}>
         {tabs.map((tab) => (
           <button
             key={tab}
-            className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              background: activeTab === tab ? '#2e7d32' : 'transparent',
+              color: activeTab === tab ? '#fff' : '#5a7a5a',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+            }}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -149,7 +207,13 @@ export default function MyHires() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#5a7a5a' }}>Loading offers...</div>
       ) : filteredHires.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '40px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
           <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No offers found</h3>
           <p style={{ color: '#5a7a5a' }}>You don't have any {activeTab !== 'all' ? activeTab : ''} offers yet.</p>
@@ -157,16 +221,24 @@ export default function MyHires() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredHires.map((hire) => (
-            <div key={hire.id} className="card" style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
-              gap: '12px',
-              borderLeft: `4px solid ${getStatusColor(hire.status)}`,
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <div
+              key={hire.id}
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                padding: '20px',
+                border: '1px solid #d4e8d4',
+                borderLeft: `4px solid ${getStatusColor(hire.status)}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              {/* Left - Offer Details */}
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
                   <span style={{ fontWeight: '600', fontSize: '16px', color: '#1a3a1a' }}>
                     {hire.employer?.fullName}
                   </span>
@@ -181,18 +253,23 @@ export default function MyHires() {
                     {getStatusIcon(hire.status)} {getStatusLabel(hire.status)}
                   </span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>
                   📍 {hire.employer?.city || 'Location not specified'}
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a', marginTop: '4px' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
                   💰 EGP {hire.agreedSalary} · 📅 {hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'Start date not set'}
                 </div>
+
                 {hire.paymentStatus === 'confirmed' && hire.contactShared && (
                   <div style={{ fontSize: '13px', color: '#2e7d32', marginTop: '4px' }}>
                     📞 {hire.employer?.phone || 'Phone not available'}
                   </div>
                 )}
               </div>
+
+              {/* Right - Action Buttons */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {hire.status === 'pending' && (
                   <>
@@ -230,6 +307,7 @@ export default function MyHires() {
                     </button>
                   </>
                 )}
+
                 {hire.status === 'accepted' && (
                   <span style={{
                     padding: '6px 16px',
@@ -242,6 +320,7 @@ export default function MyHires() {
                     ⏳ Waiting for payment
                   </span>
                 )}
+
                 {hire.status === 'active' && (
                   <span style={{
                     padding: '6px 16px',
@@ -254,6 +333,7 @@ export default function MyHires() {
                     ✅ Active - Contact shared
                   </span>
                 )}
+
                 {hire.status === 'rejected' && (
                   <span style={{
                     padding: '6px 16px',
@@ -277,38 +357,96 @@ export default function MyHires() {
   // Employer view - My Hires
   const renderEmployerView = () => (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">My Hires</h1>
-        <p className="page-subtitle">Applications you've sent to workers</p>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ 
+          fontSize: '24px', 
+          fontWeight: '700', 
+          color: '#1a3a1a',
+          marginBottom: '4px',
+        }}>
+          My Hires
+        </h1>
+        <p style={{ 
+          color: '#5a7a5a', 
+          fontSize: '14px',
+        }}>
+          Applications you've sent to workers
+        </p>
       </div>
 
       {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-label">Total Applications</div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '24px',
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>{stats.total}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Applications</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#f39c12' }}>{stats.pending}</div>
-          <div className="stat-label">Pending Response</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#f39c12' }}>{stats.pending}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending Response</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#1976d2' }}>{stats.accepted}</div>
-          <div className="stat-label">Accepted</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1976d2' }}>{stats.accepted}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Accepted</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#2e7d32' }}>{stats.active}</div>
-          <div className="stat-label">Active</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#2e7d32' }}>{stats.active}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Active</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="nav-tabs" style={{ borderBottom: '2px solid #d4e8d4', marginBottom: '20px', padding: '0 0 12px 0' }}>
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '2px solid #d4e8d4',
+        marginBottom: '20px',
+        paddingBottom: '12px',
+        flexWrap: 'wrap',
+      }}>
         {tabs.map((tab) => (
           <button
             key={tab}
-            className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              background: activeTab === tab ? '#2e7d32' : 'transparent',
+              color: activeTab === tab ? '#fff' : '#5a7a5a',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+            }}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -319,7 +457,13 @@ export default function MyHires() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#5a7a5a' }}>Loading hires...</div>
       ) : filteredHires.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '40px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
           <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No applications found</h3>
           <p style={{ color: '#5a7a5a' }}>You haven't sent any {activeTab !== 'all' ? activeTab : ''} applications yet.</p>
@@ -327,16 +471,23 @@ export default function MyHires() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredHires.map((hire) => (
-            <div key={hire.id} className="card" style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
-              gap: '12px',
-              borderLeft: `4px solid ${getStatusColor(hire.status)}`,
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <div
+              key={hire.id}
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                padding: '20px',
+                border: '1px solid #d4e8d4',
+                borderLeft: `4px solid ${getStatusColor(hire.status)}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
                   <span style={{ fontWeight: '600', fontSize: '16px', color: '#1a3a1a' }}>
                     {hire.worker?.user?.fullName}
                   </span>
@@ -351,18 +502,22 @@ export default function MyHires() {
                     {getStatusIcon(hire.status)} {getStatusLabel(hire.status)}
                   </span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>
                   📍 {hire.worker?.user?.city || 'Location not specified'}
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a', marginTop: '4px' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
                   💰 EGP {hire.agreedSalary} · 📅 {hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'Start date not set'}
                 </div>
+
                 {hire.paymentStatus === 'confirmed' && hire.contactShared && (
                   <div style={{ fontSize: '13px', color: '#2e7d32', marginTop: '4px' }}>
                     📞 {hire.worker?.user?.phone || 'Phone not available'}
                   </div>
                 )}
               </div>
+
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {hire.status === 'pending' && (
                   <span style={{
@@ -376,18 +531,37 @@ export default function MyHires() {
                     ⏳ Waiting for worker
                   </span>
                 )}
+
                 {hire.status === 'accepted' && (
-                  <span style={{
-                    padding: '6px 16px',
-                    background: '#1976d2',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                  }}>
-                    ✅ Accepted - Pay commission
-                  </span>
+                  <>
+                    <span style={{
+                      padding: '6px 16px',
+                      background: '#1976d2',
+                      color: '#fff',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                    }}>
+                      ✅ Accepted - Pay commission
+                    </span>
+                    <button
+                      onClick={() => navigate(`/payment/${hire.id}`)}
+                      style={{
+                        padding: '8px 20px',
+                        background: '#2e7d32',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                      }}
+                    >
+                      💳 Pay Commission
+                    </button>
+                  </>
                 )}
+
                 {hire.status === 'active' && (
                   <span style={{
                     padding: '6px 16px',
@@ -400,6 +574,7 @@ export default function MyHires() {
                     ✅ Active - Contact shared
                   </span>
                 )}
+
                 {hire.status === 'rejected' && (
                   <span style={{
                     padding: '6px 16px',
@@ -412,23 +587,6 @@ export default function MyHires() {
                     ❌ Declined by worker
                   </span>
                 )}
-                {hire.status === 'accepted' && (
-                  <button
-                    onClick={() => navigate(`/payment/${hire.id}`)}
-                    style={{
-                      padding: '8px 20px',
-                      background: '#2e7d32',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                    }}
-                  >
-                    💳 Pay Commission
-                  </button>
-                )}
               </div>
             </div>
           ))}
@@ -440,38 +598,96 @@ export default function MyHires() {
   // Admin view - All Hires
   const renderAdminView = () => (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">All Hires</h1>
-        <p className="page-subtitle">Overview of all hiring activity</p>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ 
+          fontSize: '24px', 
+          fontWeight: '700', 
+          color: '#1a3a1a',
+          marginBottom: '4px',
+        }}>
+          All Hires
+        </h1>
+        <p style={{ 
+          color: '#5a7a5a', 
+          fontSize: '14px',
+        }}>
+          Overview of all hiring activity
+        </p>
       </div>
 
       {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-label">Total Hires</div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '24px',
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>{stats.total}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Hires</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#f39c12' }}>{stats.pending}</div>
-          <div className="stat-label">Pending</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#f39c12' }}>{stats.pending}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#1976d2' }}>{stats.accepted}</div>
-          <div className="stat-label">Accepted</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#1976d2' }}>{stats.accepted}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Accepted</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#2e7d32' }}>{stats.active}</div>
-          <div className="stat-label">Active</div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: '#2e7d32' }}>{stats.active}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Active</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="nav-tabs" style={{ borderBottom: '2px solid #d4e8d4', marginBottom: '20px', padding: '0 0 12px 0' }}>
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '2px solid #d4e8d4',
+        marginBottom: '20px',
+        paddingBottom: '12px',
+        flexWrap: 'wrap',
+      }}>
         {tabs.map((tab) => (
           <button
             key={tab}
-            className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              background: activeTab === tab ? '#2e7d32' : 'transparent',
+              color: activeTab === tab ? '#fff' : '#5a7a5a',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+            }}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -482,7 +698,13 @@ export default function MyHires() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#5a7a5a' }}>Loading hires...</div>
       ) : filteredHires.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '40px',
+          border: '1px solid #d4e8d4',
+          textAlign: 'center',
+        }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
           <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No hires found</h3>
           <p style={{ color: '#5a7a5a' }}>No hiring activity recorded yet.</p>
@@ -490,16 +712,23 @@ export default function MyHires() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredHires.map((hire) => (
-            <div key={hire.id} className="card" style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
-              gap: '12px',
-              borderLeft: `4px solid ${getStatusColor(hire.status)}`,
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <div
+              key={hire.id}
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                padding: '20px',
+                border: '1px solid #d4e8d4',
+                borderLeft: `4px solid ${getStatusColor(hire.status)}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
                   <span style={{ fontWeight: '600', fontSize: '16px', color: '#1a3a1a' }}>
                     {hire.worker?.user?.fullName}
                   </span>
@@ -514,26 +743,32 @@ export default function MyHires() {
                     {getStatusIcon(hire.status)} {getStatusLabel(hire.status)}
                   </span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>
                   👤 Employer: {hire.employer?.fullName}
                 </div>
-                <div style={{ fontSize: '13px', color: '#5a7a5a', marginTop: '4px' }}>
+
+                <div style={{ fontSize: '13px', color: '#5a7a5a' }}>
                   💰 Salary: EGP {hire.agreedSalary} · 📅 Start: {hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'Not set'}
                 </div>
+
                 <div style={{ fontSize: '13px', color: '#f39c12', marginTop: '4px' }}>
                   📊 Commission: EGP {hire.commissionAmount?.toFixed(2)} + VAT: EGP {hire.vatAmount?.toFixed(2)} = Total: EGP {hire.totalDue?.toFixed(2)}
                 </div>
+
                 {hire.paymentStatus === 'pending' && (
                   <div style={{ fontSize: '13px', color: '#c62828', marginTop: '4px' }}>
                     ⏳ Payment pending
                   </div>
                 )}
+
                 {hire.paymentStatus === 'confirmed' && (
                   <div style={{ fontSize: '13px', color: '#2e7d32', marginTop: '4px' }}>
                     ✅ Payment confirmed
                   </div>
                 )}
               </div>
+
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {hire.status === 'pending' && (
                   <span style={{
@@ -547,6 +782,7 @@ export default function MyHires() {
                     ⏳ Pending
                   </span>
                 )}
+
                 {hire.status === 'accepted' && (
                   <span style={{
                     padding: '6px 16px',
@@ -559,6 +795,7 @@ export default function MyHires() {
                     ✅ Accepted
                   </span>
                 )}
+
                 {hire.status === 'active' && (
                   <span style={{
                     padding: '6px 16px',
@@ -571,6 +808,7 @@ export default function MyHires() {
                     ✅ Active
                   </span>
                 )}
+
                 {hire.status === 'rejected' && (
                   <span style={{
                     padding: '6px 16px',
