@@ -1,11 +1,25 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }
+});
 
-// Middleware
-app.use(cors({ origin: '*' }));
+// CORS middleware - Allow all origins
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
+
 app.use(express.json());
 
 // Test route
@@ -23,9 +37,24 @@ app.use('/api/workers', workerRoutes);
 const hireRoutes = require('./routes/hires');
 app.use('/api/hires', hireRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`HomelyServ server running on port ${PORT}`);
+// Socket.io for real-time chat
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_room', (roomId) => {
+    socket.join(roomId);
+  });
+
+  socket.on('send_message', (data) => {
+    io.to(data.roomId).emit('receive_message', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 
-module.exports = app;
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`HomelyServ server running on port ${PORT}`);
+});

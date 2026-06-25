@@ -5,6 +5,9 @@ const sendOffer = async (req, res) => {
   try {
     const { workerId, agreedSalary, startDate } = req.body;
 
+    console.log('Received offer:', { workerId, agreedSalary, startDate });
+    console.log('User ID:', req.userId);
+
     const salary = parseFloat(agreedSalary);
     const commission = salary * 0.065;
     const vat = commission * 0.14;
@@ -30,13 +33,17 @@ const sendOffer = async (req, res) => {
       }
     });
 
-    res.status(201).json({ 
-      message: 'Offer sent successfully! Waiting for worker to accept.', 
-      hire 
+    res.status(201).json({
+      message: 'Offer sent successfully! Waiting for worker to accept.',
+      hire
     });
   } catch (error) {
     console.error('Hire error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+      stack: error.stack
+    });
   }
 };
 
@@ -75,8 +82,8 @@ const acceptOffer = async (req, res) => {
       }
     });
 
-    res.json({ 
-      message: 'Offer accepted! Please complete the payment to reveal contact details.', 
+    res.json({
+      message: 'Offer accepted! Please complete the payment to reveal contact details.',
       hire: updated,
       requiresPayment: true
     });
@@ -133,33 +140,35 @@ const getMyHires = async (req, res) => {
         where: { employerId: req.userId },
         include: {
           worker: {
-            include: { user: { 
-              select: { 
-                fullName: true, 
-                phone: true, 
-                city: true,
-                email: true 
-              } 
-            } }
+            include: {
+              user: {
+                select: {
+                  fullName: true,
+                  phone: true,
+                  city: true,
+                  email: true
+                }
+              }
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
       });
     } else {
-      const profile = await prisma.workerProfile.findUnique({ 
-        where: { userId: req.userId } 
+      const profile = await prisma.workerProfile.findUnique({
+        where: { userId: req.userId }
       });
       if (!profile) return res.json([]);
       hires = await prisma.hire.findMany({
         where: { workerId: profile.id },
         include: {
-          employer: { 
-            select: { 
-              fullName: true, 
-              phone: true, 
+          employer: {
+            select: {
+              fullName: true,
+              phone: true,
               city: true,
-              email: true 
-            } 
+              email: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -169,10 +178,10 @@ const getMyHires = async (req, res) => {
     // Hide contact info if payment not confirmed
     const sanitizedHires = hires.map(hire => {
       const sanitized = { ...hire };
-      
+
       // Only show contact info if payment is confirmed AND status is active
       const canShowContact = hire.paymentStatus === 'confirmed' && hire.status === 'active';
-      
+
       if (!canShowContact) {
         if (sanitized.worker?.user) {
           sanitized.worker.user.phone = '🔒 Hidden until payment';
@@ -183,7 +192,7 @@ const getMyHires = async (req, res) => {
           sanitized.employer.email = '🔒 Hidden until payment';
         }
       }
-      
+
       return sanitized;
     });
 
@@ -223,15 +232,15 @@ const confirmPayment = async (req, res) => {
   try {
     const hire = await prisma.hire.update({
       where: { id: req.params.id },
-      data: { 
-        paymentStatus: 'confirmed', 
+      data: {
+        paymentStatus: 'confirmed',
         status: 'active',
         contactShared: true
       }
     });
-    res.json({ 
-      message: 'Payment confirmed! Contact details are now shared.', 
-      hire 
+    res.json({
+      message: 'Payment confirmed! Contact details are now shared.',
+      hire
     });
   } catch (error) {
     console.error('Confirm payment error:', error);
@@ -245,10 +254,10 @@ const submitPayment = async (req, res) => {
     const { paymentMethod, paymentProofUrl } = req.body;
     const hire = await prisma.hire.update({
       where: { id: req.params.id },
-      data: { 
-        paymentMethod, 
-        paymentProofUrl, 
-        paymentStatus: 'pending' 
+      data: {
+        paymentMethod,
+        paymentProofUrl,
+        paymentStatus: 'pending'
       }
     });
     res.json({ message: 'Payment submitted', hire });
@@ -270,7 +279,7 @@ const createTestHire = async (req, res) => {
     });
 
     if (!worker || !employer) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Need at least one worker and one employer. Please register both first.'
       });
     }
@@ -314,9 +323,9 @@ const createTestHire = async (req, res) => {
       createdHires.push(hire);
     }
 
-    res.json({ 
-      message: 'Test hires created successfully!', 
-      hires: createdHires 
+    res.json({
+      message: 'Test hires created successfully!',
+      hires: createdHires
     });
   } catch (error) {
     console.error('Create test hire error:', error);
@@ -324,11 +333,11 @@ const createTestHire = async (req, res) => {
   }
 };
 
-module.exports = { 
-  sendOffer, 
-  getMyHires, 
+module.exports = {
+  sendOffer,
+  getMyHires,
   getAllHires,
-  confirmPayment, 
+  confirmPayment,
   submitPayment,
   createTestHire,
   acceptOffer,
