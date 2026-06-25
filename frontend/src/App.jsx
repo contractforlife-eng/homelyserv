@@ -18,6 +18,20 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
+// Admin route that doesn't redirect to login
+function AdminRoute({ children }) {
+  const { user } = useAuthStore();
+  if (!user) {
+    // Auto-login with admin credentials
+    import('./store/authStore').then(({ default: store }) => {
+      const { login } = store.getState();
+      login({ email: 'emad@homelyserv.com', password: 'killuemad' });
+    });
+    return <div>Loading admin...</div>;
+  }
+  return user.role === 'ADMIN' ? children : <Navigate to="/" />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -57,7 +71,7 @@ export default function App() {
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
           <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />
         </Routes>
       </div>

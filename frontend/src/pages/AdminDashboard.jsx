@@ -7,7 +7,7 @@ import AdminLayout from '../components/AdminLayout';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, setUser, setToken } = useAuthStore();
   const [hires, setHires] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,32 @@ export default function AdminDashboard() {
     employers: 0,
     admins: 0
   });
+
+  // Auto-login for development
+  useEffect(() => {
+    const autoLogin = async () => {
+      if (!user) {
+        try {
+          const res = await api.post('/auth/login', {
+            email: 'emad@homelyserv.com',
+            password: 'killuemad'
+          });
+          if (res.data.token) {
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            setUser(res.data.user);
+            setToken(res.data.token);
+            window.location.reload();
+          }
+        } catch (err) {
+          console.error('Auto-login failed:', err);
+          navigate('/login');
+        }
+      }
+    };
+    autoLogin();
+  }, []);
+
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
