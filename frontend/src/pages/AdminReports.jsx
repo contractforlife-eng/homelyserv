@@ -24,7 +24,7 @@ export default function AdminReports() {
   const generateReport = async () => {
     setLoading(true);
     try {
-      // In production, fetch real data
+      // Mock data with percentages
       const mockData = {
         users: {
           total: 25,
@@ -33,6 +33,14 @@ export default function AdminReports() {
           admins: 3,
           newThisMonth: 5,
           activeUsers: 22,
+          percentages: {
+            workers: 76,
+            employers: 12,
+            admins: 12,
+            active: 88,
+            new: 20,
+            growth: 15,
+          }
         },
         hires: {
           total: 8,
@@ -41,6 +49,13 @@ export default function AdminReports() {
           pending: 0,
           totalRevenue: 6669,
           averageSalary: 4500,
+          percentages: {
+            active: 75,
+            completed: 25,
+            pending: 0,
+            growth: 12,
+            completion: 25,
+          }
         },
         payments: {
           total: 8,
@@ -53,7 +68,26 @@ export default function AdminReports() {
             bankTransfer: 2,
             bitcoin: 1,
           },
+          percentages: {
+            confirmed: 75,
+            pending: 25,
+            instapay: 37.5,
+            vodafoneCash: 25,
+            bankTransfer: 25,
+            bitcoin: 12.5,
+          }
         },
+        revenue: {
+          total: 6669,
+          monthly: [450, 520, 680, 750, 820, 910, 980, 1050, 1120],
+          growth: 15,
+          average: 556,
+          percentages: {
+            growth: 15,
+            monthlyChange: 12,
+            quarterGrowth: 8,
+          }
+        }
       };
       setReportData(mockData);
     } catch (err) {
@@ -80,26 +114,63 @@ export default function AdminReports() {
     { key: 'year', label: 'Last 12 Months' },
   ];
 
+  // Helper function to render percentage bar
+  const renderPercentageBar = (value, total, label, color = '#2e7d32') => {
+    const percentage = total > 0 ? (value / total) * 100 : 0;
+    return (
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span style={{ fontSize: '13px', color: '#5a7a5a' }}>{label}</span>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a3a1a' }}>{percentage.toFixed(1)}%</span>
+        </div>
+        <div style={{ width: '100%', height: '8px', background: '#f0f7f0', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{
+            width: `${percentage}%`,
+            height: '100%',
+            background: color,
+            borderRadius: '4px',
+            transition: 'width 0.5s ease',
+          }} />
+        </div>
+      </div>
+    );
+  };
+
   const renderUserReport = () => (
     <div>
       <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>User Statistics</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>{reportData?.users?.total || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Users</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>↑ {reportData?.users?.percentages?.growth || 0}% growth</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>{reportData?.users?.workers || 0}</div>
-          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Workers</div>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>{reportData?.users?.activeUsers || 0}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Active Users</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>{reportData?.users?.percentages?.active || 0}% of total</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#0d47a1' }}>{reportData?.users?.employers || 0}</div>
-          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Employers</div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#f39c12' }}>{reportData?.users?.newThisMonth || 0}</div>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#0d47a1' }}>{reportData?.users?.newThisMonth || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>New This Month</div>
+          <div style={{ fontSize: '11px', color: '#0d47a1', marginTop: '4px' }}>{reportData?.users?.percentages?.new || 0}% of total</div>
         </div>
+        <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#f39c12' }}>{reportData?.users?.workers || 0}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Workers</div>
+          <div style={{ fontSize: '11px', color: '#f39c12', marginTop: '4px' }}>{reportData?.users?.percentages?.workers || 0}% of total</div>
+        </div>
+      </div>
+
+      {/* User Distribution */}
+      <div style={{ background: '#f8fbf8', padding: '20px', borderRadius: '8px' }}>
+        <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>User Distribution</h5>
+        {renderPercentageBar(reportData?.users?.workers || 0, reportData?.users?.total || 1, 'Workers', '#2e7d32')}
+        {renderPercentageBar(reportData?.users?.employers || 0, reportData?.users?.total || 1, 'Employers', '#0d47a1')}
+        {renderPercentageBar(reportData?.users?.admins || 0, reportData?.users?.total || 1, 'Admins', '#f39c12')}
+        {renderPercentageBar(reportData?.users?.activeUsers || 0, reportData?.users?.total || 1, 'Active Users', '#1976d2')}
       </div>
     </div>
   );
@@ -107,23 +178,36 @@ export default function AdminReports() {
   const renderHireReport = () => (
     <div>
       <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Hire Statistics</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>{reportData?.hires?.total || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Hires</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>↑ {reportData?.hires?.percentages?.growth || 0}% growth</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>{reportData?.hires?.active || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Active Hires</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>{reportData?.hires?.percentages?.active || 0}% of total</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#0d47a1' }}>{reportData?.hires?.completed || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Completed</div>
+          <div style={{ fontSize: '11px', color: '#0d47a1', marginTop: '4px' }}>{reportData?.hires?.percentages?.completion || 0}% of total</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>EGP {reportData?.hires?.totalRevenue || 0}</div>
-          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Revenue</div>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#e65100' }}>{reportData?.hires?.pending || 0}</div>
+          <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending</div>
+          <div style={{ fontSize: '11px', color: '#e65100', marginTop: '4px' }}>{reportData?.hires?.percentages?.pending || 0}% of total</div>
         </div>
+      </div>
+
+      {/* Hire Status Distribution */}
+      <div style={{ background: '#f8fbf8', padding: '20px', borderRadius: '8px' }}>
+        <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Hire Status Distribution</h5>
+        {renderPercentageBar(reportData?.hires?.active || 0, reportData?.hires?.total || 1, 'Active', '#2e7d32')}
+        {renderPercentageBar(reportData?.hires?.completed || 0, reportData?.hires?.total || 1, 'Completed', '#0d47a1')}
+        {renderPercentageBar(reportData?.hires?.pending || 0, reportData?.hires?.total || 1, 'Pending', '#f39c12')}
       </div>
     </div>
   );
@@ -131,7 +215,8 @@ export default function AdminReports() {
   const renderPaymentReport = () => (
     <div>
       <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Payment Statistics</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>{reportData?.payments?.total || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Payments</div>
@@ -139,10 +224,12 @@ export default function AdminReports() {
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>{reportData?.payments?.confirmed || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Confirmed</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>{reportData?.payments?.percentages?.confirmed || 0}% of total</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#f39c12' }}>{reportData?.payments?.pending || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending</div>
+          <div style={{ fontSize: '11px', color: '#f39c12', marginTop: '4px' }}>{reportData?.payments?.percentages?.pending || 0}% of total</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>EGP {reportData?.payments?.totalAmount || 0}</div>
@@ -150,13 +237,16 @@ export default function AdminReports() {
         </div>
       </div>
 
-      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginTop: '16px', marginBottom: '12px' }}>Payment Methods</h4>
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      {/* Payment Methods Distribution */}
+      <div style={{ background: '#f8fbf8', padding: '20px', borderRadius: '8px', marginBottom: '16px' }}>
+        <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Payment Methods Distribution</h5>
         {reportData?.payments?.methods && Object.entries(reportData.payments.methods).map(([method, count]) => (
-          <div key={method} style={{ background: '#f8fbf8', padding: '12px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>{count}</span>
-            <span style={{ fontSize: '12px', color: '#5a7a5a', textTransform: 'capitalize' }}>{method}</span>
-          </div>
+          renderPercentageBar(
+            count, 
+            reportData.payments.total, 
+            method.charAt(0).toUpperCase() + method.slice(1),
+            ['#2e7d32', '#0d47a1', '#f39c12', '#e65100'][Object.keys(reportData.payments.methods).indexOf(method)]
+          )
         ))}
       </div>
     </div>
@@ -165,10 +255,12 @@ export default function AdminReports() {
   const renderRevenueReport = () => (
     <div>
       <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Revenue Overview</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>EGP {reportData?.hires?.totalRevenue || 0}</div>
+          <div style={{ fontSize: '24px', fontWeight: '700', color: '#2e7d32' }}>EGP {reportData?.revenue?.total || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Total Revenue</div>
+          <div style={{ fontSize: '11px', color: '#2e7d32', marginTop: '4px' }}>↑ {reportData?.revenue?.percentages?.growth || 0}% growth</div>
         </div>
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>{reportData?.hires?.total || 0}</div>
@@ -181,7 +273,16 @@ export default function AdminReports() {
         <div style={{ background: '#f8fbf8', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
           <div style={{ fontSize: '24px', fontWeight: '700', color: '#f39c12' }}>{reportData?.payments?.pending || 0}</div>
           <div style={{ fontSize: '12px', color: '#5a7a5a' }}>Pending Payments</div>
+          <div style={{ fontSize: '11px', color: '#f39c12', marginTop: '4px' }}>{reportData?.payments?.percentages?.pending || 0}% of total</div>
         </div>
+      </div>
+
+      {/* Revenue Growth */}
+      <div style={{ background: '#f8fbf8', padding: '20px', borderRadius: '8px' }}>
+        <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Revenue Growth Metrics</h5>
+        {renderPercentageBar(reportData?.revenue?.growth || 0, 100, 'Overall Growth', '#2e7d32')}
+        {renderPercentageBar(reportData?.revenue?.percentages?.monthlyChange || 0, 100, 'Monthly Change', '#0d47a1')}
+        {renderPercentageBar(reportData?.revenue?.percentages?.quarterGrowth || 0, 100, 'Quarter Growth', '#f39c12')}
       </div>
     </div>
   );
@@ -245,7 +346,7 @@ export default function AdminReports() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {dateOptions.map((option) => (
           <button
             key={option.key}
