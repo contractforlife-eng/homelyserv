@@ -19,6 +19,7 @@ export default function AdminDashboard() {
     admins: 0
   });
   const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -31,17 +32,16 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      let allHires = [];
-      let allUsers = [];
-      try {
-        const hiresRes = await api.get('/hires/all');
-        allHires = hiresRes.data || [];
-      } catch (err) {}
-      try {
-        const usersRes = await api.get('/auth/users');
-        allUsers = usersRes.data || [];
-      } catch (err) {}
+      // Fetch real data from the backend
+      const [hiresRes, usersRes] = await Promise.all([
+        api.get('/hires/all').catch(() => ({ data: [] })),
+        api.get('/auth/users').catch(() => ({ data: [] }))
+      ]);
 
+      const allHires = hiresRes.data || [];
+      const allUsers = usersRes.data || [];
+
+      // Calculate real stats
       const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
       const active = allHires.filter(h => h.status === 'active').length;
       const revenue = allHires
@@ -58,14 +58,90 @@ export default function AdminDashboard() {
         activeHires: active,
         pendingPayments: pending,
         totalRevenue: revenue,
-        workers,
-        employers,
-        admins
+        workers: workers,
+        employers: employers,
+        admins: admins
       });
+
+      // Build recent activity from real data
+      const activities = [];
+
+      // Add user activities
+      allUsers.slice(0, 3).forEach(u => {
+        const date = new Date(u.createdAt);
+        activities.push({
+          id: `user-${u.id}`,
+          text: `${u.fullName} joined as ${u.role}`,
+          time: getTimeAgo(date),
+          date: date,
+          icon: '👤',
+          color: u.role === 'WORKER' ? '#2e7d32' : u.role === 'EMPLOYER' ? '#0d47a1' : '#f39c12'
+        });
+      });
+
+      // Add hire activities
+      allHires.slice(0, 3).forEach(h => {
+        const date = new Date(h.createdAt);
+        const workerName = h.worker?.user?.fullName || 'a worker';
+        const employerName = h.employer?.fullName || 'an employer';
+        
+        if (h.status === 'active') {
+          activities.push({
+            id: `hire-${h.id}`,
+            text: `Hire confirmed: ${workerName} hired by ${employerName}`,
+            time: getTimeAgo(date),
+            date: date,
+            icon: '✅',
+            color: '#2e7d32'
+          });
+        } else if (h.paymentStatus === 'pending') {
+          activities.push({
+            id: `payment-${h.id}`,
+            text: `Payment pending for ${workerName}`,
+            time: getTimeAgo(date),
+            date: date,
+            icon: '⏳',
+            color: '#f39c12'
+          });
+        } else if (h.paymentStatus === 'confirmed') {
+          activities.push({
+            id: `payment-confirmed-${h.id}`,
+            text: `Payment received from ${employerName} for ${workerName}`,
+            time: getTimeAgo(date),
+            date: date,
+            icon: '💰',
+            color: '#2e7d32'
+          });
+        }
+      });
+
+      // Sort by date (newest first) and take top 5
+      activities.sort((a, b) => b.date - a.date);
+      setRecentActivity(activities.slice(0, 5));
+
     } catch (err) {
       console.error('Failed to fetch data:', err);
+      toast.error('Failed to load admin data');
     }
     setLoading(false);
+  };
+
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const diffMonth = Math.floor(diffDay / 30);
+    const diffYear = Math.floor(diffDay / 365);
+
+    if (diffYear > 0) return `${diffYear} year${diffYear > 1 ? 's' : ''} ago`;
+    if (diffMonth > 0) return `${diffMonth} month${diffMonth > 1 ? 's' : ''} ago`;
+    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    return 'Just now';
   };
 
   const statCards = [
@@ -114,7 +190,10 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '60px', color: '#5a7a5a' }}>Loading dashboard...</div>
+        <div style={{ textAlign: 'center', padding: '60px', color: '#5a7a5a' }}>
+          <div className="spinner" style={{ margin: '0 auto 16px', width: '40px', height: '40px' }}></div>
+          Loading dashboard...
+        </div>
       </AdminLayout>
     );
   }
@@ -130,7 +209,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Real Data */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
@@ -155,7 +234,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions Grid */}
+      {/* Quick Actions */}
       <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
         Quick Actions
       </h2>
@@ -197,32 +276,54 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity - Real Data */}
       <div style={{
         background: '#fff',
         borderRadius: '12px',
         padding: '24px',
         border: '1px solid #d4e8d4',
       }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-          📋 Recent Activity
-        </h3>
-        {[
-          { text: 'Profile approved by admin', time: '12 minutes ago' },
-          { text: 'Payment received from Homely Serv Corp', time: '10 minutes ago' },
-          { text: 'New message from hiring manager', time: '3 days ago' },
-        ].map((activity, index) => (
-          <div key={index} style={{ 
-            padding: '12px 0', 
-            borderBottom: index < 2 ? '1px solid #f0f7f0' : 'none',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <span style={{ fontSize: '14px', color: '#1a3a1a', fontWeight: '500' }}>{activity.text}</span>
-            <span style={{ fontSize: '12px', color: '#8aaa8a' }}>{activity.time}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <span style={{ fontSize: '20px' }}>📋</span>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a' }}>Recent Activity</h3>
+          {recentActivity.length > 0 && (
+            <span style={{ fontSize: '12px', color: '#8aaa8a', marginLeft: 'auto' }}>
+              {recentActivity.length} items
+            </span>
+          )}
+        </div>
+
+        {recentActivity.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#5a7a5a' }}>
+            No recent activity found.
           </div>
-        ))}
+        ) : (
+          recentActivity.map((activity, index) => (
+            <div 
+              key={activity.id || index} 
+              style={{ 
+                padding: '12px 0', 
+                borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f7f0' : 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: activity.color || '#8aaa8a',
+                }} />
+                <span style={{ fontSize: '14px', color: '#1a3a1a', fontWeight: '500' }}>
+                  {activity.text}
+                </span>
+              </div>
+              <span style={{ fontSize: '12px', color: '#8aaa8a' }}>{activity.time}</span>
+            </div>
+          ))
+        )}
       </div>
     </AdminLayout>
   );
