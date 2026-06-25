@@ -32,12 +32,41 @@ export default function Home() {
     }
   };
 
-  const navItems = [
-    { icon: '📊', label: 'Dashboard', path: '/', active: true },
-    { icon: '👤', label: 'My Profile', path: '/worker-profile' },
-    { icon: '📋', label: 'My Hires', path: '/my-hires' },
-    { icon: '🔄', label: 'Switch Role', path: '#', onClick: switchRole },
-  ];
+  // Navigation items based on user role
+  const getNavItems = () => {
+    const baseItems = [
+      { icon: '📊', label: 'Dashboard', path: '/', active: true },
+    ];
+
+    if (user?.role === 'ADMIN') {
+      return [
+        ...baseItems,
+        { icon: '👥', label: 'Users', path: '/admin' },
+        { icon: '📋', label: 'Hires', path: '/admin' },
+        { icon: '💰', label: 'Payments', path: '/admin' },
+      ];
+    }
+
+    if (user?.role === 'WORKER') {
+      return [
+        ...baseItems,
+        { icon: '👤', label: 'My Profile', path: '/worker-profile' },
+        { icon: '📋', label: 'My Hires', path: '/my-hires' },
+        { icon: '🔄', label: 'Switch Role', path: '#', onClick: switchRole },
+      ];
+    }
+
+    if (user?.role === 'EMPLOYER') {
+      return [
+        ...baseItems,
+        { icon: '🔍', label: 'Find Workers', path: '/search' },
+        { icon: '📋', label: 'My Hires', path: '/my-hires' },
+        { icon: '🔄', label: 'Switch Role', path: '#', onClick: switchRole },
+      ];
+    }
+
+    return baseItems;
+  };
 
   // Mock recent activity data
   const recentActivity = [
@@ -45,6 +74,86 @@ export default function Home() {
     { text: 'Payment received from Homely Serv Corp', time: '10 minutes ago' },
     { text: 'New message from hiring manager', time: '3 days ago' },
   ];
+
+  // Get dashboard cards based on role
+  const getDashboardCards = () => {
+    if (user?.role === 'ADMIN') {
+      return [
+        {
+          icon: '👥',
+          title: 'User Management',
+          description: 'Manage all registered users',
+          action: 'View Users →',
+          path: '/admin',
+        },
+        {
+          icon: '📋',
+          title: 'Hire Management',
+          description: 'View and manage all hires',
+          action: 'View Hires →',
+          path: '/admin',
+        },
+        {
+          icon: '💰',
+          title: 'Payment Tracking',
+          description: 'Monitor all payments and commissions',
+          action: 'View Payments →',
+          path: '/admin',
+        },
+        {
+          icon: '📊',
+          title: 'Revenue Reports',
+          description: 'View platform revenue and statistics',
+          action: 'View Reports →',
+          path: '/admin',
+        },
+      ];
+    }
+
+    if (user?.role === 'WORKER') {
+      return [
+        {
+          icon: '🔄',
+          title: 'Switch Account Type',
+          description: 'Start hiring workers instead',
+          action: 'View New Jobs →',
+          path: '#',
+          onClick: switchRole,
+        },
+        {
+          icon: '📝',
+          title: 'Update Skill Profile',
+          description: 'Keep your skills and experience up to date',
+          action: 'Update Profile →',
+          path: '/worker-profile',
+        },
+      ];
+    }
+
+    if (user?.role === 'EMPLOYER') {
+      return [
+        {
+          icon: '🔍',
+          title: 'Find Workers',
+          description: 'Search for the perfect candidate',
+          action: 'Search Now →',
+          path: '/search',
+        },
+        {
+          icon: '📋',
+          title: 'My Hires',
+          description: 'View your hiring history',
+          action: 'View Hires →',
+          path: '/my-hires',
+        },
+      ];
+    }
+
+    return [];
+  };
+
+  const navItems = getNavItems();
+  const dashboardCards = getDashboardCards();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
@@ -71,7 +180,7 @@ export default function Home() {
       </nav>
 
       {/* Navigation Items */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', gap: '8px', borderBottom: '1px solid #d4e8d4', background: '#fff' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', gap: '8px', borderBottom: '1px solid #d4e8d4', background: '#fff', flexWrap: 'wrap' }}>
         {navItems.map((item) => (
           <button
             key={item.label}
@@ -92,43 +201,86 @@ export default function Home() {
 
       {/* Main Content */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           {/* Welcome Section */}
           <div style={{ marginBottom: '32px' }}>
             <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a', marginBottom: '4px' }}>
               Welcome, {user?.fullName}!
             </h1>
-            <p style={{ color: '#5a7a5a', fontSize: '16px' }}>What would you like to do today?</p>
+            <p style={{ color: '#5a7a5a', fontSize: '16px' }}>
+              {user?.role === 'ADMIN' ? 'Manage your platform from here' : 'What would you like to do today?'}
+            </p>
           </div>
 
-          {/* Quick Actions Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-            <div 
-              style={{ background: '#fff', borderRadius: '16px', padding: '24px', border: '1px solid #d4e8d4', cursor: 'pointer' }}
-              onClick={switchRole}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '4px' }}>Switch Account Type</h3>
-              <p style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '12px' }}>
-                {user?.role === 'WORKER' ? 'Start hiring workers instead' : 'Start looking for jobs instead'}
-              </p>
-              <span style={{ fontSize: '13px', color: '#2e7d32', fontWeight: '600' }}>View New Jobs →</span>
-            </div>
-
-            <div 
-              style={{ background: '#fff', borderRadius: '16px', padding: '24px', border: '1px solid #d4e8d4', cursor: 'pointer' }}
-              onClick={() => navigate('/worker-profile')}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>📝</div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '4px' }}>Update Skill Profile</h3>
-              <p style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '12px' }}>Keep your skills and experience up to date</p>
-              <span style={{ fontSize: '13px', color: '#2e7d32', fontWeight: '600' }}>Update Profile →</span>
-            </div>
+          {/* Dashboard Cards Grid */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: user?.role === 'ADMIN' ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)', 
+            gap: '16px', 
+            marginBottom: '32px' 
+          }}>
+            {dashboardCards.map((card, index) => (
+              <div 
+                key={index}
+                style={{ 
+                  background: '#fff', 
+                  borderRadius: '16px', 
+                  padding: '24px', 
+                  border: '1px solid #d4e8d4', 
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onClick={() => {
+                  if (card.onClick) {
+                    card.onClick();
+                  } else {
+                    navigate(card.path);
+                  }
+                }}
+                onMouseEnter={(e) => { 
+                  e.currentTarget.style.borderColor = '#2e7d32'; 
+                  e.currentTarget.style.transform = 'translateY(-4px)'; 
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+                }}
+                onMouseLeave={(e) => { 
+                  e.currentTarget.style.borderColor = '#d4e8d4'; 
+                  e.currentTarget.style.transform = 'translateY(0)'; 
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>{card.icon}</div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '4px' }}>{card.title}</h3>
+                <p style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '12px' }}>{card.description}</p>
+                <span style={{ fontSize: '13px', color: '#2e7d32', fontWeight: '600' }}>{card.action}</span>
+              </div>
+            ))}
           </div>
+
+          {/* Admin Stats - Only for Admin */}
+          {user?.role === 'ADMIN' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>Total Users</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>1,284</div>
+                <div style={{ fontSize: '12px', color: '#2e7d32', marginTop: '4px' }}>↑ 12% this month</div>
+              </div>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>Active Workers</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>847</div>
+                <div style={{ fontSize: '12px', color: '#2e7d32', marginTop: '4px' }}>↑ 8% this month</div>
+              </div>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>Active Hires</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>43</div>
+                <div style={{ fontSize: '12px', color: '#2e7d32', marginTop: '4px' }}>↑ 5% this month</div>
+              </div>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '4px' }}>Revenue</div>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a3a1a' }}>$12,430</div>
+                <div style={{ fontSize: '12px', color: '#2e7d32', marginTop: '4px' }}>↑ 15% this month</div>
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', border: '1px solid #d4e8d4' }}>
