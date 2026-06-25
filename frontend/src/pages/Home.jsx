@@ -63,6 +63,20 @@ export default function Home() {
             <p className="welcome-subtitle">What would you like to do today?</p>
           </div>
 
+          {/* Admin Dashboard */}
+          {user?.role === 'ADMIN' && (
+            <div className="dashboard-grid">
+              <div className="dashboard-card admin" onClick={() => navigate('/admin')}>
+                <div className="card-icon">📊</div>
+                <div className="card-content">
+                  <h3 className="card-title">{t('dashboard')}</h3>
+                  <p className="card-desc">Manage hires, payments and users</p>
+                </div>
+                <span className="card-arrow">›</span>
+              </div>
+            </div>
+          )}
+
           {/* Worker Dashboard */}
           {user?.role === 'WORKER' && (
             <div className="dashboard-grid">
@@ -103,20 +117,6 @@ export default function Home() {
                 <div className="card-content">
                   <h3 className="card-title">{t('my_hires')}</h3>
                   <p className="card-desc">View your hiring history and payments</p>
-                </div>
-                <span className="card-arrow">›</span>
-              </div>
-            </div>
-          )}
-
-          {/* Admin Dashboard */}
-          {user?.role === 'ADMIN' && (
-            <div className="dashboard-grid">
-              <div className="dashboard-card admin" onClick={() => navigate('/admin')}>
-                <div className="card-icon">📊</div>
-                <div className="card-content">
-                  <h3 className="card-title">{t('dashboard')}</h3>
-                  <p className="card-desc">Manage hires, payments and users</p>
                 </div>
                 <span className="card-arrow">›</span>
               </div>
