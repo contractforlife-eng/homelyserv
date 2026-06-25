@@ -162,8 +162,8 @@ export default function Home() {
   const getDashboardCards = () => {
     if (user?.role === 'WORKER') {
       return [
-        { icon: '👤', title: 'My Profile', desc: 'Update your skills and availability', action: 'Update Profile →', path: '/worker-profile' },
         { icon: '📋', title: 'My Offers', desc: 'View job offers from employers', action: 'View Offers →', path: '/my-hires' },
+        { icon: '👤', title: 'My Profile', desc: 'Update your skills and availability', action: 'Update Profile →', path: '/worker-profile' },
         { icon: '🔄', title: 'Switch Account Type', desc: 'Start hiring workers instead', action: 'Switch →', path: '#', onClick: switchRole },
       ];
     }
