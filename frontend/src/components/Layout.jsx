@@ -33,7 +33,6 @@ export default function Layout({ children, activeTab }) {
   const getNavItems = () => {
     if (user?.role === 'ADMIN') {
       return [
-        { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
         { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
       ];
     }
@@ -82,8 +81,7 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
-      {/* Navigation Tabs - Improved Design */}
-      <div className="nav-tabs-container">
+      <div className="nav-tabs">
         {navItems.map((item) => (
           <button
             key={item.key}
@@ -92,9 +90,6 @@ export default function Layout({ children, activeTab }) {
           >
             <span className="nav-tab-icon">{item.icon}</span>
             <span className="nav-tab-label">{item.label}</span>
-            {activeTab === item.key && (
-              <span className="nav-tab-indicator"></span>
-            )}
           </button>
         ))}
         {user?.role !== 'ADMIN' && (

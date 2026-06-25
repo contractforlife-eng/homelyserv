@@ -35,13 +35,6 @@ export default function Home() {
           path: '/admin',
           primary: true 
         },
-        {
-          icon: '📊',
-          title: 'Quick Overview',
-          desc: 'View platform statistics and activity',
-          action: 'View Stats →',
-          path: '/admin',
-        },
       ];
     }
 
@@ -73,7 +66,7 @@ export default function Home() {
   const dashboardCards = getDashboardCards();
 
   return (
-    <Layout activeTab="dashboard">
+    <Layout activeTab={user?.role === 'ADMIN' ? 'admin' : 'dashboard'}>
       <div className="page-header">
         <h1 className="page-title">Welcome, {user?.fullName}!</h1>
         <p className="page-subtitle">
