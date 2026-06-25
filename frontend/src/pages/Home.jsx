@@ -27,17 +27,16 @@ export default function Home() {
   const getDashboardCards = () => {
     if (user?.role === 'ADMIN') {
       return [
-        { icon: '👥', title: 'User Management', desc: 'Manage all registered users', action: 'View Users →', path: '/admin' },
-        { icon: '📋', title: 'Hire Management', desc: 'View and manage all hires', action: 'View Hires →', path: '/admin' },
-        { icon: '💰', title: 'Payment Tracking', desc: 'Monitor all payments and commissions', action: 'View Payments →', path: '/admin' },
-        { icon: '📊', title: 'Revenue Reports', desc: 'View platform revenue and statistics', action: 'View Reports →', path: '/admin' },
+        { icon: '⚙️', title: 'Admin Panel', desc: 'Manage users, hires and payments', action: 'Open Admin →', path: '/admin' },
+        { icon: '📊', title: 'Quick Stats', desc: 'View platform statistics', action: 'View Stats →', path: '/admin' },
       ];
     }
 
     if (user?.role === 'WORKER') {
       return [
-        { icon: '🔄', title: 'Switch Account Type', desc: 'Start hiring workers instead', action: 'View New Jobs →', path: '#', onClick: switchRole },
-        { icon: '📝', title: 'Update Skill Profile', desc: 'Keep your skills and experience up to date', action: 'Update Profile →', path: '/worker-profile' },
+        { icon: '👤', title: 'My Profile', desc: 'Update your skills and availability', action: 'Update Profile →', path: '/worker-profile' },
+        { icon: '📋', title: 'My Hires', desc: 'View offers from employers', action: 'View Hires →', path: '/my-hires' },
+        { icon: '🔄', title: 'Switch Account Type', desc: 'Start hiring workers instead', action: 'Switch →', path: '#', onClick: switchRole },
       ];
     }
 
@@ -45,6 +44,7 @@ export default function Home() {
       return [
         { icon: '🔍', title: 'Find Workers', desc: 'Search for the perfect candidate', action: 'Search Now →', path: '/search' },
         { icon: '📋', title: 'My Hires', desc: 'View your hiring history', action: 'View Hires →', path: '/my-hires' },
+        { icon: '🔄', title: 'Switch Account Type', desc: 'Start looking for jobs instead', action: 'Switch →', path: '#', onClick: switchRole },
       ];
     }
 
@@ -93,7 +93,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className={`card-grid card-grid-${dashboardCards.length === 2 ? '2' : '4'}`}>
+      <div className={`card-grid card-grid-${dashboardCards.length}`}>
         {dashboardCards.map((card, index) => (
           <div 
             key={index}
@@ -105,16 +105,6 @@ export default function Home() {
               } else {
                 navigate(card.path);
               }
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#2e7d32';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#d4e8d4';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
             }}
           >
             <div className="card-icon">{card.icon}</div>

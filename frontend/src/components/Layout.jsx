@@ -34,7 +34,7 @@ export default function Layout({ children, activeTab }) {
     if (user?.role === 'ADMIN') {
       return [
         { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
-        { icon: '⚙️', label: 'Admin', path: '/admin', key: 'admin' },
+        { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
       ];
     }
 
