@@ -11,6 +11,14 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({
+    total: 0,
+    workers: 0,
+    employers: 0,
+    admins: 0,
+    active: 0,
+    suspended: 0
+  });
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -24,8 +32,26 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const res = await api.get('/auth/users');
-      setUsers(res.data || []);
+      const usersData = res.data || [];
+      setUsers(usersData);
+
+      // Calculate stats
+      const workers = usersData.filter(u => u.role === 'WORKER').length;
+      const employers = usersData.filter(u => u.role === 'EMPLOYER').length;
+      const admins = usersData.filter(u => u.role === 'ADMIN').length;
+      const active = usersData.filter(u => !u.isSuspended).length;
+      const suspended = usersData.filter(u => u.isSuspended).length;
+
+      setStats({
+        total: usersData.length,
+        workers,
+        employers,
+        admins,
+        active,
+        suspended
+      });
     } catch (err) {
+      console.error('Failed to fetch users:', err);
       toast.error('Failed to fetch users');
     }
     setLoading(false);
@@ -58,51 +84,108 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>Users</h1>
-          <p style={{ color: '#5a7a5a', fontSize: '14px' }}>Manage all registered users</p>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>Users</h1>
+        <p style={{ color: '#5a7a5a', fontSize: '14px' }}>Manage all registered users</p>
+      </div>
+
+      {/* User Stats */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(6, 1fr)',
+        gap: '12px',
+        marginBottom: '24px',
+      }}>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a3a1a' }}>{stats.total}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Total</div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: '8px 14px',
-              border: '1px solid #d4e8d4',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              width: '200px',
-            }}
-          />
-          <span style={{ fontSize: '13px', color: '#5a7a5a', alignSelf: 'center' }}>
-            {filteredUsers.length} users
-          </span>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#2e7d32' }}>{stats.workers}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Workers</div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#0d47a1' }}>{stats.employers}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Employers</div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#4a148c' }}>{stats.admins}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Admins</div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#2e7d32' }}>{stats.active}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Active</div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '8px', padding: '14px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#c62828' }}>{stats.suspended}</div>
+          <div style={{ fontSize: '11px', color: '#5a7a5a' }}>Suspended</div>
         </div>
       </div>
 
+      {/* Search and Table */}
       <div style={{
         background: '#fff',
         borderRadius: '12px',
         border: '1px solid #d4e8d4',
         overflow: 'hidden',
       }}>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #f0f7f0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>
+              All Users
+            </span>
+            <span style={{
+              fontSize: '12px',
+              color: '#fff',
+              background: '#2e7d32',
+              padding: '2px 10px',
+              borderRadius: '12px',
+            }}>
+              {filteredUsers.length}
+            </span>
+          </div>
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 16px',
+              border: '1px solid #d4e8d4',
+              borderRadius: '8px',
+              fontSize: '14px',
+              outline: 'none',
+              width: '250px',
+              transition: 'border-color 0.2s ease',
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#2e7d32'}
+            onBlur={(e) => e.target.style.borderColor = '#d4e8d4'}
+          />
+        </div>
+
         {filteredUsers.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>No users found.</div>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>
+            {searchTerm ? 'No users found matching your search.' : 'No users registered yet.'}
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr style={{ background: '#f8fbf8', borderBottom: '2px solid #d4e8d4' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Name</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Email</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Role</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Joined</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600' }}>Action</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Name</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Email</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Role</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Status</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Joined</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,7 +230,10 @@ export default function AdminUsers() {
                             cursor: 'pointer',
                             fontSize: '12px',
                             fontWeight: '600',
+                            transition: 'all 0.2s ease',
                           }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                         >
                           {u.isSuspended ? 'Unsuspend' : 'Suspend'}
                         </button>
