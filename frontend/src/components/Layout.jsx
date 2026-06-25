@@ -30,47 +30,9 @@ export default function Layout({ children, activeTab }) {
     }
   };
 
-  const getNavItems = () => {
-    if (user?.role === 'ADMIN') {
-      return [
-        { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
-      ];
-    }
-
-    if (user?.role === 'WORKER') {
-      return [
-        { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
-        { icon: '👤', label: 'My Profile', path: '/worker-profile', key: 'profile' },
-        { icon: '📋', label: 'My Offers', path: '/my-hires', key: 'hires' },
-      ];
-    }
-
-    if (user?.role === 'EMPLOYER') {
-      return [
-        { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
-        { icon: '🔍', label: 'Find Workers', path: '/search', key: 'search' },
-        { icon: '📋', label: 'My Hires', path: '/my-hires', key: 'hires' },
-      ];
-    }
-
-    return [];
-  };
-
-  const navItems = getNavItems();
-
-  // If admin, render only the page content without top navigation
-  if (user?.role === 'ADMIN') {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
-        <main className="page-content">
-          {children}
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+      {/* Top Navigation Bar */}
       <nav className="top-nav">
         <div className="top-nav-content">
           <div className="top-nav-left">
@@ -92,24 +54,18 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
-      <div className="nav-tabs">
-        {navItems.map((item) => (
+      {/* Navigation Tabs - Only for Admin */}
+      {user?.role === 'ADMIN' && (
+        <div className="nav-tabs">
           <button
-            key={item.key}
-            className={`nav-tab ${activeTab === item.key ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
+            className={`nav-tab ${activeTab === 'admin' ? 'active' : ''}`}
+            onClick={() => navigate('/admin')}
           >
-            <span className="nav-tab-icon">{item.icon}</span>
-            <span className="nav-tab-label">{item.label}</span>
+            <span className="nav-tab-icon">⚙️</span>
+            <span className="nav-tab-label">Admin Panel</span>
           </button>
-        ))}
-        {user?.role !== 'ADMIN' && (
-          <button className="nav-tab switch-role" onClick={handleSwitchRole}>
-            <span className="nav-tab-icon">🔄</span>
-            <span className="nav-tab-label">Switch Role</span>
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <main className="page-content">
         {children}

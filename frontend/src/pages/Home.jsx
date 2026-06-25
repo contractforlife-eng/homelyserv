@@ -183,87 +183,99 @@ export default function Home() {
 
   return (
     <Layout activeTab="dashboard">
-      <div style={{ marginBottom: '32px' }}>
+      {/* Dashboard Header */}
+      <div style={{ 
+        marginBottom: '32px',
+        paddingBottom: '20px',
+        borderBottom: '1px solid #e8f5e9',
+      }}>
         <h1 style={{ 
           fontSize: '28px', 
           fontWeight: '700', 
-          color: '#1a3a1a', 
+          color: '#1a3a1a',
           marginBottom: '4px',
-          letterSpacing: '-0.5px',
         }}>
-          Welcome back, {user?.fullName} 👋
+          Dashboard
         </h1>
         <p style={{ 
           color: '#5a7a5a', 
           fontSize: '16px',
-          fontWeight: '400',
         }}>
-          What would you like to do today?
+          Welcome back, {user?.fullName}
         </p>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${dashboardCards.length}, 1fr)`,
-        gap: '20px',
-        marginBottom: '32px',
-      }}>
-        {dashboardCards.map((card, index) => (
-          <div
-            key={index}
-            onClick={() => {
-              if (card.onClick) {
-                card.onClick();
-              } else {
-                navigate(card.path);
-              }
-            }}
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '28px 24px',
-              border: '1px solid #e8f5e9',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              textAlign: 'center',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = '#2e7d32';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e8f5e9';
-            }}
-          >
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>{card.icon}</div>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '6px' }}>
-              {card.title}
-            </h3>
-            <p style={{ fontSize: '14px', color: '#5a7a5a', marginBottom: '14px', lineHeight: '1.5' }}>
-              {card.desc}
-            </p>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#2e7d32', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              {card.action}
-            </span>
-          </div>
-        ))}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ 
+          fontSize: '18px', 
+          fontWeight: '600', 
+          color: '#1a3a1a', 
+          marginBottom: '16px',
+        }}>
+          What would you like to do today?
+        </h2>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${dashboardCards.length}, 1fr)`,
+          gap: '16px',
+        }}>
+          {dashboardCards.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => {
+                if (card.onClick) {
+                  card.onClick();
+                } else {
+                  navigate(card.path);
+                }
+              }}
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                padding: '24px',
+                border: '1px solid #e8f5e9',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = '#2e7d32';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = '#e8f5e9';
+              }}
+            >
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>{card.icon}</div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '4px' }}>
+                {card.title}
+              </h3>
+              <p style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '12px', lineHeight: '1.4' }}>
+                {card.desc}
+              </p>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#2e7d32' }}>
+                {card.action}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Recent Activity - Real Data */}
+      {/* Recent Activity */}
       <div style={{
         background: '#ffffff',
-        borderRadius: '16px',
+        borderRadius: '12px',
         padding: '24px',
         border: '1px solid #e8f5e9',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '20px' }}>📋</span>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a' }}>Recent Activity</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <span style={{ fontSize: '18px' }}>📋</span>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a' }}>Recent Activity</h3>
           {!loading && recentActivity.length > 0 && (
             <span style={{ fontSize: '12px', color: '#8aaa8a', marginLeft: 'auto' }}>
               {recentActivity.length} items
@@ -284,21 +296,14 @@ export default function Home() {
             <div 
               key={activity.id || index} 
               style={{ 
-                padding: '14px 0',
+                padding: '12px 0',
                 borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f7f0' : 'none',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.paddingLeft = '8px';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.paddingLeft = '0';
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
                   width: '8px',
                   height: '8px',
@@ -307,14 +312,14 @@ export default function Home() {
                   flexShrink: 0,
                 }} />
                 <div>
-                  <span style={{ fontSize: '14px', color: '#1a3a1a', fontWeight: '500' }}>
+                  <span style={{ fontSize: '13px', color: '#1a3a1a', fontWeight: '500' }}>
                     {activity.text}
                   </span>
                   {activity.type && (
                     <span style={{ 
                       fontSize: '10px', 
                       color: '#8aaa8a', 
-                      marginLeft: '8px',
+                      marginLeft: '6px',
                       background: '#f0f7f0',
                       padding: '2px 8px',
                       borderRadius: '10px',
