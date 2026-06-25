@@ -30,10 +30,17 @@ export default function Home() {
         { 
           icon: '⚙️', 
           title: 'Admin Panel', 
-          desc: 'Manage users, hires and payments', 
-          action: 'Open Admin →', 
+          desc: 'Manage users, hires, payments and settings', 
+          action: 'Open Control Panel →', 
           path: '/admin',
           primary: true 
+        },
+        {
+          icon: '📊',
+          title: 'Quick Overview',
+          desc: 'View platform statistics and activity',
+          action: 'View Stats →',
+          path: '/admin',
         },
       ];
     }
@@ -74,7 +81,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Stats Cards - Only for Admin */}
       {user?.role === 'ADMIN' && (
         <div className="stats-grid">
           <div className="stat-card">
@@ -100,7 +106,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Dashboard Cards */}
       <div className={`card-grid card-grid-${dashboardCards.length}`}>
         {dashboardCards.map((card, index) => (
           <div 
@@ -129,7 +134,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Recent Activity */}
       <div className="card">
         <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Recent Activity</h3>
         {recentActivity.map((activity, index) => (
