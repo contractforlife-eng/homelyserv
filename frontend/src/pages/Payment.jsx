@@ -2,64 +2,43 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { Browser } from '@capacitor/browser'; // استدعاء المتصفح الداخلي للموبايل
 
 export default function Payment() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hire, setHire] = useState(null);
-  const [method, setMethod] = useState('paymob'); // جعل Paymob الخيار الافتراضي الأول
+  const [method, setMethod] = useState('instapay');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [receiptFile, setReceiptFile] = useState(null);
 
-  // ⚠️ يرجى كتابة الـ Iframe ID الخاص بك من حساب بايموب هنا
-  const PAYMOB_IFRAME_ID = "اكتب_هنا_رقم_الـ_Iframe_الخاص_بك"; 
-  const BACKEND_API = "https://gas-clapped-copper.ngrok-free.dev"; // رابط الـ ngrok الحالي
-
   useEffect(() => {
-    api.get('/hires/my').then(res => {
-      const found = res.data.find(h => h.id === id);
-      setHire(found);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [id]);
-
-  // منطق الدفع التلقائي عبر بايموب
-  const handlePaymobPayment = async () => {
-    setSubmitting(true);
-    try {
-      // استدعاء الـ API الذي أنشأناه في الباك إند
-      const response = await api.post('/paymob/checkout', {
-        amount: hire.totalDue,
-        userFirstName: hire.employer?.user?.fullName || "Employer",
-        userLastName: "User",
-        userEmail: hire.employer?.user?.email || "employer@homelyserv.com",
-        userPhone: hire.employer?.user?.phone || "01000000000"
-      });
-
-      if (response.data.success) {
-        const token = response.data.paymentToken;
-
-        // فتح صفحة الدفع بالفيزا داخل التطبيق مباشرة
-        await Browser.open({ 
-          url: `https://accept.paymob.com/api/acceptance/iframes/${PAYMOB_IFRAME_ID}?payment_token=${token}` 
-        });
-
-        // عند عودة المستخدم للتطبيق بعد الدفع
-        Browser.addListener('browserFinished', () => {
-          setStep(3); // الانتقال لصفحة النجاح والانتظار التلقائي
-          toast.success('Returned to app successfully!');
-        });
-      }
-    } catch (err) {
-      toast.error('Failed to initiate card payment');
-      console.error(err);
-    } finally {
-      setSubmitting(false);
+    if (!id) {
+      toast.error('No hire ID provided');
+      navigate('/');
+      return;
     }
-  };
+
+    const fetchHire = async () => {
+      try {
+        const res = await api.get('/hires/my');
+        const found = res.data.find(h => h.id === id);
+        if (found) {
+          setHire(found);
+        } else {
+          toast.error('Hire not found');
+          navigate('/');
+        }
+      } catch (err) {
+        console.error('Failed to fetch hire:', err);
+        toast.error('Failed to load payment details');
+      }
+      setLoading(false);
+    };
+
+    fetchHire();
+  }, [id, navigate]);
 
   const submitPayment = async () => {
     if (!receiptFile) {
@@ -90,9 +69,7 @@ export default function Payment() {
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading...</div>;
   if (!hire) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Hire not found</div>;
 
-  // إضافة خيار الدفع الإلكتروني بالفيزا في مصفوفة طرق الدفع
   const paymentMethods = [
-    { id: 'paymob', label: 'Credit / Debit Card (Paymob)', desc: 'Pay instantly via Visa, Mastercard or Meeza', color: '#C0392B', short: '💳' },
     { id: 'instapay', label: 'InstaPay', desc: 'Transfer via any Egyptian bank app', color: '#1A3C8F', short: 'IP' },
     { id: 'vodafone', label: 'Vodafone Cash', desc: 'Pay from your Vodafone wallet', color: '#E2001A', short: 'VC' },
     { id: 'bank', label: 'Bank Transfer', desc: 'QNB Al Ahli · IBAN supported', color: '#1A6B3C', short: 'BK' },
@@ -145,10 +122,10 @@ export default function Payment() {
 
           {/* Egyptian methods */}
           <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: '500' }}>🇪🇬 Egyptian payments</div>
-          {paymentMethods.slice(0, 4).map(m => (
+          {paymentMethods.slice(0, 3).map(m => (
             <div key={m.id} onClick={() => setMethod(m.id)}
               style={{ background: '#fff', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: method === m.id ? '1.5px solid #C0392B' : '1.5px solid #E0E0E0' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '18px', flexShrink: 0 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '13px', flexShrink: 0 }}>
                 {m.short}
               </div>
               <div style={{ flex: 1 }}>
@@ -163,7 +140,7 @@ export default function Payment() {
 
           {/* Crypto methods */}
           <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: '500', marginTop: '8px' }}>🌍 International crypto payments</div>
-          {paymentMethods.slice(4).map(m => (
+          {paymentMethods.slice(3).map(m => (
             <div key={m.id} onClick={() => setMethod(m.id)}
               style={{ background: '#fff', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: method === m.id ? '1.5px solid #C0392B' : '1.5px solid #E0E0E0' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '18px', flexShrink: 0 }}>
@@ -180,21 +157,17 @@ export default function Payment() {
           ))}
 
           <div style={{ fontSize: '12px', color: '#888', padding: '4px 0 16px' }}>
-            🔒 Payment verified securely by HomelyServ system
+            🔒 Payment verified by HomelyServ admin within 2 hours
           </div>
 
-          {/* زر المتابعة التكيفي: لو اختار بايموب يدفع فوراً، ولو اختار طريقة يدوية ينتقل لخطوة رفع الإيصال */}
-          <button 
-            onClick={() => method === 'paymob' ? handlePaymobPayment() : setStep(2)}
-            disabled={submitting}
-            style={{ width: '100%', padding: '14px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
-          >
-            {submitting ? 'Processing Payment...' : method === 'paymob' ? 'Pay Now via Card' : 'Proceed to payment instructions'}
+          <button onClick={() => setStep(2)}
+            style={{ width: '100%', padding: '14px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>
+            Proceed to payment
           </button>
         </div>
       )}
 
-      {/* STEP 2 - Instructions (تفتح فقط في حالة اختيار الطرق اليدوية القديمة) */}
+      {/* STEP 2 - Instructions */}
       {step === 2 && (
         <div style={{ maxWidth: '540px', margin: '0 auto', padding: '16px' }}>
           <div style={{ background: method === 'vodafone' ? '#E2001A' : method === 'bank' ? '#1A6B3C' : method === 'btc' ? '#F7931A' : method === 'usdc' ? '#2775CA' : '#1A3C8F', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '16px', color: '#fff' }}>
@@ -420,13 +393,13 @@ export default function Payment() {
         </div>
       )}
 
-      {/* STEP 3 - Success / Verification */}
+      {/* STEP 3 - Success */}
       {step === 3 && (
         <div style={{ maxWidth: '540px', margin: '0 auto', padding: '16px' }}>
           <div style={{ background: '#1E8449', borderRadius: '12px', padding: '28px 20px', textAlign: 'center', color: '#fff', marginBottom: '16px' }}>
             <div style={{ fontSize: '48px', marginBottom: '8px' }}>⏰</div>
-            <h2 style={{ fontSize: '20px', fontWeight: '700' }}>Payment status updated!</h2>
-            <p style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>We're processing and verifying your transfer status</p>
+            <h2 style={{ fontSize: '20px', fontWeight: '700' }}>Payment submitted!</h2>
+            <p style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>We're verifying your transfer — usually within 2 hours</p>
           </div>
 
           <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
@@ -435,14 +408,14 @@ export default function Payment() {
                 <div style={{ fontSize: '11px', color: '#888' }}>Transaction reference</div>
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A1A' }}>{hire.paymentReference}</div>
               </div>
-              <div style={{ background: '#FEF9E7', color: '#7D6608', fontSize: '12px', fontWeight: '600', padding: '3px 10px', borderRadius: '20px' }}>⏳ Processing</div>
+              <div style={{ background: '#FEF9E7', color: '#7D6608', fontSize: '12px', fontWeight: '600', padding: '3px 10px', borderRadius: '20px' }}>⏳ Pending</div>
             </div>
             <div style={{ padding: '14px 16px' }}>
               {[
                 { label: 'Worker', value: hire.worker?.user?.fullName },
-                { label: 'Payment method', value: method === 'paymob' ? 'Credit Card (Paymob)' : method === 'instapay' ? 'InstaPay' : method === 'vodafone' ? 'Vodafone Cash' : method === 'bank' ? 'Bank Transfer' : 'Crypto' },
+                { label: 'Payment method', value: method === 'instapay' ? 'InstaPay' : method === 'vodafone' ? 'Vodafone Cash' : method === 'bank' ? 'Bank Transfer' : method === 'btc' ? 'Bitcoin (BTC)' : 'USDC (Solana)' },
                 { label: 'Amount paid', value: `EGP ${hire.totalDue?.toFixed(0)}` },
-                { label: 'Status', value: '🔄 Action logged' },
+                { label: 'Receipt', value: '✅ Uploaded' },
               ].map(row => (
                 <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #F5F5F5' }}>
                   <span style={{ fontSize: '13px', color: '#888' }}>{row.label}</span>
@@ -450,6 +423,10 @@ export default function Payment() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div style={{ background: '#FEF9E7', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px', color: '#7D6608' }}>
+            ℹ️ Admin will review your payment screenshot and activate the hire within 2 hours.
           </div>
 
           <button onClick={() => navigate('/')}

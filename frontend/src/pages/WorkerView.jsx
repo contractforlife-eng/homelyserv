@@ -35,6 +35,7 @@ export default function WorkerView() {
 
   const sendOffer = async () => {
     if (!offer.agreedSalary) return toast.error('Please enter the agreed salary');
+    if (parseFloat(offer.agreedSalary) <= 0) return toast.error('Please enter a valid salary amount');
     setOffering(true);
     try {
       const res = await api.post('/hires', {
@@ -44,6 +45,7 @@ export default function WorkerView() {
       });
       toast.success('Job offer sent successfully!');
       setShowOffer(false);
+      // Redirect to payment page with the hire ID
       navigate(`/payment/${res.data.hire.id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send offer');
@@ -63,7 +65,7 @@ export default function WorkerView() {
     : 'Not specified';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       {/* Header */}
       <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
@@ -171,15 +173,23 @@ export default function WorkerView() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Agreed monthly salary (EGP)</label>
-              <input type="number" value={offer.agreedSalary} onChange={e => setOffer({...offer, agreedSalary: e.target.value})}
+              <input 
+                type="number" 
+                value={offer.agreedSalary} 
+                onChange={e => setOffer({...offer, agreedSalary: e.target.value})}
                 placeholder="e.g. 5000"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} 
+              />
             </div>
 
             <div style={{ marginBottom: '16px' }}>
               <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Start date</label>
-              <input type="date" value={offer.startDate} onChange={e => setOffer({...offer, startDate: e.target.value})}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
+              <input 
+                type="date" 
+                value={offer.startDate} 
+                onChange={e => setOffer({...offer, startDate: e.target.value})}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} 
+              />
             </div>
 
             {offer.agreedSalary > 0 && (
