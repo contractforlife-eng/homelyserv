@@ -13,6 +13,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminHires from './pages/AdminHires';
 import AdminPayments from './pages/AdminPayments';
 import AdminSettings from './pages/AdminSettings';
+import AdminReports from './pages/AdminReports';
 import MyHires from './pages/MyHires';
 import './i18n';
 import './index.css';
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/admin/hires" element={<AdminRoute><AdminHires /></AdminRoute>} />
           <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+          <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
         </Routes>
       </div>
     </BrowserRouter>
