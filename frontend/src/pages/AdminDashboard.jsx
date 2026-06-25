@@ -36,7 +36,6 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      // Try to fetch hires
       let allHires = [];
       try {
         const hiresRes = await api.get('/hires/all');
@@ -44,10 +43,8 @@ export default function AdminDashboard() {
         setHires(allHires);
       } catch (err) {
         console.error('Failed to fetch hires:', err);
-        // Don't set error here, just show empty hires
       }
 
-      // Try to fetch users
       let allUsers = [];
       try {
         const usersRes = await api.get('/auth/users');
@@ -55,7 +52,6 @@ export default function AdminDashboard() {
         setUsers(allUsers);
       } catch (err) {
         console.error('Failed to fetch users:', err);
-        // Don't set error here, just show empty users
       }
 
       const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
@@ -175,23 +171,23 @@ export default function AdminDashboard() {
 
       {/* Stats Overview */}
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{stats.totalUsers}</div>
+        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)' }}>
+          <div className="stat-value" style={{ color: '#1b5e20' }}>{stats.totalUsers}</div>
           <div className="stat-label">Total Users</div>
           <div className="stat-change">👥 {stats.totalWorkers} Workers · {stats.totalEmployers} Employers</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats.totalHires}</div>
+        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)' }}>
+          <div className="stat-value" style={{ color: '#0d47a1' }}>{stats.totalHires}</div>
           <div className="stat-label">Total Hires</div>
           <div className="stat-change">📋 {stats.activeHires} Active</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#f39c12' }}>{stats.pendingPayments}</div>
+        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #fff3e0, #ffe0b2)' }}>
+          <div className="stat-value" style={{ color: '#bf360c' }}>{stats.pendingPayments}</div>
           <div className="stat-label">Pending Payments</div>
           <div className="stat-change">⏳ Awaiting confirmation</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: '#2e7d32' }}>EGP {stats.totalRevenue.toFixed(0)}</div>
+        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)' }}>
+          <div className="stat-value" style={{ color: '#1b5e20' }}>EGP {stats.totalRevenue.toFixed(0)}</div>
           <div className="stat-label">Total Revenue</div>
           <div className="stat-change">💰 Commissions collected</div>
         </div>
@@ -201,47 +197,51 @@ export default function AdminDashboard() {
       <div className="card-grid card-grid-4" style={{ marginBottom: '32px' }}>
         <div 
           className="card" 
-          style={{ cursor: 'pointer', textAlign: 'center' }}
+          style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('users')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>👥</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Manage Users</h4>
           <p style={{ fontSize: '12px', color: '#5a7a5a' }}>View and manage all users</p>
+          <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: '600' }}>Click to view →</span>
         </div>
         <div 
           className="card" 
-          style={{ cursor: 'pointer', textAlign: 'center' }}
+          style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('hires')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>View Hires</h4>
           <p style={{ fontSize: '12px', color: '#5a7a5a' }}>Monitor all hiring activity</p>
+          <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: '600' }}>Click to view →</span>
         </div>
         <div 
           className="card" 
-          style={{ cursor: 'pointer', textAlign: 'center' }}
+          style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => setActiveTab('payments')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Payments</h4>
           <p style={{ fontSize: '12px', color: '#5a7a5a' }}>Confirm and manage payments</p>
+          <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: '600' }}>Click to view →</span>
         </div>
         <div 
           className="card" 
-          style={{ cursor: 'pointer', textAlign: 'center' }}
+          style={{ cursor: 'pointer', textAlign: 'center', transition: 'all 0.3s ease' }}
           onClick={() => navigate('/')}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2e7d32'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d4e8d4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
         >
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
           <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a' }}>Dashboard</h4>
           <p style={{ fontSize: '12px', color: '#5a7a5a' }}>Return to main dashboard</p>
+          <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: '600' }}>Go back →</span>
         </div>
       </div>
 
@@ -258,80 +258,73 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div>
-          <div className="card-grid card-grid-2">
-            <div className="card">
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>📈 Platform Overview</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div><span style={{ color: '#5a7a5a' }}>Total Users:</span> <strong>{stats.totalUsers}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Workers:</span> <strong>{stats.totalWorkers}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Employers:</span> <strong>{stats.totalEmployers}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Admins:</span> <strong>{stats.totalAdmins}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Total Hires:</span> <strong>{stats.totalHires}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Active Hires:</span> <strong>{stats.activeHires}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Pending Payments:</span> <strong style={{ color: '#f39c12' }}>{stats.pendingPayments}</strong></div>
-                <div><span style={{ color: '#5a7a5a' }}>Revenue:</span> <strong style={{ color: '#2e7d32' }}>EGP {stats.totalRevenue.toFixed(0)}</strong></div>
+      {/* Content based on active tab */}
+      <div className="card" style={{ padding: '24px', minHeight: '300px' }}>
+        {activeTab === 'overview' && (
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>📈 Platform Overview</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Total Users:</span> <strong>{stats.totalUsers}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Workers:</span> <strong>{stats.totalWorkers}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Employers:</span> <strong>{stats.totalEmployers}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Admins:</span> <strong>{stats.totalAdmins}</strong>
+                </div>
               </div>
-            </div>
-            <div className="card">
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>⚡ Quick Actions</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '10px', fontSize: '14px' }}
-                  onClick={() => setActiveTab('users')}
-                >
-                  👥 Manage Users
-                </button>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '10px', fontSize: '14px', background: '#f39c12' }}
-                  onClick={() => setActiveTab('payments')}
-                >
-                  💳 Review Payments
-                </button>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '10px', fontSize: '14px', background: '#1976d2' }}
-                  onClick={() => setActiveTab('hires')}
-                >
-                  📋 View All Hires
-                </button>
+              <div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Total Hires:</span> <strong>{stats.totalHires}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Active Hires:</span> <strong>{stats.activeHires}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Pending Payments:</span> <strong style={{ color: '#f39c12' }}>{stats.pendingPayments}</strong>
+                </div>
+                <div style={{ padding: '12px', background: '#f8fbf8', borderRadius: '8px' }}>
+                  <span style={{ color: '#5a7a5a' }}>Revenue:</span> <strong style={{ color: '#2e7d32' }}>EGP {stats.totalRevenue.toFixed(0)}</strong>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div>
-          <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+        {activeTab === 'users' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a' }}>👥 All Users ({users.length})</h3>
+              <span style={{ fontSize: '13px', color: '#5a7a5a' }}>Click Suspend to block user access</span>
+            </div>
             {users.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>No users registered yet.</div>
+              <div style={{ textAlign: 'center', padding: '40px', color: '#5a7a5a' }}>No users registered yet.</div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
                     <tr style={{ background: '#f8fbf8', borderBottom: '2px solid #d4e8d4' }}>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Name</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Email</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Role</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Status</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Action</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Name</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Email</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Role</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map(u => (
                       <tr key={u.id} style={{ borderBottom: '1px solid #f0f7f0' }}>
-                        <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a3a1a' }}>{u.fullName}</td>
-                        <td style={{ padding: '12px 18px', color: '#5a7a5a' }}>{u.email}</td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: '500', color: '#1a3a1a' }}>{u.fullName}</td>
+                        <td style={{ padding: '10px 16px', color: '#5a7a5a' }}>{u.email}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <span style={{
-                            padding: '3px 12px',
-                            borderRadius: '12px',
+                            padding: '2px 10px',
+                            borderRadius: '10px',
                             fontSize: '11px',
                             fontWeight: '600',
                             background: u.role === 'ADMIN' ? '#2a3a2a' : u.role === 'EMPLOYER' ? '#e3f2fd' : '#e8f5e9',
@@ -340,7 +333,7 @@ export default function AdminDashboard() {
                             {u.role}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px' }}>
                           <span style={{
                             color: u.isSuspended ? '#c62828' : '#2e7d32',
                             fontSize: '13px',
@@ -349,16 +342,16 @@ export default function AdminDashboard() {
                             {u.isSuspended ? '🚫 Suspended' : '✅ Active'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px' }}>
                           {u.role !== 'ADMIN' && (
                             <button
                               onClick={() => toggleUserSuspend(u.id, u.isSuspended)}
                               style={{
-                                padding: '5px 16px',
+                                padding: '4px 14px',
                                 background: u.isSuspended ? '#2e7d32' : '#e65100',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: '6px',
+                                borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '12px',
                                 fontWeight: '600',
@@ -378,15 +371,13 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Hires Tab */}
-      {activeTab === 'hires' && (
-        <div>
-          <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+        {activeTab === 'hires' && (
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>📋 All Hires ({hires.length})</h3>
             {hires.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>
+              <div style={{ textAlign: 'center', padding: '40px', color: '#5a7a5a' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
                 <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Hires Yet</h3>
                 <p style={{ color: '#5a7a5a' }}>No hiring activity has been recorded yet.</p>
@@ -396,23 +387,23 @@ export default function AdminDashboard() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
                     <tr style={{ background: '#f8fbf8', borderBottom: '2px solid #d4e8d4' }}>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Worker</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Employer</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Salary</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Status</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Payment</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Worker</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Employer</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Salary</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Payment</th>
                     </tr>
                   </thead>
                   <tbody>
                     {hires.map(hire => (
                       <tr key={hire.id} style={{ borderBottom: '1px solid #f0f7f0' }}>
-                        <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a3a1a' }}>{hire.worker?.user?.fullName || 'N/A'}</td>
-                        <td style={{ padding: '12px 18px', color: '#5a7a5a' }}>{hire.employer?.fullName || 'N/A'}</td>
-                        <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a3a1a' }}>EGP {hire.agreedSalary}</td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: '500', color: '#1a3a1a' }}>{hire.worker?.user?.fullName || 'N/A'}</td>
+                        <td style={{ padding: '10px 16px', color: '#5a7a5a' }}>{hire.employer?.fullName || 'N/A'}</td>
+                        <td style={{ padding: '10px 16px', fontWeight: '500', color: '#1a3a1a' }}>EGP {hire.agreedSalary}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <span style={{
-                            padding: '3px 12px',
-                            borderRadius: '12px',
+                            padding: '2px 10px',
+                            borderRadius: '10px',
                             fontSize: '11px',
                             fontWeight: '600',
                             background: hire.status === 'active' ? '#e8f5e9' : hire.status === 'offer_sent' ? '#fff3e0' : '#fce4ec',
@@ -421,7 +412,7 @@ export default function AdminDashboard() {
                             {hire.status?.replace('_', ' ') || 'N/A'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px' }}>
                           <span style={{
                             color: hire.paymentStatus === 'confirmed' ? '#2e7d32' : hire.paymentStatus === 'pending' ? '#f39c12' : '#5a7a5a',
                             fontWeight: '600',
@@ -437,73 +428,73 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Payments Tab */}
-      {activeTab === 'payments' && (
-        <div>
-          {hires.filter(h => h.paymentStatus === 'pending').length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
-              <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Pending Payments</h3>
-              <p style={{ color: '#5a7a5a' }}>All payments have been processed.</p>
-            </div>
-          ) : (
-            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+        {activeTab === 'payments' && (
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>💰 Pending Payments</h3>
+            {hires.filter(h => h.paymentStatus === 'pending').length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+                <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Pending Payments</h3>
+                <p style={{ color: '#5a7a5a' }}>All payments have been processed.</p>
+              </div>
+            ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
                     <tr style={{ background: '#f8fbf8', borderBottom: '2px solid #d4e8d4' }}>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Worker</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Amount</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Method</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Reference</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '13px' }}>Action</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Worker</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Amount</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Method</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Reference</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#5a7a5a', fontWeight: '600', fontSize: '12px' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {hires.filter(h => h.paymentStatus === 'pending').map(hire => (
                       <tr key={hire.id} style={{ borderBottom: '1px solid #f0f7f0' }}>
-                        <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a3a1a' }}>{hire.worker?.user?.fullName || 'N/A'}</td>
-                        <td style={{ padding: '12px 18px', fontWeight: '600', color: '#1a3a1a' }}>EGP {hire.totalDue?.toFixed(0)}</td>
-                        <td style={{ padding: '12px 18px', color: '#5a7a5a' }}>{hire.paymentMethod || 'N/A'}</td>
-                        <td style={{ padding: '12px 18px', color: '#5a7a5a', fontSize: '12px' }}>{hire.paymentReference}</td>
-                        <td style={{ padding: '12px 18px' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: '500', color: '#1a3a1a' }}>{hire.worker?.user?.fullName || 'N/A'}</td>
+                        <td style={{ padding: '10px 16px', fontWeight: '600', color: '#1a3a1a' }}>EGP {hire.totalDue?.toFixed(0)}</td>
+                        <td style={{ padding: '10px 16px', color: '#5a7a5a' }}>{hire.paymentMethod || 'N/A'}</td>
+                        <td style={{ padding: '10px 16px', color: '#5a7a5a', fontSize: '12px' }}>{hire.paymentReference}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button
                               onClick={() => confirmPayment(hire.id)}
                               style={{
-                                padding: '5px 16px',
+                                padding: '4px 14px',
                                 background: '#2e7d32',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: '6px',
+                                borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '12px',
                                 fontWeight: '600',
+                                transition: 'all 0.2s ease',
                               }}
                               onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                               onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
                             >
-                              Confirm
+                              ✅ Confirm
                             </button>
                             <button
                               onClick={() => rejectPayment(hire.id)}
                               style={{
-                                padding: '5px 16px',
+                                padding: '4px 14px',
                                 background: '#c62828',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: '6px',
+                                borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '12px',
                                 fontWeight: '600',
+                                transition: 'all 0.2s ease',
                               }}
                               onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                               onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
                             >
-                              Reject
+                              ❌ Reject
                             </button>
                           </div>
                         </td>
@@ -512,10 +503,10 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </Layout>
   );
 }
