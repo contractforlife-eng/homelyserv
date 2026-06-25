@@ -6,61 +6,77 @@ export default function Logo() {
       gap: '14px',
       textDecoration: 'none',
     }}>
-      {/* Elegant SVG Logo */}
+      {/* Advanced SVG Logo */}
       <svg
-        width="50"
-        height="50"
-        viewBox="0 0 50 50"
+        width="52"
+        height="52"
+        viewBox="0 0 52 52"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         style={{ flexShrink: 0 }}
       >
-        {/* Gradient Background */}
         <defs>
-          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="logoBg" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style={{ stopColor: '#2e7d32', stopOpacity: 1 }} />
+            <stop offset="50%" style={{ stopColor: '#388e3c', stopOpacity: 1 }} />
             <stop offset="100%" style={{ stopColor: '#1b5e20', stopOpacity: 1 }} />
           </linearGradient>
-          <linearGradient id="roofGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#a5d6a7', stopOpacity: 0.9 }} />
-            <stop offset="100%" style={{ stopColor: '#81c784', stopOpacity: 0.6 }} />
+          <linearGradient id="logoShine" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: 'rgba(255,255,255,0.3)', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: 'rgba(255,255,255,0)', stopOpacity: 0 }} />
           </linearGradient>
+          <linearGradient id="roofGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#a5d6a7', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#66bb6a', stopOpacity: 0.7 }} />
+          </linearGradient>
+          <filter id="logoShadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="rgba(0,0,0,0.2)"/>
+          </filter>
         </defs>
 
         {/* Rounded Square Background */}
-        <rect width="50" height="50" rx="14" fill="url(#logoGrad)" />
-        <rect x="1.5" y="1.5" width="47" height="47" rx="12.5" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+        <rect width="52" height="52" rx="14" fill="url(#logoBg)" filter="url(#logoShadow)" />
+        
+        {/* Shine Effect */}
+        <rect width="52" height="26" rx="14" fill="url(#logoShine)" />
+        
+        {/* Border */}
+        <rect x="1.5" y="1.5" width="49" height="49" rx="12.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
 
         {/* House Body */}
         <path
-          d="M25 11L14 21H16.5L25 15L33.5 21H36L25 11Z"
+          d="M26 12L15 22H18L26 16L34 22H37L26 12Z"
           fill="#ffffff"
-          opacity="0.95"
         />
 
         {/* House Base */}
         <path
-          d="M16 23H34V34H16V23Z"
+          d="M17 24H35V35H17V24Z"
           fill="#ffffff"
-          opacity="0.95"
         />
 
         {/* Door */}
-        <rect x="22" y="28" width="6" height="6" fill="#1b5e20" rx="2" />
-        <circle cx="26.5" cy="31" r="1" fill="#a5d6a7" />
+        <rect x="23" y="29" width="6" height="6" fill="#1b5e20" rx="2" />
+        <circle cx="27.5" cy="32" r="1.2" fill="#a5d6a7" />
 
         {/* Windows */}
-        <rect x="18" y="24" width="4" height="4" fill="#1b5e20" rx="1" opacity="0.4" />
-        <rect x="28" y="24" width="4" height="4" fill="#1b5e20" rx="1" opacity="0.4" />
+        <rect x="19" y="25" width="4.5" height="4.5" fill="#1b5e20" rx="1.5" opacity="0.35" />
+        <rect x="28.5" y="25" width="4.5" height="4.5" fill="#1b5e20" rx="1.5" opacity="0.35" />
 
-        {/* Roof Line */}
+        {/* Roof Detail */}
         <path
-          d="M25 13L18 19H32L25 13Z"
+          d="M26 14L19 20H33L26 14Z"
           fill="url(#roofGrad)"
         />
 
-        {/* Small decorative dot */}
-        <circle cx="25" cy="11" r="1.5" fill="#a5d6a7" opacity="0.5" />
+        {/* Small decorative elements */}
+        <circle cx="26" cy="11.5" r="1.5" fill="#a5d6a7" opacity="0.6" />
+        
+        {/* Window crosses */}
+        <line x1="21.25" y1="25" x2="21.25" y2="29.5" stroke="#1b5e20" strokeWidth="0.8" opacity="0.3" />
+        <line x1="19" y1="27.25" x2="23.5" y2="27.25" stroke="#1b5e20" strokeWidth="0.8" opacity="0.3" />
+        <line x1="30.75" y1="25" x2="30.75" y2="29.5" stroke="#1b5e20" strokeWidth="0.8" opacity="0.3" />
+        <line x1="28.5" y1="27.25" x2="33" y2="27.25" stroke="#1b5e20" strokeWidth="0.8" opacity="0.3" />
       </svg>
 
       {/* Text */}
@@ -74,6 +90,7 @@ export default function Logo() {
           fontWeight: 700,
           color: '#1a3a1a',
           letterSpacing: '-0.5px',
+          textShadow: '0 1px 2px rgba(0,0,0,0.05)',
         }}>
           Homely
         </span>
@@ -82,6 +99,7 @@ export default function Logo() {
           fontWeight: 700,
           color: '#2e7d32',
           letterSpacing: '-0.5px',
+          textShadow: '0 1px 2px rgba(0,0,0,0.05)',
         }}>
           Serv
         </span>

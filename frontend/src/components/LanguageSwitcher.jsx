@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const languages = [
-  { code: 'en', label: '🇬🇧 English' },
-  { code: 'ar', label: '🇸🇦 العربية' },
-  { code: 'ru', label: '🇷🇺 Русский' },
-  { code: 'fr', label: '🇫🇷 Français' },
-  { code: 'de', label: '🇩🇪 Deutsch' },
-  { code: 'tr', label: '🇹🇷 Türkçe' }
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' }
 ];
 
 export default function LanguageSwitcher() {
@@ -21,55 +21,30 @@ export default function LanguageSwitcher() {
   };
 
   const currentLang = i18n.language || 'en';
+  const currentFlag = languages.find(l => l.code === currentLang)?.flag || '🌐';
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="lang-switcher">
       <button
+        className="lang-btn"
         onClick={() => setShowMenu(!showMenu)}
-        style={{
-          background: 'rgba(255,255,255,0.15)',
-          color: '#fff',
-          border: 'none',
-          padding: '6px 10px',
-          borderRadius: '20px',
-          cursor: 'pointer',
-          fontSize: '13px'
-        }}
       >
-        🌐 {currentLang.toUpperCase()}
+        <span className="lang-flag">{currentFlag}</span>
+        <span className="lang-code">{currentLang.toUpperCase()}</span>
+        <span className="lang-arrow">▾</span>
       </button>
 
       {showMenu && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '40px',
-            right: '0',
-            background: '#fff',
-            borderRadius: '10px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            padding: '8px 0',
-            zIndex: 1000,
-            minWidth: '160px'
-          }}
-        >
+        <div className="lang-dropdown">
           {languages.map(lang => (
             <div
               key={lang.code}
+              className={`lang-item ${lang.code === currentLang ? 'active' : ''}`}
               onClick={() => changeLanguage(lang.code)}
-              style={{
-                padding: '8px 16px',
-                cursor: 'pointer',
-                color: '#1A1A1A',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#F5F5F5'}
-              onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
-              {lang.label}
+              <span className="lang-item-flag">{lang.flag}</span>
+              <span className="lang-item-label">{lang.label}</span>
+              {lang.code === currentLang && <span className="lang-item-check">✓</span>}
             </div>
           ))}
         </div>
