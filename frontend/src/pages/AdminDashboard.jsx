@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import Logo from '../components/Logo';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function AdminDashboard() {
   const [hires, setHires] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('hires');
+  const [activeTab, setActiveTab] = useState('users');
   const [stats, setStats] = useState({
     totalHires: 0,
     pendingPayments: 0,
@@ -111,32 +112,23 @@ export default function AdminDashboard() {
   const styles = {
     container: {
       minHeight: '100vh',
-      background: '#0f0f1a',
+      background: '#f0f7f0',
       display: 'flex',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     sidebar: {
       width: '240px',
-      background: '#1a1a2e',
+      background: '#1a3a1a',
       padding: '24px 0',
       display: 'flex',
       flexDirection: 'column',
-      borderRight: '1px solid #2a2a4a',
+      borderRight: '1px solid #2a5a2a',
       flexShrink: 0,
     },
     sidebarLogo: {
       padding: '0 20px 24px',
-      borderBottom: '1px solid #2a2a4a',
+      borderBottom: '1px solid #2a5a2a',
       marginBottom: '16px',
-    },
-    sidebarLogoText: {
-      fontSize: '20px',
-      fontWeight: '700',
-      color: '#fff',
-      letterSpacing: '-0.5px',
-    },
-    sidebarLogoAccent: {
-      color: '#e74c3c',
     },
     sidebarMenu: {
       flex: 1,
@@ -148,7 +140,7 @@ export default function AdminDashboard() {
       gap: '12px',
       padding: '10px 16px',
       borderRadius: '10px',
-      color: '#8892b0',
+      color: '#8aaa8a',
       fontSize: '14px',
       fontWeight: '500',
       cursor: 'pointer',
@@ -156,7 +148,7 @@ export default function AdminDashboard() {
       marginBottom: '2px',
     },
     sidebarItemActive: {
-      background: '#2a2a4a',
+      background: '#2a5a2a',
       color: '#fff',
     },
     sidebarItemIcon: {
@@ -165,7 +157,7 @@ export default function AdminDashboard() {
     },
     sidebarBottom: {
       padding: '16px 20px',
-      borderTop: '1px solid #2a2a4a',
+      borderTop: '1px solid #2a5a2a',
       marginTop: 'auto',
     },
     sidebarUser: {
@@ -177,7 +169,7 @@ export default function AdminDashboard() {
       width: '36px',
       height: '36px',
       borderRadius: '50%',
-      background: '#e74c3c',
+      background: '#2e7d32',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -191,16 +183,16 @@ export default function AdminDashboard() {
       fontWeight: '500',
     },
     sidebarUserRole: {
-      color: '#8892b0',
+      color: '#8aaa8a',
       fontSize: '12px',
     },
     sidebarLogout: {
       marginTop: '12px',
       padding: '8px 16px',
       background: 'transparent',
-      border: '1px solid #2a2a4a',
+      border: '1px solid #2a5a2a',
       borderRadius: '8px',
-      color: '#8892b0',
+      color: '#8aaa8a',
       fontSize: '13px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
@@ -221,18 +213,18 @@ export default function AdminDashboard() {
     headerTitle: {
       fontSize: '24px',
       fontWeight: '700',
-      color: '#fff',
+      color: '#1a3a1a',
       margin: 0,
     },
     headerSubtitle: {
       fontSize: '14px',
-      color: '#8892b0',
+      color: '#5a7a5a',
       margin: '4px 0 0',
     },
     backBtn: {
       background: 'transparent',
-      border: '1px solid #2a2a4a',
-      color: '#8892b0',
+      border: '1px solid #d4e8d4',
+      color: '#5a7a5a',
       padding: '8px 16px',
       borderRadius: '8px',
       cursor: 'pointer',
@@ -246,33 +238,34 @@ export default function AdminDashboard() {
       marginBottom: '24px',
     },
     statCard: {
-      background: '#1a1a2e',
+      background: '#fff',
       borderRadius: '12px',
       padding: '20px',
-      border: '1px solid #2a2a4a',
+      border: '1px solid #d4e8d4',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
     },
     statLabel: {
       fontSize: '13px',
-      color: '#8892b0',
+      color: '#5a7a5a',
       marginBottom: '6px',
     },
     statValue: {
       fontSize: '28px',
       fontWeight: '700',
-      color: '#fff',
+      color: '#1a3a1a',
     },
     tabs: {
       display: 'flex',
       gap: '10px',
       marginBottom: '20px',
-      borderBottom: '1px solid #2a2a4a',
+      borderBottom: '1px solid #d4e8d4',
       paddingBottom: '12px',
     },
     tab: {
       padding: '8px 20px',
       borderRadius: '8px',
       background: 'transparent',
-      color: '#8892b0',
+      color: '#5a7a5a',
       border: 'none',
       cursor: 'pointer',
       fontSize: '14px',
@@ -280,14 +273,15 @@ export default function AdminDashboard() {
       transition: 'all 0.2s ease',
     },
     tabActive: {
-      background: '#2a2a4a',
+      background: '#2e7d32',
       color: '#fff',
     },
     tableContainer: {
-      background: '#1a1a2e',
+      background: '#fff',
       borderRadius: '12px',
-      border: '1px solid #2a2a4a',
+      border: '1px solid #d4e8d4',
       overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
     },
     table: {
       width: '100%',
@@ -297,15 +291,15 @@ export default function AdminDashboard() {
     th: {
       padding: '12px 16px',
       textAlign: 'left',
-      color: '#8892b0',
+      color: '#5a7a5a',
       fontWeight: '600',
-      borderBottom: '1px solid #2a2a4a',
-      background: '#151525',
+      borderBottom: '1px solid #d4e8d4',
+      background: '#f8fbf8',
     },
     td: {
       padding: '12px 16px',
-      color: '#e0e0e0',
-      borderBottom: '1px solid #1a1a2e',
+      color: '#1a3a1a',
+      borderBottom: '1px solid #f0f7f0',
     },
     badge: {
       padding: '3px 10px',
@@ -314,21 +308,33 @@ export default function AdminDashboard() {
       fontWeight: '500',
     },
     badgeAdmin: {
-      background: '#2a2a4a',
+      background: '#2a3a2a',
       color: '#fff',
     },
     badgeEmployer: {
-      background: '#1a3a5a',
-      color: '#4fc3f7',
+      background: '#e3f2fd',
+      color: '#1565c0',
     },
     badgeWorker: {
-      background: '#1a3a2a',
-      color: '#4ade80',
+      background: '#e8f5e9',
+      color: '#2e7d32',
+    },
+    badgePending: {
+      background: '#fff3e0',
+      color: '#e65100',
+    },
+    badgeConfirmed: {
+      background: '#e8f5e9',
+      color: '#2e7d32',
+    },
+    badgeActive: {
+      background: '#e8f5e9',
+      color: '#2e7d32',
     },
     btnConfirm: {
       padding: '4px 12px',
-      background: '#4ade80',
-      color: '#0f0f1a',
+      background: '#2e7d32',
+      color: '#fff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
@@ -337,7 +343,7 @@ export default function AdminDashboard() {
     },
     btnReject: {
       padding: '4px 12px',
-      background: '#e74c3c',
+      background: '#c62828',
       color: '#fff',
       border: 'none',
       borderRadius: '6px',
@@ -348,8 +354,8 @@ export default function AdminDashboard() {
     },
     btnSuspend: {
       padding: '4px 12px',
-      background: '#f39c12',
-      color: '#0f0f1a',
+      background: '#e65100',
+      color: '#fff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
@@ -358,8 +364,8 @@ export default function AdminDashboard() {
     },
     btnUnsuspend: {
       padding: '4px 12px',
-      background: '#4ade80',
-      color: '#0f0f1a',
+      background: '#2e7d32',
+      color: '#fff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
@@ -369,7 +375,7 @@ export default function AdminDashboard() {
     emptyState: {
       padding: '40px',
       textAlign: 'center',
-      color: '#8892b0',
+      color: '#5a7a5a',
       fontSize: '14px',
     },
   };
@@ -399,9 +405,7 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarLogo}>
-          <div style={styles.sidebarLogoText}>
-            Home<span style={styles.sidebarLogoAccent}>Serv</span>
-          </div>
+          <Logo />
         </div>
 
         <nav style={styles.sidebarMenu}>
@@ -429,12 +433,12 @@ export default function AdminDashboard() {
             onClick={handleLogout} 
             style={styles.sidebarLogout}
             onMouseEnter={(e) => {
-              e.target.style.background = '#2a2a4a';
+              e.target.style.background = '#2a5a2a';
               e.target.style.color = '#fff';
             }}
             onMouseLeave={(e) => {
               e.target.style.background = 'transparent';
-              e.target.style.color = '#8892b0';
+              e.target.style.color = '#8aaa8a';
             }}
           >
             Logout
@@ -453,12 +457,12 @@ export default function AdminDashboard() {
             style={styles.backBtn}
             onClick={() => navigate('/')}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#e74c3c';
-              e.target.style.color = '#fff';
+              e.target.style.borderColor = '#2e7d32';
+              e.target.style.color = '#1a3a1a';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#2a2a4a';
-              e.target.style.color = '#8892b0';
+              e.target.style.borderColor = '#d4e8d4';
+              e.target.style.color = '#5a7a5a';
             }}
           >
             ← Back
@@ -538,8 +542,9 @@ export default function AdminDashboard() {
                       </td>
                       <td style={styles.td}>
                         <span style={{
-                          color: u.isSuspended ? '#e74c3c' : '#4ade80',
-                          fontSize: '12px'
+                          color: u.isSuspended ? '#c62828' : '#2e7d32',
+                          fontSize: '12px',
+                          fontWeight: '500'
                         }}>
                           {u.isSuspended ? '🚫 Suspended' : '✅ Active'}
                         </span>
@@ -580,15 +585,15 @@ export default function AdminDashboard() {
                 <tbody>
                   {hires.map(hire => (
                     <tr key={hire.id}>
-                      <td style={styles.td}>{hire.worker?.user?.fullName}</td>
-                      <td style={styles.td}>{hire.employer?.fullName}</td>
+                      <td style={styles.td}>{hire.worker?.user?.fullName || 'N/A'}</td>
+                      <td style={styles.td}>{hire.employer?.fullName || 'N/A'}</td>
                       <td style={styles.td}>EGP {hire.agreedSalary}</td>
                       <td style={styles.td}>
                         <span style={{
-                          color: hire.status === 'active' ? '#4ade80' : '#f39c12',
-                          fontSize: '12px'
+                          ...styles.badge,
+                          ...(hire.status === 'active' ? styles.badgeActive : styles.badgePending)
                         }}>
-                          {hire.status?.replace('_', ' ')}
+                          {hire.status?.replace('_', ' ') || 'N/A'}
                         </span>
                       </td>
                     </tr>
@@ -618,11 +623,16 @@ export default function AdminDashboard() {
                 <tbody>
                   {hires.filter(h => h.paymentStatus === 'pending').map(hire => (
                     <tr key={hire.id}>
-                      <td style={styles.td}>{hire.worker?.user?.fullName}</td>
+                      <td style={styles.td}>{hire.worker?.user?.fullName || 'N/A'}</td>
                       <td style={styles.td}>EGP {hire.totalDue?.toFixed(0)}</td>
-                      <td style={styles.td}>{hire.paymentMethod}</td>
+                      <td style={styles.td}>{hire.paymentMethod || 'N/A'}</td>
                       <td style={styles.td}>
-                        <span style={{ color: '#f39c12', fontSize: '12px' }}>⏳ Pending</span>
+                        <span style={{
+                          ...styles.badge,
+                          ...styles.badgePending
+                        }}>
+                          ⏳ Pending
+                        </span>
                       </td>
                       <td style={styles.td}>
                         <button
