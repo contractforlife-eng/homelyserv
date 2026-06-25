@@ -1040,4 +1040,29 @@ body {
   .hide-desktop {
     display: none !important;
   }
+}/* Primary Card - Featured */
+.card.primary {
+  background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+  border-color: transparent !important;
+}
+
+.card.primary .card-title {
+  color: #fff !important;
+}
+
+.card.primary .card-desc {
+  color: #a5d6a7 !important;
+}
+
+.card.primary .card-action {
+  color: #fff !important;
+}
+
+.card.primary .card-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.card.primary:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 30px rgba(46, 125, 50, 0.3) !important;
 }

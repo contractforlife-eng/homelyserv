@@ -27,8 +27,14 @@ export default function Home() {
   const getDashboardCards = () => {
     if (user?.role === 'ADMIN') {
       return [
-        { icon: '⚙️', title: 'Admin Panel', desc: 'Manage users, hires and payments', action: 'Open Admin →', path: '/admin' },
-        { icon: '📊', title: 'Quick Stats', desc: 'View platform statistics', action: 'View Stats →', path: '/admin' },
+        { 
+          icon: '⚙️', 
+          title: 'Admin Panel', 
+          desc: 'Manage users, hires and payments', 
+          action: 'Open Admin →', 
+          path: '/admin',
+          primary: true 
+        },
       ];
     }
 
@@ -68,6 +74,7 @@ export default function Home() {
         </p>
       </div>
 
+      {/* Stats Cards - Only for Admin */}
       {user?.role === 'ADMIN' && (
         <div className="stats-grid">
           <div className="stat-card">
@@ -93,12 +100,19 @@ export default function Home() {
         </div>
       )}
 
+      {/* Dashboard Cards */}
       <div className={`card-grid card-grid-${dashboardCards.length}`}>
         {dashboardCards.map((card, index) => (
           <div 
             key={index}
-            className="card"
-            style={{ cursor: 'pointer' }}
+            className={`card ${card.primary ? 'primary' : ''}`}
+            style={{ 
+              cursor: 'pointer',
+              ...(card.primary && {
+                background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
+                borderColor: 'transparent',
+              })
+            }}
             onClick={() => {
               if (card.onClick) {
                 card.onClick();
@@ -107,14 +121,15 @@ export default function Home() {
               }
             }}
           >
-            <div className="card-icon">{card.icon}</div>
-            <h3 className="card-title">{card.title}</h3>
-            <p className="card-desc">{card.desc}</p>
-            <span className="card-action">{card.action}</span>
+            <div className="card-icon" style={card.primary ? { background: 'rgba(255,255,255,0.2)' } : {}}>{card.icon}</div>
+            <h3 className="card-title" style={card.primary ? { color: '#fff' } : {}}>{card.title}</h3>
+            <p className="card-desc" style={card.primary ? { color: '#a5d6a7' } : {}}>{card.desc}</p>
+            <span className="card-action" style={card.primary ? { color: '#fff' } : {}}>{card.action}</span>
           </div>
         ))}
       </div>
 
+      {/* Recent Activity */}
       <div className="card">
         <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Recent Activity</h3>
         {recentActivity.map((activity, index) => (
