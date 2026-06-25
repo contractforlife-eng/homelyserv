@@ -4,19 +4,27 @@ const auth = require('../middleware/auth');
 const { 
   sendOffer, 
   getMyHires, 
-  confirmPayment, 
-  submitPayment, 
   getAllHires,
-  createTestHire
+  confirmPayment, 
+  submitPayment,
+  createTestHire,
+  acceptOffer,
+  declineOffer
 } = require('../controllers/hireController');
 
-// Public test route (no auth required for testing)
+// Test route
 router.post('/test', createTestHire);
 
-// Protected routes
+// Offer routes
 router.post('/', auth, sendOffer);
+router.put('/:id/accept', auth, acceptOffer);
+router.put('/:id/decline', auth, declineOffer);
+
+// Hire routes
 router.get('/all', auth, getAllHires);
 router.get('/my', auth, getMyHires);
+
+// Payment routes
 router.put('/:id/payment', auth, submitPayment);
 router.put('/:id/confirm-payment', auth, confirmPayment);
 

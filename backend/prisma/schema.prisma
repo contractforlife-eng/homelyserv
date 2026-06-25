@@ -25,6 +25,7 @@ model User {
   isSuspended      Boolean        @default(false)
   language         String         @default("en")
   createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   workerProfile    WorkerProfile?
   sentMessages     Message[]      @relation("SentMessages")
   receivedMessages Message[]      @relation("ReceivedMessages")
@@ -51,6 +52,7 @@ model WorkerProfile {
   ratingCount     Int          @default(0)
   isVisible       Boolean      @default(true)
   createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   documents       Document[]
   experiences     Experience[]
   hires           Hire[]       @relation("WorkerHires")
@@ -92,11 +94,15 @@ model Hire {
   totalDue         Float
   paymentMethod    String?
   paymentReference String?
-  paymentStatus    String        @default("pending")
+  paymentStatus    String        @default("pending") // pending, confirmed, rejected
   paymentProofUrl  String?
   startDate        DateTime?
-  status           String        @default("offer_sent")
+  status           String        @default("pending") // pending, accepted, rejected, active, completed, cancelled
+  workerAccepted   Boolean       @default(false)
+  employerAccepted Boolean       @default(false)
+  contactShared    Boolean       @default(false)
   createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   messages         Message[]
   reviews          Review[]
 }
