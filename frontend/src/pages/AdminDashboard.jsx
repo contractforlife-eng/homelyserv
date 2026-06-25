@@ -117,57 +117,59 @@ export default function AdminDashboard() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     sidebar: {
-      width: '240px',
+      width: '260px',
       background: '#1a3a1a',
-      padding: '24px 0',
+      padding: '28px 0',
       display: 'flex',
       flexDirection: 'column',
       borderRight: '1px solid #2a5a2a',
       flexShrink: 0,
     },
     sidebarLogo: {
-      padding: '0 20px 24px',
+      padding: '0 24px 28px',
       borderBottom: '1px solid #2a5a2a',
-      marginBottom: '16px',
+      marginBottom: '20px',
     },
     sidebarMenu: {
       flex: 1,
-      padding: '0 12px',
+      padding: '0 14px',
     },
     sidebarItem: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
-      padding: '10px 16px',
+      gap: '14px',
+      padding: '12px 18px',
       borderRadius: '10px',
       color: '#8aaa8a',
-      fontSize: '14px',
-      fontWeight: '500',
+      fontSize: '15px',
+      fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
-      marginBottom: '2px',
+      marginBottom: '4px',
+      letterSpacing: '0.3px',
     },
     sidebarItemActive: {
       background: '#2a5a2a',
-      color: '#fff',
+      color: '#ffffff',
     },
     sidebarItemIcon: {
-      fontSize: '18px',
-      width: '24px',
+      fontSize: '20px',
+      width: '28px',
+      textAlign: 'center',
     },
     sidebarBottom: {
-      padding: '16px 20px',
+      padding: '20px 24px',
       borderTop: '1px solid #2a5a2a',
       marginTop: 'auto',
     },
     sidebarUser: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
+      gap: '14px',
     },
     sidebarAvatar: {
-      width: '36px',
-      height: '36px',
+      width: '42px',
+      height: '42px',
       borderRadius: '50%',
       background: '#2e7d32',
       display: 'flex',
@@ -175,110 +177,120 @@ export default function AdminDashboard() {
       justifyContent: 'center',
       color: '#fff',
       fontWeight: '700',
-      fontSize: '14px',
+      fontSize: '18px',
     },
     sidebarUserName: {
-      color: '#fff',
-      fontSize: '14px',
-      fontWeight: '500',
+      color: '#ffffff',
+      fontSize: '15px',
+      fontWeight: '600',
     },
     sidebarUserRole: {
       color: '#8aaa8a',
-      fontSize: '12px',
+      fontSize: '13px',
+      fontWeight: '500',
     },
     sidebarLogout: {
-      marginTop: '12px',
-      padding: '8px 16px',
+      marginTop: '14px',
+      padding: '10px 18px',
       background: 'transparent',
       border: '1px solid #2a5a2a',
       borderRadius: '8px',
       color: '#8aaa8a',
-      fontSize: '13px',
+      fontSize: '14px',
+      fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: '100%',
       textAlign: 'center',
+      letterSpacing: '0.3px',
     },
     main: {
       flex: 1,
-      padding: '32px 40px',
+      padding: '36px 44px',
       overflow: 'auto',
     },
     header: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: '32px',
+      marginBottom: '36px',
     },
     headerTitle: {
-      fontSize: '24px',
+      fontSize: '28px',
       fontWeight: '700',
       color: '#1a3a1a',
       margin: 0,
+      letterSpacing: '-0.5px',
     },
     headerSubtitle: {
-      fontSize: '14px',
+      fontSize: '16px',
       color: '#5a7a5a',
-      margin: '4px 0 0',
+      margin: '6px 0 0',
+      fontWeight: '500',
     },
     backBtn: {
       background: 'transparent',
-      border: '1px solid #d4e8d4',
+      border: '1.5px solid #d4e8d4',
       color: '#5a7a5a',
-      padding: '8px 16px',
+      padding: '10px 20px',
       borderRadius: '8px',
       cursor: 'pointer',
-      fontSize: '13px',
+      fontSize: '14px',
+      fontWeight: '600',
       transition: 'all 0.2s ease',
+      letterSpacing: '0.3px',
     },
     statsGrid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: '16px',
-      marginBottom: '24px',
+      gap: '18px',
+      marginBottom: '28px',
     },
     statCard: {
-      background: '#fff',
-      borderRadius: '12px',
-      padding: '20px',
+      background: '#ffffff',
+      borderRadius: '14px',
+      padding: '24px',
       border: '1px solid #d4e8d4',
       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
     },
     statLabel: {
-      fontSize: '13px',
+      fontSize: '14px',
+      fontWeight: '600',
       color: '#5a7a5a',
-      marginBottom: '6px',
+      marginBottom: '8px',
+      letterSpacing: '0.3px',
     },
     statValue: {
-      fontSize: '28px',
+      fontSize: '32px',
       fontWeight: '700',
       color: '#1a3a1a',
     },
     tabs: {
       display: 'flex',
-      gap: '10px',
-      marginBottom: '20px',
-      borderBottom: '1px solid #d4e8d4',
-      paddingBottom: '12px',
+      gap: '12px',
+      marginBottom: '24px',
+      borderBottom: '2px solid #d4e8d4',
+      paddingBottom: '14px',
     },
     tab: {
-      padding: '8px 20px',
+      padding: '10px 24px',
       borderRadius: '8px',
       background: 'transparent',
       color: '#5a7a5a',
       border: 'none',
       cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '500',
+      fontSize: '15px',
+      fontWeight: '600',
       transition: 'all 0.2s ease',
+      letterSpacing: '0.3px',
     },
     tabActive: {
       background: '#2e7d32',
-      color: '#fff',
+      color: '#ffffff',
     },
     tableContainer: {
-      background: '#fff',
-      borderRadius: '12px',
+      background: '#ffffff',
+      borderRadius: '14px',
       border: '1px solid #d4e8d4',
       overflow: 'hidden',
       boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
@@ -286,97 +298,112 @@ export default function AdminDashboard() {
     table: {
       width: '100%',
       borderCollapse: 'collapse',
-      fontSize: '13px',
+      fontSize: '14px',
     },
     th: {
-      padding: '12px 16px',
+      padding: '14px 18px',
       textAlign: 'left',
       color: '#5a7a5a',
-      fontWeight: '600',
-      borderBottom: '1px solid #d4e8d4',
+      fontWeight: '700',
+      borderBottom: '2px solid #d4e8d4',
       background: '#f8fbf8',
+      fontSize: '14px',
+      letterSpacing: '0.5px',
+      textTransform: 'uppercase',
     },
     td: {
-      padding: '12px 16px',
+      padding: '14px 18px',
       color: '#1a3a1a',
       borderBottom: '1px solid #f0f7f0',
+      fontSize: '14px',
+      fontWeight: '500',
     },
     badge: {
-      padding: '3px 10px',
+      padding: '4px 12px',
       borderRadius: '12px',
-      fontSize: '11px',
-      fontWeight: '500',
+      fontSize: '12px',
+      fontWeight: '600',
+      letterSpacing: '0.3px',
     },
     badgeAdmin: {
       background: '#2a3a2a',
-      color: '#fff',
+      color: '#ffffff',
     },
     badgeEmployer: {
       background: '#e3f2fd',
-      color: '#1565c0',
+      color: '#0d47a1',
     },
     badgeWorker: {
       background: '#e8f5e9',
-      color: '#2e7d32',
+      color: '#1b5e20',
     },
     badgePending: {
       background: '#fff3e0',
-      color: '#e65100',
+      color: '#bf360c',
     },
     badgeConfirmed: {
       background: '#e8f5e9',
-      color: '#2e7d32',
+      color: '#1b5e20',
     },
     badgeActive: {
       background: '#e8f5e9',
-      color: '#2e7d32',
+      color: '#1b5e20',
     },
     btnConfirm: {
-      padding: '4px 12px',
+      padding: '6px 16px',
       background: '#2e7d32',
-      color: '#fff',
+      color: '#ffffff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
-      fontSize: '12px',
-      fontWeight: '500',
+      fontSize: '13px',
+      fontWeight: '600',
+      letterSpacing: '0.3px',
+      transition: 'all 0.2s ease',
     },
     btnReject: {
-      padding: '4px 12px',
+      padding: '6px 16px',
       background: '#c62828',
-      color: '#fff',
+      color: '#ffffff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
-      fontSize: '12px',
-      fontWeight: '500',
+      fontSize: '13px',
+      fontWeight: '600',
       marginLeft: '6px',
+      letterSpacing: '0.3px',
+      transition: 'all 0.2s ease',
     },
     btnSuspend: {
-      padding: '4px 12px',
+      padding: '6px 16px',
       background: '#e65100',
-      color: '#fff',
+      color: '#ffffff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
-      fontSize: '12px',
-      fontWeight: '500',
+      fontSize: '13px',
+      fontWeight: '600',
+      letterSpacing: '0.3px',
+      transition: 'all 0.2s ease',
     },
     btnUnsuspend: {
-      padding: '4px 12px',
+      padding: '6px 16px',
       background: '#2e7d32',
-      color: '#fff',
+      color: '#ffffff',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
-      fontSize: '12px',
-      fontWeight: '500',
+      fontSize: '13px',
+      fontWeight: '600',
+      letterSpacing: '0.3px',
+      transition: 'all 0.2s ease',
     },
     emptyState: {
-      padding: '40px',
+      padding: '48px',
       textAlign: 'center',
       color: '#5a7a5a',
-      fontSize: '14px',
+      fontSize: '15px',
+      fontWeight: '500',
     },
   };
 
@@ -434,7 +461,7 @@ export default function AdminDashboard() {
             style={styles.sidebarLogout}
             onMouseEnter={(e) => {
               e.target.style.background = '#2a5a2a';
-              e.target.style.color = '#fff';
+              e.target.style.color = '#ffffff';
             }}
             onMouseLeave={(e) => {
               e.target.style.background = 'transparent';
@@ -472,19 +499,19 @@ export default function AdminDashboard() {
         {/* Stats */}
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Total Users</div>
+            <div style={styles.statLabel}>👥 Total Users</div>
             <div style={styles.statValue}>{stats.totalUsers}</div>
           </div>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Workers</div>
+            <div style={styles.statLabel}>🛠️ Workers</div>
             <div style={styles.statValue}>{stats.totalWorkers}</div>
           </div>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Employers</div>
+            <div style={styles.statLabel}>🏢 Employers</div>
             <div style={styles.statValue}>{stats.totalEmployers}</div>
           </div>
           <div style={styles.statCard}>
-            <div style={styles.statLabel}>Total Hires</div>
+            <div style={styles.statLabel}>📋 Total Hires</div>
             <div style={styles.statValue}>{stats.totalHires}</div>
           </div>
         </div>
@@ -543,8 +570,8 @@ export default function AdminDashboard() {
                       <td style={styles.td}>
                         <span style={{
                           color: u.isSuspended ? '#c62828' : '#2e7d32',
-                          fontSize: '12px',
-                          fontWeight: '500'
+                          fontSize: '13px',
+                          fontWeight: '600'
                         }}>
                           {u.isSuspended ? '🚫 Suspended' : '✅ Active'}
                         </span>
