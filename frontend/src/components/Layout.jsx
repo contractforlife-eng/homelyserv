@@ -32,15 +32,16 @@ export default function Layout({ children, activeTab }) {
 
   const getNavItems = () => {
     if (user?.role === 'ADMIN') {
-      // Admin should not see any top nav tabs (they go directly to /admin)
-      return [];
+      return [
+        { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
+      ];
     }
 
     if (user?.role === 'WORKER') {
       return [
         { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
         { icon: '👤', label: 'My Profile', path: '/worker-profile', key: 'profile' },
-        { icon: '📋', label: 'My Hires', path: '/my-hires', key: 'hires' },
+        { icon: '📋', label: 'My Offers', path: '/my-hires', key: 'hires' },
       ];
     }
 

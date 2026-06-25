@@ -28,19 +28,13 @@ export default function Home() {
   const fetchRecentActivity = async () => {
     setLoading(true);
     try {
-      // Try to get real data from the backend
-      const [hiresRes, userRes] = await Promise.all([
+      const [hiresRes] = await Promise.all([
         api.get('/hires/my').catch(() => ({ data: [] })),
-        api.get('/auth/me').catch(() => ({ data: null }))
       ]);
 
       const hires = hiresRes.data || [];
-      const currentUser = userRes.data || user;
-
-      // Build real activity items
       const activities = [];
 
-      // Add hire-related activities
       hires.slice(0, 5).forEach(hire => {
         const date = new Date(hire.createdAt);
         const timeAgo = getTimeAgo(date);
@@ -79,8 +73,8 @@ export default function Home() {
       });
 
       // Add user profile activities
-      if (currentUser?.createdAt) {
-        const date = new Date(currentUser.createdAt);
+      if (user?.createdAt) {
+        const date = new Date(user.createdAt);
         const timeAgo = getTimeAgo(date);
         activities.push({
           id: 'user-created',
@@ -93,13 +87,9 @@ export default function Home() {
         });
       }
 
-      // Sort by date (newest first)
       activities.sort((a, b) => b.date - a.date);
-      
-      // Take the 5 most recent
       setRecentActivity(activities.slice(0, 5));
 
-      // If no activities, show default message
       if (activities.length === 0) {
         setRecentActivity([
           {
@@ -115,7 +105,6 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Failed to fetch activity:', err);
-      // Show default activities if API fails
       setRecentActivity([
         {
           id: 'default1',
@@ -131,7 +120,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  // Helper function to get time ago
   const getTimeAgo = (date) => {
     const now = new Date();
     const diffMs = now - date;
@@ -175,7 +163,7 @@ export default function Home() {
     if (user?.role === 'WORKER') {
       return [
         { icon: '👤', title: 'My Profile', desc: 'Update your skills and availability', action: 'Update Profile →', path: '/worker-profile' },
-        { icon: '📋', title: 'My Hires', desc: 'View offers from employers', action: 'View Hires →', path: '/my-hires' },
+        { icon: '📋', title: 'My Offers', desc: 'View job offers from employers', action: 'View Offers →', path: '/my-hires' },
         { icon: '🔄', title: 'Switch Account Type', desc: 'Start hiring workers instead', action: 'Switch →', path: '#', onClick: switchRole },
       ];
     }
