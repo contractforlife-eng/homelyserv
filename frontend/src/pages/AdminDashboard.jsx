@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalHires: 0,
     pendingPayments: 0,
@@ -33,20 +34,35 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const hiresRes = await api.get('/hires/all');
-      const allHires = hiresRes.data || [];
-      setHires(allHires);
+      // Try to fetch hires
+      let allHires = [];
+      try {
+        const hiresRes = await api.get('/hires/all');
+        allHires = hiresRes.data || [];
+        setHires(allHires);
+      } catch (err) {
+        console.error('Failed to fetch hires:', err);
+        // Don't set error here, just show empty hires
+      }
 
-      const usersRes = await api.get('/auth/users');
-      const allUsers = usersRes.data || [];
-      setUsers(allUsers);
+      // Try to fetch users
+      let allUsers = [];
+      try {
+        const usersRes = await api.get('/auth/users');
+        allUsers = usersRes.data || [];
+        setUsers(allUsers);
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+        // Don't set error here, just show empty users
+      }
 
       const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
       const active = allHires.filter(h => h.status === 'active').length;
       const revenue = allHires
         .filter(h => h.paymentStatus === 'confirmed')
-        .reduce((sum, h) => sum + h.totalDue, 0);
+        .reduce((sum, h) => sum + (h.totalDue || 0), 0);
 
       const workers = allUsers.filter(u => u.role === 'WORKER').length;
       const employers = allUsers.filter(u => u.role === 'EMPLOYER').length;
@@ -64,7 +80,7 @@ export default function AdminDashboard() {
       });
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      toast.error('Failed to load admin data');
+      setError('Failed to load admin data. Please try again.');
     }
     setLoading(false);
   };
@@ -144,6 +160,18 @@ export default function AdminDashboard() {
         <h1 className="page-title">Admin Control Panel</h1>
         <p className="page-subtitle">Manage all aspects of the HomelyServ platform</p>
       </div>
+
+      {error && (
+        <div className="card" style={{ background: '#fff3e0', borderColor: '#e65100', marginBottom: '20px' }}>
+          <p style={{ color: '#e65100' }}>{error}</p>
+          <button 
+            onClick={fetchData}
+            style={{ marginTop: '8px', padding: '6px 16px', background: '#e65100', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="stats-grid">
@@ -358,7 +386,11 @@ export default function AdminDashboard() {
         <div>
           <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
             {hires.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>No hires yet.</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#5a7a5a' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
+                <h3 style={{ fontSize: '18px', color: '#1a3a1a', marginBottom: '4px' }}>No Hires Yet</h3>
+                <p style={{ color: '#5a7a5a' }}>No hiring activity has been recorded yet.</p>
+              </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
@@ -383,15 +415,15 @@ export default function AdminDashboard() {
                             borderRadius: '12px',
                             fontSize: '11px',
                             fontWeight: '600',
-                            background: hire.status === 'active' ? '#e8f5e9' : '#fff3e0',
-                            color: hire.status === 'active' ? '#1b5e20' : '#bf360c',
+                            background: hire.status === 'active' ? '#e8f5e9' : hire.status === 'offer_sent' ? '#fff3e0' : '#fce4ec',
+                            color: hire.status === 'active' ? '#1b5e20' : hire.status === 'offer_sent' ? '#bf360c' : '#c62828',
                           }}>
                             {hire.status?.replace('_', ' ') || 'N/A'}
                           </span>
                         </td>
                         <td style={{ padding: '12px 18px' }}>
                           <span style={{
-                            color: hire.paymentStatus === 'confirmed' ? '#2e7d32' : '#f39c12',
+                            color: hire.paymentStatus === 'confirmed' ? '#2e7d32' : hire.paymentStatus === 'pending' ? '#f39c12' : '#5a7a5a',
                             fontWeight: '600',
                             fontSize: '13px'
                           }}>
