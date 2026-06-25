@@ -30,7 +30,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card fade-in">
+      <div className="auth-card">
         <div className="auth-language">
           <LanguageSwitcher />
         </div>
@@ -39,25 +39,25 @@ export default function Login() {
           <div className="auth-logo-wrapper">
             <Logo />
           </div>
-          <p className="auth-subtitle">{t('sign_in_to_account')}</p>
+          <p className="auth-subtitle">SIGN IN</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label className="form-label">{t('email')}</label>
+            <label className="form-label">Email address</label>
             <input
               name="email"
               type="email"
               value={form.email}
               onChange={handleChange}
               required
-              placeholder="sara@email.com"
+              placeholder="emad@homelyserv.com"
               className="form-input"
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('password')}</label>
+            <label className="form-label">Password</label>
             <input
               name="password"
               type="password"
@@ -70,14 +70,14 @@ export default function Login() {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary btn-full">
-            {loading ? 'Signing in...' : t('login')}
+            {loading ? 'Signing in...' : 'Login'}
           </button>
         </form>
 
         <SocialLogin />
 
         <p className="auth-footer">
-          {t('dont_have_account')} <Link to="/register">{t('create_one')}</Link>
+          Don't have an account? <Link to="/register">Create one</Link>
         </p>
       </div>
     </div>

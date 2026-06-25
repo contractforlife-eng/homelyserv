@@ -4,50 +4,27 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import { countries } from '../utils/countries';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import Logo from '../components/Logo';
 
 const CATEGORIES = [
-  'Nanny', 
-  'Baby-Sitter', 
-  'Elderly Caregiver',
-  'Driver', 
-  'Cook', 
-  'House Manager', 
-  'Gardener', 
-  'Nurse',
-  'Security Guard', 
-  'Bodyguard'
+  'Nanny', 'Baby-Sitter', 'Elderly Caregiver',
+  'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse',
+  'Security Guard', 'Bodyguard'
 ];
 
 const SKILLS = [
-  'First Aid', 
-  'Newborn Care', 
-  'Cooking', 
-  'Driving License',
-  'Medical Training', 
-  'Bilingual (AR/EN)', 
-  'Educational Games',
-  'Meal Prep', 
-  'Elderly Care', 
-  'Sleep Training', 
-  'Gardening', 
-  'Housekeeping',
-  'Security Training', 
-  'Surveillance', 
-  'Self Defense', 
-  'Risk Assessment',
-  'Firearms Training', 
-  'First Responder', 
-  'Crowd Control', 
-  'Close Protection',
-  'Child Care',
-  'Pet Care',
-  'Swimming',
-  'CPR Certified'
+  'First Aid', 'Newborn Care', 'Cooking', 'Driving License',
+  'Medical Training', 'Bilingual (AR/EN)', 'Educational Games',
+  'Meal Prep', 'Elderly Care', 'Sleep Training', 'Gardening', 'Housekeeping',
+  'Security Training', 'Surveillance', 'Self Defense', 'Risk Assessment',
+  'Firearms Training', 'First Responder', 'Crowd Control', 'Close Protection',
+  'Child Care', 'Pet Care', 'Swimming', 'CPR Certified'
 ];
 
 export default function WorkerProfile() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
@@ -146,174 +123,206 @@ export default function WorkerProfile() {
     setLoading(false);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const navItems = [
+    { icon: '📊', label: 'Dashboard', path: '/' },
+    { icon: '👤', label: 'My Profile', path: '/worker-profile', active: true },
+    { icon: '📋', label: 'My Hires', path: '/my-hires' },
+    { icon: '🔄', label: 'Switch Role', path: '#' },
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      {/* Header */}
-      <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
-        <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>My Worker Profile</h1>
+    <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+      {/* Top Navigation Bar */}
+      <nav className="top-nav">
+        <div className="top-nav-content">
+          <div className="top-nav-left">
+            <Logo />
+          </div>
+          <div className="top-nav-right">
+            <LanguageSwitcher />
+            <div className="nav-user">
+              <div className="nav-avatar">{user?.fullName?.charAt(0) || 'U'}</div>
+              <div>
+                <div className="nav-username">{user?.fullName}</div>
+                <div className="nav-user-role">{user?.role}</div>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="btn-logout" style={{ background: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32', padding: '6px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Navigation Items */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', gap: '8px', borderBottom: '1px solid #d4e8d4', background: '#fff' }}>
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            className={`nav-item ${item.active ? 'active' : ''}`}
+            onClick={() => navigate(item.path)}
+          >
+            <span className="nav-item-icon">{item.icon}</span>
+            <span className="nav-item-text">{item.label}</span>
+          </button>
+        ))}
       </div>
 
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-        <form onSubmit={handleSubmit}>
-
-          {/* Profile Photo */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Profile Photo</h3>
-            
-            <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#F5F5F5', margin: '0 auto 12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #C0392B' }}>
-              {form.profilePhotoUrl ? (
-                <img src={form.profilePhotoUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ fontSize: '48px', color: '#888' }}>📷</span>
-              )}
+      {/* Main Content */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          {/* Profile Header */}
+          <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '32px', fontWeight: '700', flexShrink: 0 }}>
+              {user?.fullName?.charAt(0) || 'U'}
             </div>
-
-            <label style={{ display: 'inline-block', padding: '8px 20px', background: '#C0392B', color: '#fff', borderRadius: '20px', cursor: 'pointer', fontSize: '13px' }}>
-              {uploading ? 'Uploading...' : '📸 Upload Photo'}
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handlePhotoUpload} 
-                disabled={uploading}
-                style={{ display: 'none' }}
-              />
-            </label>
-            <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>JPG, PNG · Max 5MB</p>
-          </div>
-
-          {/* Category */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Service category</h3>
-            <select name="category" value={form.category} onChange={handleChange}
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px' }}>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-
-          {/* Experience & Salary */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Experience & salary</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Years of experience</label>
-                <input name="experienceYears" type="number" value={form.experienceYears} onChange={handleChange} placeholder="5"
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Expected salary (EGP/mo)</label>
-                <input name="expectedSalary" type="number" value={form.expectedSalary} onChange={handleChange} placeholder="5000"
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} />
-              </div>
+            <div>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a', marginBottom: '4px' }}>{user?.fullName}</h1>
+              <p style={{ color: '#5a7a5a', fontSize: '14px' }}>Update your profile information</p>
             </div>
           </div>
 
-          {/* Availability */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Availability & work type</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Availability</label>
-                <select name="availability" value={form.availability} onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px' }}>
-                  <option value="available">Available</option>
-                  <option value="busy">Busy</option>
-                  <option value="unavailable">Not available</option>
+          <form onSubmit={handleSubmit}>
+            {/* Profile Photo */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', marginBottom: '20px', border: '1px solid #d4e8d4', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Profile Photo</h3>
+              <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#f0f7f0', margin: '0 auto 12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #2e7d32' }}>
+                {form.profilePhotoUrl ? (
+                  <img src={form.profilePhotoUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '48px', color: '#8aaa8a' }}>📷</span>
+                )}
+              </div>
+              <label style={{ display: 'inline-block', padding: '8px 24px', background: '#2e7d32', color: '#fff', borderRadius: '30px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                {uploading ? 'Uploading...' : 'Upload Photo'}
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: 'none' }} />
+              </label>
+              <p style={{ fontSize: '11px', color: '#8aaa8a', marginTop: '8px' }}>JPG, PNG · Max 5MB</p>
+            </div>
+
+            {/* Service & Experience */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', marginBottom: '20px', border: '1px solid #d4e8d4' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Service & Experience</h3>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Service category</label>
+                <select name="category" value={form.category} onChange={handleChange} className="form-input">
+                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Work type</label>
-                <select name="workType" value={form.workType} onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px' }}>
-                  <option value="full-time">Full-time</option>
-                  <option value="part-time">Part-time</option>
-                  <option value="live-in">Live-in</option>
-                  <option value="live-out">Live-out</option>
-                </select>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Years of experience</label>
+                  <input name="experienceYears" type="number" value={form.experienceYears} onChange={handleChange} placeholder="0" className="form-input" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Expected salary</label>
+                  <input name="expectedSalary" type="number" value={form.expectedSalary} onChange={handleChange} placeholder="5000" className="form-input" />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Location */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Location</h3>
-            
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Country</label>
-              <select 
-                name="country" 
-                value={form.country} 
-                onChange={handleCountryChange}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
-              >
-                <option value="">Select your country</option>
-                {countries.map(country => (
-                  <option key={country.code} value={country.name}>
-                    {country.flag} {country.name}
-                  </option>
-                ))}
-              </select>
+            {/* Availability & Work Type */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', marginBottom: '20px', border: '1px solid #d4e8d4' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Availability & Work Type</h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Availability</label>
+                  <select name="availability" value={form.availability} onChange={handleChange} className="form-input">
+                    <option value="available">Available</option>
+                    <option value="busy">Busy</option>
+                    <option value="unavailable">Not available</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Work Type</label>
+                  <select name="workType" value={form.workType} onChange={handleChange} className="form-input">
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="live-in">Live-in</option>
+                    <option value="live-out">Live-out</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {form.country && (
-              <div>
-                <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>City</label>
-                <select 
-                  name="city" 
-                  value={form.city} 
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
-                >
-                  <option value="">Select your city</option>
-                  {countries.find(c => c.name === form.country)?.cities.map(city => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
+            {/* Location & Bio */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', marginBottom: '20px', border: '1px solid #d4e8d4' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Location & Bio</h3>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Country</label>
+                <select name="country" value={form.country} onChange={handleCountryChange} className="form-input">
+                  <option value="">Select your country</option>
+                  {countries.map(country => (
+                    <option key={country.code} value={country.name}>{country.flag} {country.name}</option>
                   ))}
                 </select>
               </div>
-            )}
-          </div>
 
-          {/* Skills */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>Skills</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {SKILLS.map(skill => (
-                <button key={skill} type="button" onClick={() => toggleSkill(skill)}
-                  style={{
-                    padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '500', cursor: 'pointer',
-                    background: form.skills.includes(skill) ? '#C0392B' : '#F5F5F5',
-                    color: form.skills.includes(skill) ? '#fff' : '#444',
-                    border: form.skills.includes(skill) ? '1px solid #C0392B' : '1px solid #E0E0E0'
-                  }}>
-                  {skill}
-                </button>
-              ))}
-            </div>
-          </div>
+              {form.country && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>City</label>
+                  <select name="city" value={form.city} onChange={handleChange} className="form-input">
+                    <option value="">Select your city</option>
+                    {countries.find(c => c.name === form.country)?.cities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {/* Bio */}
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#444', marginBottom: '12px' }}>About you</h3>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Bio in English</label>
-              <textarea name="bioEn" value={form.bioEn} onChange={handleChange} rows={3} placeholder="Tell employers about yourself..."
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' }}>Bio in Arabic</label>
-              <textarea name="bioAr" value={form.bioAr} onChange={handleChange} rows={3} placeholder="اكتب نبذة عن نفسك..." dir="rtl"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
-            </div>
-          </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Bio in English</label>
+                <textarea name="bioEn" value={form.bioEn} onChange={handleChange} rows={3} placeholder="Tell employers about yourself..." className="form-input" style={{ resize: 'vertical' }} />
+              </div>
 
-          <button type="submit" disabled={loading}
-            style={{ width: '100%', padding: '14px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>
-            {loading ? 'Saving...' : 'Save profile'}
-          </button>
-        </form>
-      </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Bio in Arabic</label>
+                <textarea name="bioAr" value={form.bioAr} onChange={handleChange} rows={3} placeholder="اكتب نبذة عن نفسك..." dir="rtl" className="form-input" style={{ resize: 'vertical' }} />
+              </div>
+            </div>
+
+            {/* Skills */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', marginBottom: '20px', border: '1px solid #d4e8d4' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Skills</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {SKILLS.map(skill => (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => toggleSkill(skill)}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: '30px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      background: form.skills.includes(skill) ? '#2e7d32' : '#f0f7f0',
+                      color: form.skills.includes(skill) ? '#fff' : '#5a7a5a',
+                      border: form.skills.includes(skill) ? '1px solid #2e7d32' : '1px solid #d4e8d4',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} className="btn-primary btn-full" style={{ padding: '14px', fontSize: '16px', borderRadius: '12px' }}>
+              {loading ? 'Saving...' : 'Save profile'}
+            </button>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
