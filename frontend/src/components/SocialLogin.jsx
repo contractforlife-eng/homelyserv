@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import GoogleLogin from './GoogleLogin';
 
-// Facebook App ID - Your actual App ID
 const FACEBOOK_APP_ID = '1813816306257010';
 
 export default function SocialLogin() {
@@ -14,7 +13,6 @@ export default function SocialLogin() {
   const [loading, setLoading] = useState(false);
   const [fbLoaded, setFbLoaded] = useState(false);
 
-  // Load Facebook SDK
   useEffect(() => {
     if (window.FB) {
       setFbLoaded(true);
@@ -31,7 +29,6 @@ export default function SocialLogin() {
       setFbLoaded(true);
     };
 
-    // Load SDK
     const script = document.createElement('script');
     script.src = 'https://connect.facebook.net/en_US/sdk.js';
     script.async = true;
@@ -44,7 +41,6 @@ export default function SocialLogin() {
     };
   }, []);
 
-  // Generic social login handler
   const handleSocialLogin = async (provider, providerData) => {
     setLoading(true);
     try {
@@ -70,7 +66,6 @@ export default function SocialLogin() {
     setLoading(false);
   };
 
-  // Facebook Login
   const handleFacebookLogin = () => {
     if (!fbLoaded) {
       toast.info('Facebook SDK is loading. Please try again.');
@@ -79,7 +74,6 @@ export default function SocialLogin() {
 
     window.FB.login(function(response) {
       if (response.authResponse) {
-        // Get user info
         window.FB.api('/me', { fields: 'id,name,email,picture' }, function(userInfo) {
           handleSocialLogin('facebook', {
             id: userInfo.id,
@@ -94,7 +88,6 @@ export default function SocialLogin() {
     }, { scope: 'email,public_profile' });
   };
 
-  // Twitter Login (mock for now)
   const handleTwitterLogin = () => {
     toast.info('Twitter login is in demo mode. Using mock account.');
     const mockTwitterData = {
@@ -106,7 +99,6 @@ export default function SocialLogin() {
     handleSocialLogin('twitter', mockTwitterData);
   };
 
-  // Telegram Login (mock for now)
   const handleTelegramLogin = () => {
     toast.info('Telegram login is in demo mode. Using mock account.');
     const mockTelegramData = {
@@ -118,7 +110,6 @@ export default function SocialLogin() {
     handleSocialLogin('telegram', mockTelegramData);
   };
 
-  // Signal Login (mock for now)
   const handleSignalLogin = () => {
     toast.info('Signal login is in demo mode. Using mock account.');
     const mockSignalData = {
@@ -131,46 +122,10 @@ export default function SocialLogin() {
   };
 
   const socialButtons = [
-    { 
-      provider: 'Google', 
-      icon: 'G', 
-      color: '#4285F4',
-      bgColor: '#ffffff',
-      textColor: '#757575',
-      onClick: () => document.querySelector('.google-btn-wrapper button')?.click()
-    },
-    { 
-      provider: 'Facebook', 
-      icon: 'f', 
-      color: '#1877F2', 
-      bgColor: '#1877F2',
-      textColor: '#ffffff',
-      onClick: handleFacebookLogin 
-    },
-    { 
-      provider: 'Twitter', 
-      icon: '🐦', 
-      color: '#1DA1F2', 
-      bgColor: '#1DA1F2',
-      textColor: '#ffffff',
-      onClick: handleTwitterLogin 
-    },
-    { 
-      provider: 'Telegram', 
-      icon: '✈️', 
-      color: '#0088CC', 
-      bgColor: '#0088CC',
-      textColor: '#ffffff',
-      onClick: handleTelegramLogin 
-    },
-    { 
-      provider: 'Signal', 
-      icon: '📱', 
-      color: '#3A76F0', 
-      bgColor: '#3A76F0',
-      textColor: '#ffffff',
-      onClick: handleSignalLogin 
-    },
+    { provider: 'Facebook', icon: '🔷', color: '#1877F2', onClick: handleFacebookLogin },
+    { provider: 'Twitter', icon: '🐦', color: '#1DA1F2', onClick: handleTwitterLogin },
+    { provider: 'Telegram', icon: '✈️', color: '#0088CC', onClick: handleTelegramLogin },
+    { provider: 'Signal', icon: '📱', color: '#3A76F0', onClick: handleSignalLogin },
   ];
 
   return (
@@ -179,29 +134,27 @@ export default function SocialLogin() {
         <span>OR CONTINUE WITH</span>
       </div>
 
-      {/* Google Login */}
-      <div className="social-btn-wrapper google-btn-wrapper">
+      {/* Google Login - Centered */}
+      <div className="google-login-section">
         <GoogleLogin />
       </div>
 
-      {/* Other social logins */}
-      <div className="social-buttons-grid">
-        {socialButtons.slice(1).map((btn) => (
+      <div className="social-divider" style={{ margin: '12px 0' }}>
+        <span>Other providers</span>
+      </div>
+
+      <div className="social-buttons">
+        {socialButtons.map((btn) => (
           <button
             key={btn.provider}
             onClick={btn.onClick}
             disabled={loading || (btn.provider === 'Facebook' && !fbLoaded)}
-            className="social-btn professional"
-            style={{
-              backgroundColor: btn.bgColor,
-              borderColor: btn.color,
-              color: btn.textColor,
-            }}
+            className="social-btn"
+            style={{ borderColor: btn.color }}
           >
-            <span className="social-icon professional-icon" style={{ color: btn.color }}>
-              {btn.icon}
-            </span>
-            <span className="social-btn-text">{btn.provider}</span>
+            <span className="social-icon">{btn.icon}</span>
+            {btn.provider}
+            {btn.provider === 'Facebook' && !fbLoaded && ' (Loading...)'}
           </button>
         ))}
       </div>

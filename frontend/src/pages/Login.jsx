@@ -39,7 +39,8 @@ export default function Login() {
           <div className="auth-logo-wrapper">
             <Logo />
           </div>
-          <p className="auth-subtitle">SIGN IN</p>
+          <h1 className="auth-title">SIGN IN</h1>
+          <p className="auth-subtitle">Access your HomelyServ account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
