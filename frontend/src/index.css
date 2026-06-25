@@ -276,59 +276,100 @@ body {
    NAVIGATION TABS
    ============================================ */
 
-.nav-tabs {
+/* ============================================
+   NAVIGATION TABS - IMPROVED DESIGN
+   ============================================ */
+
+.nav-tabs-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 0 24px;
   display: flex;
   gap: 4px;
-  border-bottom: 2px solid #d4e8d4;
+  border-bottom: 2px solid #e8f5e9;
   background: #ffffff;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .nav-tab {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 14px 24px;
   border: none;
   background: transparent;
   color: #5a7a5a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  border-radius: 10px;
+  border-radius: 8px 8px 0 0;
   position: relative;
+  font-family: inherit;
 }
 
 .nav-tab:hover {
-  background: #e8f5e9;
+  background: #f0f7f0;
   color: #1a3a1a;
 }
 
 .nav-tab.active {
-  background: #2e7d32;
-  color: #ffffff;
+  color: #2e7d32;
+  font-weight: 600;
+  background: #f0f7f0;
 }
 
-.nav-tab.active::after {
-  content: '';
+.nav-tab.active .nav-tab-icon {
+  transform: scale(1.1);
+}
+
+/* Active indicator bar - clean and professional */
+.nav-tab-indicator {
   position: absolute;
   bottom: -2px;
   left: 20%;
   right: 20%;
   height: 3px;
-  background: #2e7d32;
+  background: linear-gradient(90deg, #2e7d32, #4caf50);
   border-radius: 3px;
+  animation: slideIn 0.3s ease;
 }
 
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.nav-tab-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.nav-tab-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-tab.active .nav-tab-label {
+  font-weight: 600;
+}
+
+/* Switch Role button - Professional style */
 .nav-tab.switch-role {
   margin-left: auto;
-  border: 1px dashed #2e7d32;
-  background: #f0f7f0;
+  border: 1.5px solid #2e7d32;
+  border-radius: 20px;
+  background: transparent;
   color: #2e7d32;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
 }
 
 .nav-tab.switch-role:hover {
@@ -336,13 +377,56 @@ body {
   color: #ffffff;
 }
 
-.nav-tab-icon {
-  font-size: 18px;
+.nav-tab.switch-role .nav-tab-icon {
+  font-size: 16px;
 }
 
-.nav-tab-label {
-  font-size: 14px;
-  font-weight: 600;
+.nav-tab.switch-role .nav-tab-label {
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .nav-tabs-container {
+    padding: 0 16px;
+    gap: 2px;
+  }
+
+  .nav-tab {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .nav-tab-label {
+    font-size: 13px;
+  }
+
+  .nav-tab.switch-role {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .nav-tab.switch-role .nav-tab-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .nav-tab-label {
+    font-size: 12px;
+  }
+
+  .nav-tab-icon {
+    font-size: 15px;
+  }
+
+  .nav-tab.switch-role {
+    padding: 6px 12px;
+  }
 }
 
 /* ============================================

@@ -82,7 +82,8 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
-      <div className="nav-tabs">
+      {/* Navigation Tabs - Improved Design */}
+      <div className="nav-tabs-container">
         {navItems.map((item) => (
           <button
             key={item.key}
@@ -91,6 +92,9 @@ export default function Layout({ children, activeTab }) {
           >
             <span className="nav-tab-icon">{item.icon}</span>
             <span className="nav-tab-label">{item.label}</span>
+            {activeTab === item.key && (
+              <span className="nav-tab-indicator"></span>
+            )}
           </button>
         ))}
         {user?.role !== 'ADMIN' && (
