@@ -8,8 +8,8 @@ import WorkerProfile from './pages/WorkerProfile';
 import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
-import AdminDashboard from './pages/AdminDashboard';
-import MyHires from './pages/MyHires';  // <-- ADD THIS
+import NewAdminDashboard from './pages/NewAdminDashboard';
+import MyHires from './pages/MyHires';
 import './i18n';
 import './index.css';
 
@@ -57,8 +57,8 @@ export default function App() {
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
           <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />  {/* <-- ADD THIS */}
+          <Route path="/admin" element={<ProtectedRoute><NewAdminDashboard /></ProtectedRoute>} />
+          <Route path="/my-hires" element={<ProtectedRoute><MyHires /></ProtectedRoute>} />
         </Routes>
       </div>
     </BrowserRouter>
