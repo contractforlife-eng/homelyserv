@@ -31,12 +31,10 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch hires
       const hiresRes = await api.get('/hires/all');
       const allHires = hiresRes.data || [];
       setHires(allHires);
 
-      // Fetch users
       const usersRes = await api.get('/auth/users');
       const allUsers = usersRes.data || [];
       setUsers(allUsers);
@@ -104,261 +102,550 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading dashboard...</div>;
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      background: '#0f0f1a',
+      display: 'flex',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    },
+    sidebar: {
+      width: '240px',
+      background: '#1a1a2e',
+      padding: '24px 0',
+      display: 'flex',
+      flexDirection: 'column',
+      borderRight: '1px solid #2a2a4a',
+      flexShrink: 0,
+    },
+    sidebarLogo: {
+      padding: '0 20px 24px',
+      borderBottom: '1px solid #2a2a4a',
+      marginBottom: '16px',
+    },
+    sidebarLogoText: {
+      fontSize: '20px',
+      fontWeight: '700',
+      color: '#fff',
+      letterSpacing: '-0.5px',
+    },
+    sidebarLogoAccent: {
+      color: '#e74c3c',
+    },
+    sidebarMenu: {
+      flex: 1,
+      padding: '0 12px',
+    },
+    sidebarItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '10px 16px',
+      borderRadius: '10px',
+      color: '#8892b0',
+      fontSize: '14px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      marginBottom: '2px',
+    },
+    sidebarItemActive: {
+      background: '#2a2a4a',
+      color: '#fff',
+    },
+    sidebarItemIcon: {
+      fontSize: '18px',
+      width: '24px',
+    },
+    sidebarBottom: {
+      padding: '16px 20px',
+      borderTop: '1px solid #2a2a4a',
+      marginTop: 'auto',
+    },
+    sidebarUser: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+    },
+    sidebarAvatar: {
+      width: '36px',
+      height: '36px',
+      borderRadius: '50%',
+      background: '#e74c3c',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: '14px',
+    },
+    sidebarUserName: {
+      color: '#fff',
+      fontSize: '14px',
+      fontWeight: '500',
+    },
+    sidebarUserRole: {
+      color: '#8892b0',
+      fontSize: '12px',
+    },
+    sidebarLogout: {
+      marginTop: '12px',
+      padding: '8px 16px',
+      background: 'transparent',
+      border: '1px solid #2a2a4a',
+      borderRadius: '8px',
+      color: '#8892b0',
+      fontSize: '13px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      width: '100%',
+      textAlign: 'center',
+    },
+    main: {
+      flex: 1,
+      padding: '32px 40px',
+      overflow: 'auto',
+    },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '32px',
+    },
+    headerTitle: {
+      fontSize: '24px',
+      fontWeight: '700',
+      color: '#fff',
+      margin: 0,
+    },
+    headerSubtitle: {
+      fontSize: '14px',
+      color: '#8892b0',
+      margin: '4px 0 0',
+    },
+    backBtn: {
+      background: 'transparent',
+      border: '1px solid #2a2a4a',
+      color: '#8892b0',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '13px',
+      transition: 'all 0.2s ease',
+    },
+    statsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '16px',
+      marginBottom: '24px',
+    },
+    statCard: {
+      background: '#1a1a2e',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '1px solid #2a2a4a',
+    },
+    statLabel: {
+      fontSize: '13px',
+      color: '#8892b0',
+      marginBottom: '6px',
+    },
+    statValue: {
+      fontSize: '28px',
+      fontWeight: '700',
+      color: '#fff',
+    },
+    tabs: {
+      display: 'flex',
+      gap: '10px',
+      marginBottom: '20px',
+      borderBottom: '1px solid #2a2a4a',
+      paddingBottom: '12px',
+    },
+    tab: {
+      padding: '8px 20px',
+      borderRadius: '8px',
+      background: 'transparent',
+      color: '#8892b0',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: '500',
+      transition: 'all 0.2s ease',
+    },
+    tabActive: {
+      background: '#2a2a4a',
+      color: '#fff',
+    },
+    tableContainer: {
+      background: '#1a1a2e',
+      borderRadius: '12px',
+      border: '1px solid #2a2a4a',
+      overflow: 'hidden',
+    },
+    table: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      fontSize: '13px',
+    },
+    th: {
+      padding: '12px 16px',
+      textAlign: 'left',
+      color: '#8892b0',
+      fontWeight: '600',
+      borderBottom: '1px solid #2a2a4a',
+      background: '#151525',
+    },
+    td: {
+      padding: '12px 16px',
+      color: '#e0e0e0',
+      borderBottom: '1px solid #1a1a2e',
+    },
+    badge: {
+      padding: '3px 10px',
+      borderRadius: '12px',
+      fontSize: '11px',
+      fontWeight: '500',
+    },
+    badgeAdmin: {
+      background: '#2a2a4a',
+      color: '#fff',
+    },
+    badgeEmployer: {
+      background: '#1a3a5a',
+      color: '#4fc3f7',
+    },
+    badgeWorker: {
+      background: '#1a3a2a',
+      color: '#4ade80',
+    },
+    btnConfirm: {
+      padding: '4px 12px',
+      background: '#4ade80',
+      color: '#0f0f1a',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '12px',
+      fontWeight: '500',
+    },
+    btnReject: {
+      padding: '4px 12px',
+      background: '#e74c3c',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '12px',
+      fontWeight: '500',
+      marginLeft: '6px',
+    },
+    btnSuspend: {
+      padding: '4px 12px',
+      background: '#f39c12',
+      color: '#0f0f1a',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '12px',
+      fontWeight: '500',
+    },
+    btnUnsuspend: {
+      padding: '4px 12px',
+      background: '#4ade80',
+      color: '#0f0f1a',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '12px',
+      fontWeight: '500',
+    },
+    emptyState: {
+      padding: '40px',
+      textAlign: 'center',
+      color: '#8892b0',
+      fontSize: '14px',
+    },
+  };
+
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.main}>
+          <div style={styles.emptyState}>Loading dashboard...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (user?.role !== 'ADMIN') {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Access denied. Admin only.</div>;
+    return (
+      <div style={styles.container}>
+        <div style={styles.main}>
+          <div style={styles.emptyState}>Access denied. Admin only.</div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      {/* Header */}
-      <div style={{ background: '#2C3E50', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
-        <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Admin Dashboard</h1>
-        <span style={{ marginLeft: 'auto', color: '#bdc3c7', fontSize: '13px' }}>HomelyServ Admin</span>
-      </div>
-
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '16px' }}>
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#C0392B' }}>{stats.totalHires}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Total Hires</div>
-          </div>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#E67E22' }}>{stats.pendingPayments}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Pending Payments</div>
-          </div>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#27AE60' }}>{stats.activeHires}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Active Hires</div>
-          </div>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#C0392B' }}>EGP {stats.totalRevenue.toFixed(0)}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Revenue</div>
+    <div style={styles.container}>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.sidebarLogo}>
+          <div style={styles.sidebarLogoText}>
+            Home<span style={styles.sidebarLogoAccent}>Serv</span>
           </div>
         </div>
 
-        {/* User Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#2C3E50' }}>{stats.totalUsers}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Total Users</div>
+        <nav style={styles.sidebarMenu}>
+          <div style={{ ...styles.sidebarItem, ...styles.sidebarItemActive }}>
+            <span style={styles.sidebarItemIcon}>👥</span>
+            Users
           </div>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#2980B9' }}>{stats.totalWorkers}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Workers</div>
+          <div style={styles.sidebarItem} onClick={() => navigate('/')}>
+            <span style={styles.sidebarItemIcon}>📊</span>
+            Dashboard
           </div>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#27AE60' }}>{stats.totalEmployers}</div>
-            <div style={{ fontSize: '11px', color: '#888' }}>Employers</div>
-          </div>
-        </div>
+        </nav>
 
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', borderBottom: '2px solid #E0E0E0', paddingBottom: '8px' }}>
-          <button
-            onClick={() => setActiveTab('hires')}
-            style={{
-              padding: '8px 20px',
-              background: activeTab === 'hires' ? '#C0392B' : 'transparent',
-              color: activeTab === 'hires' ? '#fff' : '#444',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '14px'
+        <div style={styles.sidebarBottom}>
+          <div style={styles.sidebarUser}>
+            <div style={styles.sidebarAvatar}>
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+            <div>
+              <div style={styles.sidebarUserName}>{user?.fullName}</div>
+              <div style={styles.sidebarUserRole}>{user?.role}</div>
+            </div>
+          </div>
+          <button 
+            onClick={handleLogout} 
+            style={styles.sidebarLogout}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#2a2a4a';
+              e.target.style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+              e.target.style.color = '#8892b0';
             }}
           >
-            📋 Hires
+            Logout
           </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            style={{
-              padding: '8px 20px',
-              background: activeTab === 'users' ? '#C0392B' : 'transparent',
-              color: activeTab === 'users' ? '#fff' : '#444',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '14px'
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main style={styles.main}>
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.headerTitle}>User Management</h1>
+            <p style={styles.headerSubtitle}>Manage all registered users and their activity</p>
+          </div>
+          <button 
+            style={styles.backBtn}
+            onClick={() => navigate('/')}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#e74c3c';
+              e.target.style.color = '#fff';
             }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#2a2a4a';
+              e.target.style.color = '#8892b0';
+            }}
+          >
+            ← Back
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <div style={styles.statLabel}>Total Users</div>
+            <div style={styles.statValue}>{stats.totalUsers}</div>
+          </div>
+          <div style={styles.statCard}>
+            <div style={styles.statLabel}>Workers</div>
+            <div style={styles.statValue}>{stats.totalWorkers}</div>
+          </div>
+          <div style={styles.statCard}>
+            <div style={styles.statLabel}>Employers</div>
+            <div style={styles.statValue}>{stats.totalEmployers}</div>
+          </div>
+          <div style={styles.statCard}>
+            <div style={styles.statLabel}>Total Hires</div>
+            <div style={styles.statValue}>{stats.totalHires}</div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={styles.tabs}>
+          <button 
+            style={{ ...styles.tab, ...(activeTab === 'users' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('users')}
           >
             👥 Users
           </button>
+          <button 
+            style={{ ...styles.tab, ...(activeTab === 'hires' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('hires')}
+          >
+            📋 Hires
+          </button>
+          <button 
+            style={{ ...styles.tab, ...(activeTab === 'payments' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('payments')}
+          >
+            💳 Payments
+          </button>
         </div>
-
-        {/* Hires Tab */}
-        {activeTab === 'hires' && (
-          <>
-            {/* Pending Payments */}
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', marginBottom: '12px' }}>Pending Payments</h2>
-
-            {hires.filter(h => h.paymentStatus === 'pending').length === 0 ? (
-              <div style={{ background: '#fff', borderRadius: '10px', padding: '20px', textAlign: 'center', color: '#888', marginBottom: '20px' }}>
-                ✅ No pending payments
-              </div>
-            ) : (
-              hires.filter(h => h.paymentStatus === 'pending').map(hire => (
-                <div key={hire.id} style={{ background: '#fff', borderRadius: '10px', padding: '16px', marginBottom: '10px', border: '1px solid #E0E0E0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#1A1A1A' }}>{hire.worker?.user?.fullName}</div>
-                      <div style={{ fontSize: '12px', color: '#888' }}>{hire.worker?.category} · {hire.worker?.user?.city}</div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                        Employer: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.employer?.fullName}</span>
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                        Method: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.paymentMethod}</span>
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                        Reference: <span style={{ fontWeight: '500', color: '#1A1A1A' }}>{hire.paymentReference}</span>
-                      </div>
-                      {hire.paymentProofUrl && (
-                        <div style={{ marginTop: '8px' }}>
-                          <a href={hire.paymentProofUrl} target="_blank" rel="noreferrer"
-                            style={{ color: '#C0392B', fontSize: '12px', fontWeight: '600', textDecoration: 'none', background: '#FDECEA', padding: '4px 12px', borderRadius: '20px' }}>
-                            📎 View payment screenshot
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#C0392B' }}>EGP {hire.totalDue?.toFixed(0)}</div>
-                      <div style={{ fontSize: '11px', color: '#E67E22', fontWeight: '500' }}>⏳ Pending</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button onClick={() => confirmPayment(hire.id)}
-                      style={{ flex: 1, padding: '8px', background: '#27AE60', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
-                      ✅ Confirm Payment
-                    </button>
-                    <button onClick={() => rejectPayment(hire.id)}
-                      style={{ flex: 1, padding: '8px', background: '#E74C3C', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}>
-                      ❌ Reject
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-
-            {/* All Hires */}
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', margin: '20px 0 12px' }}>All Hires ({hires.length})</h2>
-
-            {hires.map(hire => (
-              <div key={hire.id} style={{ background: '#fff', borderRadius: '10px', padding: '14px 16px', marginBottom: '8px', border: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#1A1A1A' }}>{hire.worker?.user?.fullName}</div>
-                  <div style={{ fontSize: '11px', color: '#888' }}>{hire.employer?.fullName} · EGP {hire.agreedSalary} · {hire.paymentReference}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{
-                    fontSize: '11px', fontWeight: '500',
-                    color: hire.paymentStatus === 'confirmed' ? '#27AE60' :
-                      hire.paymentStatus === 'pending' ? '#E67E22' : '#888'
-                  }}>
-                    {hire.paymentStatus === 'confirmed' ? '✅' :
-                      hire.paymentStatus === 'pending' ? '⏳' : '⚪'} {hire.paymentStatus || 'Not started'}
-                  </span>
-                  <span style={{
-                    fontSize: '11px', fontWeight: '500',
-                    color: hire.status === 'active' ? '#27AE60' :
-                      hire.status === 'offer_sent' ? '#F39C12' : '#888'
-                  }}>
-                    ● {hire.status?.replace('_', ' ')}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', marginBottom: '12px' }}>
-              Registered Users ({users.length})
-            </h2>
-
+          <div style={styles.tableContainer}>
             {users.length === 0 ? (
-              <div style={{ background: '#fff', borderRadius: '10px', padding: '20px', textAlign: 'center', color: '#888' }}>
-                No users registered yet.
-              </div>
+              <div style={styles.emptyState}>No users registered yet.</div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', background: '#fff', borderRadius: '10px', borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ background: '#F5F5F5', borderBottom: '2px solid #E0E0E0' }}>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Name</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Email</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Role</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Category</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Status</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', color: '#444' }}>Joined</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: '600', color: '#444' }}>Action</th>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Role</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td style={styles.td}>{u.fullName}</td>
+                      <td style={styles.td}>{u.email}</td>
+                      <td style={styles.td}>
+                        <span style={{
+                          ...styles.badge,
+                          ...(u.role === 'ADMIN' ? styles.badgeAdmin : u.role === 'EMPLOYER' ? styles.badgeEmployer : styles.badgeWorker)
+                        }}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{
+                          color: u.isSuspended ? '#e74c3c' : '#4ade80',
+                          fontSize: '12px'
+                        }}>
+                          {u.isSuspended ? '🚫 Suspended' : '✅ Active'}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        {u.role !== 'ADMIN' && (
+                          <button
+                            onClick={() => toggleUserSuspend(u.id, u.isSuspended)}
+                            style={u.isSuspended ? styles.btnUnsuspend : styles.btnSuspend}
+                          >
+                            {u.isSuspended ? 'Unsuspend' : 'Suspend'}
+                          </button>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: '500' }}>{u.fullName}</td>
-                        <td style={{ padding: '10px 12px', color: '#666' }}>{u.email}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{
-                            background: u.role === 'ADMIN' ? '#2C3E50' : u.role === 'EMPLOYER' ? '#2980B9' : '#27AE60',
-                            color: '#fff',
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: '500'
-                          }}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: '#666' }}>
-                          {u.workerProfile?.category || '-'}
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{
-                            color: u.isSuspended ? '#E74C3C' : '#27AE60',
-                            fontWeight: '500',
-                            fontSize: '12px'
-                          }}>
-                            {u.isSuspended ? '🚫 Suspended' : u.isVerified ? '✅ Verified' : '⏳ Pending'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px 12px', color: '#666', fontSize: '12px' }}>
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          {u.role !== 'ADMIN' && (
-                            <button
-                              onClick={() => toggleUserSuspend(u.id, u.isSuspended)}
-                              style={{
-                                padding: '4px 12px',
-                                background: u.isSuspended ? '#27AE60' : '#E67E22',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '11px'
-                              }}
-                            >
-                              {u.isSuspended ? 'Unsuspend' : 'Suspend'}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         )}
-      </div>
+
+        {/* Hires Tab */}
+        {activeTab === 'hires' && (
+          <div style={styles.tableContainer}>
+            {hires.length === 0 ? (
+              <div style={styles.emptyState}>No hires yet.</div>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Worker</th>
+                    <th style={styles.th}>Employer</th>
+                    <th style={styles.th}>Salary</th>
+                    <th style={styles.th}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hires.map(hire => (
+                    <tr key={hire.id}>
+                      <td style={styles.td}>{hire.worker?.user?.fullName}</td>
+                      <td style={styles.td}>{hire.employer?.fullName}</td>
+                      <td style={styles.td}>EGP {hire.agreedSalary}</td>
+                      <td style={styles.td}>
+                        <span style={{
+                          color: hire.status === 'active' ? '#4ade80' : '#f39c12',
+                          fontSize: '12px'
+                        }}>
+                          {hire.status?.replace('_', ' ')}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* Payments Tab */}
+        {activeTab === 'payments' && (
+          <div style={styles.tableContainer}>
+            {hires.filter(h => h.paymentStatus === 'pending').length === 0 ? (
+              <div style={styles.emptyState}>No pending payments.</div>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Worker</th>
+                    <th style={styles.th}>Amount</th>
+                    <th style={styles.th}>Method</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hires.filter(h => h.paymentStatus === 'pending').map(hire => (
+                    <tr key={hire.id}>
+                      <td style={styles.td}>{hire.worker?.user?.fullName}</td>
+                      <td style={styles.td}>EGP {hire.totalDue?.toFixed(0)}</td>
+                      <td style={styles.td}>{hire.paymentMethod}</td>
+                      <td style={styles.td}>
+                        <span style={{ color: '#f39c12', fontSize: '12px' }}>⏳ Pending</span>
+                      </td>
+                      <td style={styles.td}>
+                        <button
+                          onClick={() => confirmPayment(hire.id)}
+                          style={styles.btnConfirm}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => rejectPayment(hire.id)}
+                          style={styles.btnReject}
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
