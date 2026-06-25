@@ -1,24 +1,45 @@
 export default function Logo() {
   return (
-    <div className="logo-container" style={{
+    <div style={{
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
+      textDecoration: 'none',
     }}>
-      <div style={{
-        fontSize: '28px',
-        background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
-        width: '44px',
-        height: '44px',
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
-        boxShadow: '0 4px 15px rgba(46, 125, 50, 0.3)',
-      }}>
-        🏠
-      </div>
+      {/* SVG Logo */}
+      <svg
+        width="44"
+        height="44"
+        viewBox="0 0 44 44"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ flexShrink: 0 }}
+      >
+        {/* Background */}
+        <rect width="44" height="44" rx="12" fill="#2e7d32" />
+        
+        {/* House shape */}
+        <path
+          d="M22 8L8 20H11V34H18V24H26V34H33V20H36L22 8Z"
+          fill="white"
+          opacity="0.9"
+        />
+        
+        {/* Door */}
+        <rect x="19" y="26" width="6" height="8" fill="#1b5e20" rx="1" />
+        
+        {/* Door handle */}
+        <circle cx="23" cy="30" r="1" fill="#a5d6a7" />
+        
+        {/* Roof highlight */}
+        <path
+          d="M22 11L10 21H14L22 14L30 21H34L22 11Z"
+          fill="#4caf50"
+          opacity="0.3"
+        />
+      </svg>
+
+      {/* Text */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -27,7 +48,7 @@ export default function Logo() {
         <span style={{
           fontSize: '20px',
           fontWeight: 700,
-          color: '#fff',
+          color: '#ffffff',
           letterSpacing: '-0.5px',
         }}>
           Homely

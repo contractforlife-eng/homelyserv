@@ -74,7 +74,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Social Login Section */}
         <SocialLogin />
 
         <p className="auth-footer">
