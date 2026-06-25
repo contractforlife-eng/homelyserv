@@ -32,9 +32,8 @@ export default function Layout({ children, activeTab }) {
 
   const getNavItems = () => {
     if (user?.role === 'ADMIN') {
-      return [
-        { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
-      ];
+      // Admin should not see any top nav tabs (they go directly to /admin)
+      return [];
     }
 
     if (user?.role === 'WORKER') {
@@ -57,6 +56,17 @@ export default function Layout({ children, activeTab }) {
   };
 
   const navItems = getNavItems();
+
+  // If admin, render only the page content without top navigation
+  if (user?.role === 'ADMIN') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+        <main className="page-content">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
