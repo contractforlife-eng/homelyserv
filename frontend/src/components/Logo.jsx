@@ -6,37 +6,48 @@ export default function Logo() {
       gap: '12px',
       textDecoration: 'none',
     }}>
-      {/* SVG Logo */}
+      {/* SVG Logo - Improved visibility */}
       <svg
-        width="44"
-        height="44"
-        viewBox="0 0 44 44"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         style={{ flexShrink: 0 }}
       >
-        {/* Background */}
-        <rect width="44" height="44" rx="12" fill="#2e7d32" />
+        {/* Background - Light green for contrast */}
+        <rect width="48" height="48" rx="14" fill="#2e7d32" />
         
-        {/* House shape */}
+        {/* White border for definition */}
+        <rect x="2" y="2" width="44" height="44" rx="12" fill="#2e7d32" stroke="#4caf50" strokeWidth="1.5" />
+        
+        {/* House body */}
         <path
-          d="M22 8L8 20H11V34H18V24H26V34H33V20H36L22 8Z"
-          fill="white"
-          opacity="0.9"
+          d="M24 10L10 22H13V36H20V26H28V36H35V22H38L24 10Z"
+          fill="#ffffff"
+          stroke="#ffffff"
+          strokeWidth="0.5"
+        />
+        
+        {/* Roof */}
+        <path
+          d="M24 13L14 21H16L24 16L32 21H34L24 13Z"
+          fill="#a5d6a7"
+          opacity="0.8"
         />
         
         {/* Door */}
-        <rect x="19" y="26" width="6" height="8" fill="#1b5e20" rx="1" />
+        <rect x="21" y="28" width="6" height="8" fill="#1b5e20" rx="1" />
         
         {/* Door handle */}
-        <circle cx="23" cy="30" r="1" fill="#a5d6a7" />
+        <circle cx="25" cy="32" r="1.5" fill="#a5d6a7" />
         
-        {/* Roof highlight */}
-        <path
-          d="M22 11L10 21H14L22 14L30 21H34L22 11Z"
-          fill="#4caf50"
-          opacity="0.3"
-        />
+        {/* Window */}
+        <rect x="15" y="18" width="5" height="5" fill="#a5d6a7" rx="1" opacity="0.6" />
+        <rect x="28" y="18" width="5" height="5" fill="#a5d6a7" rx="1" opacity="0.6" />
+        
+        {/* Chimney */}
+        <rect x="31" y="12" width="4" height="6" fill="#4caf50" rx="1" opacity="0.5" />
       </svg>
 
       {/* Text */}
@@ -46,18 +57,20 @@ export default function Logo() {
         lineHeight: 1.1,
       }}>
         <span style={{
-          fontSize: '20px',
+          fontSize: '22px',
           fontWeight: 700,
           color: '#ffffff',
           letterSpacing: '-0.5px',
+          textShadow: '0 1px 3px rgba(0,0,0,0.2)',
         }}>
           Homely
         </span>
         <span style={{
-          fontSize: '20px',
+          fontSize: '22px',
           fontWeight: 700,
           color: '#a5d6a7',
           letterSpacing: '-0.5px',
+          textShadow: '0 1px 3px rgba(0,0,0,0.15)',
         }}>
           Serv
         </span>
