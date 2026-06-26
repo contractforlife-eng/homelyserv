@@ -27,6 +27,7 @@ model User {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   workerProfile    WorkerProfile?
+  employerProfile  EmployerProfile?
   sentMessages     Message[]      @relation("SentMessages")
   receivedMessages Message[]      @relation("ReceivedMessages")
   notifications    Notification[]
@@ -57,6 +58,23 @@ model WorkerProfile {
   experiences     Experience[]
   hires           Hire[]       @relation("WorkerHires")
   reviews         Review[]     @relation("ReviewsReceived")
+}
+
+model EmployerProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  companyName     String?
+  companyLogo     String?
+  companyPhotos   String[] @default([])
+  companyWebsite  String?
+  companySize     String?
+  industry        String?
+  description     String?
+  address         String?
+  isVerified      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Document {
@@ -94,10 +112,10 @@ model Hire {
   totalDue         Float
   paymentMethod    String?
   paymentReference String?
-  paymentStatus    String        @default("pending") // pending, confirmed, rejected
+  paymentStatus    String        @default("pending")
   paymentProofUrl  String?
   startDate        DateTime?
-  status           String        @default("pending") // pending, accepted, rejected, active, completed, cancelled
+  status           String        @default("pending")
   workerAccepted   Boolean       @default(false)
   employerAccepted Boolean       @default(false)
   contactShared    Boolean       @default(false)

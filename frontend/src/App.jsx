@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import WorkerProfile from './pages/WorkerProfile';
+import EmployerProfile from './pages/EmployerProfile';
 import Search from './pages/Search';
 import WorkerView from './pages/WorkerView';
 import Payment from './pages/Payment';
@@ -61,10 +62,14 @@ export default function App() {
       />
       <div className="app-container">
         <Routes>
-          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/worker-profile" element={<ProtectedRoute><WorkerProfile /></ProtectedRoute>} />
+          <Route path="/employer-profile" element={<ProtectedRoute><EmployerProfile /></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/worker/:id" element={<ProtectedRoute><WorkerView /></ProtectedRoute>} />
           <Route path="/payment/:id" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
