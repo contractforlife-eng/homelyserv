@@ -26,6 +26,7 @@ export default function WorkerProfile() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState({
     category: 'Nanny',
     experienceYears: '',
@@ -41,6 +42,15 @@ export default function WorkerProfile() {
   });
 
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
     fetchProfile();
   }, []);
 
@@ -52,7 +62,8 @@ export default function WorkerProfile() {
           ...f,
           ...res.data,
           country: res.data.user?.city || '',
-          city: res.data.user?.city || ''
+          city: res.data.user?.city || '',
+          profilePhotoUrl: res.data.profilePhotoUrl || ''
         }));
       }
     } catch (err) {
@@ -106,17 +117,26 @@ export default function WorkerProfile() {
       });
 
       const photoUrl = res.data.url;
-      setForm({ ...form, profilePhotoUrl: photoUrl });
       
-      // Save the profile to persist the photo URL
-      await api.post('/workers/profile', {
+      // Update form with new photo URL
+      setForm(prev => ({
+        ...prev,
+        profilePhotoUrl: photoUrl
+      }));
+
+      // Immediately save the profile to persist the photo URL
+      const saveRes = await api.post('/workers/profile', {
         ...form,
         profilePhotoUrl: photoUrl,
         city: form.city || form.country
       });
-      
+
       toast.success('Photo uploaded successfully!');
+      
+      // Refresh profile to get the latest data
+      await fetchProfile();
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error('Failed to upload photo');
     }
     setUploading(false);
@@ -141,11 +161,16 @@ export default function WorkerProfile() {
   return (
     <Layout activeTab="profile">
       <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a', marginBottom: '4px' }}>
+        <div style={{ marginBottom: isMobile ? '20px' : '32px' }}>
+          <h1 style={{ 
+            fontSize: isMobile ? '22px' : '24px', 
+            fontWeight: '700', 
+            color: '#1a3a1a', 
+            marginBottom: '4px' 
+          }}>
             My Profile
           </h1>
-          <p style={{ color: '#5a7a5a', fontSize: '14px' }}>
+          <p style={{ color: '#5a7a5a', fontSize: isMobile ? '13px' : '14px' }}>
             Update your profile information
           </p>
         </div>
@@ -155,7 +180,7 @@ export default function WorkerProfile() {
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             border: '1px solid #d4e8d4',
             textAlign: 'center',
             marginBottom: '20px',
@@ -164,8 +189,8 @@ export default function WorkerProfile() {
               Profile Photo
             </h3>
             <div style={{
-              width: '120px',
-              height: '120px',
+              width: isMobile ? '100px' : '120px',
+              height: isMobile ? '100px' : '120px',
               borderRadius: '50%',
               background: '#f0f7f0',
               margin: '0 auto 12px',
@@ -180,6 +205,10 @@ export default function WorkerProfile() {
                   src={form.profilePhotoUrl}
                   alt="Profile"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '<span style="font-size:48px;color:#8aaa8a;">📷</span>';
+                  }}
                 />
               ) : (
                 <span style={{ fontSize: '48px', color: '#8aaa8a' }}>📷</span>
@@ -187,12 +216,12 @@ export default function WorkerProfile() {
             </div>
             <label style={{
               display: 'inline-block',
-              padding: '8px 24px',
+              padding: isMobile ? '8px 18px' : '8px 24px',
               background: '#2e7d32',
               color: '#fff',
               borderRadius: '30px',
               cursor: 'pointer',
-              fontSize: '13px',
+              fontSize: isMobile ? '12px' : '13px',
               fontWeight: '600',
             }}>
               {uploading ? 'Uploading...' : '📸 Upload Photo'}
@@ -213,7 +242,7 @@ export default function WorkerProfile() {
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             border: '1px solid #d4e8d4',
             marginBottom: '20px',
           }}>
@@ -233,7 +262,7 @@ export default function WorkerProfile() {
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
                   Years of experience
@@ -267,14 +296,14 @@ export default function WorkerProfile() {
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             border: '1px solid #d4e8d4',
             marginBottom: '20px',
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
               Availability & Work Type
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
                   Availability
@@ -313,7 +342,7 @@ export default function WorkerProfile() {
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             border: '1px solid #d4e8d4',
             marginBottom: '20px',
           }}>
@@ -394,7 +423,7 @@ export default function WorkerProfile() {
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             border: '1px solid #d4e8d4',
             marginBottom: '20px',
           }}>
@@ -429,9 +458,13 @@ export default function WorkerProfile() {
             type="submit"
             disabled={loading}
             className="btn-primary btn-full"
-            style={{ padding: '14px', fontSize: '16px', borderRadius: '12px' }}
+            style={{ 
+              padding: isMobile ? '12px' : '14px', 
+              fontSize: isMobile ? '15px' : '16px', 
+              borderRadius: '12px' 
+            }}
           >
-            {loading ? 'Saving...' : 'Save profile'}
+            {loading ? 'Saving...' : '💾 Save profile'}
           </button>
         </form>
       </div>

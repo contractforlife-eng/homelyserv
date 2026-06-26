@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
@@ -13,7 +14,7 @@ const io = new Server(server, {
   }
 });
 
-// CORS middleware - Allow all origins
+// CORS middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -21,6 +22,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Test route
 app.get('/', (req, res) => {
