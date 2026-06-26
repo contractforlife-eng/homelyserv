@@ -6,7 +6,7 @@ import AdminLayout from '../components/AdminLayout';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalHires: 0,
@@ -30,6 +30,11 @@ export default function AdminDashboard() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -110,7 +115,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid - Mobile Responsive */}
+      {/* Stats Grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
@@ -163,7 +168,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions - Mobile Responsive */}
+      {/* Quick Actions */}
       <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
         <h2 style={{ 
           fontSize: isMobile ? '16px' : '18px', 
@@ -227,13 +232,14 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Recent Activity - Mobile Responsive */}
+      {/* Recent Activity */}
       <div style={{
         background: '#ffffff',
         borderRadius: isMobile ? '12px' : '16px',
         padding: isMobile ? '16px' : '24px',
         border: '1px solid #edf2f7',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        marginBottom: isMobile ? '24px' : '32px',
       }}>
         <h3 style={{ 
           fontSize: isMobile ? '15px' : '16px', 
@@ -279,6 +285,41 @@ export default function AdminDashboard() {
             </span>
           </div>
         ))}
+      </div>
+
+      {/* Logout Button at Bottom */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        padding: isMobile ? '16px 0' : '24px 0',
+        borderTop: '1px solid #edf2f7',
+      }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: isMobile ? '12px 32px' : '14px 40px',
+            background: '#e53e3e',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: isMobile ? '15px' : '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(229, 62, 62, 0.3)',
+            width: isMobile ? '100%' : 'auto',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(229, 62, 62, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(229, 62, 62, 0.3)';
+          }}
+        >
+          🚪 Logout
+        </button>
       </div>
     </AdminLayout>
   );

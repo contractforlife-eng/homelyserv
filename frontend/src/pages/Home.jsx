@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import Layout from '../components/Layout';
 
 export default function Home() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,11 @@ export default function Home() {
       fetchRecentActivity();
     }
   }, [user]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const fetchRecentActivity = async () => {
     setLoading(true);
@@ -298,6 +303,7 @@ export default function Home() {
         padding: isMobile ? '16px' : '24px',
         border: '1px solid #e8f5e9',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        marginBottom: isMobile ? '20px' : '32px',
       }}>
         <div style={{ 
           display: 'flex', 
@@ -386,6 +392,41 @@ export default function Home() {
             </div>
           ))
         )}
+      </div>
+
+      {/* Logout Button at Bottom */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        padding: isMobile ? '16px 0' : '24px 0',
+        borderTop: '1px solid #e8f5e9',
+      }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: isMobile ? '12px 32px' : '14px 40px',
+            background: '#c62828',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: isMobile ? '15px' : '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(198, 40, 40, 0.3)',
+            width: isMobile ? '100%' : 'auto',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(198, 40, 40, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(198, 40, 40, 0.3)';
+          }}
+        >
+          🚪 Logout
+        </button>
       </div>
     </Layout>
   );
