@@ -1,127 +1,139 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search as SearchIcon, Filter, Star, MapPin, DollarSign, Clock, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import useAuthStore from '../store/authStore';
 
-function Search() {
+const CATEGORIES = ['All', 'Nanny', 'Baby-Sitter', 'Elderly Caregiver', 'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse'];
+
+const COLORS = ['#C0392B', '#2C3E50', '#8E44AD', '#16A085', '#E67E22', '#2980B9', '#27AE60', '#D35400'];
+
+export default function Search() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user, logout } = useAuthStore();
+  const [workers, setWorkers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState('All');
+  const [city, setCity] = useState('');
+  const [availability, setAvailability] = useState('');
 
-  const workers = [
-    {
-      id: 1,
-      name: 'Ahmed Ali',
-      category: 'Nanny',
-      rating: 4.9,
-      location: 'Cairo, Egypt',
-      salary: 3500,
-      availability: 'Available',
-      image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=100&h=100&fit=crop&crop=face',
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Mona Hassan',
-      category: 'Elderly Caregiver',
-      rating: 4.8,
-      location: 'Alexandria, Egypt',
-      salary: 4200,
-      availability: 'Available',
-      image: 'https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=100&h=100&fit=crop&crop=face',
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Khaled Mostafa',
-      category: 'Driver',
-      rating: 4.7,
-      location: 'Giza, Egypt',
-      salary: 3800,
-      availability: 'Part-Time',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-      verified: true
+  useEffect(() => {
+    fetchWorkers();
+  }, [category, availability]);
+
+  const fetchWorkers = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (category !== 'All') params.category = category;
+      if (city) params.city = city;
+      if (availability) params.availability = availability;
+      const res = await api.get('/workers/search', { params });
+      setWorkers(res.data);
+    } catch (err) {
+      console.error(err);
     }
-  ];
+    setLoading(false);
+  };
+
+  const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getColor = (name) => COLORS[name?.charCodeAt(0) % COLORS.length];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-red-600 hover:underline">← Back</Link>
-            <h1 className="text-2xl font-bold text-gray-800">Search Workers</h1>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+      {/* Header */}
+      <div style={{ background: '#C0392B', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>←</button>
+          <h1 style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Find Workers</h1>
         </div>
-      </header>
+        <span style={{ color: '#ffcdd2', fontSize: '13px' }}>{user?.fullName}</span>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <SearchIcon size={20} className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, category, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
-              <Filter size={18} /> Filter
-            </button>
-          </div>
-        </div>
+      {/* Search bar */}
+      <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '1px solid #E0E0E0', display: 'flex', gap: '8px' }}>
+        <input
+          value={city} onChange={e => setCity(e.target.value)}
+          placeholder="Search by city..."
+          style={{ flex: 1, padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+        />
+        <button onClick={fetchWorkers}
+          style={{ padding: '9px 18px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+          Search
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {workers.map((worker) => (
-            <div key={worker.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
-              <div className="flex items-start gap-4">
-                <img src={worker.image} alt={worker.name} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-800">{worker.name}</h3>
-                    {worker.verified && <CheckCircle size={14} className="text-green-500" />}
+      {/* Category filters */}
+      <div style={{ display: 'flex', gap: '8px', padding: '12px 16px', overflowX: 'auto' }}>
+        {CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => setCategory(cat)}
+            style={{
+              flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '500', cursor: 'pointer',
+              background: category === cat ? '#C0392B' : '#fff',
+              color: category === cat ? '#fff' : '#444',
+              border: category === cat ? '1px solid #C0392B' : '1px solid #E0E0E0'
+            }}>
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Availability filter */}
+      <div style={{ padding: '0 16px 12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', color: '#888' }}>Availability:</span>
+        {['', 'available', 'busy'].map(a => (
+          <button key={a} onClick={() => setAvailability(a)}
+            style={{
+              padding: '4px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer',
+              background: availability === a ? '#1A1A1A' : '#fff',
+              color: availability === a ? '#fff' : '#444',
+              border: availability === a ? '1px solid #1A1A1A' : '1px solid #E0E0E0'
+            }}>
+            {a === '' ? 'All' : a.charAt(0).toUpperCase() + a.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Results */}
+      <div style={{ padding: '0 16px 24px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading workers...</div>
+        ) : workers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No workers found. Try different filters.</div>
+        ) : (
+          <>
+            <div style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>{workers.length} workers found</div>
+            {workers.map(worker => (
+              <div key={worker.id} onClick={() => navigate(`/worker/${worker.id}`)}
+                style={{ background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '10px', cursor: 'pointer', border: '1px solid #E0E0E0', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                {/* Avatar */}
+                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: getColor(worker.user?.fullName), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
+                  {getInitials(worker.user?.fullName)}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', color: '#1A1A1A', fontSize: '15px' }}>{worker.user?.fullName}</div>
+                  <div style={{ fontSize: '12px', color: '#888', margin: '2px 0 6px' }}>{worker.category} · {worker.experienceYears} yrs exp · {worker.user?.city}</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {worker.skills?.slice(0, 3).map(skill => (
+                      <span key={skill} style={{ background: '#F5F5F5', color: '#444', fontSize: '11px', padding: '2px 8px', borderRadius: '20px' }}>{skill}</span>
+                    ))}
                   </div>
-                  <p className="text-sm text-gray-500">{worker.category}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{worker.rating}</span>
+                </div>
+                {/* Right */}
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontWeight: '700', color: '#C0392B', fontSize: '14px' }}>EGP {worker.expectedSalary?.toLocaleString()}/mo</div>
+                  <div style={{ fontSize: '11px', marginTop: '4px', color: worker.availability === 'available' ? '#27AE60' : '#E67E22', fontWeight: '500' }}>
+                    ● {worker.availability}
                   </div>
+                  {worker.ratingAvg > 0 && (
+                    <div style={{ fontSize: '11px', color: '#F39C12', marginTop: '2px' }}>★ {worker.ratingAvg.toFixed(1)}</div>
+                  )}
                 </div>
               </div>
-
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin size={14} className="text-gray-400" /> {worker.location}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <DollarSign size={14} className="text-gray-400" /> EGP {worker.salary.toLocaleString()}/month
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock size={14} className="text-gray-400" /> 
-                  <span className={worker.availability === 'Available' ? 'text-green-600' : 'text-orange-500'}>
-                    {worker.availability}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex gap-2">
-                <button 
-                  onClick={() => navigate(`/worker/${worker.id}`)}
-                  className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
-                >
-                  View Profile
-                </button>
-                <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
-                  Message
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-export default Search;
