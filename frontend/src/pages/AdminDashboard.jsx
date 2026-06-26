@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
-import toast from 'react-hot-toast';
 import AdminLayout from '../components/AdminLayout';
 
 export default function AdminDashboard() {
@@ -14,11 +13,8 @@ export default function AdminDashboard() {
     activeHires: 0,
     pendingPayments: 0,
     totalRevenue: 0,
-    workers: 0,
-    employers: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -45,168 +41,135 @@ export default function AdminDashboard() {
         .filter(h => h.paymentStatus === 'confirmed')
         .reduce((sum, h) => sum + (h.totalDue || 0), 0);
 
-      const workers = allUsers.filter(u => u.role === 'WORKER').length;
-      const employers = allUsers.filter(u => u.role === 'EMPLOYER').length;
-
       setStats({
         totalUsers: allUsers.length,
         totalHires: allHires.length,
         activeHires: active,
         pendingPayments: pending,
         totalRevenue: revenue,
-        workers,
-        employers,
       });
-
-      // Build recent activity
-      const activities = [];
-      allUsers.slice(0, 3).forEach(u => {
-        const date = new Date(u.createdAt);
-        activities.push({
-          id: `user-${u.id}`,
-          text: `${u.fullName} joined as ${u.role}`,
-          time: getTimeAgo(date),
-          date: date,
-          color: u.role === 'WORKER' ? '#4facfe' : '#43e97b'
-        });
-      });
-
-      allHires.slice(0, 3).forEach(h => {
-        const date = new Date(h.createdAt);
-        if (h.status === 'active') {
-          activities.push({
-            id: `hire-${h.id}`,
-            text: `Hire confirmed: ${h.worker?.user?.fullName} hired by ${h.employer?.fullName}`,
-            time: getTimeAgo(date),
-            date: date,
-            color: '#43e97b'
-          });
-        }
-      });
-
-      activities.sort((a, b) => b.date - a.date);
-      setRecentActivity(activities.slice(0, 5));
-
     } catch (err) {
       console.error('Failed to fetch data:', err);
     }
     setLoading(false);
   };
 
-  const getTimeAgo = (date) => {
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    return 'Just now';
-  };
-
-  const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#4facfe', bg: 'rgba(79, 172, 254, 0.1)' },
-    { label: 'Total Hires', value: stats.totalHires, icon: '📋', color: '#43e97b', bg: 'rgba(67, 233, 123, 0.1)' },
-    { label: 'Pending Payments', value: stats.pendingPayments, icon: '⏳', color: '#f093fb', bg: 'rgba(240, 147, 251, 0.1)' },
-    { label: 'Revenue', value: `EGP ${stats.totalRevenue.toFixed(0)}`, icon: '💰', color: '#f5576c', bg: 'rgba(245, 87, 108, 0.1)' },
+  const statItems = [
+    { label: 'Total Users', value: stats.totalUsers, icon: '👥', change: '+12%', color: '#6C63FF' },
+    { label: 'Total Hires', value: stats.totalHires, icon: '📋', change: '+8%', color: '#48BB78' },
+    { label: 'Pending Payments', value: stats.pendingPayments, icon: '⏳', change: '-3%', color: '#ED8936' },
+    { label: 'Revenue', value: `EGP ${stats.totalRevenue.toFixed(0)}`, icon: '💰', change: '+15%', color: '#FC8181' },
   ];
 
   const quickActions = [
-    { icon: '👥', label: 'Users', path: '/admin/users', color: '#4facfe' },
-    { icon: '📋', label: 'Hires', path: '/admin/hires', color: '#43e97b' },
-    { icon: '💰', label: 'Payments', path: '/admin/payments', color: '#f093fb' },
-    { icon: '⚙️', label: 'Settings', path: '/admin/settings', color: '#4facfe' },
-    { icon: '📈', label: 'Reports', path: '/admin/reports', color: '#f5576c' },
+    { icon: '👤', label: 'Users', desc: 'Manage all users', path: '/admin/users', color: '#6C63FF' },
+    { icon: '📋', label: 'Hires', desc: 'View all hires', path: '/admin/hires', color: '#48BB78' },
+    { icon: '💳', label: 'Payments', desc: 'Process payments', path: '/admin/payments', color: '#ED8936' },
+    { icon: '⚙️', label: 'Settings', desc: 'Configure platform', path: '/admin/settings', color: '#4A5568' },
+  ];
+
+  const recentActivity = [
+    { text: 'New user registered: Sara Samir', time: '2 hours ago', type: 'user' },
+    { text: 'Payment confirmed: EGP 370.50', time: '4 hours ago', type: 'payment' },
+    { text: 'New hire: Ahmed joined as Driver', time: '6 hours ago', type: 'hire' },
+    { text: 'Profile updated: Emad Admin', time: '8 hours ago', type: 'profile' },
   ];
 
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6a8bb0' }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: '60px', color: '#4a5568' }}>Loading...</div>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      {/* Header */}
+      {/* Welcome Section */}
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1a2a3a', marginBottom: '4px' }}>
-          Dashboard
+        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#2d3748', marginBottom: '4px' }}>
+          Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user?.fullName} 👋
         </h1>
-        <p style={{ color: '#6a8bb0', fontSize: '15px' }}>
-          Welcome back, {user?.fullName}
+        <p style={{ color: '#718096', fontSize: '15px' }}>
+          Here's what's happening with your platform today
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '20px',
         marginBottom: '32px',
       }}>
-        {statCards.map((card, index) => (
+        {statItems.map((item, index) => (
           <div key={index} style={{
             background: '#ffffff',
             borderRadius: '16px',
             padding: '24px',
-            border: '1px solid rgba(0,0,0,0.04)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #edf2f7',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', color: '#6a8bb0', fontWeight: '500' }}>{card.label}</span>
-              <span style={{ fontSize: '22px' }}>{card.icon}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ fontSize: '14px', color: '#718096', fontWeight: '500' }}>{item.label}</span>
+              <span style={{ fontSize: '24px' }}>{item.icon}</span>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a2a3a' }}>{card.value}</div>
-            <div style={{ fontSize: '12px', color: card.color, marginTop: '6px' }}>
-              {card.label === 'Revenue' ? 'Commissions collected' : 'Updated'}
+            <div style={{ fontSize: '28px', fontWeight: '700', color: '#2d3748' }}>{item.value}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+              <span style={{
+                fontSize: '12px',
+                color: item.change.startsWith('+') ? '#48BB78' : '#FC8181',
+                fontWeight: '600',
+              }}>
+                {item.change}
+              </span>
+              <span style={{ fontSize: '12px', color: '#a0aec0' }}>from last month</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1a2a3a', marginBottom: '16px' }}>
-        Quick Actions
-      </h2>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: '16px',
-        marginBottom: '32px',
-      }}>
-        {quickActions.map((action, index) => (
-          <div
-            key={index}
-            onClick={() => navigate(action.path)}
-            style={{
-              background: '#ffffff',
-              borderRadius: '12px',
-              padding: '20px',
-              border: '1px solid rgba(0,0,0,0.04)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              textAlign: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
-              e.currentTarget.style.borderColor = action.color;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
-              e.currentTarget.style.borderColor = 'rgba(0,0,0,0.04)';
-            }}
-          >
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>{action.icon}</div>
-            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1a2a3a' }}>{action.label}</h4>
-            <span style={{ fontSize: '12px', color: action.color, fontWeight: '500' }}>Go →</span>
-          </div>
-        ))}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#2d3748', marginBottom: '16px' }}>
+          Quick Actions
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '16px',
+        }}>
+          {quickActions.map((action, index) => (
+            <div
+              key={index}
+              onClick={() => navigate(action.path)}
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                padding: '20px',
+                border: '1px solid #edf2f7',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
+                e.currentTarget.style.borderColor = action.color;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                e.currentTarget.style.borderColor = '#edf2f7';
+              }}
+            >
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{action.icon}</div>
+              <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#2d3748' }}>{action.label}</h4>
+              <p style={{ fontSize: '13px', color: '#718096', marginBottom: '8px' }}>{action.desc}</p>
+              <span style={{ fontSize: '13px', color: action.color, fontWeight: '500' }}>Go →</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Recent Activity */}
@@ -214,48 +177,35 @@ export default function AdminDashboard() {
         background: '#ffffff',
         borderRadius: '16px',
         padding: '24px',
-        border: '1px solid rgba(0,0,0,0.04)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        border: '1px solid #edf2f7',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '18px' }}>📋</span>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a2a3a' }}>Recent Activity</h3>
-          {recentActivity.length > 0 && (
-            <span style={{ fontSize: '12px', color: '#6a8bb0', marginLeft: 'auto' }}>
-              {recentActivity.length} items
-            </span>
-          )}
-        </div>
-
-        {recentActivity.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#6a8bb0' }}>
-            No recent activity found.
-          </div>
-        ) : (
-          recentActivity.map((activity, index) => (
-            <div
-              key={activity.id || index}
-              style={{
-                padding: '12px 0',
-                borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f4f8' : 'none',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: activity.color || '#4facfe',
-                }} />
-                <span style={{ fontSize: '14px', color: '#1a2a3a' }}>{activity.text}</span>
-              </div>
-              <span style={{ fontSize: '12px', color: '#6a8bb0' }}>{activity.time}</span>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#2d3748', marginBottom: '16px' }}>
+          Recent Activity
+        </h3>
+        {recentActivity.map((activity, index) => (
+          <div
+            key={index}
+            style={{
+              padding: '12px 0',
+              borderBottom: index < recentActivity.length - 1 ? '1px solid #edf2f7' : 'none',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: activity.type === 'user' ? '#6C63FF' : activity.type === 'payment' ? '#48BB78' : '#ED8936',
+              }} />
+              <span style={{ fontSize: '14px', color: '#2d3748' }}>{activity.text}</span>
             </div>
-          ))
-        )}
+            <span style={{ fontSize: '12px', color: '#a0aec0' }}>{activity.time}</span>
+          </div>
+        ))}
       </div>
     </AdminLayout>
   );
