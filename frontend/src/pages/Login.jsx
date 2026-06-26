@@ -27,12 +27,11 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+      background: '#f5f5f5',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
       <div style={{
         display: 'flex',
@@ -59,7 +58,6 @@ export default function Login() {
               fontSize: '28px',
               fontWeight: '700',
               color: '#C0392B',
-              letterSpacing: '-0.5px',
               margin: 0
             }}>
               HomelyServ
@@ -67,8 +65,7 @@ export default function Login() {
             <p style={{
               color: '#888',
               fontSize: '14px',
-              marginTop: '4px',
-              fontWeight: '400'
+              marginTop: '4px'
             }}>
               Your Home, Our Priority
             </p>
@@ -78,8 +75,7 @@ export default function Login() {
             fontSize: '22px',
             fontWeight: '600',
             color: '#1A1A1A',
-            marginBottom: '4px',
-            letterSpacing: '-0.3px'
+            marginBottom: '4px'
           }}>
             Welcome Back
           </h2>
@@ -100,8 +96,8 @@ export default function Login() {
                 color: '#444',
                 display: 'block',
                 marginBottom: '6px',
-                letterSpacing: '0.4px',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px'
               }}>
                 Email Address
               </label>
@@ -120,11 +116,8 @@ export default function Login() {
                   fontSize: '14px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  transition: 'border-color 0.2s ease',
                   background: '#FAFAFA'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#C0392B'}
-                onBlur={(e) => e.target.style.borderColor = '#E0E0E0'}
               />
             </div>
 
@@ -140,8 +133,8 @@ export default function Login() {
                   fontSize: '11px',
                   fontWeight: '600',
                   color: '#444',
-                  letterSpacing: '0.4px',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.4px'
                 }}>
                   Password
                 </label>
@@ -169,11 +162,8 @@ export default function Login() {
                   fontSize: '14px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  transition: 'border-color 0.2s ease',
                   background: '#FAFAFA'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#C0392B'}
-                onBlur={(e) => e.target.style.borderColor = '#E0E0E0'}
               />
             </div>
 
@@ -219,11 +209,8 @@ export default function Login() {
                 fontSize: '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
-                transition: 'background 0.2s ease',
                 marginBottom: '20px'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#A93226'}
-              onMouseLeave={(e) => e.target.style.background = '#C0392B'}
             >
               {loading ? 'Signing in...' : 'Login'}
             </button>
@@ -251,9 +238,6 @@ export default function Login() {
             flexWrap: 'wrap'
           }}>
             <button style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
               padding: '10px 20px',
               border: '1.5px solid #E0E0E0',
               borderRadius: '10px',
@@ -261,18 +245,11 @@ export default function Login() {
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: '500',
-              color: '#444',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => { e.target.style.borderColor = '#C0392B'; e.target.style.background = '#f8f8f8'; }}
-            onMouseLeave={(e) => { e.target.style.borderColor = '#E0E0E0'; e.target.style.background = '#fff'; }}
-            >
-              <span style={{ fontSize: '18px' }}>🔵</span> Google
+              color: '#444'
+            }}>
+              🔵 Google
             </button>
             <button style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
               padding: '10px 20px',
               border: '1.5px solid #E0E0E0',
               borderRadius: '10px',
@@ -280,13 +257,9 @@ export default function Login() {
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: '500',
-              color: '#444',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => { e.target.style.borderColor = '#1877F2'; e.target.style.background = '#f0f4ff'; }}
-            onMouseLeave={(e) => { e.target.style.borderColor = '#E0E0E0'; e.target.style.background = '#fff'; }}
-            >
-              <span style={{ fontSize: '18px' }}>🔷</span> Facebook
+              color: '#444'
+            }}>
+              🔷 Facebook
             </button>
           </div>
 
@@ -322,7 +295,6 @@ export default function Login() {
           position: 'relative',
           overflow: 'hidden'
         }}>
-          {/* Decorative circles */}
           <div style={{
             position: 'absolute',
             top: '-60px',
@@ -345,8 +317,7 @@ export default function Login() {
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{
               fontSize: '64px',
-              marginBottom: '20px',
-              display: 'block'
+              marginBottom: '20px'
             }}>
               🏠
             </div>
