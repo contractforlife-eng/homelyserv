@@ -104,19 +104,21 @@ export default function Layout({ children, activeTab }) {
                 </div>
               </div>
             )}
-            <button onClick={handleLogout} className="btn-logout" style={{
-              background: 'rgba(46, 125, 50, 0.1)',
-              color: '#2e7d32',
-              padding: isMobile ? '6px 12px' : '6px 16px',
-              borderRadius: '20px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: isMobile ? '12px' : '13px',
-              fontWeight: '600',
-              transition: 'all 0.2s ease',
-            }}>
-              {isMobile ? '🚪' : 'Logout'}
-            </button>
+            {!isMobile && (
+              <button onClick={handleLogout} className="btn-logout" style={{
+                background: 'rgba(46, 125, 50, 0.1)',
+                color: '#2e7d32',
+                padding: '6px 16px',
+                borderRadius: '20px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '600',
+                transition: 'all 0.2s ease',
+              }}>
+                Logout
+              </button>
+            )}
             {isMobile && (
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -317,6 +319,36 @@ export default function Layout({ children, activeTab }) {
               </button>
             </>
           )}
+
+          {/* Logout Button at Bottom - ALWAYS VISIBLE */}
+          <button
+            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              border: '1px solid #c62828',
+              background: 'transparent',
+              color: '#c62828',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left',
+              marginTop: '12px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fee';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span>🚪</span> Logout
+          </button>
         </div>
       )}
 

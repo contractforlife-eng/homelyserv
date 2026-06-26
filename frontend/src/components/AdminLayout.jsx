@@ -165,31 +165,33 @@ export default function AdminLayout({ children }) {
               </div>
             </div>
           )}
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: isMobile ? '6px 12px' : '8px 16px',
-              border: '1px solid #e8edf4',
-              borderRadius: '8px',
-              background: '#fff',
-              color: '#4a5568',
-              fontSize: isMobile ? '12px' : '13px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#fee';
-              e.currentTarget.style.borderColor = '#fc8181';
-              e.currentTarget.style.color = '#e53e3e';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#fff';
-              e.currentTarget.style.borderColor = '#e8edf4';
-              e.currentTarget.style.color = '#4a5568';
-            }}
-          >
-            {isMobile ? '🚪' : 'Logout'}
-          </button>
+          {!isMobile && (
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #e8edf4',
+                borderRadius: '8px',
+                background: '#fff',
+                color: '#4a5568',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#fee';
+                e.currentTarget.style.borderColor = '#fc8181';
+                e.currentTarget.style.color = '#e53e3e';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#fff';
+                e.currentTarget.style.borderColor = '#e8edf4';
+                e.currentTarget.style.color = '#4a5568';
+              }}
+            >
+              Logout
+            </button>
+          )}
         </div>
       </nav>
 
@@ -229,6 +231,8 @@ export default function AdminLayout({ children }) {
               {item.label}
             </button>
           ))}
+
+          {/* User Info in Mobile Menu */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -257,6 +261,36 @@ export default function AdminLayout({ children }) {
               <div style={{ fontSize: '12px', color: '#6C63FF', fontWeight: '500' }}>{user?.role}</div>
             </div>
           </div>
+
+          {/* Logout Button in Mobile Menu */}
+          <button
+            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              border: '1px solid #fc8181',
+              background: 'transparent',
+              color: '#e53e3e',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left',
+              marginTop: '12px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fee';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span>🚪</span> Logout
+          </button>
         </div>
       )}
 
