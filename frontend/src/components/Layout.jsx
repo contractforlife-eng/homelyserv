@@ -75,7 +75,11 @@ export default function Layout({ children, activeTab }) {
   if (user?.role === 'ADMIN') {
     return (
       <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
-        <main className="page-content">
+        <main className="page-content" style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: isMobile ? '16px' : '32px 24px',
+        }}>
           {children}
         </main>
       </div>
@@ -84,6 +88,7 @@ export default function Layout({ children, activeTab }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+      {/* Top Navigation Bar */}
       <nav className="top-nav" style={{
         background: '#ffffff',
         padding: isMobile ? '0 16px' : '0 20px',
@@ -130,8 +135,17 @@ export default function Layout({ children, activeTab }) {
                   color: '#fff',
                   fontWeight: '700',
                   fontSize: '14px',
+                  overflow: 'hidden',
                 }}>
-                  {user?.fullName?.charAt(0) || 'U'}
+                  {user?.profilePhotoUrl ? (
+                    <img 
+                      src={user.profilePhotoUrl} 
+                      alt={user.fullName}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    user?.fullName?.charAt(0) || 'U'
+                  )}
                 </div>
                 <div>
                   <div className="nav-username" style={{ fontSize: '13px', fontWeight: '500', color: '#1a3a1a' }}>
@@ -176,6 +190,7 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
+      {/* Desktop Navigation Tabs */}
       {!isMobile && (
         <div className="nav-tabs" style={{
           maxWidth: '1200px',
@@ -250,6 +265,7 @@ export default function Layout({ children, activeTab }) {
         </div>
       )}
 
+      {/* Mobile Menu */}
       {isMobile && mobileMenuOpen && (
         <div style={{
           background: '#ffffff',
@@ -451,6 +467,7 @@ export default function Layout({ children, activeTab }) {
             </>
           )}
 
+          {/* Logout Button at Bottom */}
           <button
             onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
             style={{
@@ -482,6 +499,7 @@ export default function Layout({ children, activeTab }) {
         </div>
       )}
 
+      {/* Main Content */}
       <main className="page-content" style={{
         maxWidth: '1200px',
         margin: '0 auto',

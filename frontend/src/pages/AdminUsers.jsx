@@ -11,6 +11,18 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -30,7 +42,7 @@ export default function AdminUsers() {
       const usersWithPhotos = await Promise.all(usersData.map(async (u) => {
         if (u.role === 'WORKER') {
           try {
-            const profileRes = await api.get(`/workers/me`).catch(() => ({ data: null }));
+            const profileRes = await api.get('/workers/me').catch(() => ({ data: null }));
             return { ...u, profilePhotoUrl: profileRes.data?.profilePhotoUrl || null };
           } catch {
             return { ...u, profilePhotoUrl: null };
@@ -59,11 +71,6 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(u =>
-    u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const getRoleColor = (role) => {
     switch(role) {
       case 'ADMIN': return { bg: '#f5576c', color: '#fff' };
@@ -72,6 +79,30 @@ export default function AdminUsers() {
       default: return { bg: '#6a8bb0', color: '#fff' };
     }
   };
+
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = 
+      u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = filterRole === 'all' || u.role === filterRole;
+    const matchesStatus = filterStatus === 'all' || 
+      (filterStatus === 'active' ? !u.isSuspended : u.isSuspended);
+    
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const stats = {
+    total: users.length,
+    workers: users.filter(u => u.role === 'WORKER').length,
+    employers: users.filter(u => u.role === 'EMPLOYER').length,
+    admins: users.filter(u => u.role === 'ADMIN').length,
+    active: users.filter(u => !u.isSuspended).length,
+    suspended: users.filter(u => u.isSuspended).length,
+  };
+
+  const roleOptions = ['all', 'WORKER', 'EMPLOYER', 'ADMIN'];
+  const statusOptions = ['all', 'active', 'suspended'];
 
   if (loading) {
     return (
@@ -83,79 +114,201 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1a2a3a', marginBottom: '4px' }}>
+      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
+        <h1 style={{ 
+          fontSize: isMobile ? '22px' : '28px', 
+          fontWeight: '700', 
+          color: '#1a2a3a', 
+          marginBottom: '4px' 
+        }}>
           Users
         </h1>
-        <p style={{ color: '#6a8bb0', fontSize: '15px' }}>
+        <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
           Manage all registered users
         </p>
       </div>
 
+      {/* Stats Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'repeat(6, 1fr)',
+        gap: isMobile ? '8px' : '12px',
+        marginBottom: isMobile ? '16px' : '24px',
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#1a2a3a' }}>{stats.total}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Total</div>
+        </div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#4facfe' }}>{stats.workers}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Workers</div>
+        </div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#43e97b' }}>{stats.employers}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Employers</div>
+        </div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#f5576c' }}>{stats.admins}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Admins</div>
+        </div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#2e7d32' }}>{stats.active}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Active</div>
+        </div>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '16px',
+          border: '1px solid #e8edf4',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#c62828' }}>{stats.suspended}</div>
+          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Suspended</div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
+        flexDirection: isMobile ? 'column' : 'row',
         gap: '12px',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a2a3a' }}>
-            All Users
-          </span>
-          <span style={{
-            fontSize: '12px',
-            color: '#fff',
-            background: '#4facfe',
-            padding: '2px 10px',
-            borderRadius: '12px',
-          }}>
-            {filteredUsers.length}
-          </span>
-        </div>
         <input
           type="text"
           placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
+            flex: 1,
             padding: '10px 16px',
             border: '1px solid #e0e8f0',
             borderRadius: '10px',
             fontSize: '14px',
             outline: 'none',
-            width: '260px',
             background: '#ffffff',
+            minWidth: '200px',
             transition: 'border-color 0.2s ease',
           }}
           onFocus={(e) => e.target.style.borderColor = '#4facfe'}
           onBlur={(e) => e.target.style.borderColor = '#e0e8f0'}
         />
+        
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            style={{
+              padding: '8px 14px',
+              border: '1px solid #e0e8f0',
+              borderRadius: '8px',
+              fontSize: '13px',
+              outline: 'none',
+              background: '#ffffff',
+              color: '#1a2a3a',
+            }}
+          >
+            <option value="all">All Roles</option>
+            <option value="WORKER">Workers</option>
+            <option value="EMPLOYER">Employers</option>
+            <option value="ADMIN">Admins</option>
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{
+              padding: '8px 14px',
+              border: '1px solid #e0e8f0',
+              borderRadius: '8px',
+              fontSize: '13px',
+              outline: 'none',
+              background: '#ffffff',
+              color: '#1a2a3a',
+            }}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
       </div>
 
+      {/* Users Table */}
       <div style={{
         background: '#ffffff',
-        borderRadius: '16px',
-        border: '1px solid rgba(0,0,0,0.04)',
+        borderRadius: isMobile ? '12px' : '16px',
+        border: '1px solid #e8edf4',
         overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}>
         {filteredUsers.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#6a8bb0' }}>
-            {searchTerm ? 'No users found matching your search.' : 'No users registered yet.'}
+            {searchTerm || filterRole !== 'all' || filterStatus !== 'all' 
+              ? 'No users found matching your filters.' 
+              : 'No users registered yet.'}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse', 
+              fontSize: isMobile ? '12px' : '14px' 
+            }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e0e8f0' }}>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Photo</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Name</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e8edf4' }}>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Photo
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Name
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Email
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Role
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Status
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Joined
+                  </th>
+                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -163,10 +316,10 @@ export default function AdminUsers() {
                   const roleStyle = getRoleColor(u.role);
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid #f0f4f8' }}>
-                      <td style={{ padding: '12px 18px' }}>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px' }}>
                         <div style={{
-                          width: '40px',
-                          height: '40px',
+                          width: isMobile ? '32px' : '40px',
+                          height: isMobile ? '32px' : '40px',
                           borderRadius: '50%',
                           background: '#f0f0f0',
                           overflow: 'hidden',
@@ -186,17 +339,21 @@ export default function AdminUsers() {
                               }}
                             />
                           ) : (
-                            <span style={{ fontSize: '18px', color: '#6a8bb0' }}>👤</span>
+                            <span style={{ fontSize: isMobile ? '14px' : '18px', color: '#6a8bb0' }}>👤</span>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a2a3a' }}>{u.fullName}</td>
-                      <td style={{ padding: '12px 18px', color: '#6a8bb0' }}>{u.email}</td>
-                      <td style={{ padding: '12px 18px' }}>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px', fontWeight: '500', color: '#1a2a3a' }}>
+                        {u.fullName}
+                      </td>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px', color: '#6a8bb0', fontSize: isMobile ? '11px' : '13px' }}>
+                        {u.email}
+                      </td>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px' }}>
                         <span style={{
-                          padding: '4px 12px',
+                          padding: '2px 10px',
                           borderRadius: '6px',
-                          fontSize: '12px',
+                          fontSize: isMobile ? '10px' : '12px',
                           fontWeight: '600',
                           background: roleStyle.bg,
                           color: roleStyle.color,
@@ -204,29 +361,33 @@ export default function AdminUsers() {
                           {u.role}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 18px' }}>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px' }}>
                         <span style={{
-                          color: u.isSuspended ? '#f5576c' : '#43e97b',
+                          color: u.isSuspended ? '#c62828' : '#2e7d32',
                           fontWeight: '600',
-                          fontSize: '13px'
+                          fontSize: isMobile ? '11px' : '13px'
                         }}>
                           {u.isSuspended ? '⛔ Suspended' : '✅ Active'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 18px' }}>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px', color: '#6a8bb0', fontSize: isMobile ? '10px' : '12px' }}>
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: isMobile ? '8px 12px' : '10px 18px' }}>
                         {u.role !== 'ADMIN' && (
                           <button
                             onClick={() => toggleUserSuspend(u.id, u.isSuspended)}
                             style={{
-                              padding: '6px 16px',
-                              background: u.isSuspended ? '#43e97b' : '#f5576c',
-                              color: u.isSuspended ? '#1a2a3a' : '#fff',
+                              padding: isMobile ? '4px 10px' : '6px 16px',
+                              background: u.isSuspended ? '#2e7d32' : '#f5576c',
+                              color: u.isSuspended ? '#fff' : '#fff',
                               border: 'none',
                               borderRadius: '6px',
                               cursor: 'pointer',
-                              fontSize: '12px',
+                              fontSize: isMobile ? '10px' : '12px',
                               fontWeight: '600',
                               transition: 'all 0.2s ease',
+                              whiteSpace: 'nowrap',
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}

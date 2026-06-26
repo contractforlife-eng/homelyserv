@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import LanguageSwitcher from './LanguageSwitcher';
+import Logo from './Logo';
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -24,12 +26,12 @@ export default function AdminLayout({ children }) {
   };
 
   const menuItems = [
-    { key: 'dashboard', icon: '🏠', label: 'Dashboard', path: '/admin' },
-    { key: 'users', icon: '👤', label: 'Users', path: '/admin/users' },
+    { key: 'dashboard', icon: '📊', label: 'Dashboard', path: '/admin' },
+    { key: 'users', icon: '👥', label: 'Users', path: '/admin/users' },
     { key: 'hires', icon: '📋', label: 'Hires', path: '/admin/hires' },
-    { key: 'payments', icon: '💳', label: 'Payments', path: '/admin/payments' },
+    { key: 'payments', icon: '💰', label: 'Payments', path: '/admin/payments' },
     { key: 'settings', icon: '⚙️', label: 'Settings', path: '/admin/settings' },
-    { key: 'reports', icon: '📊', label: 'Reports', path: '/admin/reports' },
+    { key: 'reports', icon: '📈', label: 'Reports', path: '/admin/reports' },
   ];
 
   const isActive = (path) => {
@@ -37,268 +39,224 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#eef2f7' }}>
-      {/* Top Navigation Bar */}
-      <nav style={{
-        background: '#ffffff',
-        padding: isMobile ? '0 16px' : '0 32px',
-        height: isMobile ? '60px' : '70px',
+    <div style={{ minHeight: '100vh', background: '#f0f7f0', display: 'flex' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: isMobile ? '0px' : '260px',
+        background: '#1a2a1a',
+        minHeight: '100vh',
+        padding: isMobile ? '0' : '20px 0',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid #e8edf4',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        position: 'sticky',
+        flexDirection: 'column',
+        position: isMobile ? 'fixed' : 'sticky',
         top: 0,
+        left: 0,
+        bottom: 0,
+        overflowY: 'auto',
         zIndex: 100,
+        transition: 'width 0.3s ease',
+        boxShadow: '4px 0 20px rgba(0,0,0,0.1)',
+        transform: isMobile && !mobileMenuOpen ? 'translateX(-100%)' : 'translateX(0)',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
           <div style={{
-            width: isMobile ? '36px' : '40px',
-            height: isMobile ? '36px' : '40px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6C63FF, #3F3D9E)',
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            fontSize: isMobile ? '14px' : '18px',
+            fontSize: '20px',
             fontWeight: '700',
+            flexShrink: 0,
           }}>
-            HS
+            H
           </div>
           {!isMobile && (
             <div>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: '#2d3748' }}>Homely</span>
-              <span style={{ fontSize: '18px', fontWeight: '400', color: '#6C63FF' }}>Serv</span>
+              <div style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Homely</div>
+              <div style={{ color: '#6a8bb0', fontSize: '12px', fontWeight: '400' }}>Control Panel</div>
             </div>
           )}
         </div>
 
-        {/* Mobile Menu Toggle */}
-        {isMobile && (
+        {/* Mobile Close Button */}
+        {isMobile && mobileMenuOpen && (
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={() => setMobileMenuOpen(false)}
             style={{
-              padding: '8px 12px',
-              border: 'none',
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
               background: 'transparent',
+              border: 'none',
+              color: '#fff',
               fontSize: '24px',
               cursor: 'pointer',
-              color: '#2d3748',
             }}
           >
-            {mobileMenuOpen ? '✕' : '☰'}
+            ✕
           </button>
         )}
 
-        {/* Desktop Menu */}
-        {!isMobile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {menuItems.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => navigate(item.path)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: isActive(item.path) ? '#6C63FF' : 'transparent',
-                  color: isActive(item.path) ? '#fff' : '#4a5568',
-                  fontSize: '14px',
-                  fontWeight: isActive(item.path) ? '600' : '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive(item.path)) {
-                    e.currentTarget.style.background = '#f0f0ff';
-                    e.currentTarget.style.color = '#6C63FF';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive(item.path)) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = '#4a5568';
-                  }
-                }}
-              >
-                <span>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* User Menu */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px' }}>
-          {!isMobile && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '6px 12px 6px 6px',
-              borderRadius: '30px',
-              background: '#f7fafc',
-            }}>
-              <div style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #6C63FF, #3F3D9E)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: '600',
-                fontSize: '14px',
-              }}>
-                {user?.fullName?.charAt(0) || 'A'}
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#2d3748' }}>{user?.fullName}</div>
-                <div style={{ fontSize: '11px', color: '#6C63FF', fontWeight: '500' }}>{user?.role}</div>
-              </div>
-            </div>
-          )}
-          {!isMobile && (
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #e8edf4',
-                borderRadius: '8px',
-                background: '#fff',
-                color: '#4a5568',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fee';
-                e.currentTarget.style.borderColor = '#fc8181';
-                e.currentTarget.style.color = '#e53e3e';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#fff';
-                e.currentTarget.style.borderColor = '#e8edf4';
-                e.currentTarget.style.color = '#4a5568';
-              }}
-            >
-              Logout
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* Mobile Menu */}
-      {isMobile && mobileMenuOpen && (
-        <div style={{
-          background: '#ffffff',
-          padding: '16px',
-          borderBottom: '1px solid #e8edf4',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-        }}>
+        {/* Menu */}
+        <nav style={{ flex: 1, padding: '12px 12px' }}>
           {menuItems.map((item) => (
-            <button
+            <div
               key={item.key}
               onClick={() => {
                 navigate(item.path);
-                setMobileMenuOpen(false);
+                if (isMobile) setMobileMenuOpen(false);
               }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '12px 16px',
+                gap: '14px',
+                padding: '12px 18px',
+                margin: '4px 0',
                 borderRadius: '10px',
-                border: 'none',
-                background: isActive(item.path) ? '#6C63FF' : 'transparent',
-                color: isActive(item.path) ? '#fff' : '#4a5568',
-                fontSize: '15px',
-                fontWeight: isActive(item.path) ? '600' : '500',
                 cursor: 'pointer',
-                width: '100%',
-                textAlign: 'left',
+                color: isActive(item.path) ? '#fff' : '#6a8bb0',
+                background: isActive(item.path) ? 'rgba(79, 172, 254, 0.15)' : 'transparent',
+                border: isActive(item.path) ? '1px solid rgba(79, 172, 254, 0.2)' : 'none',
                 transition: 'all 0.2s ease',
               }}
+              onMouseEnter={(e) => {
+                if (!isActive(item.path)) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = '#fff';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive(item.path)) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#6a8bb0';
+                }
+              }}
             >
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
+              <span style={{ fontSize: '20px', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: '14px', fontWeight: isActive(item.path) ? '600' : '400' }}>
+                {item.label}
+              </span>
+              {isActive(item.path) && (
+                <span style={{
+                  marginLeft: 'auto',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: '#4facfe',
+                }} />
+              )}
+            </div>
           ))}
+        </nav>
 
-          {/* User Info in Mobile Menu */}
+        {/* User Info */}
+        <div style={{
+          padding: '16px 20px',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
           <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            padding: '12px 16px',
-            marginTop: '8px',
-            borderTop: '1px solid #e8edf4',
-            paddingTop: '16px',
+            justifyContent: 'center',
+            color: '#fff',
+            fontWeight: '700',
+            fontSize: '16px',
+            flexShrink: 0,
           }}>
-            <div style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #6C63FF, #3F3D9E)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: '600',
-              fontSize: '14px',
-            }}>
-              {user?.fullName?.charAt(0) || 'A'}
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#2d3748' }}>{user?.fullName}</div>
-              <div style={{ fontSize: '12px', color: '#6C63FF', fontWeight: '500' }}>{user?.role}</div>
-            </div>
+            {user?.fullName?.charAt(0) || 'A'}
           </div>
-
-          {/* Logout Button in Mobile Menu */}
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{user?.fullName}</div>
+            <div style={{ color: '#6a8bb0', fontSize: '11px' }}>{user?.role}</div>
+          </div>
           <button
-            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+            onClick={handleLogout}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '10px',
-              border: '1px solid #fc8181',
-              background: 'transparent',
-              color: '#e53e3e',
-              fontSize: '15px',
-              fontWeight: '600',
+              padding: '6px 14px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#6a8bb0',
+              fontSize: '13px',
               cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-              marginTop: '12px',
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#fee';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.color = '#fff';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.color = '#6a8bb0';
             }}
           >
-            <span>🚪</span> Logout
+            {isMobile ? '🚪' : 'Logout'}
           </button>
         </div>
+      </aside>
+
+      {/* Mobile Overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 99,
+          }}
+        />
+      )}
+
+      {/* Mobile Menu Toggle Button */}
+      {isMobile && (
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          style={{
+            position: 'fixed',
+            top: '16px',
+            left: '16px',
+            zIndex: 50,
+            padding: '10px 12px',
+            background: '#ffffff',
+            border: '1px solid #d4e8d4',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '20px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}
+        >
+          ☰
+        </button>
       )}
 
       {/* Main Content */}
       <main style={{
-        padding: isMobile ? '16px' : '32px',
-        maxWidth: '1400px',
-        margin: '0 auto',
+        flex: 1,
+        padding: isMobile ? '16px' : '24px 32px',
+        minHeight: '100vh',
+        background: '#f0f7f0',
+        marginLeft: isMobile ? '0' : '0',
+        transition: 'margin-left 0.3s ease',
       }}>
         {children}
       </main>

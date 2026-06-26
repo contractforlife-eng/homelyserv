@@ -10,6 +10,16 @@ export default function AdminSettings() {
   const { user } = useAuthStore();
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // General Settings
   const [generalSettings, setGeneralSettings] = useState({
@@ -147,10 +157,14 @@ export default function AdminSettings() {
 
   const renderGeneralSettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>General Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        General Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>App Name</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            App Name
+          </label>
           <input
             name="appName"
             value={generalSettings.appName}
@@ -159,7 +173,9 @@ export default function AdminSettings() {
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>App Description</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            App Description
+          </label>
           <input
             name="appDescription"
             value={generalSettings.appDescription}
@@ -168,7 +184,9 @@ export default function AdminSettings() {
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Contact Email</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Contact Email
+          </label>
           <input
             name="contactEmail"
             value={generalSettings.contactEmail}
@@ -177,7 +195,9 @@ export default function AdminSettings() {
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Contact Phone</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Contact Phone
+          </label>
           <input
             name="contactPhone"
             value={generalSettings.contactPhone}
@@ -186,7 +206,9 @@ export default function AdminSettings() {
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Currency</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Currency
+          </label>
           <select name="currency" value={generalSettings.currency} onChange={handleGeneralChange} className="form-input">
             <option value="EGP">EGP - Egyptian Pound</option>
             <option value="USD">USD - US Dollar</option>
@@ -195,7 +217,9 @@ export default function AdminSettings() {
           </select>
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Language</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Language
+          </label>
           <select name="language" value={generalSettings.language} onChange={handleGeneralChange} className="form-input">
             <option value="en">English</option>
             <option value="ar">العربية</option>
@@ -210,30 +234,40 @@ export default function AdminSettings() {
 
   const renderPaymentSettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Payment Gateway Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        Payment Gateway Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Commission Rate (%)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Commission Rate (%)
+          </label>
           <input
             name="commissionRate"
             type="number"
+            step="0.1"
             value={paymentSettings.commissionRate}
             onChange={handlePaymentChange}
             className="form-input"
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>VAT Rate (%)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            VAT Rate (%)
+          </label>
           <input
             name="vatRate"
             type="number"
+            step="0.1"
             value={paymentSettings.vatRate}
             onChange={handlePaymentChange}
             className="form-input"
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Min Commission (EGP)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Min Commission (EGP)
+          </label>
           <input
             name="minCommission"
             type="number"
@@ -243,7 +277,9 @@ export default function AdminSettings() {
           />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Max Commission (EGP)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Max Commission (EGP)
+          </label>
           <input
             name="maxCommission"
             type="number"
@@ -252,7 +288,7 @@ export default function AdminSettings() {
             className="form-input"
           />
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: 'span 2' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
             <input name="instapay" type="checkbox" checked={paymentSettings.instapay} onChange={handlePaymentChange} />
             InstaPay
@@ -280,33 +316,47 @@ export default function AdminSettings() {
 
   const renderEmailSettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Email Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        Email Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>SMTP Host</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            SMTP Host
+          </label>
           <input name="smtpHost" value={emailSettings.smtpHost} onChange={handleEmailChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>SMTP Port</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            SMTP Port
+          </label>
           <input name="smtpPort" type="number" value={emailSettings.smtpPort} onChange={handleEmailChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>SMTP Username</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            SMTP Username
+          </label>
           <input name="smtpUser" value={emailSettings.smtpUser} onChange={handleEmailChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>SMTP Password</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            SMTP Password
+          </label>
           <input name="smtpPass" type="password" value={emailSettings.smtpPass} onChange={handleEmailChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>From Email</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            From Email
+          </label>
           <input name="fromEmail" value={emailSettings.fromEmail} onChange={handleEmailChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>From Name</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            From Name
+          </label>
           <input name="fromName" value={emailSettings.fromName} onChange={handleEmailChange} className="form-input" />
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: 'span 2' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
             <input name="notifyOnHire" type="checkbox" checked={emailSettings.notifyOnHire} onChange={handleEmailChange} />
             Notify on New Hire
@@ -326,21 +376,29 @@ export default function AdminSettings() {
 
   const renderSecuritySettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Security Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        Security Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Session Timeout (minutes)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Session Timeout (minutes)
+          </label>
           <input name="sessionTimeout" type="number" value={securitySettings.sessionTimeout} onChange={handleSecurityChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Max Login Attempts</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Max Login Attempts
+          </label>
           <input name="maxLoginAttempts" type="number" value={securitySettings.maxLoginAttempts} onChange={handleSecurityChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>IP Whitelist</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            IP Whitelist
+          </label>
           <input name="ipWhitelist" value={securitySettings.ipWhitelist} onChange={handleSecurityChange} placeholder="127.0.0.1, 192.168.1.1" className="form-input" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: 'span 2' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
             <input name="twoFactorAuth" type="checkbox" checked={securitySettings.twoFactorAuth} onChange={handleSecurityChange} />
             Enable Two-Factor Authentication
@@ -360,17 +418,23 @@ export default function AdminSettings() {
 
   const renderMobileSettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Mobile App Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        Mobile App Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>App Version</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            App Version
+          </label>
           <input name="appVersion" value={mobileSettings.appVersion} onChange={handleMobileChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Minimum Version</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Minimum Version
+          </label>
           <input name="minVersion" value={mobileSettings.minVersion} onChange={handleMobileChange} className="form-input" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: 'span 2' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
             <input name="forceUpdate" type="checkbox" checked={mobileSettings.forceUpdate} onChange={handleMobileChange} />
             Force Update (Users must update to continue)
@@ -394,14 +458,20 @@ export default function AdminSettings() {
 
   const renderAnalyticsSettings = () => (
     <div>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>Analytics Settings</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
+        Analytics Settings
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Data Retention (days)</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Data Retention (days)
+          </label>
           <input name="retentionPeriod" type="number" value={analyticsSettings.retentionPeriod} onChange={handleAnalyticsChange} className="form-input" />
         </div>
         <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>Report Frequency</label>
+          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
+            Report Frequency
+          </label>
           <select name="reportFrequency" value={analyticsSettings.reportFrequency} onChange={handleAnalyticsChange} className="form-input">
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -409,7 +479,7 @@ export default function AdminSettings() {
             <option value="quarterly">Quarterly</option>
           </select>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: 'span 2' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
             <input name="enableAnalytics" type="checkbox" checked={analyticsSettings.enableAnalytics} onChange={handleAnalyticsChange} />
             Enable Analytics
@@ -449,24 +519,29 @@ export default function AdminSettings() {
 
   return (
     <AdminLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '20px' : '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a3a1a' }}>Settings</h1>
-          <p style={{ color: '#5a7a5a', fontSize: '14px' }}>Configure your platform settings</p>
+          <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#1a2a3a', marginBottom: '4px' }}>
+            Settings
+          </h1>
+          <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
+            Configure your platform settings
+          </p>
         </div>
         <button
           onClick={saveSettings}
           disabled={loading}
           style={{
-            padding: '10px 24px',
+            padding: isMobile ? '8px 16px' : '10px 24px',
             background: '#2e7d32',
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: isMobile ? '13px' : '14px',
             fontWeight: '600',
             transition: 'all 0.3s ease',
+            width: isMobile ? '100%' : 'auto',
           }}
           onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
           onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
@@ -475,19 +550,24 @@ export default function AdminSettings() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+      <div style={{
+        display: 'flex',
+        gap: isMobile ? '8px' : '16px',
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+      }}>
         {sections.map((section) => (
           <button
             key={section.key}
             onClick={() => setActiveSection(section.key)}
             style={{
-              padding: '10px 20px',
+              padding: isMobile ? '8px 14px' : '10px 20px',
               borderRadius: '8px',
               background: activeSection === section.key ? '#2e7d32' : '#fff',
               color: activeSection === section.key ? '#fff' : '#5a7a5a',
               border: activeSection === section.key ? 'none' : '1px solid #d4e8d4',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: isMobile ? '13px' : '14px',
               fontWeight: activeSection === section.key ? '600' : '400',
               transition: 'all 0.3s ease',
               display: 'flex',
@@ -502,10 +582,11 @@ export default function AdminSettings() {
       </div>
 
       <div style={{
-        background: '#fff',
-        borderRadius: '12px',
-        padding: '24px',
+        background: '#ffffff',
+        borderRadius: isMobile ? '12px' : '16px',
+        padding: isMobile ? '16px' : '24px',
         border: '1px solid #d4e8d4',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}>
         {renderContent()}
       </div>

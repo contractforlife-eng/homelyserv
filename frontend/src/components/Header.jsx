@@ -26,7 +26,17 @@ export default function Header() {
           {user && (
             <>
               <div className="user-badge">
-                <span className="user-avatar">{user.fullName?.charAt(0) || 'U'}</span>
+                <span className="user-avatar">
+                  {user.profilePhotoUrl ? (
+                    <img 
+                      src={user.profilePhotoUrl} 
+                      alt={user.fullName}
+                      style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    user.fullName?.charAt(0) || 'U'
+                  )}
+                </span>
                 <span className="user-name hide-mobile">{user.fullName}</span>
               </div>
               <button onClick={handleLogout} className="btn-logout">
