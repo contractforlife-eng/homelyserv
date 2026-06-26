@@ -1,353 +1,85 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Login = () => {
+function Login() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: 'emad@homelyserv.com',
-    password: '**********'
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('emad@homelyserv.com');
+  const [password, setPassword] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email: formData.email,
-        password: formData.password
-      });
-
-      if (response.data.token) {
-        // Store token and user data
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    navigate('/dashboard');
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="language-toggle">
-          <button className="active">GB EN</button>
-          <button>العربية</button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-red-600">HomelyServ</h1>
+          <p className="text-gray-500 text-sm mt-1">Your Home, Our Priority</p>
         </div>
-
-        <div className="logo">
-          <h1>Homely Serv</h1>
-        </div>
-
-        <h2>SIGN IN</h2>
-        <p className="subtitle">Access your HomelyServ account</p>
-
-        {error && <div className="error-message">{error}</div>}
+        
+        <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Welcome Back</h2>
+        <p className="text-gray-500 text-center mb-6">Sign in to access your HomelyServ account</p>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>EMAIL ADDRESS</label>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">EMAIL ADDRESS</label>
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="emad@homelyserv.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+              placeholder="Enter your email"
               required
             />
           </div>
-
-          <div className="form-group">
-            <label>PASSWORD</label>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">PASSWORD</label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="**********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+              placeholder="Enter your password"
               required
             />
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+          <div className="flex items-center justify-between mb-6">
+            <label className="flex items-center text-sm text-gray-600">
+              <input type="checkbox" className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500" />
+              Remember me
+            </label>
+            <Link to="/forgot-password" className="text-sm text-red-600 hover:underline">Forget password?</Link>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-medium text-lg"
+          >
+            Login
           </button>
         </form>
 
-        <div className="divider">OR CONTINUE WITH</div>
-
-        <div className="social-buttons">
-          <button className="google-btn">
-            <span>Google</span>
-            <span className="arabic">تسجيل الدخول باستخدام</span>
+        <div className="text-center my-6">
+          <p className="text-gray-400 text-sm">OR CONTINUE WITH</p>
+          <button className="mt-2 w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2">
+            <span className="text-red-500 font-medium">Google</span>
+            <span className="text-gray-400">تسجيل الدخول باستخدام</span>
           </button>
         </div>
 
-        <div className="other-providers">
-          <span>OTHER PROVIDERS</span>
-          <div className="provider-icons">
-            <button>Facebook</button>
-            <button>Twitter</button>
-            <button>Telegram</button>
-            <button>Signal</button>
-          </div>
+        <div className="text-center">
+          <p className="text-gray-500 text-sm">
+            Don't have an account? <Link to="/register" className="text-red-600 font-medium hover:underline">Create one</Link>
+          </p>
+          <p className="text-xs text-gray-400 mt-4">Secure. Reliable. Always here for your home.</p>
         </div>
-
-        <p className="signup-link">
-          Don't have an account? <a href="/register">Create one</a>
-        </p>
       </div>
-
-      <style jsx>{`
-        .login-container {
-          min-height: 100vh;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background: #f5f5f5;
-          font-family: Arial, sans-serif;
-          padding: 20px;
-        }
-
-        .login-box {
-          background: white;
-          padding: 40px;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          width: 100%;
-          max-width: 420px;
-        }
-
-        .language-toggle {
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-          margin-bottom: 20px;
-        }
-
-        .language-toggle button {
-          background: none;
-          border: none;
-          padding: 5px 10px;
-          cursor: pointer;
-          color: #999;
-          font-size: 12px;
-        }
-
-        .language-toggle button.active {
-          color: #333;
-          font-weight: bold;
-        }
-
-        .logo {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-
-        .logo h1 {
-          color: #333;
-          font-size: 28px;
-          margin: 0;
-        }
-
-        h2 {
-          text-align: center;
-          color: #333;
-          margin-bottom: 5px;
-          font-size: 22px;
-        }
-
-        .subtitle {
-          text-align: center;
-          color: #666;
-          font-size: 14px;
-          margin-bottom: 30px;
-        }
-
-        .error-message {
-          background: #fee;
-          color: #c00;
-          padding: 10px;
-          border-radius: 5px;
-          margin-bottom: 20px;
-          text-align: center;
-          font-size: 14px;
-        }
-
-        .form-group {
-          margin-bottom: 20px;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 5px;
-          color: #666;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-        }
-
-        .form-group input {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          font-size: 14px;
-          box-sizing: border-box;
-          transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-          outline: none;
-          border-color: #e74c3c;
-        }
-
-        button[type="submit"] {
-          width: 100%;
-          padding: 14px;
-          background: #e74c3c;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.3s;
-          margin-top: 10px;
-        }
-
-        button[type="submit"]:hover:not(:disabled) {
-          background: #c0392b;
-        }
-
-        button[type="submit"]:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .divider {
-          text-align: center;
-          margin: 25px 0;
-          color: #999;
-          font-size: 13px;
-          position: relative;
-        }
-
-        .divider::before,
-        .divider::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          width: 30%;
-          height: 1px;
-          background: #ddd;
-        }
-
-        .divider::before {
-          left: 0;
-        }
-
-        .divider::after {
-          right: 0;
-        }
-
-        .social-buttons {
-          margin-bottom: 20px;
-        }
-
-        .google-btn {
-          width: 100%;
-          padding: 12px;
-          background: white;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          cursor: pointer;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 10px;
-          font-size: 14px;
-          transition: background 0.3s;
-        }
-
-        .google-btn:hover {
-          background: #f8f8f8;
-        }
-
-        .google-btn .arabic {
-          color: #666;
-          font-size: 12px;
-        }
-
-        .other-providers {
-          text-align: center;
-          margin: 20px 0;
-        }
-
-        .other-providers span {
-          color: #999;
-          font-size: 11px;
-          letter-spacing: 1px;
-          display: block;
-          margin-bottom: 10px;
-        }
-
-        .provider-icons {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          flex-wrap: wrap;
-        }
-
-        .provider-icons button {
-          background: none;
-          border: none;
-          color: #666;
-          cursor: pointer;
-          font-size: 13px;
-          padding: 5px 10px;
-        }
-
-        .provider-icons button:hover {
-          color: #e74c3c;
-        }
-
-        .signup-link {
-          text-align: center;
-          margin-top: 20px;
-          font-size: 14px;
-          color: #666;
-        }
-
-        .signup-link a {
-          color: #e74c3c;
-          text-decoration: none;
-          font-weight: 600;
-        }
-
-        .signup-link a:hover {
-          text-decoration: underline;
-        }
-      `}</style>
     </div>
   );
-};
+}
 
 export default Login;

@@ -1,326 +1,196 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
-import useAuthStore from '../store/authStore';
-import AdminLayout from '../components/AdminLayout';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Users,
+  Briefcase,
+  Calendar,
+  DollarSign,
+  Star,
+  MessageCircle,
+  FileText,
+  Settings,
+  HelpCircle,
+  BarChart3,
+  Home
+} from 'lucide-react';
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalHires: 0,
-    activeHires: 0,
-    pendingPayments: 0,
-    totalRevenue: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    if (user?.role !== 'ADMIN') {
-      navigate('/');
-      return;
-    }
-    fetchData();
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const handleLogout = () => {
-    logout();
     navigate('/login');
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [hiresRes, usersRes] = await Promise.all([
-        api.get('/hires/all').catch(() => ({ data: [] })),
-        api.get('/auth/users').catch(() => ({ data: [] }))
-      ]);
-
-      const allHires = hiresRes.data || [];
-      const allUsers = usersRes.data || [];
-
-      const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
-      const active = allHires.filter(h => h.status === 'active').length;
-      const revenue = allHires
-        .filter(h => h.paymentStatus === 'confirmed')
-        .reduce((sum, h) => sum + (h.totalDue || 0), 0);
-
-      setStats({
-        totalUsers: allUsers.length,
-        totalHires: allHires.length,
-        activeHires: active,
-        pendingPayments: pending,
-        totalRevenue: revenue,
-      });
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    }
-    setLoading(false);
-  };
-
-  const statItems = [
-    { label: 'Total Users', value: stats.totalUsers, icon: '👥', change: '+12%', color: '#6C63FF' },
-    { label: 'Total Hires', value: stats.totalHires, icon: '📋', change: '+8%', color: '#48BB78' },
-    { label: 'Pending Payments', value: stats.pendingPayments, icon: '⏳', change: '-3%', color: '#ED8936' },
-    { label: 'Revenue', value: `EGP ${stats.totalRevenue.toFixed(0)}`, icon: '💰', change: '+15%', color: '#FC8181' },
-  ];
-
-  const quickActions = [
-    { icon: '👤', label: 'Users', desc: 'Manage all users', path: '/admin/users', color: '#6C63FF' },
-    { icon: '📋', label: 'Hires', desc: 'View all hires', path: '/admin/hires', color: '#48BB78' },
-    { icon: '💳', label: 'Payments', desc: 'Process payments', path: '/admin/payments', color: '#ED8936' },
-    { icon: '⚙️', label: 'Settings', desc: 'Configure platform', path: '/admin/settings', color: '#4A5568' },
-  ];
-
-  const recentActivity = [
-    { text: 'New user registered: Sara Samir', time: '2 hours ago', type: 'user' },
-    { text: 'Payment confirmed: EGP 370.50', time: '4 hours ago', type: 'payment' },
-    { text: 'New hire: Ahmed joined as Driver', time: '6 hours ago', type: 'hire' },
-    { text: 'Profile updated: Emad Admin', time: '8 hours ago', type: 'profile' },
-  ];
-
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '60px', color: '#4a5568' }}>Loading...</div>
-      </AdminLayout>
-    );
-  }
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-
   return (
-    <AdminLayout>
-      {/* Welcome Section */}
-      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
-        <h1 style={{ 
-          fontSize: isMobile ? '22px' : '28px', 
-          fontWeight: '700', 
-          color: '#2d3748', 
-          marginBottom: '4px' 
-        }}>
-          Good {greeting}, {user?.fullName} 👋
-        </h1>
-        <p style={{ color: '#718096', fontSize: isMobile ? '14px' : '15px' }}>
-          Here's what's happening with your platform today
-        </p>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
+        </div>
+        <nav className="px-4 space-y-1">
+          <Link to="/admin" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
+            <Home size={20} /> Dashboard
+          </Link>
+          <Link to="/admin/users" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Users size={20} /> Users
+          </Link>
+          <Link to="/admin/workers" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Briefcase size={20} /> Workers
+          </Link>
+          <Link to="/admin/jobs" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <FileText size={20} /> Job Requests
+          </Link>
+          <Link to="/admin/bookings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Calendar size={20} /> Bookings
+          </Link>
+          <Link to="/admin/categories" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <BarChart3 size={20} /> Categories
+          </Link>
+          <Link to="/admin/payments" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <DollarSign size={20} /> Payments
+          </Link>
+          <Link to="/admin/reviews" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Star size={20} /> Reviews
+          </Link>
+          <Link to="/admin/messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <MessageCircle size={20} /> Messages
+          </Link>
+          <Link to="/admin/reports" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <FileText size={20} /> Reports
+          </Link>
+          <Link to="/admin/settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Settings size={20} /> Settings
+          </Link>
+          <Link to="/admin/support" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <HelpCircle size={20} /> Support
+          </Link>
+        </nav>
       </div>
 
-      {/* Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '12px' : '20px',
-        marginBottom: isMobile ? '24px' : '32px',
-      }}>
-        {statItems.map((item, index) => (
-          <div key={index} style={{
-            background: '#ffffff',
-            borderRadius: isMobile ? '12px' : '16px',
-            padding: isMobile ? '16px' : '24px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            border: '1px solid #edf2f7',
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: isMobile ? '6px' : '12px' 
-            }}>
-              <span style={{ 
-                fontSize: isMobile ? '11px' : '14px', 
-                color: '#718096', 
-                fontWeight: '500' 
-              }}>
-                {item.label}
-              </span>
-              <span style={{ fontSize: isMobile ? '20px' : '24px' }}>{item.icon}</span>
-            </div>
-            <div style={{ 
-              fontSize: isMobile ? '20px' : '28px', 
-              fontWeight: '700', 
-              color: '#2d3748' 
-            }}>
-              {item.value}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-              <span style={{
-                fontSize: isMobile ? '10px' : '12px',
-                color: item.change.startsWith('+') ? '#48BB78' : '#FC8181',
-                fontWeight: '600',
-              }}>
-                {item.change}
-              </span>
-              <span style={{ fontSize: isMobile ? '10px' : '12px', color: '#a0aec0' }}>
-                from last month
-              </span>
+      {/* Main Content */}
+      <div className="flex-1">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-800">Welcome back, Admin</h2>
+            <button 
+              onClick={handleLogout}
+              className="text-gray-600 hover:text-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
+          <p className="text-gray-500 text-sm">Here's what's happening with your platform today.</p>
+        </header>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-6">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Total Users</p>
+            <p className="text-2xl font-bold text-gray-800">25,680</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Total Workers</p>
+            <p className="text-2xl font-bold text-gray-800">8,432</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Job Requests</p>
+            <p className="text-2xl font-bold text-gray-800">3,215</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Active Bookings</p>
+            <p className="text-2xl font-bold text-gray-800">2,845</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500">Total Revenue</p>
+            <p className="text-2xl font-bold text-gray-800">$48,650</p>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 pb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Recent Job Requests</h3>
+            <div className="space-y-3">
+              <div className="border-b border-gray-100 pb-2">
+                <p className="font-medium text-gray-800">Need a babysitter for 2 kids</p>
+                <p className="text-sm text-gray-500">New York, USA</p>
+              </div>
+              <div className="border-b border-gray-100 pb-2">
+                <p className="font-medium text-gray-800">Elderly care for my father</p>
+                <p className="text-sm text-gray-500">Los Angeles, USA</p>
+              </div>
+              <div className="border-b border-gray-100 pb-2">
+                <p className="font-medium text-gray-800">Driver for daily office commute</p>
+                <p className="text-sm text-gray-500">Chicago, USA</p>
+              </div>
+              <div className="border-b border-gray-100 pb-2">
+                <p className="font-medium text-gray-800">Part-time security guard</p>
+                <p className="text-sm text-gray-500">Houston, USA</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">Housekeeping for 3 days/week</p>
+                <p className="text-sm text-gray-500">Miami, USA</p>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
-        <h2 style={{ 
-          fontSize: isMobile ? '16px' : '18px', 
-          fontWeight: '600', 
-          color: '#2d3748', 
-          marginBottom: isMobile ? '12px' : '16px' 
-        }}>
-          Quick Actions
-        </h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-          gap: isMobile ? '10px' : '16px',
-        }}>
-          {quickActions.map((action, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(action.path)}
-              style={{
-                background: '#ffffff',
-                borderRadius: isMobile ? '10px' : '12px',
-                padding: isMobile ? '16px' : '20px',
-                border: '1px solid #edf2f7',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                textAlign: isMobile ? 'center' : 'left',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
-                e.currentTarget.style.borderColor = action.color;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
-                e.currentTarget.style.borderColor = '#edf2f7';
-              }}
-            >
-              <div style={{ fontSize: isMobile ? '24px' : '28px', marginBottom: '6px' }}>{action.icon}</div>
-              <h4 style={{ 
-                fontSize: isMobile ? '13px' : '15px', 
-                fontWeight: '600', 
-                color: '#2d3748',
-                marginBottom: isMobile ? '2px' : '8px',
-              }}>
-                {action.label}
-              </h4>
-              {!isMobile && (
-                <p style={{ fontSize: '13px', color: '#718096', marginBottom: '8px' }}>{action.desc}</p>
-              )}
-              <span style={{ 
-                fontSize: isMobile ? '11px' : '13px', 
-                color: action.color, 
-                fontWeight: '500' 
-              }}>
-                Go →
-              </span>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Recent Payments</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Babysitter Service</span>
+                <span className="text-green-600 font-medium">$120</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Elderly Care</span>
+                <span className="text-green-600 font-medium">$200</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Driver Service</span>
+                <span className="text-green-600 font-medium">$80</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Security Service</span>
+                <span className="text-green-600 font-medium">$150</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-800">Housekeeping</span>
+                <span className="text-green-600 font-medium">$90</span>
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Recent Reviews</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Baby sitter</span>
+                <span className="text-gray-600">1,256 (39%)</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Elderly Care</span>
+                <span className="text-gray-600">842 (26%)</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Drivers</span>
+                <span className="text-gray-600">612 (19%)</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-100 pb-2">
+                <span className="text-gray-800">Security</span>
+                <span className="text-gray-600">285 (9%)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-800">Housekeeping</span>
+                <span className="text-gray-600">220 (7%)</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Recent Activity */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: isMobile ? '12px' : '16px',
-        padding: isMobile ? '16px' : '24px',
-        border: '1px solid #edf2f7',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-        marginBottom: isMobile ? '24px' : '32px',
-      }}>
-        <h3 style={{ 
-          fontSize: isMobile ? '15px' : '16px', 
-          fontWeight: '600', 
-          color: '#2d3748', 
-          marginBottom: isMobile ? '12px' : '16px' 
-        }}>
-          Recent Activity
-        </h3>
-        {recentActivity.map((activity, index) => (
-          <div
-            key={index}
-            style={{
-              padding: isMobile ? '10px 0' : '12px 0',
-              borderBottom: index < recentActivity.length - 1 ? '1px solid #edf2f7' : 'none',
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              alignItems: isMobile ? 'flex-start' : 'center',
-              gap: isMobile ? '4px' : '0',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: activity.type === 'user' ? '#6C63FF' : activity.type === 'payment' ? '#48BB78' : '#ED8936',
-              }} />
-              <span style={{ 
-                fontSize: isMobile ? '13px' : '14px', 
-                color: '#2d3748' 
-              }}>
-                {activity.text}
-              </span>
-            </div>
-            <span style={{ 
-              fontSize: isMobile ? '11px' : '12px', 
-              color: '#a0aec0',
-              marginLeft: isMobile ? '18px' : '0',
-            }}>
-              {activity.time}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Logout Button at Bottom */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: isMobile ? '16px 0' : '24px 0',
-        borderTop: '1px solid #edf2f7',
-      }}>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: isMobile ? '12px 32px' : '14px 40px',
-            background: '#e53e3e',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: isMobile ? '15px' : '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(229, 62, 62, 0.3)',
-            width: isMobile ? '100%' : 'auto',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 8px 25px rgba(229, 62, 62, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(229, 62, 62, 0.3)';
-          }}
-        >
-          🚪 Logout
-        </button>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
+
+export default AdminDashboard;
