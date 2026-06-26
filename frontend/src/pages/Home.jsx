@@ -10,6 +10,17 @@ export default function Home() {
   const navigate = useNavigate();
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Auto-redirect admin to admin panel
   useEffect(() => {
@@ -185,12 +196,12 @@ export default function Home() {
     <Layout activeTab="dashboard">
       {/* Dashboard Header */}
       <div style={{ 
-        marginBottom: '32px',
-        paddingBottom: '20px',
+        marginBottom: isMobile ? '20px' : '32px',
+        paddingBottom: isMobile ? '12px' : '20px',
         borderBottom: '1px solid #e8f5e9',
       }}>
         <h1 style={{ 
-          fontSize: '28px', 
+          fontSize: isMobile ? '22px' : '28px', 
           fontWeight: '700', 
           color: '#1a3a1a',
           marginBottom: '4px',
@@ -199,26 +210,26 @@ export default function Home() {
         </h1>
         <p style={{ 
           color: '#5a7a5a', 
-          fontSize: '16px',
+          fontSize: isMobile ? '14px' : '16px',
         }}>
           Welcome back, {user?.fullName}
         </p>
       </div>
 
-      <div style={{ marginBottom: '32px' }}>
+      <div style={{ marginBottom: isMobile ? '20px' : '32px' }}>
         <h2 style={{ 
-          fontSize: '18px', 
+          fontSize: isMobile ? '16px' : '18px', 
           fontWeight: '600', 
           color: '#1a3a1a', 
-          marginBottom: '16px',
+          marginBottom: isMobile ? '12px' : '16px',
         }}>
           What would you like to do today?
         </h2>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${dashboardCards.length}, 1fr)`,
-          gap: '16px',
+          gridTemplateColumns: isMobile ? '1fr' : `repeat(${dashboardCards.length}, 1fr)`,
+          gap: isMobile ? '12px' : '16px',
         }}>
           {dashboardCards.map((card, index) => (
             <div
@@ -232,12 +243,13 @@ export default function Home() {
               }}
               style={{
                 background: '#ffffff',
-                borderRadius: '12px',
-                padding: '24px',
+                borderRadius: isMobile ? '10px' : '12px',
+                padding: isMobile ? '18px' : '24px',
                 border: '1px solid #e8f5e9',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                textAlign: isMobile ? 'center' : 'left',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
@@ -250,14 +262,28 @@ export default function Home() {
                 e.currentTarget.style.borderColor = '#e8f5e9';
               }}
             >
-              <div style={{ fontSize: '36px', marginBottom: '8px' }}>{card.icon}</div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '4px' }}>
+              <div style={{ fontSize: isMobile ? '32px' : '36px', marginBottom: '8px' }}>{card.icon}</div>
+              <h3 style={{ 
+                fontSize: isMobile ? '15px' : '16px', 
+                fontWeight: '600', 
+                color: '#1a3a1a', 
+                marginBottom: '4px' 
+              }}>
                 {card.title}
               </h3>
-              <p style={{ fontSize: '13px', color: '#5a7a5a', marginBottom: '12px', lineHeight: '1.4' }}>
+              <p style={{ 
+                fontSize: isMobile ? '12px' : '13px', 
+                color: '#5a7a5a', 
+                marginBottom: '12px', 
+                lineHeight: '1.4' 
+              }}>
                 {card.desc}
               </p>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#2e7d32' }}>
+              <span style={{ 
+                fontSize: isMobile ? '12px' : '13px', 
+                fontWeight: '600', 
+                color: '#2e7d32' 
+              }}>
                 {card.action}
               </span>
             </div>
@@ -268,16 +294,31 @@ export default function Home() {
       {/* Recent Activity */}
       <div style={{
         background: '#ffffff',
-        borderRadius: '12px',
-        padding: '24px',
+        borderRadius: isMobile ? '10px' : '12px',
+        padding: isMobile ? '16px' : '24px',
         border: '1px solid #e8f5e9',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '18px' }}>📋</span>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a3a1a' }}>Recent Activity</h3>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          marginBottom: isMobile ? '12px' : '16px' 
+        }}>
+          <span style={{ fontSize: isMobile ? '16px' : '18px' }}>📋</span>
+          <h3 style={{ 
+            fontSize: isMobile ? '15px' : '16px', 
+            fontWeight: '600', 
+            color: '#1a3a1a' 
+          }}>
+            Recent Activity
+          </h3>
           {!loading && recentActivity.length > 0 && (
-            <span style={{ fontSize: '12px', color: '#8aaa8a', marginLeft: 'auto' }}>
+            <span style={{ 
+              fontSize: '12px', 
+              color: '#8aaa8a', 
+              marginLeft: 'auto' 
+            }}>
               {recentActivity.length} items
             </span>
           )}
@@ -296,11 +337,13 @@ export default function Home() {
             <div 
               key={activity.id || index} 
               style={{ 
-                padding: '12px 0',
+                padding: isMobile ? '10px 0' : '12px 0',
                 borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f7f0' : 'none',
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: isMobile ? '4px' : '0',
                 justifyContent: 'space-between',
-                alignItems: 'center',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -311,26 +354,35 @@ export default function Home() {
                   background: activity.color || '#8aaa8a',
                   flexShrink: 0,
                 }} />
-                <div>
-                  <span style={{ fontSize: '13px', color: '#1a3a1a', fontWeight: '500' }}>
-                    {activity.text}
+                <span style={{ 
+                  fontSize: isMobile ? '13px' : '14px', 
+                  color: '#1a3a1a', 
+                  fontWeight: '500' 
+                }}>
+                  {activity.text}
+                </span>
+                {activity.type && (
+                  <span style={{ 
+                    fontSize: '10px', 
+                    color: '#8aaa8a', 
+                    marginLeft: isMobile ? '0' : '6px',
+                    background: '#f0f7f0',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    textTransform: 'capitalize',
+                    display: isMobile ? 'inline-block' : 'inline',
+                  }}>
+                    {activity.type}
                   </span>
-                  {activity.type && (
-                    <span style={{ 
-                      fontSize: '10px', 
-                      color: '#8aaa8a', 
-                      marginLeft: '6px',
-                      background: '#f0f7f0',
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      textTransform: 'capitalize'
-                    }}>
-                      {activity.type}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
-              <span style={{ fontSize: '12px', color: '#8aaa8a' }}>{activity.time}</span>
+              <span style={{ 
+                fontSize: isMobile ? '11px' : '12px', 
+                color: '#8aaa8a',
+                marginLeft: isMobile ? '18px' : '0',
+              }}>
+                {activity.time}
+              </span>
             </div>
           ))
         )}
