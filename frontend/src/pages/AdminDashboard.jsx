@@ -15,6 +15,7 @@ export default function AdminDashboard() {
     totalRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -22,6 +23,12 @@ export default function AdminDashboard() {
       return;
     }
     fetchData();
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const fetchData = async () => {
@@ -83,61 +90,93 @@ export default function AdminDashboard() {
     );
   }
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+
   return (
     <AdminLayout>
       {/* Welcome Section */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#2d3748', marginBottom: '4px' }}>
-          Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user?.fullName} 👋
+      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
+        <h1 style={{ 
+          fontSize: isMobile ? '22px' : '28px', 
+          fontWeight: '700', 
+          color: '#2d3748', 
+          marginBottom: '4px' 
+        }}>
+          Good {greeting}, {user?.fullName} 👋
         </h1>
-        <p style={{ color: '#718096', fontSize: '15px' }}>
+        <p style={{ color: '#718096', fontSize: isMobile ? '14px' : '15px' }}>
           Here's what's happening with your platform today
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Mobile Responsive */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '20px',
-        marginBottom: '32px',
+        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+        gap: isMobile ? '12px' : '20px',
+        marginBottom: isMobile ? '24px' : '32px',
       }}>
         {statItems.map((item, index) => (
           <div key={index} style={{
             background: '#ffffff',
-            borderRadius: '16px',
-            padding: '24px',
+            borderRadius: isMobile ? '12px' : '16px',
+            padding: isMobile ? '16px' : '24px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             border: '1px solid #edf2f7',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', color: '#718096', fontWeight: '500' }}>{item.label}</span>
-              <span style={{ fontSize: '24px' }}>{item.icon}</span>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: isMobile ? '6px' : '12px' 
+            }}>
+              <span style={{ 
+                fontSize: isMobile ? '11px' : '14px', 
+                color: '#718096', 
+                fontWeight: '500' 
+              }}>
+                {item.label}
+              </span>
+              <span style={{ fontSize: isMobile ? '20px' : '24px' }}>{item.icon}</span>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: '#2d3748' }}>{item.value}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+            <div style={{ 
+              fontSize: isMobile ? '20px' : '28px', 
+              fontWeight: '700', 
+              color: '#2d3748' 
+            }}>
+              {item.value}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
               <span style={{
-                fontSize: '12px',
+                fontSize: isMobile ? '10px' : '12px',
                 color: item.change.startsWith('+') ? '#48BB78' : '#FC8181',
                 fontWeight: '600',
               }}>
                 {item.change}
               </span>
-              <span style={{ fontSize: '12px', color: '#a0aec0' }}>from last month</span>
+              <span style={{ fontSize: isMobile ? '10px' : '12px', color: '#a0aec0' }}>
+                from last month
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#2d3748', marginBottom: '16px' }}>
+      {/* Quick Actions - Mobile Responsive */}
+      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
+        <h2 style={{ 
+          fontSize: isMobile ? '16px' : '18px', 
+          fontWeight: '600', 
+          color: '#2d3748', 
+          marginBottom: isMobile ? '12px' : '16px' 
+        }}>
           Quick Actions
         </h2>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+          gap: isMobile ? '10px' : '16px',
         }}>
           {quickActions.map((action, index) => (
             <div
@@ -145,12 +184,13 @@ export default function AdminDashboard() {
               onClick={() => navigate(action.path)}
               style={{
                 background: '#ffffff',
-                borderRadius: '12px',
-                padding: '20px',
+                borderRadius: isMobile ? '10px' : '12px',
+                padding: isMobile ? '16px' : '20px',
                 border: '1px solid #edf2f7',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                textAlign: isMobile ? 'center' : 'left',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -163,35 +203,57 @@ export default function AdminDashboard() {
                 e.currentTarget.style.borderColor = '#edf2f7';
               }}
             >
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{action.icon}</div>
-              <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#2d3748' }}>{action.label}</h4>
-              <p style={{ fontSize: '13px', color: '#718096', marginBottom: '8px' }}>{action.desc}</p>
-              <span style={{ fontSize: '13px', color: action.color, fontWeight: '500' }}>Go →</span>
+              <div style={{ fontSize: isMobile ? '24px' : '28px', marginBottom: '6px' }}>{action.icon}</div>
+              <h4 style={{ 
+                fontSize: isMobile ? '13px' : '15px', 
+                fontWeight: '600', 
+                color: '#2d3748',
+                marginBottom: isMobile ? '2px' : '8px',
+              }}>
+                {action.label}
+              </h4>
+              {!isMobile && (
+                <p style={{ fontSize: '13px', color: '#718096', marginBottom: '8px' }}>{action.desc}</p>
+              )}
+              <span style={{ 
+                fontSize: isMobile ? '11px' : '13px', 
+                color: action.color, 
+                fontWeight: '500' 
+              }}>
+                Go →
+              </span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity - Mobile Responsive */}
       <div style={{
         background: '#ffffff',
-        borderRadius: '16px',
-        padding: '24px',
+        borderRadius: isMobile ? '12px' : '16px',
+        padding: isMobile ? '16px' : '24px',
         border: '1px solid #edf2f7',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#2d3748', marginBottom: '16px' }}>
+        <h3 style={{ 
+          fontSize: isMobile ? '15px' : '16px', 
+          fontWeight: '600', 
+          color: '#2d3748', 
+          marginBottom: isMobile ? '12px' : '16px' 
+        }}>
           Recent Activity
         </h3>
         {recentActivity.map((activity, index) => (
           <div
             key={index}
             style={{
-              padding: '12px 0',
+              padding: isMobile ? '10px 0' : '12px 0',
               borderBottom: index < recentActivity.length - 1 ? '1px solid #edf2f7' : 'none',
               display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              gap: isMobile ? '4px' : '0',
               justifyContent: 'space-between',
-              alignItems: 'center',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -201,9 +263,20 @@ export default function AdminDashboard() {
                 borderRadius: '50%',
                 background: activity.type === 'user' ? '#6C63FF' : activity.type === 'payment' ? '#48BB78' : '#ED8936',
               }} />
-              <span style={{ fontSize: '14px', color: '#2d3748' }}>{activity.text}</span>
+              <span style={{ 
+                fontSize: isMobile ? '13px' : '14px', 
+                color: '#2d3748' 
+              }}>
+                {activity.text}
+              </span>
             </div>
-            <span style={{ fontSize: '12px', color: '#a0aec0' }}>{activity.time}</span>
+            <span style={{ 
+              fontSize: isMobile ? '11px' : '12px', 
+              color: '#a0aec0',
+              marginLeft: isMobile ? '18px' : '0',
+            }}>
+              {activity.time}
+            </span>
           </div>
         ))}
       </div>
