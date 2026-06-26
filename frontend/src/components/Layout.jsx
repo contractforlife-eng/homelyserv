@@ -42,9 +42,48 @@ export default function Layout({ children, activeTab }) {
     }
   };
 
+  const getNavItems = () => {
+    if (user?.role === 'ADMIN') {
+      return [
+        { icon: '⚙️', label: 'Admin Panel', path: '/admin', key: 'admin' },
+      ];
+    }
+
+    if (user?.role === 'WORKER') {
+      return [
+        { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
+        { icon: '👤', label: 'My Profile', path: '/worker-profile', key: 'profile' },
+        { icon: '📋', label: 'My Offers', path: '/my-hires', key: 'hires' },
+      ];
+    }
+
+    if (user?.role === 'EMPLOYER') {
+      return [
+        { icon: '📊', label: 'Dashboard', path: '/', key: 'dashboard' },
+        { icon: '🔍', label: 'Find Workers', path: '/search', key: 'search' },
+        { icon: '🏢', label: 'Company Profile', path: '/employer-profile', key: 'profile' },
+        { icon: '📋', label: 'My Hires', path: '/my-hires', key: 'hires' },
+      ];
+    }
+
+    return [];
+  };
+
+  const navItems = getNavItems();
+
+  // If admin, render only the page content without top navigation
+  if (user?.role === 'ADMIN') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+        <main className="page-content">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
-      {/* Top Navigation Bar */}
       <nav className="top-nav" style={{
         background: '#ffffff',
         padding: isMobile ? '0 16px' : '0 20px',
@@ -114,7 +153,6 @@ export default function Layout({ children, activeTab }) {
                 cursor: 'pointer',
                 fontSize: '13px',
                 fontWeight: '600',
-                transition: 'all 0.2s ease',
               }}>
                 Logout
               </button>
@@ -138,7 +176,80 @@ export default function Layout({ children, activeTab }) {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {!isMobile && (
+        <div className="nav-tabs" style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '8px 24px',
+          display: 'flex',
+          gap: '4px',
+          borderBottom: '2px solid #d4e8d4',
+          background: '#ffffff',
+          flexWrap: 'wrap',
+        }}>
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={`nav-tab ${activeTab === item.key ? 'active' : ''}`}
+              onClick={() => navigate(item.path)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                border: 'none',
+                background: activeTab === item.key ? '#2e7d32' : 'transparent',
+                color: activeTab === item.key ? '#fff' : '#5a7a5a',
+                fontSize: '14px',
+                fontWeight: activeTab === item.key ? '600' : '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderRadius: '8px',
+                position: 'relative',
+              }}
+            >
+              <span className="nav-tab-icon" style={{ fontSize: '18px' }}>{item.icon}</span>
+              <span className="nav-tab-label" style={{ fontSize: '14px', fontWeight: activeTab === item.key ? '600' : '500' }}>{item.label}</span>
+              {activeTab === item.key && (
+                <span style={{
+                  position: 'absolute',
+                  bottom: '-2px',
+                  left: '20%',
+                  right: '20%',
+                  height: '3px',
+                  background: '#2e7d32',
+                  borderRadius: '3px',
+                }} />
+              )}
+            </button>
+          ))}
+          {user?.role !== 'ADMIN' && (
+            <button
+              className="nav-tab switch-role"
+              onClick={handleSwitchRole}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                border: '1px dashed #2e7d32',
+                background: 'transparent',
+                color: '#2e7d32',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderRadius: '8px',
+                marginLeft: 'auto',
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>🔄</span>
+              <span>Switch Role</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {isMobile && mobileMenuOpen && (
         <div style={{
           background: '#ffffff',
@@ -277,6 +388,26 @@ export default function Layout({ children, activeTab }) {
                 <span>🔍</span> Find Workers
               </button>
               <button
+                onClick={() => { navigate('/employer-profile'); setMobileMenuOpen(false); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: activeTab === 'profile' ? '#2e7d32' : 'transparent',
+                  color: activeTab === 'profile' ? '#fff' : '#1a3a1a',
+                  fontSize: '15px',
+                  fontWeight: activeTab === 'profile' ? '600' : '500',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                }}
+              >
+                <span>🏢</span> Company Profile
+              </button>
+              <button
                 onClick={() => { navigate('/my-hires'); setMobileMenuOpen(false); }}
                 style={{
                   display: 'flex',
@@ -320,7 +451,6 @@ export default function Layout({ children, activeTab }) {
             </>
           )}
 
-          {/* Logout Button at Bottom - ALWAYS VISIBLE */}
           <button
             onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
             style={{
@@ -352,7 +482,6 @@ export default function Layout({ children, activeTab }) {
         </div>
       )}
 
-      {/* Main Content */}
       <main className="page-content" style={{
         maxWidth: '1200px',
         margin: '0 auto',

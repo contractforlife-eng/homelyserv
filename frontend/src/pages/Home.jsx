@@ -12,7 +12,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -22,14 +21,12 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Auto-redirect admin to admin panel
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       navigate('/admin');
     }
   }, [user, navigate]);
 
-  // Fetch real activity data
   useEffect(() => {
     if (user && user?.role !== 'ADMIN') {
       fetchRecentActivity();
@@ -88,7 +85,6 @@ export default function Home() {
         }
       });
 
-      // Add user profile activities
       if (user?.createdAt) {
         const date = new Date(user.createdAt);
         const timeAgo = getTimeAgo(date);
@@ -170,7 +166,6 @@ export default function Home() {
     }
   };
 
-  // If user is admin, return null (will redirect)
   if (user?.role === 'ADMIN') {
     return null;
   }
@@ -187,6 +182,7 @@ export default function Home() {
     if (user?.role === 'EMPLOYER') {
       return [
         { icon: '🔍', title: 'Find Workers', desc: 'Search for the perfect candidate', action: 'Search Now →', path: '/search' },
+        { icon: '🏢', title: 'Company Profile', desc: 'Update your company information', action: 'Update Profile →', path: '/employer-profile' },
         { icon: '📋', title: 'My Hires', desc: 'View your hiring history', action: 'View Hires →', path: '/my-hires' },
         { icon: '🔄', title: 'Switch Account Type', desc: 'Start looking for jobs instead', action: 'Switch →', path: '#', onClick: switchRole },
       ];
@@ -199,7 +195,6 @@ export default function Home() {
 
   return (
     <Layout activeTab="dashboard">
-      {/* Dashboard Header */}
       <div style={{ 
         marginBottom: isMobile ? '20px' : '32px',
         paddingBottom: isMobile ? '12px' : '20px',
@@ -296,7 +291,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div style={{
         background: '#ffffff',
         borderRadius: isMobile ? '10px' : '12px',
@@ -394,7 +388,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Logout Button at Bottom */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',

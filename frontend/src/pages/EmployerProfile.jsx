@@ -102,7 +102,6 @@ export default function EmployerProfile() {
       ...prev,
       companyPhotos: updatedPhotos
     }));
-    // Save the updated profile
     await handleSubmit(true);
   };
 
@@ -141,7 +140,7 @@ export default function EmployerProfile() {
             color: '#1a3a1a',
             marginBottom: '4px'
           }}>
-            Employer Profile
+            Company Profile
           </h1>
           <p style={{ color: '#5a7a5a', fontSize: isMobile ? '13px' : '14px' }}>
             Update your company information
