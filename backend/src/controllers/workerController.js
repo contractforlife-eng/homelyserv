@@ -6,11 +6,10 @@ const upsertProfile = async (req, res) => {
     const {
       category, experienceYears, expectedSalary,
       availability, workType, bioAr, bioEn, skills, city,
-      profilePhotoUrl, profilePhotos
+      profilePhotoUrl
     } = req.body;
 
     console.log('Saving profile with photo URL:', profilePhotoUrl);
-    console.log('Saving profile with multiple photos:', profilePhotos);
 
     const expYears = parseInt(experienceYears) || 0;
     const salary = parseFloat(expectedSalary) || 0;
@@ -23,11 +22,10 @@ const upsertProfile = async (req, res) => {
         expectedSalary: salary,
         availability,
         workType,
-        bioAr,
-        bioEn,
+        bioAr: bioAr || '',
+        bioEn: bioEn || '',
         skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || '',
-        profilePhotos: profilePhotos || []
+        profilePhotoUrl: profilePhotoUrl || ''
       },
       create: {
         userId: req.userId,
@@ -36,24 +34,23 @@ const upsertProfile = async (req, res) => {
         expectedSalary: salary,
         availability,
         workType,
-        bioAr,
-        bioEn,
+        bioAr: bioAr || '',
+        bioEn: bioEn || '',
         skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || '',
-        profilePhotos: profilePhotos || []
+        profilePhotoUrl: profilePhotoUrl || ''
       }
     });
 
     // Update city on user
     await prisma.user.update({
       where: { id: req.userId },
-      data: { city }
+      data: { city: city || '' }
     });
 
     res.json({ message: 'Profile saved successfully', profile });
   } catch (error) {
     console.error('Profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
@@ -75,7 +72,6 @@ const getMyProfile = async (req, res) => {
     });
     
     console.log('Profile photo URL from DB:', profile?.profilePhotoUrl);
-    console.log('Profile photos from DB:', profile?.profilePhotos);
     res.json(profile);
   } catch (error) {
     console.error('Get profile error:', error);

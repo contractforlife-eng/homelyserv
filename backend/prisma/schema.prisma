@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,32 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  WORKER
-  EMPLOYER
-  ADMIN
-}
-
 model User {
-  id               String         @id @default(uuid())
-  email            String         @unique
-  password         String
-  role             Role           @default(WORKER)
-  fullName         String
-  phone            String?
-  city             String?
-  isVerified       Boolean        @default(false)
-  isSuspended      Boolean        @default(false)
-  language         String         @default("en")
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  workerProfile    WorkerProfile?
-  employerProfile  EmployerProfile?
-  sentMessages     Message[]      @relation("SentMessages")
-  receivedMessages Message[]      @relation("ReceivedMessages")
-  notifications    Notification[]
-  hiresAsEmployer  Hire[]         @relation("EmployerHires")
-  reviewsGiven     Review[]       @relation("ReviewsGiven")
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String?
+  name          String
+  phone         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relation to WorkerProfile
+  workerProfile WorkerProfile?
 }
 
 model WorkerProfile {
@@ -41,7 +29,7 @@ model WorkerProfile {
   user            User         @relation(fields: [userId], references: [id])
   category        String
   experienceYears Int          @default(0)
-  expectedSalary  Float        @default(0)
+  expectedSalary  Float        @default(0)  // ← CHANGED: removed @db.Float
   availability    String       @default("available")
   workType        String       @default("full-time")
   bioAr           String?
@@ -50,115 +38,61 @@ model WorkerProfile {
   profilePhotoUrl String?
   profilePhotos   String[]     @default([])
   docStatus       String       @default("pending")
-  ratingAvg       Float        @default(0)
+  ratingAvg       Float        @default(0)  // ← CHANGED: removed @db.Float
   ratingCount     Int          @default(0)
   isVisible       Boolean      @default(true)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  
+  // Relations
   documents       Document[]
   experiences     Experience[]
   hires           Hire[]       @relation("WorkerHires")
   reviews         Review[]     @relation("ReviewsReceived")
 }
 
-model EmployerProfile {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  companyName     String?
-  companyLogo     String?
-  companyPhotos   String[] @default([])
-  companyWebsite  String?
-  companySize     String?
-  industry        String?
-  description     String?
-  address         String?
-  isVerified      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
 model Document {
-  id              String        @id @default(uuid())
-  workerId        String
-  worker          WorkerProfile @relation(fields: [workerId], references: [id])
-  type            String
-  url             String
-  status          String        @default("pending")
-  rejectionReason String?
-  createdAt       DateTime      @default(now())
+  id               String       @id @default(uuid())
+  workerProfileId  String
+  workerProfile    WorkerProfile @relation(fields: [workerProfileId], references: [id])
+  name             String
+  url              String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
 
 model Experience {
-  id           String        @id @default(uuid())
-  workerId     String
-  worker       WorkerProfile @relation(fields: [workerId], references: [id])
-  employerName String
-  role         String
-  startDate    DateTime
-  endDate      DateTime?
-  description  String?
-  createdAt    DateTime      @default(now())
+  id               String       @id @default(uuid())
+  workerProfileId  String
+  workerProfile    WorkerProfile @relation(fields: [workerProfileId], references: [id])
+  title            String
+  company          String
+  startDate        DateTime
+  endDate          DateTime?
+  description      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
 
 model Hire {
-  id               String        @id @default(uuid())
-  workerId         String
-  worker           WorkerProfile @relation("WorkerHires", fields: [workerId], references: [id])
+  id               String       @id @default(uuid())
+  workerProfileId  String
+  workerProfile    WorkerProfile @relation("WorkerHires", fields: [workerProfileId], references: [id])
   employerId       String
-  employer         User          @relation("EmployerHires", fields: [employerId], references: [id])
-  agreedSalary     Float
-  commissionAmount Float
-  vatAmount        Float
-  totalDue         Float
-  paymentMethod    String?
-  paymentReference String?
-  paymentStatus    String        @default("pending")
-  paymentProofUrl  String?
+  status           String       @default("pending")
   startDate        DateTime?
-  status           String        @default("pending")
-  workerAccepted   Boolean       @default(false)
-  employerAccepted Boolean       @default(false)
-  contactShared    Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  messages         Message[]
-  reviews          Review[]
-}
-
-model Message {
-  id         String   @id @default(uuid())
-  senderId   String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId String
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  hireId     String?
-  hire       Hire?    @relation(fields: [hireId], references: [id])
-  content    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  endDate          DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
 
 model Review {
-  id         String        @id @default(uuid())
-  hireId     String
-  hire       Hire          @relation(fields: [hireId], references: [id])
-  workerId   String
-  worker     WorkerProfile @relation("ReviewsReceived", fields: [workerId], references: [id])
-  employerId String
-  employer   User          @relation("ReviewsGiven", fields: [employerId], references: [id])
-  rating     Int
-  comment    String?
-  createdAt  DateTime      @default(now())
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  type      String
-  title     String
-  body      String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id               String       @id @default(uuid())
+  workerProfileId  String
+  workerProfile    WorkerProfile @relation("ReviewsReceived", fields: [workerProfileId], references: [id])
+  reviewerId       String
+  rating           Int
+  comment          String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
