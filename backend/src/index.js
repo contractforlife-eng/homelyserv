@@ -1,70 +1,113 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const http = require('http');
-const { Server } = require('socket.io');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Register endpoint
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, fullName, role, phone, city } = req.body;
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user (temporarily without database)
+    const user = {
+      id: Date.now(),
+      email,
+      password: hashedPassword,
+      fullName,
+      role: role || 'worker',
+      phone: phone || '',
+      city: city || '',
+      createdAt: new Date().toISOString()
+    };
+    
+    // Create token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+    
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed',
+      error: error.message
+    });
   }
 });
 
-// CORS middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-}));
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Temporary hardcoded user for testing
+    if (email === 'worker@homelyserv.com' && password === 'password123') {
+      const token = jwt.sign(
+        { id: 1, email: email, role: 'worker' },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+      
+      res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: 1,
+          email: email,
+          fullName: 'tester',
+          role: 'worker'
+        },
+        token
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed'
+    });
+  }
+});
 
-app.use(express.json());
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Test route
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
 
-// Routes
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
-
-const workerRoutes = require('./routes/workers');
-app.use('/api/workers', workerRoutes);
-
-const employerRoutes = require('./routes/employer');
-app.use('/api/employer', employerRoutes);
-
-const hireRoutes = require('./routes/hires');
-app.use('/api/hires', hireRoutes);
-
-const paymentRoutes = require('./routes/payment');
-app.use('/api/payments', paymentRoutes);
-
-// Socket.io for real-time chat
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-  });
-
-  socket.on('send_message', (data) => {
-    io.to(data.roomId).emit('receive_message', data);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`HomelyServ server running on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
