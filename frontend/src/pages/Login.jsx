@@ -27,77 +27,100 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f5f5f5',
+      background: 'linear-gradient(135deg, #E8F0FE 0%, #D4E4FD 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
       <div style={{
         display: 'flex',
         maxWidth: '1000px',
         width: '100%',
-        background: '#fff',
-        borderRadius: '24px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.10)',
+        background: '#FFFFFF',
+        borderRadius: '32px',
+        boxShadow: '0 25px 80px rgba(37, 99, 235, 0.15)',
         overflow: 'hidden',
-        minHeight: '600px'
+        minHeight: '620px'
       }}>
         
         {/* Left Panel - Form */}
         <div style={{
           flex: 1,
-          padding: '48px 40px',
+          padding: '52px 44px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
           {/* Logo */}
-          <div style={{ marginBottom: '32px' }}>
-            <h1 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#C0392B',
-              margin: 0
+          <div style={{ marginBottom: '36px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
             }}>
-              HomelyServ
-            </h1>
+              <div style={{
+                width: '44px',
+                height: '44px',
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: '22px',
+                fontWeight: '700'
+              }}>
+                H
+              </div>
+              <h1 style={{
+                fontSize: '26px',
+                fontWeight: '700',
+                color: '#1E293B',
+                margin: 0,
+                letterSpacing: '-0.5px'
+              }}>
+                HomelyServ
+              </h1>
+            </div>
             <p style={{
-              color: '#888',
+              color: '#94A3B8',
               fontSize: '14px',
-              marginTop: '4px'
+              marginTop: '6px',
+              marginLeft: '56px'
             }}>
               Your Home, Our Priority
             </p>
           </div>
 
           <h2 style={{
-            fontSize: '22px',
+            fontSize: '24px',
             fontWeight: '600',
-            color: '#1A1A1A',
-            marginBottom: '4px'
+            color: '#0F172A',
+            marginBottom: '6px',
+            letterSpacing: '-0.3px'
           }}>
-            Welcome Back
+            Welcome Back 👋
           </h2>
           <p style={{
-            color: '#888',
+            color: '#94A3B8',
             fontSize: '14px',
-            marginBottom: '28px'
+            marginBottom: '32px'
           }}>
             Sign in to access your HomelyServ account
           </p>
 
           <form onSubmit={handleSubmit}>
             {/* Email */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '18px' }}>
               <label style={{
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: '600',
-                color: '#444',
+                color: '#475569',
                 display: 'block',
                 marginBottom: '6px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.4px'
+                letterSpacing: '0.3px'
               }}>
                 Email Address
               </label>
@@ -110,13 +133,24 @@ export default function Login() {
                 placeholder="emad@homelyserv.com"
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
-                  border: '1.5px solid #E0E0E0',
-                  borderRadius: '10px',
+                  padding: '13px 16px',
+                  border: '2px solid #E2E8F0',
+                  borderRadius: '12px',
                   fontSize: '14px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  background: '#FAFAFA'
+                  transition: 'all 0.2s ease',
+                  background: '#F8FAFC'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2563EB';
+                  e.target.style.background = '#FFFFFF';
+                  e.target.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#E2E8F0';
+                  e.target.style.background = '#F8FAFC';
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -130,21 +164,20 @@ export default function Login() {
                 marginBottom: '6px'
               }}>
                 <label style={{
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: '600',
-                  color: '#444',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.4px'
+                  color: '#475569',
+                  letterSpacing: '0.3px'
                 }}>
                   Password
                 </label>
                 <Link to="/forgot-password" style={{
                   fontSize: '12px',
-                  color: '#C0392B',
+                  color: '#2563EB',
                   textDecoration: 'none',
                   fontWeight: '500'
                 }}>
-                  Forget password?
+                  Forgot password?
                 </Link>
               </div>
               <input
@@ -156,13 +189,24 @@ export default function Login() {
                 placeholder="Enter your password"
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
-                  border: '1.5px solid #E0E0E0',
-                  borderRadius: '10px',
+                  padding: '13px 16px',
+                  border: '2px solid #E2E8F0',
+                  borderRadius: '12px',
                   fontSize: '14px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  background: '#FAFAFA'
+                  transition: 'all 0.2s ease',
+                  background: '#F8FAFC'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2563EB';
+                  e.target.style.background = '#FFFFFF';
+                  e.target.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#E2E8F0';
+                  e.target.style.background = '#F8FAFC';
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -172,7 +216,7 @@ export default function Login() {
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              marginBottom: '24px'
+              marginBottom: '26px'
             }}>
               <input
                 type="checkbox"
@@ -182,13 +226,14 @@ export default function Login() {
                 style={{
                   width: '18px',
                   height: '18px',
-                  accentColor: '#C0392B',
-                  cursor: 'pointer'
+                  accentColor: '#2563EB',
+                  cursor: 'pointer',
+                  borderRadius: '4px'
                 }}
               />
               <label htmlFor="remember" style={{
                 fontSize: '13px',
-                color: '#666',
+                color: '#64748B',
                 cursor: 'pointer'
               }}>
                 Remember me
@@ -201,18 +246,28 @@ export default function Login() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '14px',
-                background: '#C0392B',
+                padding: '15px',
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
                 color: '#fff',
                 border: 'none',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
-                marginBottom: '20px'
+                transition: 'all 0.2s ease',
+                marginBottom: '22px',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.3)';
               }}
             >
-              {loading ? 'Signing in...' : 'Login'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
@@ -223,11 +278,16 @@ export default function Login() {
             gap: '16px',
             marginBottom: '20px'
           }}>
-            <div style={{ flex: 1, height: '1px', background: '#E0E0E0' }} />
-            <span style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>
+            <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+            <span style={{
+              fontSize: '12px',
+              color: '#94A3B8',
+              fontWeight: '500',
+              letterSpacing: '0.5px'
+            }}>
               OR CONTINUE WITH
             </span>
-            <div style={{ flex: 1, height: '1px', background: '#E0E0E0' }} />
+            <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
           </div>
 
           {/* Social Login */}
@@ -238,28 +298,54 @@ export default function Login() {
             flexWrap: 'wrap'
           }}>
             <button style={{
-              padding: '10px 20px',
-              border: '1.5px solid #E0E0E0',
-              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '11px 24px',
+              border: '2px solid #E2E8F0',
+              borderRadius: '12px',
               background: '#fff',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: '500',
-              color: '#444'
-            }}>
-              🔵 Google
+              color: '#475569',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#2563EB';
+              e.target.style.background = '#F8FAFC';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#E2E8F0';
+              e.target.style.background = '#fff';
+            }}
+            >
+              <span style={{ fontSize: '18px' }}>🔵</span> Google
             </button>
             <button style={{
-              padding: '10px 20px',
-              border: '1.5px solid #E0E0E0',
-              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '11px 24px',
+              border: '2px solid #E2E8F0',
+              borderRadius: '12px',
               background: '#fff',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: '500',
-              color: '#444'
-            }}>
-              🔷 Facebook
+              color: '#475569',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#1877F2';
+              e.target.style.background = '#F0F4FF';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#E2E8F0';
+              e.target.style.background = '#fff';
+            }}
+            >
+              <span style={{ fontSize: '18px' }}>🔷</span> Facebook
             </button>
           </div>
 
@@ -267,12 +353,12 @@ export default function Login() {
           <p style={{
             textAlign: 'center',
             fontSize: '14px',
-            color: '#888',
-            marginTop: '24px'
+            color: '#94A3B8',
+            marginTop: '26px'
           }}>
             Don't have an account?{' '}
             <Link to="/register" style={{
-              color: '#C0392B',
+              color: '#2563EB',
               fontWeight: '600',
               textDecoration: 'none'
             }}>
@@ -281,11 +367,11 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Right Panel - Branding */}
+        {/* Right Panel - Branding (Blue Theme) */}
         <div style={{
-          flex: '0 0 40%',
-          background: 'linear-gradient(145deg, #C0392B 0%, #8B1A1A 100%)',
-          padding: '48px 40px',
+          flex: '0 0 42%',
+          background: 'linear-gradient(145deg, #1E3A5F 0%, #0F172A 100%)',
+          padding: '52px 40px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -295,43 +381,56 @@ export default function Login() {
           position: 'relative',
           overflow: 'hidden'
         }}>
+          {/* Decorative elements */}
           <div style={{
             position: 'absolute',
-            top: '-60px',
-            right: '-60px',
-            width: '200px',
-            height: '200px',
+            top: '-80px',
+            right: '-80px',
+            width: '280px',
+            height: '280px',
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)'
+            background: 'rgba(59, 130, 246, 0.12)'
           }} />
           <div style={{
             position: 'absolute',
-            bottom: '-80px',
-            left: '-80px',
-            width: '250px',
-            height: '250px',
+            bottom: '-100px',
+            left: '-100px',
+            width: '320px',
+            height: '320px',
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)'
+            background: 'rgba(59, 130, 246, 0.08)'
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'rgba(59, 130, 246, 0.04)'
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{
-              fontSize: '64px',
-              marginBottom: '20px'
+              fontSize: '72px',
+              marginBottom: '24px',
+              display: 'block'
             }}>
-              🏠
+              🏡
             </div>
             <h3 style={{
-              fontSize: '24px',
+              fontSize: '26px',
               fontWeight: '700',
-              marginBottom: '12px'
+              marginBottom: '14px',
+              letterSpacing: '-0.5px'
             }}>
               Your Home, Our Priority
             </h3>
             <p style={{
               fontSize: '14px',
-              opacity: 0.85,
-              lineHeight: '1.6',
+              opacity: 0.8,
+              lineHeight: '1.7',
               maxWidth: '280px',
               margin: '0 auto'
             }}>
@@ -339,46 +438,61 @@ export default function Login() {
             </p>
 
             <div style={{
-              marginTop: '32px',
+              marginTop: '36px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '14px',
               alignItems: 'center'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '12px',
                 fontSize: '13px',
-                opacity: 0.9
+                opacity: 0.9,
+                background: 'rgba(255,255,255,0.08)',
+                padding: '8px 18px',
+                borderRadius: '50px',
+                width: '100%',
+                justifyContent: 'center'
               }}>
                 <span>✅</span> Verified professionals
               </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '12px',
                 fontSize: '13px',
-                opacity: 0.9
+                opacity: 0.9,
+                background: 'rgba(255,255,255,0.08)',
+                padding: '8px 18px',
+                borderRadius: '50px',
+                width: '100%',
+                justifyContent: 'center'
               }}>
                 <span>✅</span> Secure & confidential
               </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '12px',
                 fontSize: '13px',
-                opacity: 0.9
+                opacity: 0.9,
+                background: 'rgba(255,255,255,0.08)',
+                padding: '8px 18px',
+                borderRadius: '50px',
+                width: '100%',
+                justifyContent: 'center'
               }}>
                 <span>✅</span> 24/7 support
               </div>
             </div>
 
             <div style={{
-              marginTop: '32px',
+              marginTop: '36px',
               fontSize: '12px',
-              opacity: 0.6,
-              letterSpacing: '0.3px'
+              opacity: 0.5,
+              letterSpacing: '0.5px'
             }}>
               Secure. Reliable. Always here for your home.
             </div>
