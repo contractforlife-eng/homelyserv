@@ -27,6 +27,7 @@ export default function WorkerProfile() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [photos, setPhotos] = useState([]);
   const [form, setForm] = useState({
     category: 'Nanny',
     experienceYears: '',
@@ -38,7 +39,8 @@ export default function WorkerProfile() {
     bioEn: '',
     bioAr: '',
     skills: [],
-    profilePhotoUrl: ''
+    profilePhotoUrl: '',
+    profilePhotos: []
   });
 
   useEffect(() => {
@@ -59,12 +61,15 @@ export default function WorkerProfile() {
       const res = await api.get('/workers/me');
       if (res.data) {
         console.log('Fetched profile data:', res.data);
+        const profilePhotos = res.data.profilePhotos || [];
+        setPhotos(profilePhotos);
         setForm(f => ({
           ...f,
           ...res.data,
           country: res.data.user?.city || '',
           city: res.data.user?.city || '',
-          profilePhotoUrl: res.data.profilePhotoUrl || ''
+          profilePhotoUrl: res.data.profilePhotoUrl || '',
+          profilePhotos: profilePhotos
         }));
       }
     } catch (err) {
@@ -120,16 +125,18 @@ export default function WorkerProfile() {
       const photoUrl = res.data.url;
       console.log('Uploaded photo URL:', photoUrl);
       
-      // Update form with new photo URL
+      const updatedPhotos = [...photos, photoUrl];
+      setPhotos(updatedPhotos);
       setForm(prev => ({
         ...prev,
+        profilePhotos: updatedPhotos,
         profilePhotoUrl: photoUrl
       }));
 
       toast.success('Photo uploaded successfully!');
       
-      // Refresh profile to get the latest data
-      await fetchProfile();
+      // Save the profile to persist photos
+      await handleSubmit(true);
     } catch (err) {
       console.error('Upload error:', err);
       toast.error('Failed to upload photo');
@@ -137,21 +144,34 @@ export default function WorkerProfile() {
     setUploading(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const removePhoto = async (index) => {
+    const updatedPhotos = photos.filter((_, i) => i !== index);
+    setPhotos(updatedPhotos);
+    setForm(prev => ({
+      ...prev,
+      profilePhotos: updatedPhotos,
+      profilePhotoUrl: updatedPhotos.length > 0 ? updatedPhotos[0] : ''
+    }));
+    await handleSubmit(true);
+  };
+
+  const handleSubmit = async (skipNavigate = false) => {
     setLoading(true);
     try {
-      console.log('Saving profile with photo URL:', form.profilePhotoUrl);
+      console.log('Saving profile with photos:', photos);
       
       const profileData = {
         ...form,
         city: form.city || form.country,
-        profilePhotoUrl: form.profilePhotoUrl || ''
+        profilePhotos: photos,
+        profilePhotoUrl: photos.length > 0 ? photos[0] : ''
       };
       
       await api.post('/workers/profile', profileData);
       toast.success('Profile saved successfully!');
-      navigate('/');
+      if (!skipNavigate) {
+        navigate('/');
+      }
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Failed to save profile');
@@ -176,8 +196,8 @@ export default function WorkerProfile() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Profile Photo */}
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          {/* Profile Photos */}
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
@@ -187,8 +207,10 @@ export default function WorkerProfile() {
             marginBottom: '20px',
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-              Profile Photo
+              Profile Photos
             </h3>
+            
+            {/* Main Profile Photo */}
             <div style={{
               width: isMobile ? '100px' : '120px',
               height: isMobile ? '100px' : '120px',
@@ -201,9 +223,9 @@ export default function WorkerProfile() {
               justifyContent: 'center',
               border: '3px solid #2e7d32',
             }}>
-              {form.profilePhotoUrl ? (
+              {photos.length > 0 ? (
                 <img
-                  src={form.profilePhotoUrl}
+                  src={photos[0]}
                   alt="Profile"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {
@@ -216,6 +238,62 @@ export default function WorkerProfile() {
                 <span style={{ fontSize: '48px', color: '#8aaa8a' }}>📷</span>
               )}
             </div>
+
+            {/* Additional Photos */}
+            {photos.length > 0 && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))',
+                gap: '8px',
+                marginBottom: '12px',
+                marginTop: '12px',
+              }}>
+                {photos.map((photo, index) => (
+                  <div key={index} style={{ position: 'relative' }}>
+                    <img
+                      src={photo}
+                      alt={`Photo ${index + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '60px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: index === 0 ? '2px solid #2e7d32' : '1px solid #d4e8d4',
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '-6px',
+                          right: '-6px',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          background: '#c62828',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <label style={{
               display: 'inline-block',
               padding: isMobile ? '8px 18px' : '8px 24px',
@@ -236,7 +314,7 @@ export default function WorkerProfile() {
               />
             </label>
             <p style={{ fontSize: '11px', color: '#8aaa8a', marginTop: '8px' }}>
-              JPG, PNG · Max 5MB
+              JPG, PNG · Max 5MB · First photo is your main profile picture
             </p>
           </div>
 

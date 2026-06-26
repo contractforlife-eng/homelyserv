@@ -24,8 +24,24 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const res = await api.get('/auth/users');
-      setUsers(res.data || []);
+      const usersData = res.data || [];
+      
+      // Fetch worker profiles for photos
+      const usersWithPhotos = await Promise.all(usersData.map(async (u) => {
+        if (u.role === 'WORKER') {
+          try {
+            const profileRes = await api.get(`/workers/me?userId=${u.id}`).catch(() => ({ data: null }));
+            return { ...u, profilePhotoUrl: profileRes.data?.profilePhotoUrl || null };
+          } catch {
+            return { ...u, profilePhotoUrl: null };
+          }
+        }
+        return { ...u, profilePhotoUrl: null };
+      }));
+      
+      setUsers(usersWithPhotos);
     } catch (err) {
+      console.error('Failed to fetch users:', err);
       toast.error('Failed to fetch users');
     }
     setLoading(false);
@@ -76,7 +92,6 @@ export default function AdminUsers() {
         </p>
       </div>
 
-      {/* Search */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -119,7 +134,6 @@ export default function AdminUsers() {
         />
       </div>
 
-      {/* Table */}
       <div style={{
         background: '#ffffff',
         borderRadius: '16px',
@@ -136,6 +150,7 @@ export default function AdminUsers() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e0e8f0' }}>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Photo</th>
                   <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Name</th>
                   <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</th>
                   <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</th>
@@ -148,6 +163,33 @@ export default function AdminUsers() {
                   const roleStyle = getRoleColor(u.role);
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid #f0f4f8' }}>
+                      <td style={{ padding: '12px 18px' }}>
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          background: '#f0f0f0',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid #e0e8f0',
+                        }}>
+                          {u.profilePhotoUrl ? (
+                            <img
+                              src={u.profilePhotoUrl}
+                              alt={u.fullName}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span style="font-size:18px;">👤</span>';
+                              }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: '18px', color: '#6a8bb0' }}>👤</span>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ padding: '12px 18px', fontWeight: '500', color: '#1a2a3a' }}>{u.fullName}</td>
                       <td style={{ padding: '12px 18px', color: '#6a8bb0' }}>{u.email}</td>
                       <td style={{ padding: '12px 18px' }}>

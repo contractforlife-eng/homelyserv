@@ -48,6 +48,7 @@ model WorkerProfile {
   bioEn           String?
   skills          String[]
   profilePhotoUrl String?
+  profilePhotos   String[]     @default([])
   docStatus       String       @default("pending")
   ratingAvg       Float        @default(0)
   ratingCount     Int          @default(0)

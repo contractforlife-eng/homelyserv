@@ -6,10 +6,11 @@ const upsertProfile = async (req, res) => {
     const {
       category, experienceYears, expectedSalary,
       availability, workType, bioAr, bioEn, skills, city,
-      profilePhotoUrl
+      profilePhotoUrl, profilePhotos
     } = req.body;
 
     console.log('Saving profile with photo URL:', profilePhotoUrl);
+    console.log('Saving profile with multiple photos:', profilePhotos);
 
     const expYears = parseInt(experienceYears) || 0;
     const salary = parseFloat(expectedSalary) || 0;
@@ -25,7 +26,8 @@ const upsertProfile = async (req, res) => {
         bioAr,
         bioEn,
         skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || ''
+        profilePhotoUrl: profilePhotoUrl || '',
+        profilePhotos: profilePhotos || []
       },
       create: {
         userId: req.userId,
@@ -37,7 +39,8 @@ const upsertProfile = async (req, res) => {
         bioAr,
         bioEn,
         skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || ''
+        profilePhotoUrl: profilePhotoUrl || '',
+        profilePhotos: profilePhotos || []
       }
     });
 
@@ -72,6 +75,7 @@ const getMyProfile = async (req, res) => {
     });
     
     console.log('Profile photo URL from DB:', profile?.profilePhotoUrl);
+    console.log('Profile photos from DB:', profile?.profilePhotos);
     res.json(profile);
   } catch (error) {
     console.error('Get profile error:', error);
