@@ -58,6 +58,7 @@ export default function WorkerProfile() {
     try {
       const res = await api.get('/workers/me');
       if (res.data) {
+        console.log('Fetched profile data:', res.data);
         setForm(f => ({
           ...f,
           ...res.data,
@@ -117,19 +118,13 @@ export default function WorkerProfile() {
       });
 
       const photoUrl = res.data.url;
+      console.log('Uploaded photo URL:', photoUrl);
       
       // Update form with new photo URL
       setForm(prev => ({
         ...prev,
         profilePhotoUrl: photoUrl
       }));
-
-      // Immediately save the profile to persist the photo URL
-      const saveRes = await api.post('/workers/profile', {
-        ...form,
-        profilePhotoUrl: photoUrl,
-        city: form.city || form.country
-      });
 
       toast.success('Photo uploaded successfully!');
       
@@ -146,13 +141,19 @@ export default function WorkerProfile() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/workers/profile', {
+      console.log('Saving profile with photo URL:', form.profilePhotoUrl);
+      
+      const profileData = {
         ...form,
-        city: form.city || form.country
-      });
-      toast.success('Profile saved!');
+        city: form.city || form.country,
+        profilePhotoUrl: form.profilePhotoUrl || ''
+      };
+      
+      await api.post('/workers/profile', profileData);
+      toast.success('Profile saved successfully!');
       navigate('/');
     } catch (err) {
+      console.error('Save error:', err);
       toast.error('Failed to save profile');
     }
     setLoading(false);
@@ -206,6 +207,7 @@ export default function WorkerProfile() {
                   alt="Profile"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {
+                    console.error('Image load error:', e);
                     e.target.style.display = 'none';
                     e.target.parentElement.innerHTML = '<span style="font-size:48px;color:#8aaa8a;">📷</span>';
                   }}

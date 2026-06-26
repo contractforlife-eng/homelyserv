@@ -5,8 +5,11 @@ const upsertProfile = async (req, res) => {
   try {
     const {
       category, experienceYears, expectedSalary,
-      availability, workType, bioAr, bioEn, skills, city
+      availability, workType, bioAr, bioEn, skills, city,
+      profilePhotoUrl
     } = req.body;
+
+    console.log('Saving profile with photo URL:', profilePhotoUrl);
 
     const expYears = parseInt(experienceYears) || 0;
     const salary = parseFloat(expectedSalary) || 0;
@@ -21,7 +24,8 @@ const upsertProfile = async (req, res) => {
         workType,
         bioAr,
         bioEn,
-        skills: skills || []
+        skills: skills || [],
+        profilePhotoUrl: profilePhotoUrl || ''
       },
       create: {
         userId: req.userId,
@@ -32,10 +36,12 @@ const upsertProfile = async (req, res) => {
         workType,
         bioAr,
         bioEn,
-        skills: skills || []
+        skills: skills || [],
+        profilePhotoUrl: profilePhotoUrl || ''
       }
     });
 
+    // Update city on user
     await prisma.user.update({
       where: { id: req.userId },
       data: { city }
@@ -53,10 +59,22 @@ const getMyProfile = async (req, res) => {
   try {
     const profile = await prisma.workerProfile.findUnique({
       where: { userId: req.userId },
-      include: { user: { select: { fullName: true, email: true, phone: true, city: true } } }
+      include: { 
+        user: { 
+          select: { 
+            fullName: true, 
+            email: true, 
+            phone: true, 
+            city: true 
+          } 
+        } 
+      }
     });
+    
+    console.log('Profile photo URL from DB:', profile?.profilePhotoUrl);
     res.json(profile);
   } catch (error) {
+    console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -100,7 +118,14 @@ const getWorkerById = async (req, res) => {
     const profile = await prisma.workerProfile.findUnique({
       where: { id: req.params.id },
       include: {
-        user: { select: { fullName: true, email: true, phone: true, city: true } },
+        user: { 
+          select: { 
+            fullName: true, 
+            email: true, 
+            phone: true, 
+            city: true 
+          } 
+        },
         experiences: true,
         reviews: {
           include: { employer: { select: { fullName: true } } }
@@ -110,6 +135,7 @@ const getWorkerById = async (req, res) => {
     if (!profile) return res.status(404).json({ message: 'Worker not found' });
     res.json(profile);
   } catch (error) {
+    console.error('Get worker error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
