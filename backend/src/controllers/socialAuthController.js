@@ -17,6 +17,8 @@ const socialLogin = async (req, res) => {
       return res.status(400).json({ message: 'Missing required social login data' });
     }
 
+    console.log(`Social login attempt: ${provider} - ${email}`);
+
     // Check if user exists by email
     let user = await prisma.user.findUnique({
       where: { email }
@@ -36,6 +38,8 @@ const socialLogin = async (req, res) => {
           isVerified: true,
         }
       });
+
+      console.log(`New user created via ${provider}: ${email}`);
     }
 
     // Generate JWT token

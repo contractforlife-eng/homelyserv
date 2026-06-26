@@ -115,6 +115,7 @@ const getMe = async (req, res) => {
         phone: true,
         city: true,
         language: true,
+        isVerified: true,
         createdAt: true
       }
     });
@@ -123,6 +124,7 @@ const getMe = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
+    console.error('Get me error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

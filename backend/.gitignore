@@ -1,5 +1,42 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
 
-/src/generated/prisma
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+prisma/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env.*
+!.env.example
+
+# Prisma
+prisma/*.db
+prisma/*.sqlite

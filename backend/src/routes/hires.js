@@ -12,20 +12,40 @@ const {
   declineOffer
 } = require('../controllers/hireController');
 
-// Test route
+// ============================================
+// TEST ROUTE (for development)
+// ============================================
+
+// Create test hire data
 router.post('/test', createTestHire);
 
-// Offer routes
+// ============================================
+// PROTECTED ROUTES - Authentication required
+// ============================================
+
+// Send job offer to worker
 router.post('/', auth, sendOffer);
+
+// Worker accepts offer
 router.put('/:id/accept', auth, acceptOffer);
+
+// Worker declines offer
 router.put('/:id/decline', auth, declineOffer);
 
-// Hire routes
-router.get('/all', auth, getAllHires);
+// Get my hires (for current user - employer or worker)
 router.get('/my', auth, getMyHires);
 
-// Payment routes
+// Submit payment proof for a hire
 router.put('/:id/payment', auth, submitPayment);
+
+// ============================================
+// ADMIN ONLY ROUTES
+// ============================================
+
+// Get all hires (admin only)
+router.get('/all', auth, getAllHires);
+
+// Confirm payment (admin only)
 router.put('/:id/confirm-payment', auth, confirmPayment);
 
 module.exports = router;

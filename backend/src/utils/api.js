@@ -1,16 +1,37 @@
-import axios from 'axios';
+const axios = require('axios');
 
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
-});
+// Backend API utility for making external API calls
+// This is used for payment gateways, external services, etc.
 
-// Automatically add token to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Create a reusable API client
+const createApiClient = (baseURL, headers = {}) => {
+  return axios.create({
+    baseURL,
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    }
+  });
+};
+
+// Paymob API client (for payment processing)
+const paymobApi = createApiClient(
+  process.env.PAYMOB_API_HOST || 'https://accept.paymob.com/api',
+  {
+    'Accept': 'application/json'
   }
-  return config;
-});
+);
 
-export default api;
+// Google OAuth API client
+const googleApi = createApiClient('https://oauth2.googleapis.com');
+
+// Generic API client for external services
+const externalApi = createApiClient('');
+
+module.exports = {
+  createApiClient,
+  paymobApi,
+  googleApi,
+  externalApi
+};

@@ -5,9 +5,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const {
-  upsertProfile, 
-  getMyProfile, 
-  searchWorkers, 
+  upsertProfile,
+  getMyProfile,
+  searchWorkers,
   getWorkerById
 } = require('../controllers/workerController');
 
@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -45,44 +45,50 @@ const upload = multer({
   }
 });
 
-// Public routes
+// ============================================
+// PUBLIC ROUTES - No authentication required
+// ============================================
+
+// Search workers with filters
 router.get('/search', searchWorkers);
 
-// Protected routes (require authentication)
+// Get worker by ID (public)
+router.get('/:id', getWorkerById);
+
+// ============================================
+// PROTECTED ROUTES - Authentication required
+// ============================================
+
+// Get my worker profile
 router.get('/me', auth, getMyProfile);
+
+// Create or update worker profile
 router.post('/profile', auth, upsertProfile);
 
-// Photo upload route
+// Upload profile photo
 router.post('/upload-photo', auth, upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Get the uploaded file URL
-    // In production with Cloudinary, you would get the URL from Cloudinary
-    // For now, we'll use a local URL or a placeholder
     const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     const photoUrl = `${baseUrl}/uploads/${req.file.filename}`;
-    
-    // For production, you might want to use Cloudinary
-    // const photoUrl = `https://res.cloudinary.com/your-cloud/image/upload/v123/${req.file.filename}`;
-    
-    res.json({ 
+
+    console.log('Worker photo uploaded:', photoUrl);
+
+    res.json({
       url: photoUrl,
       message: 'Photo uploaded successfully',
       filename: req.file.filename
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Upload failed',
-      error: error.message 
+      error: error.message
     });
   }
 });
-
-// Get worker by ID (public)
-router.get('/:id', getWorkerById);
 
 module.exports = router;

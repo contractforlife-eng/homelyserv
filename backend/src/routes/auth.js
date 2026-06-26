@@ -1,146 +1,142 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const prisma = require('../lib/prisma');
-
 const router = express.Router();
+const { register, login, getMe } = require('../controllers/authController');
+const { googleLogin } = require('../controllers/googleAuthController');
+const { socialLogin } = require('../controllers/socialAuthController');
+const authMiddleware = require('../middleware/auth');
+const prisma = require('../utils/prisma');
 
-// REGISTRATION
-router.post('/register', async (req, res) => {
+// ============================================
+// PUBLIC ROUTES - No authentication required
+// ============================================
+
+// Register new user
+router.post('/register', register);
+
+// Login user
+router.post('/login', login);
+
+// Google OAuth login
+router.post('/google-login', googleLogin);
+
+// Social login (Facebook, Twitter, Telegram, Signal)
+router.post('/social-login', socialLogin);
+
+// ============================================
+// PROTECTED ROUTES - Authentication required
+// ============================================
+
+// Get current user profile
+router.get('/me', authMiddleware, getMe);
+
+// Switch user role (Worker <-> Employer)
+router.put('/switch-role', authMiddleware, async (req, res) => {
   try {
-    const { email, password, username, fullName, role, phone, city } = req.body;
-
-    console.log('📝 Registration attempt:', { email, username, fullName, role });
-
-    // Validation
-    if (!email || !password || !username || !fullName) {
-      return res.status(400).json({ 
-        message: 'Email, password, username, and full name are required' 
-      });
+    const { role } = req.body;
+    
+    // Validate role
+    if (!['WORKER', 'EMPLOYER'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be WORKER or EMPLOYER' });
     }
-
-    // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email }
+    
+    // Update user role
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { role: role }
     });
-
-    if (existingEmail) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-
-    // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username }
-    });
-
-    if (existingUsername) {
-      return res.status(400).json({ message: 'Username already taken' });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        username,
-        fullName,
-        role: role || 'WORKER',
-        phone: phone || null,
-        city: city || null,
-      }
-    });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
-      { expiresIn: '7d' }
-    );
-
-    console.log('✅ User registered successfully:', user.email);
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-        role: user.role,
-        phone: user.phone,
-        city: user.city,
-        isVerified: user.isVerified
-      }
-    });
-
+    
+    res.json({ message: 'Role updated successfully', role });
   } catch (error) {
-    console.error('❌ Registration error:', error);
-    res.status(500).json({ 
-      message: 'Server error during registration',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('Switch role error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
-// LOGIN
-router.post('/login', async (req, res) => {
+// ============================================
+// ADMIN ONLY ROUTES
+// ============================================
+
+// Get all users (admin only)
+router.get('/users', authMiddleware, async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    console.log('🔑 Login attempt:', email);
-
-    if (!email || !password) {
-      return res.status(400).json({ 
-        message: 'Email and password are required' 
-      });
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
-      { expiresIn: '7d' }
-    );
-
-    console.log('✅ Login successful:', user.email);
-
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-        role: user.role,
-        phone: user.phone,
-        city: user.city,
-        isVerified: user.isVerified
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        city: true,
+        role: true,
+        isVerified: true,
+        isSuspended: true,
+        createdAt: true,
+        workerProfile: {
+          select: {
+            category: true,
+            ratingAvg: true,
+            profilePhotoUrl: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     });
 
+    res.json(users);
   } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ 
-      message: 'Server error during login',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Suspend or unsuspend a user (admin only)
+router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const { suspended } = req.body;
+    const { userId } = req.params;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
     });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent admin from suspending themselves
+    if (userId === req.userId) {
+      return res.status(400).json({ message: 'You cannot suspend your own account' });
+    }
+
+    // Update user suspension status
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isSuspended: suspended }
+    });
+
+    res.json({ 
+      message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`, 
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        isSuspended: user.isSuspended
+      }
+    });
+  } catch (error) {
+    console.error('Suspend user error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 

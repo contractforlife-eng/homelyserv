@@ -14,32 +14,32 @@ const upsertEmployerProfile = async (req, res) => {
     const profile = await prisma.employerProfile.upsert({
       where: { userId: req.userId },
       update: {
-        companyName,
+        companyName: companyName || '',
         companyLogo: companyLogo || '',
         companyPhotos: companyPhotos || [],
-        companyWebsite,
-        companySize,
-        industry,
-        description,
-        address
+        companyWebsite: companyWebsite || '',
+        companySize: companySize || '',
+        industry: industry || '',
+        description: description || '',
+        address: address || ''
       },
       create: {
         userId: req.userId,
-        companyName,
+        companyName: companyName || '',
         companyLogo: companyLogo || '',
         companyPhotos: companyPhotos || [],
-        companyWebsite,
-        companySize,
-        industry,
-        description,
-        address
+        companyWebsite: companyWebsite || '',
+        companySize: companySize || '',
+        industry: industry || '',
+        description: description || '',
+        address: address || ''
       }
     });
 
     res.json({ message: 'Employer profile saved successfully', profile });
   } catch (error) {
     console.error('Employer profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
@@ -59,6 +59,8 @@ const getMyEmployerProfile = async (req, res) => {
         }
       }
     });
+    
+    console.log('Fetched employer profile:', profile);
     res.json(profile);
   } catch (error) {
     console.error('Get employer profile error:', error);
