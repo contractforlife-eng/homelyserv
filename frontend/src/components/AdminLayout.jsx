@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import LanguageSwitcher from './LanguageSwitcher';
-import Logo from './Logo';
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -29,13 +27,13 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f7f0', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex' }}>
       {/* Sidebar */}
       <aside style={{
-        width: collapsed ? '70px' : '260px',
-        background: '#1a2a1a',
+        width: collapsed ? '72px' : '260px',
+        background: '#0f1a2e',
         minHeight: '100vh',
-        padding: '20px 0',
+        padding: '0',
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
@@ -45,60 +43,60 @@ export default function AdminLayout({ children }) {
         overflowY: 'auto',
         zIndex: 100,
         transition: 'width 0.3s ease',
+        boxShadow: '4px 0 20px rgba(0,0,0,0.1)',
       }}>
         {/* Logo */}
         <div style={{
-          padding: collapsed ? '0 12px' : '0 20px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid #2a4a2a',
+          padding: collapsed ? '16px 0' : '20px 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: '12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              fontSize: '28px',
-              background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              flexShrink: 0,
-            }}>
-              🏠
-            </div>
-            {!collapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Homely</span>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: '#a5d6a7' }}>Serv</span>
-              </div>
-            )}
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '20px',
+            fontWeight: '700',
+            flexShrink: 0,
+          }}>
+            H
           </div>
+          {!collapsed && (
+            <div>
+              <div style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Homely</div>
+              <div style={{ color: '#6a8bb0', fontSize: '12px', fontWeight: '400' }}>Control Panel</div>
+            </div>
+          )}
         </div>
 
         {/* Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           style={{
-            alignSelf: 'flex-end',
-            margin: '8px 12px',
-            padding: '4px 8px',
-            background: 'transparent',
-            border: '1px solid #2a4a2a',
-            borderRadius: '4px',
-            color: '#8aaa8a',
+            alignSelf: collapsed ? 'center' : 'flex-end',
+            margin: '12px 16px',
+            padding: '4px 10px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '6px',
+            color: '#6a8bb0',
             cursor: 'pointer',
-            fontSize: '16px',
+            fontSize: '14px',
           }}
         >
           {collapsed ? '→' : '←'}
         </button>
 
         {/* Menu */}
-        <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: '8px 12px' }}>
           {menuItems.map((item) => (
             <div
               key={item.key}
@@ -106,24 +104,44 @@ export default function AdminLayout({ children }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: collapsed ? '12px 16px' : '12px 20px',
-                margin: '4px 8px',
-                borderRadius: '8px',
+                gap: '14px',
+                padding: collapsed ? '12px 14px' : '12px 18px',
+                margin: '4px 0',
+                borderRadius: '10px',
                 cursor: 'pointer',
-                color: isActive(item.path) ? '#fff' : '#8aaa8a',
-                background: isActive(item.path) ? '#2a4a2a' : 'transparent',
+                color: isActive(item.path) ? '#fff' : '#6a8bb0',
+                background: isActive(item.path) ? 'rgba(79, 172, 254, 0.15)' : 'transparent',
+                border: isActive(item.path) ? '1px solid rgba(79, 172, 254, 0.2)' : 'none',
                 transition: 'all 0.2s ease',
                 justifyContent: collapsed ? 'center' : 'flex-start',
               }}
-              onMouseEnter={(e) => { if (!isActive(item.path)) e.currentTarget.style.background = '#2a4a2a'; }}
-              onMouseLeave={(e) => { if (!isActive(item.path)) e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => {
+                if (!isActive(item.path)) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = '#fff';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive(item.path)) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#6a8bb0';
+                }
+              }}
             >
               <span style={{ fontSize: '20px', flexShrink: 0 }}>{item.icon}</span>
               {!collapsed && (
                 <span style={{ fontSize: '14px', fontWeight: isActive(item.path) ? '600' : '400' }}>
                   {item.label}
                 </span>
+              )}
+              {isActive(item.path) && !collapsed && (
+                <span style={{
+                  marginLeft: 'auto',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: '#4facfe',
+                }} />
               )}
             </div>
           ))}
@@ -132,48 +150,54 @@ export default function AdminLayout({ children }) {
         {/* User Info */}
         <div style={{
           padding: collapsed ? '12px' : '16px 20px',
-          borderTop: '1px solid #2a4a2a',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
           display: 'flex',
           flexDirection: collapsed ? 'column' : 'row',
           alignItems: 'center',
           gap: '10px',
         }}>
           <div style={{
-            width: '36px',
-            height: '36px',
+            width: '38px',
+            height: '38px',
             borderRadius: '50%',
-            background: '#2e7d32',
+            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
             fontWeight: '700',
-            fontSize: '14px',
+            fontSize: '16px',
             flexShrink: 0,
           }}>
-            {user?.fullName?.charAt(0) || 'U'}
+            {user?.fullName?.charAt(0) || 'A'}
           </div>
           {!collapsed && (
             <div style={{ flex: 1 }}>
               <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{user?.fullName}</div>
-              <div style={{ color: '#8aaa8a', fontSize: '11px' }}>{user?.role}</div>
+              <div style={{ color: '#6a8bb0', fontSize: '11px' }}>{user?.role}</div>
             </div>
           )}
           <button
             onClick={handleLogout}
             style={{
-              padding: collapsed ? '6px' : '6px 16px',
-              background: 'transparent',
-              border: '1px solid #2a4a2a',
+              padding: collapsed ? '6px' : '6px 14px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '6px',
-              color: '#8aaa8a',
+              color: '#6a8bb0',
               fontSize: '13px',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               width: collapsed ? 'auto' : '100%',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#2a4a2a'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8aaa8a'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.color = '#6a8bb0';
+            }}
           >
             {collapsed ? '🚪' : 'Logout'}
           </button>
@@ -182,11 +206,11 @@ export default function AdminLayout({ children }) {
 
       {/* Main Content */}
       <main style={{
-        marginLeft: collapsed ? '70px' : '260px',
+        marginLeft: collapsed ? '72px' : '260px',
         flex: 1,
         padding: '24px 32px',
         minHeight: '100vh',
-        background: '#f0f7f0',
+        background: '#f0f4f8',
         transition: 'margin-left 0.3s ease',
       }}>
         {children}
