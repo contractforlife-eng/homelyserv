@@ -23,7 +23,6 @@ import {
   Award,
   Shield,
   Bookmark,
-  BookmarkCheck,
   ChevronLeft,
   ChevronRight,
   Globe,
@@ -542,7 +541,7 @@ const WorkerProfile = () => {
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+              {isSaved ? <Bookmark size={18} className="text-red-600 fill-red-600" /> : <Bookmark size={18} />}
               {isSaved ? t.saved : t.save}
             </button>
             <button

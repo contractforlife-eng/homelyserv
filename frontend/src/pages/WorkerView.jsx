@@ -35,7 +35,7 @@ import {
   Award,
   Shield,
   Bookmark,
-  BookmarkCheck,
+  
   MapPin,
   Phone,
   Mail,
