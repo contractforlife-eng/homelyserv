@@ -1,317 +1,406 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
-import useAuthStore from '../store/authStore';
-import AdminLayout from '../components/AdminLayout';
+import {
+  Users,
+  Briefcase,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  MessageCircle,
+  UserCheck,
+  UserX,
+  FileText,
+  Calendar,
+  BarChart3,
+  Activity,
+  RefreshCw,
+  Globe,
+  ChevronDown,
+  ChevronUp,
+  MoreVertical,
+  Check,
+  X,
+  Plus,
+  Settings,
+  Bell,
+  LogOut,
+  Home,
+  Star,
+  MapPin,
+  Phone,
+  Mail,
+  Shield,
+  Award,
+  PieChart,
+  LineChart,
+  Users as UsersIcon,
+  Building,
+  CreditCard,
+  Wallet,
+  Banknote
+} from 'lucide-react';
 
-export default function AdminDashboard() {
+const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalHires: 0,
-    activeHires: 0,
-    pendingPayments: 0,
-    totalRevenue: 0,
-    workers: 0,
-    employers: 0,
-    admins: 0
-  });
+  const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    if (user?.role !== 'ADMIN') {
-      navigate('/');
-      return;
+  // Translations
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      overview: 'Overview',
+      workers: 'Workers',
+      employers: 'Employers',
+      hires: 'Hires',
+      payments: 'Payments',
+      verifications: 'Verifications',
+      reports: 'Reports',
+      settings: 'Settings',
+      logout: 'Logout',
+      welcome: 'Welcome back, Admin',
+      stats: {
+        totalWorkers: 'Total Workers',
+        totalEmployers: 'Total Employers',
+        totalHires: 'Total Hires',
+        totalRevenue: 'Total Revenue',
+        pendingVerifications: 'Pending Verifications',
+        activeHires: 'Active Hires',
+        pendingPayments: 'Pending Payments',
+        monthlyGrowth: 'Monthly Growth'
+      },
+      languageToggle: 'العربية'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      overview: 'نظرة عامة',
+      workers: 'العمال',
+      employers: 'أصحاب العمل',
+      hires: 'التوظيفات',
+      payments: 'المدفوعات',
+      verifications: 'التحقق',
+      reports: 'التقارير',
+      settings: 'الإعدادات',
+      logout: 'تسجيل الخروج',
+      welcome: 'مرحباً بعودتك، مشرف',
+      stats: {
+        totalWorkers: 'إجمالي العمال',
+        totalEmployers: 'إجمالي أصحاب العمل',
+        totalHires: 'إجمالي التوظيفات',
+        totalRevenue: 'إجمالي الإيرادات',
+        pendingVerifications: 'طلبات التحقق المعلقة',
+        activeHires: 'التوظيفات النشطة',
+        pendingPayments: 'المدفوعات المعلقة',
+        monthlyGrowth: 'النمو الشهري'
+      },
+      languageToggle: 'English'
     }
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [hiresRes, usersRes] = await Promise.all([
-        api.get('/hires/all').catch(() => ({ data: [] })),
-        api.get('/auth/users').catch(() => ({ data: [] }))
-      ]);
-
-      const allHires = hiresRes.data || [];
-      const allUsers = usersRes.data || [];
-
-      const pending = allHires.filter(h => h.paymentStatus === 'pending').length;
-      const active = allHires.filter(h => h.status === 'active').length;
-      const revenue = allHires
-        .filter(h => h.paymentStatus === 'confirmed')
-        .reduce((sum, h) => sum + (h.totalDue || 0), 0);
-
-      const workers = allUsers.filter(u => u.role === 'WORKER').length;
-      const employers = allUsers.filter(u => u.role === 'EMPLOYER').length;
-      const admins = allUsers.filter(u => u.role === 'ADMIN').length;
-
-      setStats({
-        totalUsers: allUsers.length,
-        totalHires: allHires.length,
-        activeHires: active,
-        pendingPayments: pending,
-        totalRevenue: revenue,
-        workers,
-        employers,
-        admins
-      });
-
-      // Build recent activity
-      const activities = [];
-      allUsers.slice(0, 3).forEach(u => {
-        const date = new Date(u.createdAt);
-        activities.push({
-          id: `user-${u.id}`,
-          text: `${u.fullName} joined as ${u.role}`,
-          time: getTimeAgo(date),
-          date: date,
-          color: u.role === 'WORKER' ? '#4facfe' : u.role === 'EMPLOYER' ? '#43e97b' : '#f5576c'
-        });
-      });
-
-      allHires.slice(0, 3).forEach(h => {
-        const date = new Date(h.createdAt);
-        if (h.status === 'active') {
-          activities.push({
-            id: `hire-${h.id}`,
-            text: `Hire confirmed: ${h.worker?.user?.fullName} hired by ${h.employer?.fullName}`,
-            time: getTimeAgo(date),
-            date: date,
-            color: '#43e97b'
-          });
-        } else if (h.paymentStatus === 'pending') {
-          activities.push({
-            id: `payment-${h.id}`,
-            text: `Payment pending for ${h.worker?.user?.fullName}`,
-            time: getTimeAgo(date),
-            date: date,
-            color: '#f093fb'
-          });
-        }
-      });
-
-      activities.sort((a, b) => b.date - a.date);
-      setRecentActivity(activities.slice(0, 5));
-
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    }
-    setLoading(false);
   };
 
-  const getTimeAgo = (date) => {
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    return 'Just now';
+  const t = translations[language];
+
+  // Demo stats
+  const stats = {
+    totalWorkers: 2547,
+    totalEmployers: 1234,
+    totalHires: 895,
+    totalRevenue: 187500,
+    pendingVerifications: 45,
+    activeHires: 342,
+    pendingPayments: 28,
+    monthlyGrowth: 12.5
   };
 
-  const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#4facfe', bg: 'rgba(79, 172, 254, 0.1)' },
-    { label: 'Total Hires', value: stats.totalHires, icon: '📋', color: '#43e97b', bg: 'rgba(67, 233, 123, 0.1)' },
-    { label: 'Pending Payments', value: stats.pendingPayments, icon: '⏳', color: '#f093fb', bg: 'rgba(240, 147, 251, 0.1)' },
-    { label: 'Revenue', value: `EGP ${stats.totalRevenue.toFixed(0)}`, icon: '💰', color: '#f5576c', bg: 'rgba(245, 87, 108, 0.1)' },
-  ];
+  useEffect(() => {
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
-  const quickActions = [
-    { icon: '👥', label: 'Users', path: '/admin/users', color: '#4facfe' },
-    { icon: '📋', label: 'Hires', path: '/admin/hires', color: '#43e97b' },
-    { icon: '💰', label: 'Payments', path: '/admin/payments', color: '#f093fb' },
-    { icon: '⚙️', label: 'Settings', path: '/admin/settings', color: '#4facfe' },
-    { icon: '📈', label: 'Reports', path: '/admin/reports', color: '#f5576c' },
-  ];
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6a8bb0' }}>Loading...</div>
-      </AdminLayout>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
     );
   }
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-
   return (
-    <AdminLayout>
-      {/* Header */}
-      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
-        <h1 style={{ 
-          fontSize: isMobile ? '22px' : '28px', 
-          fontWeight: '700', 
-          color: '#1a2a3a', 
-          marginBottom: '4px' 
-        }}>
-          Good {greeting}, {user?.fullName} 👋
-        </h1>
-        <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
-          Here's what's happening with your platform today
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '12px' : '20px',
-        marginBottom: isMobile ? '24px' : '32px',
-      }}>
-        {statCards.map((card, index) => (
-          <div key={index} style={{
-            background: '#ffffff',
-            borderRadius: isMobile ? '12px' : '16px',
-            padding: isMobile ? '16px' : '24px',
-            border: '1px solid rgba(0,0,0,0.04)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: isMobile ? '11px' : '13px', color: '#6a8bb0', fontWeight: '500' }}>{card.label}</span>
-              <span style={{ fontSize: isMobile ? '20px' : '22px' }}>{card.icon}</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-8">
+            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <Home size={20} className="text-white" />
             </div>
-            <div style={{ 
-              fontSize: isMobile ? '22px' : '28px', 
-              fontWeight: '700', 
-              color: '#1a2a3a' 
-            }}>
-              {card.value}
-            </div>
-            <div style={{ 
-              fontSize: isMobile ? '10px' : '12px', 
-              color: card.color, 
-              marginTop: '6px' 
-            }}>
-              {card.label === 'Revenue' ? 'Commissions collected' : 'Updated'}
-            </div>
+            <span className="text-xl font-bold text-gray-800">HomelyServ</span>
           </div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <h2 style={{ 
-        fontSize: isMobile ? '15px' : '16px', 
-        fontWeight: '600', 
-        color: '#1a2a3a', 
-        marginBottom: isMobile ? '12px' : '16px' 
-      }}>
-        Quick Actions
-      </h2>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, 1fr)',
-        gap: isMobile ? '10px' : '16px',
-        marginBottom: isMobile ? '24px' : '32px',
-      }}>
-        {quickActions.map((action, index) => (
-          <div
-            key={index}
-            onClick={() => navigate(action.path)}
-            style={{
-              background: '#ffffff',
-              borderRadius: isMobile ? '10px' : '12px',
-              padding: isMobile ? '16px' : '20px',
-              border: '1px solid rgba(0,0,0,0.04)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              textAlign: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          <nav className="space-y-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'overview' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <BarChart3 size={20} />
+              <span>{t.overview}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('workers')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'workers' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Users size={20} />
+              <span>{t.workers}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('employers')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'employers' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Building size={20} />
+              <span>{t.employers}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('hires')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'hires' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Briefcase size={20} />
+              <span>{t.hires}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'payments' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <DollarSign size={20} />
+              <span>{t.payments}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('verifications')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'verifications' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Shield size={20} />
+              <span>{t.verifications}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'settings' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Settings size={20} />
+              <span>{t.settings}</span>
+            </button>
+          </nav>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <button
+            onClick={() => {
+              localStorage.removeItem('homelyserv_token');
+              localStorage.removeItem('homelyserv_user');
+              navigate('/login');
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)';
-              e.currentTarget.style.borderColor = action.color;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
-              e.currentTarget.style.borderColor = 'rgba(0,0,0,0.04)';
-            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
-            <div style={{ fontSize: isMobile ? '24px' : '28px', marginBottom: '8px' }}>{action.icon}</div>
-            <h4 style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: '600', color: '#1a2a3a' }}>{action.label}</h4>
-            <span style={{ fontSize: isMobile ? '11px' : '12px', color: action.color, fontWeight: '500' }}>Go →</span>
-          </div>
-        ))}
+            <LogOut size={20} />
+            <span>{t.logout}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Recent Activity */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: isMobile ? '12px' : '16px',
-        padding: isMobile ? '16px' : '24px',
-        border: '1px solid rgba(0,0,0,0.04)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: isMobile ? '16px' : '18px' }}>📋</span>
-          <h3 style={{ fontSize: isMobile ? '15px' : '16px', fontWeight: '600', color: '#1a2a3a' }}>
-            Recent Activity
-          </h3>
-          {recentActivity.length > 0 && (
-            <span style={{ fontSize: '12px', color: '#6a8bb0', marginLeft: 'auto' }}>
-              {recentActivity.length} items
-            </span>
+      {/* Main Content */}
+      <div className="ml-64">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">{t.dashboard}</h1>
+              <p className="text-gray-500 text-sm">{t.welcome}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-red-300 transition-colors text-sm"
+              >
+                <Globe size={16} className="text-gray-600" />
+                <span className="font-medium">{t.languageToggle}</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  A
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Admin User</p>
+                  <p className="text-xs text-gray-500">admin@homelyserv.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="p-8">
+          {activeTab === 'overview' && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.totalWorkers}</p>
+                      <p className="text-2xl font-bold text-gray-800">{stats.totalWorkers.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <Users size={24} className="text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs">
+                    <TrendingUp size={14} className="text-green-500" />
+                    <span className="text-green-500">+12%</span>
+                    <span className="text-gray-400">vs last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.totalEmployers}</p>
+                      <p className="text-2xl font-bold text-gray-800">{stats.totalEmployers.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                      <Building size={24} className="text-green-600" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs">
+                    <TrendingUp size={14} className="text-green-500" />
+                    <span className="text-green-500">+8%</span>
+                    <span className="text-gray-400">vs last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.totalHires}</p>
+                      <p className="text-2xl font-bold text-gray-800">{stats.totalHires.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                      <Briefcase size={24} className="text-purple-600" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs">
+                    <TrendingUp size={14} className="text-green-500" />
+                    <span className="text-green-500">+15%</span>
+                    <span className="text-gray-400">vs last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.totalRevenue}</p>
+                      <p className="text-2xl font-bold text-gray-800">EGP {stats.totalRevenue.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                      <DollarSign size={24} className="text-red-600" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs">
+                    <TrendingUp size={14} className="text-green-500" />
+                    <span className="text-green-500">+18%</span>
+                    <span className="text-gray-400">vs last month</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                      <Clock size={20} className="text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.pendingVerifications}</p>
+                      <p className="text-xl font-bold text-gray-800">{stats.pendingVerifications}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                      <CheckCircle size={20} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.activeHires}</p>
+                      <p className="text-xl font-bold text-gray-800">{stats.activeHires}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                      <AlertCircle size={20} className="text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">{t.stats.pendingPayments}</p>
+                      <p className="text-xl font-bold text-gray-800">{stats.pendingPayments}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Other tabs */}
+          {activeTab !== 'overview' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                {t[activeTab] || activeTab}
+              </h2>
+              <p className="text-gray-500">Management interface for {activeTab} coming soon...</p>
+            </div>
           )}
         </div>
-
-        {recentActivity.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#6a8bb0' }}>
-            No recent activity found.
-          </div>
-        ) : (
-          recentActivity.map((activity, index) => (
-            <div
-              key={activity.id || index}
-              style={{
-                padding: isMobile ? '10px 0' : '12px 0',
-                borderBottom: index < recentActivity.length - 1 ? '1px solid #f0f4f8' : 'none',
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: isMobile ? '4px' : '0',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: activity.color || '#4facfe',
-                }} />
-                <span style={{ fontSize: isMobile ? '13px' : '14px', color: '#1a2a3a' }}>
-                  {activity.text}
-                </span>
-              </div>
-              <span style={{ 
-                fontSize: isMobile ? '11px' : '12px', 
-                color: '#6a8bb0',
-                marginLeft: isMobile ? '18px' : '0',
-              }}>
-                {activity.time}
-              </span>
-            </div>
-          ))
-        )}
       </div>
-    </AdminLayout>
+    </div>
   );
-}
+};
+
+export default AdminDashboard;
