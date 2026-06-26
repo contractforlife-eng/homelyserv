@@ -135,8 +135,8 @@ export default function WorkerProfile() {
 
       toast.success('Photo uploaded successfully!');
       
-      // Save the profile to persist photos
-      await handleSubmit(true);
+      // Save the profile immediately after upload
+      await saveProfile(updatedPhotos, photoUrl);
     } catch (err) {
       console.error('Upload error:', err);
       toast.error('Failed to upload photo');
@@ -147,36 +147,42 @@ export default function WorkerProfile() {
   const removePhoto = async (index) => {
     const updatedPhotos = photos.filter((_, i) => i !== index);
     setPhotos(updatedPhotos);
+    const mainPhoto = updatedPhotos.length > 0 ? updatedPhotos[0] : '';
     setForm(prev => ({
       ...prev,
       profilePhotos: updatedPhotos,
-      profilePhotoUrl: updatedPhotos.length > 0 ? updatedPhotos[0] : ''
+      profilePhotoUrl: mainPhoto
     }));
-    await handleSubmit(true);
+    await saveProfile(updatedPhotos, mainPhoto);
   };
 
-  const handleSubmit = async (skipNavigate = false) => {
-    setLoading(true);
+  const saveProfile = async (photoList, mainPhoto) => {
     try {
-      console.log('Saving profile with photos:', photos);
-      
       const profileData = {
         ...form,
         city: form.city || form.country,
-        profilePhotos: photos,
-        profilePhotoUrl: photos.length > 0 ? photos[0] : ''
+        profilePhotos: photoList || photos,
+        profilePhotoUrl: mainPhoto || (photoList && photoList.length > 0 ? photoList[0] : '')
       };
+      
+      console.log('Saving profile data:', profileData);
       
       await api.post('/workers/profile', profileData);
       toast.success('Profile saved successfully!');
-      if (!skipNavigate) {
-        navigate('/');
-      }
+      // Refresh profile to get latest data
+      await fetchProfile();
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Failed to save profile');
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    await saveProfile(photos, photos.length > 0 ? photos[0] : '');
     setLoading(false);
+    navigate('/');
   };
 
   return (
@@ -196,7 +202,7 @@ export default function WorkerProfile() {
           </p>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+        <form onSubmit={handleSubmit}>
           {/* Profile Photos */}
           <div style={{
             background: '#ffffff',

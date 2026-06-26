@@ -30,7 +30,7 @@ export default function AdminUsers() {
       const usersWithPhotos = await Promise.all(usersData.map(async (u) => {
         if (u.role === 'WORKER') {
           try {
-            const profileRes = await api.get(`/workers/me?userId=${u.id}`).catch(() => ({ data: null }));
+            const profileRes = await api.get(`/workers/me`).catch(() => ({ data: null }));
             return { ...u, profilePhotoUrl: profileRes.data?.profilePhotoUrl || null };
           } catch {
             return { ...u, profilePhotoUrl: null };
