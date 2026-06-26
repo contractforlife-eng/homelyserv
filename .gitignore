@@ -1,0 +1,16 @@
+node_modules/ 
+.env 
+.env.local 
+package-lock.json 
+yarn.lock 
+prisma/*.db 
+prisma/*.db-journal 
+prisma/migrations/ 
+dist/ 
+build/ 
+.DS_Store 
+Thumbs.db 
+.vscode/ 
+.idea/ 
+frontend/dist/ 
+frontend/.vite/ 

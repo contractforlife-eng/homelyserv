@@ -1,116 +1,146 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const prisma = require('../lib/prisma');
+
 const router = express.Router();
-const { register, login, getMe } = require('../controllers/authController');
-const { socialLogin } = require('../controllers/socialAuthController');
-const { googleLogin } = require('../controllers/googleAuthController');
-const authMiddleware = require('../middleware/auth');
-const prisma = require('../utils/prisma');
 
-// PUBLIC routes - no auth required
-router.post('/register', register);
-router.post('/login', login);
-router.post('/social-login', socialLogin);
-router.post('/google-login', googleLogin);
-
-// PROTECTED routes - auth required
-router.get('/me', authMiddleware, getMe);
-
-// GET ALL USERS (admin only)
-router.get('/users', authMiddleware, async (req, res) => {
+// REGISTRATION
+router.post('/register', async (req, res) => {
   try {
-    if (req.userRole !== 'ADMIN') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    const { email, password, username, fullName, role, phone, city } = req.body;
+
+    console.log('📝 Registration attempt:', { email, username, fullName, role });
+
+    // Validation
+    if (!email || !password || !username || !fullName) {
+      return res.status(400).json({ 
+        message: 'Email, password, username, and full name are required' 
+      });
     }
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        city: true,
-        role: true,
-        isVerified: true,
-        isSuspended: true,
-        createdAt: true,
-        workerProfile: {
-          select: {
-            category: true,
-            ratingAvg: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
+    // Check if email already exists
+    const existingEmail = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Check if username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        username,
+        fullName,
+        role: role || 'WORKER',
+        phone: phone || null,
+        city: city || null,
       }
     });
 
-    res.json(users);
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
+      { expiresIn: '7d' }
+    );
 
-// Suspend/Unsuspend user (admin only)
-router.put('/users/:userId/suspend', authMiddleware, async (req, res) => {
-  try {
-    if (req.userRole !== 'ADMIN') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
+    console.log('✅ User registered successfully:', user.email);
 
-    const { suspended } = req.body;
-    const { userId } = req.params;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!existingUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (userId === req.userId) {
-      return res.status(400).json({ message: 'You cannot suspend your own account' });
-    }
-
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { isSuspended: suspended }
-    });
-
-    res.json({ 
-      message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`, 
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
       user: {
         id: user.id,
+        email: user.email,
+        username: user.username,
         fullName: user.fullName,
-        isSuspended: user.isSuspended
+        role: user.role,
+        phone: user.phone,
+        city: user.city,
+        isVerified: user.isVerified
       }
     });
+
   } catch (error) {
-    console.error('Suspend user error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    console.error('❌ Registration error:', error);
+    res.status(500).json({ 
+      message: 'Server error during registration',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
-// Switch role
-router.put('/switch-role', authMiddleware, async (req, res) => {
+// LOGIN
+router.post('/login', async (req, res) => {
   try {
-    const { role } = req.body;
-    
-    if (!['WORKER', 'EMPLOYER'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role. Must be WORKER or EMPLOYER' });
+    const { email, password } = req.body;
+
+    console.log('🔑 Login attempt:', email);
+
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: 'Email and password are required' 
+      });
     }
-    
-    await prisma.user.update({
-      where: { id: req.userId },
-      data: { role: role }
+
+    const user = await prisma.user.findUnique({
+      where: { email }
     });
-    
-    res.json({ message: 'Role updated successfully', role });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
+      { expiresIn: '7d' }
+    );
+
+    console.log('✅ Login successful:', user.email);
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        phone: user.phone,
+        city: user.city,
+        isVerified: user.isVerified
+      }
+    });
+
   } catch (error) {
-    console.error('Switch role error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    console.error('❌ Login error:', error);
+    res.status(500).json({ 
+      message: 'Server error during login',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

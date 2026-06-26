@@ -1,179 +1,265 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import useAuthStore from '../store/authStore';
-import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-import Logo from '../components/Logo';
-import { countries } from '../utils/countries';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-export default function Register() {
+const Register = () => {
   const navigate = useNavigate();
-  const { register, loading } = useAuthStore();
-  const { t } = useTranslation();
-  const [form, setForm] = useState({
-    fullName: '',
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
+    username: '',
+    fullName: '',
+    role: 'WORKER',
     phone: '',
-    country: '',
-    city: '',
-    role: 'WORKER'
+    city: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleCountryChange = (e) => {
-    const countryName = e.target.value;
-    setForm({
-      ...form,
-      country: countryName,
-      city: ''
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await register({
-      ...form,
-      city: form.city
-    });
-    if (result.success) {
-      toast.success('Account created successfully!');
-      navigate('/');
-    } else {
-      toast.error(result.message || 'Registration failed');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/register', formData);
+
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const selectedCountry = countries.find(c => c.name === form.country);
-
   return (
-    <div className="auth-page">
-      <div className="auth-card fade-in">
-        <div className="auth-language">
-          <LanguageSwitcher />
-        </div>
+    <div className="register-container">
+      <div className="register-box">
+        <h2>Create Account</h2>
+        <p className="subtitle">Join HomelyServ today</p>
 
-        <div className="auth-header">
-          <div className="auth-logo-wrapper">
-            <Logo />
-          </div>
-          <p className="auth-subtitle">{t('create_account')}</p>
-        </div>
+        {error && <div className="error-message">{error}</div>}
 
-        <div className="role-toggle">
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, role: 'WORKER' })}
-            className={`role-btn ${form.role === 'WORKER' ? 'active' : ''}`}
-          >
-            {t('worker')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, role: 'EMPLOYER' })}
-            className={`role-btn ${form.role === 'EMPLOYER' ? 'active' : ''}`}
-          >
-            {t('employer')}
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">{t('full_name')}</label>
+            <label>FULL NAME</label>
             <input
+              type="text"
               name="fullName"
-              value={form.fullName}
+              value={formData.fullName}
               onChange={handleChange}
+              placeholder="Enter your full name"
               required
-              placeholder="Sara Ahmed"
-              className="form-input"
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('email')}</label>
+            <label>USERNAME</label>
             <input
-              name="email"
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Choose a username"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>EMAIL ADDRESS</label>
+            <input
               type="email"
-              value={form.email}
+              name="email"
+              value={formData.email}
               onChange={handleChange}
+              placeholder="Enter your email"
               required
-              placeholder="sara@email.com"
-              className="form-input"
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('phone')}</label>
+            <label>PASSWORD</label>
             <input
-              name="phone"
-              value={form.phone}
+              type="password"
+              name="password"
+              value={formData.password}
               onChange={handleChange}
-              placeholder="+20 100 000 0000"
-              className="form-input"
+              placeholder="Create a password"
+              required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('country')}</label>
+            <label>ROLE</label>
             <select
-              name="country"
-              value={form.country}
-              onChange={handleCountryChange}
-              className="form-input"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
             >
-              <option value="">{t('select_country')}</option>
-              {countries.map(country => (
-                <option key={country.code} value={country.name}>
-                  {country.flag} {country.name}
-                </option>
-              ))}
+              <option value="WORKER">Worker (Job Seeker)</option>
+              <option value="EMPLOYER">Employer</option>
             </select>
           </div>
 
-          {selectedCountry && (
-            <div className="form-group">
-              <label className="form-label">{t('city')}</label>
-              <select
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                className="form-input"
-              >
-                <option value="">{t('select_city')}</option>
-                {selectedCountry.cities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="form-group">
-            <label className="form-label">{t('password')}</label>
+            <label>PHONE (Optional)</label>
             <input
-              name="password"
-              type="password"
-              value={form.password}
+              type="text"
+              name="phone"
+              value={formData.phone}
               onChange={handleChange}
-              required
-              placeholder="••••••••"
-              className="form-input"
+              placeholder="Enter your phone number"
             />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary btn-full">
-            {loading ? 'Creating account...' : t('register')}
+          <div className="form-group">
+            <label>CITY (Optional)</label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder="Enter your city"
+            />
+          </div>
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
-        <p className="auth-footer">
-          {t('already_have_account')} <Link to="/login">{t('sign_in')}</Link>
+        <p className="login-link">
+          Already have an account? <a href="/login">Sign in</a>
         </p>
       </div>
+
+      <style jsx>{`
+        .register-container {
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: #f5f5f5;
+          font-family: Arial, sans-serif;
+          padding: 20px;
+        }
+
+        .register-box {
+          background: white;
+          padding: 40px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          width: 100%;
+          max-width: 420px;
+        }
+
+        h2 {
+          text-align: center;
+          color: #333;
+          margin-bottom: 5px;
+          font-size: 24px;
+        }
+
+        .subtitle {
+          text-align: center;
+          color: #666;
+          font-size: 14px;
+          margin-bottom: 30px;
+        }
+
+        .error-message {
+          background: #fee;
+          color: #c00;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          text-align: center;
+          font-size: 14px;
+        }
+
+        .form-group {
+          margin-bottom: 15px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 5px;
+          color: #666;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          font-size: 14px;
+          box-sizing: border-box;
+          transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+          outline: none;
+          border-color: #e74c3c;
+        }
+
+        button[type="submit"] {
+          width: 100%;
+          padding: 14px;
+          background: #e74c3c;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.3s;
+          margin-top: 10px;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+          background: #c0392b;
+        }
+
+        button[type="submit"]:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .login-link {
+          text-align: center;
+          margin-top: 20px;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .login-link a {
+          color: #e74c3c;
+          text-decoration: none;
+          font-weight: 600;
+        }
+
+        .login-link a:hover {
+          text-decoration: underline;
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default Register;

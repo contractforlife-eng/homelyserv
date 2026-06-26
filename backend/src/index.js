@@ -1,64 +1,47 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
-const http = require('http');
-const { Server } = require('socket.io');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-  }
-});
+const PORT = process.env.PORT || 5000;
 
-// CORS middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-}));
-
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Import routes
+const authRoutes = require('./routes/auth');
+
+// Use routes
+app.use('/api/auth', authRoutes);
 
 // Test route
-app.get('/', (req, res) => {
+app.get('/api/test', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
 
-// Routes
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
+});
 
-const workerRoutes = require('./routes/workers');
-app.use('/api/workers', workerRoutes);
-
-const hireRoutes = require('./routes/hires');
-app.use('/api/hires', hireRoutes);
-
-// Socket.io for real-time chat
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-  });
-
-  socket.on('send_message', (data) => {
-    io.to(data.roomId).emit('receive_message', data);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`HomelyServ server running on port ${PORT}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📡 Test endpoint: http://localhost:${PORT}/api/test`);
+  console.log(`🔐 Auth endpoints:`);
+  console.log(`   POST /api/auth/register - Register new user`);
+  console.log(`   POST /api/auth/login - Login user`);
 });
