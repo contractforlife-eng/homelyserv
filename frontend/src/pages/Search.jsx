@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -36,10 +37,23 @@ import {
 } from 'lucide-react';
 
 const Search = () => {
+=======
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import useAuthStore from '../store/authStore';
+
+const CATEGORIES = ['All', 'Nanny', 'Baby-Sitter', 'Elderly Caregiver', 'Driver', 'Cook', 'House Manager', 'Gardener', 'Nurse'];
+
+const COLORS = ['#C0392B', '#2C3E50', '#8E44AD', '#16A085', '#E67E22', '#2980B9', '#27AE60', '#D35400'];
+
+export default function Search() {
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
   const navigate = useNavigate();
   const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -60,6 +74,11 @@ const Search = () => {
     sortBy: 'rating',
     sortOrder: 'desc'
   });
+=======
+  const [category, setCategory] = useState('All');
+  const [city, setCity] = useState('');
+  const [availability, setAvailability] = useState('');
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
 
   const [workers, setWorkers] = useState([]);
   const [filteredWorkers, setFilteredWorkers] = useState([]);
@@ -202,6 +221,7 @@ const Search = () => {
 
   const t = translations[language];
 
+<<<<<<< HEAD
   // Check language preference
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -427,6 +447,8 @@ const Search = () => {
     );
   }
 
+=======
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -450,6 +472,7 @@ const Search = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-3">
@@ -588,6 +611,86 @@ const Search = () => {
                     <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
                       <CheckCircle size={14} className="text-white" />
                     </div>
+=======
+      {/* Search bar */}
+      <div style={{ background: '#fff', padding: '14px 16px', borderBottom: '1px solid #E0E0E0', display: 'flex', gap: '8px' }}>
+        <input
+          value={city} onChange={e => setCity(e.target.value)}
+          placeholder="Search by city..."
+          style={{ flex: 1, padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+        />
+        <button onClick={fetchWorkers}
+          style={{ padding: '9px 18px', background: '#C0392B', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+          Search
+        </button>
+      </div>
+
+      {/* Category filters */}
+      <div style={{ display: 'flex', gap: '8px', padding: '12px 16px', overflowX: 'auto' }}>
+        {CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => setCategory(cat)}
+            style={{
+              flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '500', cursor: 'pointer',
+              background: category === cat ? '#C0392B' : '#fff',
+              color: category === cat ? '#fff' : '#444',
+              border: category === cat ? '1px solid #C0392B' : '1px solid #E0E0E0'
+            }}>
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Availability filter */}
+      <div style={{ padding: '0 16px 12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', color: '#888' }}>Availability:</span>
+        {['', 'available', 'busy'].map(a => (
+          <button key={a} onClick={() => setAvailability(a)}
+            style={{
+              padding: '4px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer',
+              background: availability === a ? '#1A1A1A' : '#fff',
+              color: availability === a ? '#fff' : '#444',
+              border: availability === a ? '1px solid #1A1A1A' : '1px solid #E0E0E0'
+            }}>
+            {a === '' ? 'All' : a.charAt(0).toUpperCase() + a.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Results */}
+      <div style={{ padding: '0 16px 24px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading workers...</div>
+        ) : workers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No workers found. Try different filters.</div>
+        ) : (
+          <>
+            <div style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>{workers.length} workers found</div>
+            {workers.map(worker => (
+              <div key={worker.id} onClick={() => navigate(`/worker/${worker.id}`)}
+                style={{ background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '10px', cursor: 'pointer', border: '1px solid #E0E0E0', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                {/* Avatar */}
+                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: getColor(worker.user?.fullName), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
+                  {getInitials(worker.user?.fullName)}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', color: '#1A1A1A', fontSize: '15px' }}>{worker.user?.fullName}</div>
+                  <div style={{ fontSize: '12px', color: '#888', margin: '2px 0 6px' }}>{worker.category} · {worker.experienceYears} yrs exp · {worker.user?.city}</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {worker.skills?.slice(0, 3).map(skill => (
+                      <span key={skill} style={{ background: '#F5F5F5', color: '#444', fontSize: '11px', padding: '2px 8px', borderRadius: '20px' }}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+                {/* Right */}
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontWeight: '700', color: '#C0392B', fontSize: '14px' }}>EGP {worker.expectedSalary?.toLocaleString()}/mo</div>
+                  <div style={{ fontSize: '11px', marginTop: '4px', color: worker.availability === 'available' ? '#27AE60' : '#E67E22', fontWeight: '500' }}>
+                    ● {worker.availability}
+                  </div>
+                  {worker.ratingAvg > 0 && (
+                    <div style={{ fontSize: '11px', color: '#F39C12', marginTop: '2px' }}>★ {worker.ratingAvg.toFixed(1)}</div>
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
                   )}
                 </div>
                 <div className="mt-3">

@@ -6,6 +6,7 @@ import useAuthStore from './store/authStore';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+<<<<<<< HEAD
 import Search from './pages/Search';
 import WorkerProfile from './pages/WorkerProfile';
 import WorkerView from './pages/WorkerView';
@@ -31,6 +32,15 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   return children;
 };
+=======
+import Dashboard from './pages/Dashboard';
+import Search from './pages/Search';
+import WorkerProfile from './pages/WorkerProfile';
+import WorkerView from './pages/WorkerView';
+import MyHires from './pages/MyHires';
+import Payment from './pages/Payment';
+import AdminDashboard from './pages/AdminDashboard';
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
 
 function App() {
   const { checkAuth, language } = useAuthStore();
@@ -47,6 +57,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
+<<<<<<< HEAD
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -87,6 +98,18 @@ function App() {
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+=======
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/worker/:id" element={<WorkerProfile />} />
+        <Route path="/worker-dashboard" element={<WorkerView />} />
+        <Route path="/my-hires" element={<MyHires />} />
+        <Route path="/payment/:hireId" element={<Payment />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
       </Routes>
     </div>
   );

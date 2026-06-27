@@ -325,6 +325,7 @@ const Payment = () => {
 
   // Check language preference
   useEffect(() => {
+<<<<<<< HEAD
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
@@ -399,6 +400,14 @@ const Payment = () => {
 
     fetchHireDetails();
   }, [hireId]);
+=======
+    api.get('/hires/my').then(res => {
+      const found = res.data.find(h => h.id === id);
+      setHire(found);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [id]);
+>>>>>>> e76e870126227e85229ba721aadc59dc43db8af4
 
   // Handle file upload
   const handleFileUpload = (e) => {
