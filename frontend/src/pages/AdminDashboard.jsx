@@ -5,7 +5,8 @@ import {
   Settings, HelpCircle, BarChart3, Home, Calendar, CheckCircle, 
   XCircle, Clock, AlertCircle, UserPlus, UserMinus, 
   TrendingUp, TrendingDown, Eye, Edit, Trash2, 
-  Shield, Award, Zap, Activity, PieChart, LineChart, Bell, LogOut
+  Shield, Award, Zap, Activity, PieChart, LineChart, Bell, LogOut,
+  Search, Filter, Plus, ChevronDown, MoreVertical
 } from 'lucide-react';
 
 function AdminDashboard() {
@@ -18,7 +19,6 @@ function AdminDashboard() {
     if (userData) {
       const parsed = JSON.parse(userData);
       setUser(parsed);
-      // Check if user is admin
       if (parsed.role !== 'ADMIN') {
         navigate('/dashboard');
       }
@@ -33,28 +33,47 @@ function AdminDashboard() {
     navigate('/login');
   };
 
+  // Sample data
+  const users = [
+    { id: 1, name: 'Ahmed Ali', email: 'ahmed@example.com', role: 'Worker', status: 'Active', joined: '2026-01-15' },
+    { id: 2, name: 'Sara Mohamed', email: 'sara@example.com', role: 'Employer', status: 'Pending', joined: '2026-02-20' },
+    { id: 3, name: 'Khaled Mostafa', email: 'khaled@example.com', role: 'Worker', status: 'Active', joined: '2026-03-10' },
+    { id: 4, name: 'Nadia Ibrahim', email: 'nadia@example.com', role: 'Employer', status: 'Suspended', joined: '2026-04-05' }
+  ];
+
+  const workers = [
+    { id: 1, name: 'Ahmed Ali', category: 'Nanny', rating: 4.9, status: 'Verified', jobs: 12 },
+    { id: 2, name: 'Mona Hassan', category: 'Elderly Caregiver', rating: 4.8, status: 'Pending', jobs: 8 },
+    { id: 3, name: 'Khaled Mostafa', category: 'Driver', rating: 4.7, status: 'Verified', jobs: 15 },
+    { id: 4, name: 'Sara Mahmoud', category: 'Cook', rating: 4.9, status: 'Verified', jobs: 20 }
+  ];
+
+  const jobs = [
+    { id: 1, title: 'Need a babysitter for 2 kids', location: 'New York, USA', status: 'Pending', date: '2026-06-20' },
+    { id: 2, title: 'Elderly care for my father', location: 'Los Angeles, USA', status: 'Active', date: '2026-06-18' },
+    { id: 3, title: 'Driver for daily office commute', location: 'Chicago, USA', status: 'Completed', date: '2026-06-15' },
+    { id: 4, title: 'Part-time security guard', location: 'Houston, USA', status: 'Pending', date: '2026-06-12' }
+  ];
+
+  const payments = [
+    { id: 1, user: 'Babysitter Service', amount: '$120', status: 'Paid', date: '2026-06-20' },
+    { id: 2, user: 'Elderly Care', amount: '$200', status: 'Paid', date: '2026-06-18' },
+    { id: 3, user: 'Driver Service', amount: '$80', status: 'Pending', date: '2026-06-15' },
+    { id: 4, user: 'Security Service', amount: '$150', status: 'Failed', date: '2026-06-12' }
+  ];
+
+  const reviews = [
+    { id: 1, user: 'Sara Mohamed', rating: 5, comment: 'Excellent nanny! Highly recommended.', date: '2026-06-20' },
+    { id: 2, user: 'Khaled Rashed', rating: 4, comment: 'Great with children, very reliable.', date: '2026-06-18' },
+    { id: 3, user: 'Nadia Ibrahim', rating: 5, comment: 'Wonderful experience. Highly professional.', date: '2026-06-15' }
+  ];
+
   const stats = [
     { label: 'Total Users', value: '25,680', icon: <Users size={24} />, change: '+12%', color: 'blue' },
     { label: 'Total Workers', value: '8,432', icon: <Briefcase size={24} />, change: '+8%', color: 'green' },
     { label: 'Job Requests', value: '3,215', icon: <FileText size={24} />, change: '+15%', color: 'purple' },
     { label: 'Active Bookings', value: '2,845', icon: <Calendar size={24} />, change: '+5%', color: 'orange' },
     { label: 'Total Revenue', value: '$48,650', icon: <DollarSign size={24} />, change: '+18%', color: 'red' }
-  ];
-
-  const recentJobs = [
-    { title: 'Need a babysitter for 2 kids', location: 'New York, USA', status: 'Pending' },
-    { title: 'Elderly care for my father', location: 'Los Angeles, USA', status: 'Active' },
-    { title: 'Driver for daily office commute', location: 'Chicago, USA', status: 'Completed' },
-    { title: 'Part-time security guard', location: 'Houston, USA', status: 'Pending' },
-    { title: 'Housekeeping for 3 days/week', location: 'Miami, USA', status: 'Active' }
-  ];
-
-  const recentPayments = [
-    { user: 'Babysitter Service', amount: '$120', status: 'Paid' },
-    { user: 'Elderly Care', amount: '$200', status: 'Paid' },
-    { user: 'Driver Service', amount: '$80', status: 'Pending' },
-    { user: 'Security Service', amount: '$150', status: 'Paid' },
-    { user: 'Housekeeping', amount: '$90', status: 'Failed' }
   ];
 
   if (!user) {
@@ -93,117 +112,49 @@ function AdminDashboard() {
               ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-center gap-3">
-                <UserPlus size={24} className="text-blue-600" />
-                <div>
-                  <p className="font-semibold text-gray-800">Add New User</p>
-                  <p className="text-xs text-gray-500">Create new account</p>
-                </div>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
-                <Shield size={24} className="text-green-600" />
-                <div>
-                  <p className="font-semibold text-gray-800">Verify Workers</p>
-                  <p className="text-xs text-gray-500">Pending: 45</p>
-                </div>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex items-center gap-3">
-                <DollarSign size={24} className="text-yellow-600" />
-                <div>
-                  <p className="font-semibold text-gray-800">Process Payments</p>
-                  <p className="text-xs text-gray-500">Pending: 28</p>
-                </div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 flex items-center gap-3">
-                <FileText size={24} className="text-purple-600" />
-                <div>
-                  <p className="font-semibold text-gray-800">Generate Report</p>
-                  <p className="text-xs text-gray-500">Monthly summary</p>
-                </div>
-              </div>
-            </div>
-
             {/* Recent Activity */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <FileText size={18} className="text-red-600" /> Recent Job Requests
-                </h3>
-                <div className="space-y-3">
-                  {recentJobs.map((job, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <div>
-                        <p className="font-medium text-gray-800 text-sm">{job.title}</p>
-                        <p className="text-xs text-gray-500">{job.location}</p>
-                      </div>
+                <h3 className="font-semibold text-gray-800 mb-4">Recent Jobs</h3>
+                {jobs.slice(0, 3).map((job) => (
+                  <div key={job.id} className="flex justify-between items-center border-b border-gray-100 py-2">
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm">{job.title}</p>
+                      <p className="text-xs text-gray-500">{job.location}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      job.status === 'Active' ? 'bg-green-100 text-green-800' :
+                      job.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {job.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-semibold text-gray-800 mb-4">Recent Payments</h3>
+                {payments.slice(0, 3).map((payment) => (
+                  <div key={payment.id} className="flex justify-between items-center border-b border-gray-100 py-2">
+                    <span className="text-sm text-gray-800">{payment.user}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-800">{payment.amount}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        job.status === 'Active' ? 'bg-green-100 text-green-800' :
-                        job.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        payment.status === 'Paid' ? 'bg-green-100 text-green-800' :
+                        payment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
                       }`}>
-                        {job.status}
+                        {payment.status}
                       </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <DollarSign size={18} className="text-green-600" /> Recent Payments
-                </h3>
-                <div className="space-y-3">
-                  {recentPayments.map((payment, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-sm text-gray-800">{payment.user}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800">{payment.amount}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          payment.status === 'Paid' ? 'bg-green-100 text-green-800' :
-                          payment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {payment.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Star size={18} className="text-yellow-600" /> Top Categories
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-800">Baby sitter</span>
-                    <span className="text-sm font-medium">1,256 (39%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-red-600 h-2 rounded-full" style={{ width: '39%' }}></div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-800">Elderly Care</span>
-                    <span className="text-sm font-medium">842 (26%)</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '26%' }}></div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-800">Drivers</span>
-                    <span className="text-sm font-medium">612 (19%)</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '19%' }}></div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </>
         );
+
       case 'users':
         return (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -221,42 +172,227 @@ function AdminDashboard() {
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Role</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-100">
-                    <td className="py-3 font-medium text-gray-800">Ahmed Ali</td>
-                    <td className="py-3 text-gray-600">ahmed@example.com</td>
-                    <td className="py-3"><span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Worker</span></td>
-                    <td className="py-3"><span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span></td>
-                    <td className="py-3 flex gap-2">
-                      <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
-                      <button className="p-1 text-green-600 hover:bg-green-50 rounded"><Edit size={16} /></button>
-                      <button className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-gray-100">
-                    <td className="py-3 font-medium text-gray-800">Sara Mohamed</td>
-                    <td className="py-3 text-gray-600">sara@example.com</td>
-                    <td className="py-3"><span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">Employer</span></td>
-                    <td className="py-3"><span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending</span></td>
-                    <td className="py-3 flex gap-2">
-                      <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
-                      <button className="p-1 text-green-600 hover:bg-green-50 rounded"><Edit size={16} /></button>
-                      <button className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 font-medium text-gray-800">{user.name}</td>
+                      <td className="py-3 text-gray-600">{user.email}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.role === 'Worker' ? 'bg-blue-100 text-blue-800' :
+                          user.role === 'Employer' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.status === 'Active' ? 'bg-green-100 text-green-800' :
+                          user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-gray-600">{user.joined}</td>
+                      <td className="py-3 flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
+                        <button className="p-1 text-green-600 hover:bg-green-50 rounded"><Edit size={16} /></button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         );
+
+      case 'workers':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Worker Management</h3>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
+                  <Filter size={18} /> Filter
+                </button>
+                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                  <Plus size={18} /> Add Worker
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {workers.map((worker) => (
+                <div key={worker.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">
+                      {worker.name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800">{worker.name}</p>
+                      <p className="text-xs text-gray-500">{worker.category}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{worker.rating}</span>
+                        <span className="text-xs text-gray-400">({worker.jobs} jobs)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      worker.status === 'Verified' ? 'bg-green-100 text-green-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {worker.status}
+                    </span>
+                    <button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition">Verify</button>
+                    <button className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition">Suspend</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'jobs':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Job Management</h3>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
+                  <Filter size={18} /> Filter
+                </button>
+                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                  <Plus size={18} /> Post Job
+                </button>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {jobs.map((job) => (
+                <div key={job.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center hover:bg-gray-50 transition">
+                  <div>
+                    <p className="font-semibold text-gray-800">{job.title}</p>
+                    <p className="text-sm text-gray-500">{job.location} • {job.date}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      job.status === 'Active' ? 'bg-green-100 text-green-800' :
+                      job.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {job.status}
+                    </span>
+                    <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'payments':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Payment Management</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Transaction</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 font-medium text-gray-800">{payment.user}</td>
+                      <td className="py-3 font-semibold text-gray-800">{payment.amount}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          payment.status === 'Paid' ? 'bg-green-100 text-green-800' :
+                          payment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-gray-600">{payment.date}</td>
+                      <td className="py-3">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+      case 'reviews':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Reviews Management</h3>
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-gray-800">{review.user}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={16} className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
+                        ))}
+                        <span className="text-sm ml-1">{review.rating}.0</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">"{review.comment}"</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{review.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'settings':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Admin Settings</h3>
+            <div className="space-y-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800">Commission Settings</h4>
+                <p className="text-sm text-gray-500">Current commission rate: 6.5%</p>
+                <button className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition">Edit</button>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800">Payment Methods</h4>
+                <p className="text-sm text-gray-500">InstaPay, Vodafone Cash, Bank Transfer</p>
+                <button className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition">Manage</button>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800">System Settings</h4>
+                <p className="text-sm text-gray-500">Language: English • Currency: EGP</p>
+                <button className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition">Configure</button>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Management</h3>
-            <p className="text-gray-500">Content for {activeTab} section coming soon...</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Page Not Found</h3>
+            <p className="text-gray-500">The requested tab does not exist.</p>
           </div>
         );
     }
