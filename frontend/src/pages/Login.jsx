@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Logo from '../components/Logo';
 
 function Login() {
   const navigate = useNavigate();
@@ -46,13 +47,7 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-4xl font-bold text-red-600">Homey</span>
-            <span className="text-4xl font-bold text-gray-800">Serv</span>
-          </div>
-          <p className="text-gray-500 text-sm mt-1">Your Home, Our Priority</p>
-        </div>
+        <Logo />
         
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">SIGN IN</h2>
         <p className="text-gray-500 text-center text-sm mb-6">Access your HomelyServ account</p>
