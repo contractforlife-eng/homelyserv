@@ -35,7 +35,11 @@ function Register() {
         
         // Redirect based on role
         const userRole = response.data.user.role;
-        if (userRole === 'EMPLOYER') {
+        console.log('User role:', userRole); // Debug log
+        
+        if (userRole === 'ADMIN') {
+          navigate('/admin');
+        } else if (userRole === 'EMPLOYER') {
           navigate('/employer-dashboard');
         } else {
           navigate('/worker-dashboard');

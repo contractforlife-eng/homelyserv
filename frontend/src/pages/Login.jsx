@@ -9,7 +9,6 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Use environment variable for API URL
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const handleSubmit = async (e) => {
@@ -28,10 +27,21 @@ function Login() {
       });
       
       if (response.data.success) {
-        // Save user data and token to localStorage
+        // Save user data and token
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/dashboard');
+        
+        // Redirect based on role
+        const userRole = response.data.user.role;
+        console.log('User role:', userRole); // Debug log
+        
+        if (userRole === 'ADMIN') {
+          navigate('/admin');
+        } else if (userRole === 'EMPLOYER') {
+          navigate('/employer-dashboard');
+        } else {
+          navigate('/worker-dashboard');
+        }
       } else {
         setError(response.data.message || 'Login failed');
       }
