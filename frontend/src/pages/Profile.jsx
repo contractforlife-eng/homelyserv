@@ -1,29 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Briefcase, Calendar, Edit, Save, X, Camera, CheckCircle, AlertCircle } from 'lucide-react';
 
 function Profile() {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    fullName: 'Ahmed Mohamed',
-    email: 'ahmed@homelyserv.com',
-    phone: '+201234567890',
-    location: 'Cairo, Egypt',
-    role: 'Worker',
-    category: 'Nanny',
-    experience: '5 years',
-    verified: true,
-    image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face',
-    bio: 'Experienced nanny with 5 years of experience. Passionate about childcare and child development.'
+    fullName: '',
+    email: '',
+    phone: '',
+    city: '',
+    role: '',
+    image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
   });
-
   const [editData, setEditData] = useState(profile);
+
+  useEffect(() => {
+    // Get user from localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setProfile({
+        fullName: parsedUser.fullName || '',
+        email: parsedUser.email || '',
+        phone: parsedUser.phone || '',
+        city: parsedUser.city || '',
+        role: parsedUser.role || '',
+        image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+      });
+      setEditData({
+        fullName: parsedUser.fullName || '',
+        email: parsedUser.email || '',
+        phone: parsedUser.phone || '',
+        city: parsedUser.city || '',
+        role: parsedUser.role || '',
+        image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+      });
+    } else {
+      navigate('/login');
+    }
+    setLoading(false);
+  }, [navigate]);
 
   const handleSave = () => {
     setProfile(editData);
+    // Update localStorage
+    if (user) {
+      const updatedUser = { ...user, ...editData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
     setIsEditing(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -66,14 +105,10 @@ function Profile() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-gray-800">{profile.fullName}</h2>
-                {profile.verified && <CheckCircle size={20} className="text-green-500" />}
+                <h2 className="text-2xl font-bold text-gray-800">{profile.fullName || 'User'}</h2>
+                {profile.role === 'ADMIN' && <CheckCircle size={20} className="text-green-500" />}
               </div>
-              <p className="text-gray-500">{profile.role} • {profile.category}</p>
-              <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                <span className="flex items-center gap-1"><MapPin size={14} /> {profile.location}</span>
-                <span className="flex items-center gap-1"><Briefcase size={14} /> {profile.experience}</span>
-              </div>
+              <p className="text-gray-500">{profile.role || 'No role'}</p>
             </div>
           </div>
 
@@ -89,7 +124,7 @@ function Profile() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.fullName}</p>
+                <p className="text-gray-800">{profile.fullName || 'Not set'}</p>
               )}
             </div>
 
@@ -103,7 +138,7 @@ function Profile() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.email}</p>
+                <p className="text-gray-800">{profile.email || 'Not set'}</p>
               )}
             </div>
 
@@ -117,7 +152,7 @@ function Profile() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.phone}</p>
+                <p className="text-gray-800">{profile.phone || 'Not set'}</p>
               )}
             </div>
 
@@ -126,12 +161,12 @@ function Profile() {
               {isEditing ? (
                 <input
                   type="text"
-                  value={editData.location}
-                  onChange={(e) => setEditData({...editData, location: e.target.value})}
+                  value={editData.city}
+                  onChange={(e) => setEditData({...editData, city: e.target.value})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.location}</p>
+                <p className="text-gray-800">{profile.city || 'Not set'}</p>
               )}
             </div>
 
@@ -143,58 +178,12 @@ function Profile() {
                   onChange={(e) => setEditData({...editData, role: e.target.value})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
-                  <option>Worker</option>
-                  <option>Employer</option>
+                  <option value="WORKER">Worker</option>
+                  <option value="EMPLOYER">Employer</option>
+                  <option value="ADMIN">Admin</option>
                 </select>
               ) : (
-                <p className="text-gray-800">{profile.role}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
-              {isEditing ? (
-                <select
-                  value={editData.category}
-                  onChange={(e) => setEditData({...editData, category: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option>Nanny</option>
-                  <option>Driver</option>
-                  <option>Cook</option>
-                  <option>Nurse</option>
-                  <option>Elderly Caregiver</option>
-                </select>
-              ) : (
-                <p className="text-gray-800">{profile.category}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Experience</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editData.experience}
-                  onChange={(e) => setEditData({...editData, experience: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              ) : (
-                <p className="text-gray-800">{profile.experience}</p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Bio</label>
-              {isEditing ? (
-                <textarea
-                  value={editData.bio}
-                  onChange={(e) => setEditData({...editData, bio: e.target.value})}
-                  rows="3"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-                />
-              ) : (
-                <p className="text-gray-600">{profile.bio}</p>
+                <p className="text-gray-800">{profile.role || 'Not set'}</p>
               )}
             </div>
           </div>

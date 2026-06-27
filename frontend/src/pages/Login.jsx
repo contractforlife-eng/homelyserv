@@ -28,6 +28,7 @@ function Login() {
       });
       
       if (response.data.success) {
+        // Save user data and token to localStorage
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         navigate('/dashboard');

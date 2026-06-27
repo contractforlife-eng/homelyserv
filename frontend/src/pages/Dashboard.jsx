@@ -23,6 +23,18 @@ function Dashboard() {
     navigate('/login');
   };
 
+  // If user is not loaded yet, show loading
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -30,7 +42,7 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user?.fullName || 'User'}!</span>
+            <span className="text-sm text-gray-600">Welcome, {user.fullName || 'User'}!</span>
             <button className="relative">
               <Bell size={20} className="text-gray-600" />
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
@@ -46,8 +58,9 @@ function Dashboard() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.fullName || 'User'}! 👋</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.fullName || 'User'}! 👋</h1>
           <p className="text-gray-500 mt-1">Here's what's happening with your account today.</p>
+          <p className="text-sm text-gray-400 mt-1">Role: {user.role}</p>
         </div>
 
         {/* Stats Cards */}

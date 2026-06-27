@@ -15,7 +15,6 @@ function Register() {
     city: ''
   });
 
-  // Use environment variable for API URL
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const handleSubmit = async (e) => {
@@ -33,7 +32,14 @@ function Register() {
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/dashboard');
+        
+        // Redirect based on role
+        const userRole = response.data.user.role;
+        if (userRole === 'EMPLOYER') {
+          navigate('/employer-dashboard');
+        } else {
+          navigate('/worker-dashboard');
+        }
       } else {
         setError(response.data.message || 'Registration failed');
       }
