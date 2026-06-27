@@ -28,7 +28,7 @@ export const register = async (req, res) => {
     const randomSuffix = Math.floor(Math.random() * 10000);
     const username = `${baseUsername}${randomSuffix}`;
 
-    // Create user
+    // Create user with proper role handling
     const user = await prisma.user.create({
       data: {
         email,
@@ -37,7 +37,7 @@ export const register = async (req, res) => {
         fullName,
         phone: phone || '',
         city: city || '',
-        role: role || 'WORKER'
+        role: role === 'employer' ? 'EMPLOYER' : 'WORKER' // FIXED: Handles both cases
       }
     });
 

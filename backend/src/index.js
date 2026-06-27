@@ -13,13 +13,25 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'https://homelyserv-nznn.vercel.app', 'https://gas-clapped-copper.ngrok-free.dev'],
     methods: ['GET', 'POST']
   }
 });
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://homelyserv-nznn.vercel.app', 'https://gas-clapped-copper.ngrok-free.dev'],
+  credentials: true
+}));
 app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    message: 'HomelyServ API is running'
+  });
+});
 
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
