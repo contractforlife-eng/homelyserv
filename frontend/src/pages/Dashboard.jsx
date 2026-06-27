@@ -12,7 +12,6 @@ function Dashboard() {
     if (userData) {
       setUser(JSON.parse(userData));
     } else {
-      // If no user, redirect to login
       navigate('/login');
     }
   }, [navigate]);
@@ -23,21 +22,16 @@ function Dashboard() {
     navigate('/login');
   };
 
-  // If user is not loaded yet, show loading
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
@@ -54,16 +48,13 @@ function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.fullName || 'User'}! 👋</h1>
           <p className="text-gray-500 mt-1">Here's what's happening with your account today.</p>
           <p className="text-sm text-gray-400 mt-1">Role: {user.role}</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
@@ -111,7 +102,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Link to="/search" className="bg-red-600 p-6 rounded-xl shadow-sm hover:bg-red-700 transition text-white">
             <div className="flex items-center gap-3">
@@ -142,57 +132,6 @@ function Dashboard() {
               </div>
             </div>
           </Link>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Recent Hires</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                <div>
-                  <p className="font-medium text-gray-800">Ahmed Ali</p>
-                  <p className="text-sm text-gray-500">Nanny - Full Time</p>
-                </div>
-                <span className="text-sm text-green-600 font-medium">Active</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                <div>
-                  <p className="font-medium text-gray-800">Mona Hassan</p>
-                  <p className="text-sm text-gray-500">Elderly Caregiver</p>
-                </div>
-                <span className="text-sm text-yellow-600 font-medium">Pending</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-gray-800">Khaled Mostafa</p>
-                  <p className="text-sm text-gray-500">Driver</p>
-                </div>
-                <span className="text-sm text-gray-500 font-medium">Completed</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Recent Messages</h3>
-            <div className="space-y-3">
-              <div className="border-b border-gray-100 pb-3">
-                <p className="font-medium text-gray-800">Sara Mohamed</p>
-                <p className="text-sm text-gray-500">When can you start working?</p>
-                <span className="text-xs text-gray-400">2 hours ago</span>
-              </div>
-              <div className="border-b border-gray-100 pb-3">
-                <p className="font-medium text-gray-800">Khaled Rashed</p>
-                <p className="text-sm text-gray-500">I'm interested in your profile</p>
-                <span className="text-xs text-gray-400">5 hours ago</span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Nadia Ibrahim</p>
-                <p className="text-sm text-gray-500">Thank you for your application</p>
-                <span className="text-xs text-gray-400">1 day ago</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
