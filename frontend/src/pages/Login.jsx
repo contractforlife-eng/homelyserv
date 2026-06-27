@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Logo from '../components/Logo';
 
 function Login() {
   const navigate = useNavigate();
@@ -46,8 +45,39 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        {/* Logo */}
-        <Logo />
+        {/* Logo - Centered and Larger */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          <div className="relative">
+            <div className="w-24 h-24 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto">
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="white" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="w-14 h-14"
+              >
+                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+            </div>
+            <div className="absolute -top-2 -right-2 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-white text-xl">♥</span>
+            </div>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-4xl font-bold text-red-600 tracking-tight">Homey</span>
+              <span className="text-4xl font-bold text-gray-800 tracking-tight">Serv</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 mt-2">
+              <div className="w-10 h-0.5 bg-red-600"></div>
+              <p className="text-xs text-gray-500 font-medium tracking-wider">YOUR HOME, OUR PRIORITY</p>
+              <div className="w-10 h-0.5 bg-red-600"></div>
+            </div>
+          </div>
+        </div>
         
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">SIGN IN</h2>
         <p className="text-gray-500 text-center text-sm mb-6">Access your HomelyServ account</p>
