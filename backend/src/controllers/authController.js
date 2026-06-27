@@ -1,27 +1,19 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const prisma = require('../utils/prisma');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import prisma from '../utils/prisma.js';
 
-// REGISTER - PUBLIC (no auth required)
-const register = async (req, res) => {
+// REGISTER
+export const register = async (req, res) => {
   try {
     const { email, password, fullName, phone, city, role } = req.body;
 
-    // Validate input
-    if (!email || !password || !fullName) {
-      return res.status(400).json({ message: 'Email, password and full name are required' });
-    }
-
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
@@ -33,10 +25,9 @@ const register = async (req, res) => {
       }
     });
 
-    // Generate token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -52,18 +43,14 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-// LOGIN - PUBLIC
-const login = async (req, res) => {
+// LOGIN
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -81,7 +68,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -98,12 +85,12 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-// GET CURRENT USER - PROTECTED
-const getMe = async (req, res) => {
+// GET CURRENT USER
+export const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -115,18 +102,11 @@ const getMe = async (req, res) => {
         phone: true,
         city: true,
         language: true,
-        isVerified: true,
         createdAt: true
       }
     });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
     res.json(user);
   } catch (error) {
-    console.error('Get me error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-module.exports = { register, login, getMe };

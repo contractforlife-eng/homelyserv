@@ -1,15 +1,12 @@
-const prisma = require('../utils/prisma');
+import prisma from '../utils/prisma.js';
 
 // CREATE OR UPDATE WORKER PROFILE
-const upsertProfile = async (req, res) => {
+export const upsertProfile = async (req, res) => {
   try {
     const {
       category, experienceYears, expectedSalary,
-      availability, workType, bioAr, bioEn, skills, city,
-      profilePhotoUrl
+      availability, workType, bioAr, bioEn, skills, city
     } = req.body;
-
-    console.log('Saving profile with photo URL:', profilePhotoUrl);
 
     const expYears = parseInt(experienceYears) || 0;
     const salary = parseFloat(expectedSalary) || 0;
@@ -22,10 +19,9 @@ const upsertProfile = async (req, res) => {
         expectedSalary: salary,
         availability,
         workType,
-        bioAr: bioAr || '',
-        bioEn: bioEn || '',
-        skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || ''
+        bioAr,
+        bioEn,
+        skills: skills || []
       },
       create: {
         userId: req.userId,
@@ -34,53 +30,39 @@ const upsertProfile = async (req, res) => {
         expectedSalary: salary,
         availability,
         workType,
-        bioAr: bioAr || '',
-        bioEn: bioEn || '',
-        skills: skills || [],
-        profilePhotoUrl: profilePhotoUrl || ''
+        bioAr,
+        bioEn,
+        skills: skills || []
       }
     });
 
-    // Update city on user
     await prisma.user.update({
       where: { id: req.userId },
-      data: { city: city || '' }
+      data: { city }
     });
 
     res.json({ message: 'Profile saved successfully', profile });
   } catch (error) {
     console.error('Profile error:', error);
-    res.status(500).json({ message: 'Server error: ' + error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 // GET MY PROFILE
-const getMyProfile = async (req, res) => {
+export const getMyProfile = async (req, res) => {
   try {
     const profile = await prisma.workerProfile.findUnique({
       where: { userId: req.userId },
-      include: { 
-        user: { 
-          select: { 
-            fullName: true, 
-            email: true, 
-            phone: true, 
-            city: true 
-          } 
-        } 
-      }
+      include: { user: { select: { fullName: true, email: true, phone: true, city: true } } }
     });
-    
-    console.log('Profile photo URL from DB:', profile?.profilePhotoUrl);
     res.json(profile);
   } catch (error) {
-    console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 // SEARCH WORKERS
-const searchWorkers = async (req, res) => {
+export const searchWorkers = async (req, res) => {
   try {
     const { category, city, minSalary, maxSalary, availability } = req.query;
 
@@ -113,19 +95,12 @@ const searchWorkers = async (req, res) => {
 };
 
 // GET SINGLE WORKER PROFILE
-const getWorkerById = async (req, res) => {
+export const getWorkerById = async (req, res) => {
   try {
     const profile = await prisma.workerProfile.findUnique({
       where: { id: req.params.id },
       include: {
-        user: { 
-          select: { 
-            fullName: true, 
-            email: true, 
-            phone: true, 
-            city: true 
-          } 
-        },
+        user: { select: { fullName: true, email: true, phone: true, city: true } },
         experiences: true,
         reviews: {
           include: { employer: { select: { fullName: true } } }
@@ -135,9 +110,6 @@ const getWorkerById = async (req, res) => {
     if (!profile) return res.status(404).json({ message: 'Worker not found' });
     res.json(profile);
   } catch (error) {
-    console.error('Get worker error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-module.exports = { upsertProfile, getMyProfile, searchWorkers, getWorkerById };

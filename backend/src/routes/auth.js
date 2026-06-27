@@ -1,13 +1,14 @@
-const express = require('express');
+import express from 'express';
+import { register, login, getMe } from '../controllers/authController.js';
+import authMiddleware from '../middleware/auth.js';
+
 const router = express.Router();
-const { register, login, getMe } = require('../controllers/authController');
-const authMiddleware = require('../middleware/auth');
 
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', authMiddleware, getMe);
 router.put('/switch-role', authMiddleware, async (req, res) => {
-  const prisma = require('../utils/prisma');
+  const prisma = await import('../utils/prisma.js').then(m => m.default);
   try {
     const { role } = req.body;
     if (!['WORKER', 'EMPLOYER'].includes(role)) {
@@ -23,4 +24,4 @@ router.put('/switch-role', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
