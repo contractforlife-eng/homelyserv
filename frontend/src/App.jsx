@@ -3,14 +3,14 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import EmployerDashboard from './pages/EmployerDashboard';
+import WorkerDashboard from './pages/WorkerDashboard';
 import Search from './pages/Search';
 import MyHires from './pages/MyHires';
 import WorkerProfile from './pages/WorkerProfile';
 import Profile from './pages/Profile';
 import Payment from './pages/Payment';
-import AdminDashboard from './pages/AdminDashboard';
-import EmployerDashboard from './pages/EmployerDashboard';
-import WorkerDashboard from './pages/WorkerDashboard';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import Settings from './pages/Settings';
@@ -28,14 +28,14 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/employer-dashboard" element={<EmployerDashboard />} />
+      <Route path="/worker-dashboard" element={<WorkerDashboard />} />
       <Route path="/search" element={<Search />} />
       <Route path="/my-hires" element={<MyHires />} />
       <Route path="/worker/:id" element={<WorkerProfile />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/payment/:hireId" element={<Payment />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/employer-dashboard" element={<EmployerDashboard />} />
-      <Route path="/worker-dashboard" element={<WorkerDashboard />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/settings" element={<Settings />} />
