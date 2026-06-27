@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import { Server } from 'socket.io';
 import authRoutes from './routes/auth.js';
 import workerRoutes from './routes/workers.js';
 import hireRoutes from './routes/hires.js';

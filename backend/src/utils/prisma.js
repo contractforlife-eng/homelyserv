@@ -1,12 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
-// Singleton pattern for Prisma Client
-const globalForPrisma = globalThis;
+console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL); // Add this line
 
-const prisma = globalForPrisma.prisma || new PrismaClient();
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 export default prisma;
