@@ -17,24 +17,13 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { 
-        email, 
-        password 
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       
       if (response.data.success) {
-        // Save user data and token
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Redirect based on role
         const userRole = response.data.user.role;
-        console.log('User role:', userRole); // Debug log
-        
         if (userRole === 'ADMIN') {
           navigate('/admin');
         } else if (userRole === 'EMPLOYER') {
@@ -56,8 +45,12 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-red-600">HomelyServ</h1>
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-4xl font-bold text-red-600">Homey</span>
+            <span className="text-4xl font-bold text-gray-800">Serv</span>
+          </div>
           <p className="text-gray-500 text-sm mt-1">Your Home, Our Priority</p>
         </div>
         

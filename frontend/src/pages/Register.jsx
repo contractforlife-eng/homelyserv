@@ -33,10 +33,7 @@ function Register() {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Redirect based on role
         const userRole = response.data.user.role;
-        console.log('User role:', userRole); // Debug log
-        
         if (userRole === 'ADMIN') {
           navigate('/admin');
         } else if (userRole === 'EMPLOYER') {
@@ -58,9 +55,13 @@ function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4 py-8">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-red-600">HomelyServ</h1>
-          <p className="text-gray-500 text-sm mt-1">Create Account</p>
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-4xl font-bold text-red-600">Homey</span>
+            <span className="text-4xl font-bold text-gray-800">Serv</span>
+          </div>
+          <p className="text-gray-500 text-sm mt-1">Your Home, Our Priority</p>
         </div>
         
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">REGISTER</h2>
