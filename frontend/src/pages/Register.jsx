@@ -15,13 +15,16 @@ function Register() {
     city: ''
   });
 
+  // Use environment variable for API URL
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', formData, {
+      const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: {
           'Content-Type': 'application/json'
         }
