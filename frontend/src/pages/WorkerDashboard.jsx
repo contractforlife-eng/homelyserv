@@ -204,9 +204,9 @@ function WorkerDashboard() {
           <Link to="/search" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
             <Search size={20} /> Find Jobs
           </Link>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+          <Link to="/messages" className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
             <MessageCircle size={20} /> Messages
-          </button>
+          </Link>
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
             <Settings size={20} /> Settings
           </button>
