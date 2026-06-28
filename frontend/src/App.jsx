@@ -1,23 +1,18 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+  const user = localStorage.getItem('user');
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 function App() {
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    const user = localStorage.getItem('user');
-    return user !== null;
-  };
-
-  // Protected Route wrapper
-  const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated()) {
-      return <Navigate to="/login" />;
-    }
-    return children;
-  };
-
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" />} />
@@ -27,6 +22,46 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/search" 
+        element={
+          <ProtectedRoute>
+            <div>Search Page - Coming Soon</div>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/my-hires" 
+        element={
+          <ProtectedRoute>
+            <div>My Hires Page - Coming Soon</div>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/messages" 
+        element={
+          <ProtectedRoute>
+            <div>Messages Page - Coming Soon</div>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <div>Profile Page - Coming Soon</div>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <div>Settings Page - Coming Soon</div>
           </ProtectedRoute>
         } 
       />

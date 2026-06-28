@@ -3,19 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Briefcase, Search, MessageCircle, Bell, 
   User, Settings, LogOut, DollarSign, Star,
-  Calendar, TrendingUp, Award, Shield, Home
+  Home
 } from 'lucide-react';
 
 function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
-      setLoading(false);
     } else {
       navigate('/login');
     }
@@ -26,16 +24,12 @@ function Dashboard() {
     navigate('/login');
   };
 
-  if (loading) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
@@ -185,16 +179,8 @@ function Dashboard() {
                   </div>
                   <span className="text-sm text-yellow-600">Pending</span>
                 </div>
-                <div className="flex items-center justify-between pb-3">
-                  <div>
-                    <p className="font-medium text-gray-800">Khaled Mostafa</p>
-                    <p className="text-sm text-gray-500">Driver</p>
-                  </div>
-                  <span className="text-sm text-gray-500">Completed</span>
-                </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-800 mb-4">Recent Messages</h3>
               <div className="space-y-3">
@@ -207,11 +193,6 @@ function Dashboard() {
                   <p className="font-medium text-gray-800">Khaled Rashed</p>
                   <p className="text-sm text-gray-500">I'm interested in your profile</p>
                   <span className="text-xs text-gray-400">5 hours ago</span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-800">Nadia Ibrahim</p>
-                  <p className="text-sm text-gray-500">Thank you for your application</p>
-                  <span className="text-xs text-gray-400">1 day ago</span>
                 </div>
               </div>
             </div>
