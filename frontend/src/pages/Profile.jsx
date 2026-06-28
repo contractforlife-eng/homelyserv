@@ -6,6 +6,7 @@ import {
   Star, Shield, Award, Clock, FileText, Download,
   Trash2, Plus, Minus, ChevronDown, ChevronUp
 } from 'lucide-react';
+import axios from 'axios';
 
 function Profile() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ function Profile() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const [profile, setProfile] = useState({
     fullName: '',
@@ -34,6 +35,7 @@ function Profile() {
 
   const [editData, setEditData] = useState(profile);
   const [newSkill, setNewSkill] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -42,7 +44,9 @@ function Profile() {
         const parsed = JSON.parse(userData);
         setUser(parsed);
         
-        // Merge user data with profile
+        // Use the image from localStorage if exists, otherwise use default
+        const userImage = parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+        
         const profileData = {
           fullName: parsed.fullName || '',
           email: parsed.email || '',
@@ -56,11 +60,11 @@ function Profile() {
           workType: parsed.workType || 'Full-Time',
           bio: parsed.bio || 'Experienced professional with a passion for helping others.',
           skills: parsed.skills || ['Childcare', 'First Aid'],
-          image: parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+          image: userImage
         };
         setProfile(profileData);
         setEditData(profileData);
-        setImageLoaded(true);
+        setLoading(false);
       } catch (e) {
         console.error('Error parsing user data:', e);
         navigate('/login');
@@ -74,74 +78,104 @@ function Profile() {
     fileInputRef.current?.click();
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Compress image before saving
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Create image to compress
-        const img = new Image();
-        img.onload = () => {
-          // Compress to 200x200
-          const canvas = document.createElement('canvas');
-          canvas.width = 200;
-          canvas.height = 200;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, 200, 200);
-          const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
-          
-          setEditData(prev => ({ ...prev, image: compressedImage }));
+      setLoading(true);
+      try {
+        // Compress image
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const img = new Image();
+          img.onload = async () => {
+            // Compress to 200x200
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 200, 200);
+            const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Update local state
+            setEditData(prev => ({ ...prev, image: compressedImage }));
+            setLoading(false);
+          };
+          img.src = reader.result;
         };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        setError('Failed to upload image');
+        setLoading(false);
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('');
+    setLoading(true);
     
     // Validate required fields
     if (!editData.fullName.trim()) {
       setError('Full name is required');
+      setLoading(false);
       return;
     }
     if (!editData.email.trim()) {
       setError('Email is required');
+      setLoading(false);
       return;
     }
     
-    // Update profile state
-    setProfile(editData);
-    
-    // Update localStorage with all data
-    if (user) {
-      const updatedUser = { 
-        ...user, 
-        ...editData,
-        // Ensure these fields are properly set
-        fullName: editData.fullName,
-        email: editData.email,
-        phone: editData.phone || '',
-        city: editData.city || '',
-        category: editData.category,
-        experience: editData.experience,
-        salary: editData.salary,
-        availability: editData.availability,
-        workType: editData.workType,
-        bio: editData.bio,
-        skills: editData.skills,
-        image: editData.image // Save the compressed image
-      };
+    try {
+      // Update profile state
+      setProfile(editData);
       
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      // Update localStorage with all data
+      if (user) {
+        const token = localStorage.getItem('token');
+        const updatedUser = { 
+          ...user, 
+          ...editData,
+          fullName: editData.fullName,
+          email: editData.email,
+          phone: editData.phone || '',
+          city: editData.city || '',
+          category: editData.category,
+          experience: editData.experience,
+          salary: editData.salary,
+          availability: editData.availability,
+          workType: editData.workType,
+          bio: editData.bio,
+          skills: editData.skills,
+          image: editData.image || ''
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        
+        // Also update on server
+        try {
+          await axios.put(`${API_URL}/auth/profile`, updatedUser, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+        } catch (err) {
+          console.log('Server update failed, but local saved:', err);
+        }
+      }
+      
+      setIsEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setError('Failed to save profile');
+    } finally {
+      setLoading(false);
     }
-    
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
   };
 
   const handleCancel = () => {
@@ -167,6 +201,14 @@ function Profile() {
     }));
   };
 
+  if (loading && !profile.fullName) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
@@ -183,8 +225,8 @@ function Profile() {
             )}
             {isEditing ? (
               <>
-                <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                  <Save size={18} /> Save
+                <button onClick={handleSave} disabled={loading} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50">
+                  <Save size={18} /> {loading ? 'Saving...' : 'Save'}
                 </button>
                 <button onClick={handleCancel} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
                   <X size={18} /> Cancel

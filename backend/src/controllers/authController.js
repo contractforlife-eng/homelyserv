@@ -37,7 +37,8 @@ export const register = async (req, res) => {
         fullName,
         phone: phone || '',
         city: city || '',
-        role: role === 'employer' ? 'EMPLOYER' : 'WORKER' // FIXED: Handles both cases
+        role: role === 'employer' ? 'EMPLOYER' : 'WORKER',
+        image: '' // Initialize with empty image
       }
     });
 
@@ -48,7 +49,7 @@ export const register = async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    // Return response
+    // Return response with image field
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
@@ -60,7 +61,8 @@ export const register = async (req, res) => {
         fullName: user.fullName,
         role: user.role,
         phone: user.phone,
-        city: user.city
+        city: user.city,
+        image: user.image || ''
       }
     });
   } catch (error) {
@@ -115,7 +117,7 @@ export const login = async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    // Return response
+    // Return response with image field
     res.json({
       success: true,
       message: 'Login successful',
@@ -127,7 +129,8 @@ export const login = async (req, res) => {
         fullName: user.fullName,
         role: user.role,
         phone: user.phone,
-        city: user.city
+        city: user.city,
+        image: user.image || ''
       }
     });
   } catch (error) {
@@ -153,8 +156,10 @@ export const getMe = async (req, res) => {
         role: true,
         phone: true,
         city: true,
+        image: true,
         language: true,
-        createdAt: true
+        createdAt: true,
+        isVerified: true
       }
     });
     
@@ -174,6 +179,65 @@ export const getMe = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Server error' 
+    });
+  }
+};
+
+// UPDATE PROFILE
+export const updateProfile = async (req, res) => {
+  try {
+    const { fullName, phone, city, image, category, experience, salary, availability, workType, bio, skills } = req.body;
+    const userId = req.userId;
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: fullName || undefined,
+        phone: phone || undefined,
+        city: city || undefined,
+        image: image || undefined
+      }
+    });
+
+    // Update worker profile if exists
+    if (category || experience || salary || availability || workType || bio || skills) {
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { userId: userId }
+      });
+
+      if (workerProfile) {
+        await prisma.workerProfile.update({
+          where: { userId: userId },
+          data: {
+            category: category || undefined,
+            experienceYears: experience ? parseInt(experience) : undefined,
+            expectedSalary: salary ? parseFloat(salary) : undefined,
+            availability: availability || undefined,
+            workType: workType || undefined,
+            bioEn: bio || undefined,
+            skills: skills || undefined
+          }
+        });
+      }
+    }
+
+    const { password: _, ...userWithoutPassword } = updatedUser;
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        ...userWithoutPassword,
+        image: userWithoutPassword.image || ''
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
     });
   }
 };
