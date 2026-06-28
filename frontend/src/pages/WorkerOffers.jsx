@@ -33,8 +33,7 @@ function WorkerOffers() {
     setLoading(false);
   }, [navigate]);
 
-  // Real offer data - accurate information
-  const [offers, setOffers] = useState([
+  const offers = [
     {
       id: 1,
       employerName: 'Sara Mohamed',
@@ -47,17 +46,16 @@ function WorkerOffers() {
       category: 'Babysitter',
       salary: 4000,
       startDate: '2026-07-01',
-      status: 'pending', // pending, accepted, rejected
+      status: 'pending',
       date: '2026-06-20',
-      description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5. Full-time position from Sunday to Thursday, 8 AM to 5 PM. Accommodation and meals provided.',
-      requirements: ['3+ years experience', 'First Aid certified', 'Loving and patient', 'Fluent in English'],
+      description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5.',
+      requirements: ['3+ years experience', 'First Aid certified', 'Loving and patient'],
       employerImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
       rejectionReason: null,
-      adminEditable: true,
       employerRating: 4.8,
       totalHires: 12,
       workSchedule: 'Sunday to Thursday, 8 AM - 5 PM',
-      benefits: ['Accommodation provided', 'Meals included', 'Weekly off days', 'Annual leave']
+      benefits: ['Accommodation provided', 'Meals included']
     },
     {
       id: 2,
@@ -73,15 +71,14 @@ function WorkerOffers() {
       startDate: '2026-06-25',
       status: 'accepted',
       date: '2026-06-18',
-      description: 'Looking for a compassionate caregiver for my elderly father (78 years old) with dementia. Must have experience with elderly care and medication management. Live-in position with private room.',
-      requirements: ['5+ years elderly care', 'Dementia experience', 'Patient and caring', 'Valid license'],
+      description: 'Looking for a compassionate caregiver for my elderly father with dementia.',
+      requirements: ['5+ years elderly care', 'Dementia experience', 'Patient and caring'],
       employerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
       rejectionReason: null,
-      adminEditable: false,
       employerRating: 4.9,
       totalHires: 8,
       workSchedule: 'Live-in, 6 days a week',
-      benefits: ['Private room', 'Meals provided', 'Weekly off day']
+      benefits: ['Private room', 'Meals provided']
     },
     {
       id: 3,
@@ -97,64 +94,16 @@ function WorkerOffers() {
       startDate: '2026-06-15',
       status: 'rejected',
       date: '2026-06-15',
-      description: 'Need a professional driver for daily office commute and errands. Must have valid license and clean driving record. Working hours: 7 AM to 6 PM.',
-      requirements: ['Valid driver license', '5+ years driving', 'Clean record', 'Fluent Arabic'],
+      description: 'Need a professional driver for daily office commute and errands.',
+      requirements: ['Valid driver license', '5+ years driving', 'Clean record'],
       employerImage: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=80&h=80&fit=crop&crop=face',
       rejectionReason: 'Salary below my minimum requirements',
-      adminEditable: true,
       employerRating: 4.7,
       totalHires: 15,
       workSchedule: '7 AM - 6 PM, Sunday to Thursday',
       benefits: ['Fuel allowance', 'Vehicle provided']
     }
-  ]);
-
-  const handleAccept = (offerId) => {
-    const offer = offers.find(o => o.id === offerId);
-    if (offer) {
-      setOfferToAccept(offer);
-      setShowAcceptModal(true);
-    }
-  };
-
-  const handleConfirmAccept = () => {
-    if (offerToAccept) {
-      setSelectedOffer(offerToAccept);
-      setShowDetails(true);
-      setShowAcceptModal(false);
-    }
-  };
-
-  const handleConfirmAcceptFinal = () => {
-    setOffers(prev => prev.map(o => 
-      o.id === selectedOffer.id ? { ...o, status: 'accepted' } : o
-    ));
-    alert('✅ Offer accepted successfully! You can now contact the employer.');
-    setShowDetails(false);
-  };
-
-  const handleRejectClick = (offerId) => {
-    setOfferToReject(offerId);
-    setShowRejectModal(true);
-  };
-
-  const handleConfirmReject = () => {
-    if (!rejectionReason.trim()) {
-      alert('Please provide a reason for rejection.');
-      return;
-    }
-    setOffers(prev => prev.map(o => 
-      o.id === offerToReject ? { ...o, status: 'rejected', rejectionReason: rejectionReason } : o
-    ));
-    setShowRejectModal(false);
-    setRejectionReason('');
-    alert('❌ Offer rejected. It has been moved to rejected offers.');
-  };
-
-  const handleWhatsApp = (phone) => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/${cleanPhone}`, '_blank');
-  };
+  ];
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -185,335 +134,170 @@ function WorkerOffers() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/worker-dashboard" className="text-gray-600 hover:text-red-600 transition">
-              <ArrowLeft size={20} />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">My Offers</h1>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
+          <p className="text-xs text-gray-500 mt-1">Worker Panel</p>
+        </div>
+        <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">
-              {offers.filter(o => o.status === 'pending').length} pending offers
-            </span>
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">{user?.fullName || 'User'}</p>
+              <p className="text-xs text-gray-500">Worker</p>
+            </div>
           </div>
         </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending Offers</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {offers.filter(o => o.status === 'pending').length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Accepted Offers</p>
-            <p className="text-2xl font-bold text-green-600">
-              {offers.filter(o => o.status === 'accepted').length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Rejected Offers</p>
-            <p className="text-2xl font-bold text-red-600">
-              {offers.filter(o => o.status === 'rejected').length}
-            </p>
-          </div>
+        <nav className="p-4 space-y-1">
+          <Link to="/worker-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Home size={20} /> Dashboard
+          </Link>
+          <Link to="/worker-offers" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
+            <Briefcase size={20} /> Offers
+            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
+          </Link>
+          <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <User size={20} /> Profile
+          </Link>
+          <Link to="/search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Search size={20} /> Search
+          </Link>
+          <Link to="/messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <MessageCircle size={20} /> Messages
+          </Link>
+          <Link to="/settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Settings size={20} /> Settings
+          </Link>
+        </nav>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
+            <LogOut size={20} /> Logout
+          </button>
         </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200">
-          {['pending', 'accepted', 'rejected'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium transition ${
-                activeTab === tab 
-                  ? 'text-red-600 border-b-2 border-red-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                {offers.filter(o => o.status === tab).length}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Offers List */}
-        {filteredOffers.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No {activeTab} offers</h3>
-            <p className="text-gray-500">Your {activeTab} offers will appear here</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredOffers.map((offer) => (
-              <div key={offer.id} className={`bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition ${
-                offer.status === 'accepted' ? 'border-green-200' :
-                offer.status === 'rejected' ? 'border-red-200' :
-                'border-gray-100'
-              }`}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Employer Info */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <img src={offer.employerImage} alt={offer.employerName} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{offer.employerName}</h3>
-                      <p className="text-sm text-gray-600">{offer.position}</p>
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">{offer.category}</span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <Calendar size={12} /> Start: {offer.startDate}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <Briefcase size={12} /> {offer.date}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <Star size={12} className="fill-yellow-400 text-yellow-400" /> {offer.employerRating}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Salary & Status */}
-                  <div className="flex flex-col items-end justify-center min-w-[150px]">
-                    <p className="text-sm text-gray-500">Offered Salary</p>
-                    <p className="font-bold text-gray-800">EGP {offer.salary.toLocaleString()}</p>
-                    <div className="mt-2">{getStatusBadge(offer.status)}</div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col items-end justify-center gap-2 min-w-[180px]">
-                    {offer.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleAccept(offer.id)}
-                          className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <CheckCircle size={16} /> Accept
-                        </button>
-                        <button 
-                          onClick={() => handleRejectClick(offer.id)}
-                          className="px-4 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1"
-                        >
-                          <XCircle size={16} /> Reject
-                        </button>
-                      </div>
-                    )}
-                    {offer.status === 'accepted' && (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            setSelectedOffer(offer);
-                            setShowDetails(true);
-                          }}
-                          className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1"
-                        >
-                          <Eye size={16} /> View Details
-                        </button>
-                        <button 
-                          onClick={() => handleWhatsApp(offer.employerPhone)}
-                          className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <span>💬</span> WhatsApp
-                        </button>
-                      </div>
-                    )}
-                    {offer.status === 'rejected' && (
-                      <div className="text-center">
-                        <p className="text-xs text-red-600">Reason: {offer.rejectionReason}</p>
-                        <p className="text-xs text-gray-400 mt-1">Contact admin to edit</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Accept Offer Modal - Step 1 */}
-      {showAcceptModal && offerToAccept && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Accept Offer</h3>
-              <button onClick={() => setShowAcceptModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                <XCircle size={24} className="text-gray-400" />
-              </button>
+      {/* Main Content */}
+      <div className="ml-64 flex-1">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">My Offers</h2>
+              <p className="text-gray-500 text-sm">Manage your job offers</p>
             </div>
-            <div className="space-y-4">
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">
-                  You are about to accept an offer from <strong>{offerToAccept.employerName}</strong>
-                </p>
-                <p className="text-sm text-green-700 mt-2">
-                  Position: {offerToAccept.position}
-                </p>
-                <p className="text-sm text-green-700">
-                  Salary: <strong>EGP {offerToAccept.salary.toLocaleString()}</strong>
-                </p>
-              </div>
+          </div>
+        </header>
+
+        <div className="p-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Pending Offers</p>
+              <p className="text-2xl font-bold text-yellow-600">{offers.filter(o => o.status === 'pending').length}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Accepted Offers</p>
+              <p className="text-2xl font-bold text-green-600">{offers.filter(o => o.status === 'accepted').length}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Rejected Offers</p>
+              <p className="text-2xl font-bold text-red-600">{offers.filter(o => o.status === 'rejected').length}</p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            {['pending', 'accepted', 'rejected'].map((tab) => (
               <button
-                onClick={handleConfirmAccept}
-                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium transition ${
+                  activeTab === tab 
+                    ? 'text-red-600 border-b-2 border-red-600' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
-                <CheckCircle size={18} /> Continue to Offer Details
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                  {offers.filter(o => o.status === tab).length}
+                </span>
               </button>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
 
-      {/* Offer Details Modal (on Accept) - Step 2 */}
-      {showDetails && selectedOffer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Offer Details</h2>
-              <button onClick={() => setShowDetails(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                <XCircle size={24} className="text-gray-400" />
-              </button>
+          {/* Offers List */}
+          {filteredOffers.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No {activeTab} offers</h3>
+              <p className="text-gray-500">Your {activeTab} offers will appear here</p>
             </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredOffers.map((offer) => (
+                <div key={offer.id} className="bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <img src={offer.employerImage} alt={offer.employerName} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                      <div>
+                        <h3 className="font-semibold text-gray-800 text-lg">{offer.employerName}</h3>
+                        <p className="text-sm text-gray-600">{offer.position}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-1">
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">{offer.category}</span>
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <Calendar size={12} /> Start: {offer.startDate}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <Briefcase size={12} /> {offer.date}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Employer Info */}
-            <div className="flex items-center gap-4 mb-4">
-              <img src={selectedOffer.employerImage} alt={selectedOffer.employerName} className="w-20 h-20 rounded-full object-cover border-2 border-gray-200" />
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">{selectedOffer.employerName}</h3>
-                <p className="text-gray-500">{selectedOffer.position}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{selectedOffer.employerRating}</span>
-                  <span className="text-xs text-gray-400">({selectedOffer.totalHires} hires)</span>
+                    <div className="flex flex-col items-end justify-center min-w-[150px]">
+                      <p className="text-sm text-gray-500">Offered Salary</p>
+                      <p className="font-bold text-gray-800">EGP {offer.salary.toLocaleString()}</p>
+                      <div className="mt-2">{getStatusBadge(offer.status)}</div>
+                    </div>
+
+                    <div className="flex flex-col items-end justify-center gap-2 min-w-[180px]">
+                      {offer.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-1">
+                            <CheckCircle size={16} /> Accept
+                          </button>
+                          <button className="px-4 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1">
+                            <XCircle size={16} /> Reject
+                          </button>
+                        </div>
+                      )}
+                      {offer.status === 'accepted' && (
+                        <div className="flex gap-2">
+                          <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
+                            <MessageCircle size={16} /> Message
+                          </button>
+                          <button className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-1">
+                            <span>💬</span> WhatsApp
+                          </button>
+                        </div>
+                      )}
+                      {offer.status === 'rejected' && (
+                        <div className="text-center">
+                          <p className="text-xs text-red-600">Reason: {offer.rejectionReason}</p>
+                          <p className="text-xs text-gray-400 mt-1">Contact admin to edit</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Salary</p>
-                <p className="font-bold text-gray-800">EGP {selectedOffer.salary.toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Start Date</p>
-                <p className="font-medium text-gray-800">{selectedOffer.startDate}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium text-gray-800">{selectedOffer.employerPhone}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-800">{selectedOffer.employerEmail}</p>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Address</p>
-              <p className="font-medium text-gray-800">{selectedOffer.employerAddress}</p>
-              <p className="text-sm text-gray-500 mt-1">{selectedOffer.employerCity}, {selectedOffer.employerCountry}</p>
-            </div>
-
-            {/* Work Schedule */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Work Schedule</p>
-              <p className="font-medium text-gray-800">{selectedOffer.workSchedule}</p>
-            </div>
-
-            {/* Benefits */}
-            {selectedOffer.benefits && (
-              <div className="p-3 bg-gray-50 rounded-lg mb-4">
-                <p className="text-sm text-gray-500">Benefits</p>
-                <ul className="list-disc list-inside text-gray-700 mt-1">
-                  {selectedOffer.benefits.map((benefit, i) => (
-                    <li key={i} className="text-sm">{benefit}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Description */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Job Description</p>
-              <p className="text-gray-700">{selectedOffer.description}</p>
-            </div>
-
-            {/* Requirements */}
-            {selectedOffer.requirements && (
-              <div className="p-3 bg-gray-50 rounded-lg mb-4">
-                <p className="text-sm text-gray-500">Requirements</p>
-                <ul className="list-disc list-inside text-gray-700">
-                  {selectedOffer.requirements.map((req, i) => (
-                    <li key={i} className="text-sm">{req}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3">
-              <button 
-                onClick={handleConfirmAcceptFinal}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} /> Confirm Accept
-              </button>
-              <button 
-                onClick={() => handleWhatsApp(selectedOffer.employerPhone)}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-              >
-                <span>💬</span> WhatsApp
-              </button>
-              <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2">
-                <MessageCircle size={18} /> Chat
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
-
-      {/* Reject Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Reject Offer</h3>
-            <p className="text-gray-600 mb-4">Please provide a reason for rejecting this offer:</p>
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-              placeholder="Enter rejection reason..."
-            />
-            <div className="flex gap-3 mt-4">
-              <button 
-                onClick={() => setShowRejectModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleConfirmReject}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Confirm Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
