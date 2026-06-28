@@ -25,8 +25,14 @@ function Register() {
   });
 
   const categories = [
-    'Babysitter', 'Adult Caregiver', 'Driver', 'Cook', 
-    'House Manager', 'Gardener', 'Nurse', 'Bodyguard', 'Security Guard'
+    { name: 'Nanny', icon: '👶' },
+    { name: 'Babysitter', icon: '🍼' },
+    { name: 'Elderly Caregiver', icon: '👴' },
+    { name: 'Driver', icon: '🚗' },
+    { name: 'Cook', icon: '🍳' },
+    { name: 'House Manager', icon: '🏠' },
+    { name: 'Gardener', icon: '🌿' },
+    { name: 'Nurse', icon: '💉' }
   ];
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -192,17 +198,24 @@ function Register() {
             <>
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-semibold mb-2">CATEGORY</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-                  required
-                >
-                  <option value="">Select Category</option>
+                <div className="grid grid-cols-2 gap-2">
                   {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => setFormData({...formData, category: cat.name})}
+                      className={`p-3 rounded-lg border-2 text-center transition ${
+                        formData.category === cat.name
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-2xl">{cat.icon}</div>
+                      <p className="text-xs mt-1 font-medium text-gray-700">{cat.name}</p>
+                    </button>
                   ))}
-                </select>
+                </div>
+                <input type="hidden" name="category" value={formData.category} required />
               </div>
 
               {/* Experience */}

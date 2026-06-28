@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  DollarSign, CreditCard, Wallet, Banknote, Calendar,
-  CheckCircle, XCircle, Clock, Eye, Download,
-  Search, Filter, ArrowLeft, Plus, FileText,
-  Printer, TrendingUp, TrendingDown, AlertCircle,
-  Phone, Mail, User, Briefcase, MapPin, Edit,
-  Trash2, Save, X, ChevronDown, ChevronUp,
-  RefreshCw, Settings, Users, Building, Star
-} from 'lucide-react';
+import { DollarSign, CreditCard, Wallet, Banknote, Calendar, CircleCheck as CheckCircle, Circle as XCircle, Clock, Eye, Download, Search, ListFilter as Filter, ArrowLeft, Plus, FileText, Printer, TrendingUp, TrendingDown, CircleAlert as AlertCircle, Phone, Mail, User, Briefcase, MapPin, CreditCard as Edit, Trash2, Save, X, ChevronDown, ChevronUp, RefreshCw, Settings, Users, Building, Star } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 function AdminPayments() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('payments');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState({
+    vodafone_cash_number: '',
+    bank_account_1: '',
+    bank_account_2: '',
+    instapay_number: '',
+    commission_rate: '10'
+  });
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -28,12 +29,55 @@ function AdminPayments() {
       setUser(parsed);
       if (parsed.role !== 'ADMIN') {
         navigate('/dashboard');
+      } else {
+        fetchPaymentSettings();
       }
     } else {
       navigate('/login');
     }
     setLoading(false);
   }, [navigate]);
+
+  const fetchPaymentSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('payment_settings')
+        .select('*');
+
+      if (data) {
+        const settings = {};
+        data.forEach(item => {
+          settings[item.setting_key] = item.setting_value;
+        });
+        setPaymentSettings(prev => ({
+          ...prev,
+          ...settings
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching payment settings:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const updates = Object.entries(paymentSettings).map(([key, value]) => ({
+        setting_key: key,
+        setting_value: value
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('payment_settings')
+          .upsert(update, { onConflict: 'setting_key' });
+      }
+
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving payment settings:', error);
+    }
+  };
 
   // Real payment data - accurate information
   const [payments, setPayments] = useState([
@@ -240,137 +284,259 @@ function AdminPayments() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Total Payments</p>
-            <p className="text-2xl font-bold text-gray-800">EGP {stats.total.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">{stats.count} transactions</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Completed</p>
-            <p className="text-2xl font-bold text-green-600">EGP {stats.completed.toLocaleString()}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">EGP {stats.pending.toLocaleString()}</p>
-            <p className="text-xs text-yellow-600">{stats.pendingCount} pending</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Failed</p>
-            <p className="text-2xl font-bold text-red-600">EGP {stats.failed.toLocaleString()}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending Amount</p>
-            <p className="text-2xl font-bold text-orange-600">EGP {stats.pending.toLocaleString()}</p>
-          </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              activeTab === 'payments'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Payments
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              activeTab === 'settings'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Settings size={16} className="inline mr-1" /> Payment Settings
+          </button>
         </div>
 
-        {/* Search & Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by worker, employer, position, or reference..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-            >
-              <option value="all">All Status</option>
-              <option value="completed">✅ Completed</option>
-              <option value="pending">⏳ Pending</option>
-              <option value="failed">❌ Failed</option>
-            </select>
-          </div>
-        </div>
+        {activeTab === 'settings' ? (
+          /* Payment Settings */
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Site Payment Information</h3>
+            {settingsSaved && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm flex items-center gap-2">
+                <CheckCircle size={18} /> Settings saved successfully!
+              </div>
+            )}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Phone size={18} className="text-green-600" /> Vodafone Cash
+                  </h4>
+                  <label className="block text-sm text-gray-600 mb-1">Vodafone Cash Number</label>
+                  <input
+                    type="text"
+                    value={paymentSettings.vodafone_cash_number}
+                    onChange={(e) => setPaymentSettings({...paymentSettings, vodafone_cash_number: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    placeholder="Enter Vodafone Cash number"
+                  />
+                </div>
 
-        {/* Payments List */}
-        {filteredPayments.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="text-6xl mb-4">💳</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No payments found</h3>
-            <p className="text-gray-500">Payments will appear here</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredPayments.map((payment) => (
-              <div key={payment.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Worker & Employer Info */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <img src={payment.workerImage} alt={payment.workerName} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-800">{payment.workerName}</h3>
-                        <span className="text-xs text-gray-400">→</span>
-                        <span className="text-sm text-gray-600">{payment.employerName}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">{payment.position}</p>
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <FileText size={12} /> {payment.reference}
-                        </span>
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Calendar size={12} /> {payment.date}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full flex items-center gap-1">
-                          {getMethodIcon(payment.method)} {payment.method}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Wallet size={18} className="text-blue-600" /> InstaPay
+                  </h4>
+                  <label className="block text-sm text-gray-600 mb-1">InstaPay Number</label>
+                  <input
+                    type="text"
+                    value={paymentSettings.instapay_number}
+                    onChange={(e) => setPaymentSettings({...paymentSettings, instapay_number: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    placeholder="Enter InstaPay number"
+                  />
+                </div>
 
-                  {/* Amount & Status */}
-                  <div className="flex flex-col items-end justify-center min-w-[150px]">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Amount</p>
-                      <p className="font-bold text-gray-800 text-lg">EGP {payment.total.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">Fee: EGP {payment.fee}</p>
-                    </div>
-                    <div className="mt-2">{getStatusBadge(payment.status)}</div>
-                  </div>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Banknote size={18} className="text-purple-600" /> Bank Account 1
+                  </h4>
+                  <label className="block text-sm text-gray-600 mb-1">Bank Account Number</label>
+                  <input
+                    type="text"
+                    value={paymentSettings.bank_account_1}
+                    onChange={(e) => setPaymentSettings({...paymentSettings, bank_account_1: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    placeholder="Enter bank account number"
+                  />
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col items-end justify-center gap-2 min-w-[120px]">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleViewDetails(payment)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                        title="View Details"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleEditPayment(payment)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
-                        title="Edit Payment"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeletePayment(payment.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                        title="Delete Payment"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                    {payment.status === 'pending' && (
-                      <span className="text-xs text-yellow-600">Due: {payment.dueDate}</span>
-                    )}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Banknote size={18} className="text-purple-600" /> Bank Account 2
+                  </h4>
+                  <label className="block text-sm text-gray-600 mb-1">Bank Account Number (Alternative)</label>
+                  <input
+                    type="text"
+                    value={paymentSettings.bank_account_2}
+                    onChange={(e) => setPaymentSettings({...paymentSettings, bank_account_2: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                    placeholder="Enter alternative bank account number"
+                  />
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 md:col-span-2">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <DollarSign size={18} className="text-red-600" /> Commission Rate
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      value={paymentSettings.commission_rate}
+                      onChange={(e) => setPaymentSettings({...paymentSettings, commission_rate: e.target.value})}
+                      className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      min="0"
+                      max="100"
+                    />
+                    <span className="text-gray-600">%</span>
+                    <p className="text-sm text-gray-500">This percentage will be charged on each successful hire</p>
                   </div>
                 </div>
               </div>
-            ))}
+
+              <button
+                onClick={handleSaveSettings}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 font-semibold"
+              >
+                <Save size={18} /> Save Payment Settings
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500">Total Payments</p>
+                <p className="text-2xl font-bold text-gray-800">EGP {stats.total.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">{stats.count} transactions</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500">Completed</p>
+                <p className="text-2xl font-bold text-green-600">EGP {stats.completed.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">EGP {stats.pending.toLocaleString()}</p>
+                <p className="text-xs text-yellow-600">{stats.pendingCount} pending</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500">Failed</p>
+                <p className="text-2xl font-bold text-red-600">EGP {stats.failed.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-500">Pending Amount</p>
+                <p className="text-2xl font-bold text-orange-600">EGP {stats.pending.toLocaleString()}</p>
+              </div>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+              <div className="flex flex-wrap gap-3">
+                <div className="flex-1 relative">
+                  <Search size={20} className="absolute left-3 top-2.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by worker, employer, position, or reference..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <select
+                  value={activeTab === 'payments' ? 'all' : activeTab}
+                  onChange={(e) => setActiveTab(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Payments List */}
+            {filteredPayments.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <div className="text-6xl mb-4">💳</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No payments found</h3>
+                <p className="text-gray-500">Payments will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredPayments.map((payment) => (
+                  <div key={payment.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {/* Worker & Employer Info */}
+                      <div className="flex items-start gap-4 flex-1">
+                        <img src={payment.workerImage} alt={payment.workerName} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-800">{payment.workerName}</h3>
+                            <span className="text-xs text-gray-400">→</span>
+                            <span className="text-sm text-gray-600">{payment.employerName}</span>
+                          </div>
+                          <p className="text-sm text-gray-500">{payment.position}</p>
+                          <div className="flex flex-wrap items-center gap-3 mt-1">
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <FileText size={12} /> {payment.reference}
+                            </span>
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Calendar size={12} /> {payment.date}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full flex items-center gap-1">
+                              {getMethodIcon(payment.method)} {payment.method}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Amount & Status */}
+                      <div className="flex flex-col items-end justify-center min-w-[150px]">
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">Amount</p>
+                          <p className="font-bold text-gray-800 text-lg">EGP {payment.total.toLocaleString()}</p>
+                          <p className="text-xs text-gray-400">Fee: EGP {payment.fee}</p>
+                        </div>
+                        <div className="mt-2">{getStatusBadge(payment.status)}</div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col items-end justify-center gap-2 min-w-[120px]">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleViewDetails(payment)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
+                            title="View Details"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleEditPayment(payment)}
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
+                            title="Edit Payment"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePayment(payment.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
+                            title="Delete Payment"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                        {payment.status === 'pending' && (
+                          <span className="text-xs text-yellow-600">Due: {payment.dueDate}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

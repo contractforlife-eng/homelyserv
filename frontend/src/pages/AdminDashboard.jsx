@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Home, Users, Briefcase, DollarSign, Star, MessageCircle, 
-  FileText, Settings, HelpCircle, BarChart3, Calendar, 
-  CheckCircle, XCircle, Clock, AlertCircle, UserPlus, 
-  UserMinus, TrendingUp, TrendingDown, Eye, Edit, 
-  Trash2, Shield, Award, Zap, Activity, PieChart, 
-  LineChart, Bell, LogOut, Search, Filter, Download,
-  CreditCard, Wallet, Phone, Mail, MapPin, Globe, Plus
-} from 'lucide-react';
+import { Hop as Home, Users, Briefcase, DollarSign, Star, MessageCircle, FileText, Settings, Circle as HelpCircle, ChartBar as BarChart3, Calendar, CircleCheck as CheckCircle, Circle as XCircle, Clock, CircleAlert as AlertCircle, UserPlus, UserMinus, TrendingUp, TrendingDown, Eye, CreditCard as Edit, Trash2, Shield, Award, Zap, Activity, ChartPie as PieChart, ChartLine as LineChart, Bell, LogOut, Search, ListFilter as Filter, Download, CreditCard, Wallet, Phone, Mail, MapPin, Globe, Plus, Wifi, WifiOff } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -16,6 +9,16 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalPayments: 0,
+    totalComplaints: 0,
+    onlineWorkers: 0,
+    offlineWorkers: 0,
+    onlineEmployers: 0,
+    offlineEmployers: 0,
+    recentUsers: []
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -24,12 +27,74 @@ function AdminDashboard() {
       setUser(parsed);
       if (parsed.role !== 'ADMIN') {
         navigate('/dashboard');
+      } else {
+        fetchDashboardStats();
       }
     } else {
       navigate('/login');
     }
     setLoading(false);
   }, [navigate]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      // Get total users
+      const { count: totalUsers } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+      // Get online/offline workers
+      const { data: workers } = await supabase
+        .from('users')
+        .select('is_online')
+        .eq('role', 'WORKER');
+
+      const onlineWorkers = workers?.filter(w => w.is_online).length || 0;
+      const offlineWorkers = workers?.filter(w => !w.is_online).length || 0;
+
+      // Get online/offline employers
+      const { data: employers } = await supabase
+        .from('users')
+        .select('is_online')
+        .eq('role', 'EMPLOYER');
+
+      const onlineEmployers = employers?.filter(e => e.is_online).length || 0;
+      const offlineEmployers = employers?.filter(e => !e.is_online).length || 0;
+
+      // Get total complaints
+      const { count: totalComplaints } = await supabase
+        .from('complaints')
+        .select('*', { count: 'exact', head: true });
+
+      // Get total payments
+      const { data: payments } = await supabase
+        .from('hires')
+        .select('total_due')
+        .eq('payment_status', 'completed');
+
+      const totalPayments = payments?.reduce((sum, p) => sum + (p.total_due || 0), 0) || 0;
+
+      // Get recent users
+      const { data: recentUsers } = await supabase
+        .from('users')
+        .select('id, full_name, email, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      setStats({
+        totalUsers: totalUsers || 0,
+        totalPayments,
+        totalComplaints: totalComplaints || 0,
+        onlineWorkers,
+        offlineWorkers,
+        onlineEmployers,
+        offlineEmployers,
+        recentUsers: recentUsers || []
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -49,13 +114,14 @@ function AdminDashboard() {
     return null;
   }
 
-  // Sample data
-  const stats = [
-    { label: 'Total Users', value: '25,680', icon: <Users size={24} />, change: '+12%', color: 'blue' },
-    { label: 'Total Workers', value: '8,432', icon: <Briefcase size={24} />, change: '+8%', color: 'green' },
-    { label: 'Job Requests', value: '3,215', icon: <FileText size={24} />, change: '+15%', color: 'purple' },
-    { label: 'Active Bookings', value: '2,845', icon: <Calendar size={24} />, change: '+5%', color: 'orange' },
-    { label: 'Total Revenue', value: '$48,650', icon: <DollarSign size={24} />, change: '+18%', color: 'red' }
+  // Stats from database
+  const statsCards = [
+    { label: 'Total Users', value: stats.totalUsers.toLocaleString(), icon: <Users size={24} />, color: 'blue' },
+    { label: 'Online Workers', value: stats.onlineWorkers, icon: <Wifi size={24} />, color: 'green' },
+    { label: 'Offline Workers', value: stats.offlineWorkers, icon: <WifiOff size={24} />, color: 'gray' },
+    { label: 'Online Employers', value: stats.onlineEmployers, icon: <Wifi size={24} />, color: 'green' },
+    { label: 'Total Payments', value: `EGP ${stats.totalPayments.toLocaleString()}`, icon: <DollarSign size={24} />, color: 'red' },
+    { label: 'Total Complaints', value: stats.totalComplaints, icon: <AlertCircle size={24} />, color: 'yellow' }
   ];
 
   const users = [
@@ -92,8 +158,8 @@ function AdminDashboard() {
         return (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              {stats.map((stat, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+              {statsCards.map((stat, i) => (
                 <div key={i} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -104,44 +170,71 @@ function AdminDashboard() {
                       {stat.icon}
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-1 text-xs">
-                    <TrendingUp size={14} className="text-green-500" />
-                    <span className="text-green-500">{stat.change}</span>
-                    <span className="text-gray-400">vs last month</span>
-                  </div>
                 </div>
               ))}
             </div>
+            </div>
 
-            {/* Quick Actions */}
+            {/* Online/Offline Status */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-center gap-3">
-                <UserPlus size={24} className="text-blue-600" />
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
+                <Wifi size={24} className="text-green-600" />
                 <div>
-                  <p className="font-semibold text-gray-800">Add New User</p>
-                  <p className="text-xs text-gray-500">Create new account</p>
+                  <p className="font-semibold text-gray-800">Online Workers</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.onlineWorkers}</p>
+                </div>
+              </div>
+              <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 flex items-center gap-3">
+                <WifiOff size={24} className="text-gray-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">Offline Workers</p>
+                  <p className="text-2xl font-bold text-gray-600">{stats.offlineWorkers}</p>
                 </div>
               </div>
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
-                <Shield size={24} className="text-green-600" />
+                <Wifi size={24} className="text-green-600" />
                 <div>
-                  <p className="font-semibold text-gray-800">Verify Workers</p>
-                  <p className="text-xs text-gray-500">Pending: 45</p>
+                  <p className="font-semibold text-gray-800">Online Employers</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.onlineEmployers}</p>
                 </div>
               </div>
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex items-center gap-3">
-                <DollarSign size={24} className="text-yellow-600" />
+              <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 flex items-center gap-3">
+                <WifiOff size={24} className="text-gray-600" />
                 <div>
-                  <p className="font-semibold text-gray-800">Process Payments</p>
-                  <p className="text-xs text-gray-500">Pending: 28</p>
+                  <p className="font-semibold text-gray-800">Offline Employers</p>
+                  <p className="text-2xl font-bold text-gray-600">{stats.offlineEmployers}</p>
                 </div>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 flex items-center gap-3">
-                <FileText size={24} className="text-purple-600" />
-                <div>
-                  <p className="font-semibold text-gray-800">Generate Report</p>
-                  <p className="text-xs text-gray-500">Monthly summary</p>
-                </div>
+            </div>
+
+            {/* Recent Users */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Users size={18} className="text-red-600" /> Most Recent Users
+              </h3>
+              <div className="space-y-3">
+                {stats.recentUsers.length > 0 ? stats.recentUsers.map((recentUser, i) => (
+                  <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <div>
+                      <p className="font-medium text-gray-800">{recentUser.full_name}</p>
+                      <p className="text-xs text-gray-500">{recentUser.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        recentUser.role === 'WORKER' ? 'bg-blue-100 text-blue-800' :
+                        recentUser.role === 'EMPLOYER' ? 'bg-purple-100 text-purple-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {recentUser.role}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(recentUser.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-gray-500 text-center py-4">No users yet</p>
+                )}
               </div>
             </div>
 
