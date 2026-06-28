@@ -12,7 +12,9 @@ function Profile() {
   const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  
   const [profile, setProfile] = useState({
     fullName: '',
     email: '',
@@ -26,7 +28,7 @@ function Profile() {
     workType: 'Full-Time',
     bio: '',
     skills: [],
-    image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+    image: ''
   });
 
   const [editData, setEditData] = useState(profile);
@@ -35,26 +37,32 @@ function Profile() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      // Merge user data with profile
-      const profileData = {
-        fullName: parsed.fullName || '',
-        email: parsed.email || '',
-        phone: parsed.phone || '',
-        city: parsed.city || '',
-        role: parsed.role || 'worker',
-        category: parsed.category || 'Nanny',
-        experience: parsed.experience || '5',
-        salary: parsed.salary || '3500',
-        availability: parsed.availability || 'Available',
-        workType: parsed.workType || 'Full-Time',
-        bio: parsed.bio || 'Experienced professional with a passion for helping others.',
-        skills: parsed.skills || ['Childcare', 'First Aid'],
-        image: parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
-      };
-      setProfile(profileData);
-      setEditData(profileData);
+      try {
+        const parsed = JSON.parse(userData);
+        setUser(parsed);
+        
+        // Merge user data with profile
+        const profileData = {
+          fullName: parsed.fullName || '',
+          email: parsed.email || '',
+          phone: parsed.phone || '',
+          city: parsed.city || '',
+          role: parsed.role || 'worker',
+          category: parsed.category || 'Nanny',
+          experience: parsed.experience || '5',
+          salary: parsed.salary || '3500',
+          availability: parsed.availability || 'Available',
+          workType: parsed.workType || 'Full-Time',
+          bio: parsed.bio || 'Experienced professional with a passion for helping others.',
+          skills: parsed.skills || ['Childcare', 'First Aid'],
+          image: parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+        };
+        setProfile(profileData);
+        setEditData(profileData);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        navigate('/login');
+      }
     } else {
       navigate('/login');
     }
@@ -76,16 +84,54 @@ function Profile() {
   };
 
   const handleSave = () => {
+    setError('');
+    
+    // Validate required fields
+    if (!editData.fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+    if (!editData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    // Update profile state
     setProfile(editData);
-    // Update localStorage
+    
+    // Update localStorage with all data
     if (user) {
-      const updatedUser = { ...user, ...editData };
+      const updatedUser = { 
+        ...user, 
+        ...editData,
+        // Ensure these fields are properly set
+        fullName: editData.fullName,
+        email: editData.email,
+        phone: editData.phone || '',
+        city: editData.city || '',
+        category: editData.category,
+        experience: editData.experience,
+        salary: editData.salary,
+        availability: editData.availability,
+        workType: editData.workType,
+        bio: editData.bio,
+        skills: editData.skills,
+        image: editData.image
+      };
+      
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
     }
+    
     setIsEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditData(profile);
+    setError('');
   };
 
   const handleAddSkill = () => {
@@ -110,7 +156,7 @@ function Profile() {
       <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-gray-600 hover:text-red-600 transition">← Back</Link>
+            <Link to="/worker-dashboard" className="text-gray-600 hover:text-red-600 transition">← Back</Link>
             <h1 className="text-2xl font-bold text-gray-800">My Profile</h1>
           </div>
           <div className="flex gap-3">
@@ -124,7 +170,7 @@ function Profile() {
                 <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
                   <Save size={18} /> Save
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditData(profile); }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
+                <button onClick={handleCancel} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
                   <X size={18} /> Cancel
                 </button>
               </>
@@ -138,11 +184,21 @@ function Profile() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+            <AlertCircle size={18} /> {error}
+          </div>
+        )}
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           {/* Profile Image */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
             <div className="relative">
-              <img src={editData.image} alt={profile.fullName} className="w-24 h-24 rounded-full object-cover border-4 border-gray-200" />
+              <img 
+                src={editData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'} 
+                alt={profile.fullName} 
+                className="w-24 h-24 rounded-full object-cover border-4 border-gray-200" 
+              />
               <button 
                 onClick={handlePhotoClick}
                 className="absolute bottom-0 right-0 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
