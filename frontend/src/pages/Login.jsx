@@ -1,35 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { saveUser, clearUser } from '../utils/userHelpers';
 
 function Login() {
-  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showLanguages, setShowLanguages] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
-    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
-  ];
-
-  const changeLanguage = (langCode) => {
-    i18n.changeLanguage(langCode);
-    localStorage.setItem('i18nextLng', langCode);
-    document.documentElement.dir = langCode === 'ar' ? 'rtl' : 'ltr';
-    setShowLanguages(false);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,9 +27,8 @@ function Login() {
       });
       
       if (response.data.success) {
-        clearUser();
         localStorage.setItem('token', response.data.token);
-        saveUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         
         const userRole = response.data.user.role;
         if (userRole === 'ADMIN') {
@@ -73,65 +52,12 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        {/* Language Button */}
-        <div className="relative mb-6">
-          <button
-            onClick={() => setShowLanguages(!showLanguages)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"
-          >
-            <span>🌐</span>
-            <span>{t('language') || 'Language'}</span>
-            <span className={`transform transition-transform ${showLanguages ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-
-          {showLanguages && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm"
-                >
-                  <span className="text-xl">{lang.flag}</span>
-                  <span className="text-gray-700">{lang.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Logo */}
-        <div className="flex flex-col items-center justify-center mb-8">
-          <div className="relative">
-            <div className="w-24 h-24 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto">
-              <svg 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="white" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                className="w-14 h-14"
-              >
-                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-              </svg>
-            </div>
-            <div className="absolute -top-2 -right-2 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white text-xl">♥</span>
-            </div>
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+            <span className="text-white text-3xl font-bold">H</span>
           </div>
-          
-          <div className="mt-4 text-center">
-            <div className="flex items-center justify-center gap-1">
-              <span className="text-4xl font-bold text-red-600 tracking-tight">Homey</span>
-              <span className="text-4xl font-bold text-gray-800 tracking-tight">Serv</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 mt-2">
-              <div className="w-10 h-0.5 bg-red-600"></div>
-              <p className="text-xs text-gray-500 font-medium tracking-wider">YOUR HOME, OUR PRIORITY</p>
-              <div className="w-10 h-0.5 bg-red-600"></div>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold text-red-600 mt-4">HomelyServ</h1>
+          <p className="text-gray-500 text-sm">Your Home, Our Priority</p>
         </div>
         
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">SIGN IN</h2>
