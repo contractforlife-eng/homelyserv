@@ -1,41 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
-  Clock, CheckCircle, XCircle, DollarSign, User, 
-  Briefcase, Calendar, MapPin, Phone, Mail,
-  Search, Filter, ChevronDown, ChevronUp,
-  Eye, MessageCircle, CreditCard, Wallet,
-  AlertCircle, FileText, Download, Printer
+  Home, Briefcase, User, Search, Clock, DollarSign,
+  MessageCircle, Settings, LogOut, AlertCircle,
+  CheckCircle, XCircle, Eye, CreditCard, Calendar,
+  MapPin, Phone, Mail, FileText, UserCheck
 } from 'lucide-react';
 
 function EmployerPending() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const userData = JSON.parse(localStorage.getItem('user') || '{}');
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-    } else {
-      navigate('/login');
-    }
-    setLoading(false);
-  }, [navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-      </div>
-    );
-  }
-
-  // Sample pending applications data
-  const applications = [
+  const pendingApplications = [
     {
       id: 1,
       workerName: 'Ahmed Ali',
@@ -67,151 +42,126 @@ function EmployerPending() {
       experience: 7,
       rating: 4.8,
       image: 'https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-      id: 3,
-      workerName: 'Khaled Mostafa',
-      position: 'Driver',
-      category: 'Driver',
-      location: 'Giza, Egypt',
-      salary: 3800,
-      fee: 380,
-      status: 'pending_fee',
-      date: '2026-06-15',
-      phone: '+201234567892',
-      email: 'khaled@example.com',
-      experience: 10,
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face'
-    },
-    {
-      id: 4,
-      workerName: 'Sara Mahmoud',
-      position: 'Cook - Part Time',
-      category: 'Cook',
-      location: 'Cairo, Egypt',
-      salary: 4000,
-      fee: 400,
-      status: 'pending_approval',
-      date: '2026-06-12',
-      phone: '+201234567893',
-      email: 'sara@example.com',
-      experience: 8,
-      rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=80&h=80&fit=crop&crop=face'
     }
   ];
 
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.workerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || app.status === filterStatus;
-    
-    return matchesSearch && matchesFilter;
-  });
+  const handlePayFee = (id) => {
+    alert(`Processing payment for application #${id}`);
+  };
 
-  const handlePayFee = (appId) => {
-    navigate(`/payment/${appId}`);
+  const getStatusBadge = (status) => {
+    switch(status) {
+      case 'pending_fee':
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending Fee (10%)</span>;
+      case 'pending_approval':
+        return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Pending Approval</span>;
+      default:
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/employer-dashboard" className="text-gray-600 hover:text-red-600 transition">
-              ← Back
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Pending Applications</h1>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
+          <p className="text-xs text-gray-500 mt-1">Employer Panel</p>
+        </div>
+        <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">
-              {applications.filter(a => a.status === 'pending_fee').length} pending fees
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Total Pending</p>
-            <p className="text-2xl font-bold text-gray-800">{applications.length}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending Fee (10%)</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {applications.filter(a => a.status === 'pending_fee').length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending Approval</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {applications.filter(a => a.status === 'pending_approval').length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Total Fee Amount</p>
-            <p className="text-2xl font-bold text-red-600">
-              EGP {applications.reduce((sum, app) => sum + app.fee, 0).toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        {/* Search & Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by worker name, position, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-              />
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
+              {userData.fullName?.charAt(0) || 'E'}
             </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-            >
-              <option value="all">All Status</option>
-              <option value="pending_fee">Pending Fee</option>
-              <option value="pending_approval">Pending Approval</option>
-            </select>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">{userData.fullName || 'Employer'}</p>
+              <p className="text-xs text-gray-500">Employer</p>
+            </div>
           </div>
         </div>
+        <nav className="p-4 space-y-1">
+          <Link to="/employer-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Home size={20} /> Dashboard
+          </Link>
+          <Link to="/employer-search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Search size={20} /> Search
+          </Link>
+          <Link to="/employer-pending" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
+            <Clock size={20} /> Pending
+            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
+          </Link>
+          <Link to="/employer-past" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Briefcase size={20} /> Past
+          </Link>
+          <Link to="/employer-payments" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <DollarSign size={20} /> Payments
+          </Link>
+          <Link to="/employer-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <User size={20} /> Profile
+          </Link>
+          <Link to="/employer-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <AlertCircle size={20} /> Complaints
+          </Link>
+          <Link to="/employer-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <MessageCircle size={20} /> Messages
+          </Link>
+          <Link to="/employer-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Settings size={20} /> Settings
+          </Link>
+        </nav>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
+            <LogOut size={20} /> Logout
+          </button>
+        </div>
+      </div>
 
-        {/* Applications List */}
-        {filteredApplications.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No pending applications</h3>
-            <p className="text-gray-500">All applications are processed</p>
+      {/* Main Content */}
+      <div className="ml-64 flex-1">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Pending Applications</h2>
+              <p className="text-gray-500 text-sm">Review and manage pending requests</p>
+            </div>
           </div>
-        ) : (
+        </header>
+
+        <div className="p-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Total Pending</p>
+              <p className="text-2xl font-bold text-gray-800">{pendingApplications.length}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Pending Fee</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {pendingApplications.filter(a => a.status === 'pending_fee').length}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Total Fee Amount</p>
+              <p className="text-2xl font-bold text-red-600">
+                EGP {pendingApplications.reduce((sum, a) => sum + a.fee, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Applications List */}
           <div className="space-y-4">
-            {filteredApplications.map((app) => (
-              <div key={app.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
+            {pendingApplications.map((app) => (
+              <div key={app.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                 <div className="flex flex-col md:flex-row gap-4">
-                  {/* Worker Image & Info */}
                   <div className="flex items-start gap-4 flex-1">
-                    <img src={app.image} alt={app.workerName} className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                    <img src={app.image} alt={app.workerName} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
                     <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{app.workerName}</h3>
+                      <h3 className="font-semibold text-gray-800">{app.workerName}</h3>
                       <p className="text-sm text-gray-500">{app.position}</p>
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">{app.category}</span>
                         <span className="flex items-center gap-1 text-xs text-gray-500">
                           <MapPin size={12} /> {app.location}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <Briefcase size={12} /> {app.experience} years
                         </span>
                         <span className="flex items-center gap-1 text-xs text-gray-500">
                           ⭐ {app.rating}
@@ -220,48 +170,37 @@ function EmployerPending() {
                     </div>
                   </div>
 
-                  {/* Salary & Fee */}
                   <div className="flex flex-col items-end justify-center min-w-[150px]">
                     <p className="text-sm text-gray-500">Salary</p>
                     <p className="font-bold text-gray-800">EGP {app.salary.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500 mt-1">Fee (10%)</p>
+                    <p className="text-sm text-gray-500">Fee (10%)</p>
                     <p className="font-bold text-red-600">EGP {app.fee.toLocaleString()}</p>
                   </div>
 
-                  {/* Status & Actions */}
-                  <div className="flex flex-col items-end justify-center gap-2 min-w-[180px]">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      app.status === 'pending_fee' 
-                        ? 'bg-yellow-100 text-yellow-800' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {app.status === 'pending_fee' ? '⏳ Pending Fee' : '⏳ Pending Approval'}
-                    </span>
+                  <div className="flex flex-col items-end justify-center gap-2 min-w-[160px]">
+                    {getStatusBadge(app.status)}
                     <div className="flex gap-2">
                       <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition">
                         <Eye size={18} />
                       </button>
-                      <button className="p-1.5 text-green-600 hover:bg-green-50 rounded transition">
-                        <MessageCircle size={18} />
-                      </button>
                       {app.status === 'pending_fee' && (
                         <button 
                           onClick={() => handlePayFee(app.id)}
-                          className="px-4 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1"
+                          className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1"
                         >
                           <CreditCard size={16} /> Pay Fee
                         </button>
                       )}
                     </div>
                     {app.status === 'pending_fee' && (
-                      <p className="text-xs text-gray-400 mt-1">Pay 10% fee to proceed</p>
+                      <p className="text-xs text-yellow-600">Pay 10% fee to proceed</p>
                     )}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
