@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, MessageCircle, Shield, Award, 
   Mail, Phone, Heart, Share2, Flag, FileText, 
   Download, Eye, ThumbsUp, ThumbsDown, User,
-  Bookmark, BookmarkCheck, ExternalLink, Copy
+  Bookmark, ExternalLink, Copy
 } from 'lucide-react';
 
 function WorkerProfile() {
@@ -176,7 +176,7 @@ function WorkerProfile() {
                     onClick={toggleSave}
                     className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2 text-sm"
                   >
-                    {isSaved ? <BookmarkCheck size={16} className="text-red-600" /> : <Bookmark size={16} />}
+                    {isSaved ? <Bookmark size={16} className="text-red-600" /> : <Bookmark size={16} />}
                     {isSaved ? 'Saved' : 'Save'}
                   </button>
                   <button 
