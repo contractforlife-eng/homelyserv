@@ -26,17 +26,22 @@ function Login() {
         }
       });
       
+      console.log('Login response:', response.data);
+      
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
         const userRole = response.data.user.role;
+        console.log('User role:', userRole);
+        
+        // Redirect based on role
         if (userRole === 'ADMIN') {
-          window.location.href = '/admin';
+          navigate('/admin');
         } else if (userRole === 'EMPLOYER') {
-          window.location.href = '/employer-dashboard';
+          navigate('/employer-dashboard');
         } else {
-          window.location.href = '/worker-dashboard';
+          navigate('/dashboard');
         }
       } else {
         setError(response.data.message || 'Login failed');
