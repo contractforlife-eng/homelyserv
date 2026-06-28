@@ -6,11 +6,11 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import WorkerDashboard from './pages/WorkerDashboard';
-import WorkerOffers from './pages/WorkerOffers'; // Add this import
+import WorkerOffers from './pages/WorkerOffers';
+import Profile from './pages/Profile';
 import Search from './pages/Search';
 import MyHires from './pages/MyHires';
 import WorkerProfile from './pages/WorkerProfile';
-import Profile from './pages/Profile';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
@@ -32,11 +32,11 @@ function App() {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/employer-dashboard" element={<EmployerDashboard />} />
       <Route path="/worker-dashboard" element={<WorkerDashboard />} />
-      <Route path="/worker-offers" element={<WorkerOffers />} /> {/* Add this route */}
+      <Route path="/worker-offers" element={<WorkerOffers />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="/search" element={<Search />} />
       <Route path="/my-hires" element={<MyHires />} />
       <Route path="/worker/:id" element={<WorkerProfile />} />
-      <Route path="/profile" element={<Profile />} />
       <Route path="/payment/:hireId" element={<Payment />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/messages" element={<Messages />} />

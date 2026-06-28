@@ -1,3 +1,5 @@
+// frontend/src/utils/userHelpers.js
+
 // Get user data with fallback for image
 export const getUser = () => {
   try {
@@ -7,7 +9,6 @@ export const getUser = () => {
       // Ensure image field exists
       if (!user.image) {
         user.image = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
-        // Update localStorage with default image
         localStorage.setItem('user', JSON.stringify(user));
       }
       return user;
@@ -48,4 +49,19 @@ export const getUserName = () => {
     return user.fullName;
   }
   return 'User';
+};
+
+// Get user role with fallback
+export const getUserRole = () => {
+  const user = getUser();
+  if (user && user.role) {
+    return user.role;
+  }
+  return 'WORKER';
+};
+
+// Clear user data
+export const clearUser = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
 };
