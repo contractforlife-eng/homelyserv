@@ -9,6 +9,7 @@ import {
   Home, Car, Utensils, Heart as HeartIcon, Shield as ShieldIcon,
   Sprout, Activity, Lock, Plus, Minus, X
 } from 'lucide-react';
+import axios from 'axios';
 
 function EmployerSearch() {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ function EmployerSearch() {
   const [savedWorkers, setSavedWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [workers, setWorkers] = useState([]);
+  const [filteredWorkers, setFilteredWorkers] = useState([]);
   const [filters, setFilters] = useState({
     minSalary: '',
     maxSalary: '',
@@ -30,16 +33,7 @@ function EmployerSearch() {
     experience: 'all'
   });
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-    } else {
-      navigate('/login');
-    }
-    setLoading(false);
-  }, [navigate]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   // Worker categories with icons
   const categories = [
@@ -55,135 +49,140 @@ function EmployerSearch() {
     { id: 'security', label: 'Security Guard', icon: <Lock size={20} />, color: 'gray' }
   ];
 
-  // Sample workers data - real accurate information
-  const workers = [
-    {
-      id: 1,
-      name: 'Ahmed Ali',
-      category: 'babysitter',
-      categoryLabel: 'Babysitter',
-      rating: 4.9,
-      reviewCount: 127,
-      location: 'Cairo, Egypt',
-      phone: '+201234567890',
-      email: 'ahmed.ali@homelyserv.com',
-      salary: 3500,
-      availability: 'Available',
-      experience: 5,
-      verified: true,
-      age: 28,
-      image: 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face',
-      skills: ['Childcare', 'First Aid', 'Teaching', 'Cooking'],
-      bio: 'Experienced nanny with 5 years of experience. Passionate about childcare and child development.',
-      languages: ['English', 'Arabic'],
-      education: 'Bachelor Degree in Early Childhood Education',
-      documents: ['ID Card', 'Certificate', 'First Aid']
-    },
-    {
-      id: 2,
-      name: 'Mona Hassan',
-      category: 'caregiver',
-      categoryLabel: 'Caregiver',
-      rating: 4.8,
-      reviewCount: 89,
-      location: 'Alexandria, Egypt',
-      phone: '+201234567891',
-      email: 'mona.hassan@homelyserv.com',
-      salary: 4200,
-      availability: 'Available',
-      experience: 7,
-      verified: true,
-      age: 45,
-      image: 'https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=200&h=200&fit=crop&crop=face',
-      skills: ['Elderly Care', 'Medication Management', 'Companionship', 'Physiotherapy'],
-      bio: 'Dedicated elderly caregiver with 7 years of experience. Specialized in dementia and Alzheimer\'s care.',
-      languages: ['English', 'Arabic'],
-      education: 'Nursing Diploma',
-      documents: ['ID Card', 'License', 'Certificate']
-    },
-    {
-      id: 3,
-      name: 'Khaled Mostafa',
-      category: 'driver',
-      categoryLabel: 'Driver',
-      rating: 4.7,
-      reviewCount: 156,
-      location: 'Giza, Egypt',
-      phone: '+201234567892',
-      email: 'khaled.mostafa@homelyserv.com',
-      salary: 3800,
-      availability: 'Part-Time',
-      experience: 10,
-      verified: true,
-      age: 35,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-      skills: ['Driving', 'Navigation', 'Car Maintenance', 'Customer Service'],
-      bio: 'Professional driver with 10 years of experience. Safe and reliable transportation services.',
-      languages: ['English', 'Arabic'],
-      education: 'High School',
-      documents: ['ID Card', 'License', 'Certificate']
-    },
-    {
-      id: 4,
-      name: 'Sara Mahmoud',
-      category: 'cook',
-      categoryLabel: 'Cook',
-      rating: 4.9,
-      reviewCount: 203,
-      location: 'Cairo, Egypt',
-      phone: '+201234567893',
-      email: 'sara.mahmoud@homelyserv.com',
-      salary: 4000,
-      availability: 'Available',
-      experience: 8,
-      verified: true,
-      age: 32,
-      image: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=200&h=200&fit=crop&crop=face',
-      skills: ['International Cuisine', 'Meal Planning', 'Dietary Restrictions', 'Food Safety'],
-      bio: 'Professional cook specializing in international cuisine. Can accommodate dietary restrictions.',
-      languages: ['English', 'Arabic', 'French'],
-      education: 'Culinary Arts Degree',
-      documents: ['ID Card', 'Certificate', 'Food Safety']
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      navigate('/login');
     }
-  ];
+    fetchWorkers();
+  }, [navigate]);
+
+  // Fetch workers from backend
+  const fetchWorkers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/workers`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      // Transform worker data to match the expected format
+      const transformedWorkers = response.data.map(worker => ({
+        id: worker.id,
+        name: worker.fullName || 'Unknown',
+        category: worker.category || 'general',
+        categoryLabel: worker.category || 'Worker',
+        rating: worker.rating || 4.5,
+        reviewCount: worker.reviewCount || 0,
+        location: worker.city || 'Not specified',
+        phone: worker.phone || '',
+        email: worker.email || '',
+        salary: worker.expectedSalary || 0,
+        availability: worker.availability || 'Available',
+        experience: worker.experienceYears || 0,
+        verified: worker.isVerified || false,
+        age: worker.age || 25,
+        image: worker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face',
+        skills: worker.skills || [],
+        bio: worker.bio || '',
+        languages: worker.languages || ['English'],
+        education: worker.education || '',
+        documents: worker.documents || []
+      }));
+
+      setWorkers(transformedWorkers);
+      setFilteredWorkers(transformedWorkers);
+    } catch (error) {
+      console.error('Error fetching workers:', error);
+      // If API fails, show empty state
+      setWorkers([]);
+      setFilteredWorkers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter and sort workers
-  const filteredWorkers = workers
-    .filter(worker => {
-      const matchesSearch = worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        worker.categoryLabel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        worker.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        worker.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === 'all' || worker.category === selectedCategory;
-      
-      const matchesMinSalary = !filters.minSalary || worker.salary >= parseInt(filters.minSalary);
-      const matchesMaxSalary = !filters.maxSalary || worker.salary <= parseInt(filters.maxSalary);
-      const matchesRating = !filters.minRating || worker.rating >= filters.minRating;
-      const matchesAvailability = filters.availability === 'all' || worker.availability === filters.availability;
-      const matchesExperience = filters.experience === 'all' || 
-        (filters.experience === '0-2' && worker.experience <= 2) ||
-        (filters.experience === '3-5' && worker.experience >= 3 && worker.experience <= 5) ||
-        (filters.experience === '6-10' && worker.experience >= 6 && worker.experience <= 10) ||
-        (filters.experience === '10+' && worker.experience > 10);
-      
-      return matchesSearch && matchesCategory && matchesMinSalary && 
-        matchesMaxSalary && matchesRating && matchesAvailability && matchesExperience;
-    })
-    .sort((a, b) => {
-      switch(sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'salary-low':
-          return a.salary - b.salary;
-        case 'salary-high':
-          return b.salary - a.salary;
-        case 'experience':
-          return b.experience - a.experience;
-        default:
-          return 0;
-      }
-    });
+  useEffect(() => {
+    let filtered = [...workers];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(worker =>
+        worker.name.toLowerCase().includes(term) ||
+        worker.categoryLabel.toLowerCase().includes(term) ||
+        worker.location.toLowerCase().includes(term) ||
+        worker.skills.some(s => s.toLowerCase().includes(term))
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(worker => 
+        worker.category === selectedCategory || 
+        worker.categoryLabel?.toLowerCase().includes(selectedCategory)
+      );
+    }
+
+    // Salary filters
+    if (filters.minSalary) {
+      filtered = filtered.filter(worker => worker.salary >= parseInt(filters.minSalary));
+    }
+    if (filters.maxSalary) {
+      filtered = filtered.filter(worker => worker.salary <= parseInt(filters.maxSalary));
+    }
+
+    // Rating filter
+    if (filters.minRating) {
+      filtered = filtered.filter(worker => worker.rating >= filters.minRating);
+    }
+
+    // Availability filter
+    if (filters.availability !== 'all') {
+      filtered = filtered.filter(worker => 
+        worker.availability?.toLowerCase() === filters.availability.toLowerCase()
+      );
+    }
+
+    // Experience filter
+    if (filters.experience !== 'all') {
+      filtered = filtered.filter(worker => {
+        const exp = worker.experience || 0;
+        switch(filters.experience) {
+          case '0-2': return exp <= 2;
+          case '3-5': return exp >= 3 && exp <= 5;
+          case '6-10': return exp >= 6 && exp <= 10;
+          case '10+': return exp > 10;
+          default: return true;
+        }
+      });
+    }
+
+    // Sort
+    switch(sortBy) {
+      case 'rating':
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'salary-low':
+        filtered.sort((a, b) => (a.salary || 0) - (b.salary || 0));
+        break;
+      case 'salary-high':
+        filtered.sort((a, b) => (b.salary || 0) - (a.salary || 0));
+        break;
+      case 'experience':
+        filtered.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+        break;
+      default:
+        break;
+    }
+
+    setFilteredWorkers(filtered);
+  }, [workers, searchTerm, selectedCategory, filters, sortBy]);
 
   const toggleSave = (workerId) => {
     setSavedWorkers(prev => 
@@ -312,9 +311,9 @@ function EmployerSearch() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="all">All</option>
-                  <option value="Available">Available</option>
-                  <option value="Part-Time">Part-Time</option>
-                  <option value="Full-Time">Full-Time</option>
+                  <option value="available">Available</option>
+                  <option value="part-time">Part-Time</option>
+                  <option value="full-time">Full-Time</option>
                 </select>
               </div>
               <div>
@@ -359,6 +358,16 @@ function EmployerSearch() {
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No workers found</h3>
             <p className="text-gray-500">Try adjusting your search or filters</p>
+            <button 
+              onClick={() => {
+                setSearchTerm('');
+                setFilters({minSalary: '', maxSalary: '', minRating: 0, availability: 'all', experience: 'all'});
+                setSelectedCategory('all');
+              }}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Clear All Filters
+            </button>
           </div>
         ) : (
           <div className={viewMode === 'grid' 
@@ -377,11 +386,14 @@ function EmployerSearch() {
                 <div className={viewMode === 'list' ? 'sm:w-32 sm:flex-shrink-0' : ''}>
                   <div className="relative">
                     <img
-                      src={worker.image}
+                      src={worker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face'}
                       alt={worker.name}
                       className={`rounded-lg object-cover ${
                         viewMode === 'list' ? 'w-full h-32' : 'w-full h-48'
                       }`}
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face';
+                      }}
                     />
                     {worker.verified && (
                       <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
@@ -400,8 +412,8 @@ function EmployerSearch() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{worker.rating}</span>
-                      <span className="text-xs text-gray-400">({worker.reviewCount})</span>
+                      <span className="font-medium">{worker.rating || 0}</span>
+                      <span className="text-xs text-gray-400">({worker.reviewCount || 0})</span>
                     </div>
                   </div>
 
@@ -412,27 +424,29 @@ function EmployerSearch() {
                     </span>
                     <span className="flex items-center gap-1 text-sm text-gray-600">
                       <DollarSign size={14} className="text-gray-400" />
-                      EGP {worker.salary.toLocaleString()}
+                      EGP {worker.salary?.toLocaleString() || 0}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      worker.availability === 'Available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      worker.availability?.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {worker.availability}
+                      {worker.availability || 'Not specified'}
                     </span>
                   </div>
 
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {worker.skills.slice(0, 3).map((skill, i) => (
-                      <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
-                        {skill}
-                      </span>
-                    ))}
-                    {worker.skills.length > 3 && (
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-400">
-                        +{worker.skills.length - 3}
-                      </span>
-                    )}
-                  </div>
+                  {worker.skills && worker.skills.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {worker.skills.slice(0, 3).map((skill, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
+                          {skill}
+                        </span>
+                      ))}
+                      {worker.skills.length > 3 && (
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-400">
+                          +{worker.skills.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                     <button 
@@ -487,14 +501,21 @@ function EmployerSearch() {
 
             {/* Worker Info */}
             <div className="flex items-start gap-4 mb-4">
-              <img src={selectedWorker.image} alt={selectedWorker.name} className="w-24 h-24 rounded-full object-cover border-2 border-gray-200" />
+              <img 
+                src={selectedWorker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face'} 
+                alt={selectedWorker.name} 
+                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face';
+                }}
+              />
               <div className="flex-1">
                 <h3 className="text-2xl font-bold text-gray-800">{selectedWorker.name}</h3>
-                <p className="text-gray-500">{selectedWorker.categoryLabel} • {selectedWorker.age} years old</p>
+                <p className="text-gray-500">{selectedWorker.categoryLabel}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{selectedWorker.rating}</span>
-                  <span className="text-xs text-gray-400">({selectedWorker.reviewCount} reviews)</span>
+                  <span className="font-medium">{selectedWorker.rating || 0}</span>
+                  <span className="text-xs text-gray-400">({selectedWorker.reviewCount || 0} reviews)</span>
                   {selectedWorker.verified && (
                     <span className="text-xs text-green-600 flex items-center gap-1">
                       <CheckCircle size={12} /> Verified
@@ -506,10 +527,10 @@ function EmployerSearch() {
                     <MapPin size={14} className="text-gray-400" /> {selectedWorker.location}
                   </span>
                   <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <DollarSign size={14} className="text-gray-400" /> EGP {selectedWorker.salary.toLocaleString()}/month
+                    <DollarSign size={14} className="text-gray-400" /> EGP {selectedWorker.salary?.toLocaleString() || 0}/month
                   </span>
                   <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <Briefcase size={14} className="text-gray-400" /> {selectedWorker.experience} years
+                    <Briefcase size={14} className="text-gray-400" /> {selectedWorker.experience || 0} years
                   </span>
                 </div>
               </div>
@@ -519,51 +540,43 @@ function EmployerSearch() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium text-gray-800">{selectedWorker.phone}</p>
+                <p className="font-medium text-gray-800">{selectedWorker.phone || 'Not provided'}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-800">{selectedWorker.email}</p>
+                <p className="font-medium text-gray-800">{selectedWorker.email || 'Not provided'}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Languages</p>
-                <p className="font-medium text-gray-800">{selectedWorker.languages.join(', ')}</p>
+                <p className="font-medium text-gray-800">{selectedWorker.languages?.join(', ') || 'Not specified'}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Education</p>
-                <p className="font-medium text-gray-800">{selectedWorker.education}</p>
+                <p className="font-medium text-gray-800">{selectedWorker.education || 'Not specified'}</p>
               </div>
             </div>
 
             {/* Bio */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Bio</p>
-              <p className="text-gray-700">{selectedWorker.bio}</p>
-            </div>
+            {selectedWorker.bio && (
+              <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                <p className="text-sm text-gray-500">Bio</p>
+                <p className="text-gray-700">{selectedWorker.bio}</p>
+              </div>
+            )}
 
             {/* Skills */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Skills</p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {selectedWorker.skills.map((skill, i) => (
-                  <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
-                    {skill}
-                  </span>
-                ))}
+            {selectedWorker.skills && selectedWorker.skills.length > 0 && (
+              <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                <p className="text-sm text-gray-500">Skills</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedWorker.skills.map((skill, i) => (
+                    <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Documents */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Documents</p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {selectedWorker.documents.map((doc, i) => (
-                  <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                    {doc}
-                  </span>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
@@ -575,8 +588,10 @@ function EmployerSearch() {
               </button>
               <button 
                 onClick={() => {
-                  const phone = selectedWorker.phone.replace(/[^0-9]/g, '');
-                  window.open(`https://wa.me/${phone}`, '_blank');
+                  const phone = selectedWorker.phone?.replace(/[^0-9]/g, '');
+                  if (phone) {
+                    window.open(`https://wa.me/${phone}`, '_blank');
+                  }
                 }}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
               >
