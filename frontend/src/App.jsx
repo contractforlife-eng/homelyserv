@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import WorkerDashboard from './pages/WorkerDashboard';
+import WorkerOffers from './pages/WorkerOffers'; // Add this import
 import Search from './pages/Search';
 import MyHires from './pages/MyHires';
 import WorkerProfile from './pages/WorkerProfile';
@@ -31,6 +32,7 @@ function App() {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/employer-dashboard" element={<EmployerDashboard />} />
       <Route path="/worker-dashboard" element={<WorkerDashboard />} />
+      <Route path="/worker-offers" element={<WorkerOffers />} /> {/* Add this route */}
       <Route path="/search" element={<Search />} />
       <Route path="/my-hires" element={<MyHires />} />
       <Route path="/worker/:id" element={<WorkerProfile />} />
