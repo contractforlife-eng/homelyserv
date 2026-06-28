@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Hop as Home, Users, Briefcase, DollarSign, Star, MessageCircle, FileText, Settings, Circle as HelpCircle, ChartBar as BarChart3, Calendar, CircleCheck as CheckCircle, Circle as XCircle, Clock, CircleAlert as AlertCircle, UserPlus, UserMinus, TrendingUp, TrendingDown, Eye, CreditCard as Edit, Trash2, Shield, Award, Zap, Activity, ChartPie as PieChart, ChartLine as LineChart, Bell, LogOut, Search, ListFilter as Filter, Download, CreditCard, Wallet, Phone, Mail, MapPin, Globe, Plus, Wifi, WifiOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { 
+  Home, Users, Briefcase, DollarSign, Star, MessageCircle, 
+  FileText, Settings, HelpCircle, BarChart3, Calendar, 
+  CheckCircle, XCircle, Clock, AlertCircle, UserPlus, 
+  UserMinus, TrendingUp, TrendingDown, Eye, Edit, 
+  Trash2, Shield, Award, Zap, Activity, PieChart, 
+  LineChart, Bell, LogOut, Search, Filter, Download,
+  CreditCard, Wallet, Phone, Mail, MapPin, Globe, Plus
+} from 'lucide-react';
 
 function AdminDashboard() {
   const navigate = useNavigate();

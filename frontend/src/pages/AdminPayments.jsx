@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DollarSign, CreditCard, Wallet, Banknote, Calendar, CircleCheck as CheckCircle, Circle as XCircle, Clock, Eye, Download, Search, ListFilter as Filter, ArrowLeft, Plus, FileText, Printer, TrendingUp, TrendingDown, CircleAlert as AlertCircle, Phone, Mail, User, Briefcase, MapPin, CreditCard as Edit, Trash2, Save, X, ChevronDown, ChevronUp, RefreshCw, Settings, Users, Building, Star } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { 
+  DollarSign, CreditCard, Wallet, Banknote, Calendar, 
+  CheckCircle, XCircle, Clock, Eye, Download,
+  Search, Filter, ArrowLeft, Plus, FileText,
+  Printer, TrendingUp, TrendingDown, AlertCircle,
+  Phone, Mail, User, Briefcase, MapPin, Edit,
+  Trash2, Save, X, ChevronDown, ChevronUp,
+  RefreshCw, Settings, Users, Building, Star
+} from 'lucide-react';
 
 function AdminPayments() {
   const navigate = useNavigate();
