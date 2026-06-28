@@ -8,7 +8,7 @@ import {
   MessageCircle, Settings, LogOut, ArrowLeft,
   Plus, Trash2, ChevronDown, ChevronUp, AlertCircle
 } from 'lucide-react';
-import { getUser, updateUser, getUserImage, getUserName } from '../utils/userHelpers';
+import { getUser, updateUser } from '../utils/userHelpers';
 
 function EmployerProfile() {
   const navigate = useNavigate();
@@ -18,7 +18,6 @@ function EmployerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
-  
   const [profile, setProfile] = useState({
     fullName: '',
     email: '',
@@ -101,10 +100,13 @@ function EmployerProfile() {
     }
   };
 
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
   const handleSave = () => {
     setError('');
     
-    // Validate required fields
     if (!editData.fullName.trim()) {
       setError('Full name is required');
       return;
@@ -186,7 +188,7 @@ function EmployerProfile() {
                 </button>
               </>
             ) : (
-              <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+              <button onClick={handleEditClick} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
                 <Edit size={18} /> Edit Profile
               </button>
             )}
