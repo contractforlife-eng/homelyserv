@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { saveUser, clearUser } from '../utils/userHelpers';
 
 function Login() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +24,13 @@ function Login() {
     { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
   ];
 
+  const changeLanguage = (langCode) => {
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('i18nextLng', langCode);
+    document.documentElement.dir = langCode === 'ar' ? 'rtl' : 'ltr';
+    setShowLanguages(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -38,14 +47,10 @@ function Login() {
       });
       
       if (response.data.success) {
-        // Clear old data
         clearUser();
-        
-        // Save user with image
         localStorage.setItem('token', response.data.token);
         saveUser(response.data.user);
         
-        // Redirect based on role
         const userRole = response.data.user.role;
         if (userRole === 'ADMIN') {
           window.location.href = '/admin';
@@ -75,21 +80,17 @@ function Login() {
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"
           >
             <span>🌐</span>
-            <span>Language</span>
+            <span>{t('language') || 'Language'}</span>
             <span className={`transform transition-transform ${showLanguages ? 'rotate-180' : ''}`}>▼</span>
           </button>
 
-          {/* Language Dropdown */}
           {showLanguages && (
             <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm"
-                  onClick={() => {
-                    // Handle language change here
-                    setShowLanguages(false);
-                  }}
                 >
                   <span className="text-xl">{lang.flag}</span>
                   <span className="text-gray-700">{lang.name}</span>
