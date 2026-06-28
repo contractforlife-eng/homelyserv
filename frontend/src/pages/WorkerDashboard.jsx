@@ -5,6 +5,7 @@ import {
   Home, Calendar, DollarSign, Star, MapPin, Clock, CheckCircle, XCircle,
   FileText, Award, Shield, TrendingUp, Heart, Bookmark
 } from 'lucide-react';
+import { getUser, getUserImage, getUserName, clearUser } from '../utils/userHelpers';
 
 function WorkerDashboard() {
   const navigate = useNavigate();
@@ -13,10 +14,9 @@ function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const userData = getUser();
     if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
+      setUser(userData);
     } else {
       navigate('/login');
     }
@@ -24,9 +24,9 @@ function WorkerDashboard() {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearUser();
     navigate('/login');
+    window.location.reload();
   };
 
   if (loading) {
@@ -41,7 +41,6 @@ function WorkerDashboard() {
     return null;
   }
 
-  // Sample stats
   const stats = {
     applications: 24,
     interviews: 3,
@@ -49,7 +48,6 @@ function WorkerDashboard() {
     rating: 4.9
   };
 
-  // Render content based on active tab
   const renderContent = () => {
     switch(activeTab) {
       case 'overview':
@@ -79,13 +77,13 @@ function WorkerDashboard() {
                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><Search size={20} className="text-red-600" /></div>
                 <div><p className="font-semibold text-gray-800">Find Jobs</p><p className="text-xs text-gray-500">Search for new opportunities</p></div>
               </Link>
-              <button 
-                onClick={() => setActiveTab('profile')}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3 text-left w-full"
+              <Link 
+                to="/profile"
+                className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3"
               >
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><User size={20} className="text-blue-600" /></div>
                 <div><p className="font-semibold text-gray-800">My Profile</p><p className="text-xs text-gray-500">View and edit your profile</p></div>
-              </button>
+              </Link>
               <button 
                 onClick={() => setActiveTab('applications')}
                 className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3 text-left w-full"
@@ -102,11 +100,16 @@ function WorkerDashboard() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-6">My Profile</h3>
             <div className="flex items-start gap-6">
-              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center text-4xl font-bold text-red-600">
-                {user.fullName?.charAt(0) || 'U'}
-              </div>
+              <img 
+                src={getUserImage()} 
+                alt={getUserName()} 
+                className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+                }}
+              />
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-800">{user.fullName || 'User'}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{getUserName()}</h2>
                 <p className="text-gray-500">Worker</p>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div><span className="text-sm text-gray-500">Email</span><p className="font-medium">{user.email}</p></div>
@@ -114,9 +117,9 @@ function WorkerDashboard() {
                   <div><span className="text-sm text-gray-500">City</span><p className="font-medium">{user.city || 'Not set'}</p></div>
                   <div><span className="text-sm text-gray-500">Role</span><p className="font-medium">{user.role}</p></div>
                 </div>
-                <button className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                <Link to="/profile" className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
                   Edit Profile
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -176,11 +179,16 @@ function WorkerDashboard() {
         </div>
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">
-              {user.fullName?.charAt(0) || 'U'}
-            </div>
+            <img 
+              src={getUserImage()} 
+              alt={getUserName()} 
+              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+              onError={(e) => {
+                e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=40&h=40&fit=crop&crop=face';
+              }}
+            />
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{user.fullName || 'User'}</p>
+              <p className="font-semibold text-gray-800 text-sm">{getUserName()}</p>
               <p className="text-xs text-gray-500">Worker</p>
             </div>
           </div>
@@ -202,11 +210,11 @@ function WorkerDashboard() {
             <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
           </Link>
           <Link 
-  to="/profile"
-  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition"
->
-  <User size={20} /> My Profile
-</Link>
+            to="/profile"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+          >
+            <User size={20} /> My Profile
+          </Link>
           <button 
             onClick={() => setActiveTab('applications')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
@@ -238,7 +246,7 @@ function WorkerDashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-800">Worker Dashboard</h2>
-              <p className="text-gray-500 text-sm">Welcome back, {user.fullName || 'User'}!</p>
+              <p className="text-gray-500 text-sm">Welcome back, {getUserName()}!</p>
             </div>
             <div className="flex items-center gap-3">
               <button className="relative">

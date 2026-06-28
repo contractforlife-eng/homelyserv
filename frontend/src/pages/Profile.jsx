@@ -6,7 +6,7 @@ import {
   Star, Shield, Award, Clock, FileText, Download,
   Trash2, Plus, Minus, ChevronDown, ChevronUp
 } from 'lucide-react';
-import axios from 'axios';
+import { getUser, updateUser, getUserImage, getUserName, clearUser } from '../utils/userHelpers';
 
 function Profile() {
   const navigate = useNavigate();
@@ -35,40 +35,29 @@ function Profile() {
 
   const [editData, setEditData] = useState(profile);
   const [newSkill, setNewSkill] = useState('');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const userData = getUser();
     if (userData) {
-      try {
-        const parsed = JSON.parse(userData);
-        setUser(parsed);
-        
-        // Use the image from localStorage if exists, otherwise use default
-        const userImage = parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
-        
-        const profileData = {
-          fullName: parsed.fullName || '',
-          email: parsed.email || '',
-          phone: parsed.phone || '',
-          city: parsed.city || '',
-          role: parsed.role || 'worker',
-          category: parsed.category || 'Nanny',
-          experience: parsed.experience || '5',
-          salary: parsed.salary || '3500',
-          availability: parsed.availability || 'Available',
-          workType: parsed.workType || 'Full-Time',
-          bio: parsed.bio || 'Experienced professional with a passion for helping others.',
-          skills: parsed.skills || ['Childcare', 'First Aid'],
-          image: userImage
-        };
-        setProfile(profileData);
-        setEditData(profileData);
-        setLoading(false);
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        navigate('/login');
-      }
+      setUser(userData);
+      const profileData = {
+        fullName: userData.fullName || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        city: userData.city || '',
+        role: userData.role || 'worker',
+        category: userData.category || 'Nanny',
+        experience: userData.experience || '5',
+        salary: userData.salary || '3500',
+        availability: userData.availability || 'Available',
+        workType: userData.workType || 'Full-Time',
+        bio: userData.bio || 'Experienced professional with a passion for helping others.',
+        skills: userData.skills || ['Childcare', 'First Aid'],
+        image: userData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+      };
+      setProfile(profileData);
+      setEditData(profileData);
+      setLoading(false);
     } else {
       navigate('/login');
     }
@@ -78,104 +67,70 @@ function Profile() {
     fileInputRef.current?.click();
   };
 
-  const handlePhotoUpload = async (e) => {
+  const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setLoading(true);
-      try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
         // Compress image
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const img = new Image();
-          img.onload = async () => {
-            // Compress to 200x200
-            const canvas = document.createElement('canvas');
-            canvas.width = 200;
-            canvas.height = 200;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 200, 200);
-            const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
-            
-            // Update local state
-            setEditData(prev => ({ ...prev, image: compressedImage }));
-            setLoading(false);
-          };
-          img.src = reader.result;
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 200;
+          canvas.height = 200;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 200, 200);
+          const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
+          setEditData(prev => ({ ...prev, image: compressedImage }));
         };
-        reader.readAsDataURL(file);
-      } catch (err) {
-        console.error('Error uploading image:', err);
-        setError('Failed to upload image');
-        setLoading(false);
-      }
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError('');
-    setLoading(true);
     
     // Validate required fields
     if (!editData.fullName.trim()) {
       setError('Full name is required');
-      setLoading(false);
       return;
     }
     if (!editData.email.trim()) {
       setError('Email is required');
-      setLoading(false);
       return;
     }
     
-    try {
-      // Update profile state
-      setProfile(editData);
+    // Update profile state
+    setProfile(editData);
+    
+    // Update localStorage using the helper
+    if (user) {
+      const updatedUser = { 
+        ...user, 
+        ...editData,
+        fullName: editData.fullName,
+        email: editData.email,
+        phone: editData.phone || '',
+        city: editData.city || '',
+        category: editData.category,
+        experience: editData.experience,
+        salary: editData.salary,
+        availability: editData.availability,
+        workType: editData.workType,
+        bio: editData.bio,
+        skills: editData.skills,
+        image: editData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+      };
       
-      // Update localStorage with all data
-      if (user) {
-        const token = localStorage.getItem('token');
-        const updatedUser = { 
-          ...user, 
-          ...editData,
-          fullName: editData.fullName,
-          email: editData.email,
-          phone: editData.phone || '',
-          city: editData.city || '',
-          category: editData.category,
-          experience: editData.experience,
-          salary: editData.salary,
-          availability: editData.availability,
-          workType: editData.workType,
-          bio: editData.bio,
-          skills: editData.skills,
-          image: editData.image || ''
-        };
-        
-        // Save to localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-        
-        // Also update on server
-        try {
-          await axios.put(`${API_URL}/auth/profile`, updatedUser, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-        } catch (err) {
-          console.log('Server update failed, but local saved:', err);
-        }
-      }
-      
-      setIsEditing(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      console.error('Error saving profile:', err);
-      setError('Failed to save profile');
-    } finally {
-      setLoading(false);
+      const savedUser = updateUser(updatedUser);
+      setUser(savedUser);
     }
+    
+    setIsEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   const handleCancel = () => {
@@ -201,7 +156,13 @@ function Profile() {
     }));
   };
 
-  if (loading && !profile.fullName) {
+  const handleLogout = () => {
+    clearUser();
+    navigate('/login');
+    window.location.reload();
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
@@ -225,8 +186,8 @@ function Profile() {
             )}
             {isEditing ? (
               <>
-                <button onClick={handleSave} disabled={loading} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50">
-                  <Save size={18} /> {loading ? 'Saving...' : 'Save'}
+                <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                  <Save size={18} /> Save
                 </button>
                 <button onClick={handleCancel} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
                   <X size={18} /> Cancel
