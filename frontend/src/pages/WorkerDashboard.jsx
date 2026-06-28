@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Home, Briefcase, User, FileText, Search, MessageCircle, 
   Settings, LogOut, Bell, Clock, CheckCircle, XCircle,
-  TrendingUp, Award, Shield, Star, Calendar, Users,
-  DollarSign, MapPin, Phone, Mail
+  Star, Calendar, Users, DollarSign, MapPin, Phone, Mail,
+  AlertCircle, Award, Shield, TrendingUp
 } from 'lucide-react';
 
 function WorkerDashboard() {
@@ -35,9 +35,14 @@ function WorkerDashboard() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  // Sample stats for dashboard
+  const stats = {
+    totalTasks: 45,
+    completedTasks: 28,
+    receivedTasks: 12,
+    declinedTasks: 5,
+    completionRate: 62
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -50,10 +55,10 @@ function WorkerDashboard() {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">
-              {user.fullName?.charAt(0) || 'U'}
+              {user?.fullName?.charAt(0) || 'U'}
             </div>
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{user.fullName || 'User'}</p>
+              <p className="font-semibold text-gray-800 text-sm">{user?.fullName || 'User'}</p>
               <p className="text-xs text-gray-500">Worker</p>
             </div>
           </div>
@@ -66,16 +71,16 @@ function WorkerDashboard() {
             <Briefcase size={20} /> Offers
             <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
           </Link>
-          <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+          <Link to="/worker-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
             <User size={20} /> Profile
           </Link>
-          <Link to="/search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Search size={20} /> Search
+          <Link to="/worker-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <AlertCircle size={20} /> Complaints
           </Link>
-          <Link to="/messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+          <Link to="/worker-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
             <MessageCircle size={20} /> Messages
           </Link>
-          <Link to="/settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+          <Link to="/worker-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
             <Settings size={20} /> Settings
           </Link>
         </nav>
@@ -92,7 +97,7 @@ function WorkerDashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-800">Worker Dashboard</h2>
-              <p className="text-gray-500 text-sm">Welcome back, {user.fullName || 'User'}!</p>
+              <p className="text-gray-500 text-sm">Welcome back, {user?.fullName || 'User'}!</p>
             </div>
             <button className="relative">
               <Bell size={20} className="text-gray-600" />
@@ -107,8 +112,8 @@ function WorkerDashboard() {
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Applications</p>
-                  <p className="text-2xl font-bold text-gray-800">24</p>
+                  <p className="text-sm text-gray-500">Total Tasks</p>
+                  <p className="text-2xl font-bold text-gray-800">{stats.totalTasks}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                   <FileText size={20} className="text-blue-600" />
@@ -118,67 +123,61 @@ function WorkerDashboard() {
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Interviews</p>
-                  <p className="text-2xl font-bold text-gray-800">3</p>
-                </div>
-                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                  <Calendar size={20} className="text-purple-600" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Offers</p>
-                  <p className="text-2xl font-bold text-gray-800">2</p>
+                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.completedTasks}</p>
                 </div>
                 <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                  <Briefcase size={20} className="text-green-600" />
+                  <CheckCircle size={20} className="text-green-600" />
                 </div>
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Rating</p>
-                  <p className="text-2xl font-bold text-gray-800">4.9 ★</p>
+                  <p className="text-sm text-gray-500">Received</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.receivedTasks}</p>
                 </div>
                 <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
-                  <Star size={20} className="text-yellow-600" />
+                  <Clock size={20} className="text-yellow-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Declined</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.declinedTasks}</p>
+                </div>
+                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                  <XCircle size={20} className="text-red-600" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Link to="/search" className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <Search size={20} className="text-red-600" />
+          {/* Completion Rate */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Task Completion Rate</h3>
+            <div className="flex items-center gap-4">
+              <div className="relative w-32 h-32">
+                <svg className="w-32 h-32 transform -rotate-90">
+                  <circle cx="64" cy="64" r="56" fill="none" stroke="#e5e7eb" strokeWidth="12" />
+                  <circle cx="64" cy="64" r="56" fill="none" stroke="#dc2626" strokeWidth="12" 
+                    strokeDasharray={`${stats.completionRate * 3.52} 352`} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-800">{stats.completionRate}%</span>
+                </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-800">Find Jobs</p>
-                <p className="text-xs text-gray-500">Search for new opportunities</p>
+                <p className="text-sm text-gray-600">You have completed <strong>{stats.completedTasks}</strong> out of <strong>{stats.totalTasks}</strong> tasks</p>
+                <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                  <span className="flex items-center gap-1"><CheckCircle size={14} className="text-green-500" /> Completed: {stats.completedTasks}</span>
+                  <span className="flex items-center gap-1"><Clock size={14} className="text-yellow-500" /> Received: {stats.receivedTasks}</span>
+                  <span className="flex items-center gap-1"><XCircle size={14} className="text-red-500" /> Declined: {stats.declinedTasks}</span>
+                </div>
               </div>
-            </Link>
-            <Link to="/profile" className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <User size={20} className="text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">My Profile</p>
-                <p className="text-xs text-gray-500">View and edit your profile</p>
-              </div>
-            </Link>
-            <Link to="/worker-offers" className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Briefcase size={20} className="text-green-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">My Offers</p>
-                <p className="text-xs text-gray-500">View your offers</p>
-              </div>
-            </Link>
+            </div>
           </div>
 
           {/* Recent Activity */}
