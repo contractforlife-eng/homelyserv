@@ -1,575 +1,425 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../store/authStore';
-import api from '../utils/api';
-import toast from 'react-hot-toast';
-import AdminLayout from '../components/AdminLayout';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  BarChart3, PieChart, LineChart, TrendingUp, TrendingDown,
+  Download, Printer, RefreshCw, ArrowLeft, Calendar,
+  Users, Briefcase, DollarSign, Star, Clock, CheckCircle,
+  XCircle, AlertCircle, FileText, Mail, Phone,
+  Eye, Edit, Trash2, Filter, Search, ChevronDown,
+  ChevronUp, Award, Shield, Building, MapPin,
+  Activity, Zap, Target, Flag, Globe, Settings
+} from 'lucide-react';
 
-export default function AdminReports() {
+function AdminReports() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  const [reportType, setReportType] = useState('users');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('month');
-  const [reportData, setReportData] = useState(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [chartType, setChartType] = useState('bar');
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    if (user?.role !== 'ADMIN') {
-      navigate('/');
-      return;
-    }
-    generateReport();
-  }, []);
-
-  const generateReport = async () => {
-    setLoading(true);
-    try {
-      const [hiresRes, usersRes] = await Promise.all([
-        api.get('/hires/all').catch(() => ({ data: [] })),
-        api.get('/auth/users').catch(() => ({ data: [] }))
-      ]);
-
-      const allHires = hiresRes.data || [];
-      const allUsers = usersRes.data || [];
-
-      // Calculate real data
-      const totalRevenue = allHires
-        .filter(h => h.paymentStatus === 'confirmed')
-        .reduce((sum, h) => sum + (h.totalDue || 0), 0);
-
-      const avgSalary = allHires.length > 0
-        ? allHires.reduce((sum, h) => sum + (h.agreedSalary || 0), 0) / allHires.length
-        : 0;
-
-      const methods = {
-        instapay: allHires.filter(h => h.paymentMethod === 'instapay').length,
-        vodafoneCash: allHires.filter(h => h.paymentMethod === 'vodafone').length,
-        bankTransfer: allHires.filter(h => h.paymentMethod === 'bank').length,
-        bitcoin: allHires.filter(h => h.paymentMethod === 'btc').length,
-        usdc: allHires.filter(h => h.paymentMethod === 'usdc').length,
-      };
-
-      const mockData = {
-        users: {
-          total: allUsers.length,
-          workers: allUsers.filter(u => u.role === 'WORKER').length,
-          employers: allUsers.filter(u => u.role === 'EMPLOYER').length,
-          admins: allUsers.filter(u => u.role === 'ADMIN').length,
-          newThisMonth: allUsers.filter(u => {
-            const monthAgo = new Date();
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return new Date(u.createdAt) > monthAgo;
-          }).length,
-          activeUsers: allUsers.filter(u => !u.isSuspended).length,
-          percentages: {
-            workers: allUsers.length > 0 ? (allUsers.filter(u => u.role === 'WORKER').length / allUsers.length) * 100 : 0,
-            employers: allUsers.length > 0 ? (allUsers.filter(u => u.role === 'EMPLOYER').length / allUsers.length) * 100 : 0,
-            admins: allUsers.length > 0 ? (allUsers.filter(u => u.role === 'ADMIN').length / allUsers.length) * 100 : 0,
-            active: allUsers.length > 0 ? (allUsers.filter(u => !u.isSuspended).length / allUsers.length) * 100 : 0,
-            new: allUsers.length > 0 ? (allUsers.filter(u => {
-              const monthAgo = new Date();
-              monthAgo.setMonth(monthAgo.getMonth() - 1);
-              return new Date(u.createdAt) > monthAgo;
-            }).length / allUsers.length) * 100 : 0,
-            growth: 15,
-          }
-        },
-        hires: {
-          total: allHires.length,
-          active: allHires.filter(h => h.status === 'active').length,
-          completed: allHires.filter(h => h.status === 'completed').length,
-          pending: allHires.filter(h => h.paymentStatus === 'pending').length,
-          totalRevenue: totalRevenue,
-          averageSalary: avgSalary,
-          percentages: {
-            active: allHires.length > 0 ? (allHires.filter(h => h.status === 'active').length / allHires.length) * 100 : 0,
-            completed: allHires.length > 0 ? (allHires.filter(h => h.status === 'completed').length / allHires.length) * 100 : 0,
-            pending: allHires.length > 0 ? (allHires.filter(h => h.paymentStatus === 'pending').length / allHires.length) * 100 : 0,
-            growth: 12,
-            completion: allHires.length > 0 ? (allHires.filter(h => h.status === 'completed').length / allHires.length) * 100 : 0,
-          }
-        },
-        payments: {
-          total: allHires.length,
-          confirmed: allHires.filter(h => h.paymentStatus === 'confirmed').length,
-          pending: allHires.filter(h => h.paymentStatus === 'pending').length,
-          rejected: allHires.filter(h => h.paymentStatus === 'rejected').length,
-          totalAmount: totalRevenue,
-          methods: methods,
-          percentages: {
-            confirmed: allHires.length > 0 ? (allHires.filter(h => h.paymentStatus === 'confirmed').length / allHires.length) * 100 : 0,
-            pending: allHires.length > 0 ? (allHires.filter(h => h.paymentStatus === 'pending').length / allHires.length) * 100 : 0,
-            rejected: allHires.length > 0 ? (allHires.filter(h => h.paymentStatus === 'rejected').length / allHires.length) * 100 : 0,
-            instapay: allHires.length > 0 ? (allHires.filter(h => h.paymentMethod === 'instapay').length / allHires.length) * 100 : 0,
-            vodafoneCash: allHires.length > 0 ? (allHires.filter(h => h.paymentMethod === 'vodafone').length / allHires.length) * 100 : 0,
-            bankTransfer: allHires.length > 0 ? (allHires.filter(h => h.paymentMethod === 'bank').length / allHires.length) * 100 : 0,
-            bitcoin: allHires.length > 0 ? (allHires.filter(h => h.paymentMethod === 'btc').length / allHires.length) * 100 : 0,
-            usdc: allHires.length > 0 ? (allHires.filter(h => h.paymentMethod === 'usdc').length / allHires.length) * 100 : 0,
-          }
-        },
-        revenue: {
-          total: totalRevenue,
-          monthly: [450, 520, 680, 750, 820, 910, 980, 1050, 1120],
-          growth: allHires.length > 0 ? 15 : 0,
-          average: allHires.length > 0 ? totalRevenue / allHires.length : 0,
-          percentages: {
-            growth: allHires.length > 0 ? 15 : 0,
-            monthlyChange: allHires.length > 0 ? 12 : 0,
-            quarterGrowth: allHires.length > 0 ? 8 : 0,
-          }
-        }
-      };
-      setReportData(mockData);
-    } catch (err) {
-      console.error('Failed to generate report:', err);
-      toast.error('Failed to generate report');
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      if (parsed.role !== 'ADMIN') {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/login');
     }
     setLoading(false);
-  };
+  }, [navigate]);
 
-  const exportReport = () => {
-    toast.success('Report exported successfully!');
-  };
-
-  const reportTypes = [
-    { key: 'users', label: '👥 User Report' },
-    { key: 'hires', label: '📋 Hire Report' },
-    { key: 'payments', label: '💰 Payment Report' },
-    { key: 'revenue', label: '📈 Revenue Report' },
-  ];
-
-  const dateOptions = [
-    { key: 'week', label: 'Last 7 Days' },
-    { key: 'month', label: 'Last 30 Days' },
-    { key: 'quarter', label: 'Last 3 Months' },
-    { key: 'year', label: 'Last 12 Months' },
-  ];
-
-  const renderPercentageBar = (value, total, label, color = '#2e7d32') => {
-    const percentage = total > 0 ? (value / total) * 100 : 0;
+  if (loading) {
     return (
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#5a7a5a' }}>{label}</span>
-          <span style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '600', color: '#1a3a1a' }}>
-            {percentage.toFixed(1)}%
-          </span>
-        </div>
-        <div style={{ 
-          width: '100%', 
-          height: isMobile ? '6px' : '8px', 
-          background: '#f0f7f0', 
-          borderRadius: '4px', 
-          overflow: 'hidden' 
-        }}>
-          <div style={{
-            width: `${percentage}%`,
-            height: '100%',
-            background: color,
-            borderRadius: '4px',
-            transition: 'width 0.5s ease',
-          }} />
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
       </div>
     );
+  }
+
+  // Report data
+  const overviewStats = {
+    totalUsers: 25680,
+    totalWorkers: 8432,
+    totalEmployers: 1234,
+    totalHires: 895,
+    totalRevenue: 48650,
+    totalComplaints: 127,
+    activeUsers: 2845,
+    completionRate: 78,
+    growthRate: 12.5
   };
 
-  const renderUserReport = () => (
-    <div>
-      <h4 style={{ fontSize: isMobile ? '15px' : '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        User Statistics
-      </h4>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '10px' : '16px',
-        marginBottom: '20px',
-      }}>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#1a3a1a' }}>
-            {reportData?.users?.total || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Users</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            ↑ {reportData?.users?.percentages?.growth || 0}% growth
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#2e7d32' }}>
-            {reportData?.users?.activeUsers || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Active Users</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            {reportData?.users?.percentages?.active?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#0d47a1' }}>
-            {reportData?.users?.newThisMonth || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>New This Month</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#0d47a1', marginTop: '4px' }}>
-            {reportData?.users?.percentages?.new?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#f39c12' }}>
-            {reportData?.users?.workers || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Workers</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#f39c12', marginTop: '4px' }}>
-            {reportData?.users?.percentages?.workers?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-      </div>
+  const monthlyData = [
+    { month: 'Jan', users: 1200, hires: 45, revenue: 3200 },
+    { month: 'Feb', users: 1340, hires: 52, revenue: 3800 },
+    { month: 'Mar', users: 1500, hires: 58, revenue: 4200 },
+    { month: 'Apr', users: 1680, hires: 63, revenue: 4800 },
+    { month: 'May', users: 1850, hires: 72, revenue: 5400 },
+    { month: 'Jun', users: 2100, hires: 85, revenue: 6200 }
+  ];
 
-      <div style={{ background: '#f8fbf8', padding: isMobile ? '16px' : '20px', borderRadius: '8px' }}>
-        <h5 style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '12px' }}>
-          User Distribution
-        </h5>
-        {renderPercentageBar(
-          reportData?.users?.workers || 0, 
-          reportData?.users?.total || 1, 
-          'Workers', '#2e7d32'
-        )}
-        {renderPercentageBar(
-          reportData?.users?.employers || 0, 
-          reportData?.users?.total || 1, 
-          'Employers', '#0d47a1'
-        )}
-        {renderPercentageBar(
-          reportData?.users?.admins || 0, 
-          reportData?.users?.total || 1, 
-          'Admins', '#f39c12'
-        )}
-        {renderPercentageBar(
-          reportData?.users?.activeUsers || 0, 
-          reportData?.users?.total || 1, 
-          'Active Users', '#1976d2'
-        )}
-      </div>
-    </div>
-  );
+  const categoryData = [
+    { name: 'Nanny', value: 1256, percentage: 39 },
+    { name: 'Elderly Care', value: 842, percentage: 26 },
+    { name: 'Drivers', value: 612, percentage: 19 },
+    { name: 'Security', value: 285, percentage: 9 },
+    { name: 'Housekeeping', value: 220, percentage: 7 }
+  ];
 
-  const renderHireReport = () => (
-    <div>
-      <h4 style={{ fontSize: isMobile ? '15px' : '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Hire Statistics
-      </h4>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '10px' : '16px',
-        marginBottom: '20px',
-      }}>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#1a3a1a' }}>
-            {reportData?.hires?.total || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Hires</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            ↑ {reportData?.hires?.percentages?.growth || 0}% growth
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#2e7d32' }}>
-            {reportData?.hires?.active || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Active Hires</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            {reportData?.hires?.percentages?.active?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#0d47a1' }}>
-            {reportData?.hires?.completed || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Completed</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#0d47a1', marginTop: '4px' }}>
-            {reportData?.hires?.percentages?.completion?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#e65100' }}>
-            {reportData?.hires?.pending || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Pending</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#e65100', marginTop: '4px' }}>
-            {reportData?.hires?.percentages?.pending?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-      </div>
+  const recentReports = [
+    { id: 1, title: 'Monthly Revenue Report', date: '2026-06-20', status: 'completed', type: 'revenue' },
+    { id: 2, title: 'User Growth Report', date: '2026-06-18', status: 'pending', type: 'users' },
+    { id: 3, title: 'Worker Performance Report', date: '2026-06-15', status: 'completed', type: 'workers' },
+    { id: 4, title: 'Commission Report', date: '2026-06-12', status: 'completed', type: 'commission' }
+  ];
 
-      <div style={{ background: '#f8fbf8', padding: isMobile ? '16px' : '20px', borderRadius: '8px' }}>
-        <h5 style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '12px' }}>
-          Hire Status Distribution
-        </h5>
-        {renderPercentageBar(
-          reportData?.hires?.active || 0, 
-          reportData?.hires?.total || 1, 
-          'Active', '#2e7d32'
-        )}
-        {renderPercentageBar(
-          reportData?.hires?.completed || 0, 
-          reportData?.hires?.total || 1, 
-          'Completed', '#0d47a1'
-        )}
-        {renderPercentageBar(
-          reportData?.hires?.pending || 0, 
-          reportData?.hires?.total || 1, 
-          'Pending', '#f39c12'
-        )}
-      </div>
-    </div>
-  );
-
-  const renderPaymentReport = () => (
-    <div>
-      <h4 style={{ fontSize: isMobile ? '15px' : '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Payment Statistics
-      </h4>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '10px' : '16px',
-        marginBottom: '20px',
-      }}>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#1a3a1a' }}>
-            {reportData?.payments?.total || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Payments</div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#2e7d32' }}>
-            {reportData?.payments?.confirmed || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Confirmed</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            {reportData?.payments?.percentages?.confirmed?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#f39c12' }}>
-            {reportData?.payments?.pending || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Pending</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#f39c12', marginTop: '4px' }}>
-            {reportData?.payments?.percentages?.pending?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#2e7d32' }}>
-            EGP {reportData?.payments?.totalAmount?.toFixed(0) || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Amount</div>
-        </div>
-      </div>
-
-      <div style={{ background: '#f8fbf8', padding: isMobile ? '16px' : '20px', borderRadius: '8px', marginBottom: '16px' }}>
-        <h5 style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '12px' }}>
-          Payment Methods Distribution
-        </h5>
-        {reportData?.payments?.methods && Object.entries(reportData.payments.methods).map(([method, count]) => (
-          renderPercentageBar(
-            count, 
-            reportData.payments.total || 1, 
-            method.charAt(0).toUpperCase() + method.slice(1).replace(/([A-Z])/g, ' $1'),
-            ['#2e7d32', '#0d47a1', '#f39c12', '#e65100', '#4a148c'][Object.keys(reportData.payments.methods).indexOf(method)]
-          )
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderRevenueReport = () => (
-    <div>
-      <h4 style={{ fontSize: isMobile ? '15px' : '16px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Revenue Overview
-      </h4>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-        gap: isMobile ? '10px' : '16px',
-        marginBottom: '20px',
-      }}>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#2e7d32' }}>
-            EGP {reportData?.revenue?.total?.toFixed(0) || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Revenue</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#2e7d32', marginTop: '4px' }}>
-            ↑ {reportData?.revenue?.percentages?.growth || 0}% growth
-          </div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#1a3a1a' }}>
-            {reportData?.hires?.total || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Total Hires</div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#0d47a1' }}>
-            EGP {reportData?.revenue?.average?.toFixed(0) || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Avg. Revenue/Hire</div>
-        </div>
-        <div style={{ background: '#f8fbf8', padding: isMobile ? '12px' : '16px', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', color: '#f39c12' }}>
-            {reportData?.payments?.pending || 0}
-          </div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#5a7a5a' }}>Pending Payments</div>
-          <div style={{ fontSize: isMobile ? '10px' : '11px', color: '#f39c12', marginTop: '4px' }}>
-            {reportData?.payments?.percentages?.pending?.toFixed(1) || 0}% of total
-          </div>
-        </div>
-      </div>
-
-      <div style={{ background: '#f8fbf8', padding: isMobile ? '16px' : '20px', borderRadius: '8px' }}>
-        <h5 style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: '600', color: '#1a3a1a', marginBottom: '12px' }}>
-          Revenue Growth Metrics
-        </h5>
-        {renderPercentageBar(
-          reportData?.revenue?.percentages?.growth || 0, 
-          100, 
-          'Overall Growth', '#2e7d32'
-        )}
-        {renderPercentageBar(
-          reportData?.revenue?.percentages?.monthlyChange || 0, 
-          100, 
-          'Monthly Change', '#0d47a1'
-        )}
-        {renderPercentageBar(
-          reportData?.revenue?.percentages?.quarterGrowth || 0, 
-          100, 
-          'Quarter Growth', '#f39c12'
-        )}
-      </div>
-    </div>
-  );
-
-  const renderContent = () => {
-    switch(reportType) {
-      case 'users': return renderUserReport();
-      case 'hires': return renderHireReport();
-      case 'payments': return renderPaymentReport();
-      case 'revenue': return renderRevenueReport();
-      default: return renderUserReport();
+  const getStatusBadge = (status) => {
+    switch(status) {
+      case 'completed':
+        return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Completed</span>;
+      case 'pending':
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending</span>;
+      default:
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
     }
   };
 
   return (
-    <AdminLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '20px' : '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#1a2a3a', marginBottom: '4px' }}>
-            Reports
-          </h1>
-          <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
-            View and export platform reports
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Link to="/admin" className="text-gray-600 hover:text-red-600 transition">
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-800">Reports & Analytics</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"
+            >
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="quarter">Last 90 Days</option>
+              <option value="year">Last Year</option>
+            </select>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+              <Download size={16} /> Export
+            </button>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+              <Printer size={16} /> Print
+            </button>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+              <RefreshCw size={16} /> Refresh
+            </button>
+          </div>
         </div>
-        <button
-          onClick={exportReport}
-          style={{
-            padding: isMobile ? '8px 16px' : '10px 24px',
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: isMobile ? '13px' : '14px',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            width: isMobile ? '100%' : 'auto',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-        >
-          📊 Export Report
-        </button>
-      </div>
+      </header>
 
-      <div style={{
-        display: 'flex',
-        gap: isMobile ? '8px' : '16px',
-        marginBottom: '20px',
-        flexWrap: 'wrap',
-      }}>
-        {reportTypes.map((type) => (
-          <button
-            key={type.key}
-            onClick={() => setReportType(type.key)}
-            style={{
-              padding: isMobile ? '8px 14px' : '10px 20px',
-              borderRadius: '8px',
-              background: reportType === type.key ? '#2e7d32' : '#fff',
-              color: reportType === type.key ? '#fff' : '#5a7a5a',
-              border: reportType === type.key ? 'none' : '1px solid #d4e8d4',
-              cursor: 'pointer',
-              fontSize: isMobile ? '13px' : '14px',
-              fontWeight: reportType === type.key ? '600' : '400',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            {type.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        gap: isMobile ? '6px' : '8px',
-        marginBottom: '16px',
-        flexWrap: 'wrap',
-      }}>
-        {dateOptions.map((option) => (
-          <button
-            key={option.key}
-            onClick={() => setDateRange(option.key)}
-            style={{
-              padding: '4px 12px',
-              borderRadius: '6px',
-              background: dateRange === option.key ? '#e8f5e9' : 'transparent',
-              color: dateRange === option.key ? '#2e7d32' : '#5a7a5a',
-              border: '1px solid ' + (dateRange === option.key ? '#2e7d32' : '#d4e8d4'),
-              cursor: 'pointer',
-              fontSize: isMobile ? '11px' : '12px',
-              fontWeight: dateRange === option.key ? '600' : '400',
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6a8bb0' }}>Generating report...</div>
-      ) : (
-        <div style={{
-          background: '#fff',
-          borderRadius: isMobile ? '12px' : '16px',
-          padding: isMobile ? '16px' : '24px',
-          border: '1px solid #d4e8d4',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        }}>
-          {renderContent()}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
+          {['overview', 'users', 'hires', 'revenue', 'performance', 'reports'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium transition capitalize ${
+                activeTab === tab 
+                  ? 'text-red-600 border-b-2 border-red-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-      )}
-    </AdminLayout>
+
+        {activeTab === 'overview' && (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Total Users</p>
+                    <p className="text-2xl font-bold text-gray-800">{overviewStats.totalUsers.toLocaleString()}</p>
+                  </div>
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <Users size={20} className="text-blue-600" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1 text-xs">
+                  <TrendingUp size={14} className="text-green-500" />
+                  <span className="text-green-500">+{overviewStats.growthRate}%</span>
+                  <span className="text-gray-400">vs last month</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Total Workers</p>
+                    <p className="text-2xl font-bold text-gray-800">{overviewStats.totalWorkers.toLocaleString()}</p>
+                  </div>
+                  <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                    <Briefcase size={20} className="text-green-600" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1 text-xs">
+                  <TrendingUp size={14} className="text-green-500" />
+                  <span className="text-green-500">+8%</span>
+                  <span className="text-gray-400">vs last month</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Total Revenue</p>
+                    <p className="text-2xl font-bold text-gray-800">${overviewStats.totalRevenue.toLocaleString()}</p>
+                  </div>
+                  <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                    <DollarSign size={20} className="text-red-600" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1 text-xs">
+                  <TrendingUp size={14} className="text-green-500" />
+                  <span className="text-green-500">+18%</span>
+                  <span className="text-gray-400">vs last month</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Completion Rate</p>
+                    <p className="text-2xl font-bold text-gray-800">{overviewStats.completionRate}%</p>
+                  </div>
+                  <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <Award size={20} className="text-purple-600" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1 text-xs">
+                  <TrendingUp size={14} className="text-green-500" />
+                  <span className="text-green-500">+5%</span>
+                  <span className="text-gray-400">vs last month</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-gray-800">Monthly Growth</h3>
+                  <button 
+                    onClick={() => setChartType(chartType === 'bar' ? 'line' : 'bar')}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Switch to {chartType === 'bar' ? 'Line' : 'Bar'} Chart
+                  </button>
+                </div>
+                <div className="h-64 flex items-end justify-between gap-2">
+                  {monthlyData.map((item, i) => (
+                    <div key={i} className="flex flex-col items-center flex-1">
+                      <div 
+                        className={`${chartType === 'bar' ? 'w-full' : 'w-1'} bg-red-600 rounded-t transition-all duration-500`}
+                        style={{ height: `${(item.users / 2500) * 100}%` }}
+                      ></div>
+                      <span className="text-xs text-gray-500 mt-2">{item.month}</span>
+                      <span className="text-xs text-gray-400">{item.users}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-semibold text-gray-800 mb-4">Category Distribution</h3>
+                <div className="space-y-3">
+                  {categoryData.map((cat, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">{cat.name}</span>
+                        <span className="font-medium">{cat.value} ({cat.percentage}%)</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            i === 0 ? 'bg-red-600' : 
+                            i === 1 ? 'bg-blue-600' : 
+                            i === 2 ? 'bg-green-600' : 
+                            i === 3 ? 'bg-purple-600' : 'bg-yellow-600'
+                          }`}
+                          style={{ width: `${cat.percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Reports */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-800 mb-4">Recent Reports</h3>
+              <div className="space-y-3">
+                {recentReports.map((report) => (
+                  <div key={report.id} className="flex justify-between items-center border-b border-gray-100 pb-3">
+                    <div>
+                      <p className="font-medium text-gray-800">{report.title}</p>
+                      <p className="text-sm text-gray-500">{report.date}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {getStatusBadge(report.status)}
+                      <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                        <Eye size={16} />
+                      </button>
+                      <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded">
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">User Analytics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">New Users (This Month)</p>
+                <p className="text-2xl font-bold text-blue-600">2,100</p>
+                <p className="text-xs text-green-600">+15% from last month</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Active Users</p>
+                <p className="text-2xl font-bold text-green-600">{overviewStats.activeUsers.toLocaleString()}</p>
+                <p className="text-xs text-green-600">+8% from last month</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">User Retention Rate</p>
+                <p className="text-2xl font-bold text-purple-600">72%</p>
+                <p className="text-xs text-green-600">+5% from last month</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Month</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">New Users</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Active Users</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Growth</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyData.map((item, i) => (
+                    <tr key={i} className="border-b border-gray-100">
+                      <td className="py-3 font-medium text-gray-800">{item.month}</td>
+                      <td className="py-3 text-gray-600">{item.users}</td>
+                      <td className="py-3 text-gray-600">{Math.round(item.users * 0.65)}</td>
+                      <td className="py-3 text-green-600">+{Math.round((item.users / 1200 - 1) * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'revenue' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Revenue Analytics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Total Revenue</p>
+                <p className="text-2xl font-bold text-red-600">${overviewStats.totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Commission Earned</p>
+                <p className="text-2xl font-bold text-orange-600">${Math.round(overviewStats.totalRevenue * 0.065).toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Average Per Hire</p>
+                <p className="text-2xl font-bold text-blue-600">$54</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Month</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Revenue</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Commission</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Growth</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyData.map((item, i) => (
+                    <tr key={i} className="border-b border-gray-100">
+                      <td className="py-3 font-medium text-gray-800">{item.month}</td>
+                      <td className="py-3 text-gray-600">${item.revenue}</td>
+                      <td className="py-3 text-gray-600">${Math.round(item.revenue * 0.065)}</td>
+                      <td className="py-3 text-green-600">+{Math.round((item.revenue / 3200 - 1) * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Generate Report</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                  <option>Revenue Report</option>
+                  <option>User Report</option>
+                  <option>Worker Report</option>
+                  <option>Hire Report</option>
+                  <option>Commission Report</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                  <option>PDF</option>
+                  <option>Excel</option>
+                  <option>CSV</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input type="date" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input type="date" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" />
+              </div>
+            </div>
+            <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+              <FileText size={18} /> Generate Report
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+
+export default AdminReports;
