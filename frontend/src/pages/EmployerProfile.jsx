@@ -34,10 +34,7 @@ function EmployerProfile() {
     joined: '',
     verified: true,
     image: '',
-    documents: [
-      { name: 'ID Card.pdf', type: 'Identity', size: '1.2 MB', verified: true },
-      { name: 'Business License.pdf', type: 'Business', size: '0.8 MB', verified: false }
-    ]
+    documents: []
   });
 
   const [editData, setEditData] = useState(profile);
@@ -47,25 +44,22 @@ function EmployerProfile() {
     if (userData) {
       setUser(userData);
       const profileData = {
-        fullName: userData.fullName || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        city: userData.city || '',
+        fullName: userData.fullName || 'Contract',
+        email: userData.email || 'contract@homelyserv.com',
+        phone: userData.phone || '2166665710',
+        city: userData.city || 'Cairo',
         country: userData.country || 'Egypt',
         role: 'employer',
         company: userData.company || 'Individual',
         position: userData.position || 'Employer',
-        bio: userData.bio || '',
+        bio: userData.bio || 'Experienced employer',
         rating: userData.rating || 4.7,
         reviewCount: userData.reviewCount || 45,
         totalHires: userData.totalHires || 24,
-        joined: userData.joined || new Date().toISOString().split('T')[0],
-        verified: userData.isVerified || true,
+        joined: userData.joined || '2026-01-15',
+        verified: true,
         image: userData.image || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-        documents: userData.documents || [
-          { name: 'ID Card.pdf', type: 'Identity', size: '1.2 MB', verified: true },
-          { name: 'Business License.pdf', type: 'Business', size: '0.8 MB', verified: false }
-        ]
+        documents: userData.documents || []
       };
       setProfile(profileData);
       setEditData(profileData);
@@ -133,8 +127,8 @@ function EmployerProfile() {
         rating: editData.rating || 4.7,
         reviewCount: editData.reviewCount || 45,
         totalHires: editData.totalHires || 24,
-        joined: editData.joined || new Date().toISOString().split('T')[0],
-        isVerified: editData.verified || true,
+        joined: editData.joined || '2026-01-15',
+        isVerified: true,
         image: editData.image || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
         documents: editData.documents || []
       };
@@ -204,10 +198,8 @@ function EmployerProfile() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Info */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-4">
-              {/* Profile Image */}
               <div className="relative">
                 <img 
                   src={editData.image || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face'} 
@@ -238,7 +230,6 @@ function EmployerProfile() {
                 )}
               </div>
 
-              {/* Name & Rating */}
               <div className="mt-4">
                 {isEditing ? (
                   <input
@@ -270,7 +261,6 @@ function EmployerProfile() {
                 )}
               </div>
 
-              {/* Quick Info */}
               <div className="mt-4 space-y-2.5 text-sm">
                 <div className="flex items-center gap-3 text-gray-600">
                   <MapPin size={16} className="text-gray-400" />
@@ -317,7 +307,6 @@ function EmployerProfile() {
                 </div>
               </div>
 
-              {/* Stats */}
               <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2 text-center">
                 <div>
                   <p className="text-lg font-bold text-gray-800">{editData.totalHires}</p>
@@ -335,11 +324,9 @@ function EmployerProfile() {
             </div>
           </div>
 
-          {/* Right Column - Details */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6">
-                {/* Bio */}
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-800 mb-2">About</h3>
                   {isEditing ? (
@@ -354,7 +341,6 @@ function EmployerProfile() {
                   )}
                 </div>
 
-                {/* Company Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
@@ -384,7 +370,6 @@ function EmployerProfile() {
                   </div>
                 </div>
 
-                {/* Personal Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -440,36 +425,39 @@ function EmployerProfile() {
                   </div>
                 </div>
 
-                {/* Documents */}
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-4">Documents</h3>
                   <div className="space-y-3">
-                    {editData.documents.map((doc, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <FileText size={20} className="text-red-600" />
-                          <div>
-                            <p className="font-medium text-gray-800">{doc.name}</p>
-                            <div className="flex items-center gap-3 text-xs text-gray-400">
-                              <span>{doc.type}</span>
-                              <span>{doc.size}</span>
-                              {doc.verified ? (
-                                <span className="text-green-600 flex items-center gap-1">
-                                  <CheckCircle size={12} /> Verified
-                                </span>
-                              ) : (
-                                <span className="text-yellow-600 flex items-center gap-1">
-                                  <Clock size={12} /> Pending
-                                </span>
-                              )}
+                    {editData.documents && editData.documents.length > 0 ? (
+                      editData.documents.map((doc, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <FileText size={20} className="text-red-600" />
+                            <div>
+                              <p className="font-medium text-gray-800">{doc.name}</p>
+                              <div className="flex items-center gap-3 text-xs text-gray-400">
+                                <span>{doc.type}</span>
+                                <span>{doc.size}</span>
+                                {doc.verified ? (
+                                  <span className="text-green-600 flex items-center gap-1">
+                                    <CheckCircle size={12} /> Verified
+                                  </span>
+                                ) : (
+                                  <span className="text-yellow-600 flex items-center gap-1">
+                                    <Clock size={12} /> Pending
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          <button className="p-1.5 text-gray-400 hover:text-gray-600 transition">
+                            <Download size={18} />
+                          </button>
                         </div>
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 transition">
-                          <Download size={18} />
-                        </button>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No documents uploaded</p>
+                    )}
                   </div>
                 </div>
               </div>
