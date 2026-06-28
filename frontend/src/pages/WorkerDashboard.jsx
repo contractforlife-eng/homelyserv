@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Home, Briefcase, User, FileText, Search, MessageCircle, 
   Settings, LogOut, Bell, Clock, CheckCircle, XCircle,
-  Star, Calendar, Users, DollarSign, MapPin, Phone, Mail,
-  AlertCircle, Award, Shield, TrendingUp
+  TrendingUp, Award, Shield, Star, Calendar, Users,
+  DollarSign, MapPin, Phone, Mail, AlertCircle
 } from 'lucide-react';
 
 function WorkerDashboard() {

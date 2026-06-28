@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Briefcase, User, AlertCircle, MessageCircle, Settings, LogOut, Send, Phone, Mail, FileText } from 'lucide-react';
+import { Home, Briefcase, User, AlertCircle, MessageCircle, 
+  Settings, LogOut, Send, Phone, Mail, FileText, CheckCircle } from 'lucide-react';
 
 function WorkerComplaints() {
   const userData = JSON.parse(localStorage.getItem('user') || '{}');

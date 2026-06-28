@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Home, Briefcase, User, Search, Clock, DollarSign,
-  MessageCircle, Settings, LogOut, Star, MapPin,
-  Filter, Grid, List, Bookmark, CheckCircle,
-  XCircle, Users, Building, Home as HomeIcon,
-  Car, Utensils, Heart, Shield, Sprout, Activity, Lock
+  Home, Briefcase, User, Search, Clock, CheckCircle, XCircle,
+  DollarSign, MessageCircle, Settings, LogOut, Bell,
+  Users, Star, Calendar, TrendingUp, Award, Shield,
+  FileText, AlertCircle, Plus, Eye, Edit, Trash2
 } from 'lucide-react';
 
 function EmployerSearch() {
