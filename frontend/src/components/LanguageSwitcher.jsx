@@ -1,55 +1,53 @@
-import { useState } from 'react';
+// frontend/src/components/LanguageSwitcher.jsx
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
 
-const languages = [
-  { code: 'en', label: '🇬🇧 English' },
-  { code: 'ar', label: '🇸🇦 العربية' },
-  { code: 'ru', label: '🇷🇺 Русский' },
-  { code: 'fr', label: '🇫🇷 Français' },
-  { code: 'de', label: '🇩🇪 Deutsch' },
-  { code: 'tr', label: '🇹🇷 Türkçe' }
-];
+function LanguageSwitcher() {
+  const { t, i18n } = useTranslation();
+  const [showLanguages, setShowLanguages] = useState(false);
 
-export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
-  const [showMenu, setShowMenu] = useState(false);
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
+  ];
 
-  const changeLanguage = (code) => {
-    i18n.changeLanguage(code);
-    localStorage.setItem('i18nextLng', code);
-    setShowMenu(false);
+  const changeLanguage = (langCode) => {
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('i18nextLng', langCode);
+    document.documentElement.dir = langCode === 'ar' ? 'rtl' : 'ltr';
+    setShowLanguages(false);
   };
 
-  const currentLang = i18n.language || 'en';
-  const currentFlag = languages.find(l => l.code === currentLang)?.label.split(' ')[0] || '🌐';
-
   return (
-    <div className="lang-switcher">
+    <div className="relative">
       <button
-        className="lang-btn"
-        onClick={() => setShowMenu(!showMenu)}
-        aria-label="Change language"
+        onClick={() => setShowLanguages(!showLanguages)}
+        className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:border-red-300 transition text-sm bg-white"
       >
-        <span className="lang-flag">{currentFlag}</span>
-        <span className="lang-code">{currentLang.toUpperCase()}</span>
-        <span className="lang-arrow">▾</span>
+        <Globe size={16} className="text-gray-500" />
+        <span>{t('language')}</span>
       </button>
 
-      {showMenu && (
-        <div className="lang-dropdown">
-          {languages.map(lang => (
-            <div
+      {showLanguages && (
+        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+          {languages.map((lang) => (
+            <button
               key={lang.code}
-              className={`lang-item ${lang.code === currentLang ? 'active' : ''}`}
               onClick={() => changeLanguage(lang.code)}
+              className="w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm"
             >
-              <span className="lang-item-flag">{lang.label.split(' ')[0]}</span>
-              <span className="lang-item-label">{lang.label.split(' ').slice(1).join(' ')}</span>
-              {lang.code === currentLang && <span className="lang-item-check">✓</span>}
-            </div>
+              <span className="text-xl">{lang.flag}</span>
+              <span className="text-gray-700">{lang.name}</span>
+            </button>
           ))}
         </div>
       )}
     </div>
   );
 }
+
+export default LanguageSwitcher;

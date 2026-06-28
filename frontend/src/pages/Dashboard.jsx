@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, Briefcase, Search, MessageCircle, Bell, User, Settings, LogOut, Home, Calendar, DollarSign, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -24,6 +26,13 @@ function Dashboard() {
 
   if (!user) {
     return (
+      <div>
+      <header>
+        <LanguageSwitcher />
+        <h1>{t('dashboard')}</h1>
+        <p>{t('welcomeBack')} {user?.fullName}!</p>
+      </header>
+      
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
       </div>
