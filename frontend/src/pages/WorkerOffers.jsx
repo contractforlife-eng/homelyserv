@@ -4,9 +4,9 @@ import {
   Briefcase, DollarSign, User, MapPin, Phone, Mail,
   CheckCircle, XCircle, Clock, Eye, MessageCircle,
   Calendar, Building, Award, AlertCircle, ArrowLeft,
-  ChevronDown, ChevronUp, Search, Filter, Download,
   Star, Shield, Heart, Share2, Flag, FileText,
-  ExternalLink, Copy, Globe, Home, Users
+  ExternalLink, Copy, Globe, Home, Users,
+  Send, Edit, Trash2, Plus, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 function WorkerOffers() {
@@ -19,6 +19,8 @@ function WorkerOffers() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [offerToReject, setOfferToReject] = useState(null);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [offerToAccept, setOfferToAccept] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -53,7 +55,9 @@ function WorkerOffers() {
       rejectionReason: null,
       adminEditable: true,
       employerRating: 4.8,
-      totalHires: 12
+      totalHires: 12,
+      workSchedule: 'Sunday to Thursday, 8 AM - 5 PM',
+      benefits: ['Accommodation provided', 'Meals included', 'Weekly off days', 'Annual leave']
     },
     {
       id: 2,
@@ -75,7 +79,9 @@ function WorkerOffers() {
       rejectionReason: null,
       adminEditable: false,
       employerRating: 4.9,
-      totalHires: 8
+      totalHires: 8,
+      workSchedule: 'Live-in, 6 days a week',
+      benefits: ['Private room', 'Meals provided', 'Weekly off day']
     },
     {
       id: 3,
@@ -97,19 +103,29 @@ function WorkerOffers() {
       rejectionReason: 'Salary below my minimum requirements',
       adminEditable: true,
       employerRating: 4.7,
-      totalHires: 15
+      totalHires: 15,
+      workSchedule: '7 AM - 6 PM, Sunday to Thursday',
+      benefits: ['Fuel allowance', 'Vehicle provided']
     }
   ]);
 
   const handleAccept = (offerId) => {
     const offer = offers.find(o => o.id === offerId);
     if (offer) {
-      setSelectedOffer(offer);
-      setShowDetails(true);
+      setOfferToAccept(offer);
+      setShowAcceptModal(true);
     }
   };
 
   const handleConfirmAccept = () => {
+    if (offerToAccept) {
+      setSelectedOffer(offerToAccept);
+      setShowDetails(true);
+      setShowAcceptModal(false);
+    }
+  };
+
+  const handleConfirmAcceptFinal = () => {
     setOffers(prev => prev.map(o => 
       o.id === selectedOffer.id ? { ...o, status: 'accepted' } : o
     ));
@@ -294,8 +310,14 @@ function WorkerOffers() {
                     )}
                     {offer.status === 'accepted' && (
                       <div className="flex gap-2">
-                        <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1">
-                          <MessageCircle size={16} /> Message
+                        <button 
+                          onClick={() => {
+                            setSelectedOffer(offer);
+                            setShowDetails(true);
+                          }}
+                          className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1"
+                        >
+                          <Eye size={16} /> View Details
                         </button>
                         <button 
                           onClick={() => handleWhatsApp(offer.employerPhone)}
@@ -319,7 +341,40 @@ function WorkerOffers() {
         )}
       </div>
 
-      {/* Offer Details Modal (on Accept) */}
+      {/* Accept Offer Modal - Step 1 */}
+      {showAcceptModal && offerToAccept && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Accept Offer</h3>
+              <button onClick={() => setShowAcceptModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <XCircle size={24} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm text-green-800">
+                  You are about to accept an offer from <strong>{offerToAccept.employerName}</strong>
+                </p>
+                <p className="text-sm text-green-700 mt-2">
+                  Position: {offerToAccept.position}
+                </p>
+                <p className="text-sm text-green-700">
+                  Salary: <strong>EGP {offerToAccept.salary.toLocaleString()}</strong>
+                </p>
+              </div>
+              <button
+                onClick={handleConfirmAccept}
+                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+              >
+                <CheckCircle size={18} /> Continue to Offer Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Details Modal (on Accept) - Step 2 */}
       {showDetails && selectedOffer && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
@@ -371,6 +426,24 @@ function WorkerOffers() {
               <p className="text-sm text-gray-500 mt-1">{selectedOffer.employerCity}, {selectedOffer.employerCountry}</p>
             </div>
 
+            {/* Work Schedule */}
+            <div className="p-3 bg-gray-50 rounded-lg mb-4">
+              <p className="text-sm text-gray-500">Work Schedule</p>
+              <p className="font-medium text-gray-800">{selectedOffer.workSchedule}</p>
+            </div>
+
+            {/* Benefits */}
+            {selectedOffer.benefits && (
+              <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                <p className="text-sm text-gray-500">Benefits</p>
+                <ul className="list-disc list-inside text-gray-700 mt-1">
+                  {selectedOffer.benefits.map((benefit, i) => (
+                    <li key={i} className="text-sm">{benefit}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Description */}
             <div className="p-3 bg-gray-50 rounded-lg mb-4">
               <p className="text-sm text-gray-500">Job Description</p>
@@ -378,19 +451,21 @@ function WorkerOffers() {
             </div>
 
             {/* Requirements */}
-            <div className="p-3 bg-gray-50 rounded-lg mb-4">
-              <p className="text-sm text-gray-500">Requirements</p>
-              <ul className="list-disc list-inside text-gray-700">
-                {selectedOffer.requirements.map((req, i) => (
-                  <li key={i} className="text-sm">{req}</li>
-                ))}
-              </ul>
-            </div>
+            {selectedOffer.requirements && (
+              <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                <p className="text-sm text-gray-500">Requirements</p>
+                <ul className="list-disc list-inside text-gray-700">
+                  {selectedOffer.requirements.map((req, i) => (
+                    <li key={i} className="text-sm">{req}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
               <button 
-                onClick={handleConfirmAccept}
+                onClick={handleConfirmAcceptFinal}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
               >
                 <CheckCircle size={18} /> Confirm Accept
@@ -400,6 +475,9 @@ function WorkerOffers() {
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
               >
                 <span>💬</span> WhatsApp
+              </button>
+              <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                <MessageCircle size={18} /> Chat
               </button>
             </div>
           </div>
