@@ -3,18 +3,16 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Search from './pages/Search';
-import MyHires from './pages/MyHires';
-import Messages from './pages/Messages';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminUsers from './pages/AdminUsers';
-import AdminPayments from './pages/AdminPayments';
-import AdminComplaints from './pages/AdminComplaints';
-import AdminReports from './pages/AdminReports';
-import AdminSettings from './pages/AdminSettings';
-import AdminMessages from './pages/AdminMessages';
+
+// Worker Pages - NEW
+import WorkerDashboard from './pages/WorkerDashboard';
+import WorkerOffers from './pages/WorkerOffers';
+import WorkerProfile from './pages/WorkerProfile';
+import WorkerComplaints from './pages/WorkerComplaints';
+import WorkerMessages from './pages/WorkerMessages';
+import WorkerSettings from './pages/WorkerSettings';
+
+// Employer Pages - NEW
 import EmployerDashboard from './pages/EmployerDashboard';
 import EmployerSearch from './pages/EmployerSearch';
 import EmployerPending from './pages/EmployerPending';
@@ -24,12 +22,22 @@ import EmployerProfile from './pages/EmployerProfile';
 import EmployerComplaints from './pages/EmployerComplaints';
 import EmployerMessages from './pages/EmployerMessages';
 import EmployerSettings from './pages/EmployerSettings';
-import WorkerDashboard from './pages/WorkerDashboard';
-import WorkerOffers from './pages/WorkerOffers';
-import WorkerProfile from './pages/WorkerProfile';
-import WorkerComplaints from './pages/WorkerComplaints';
-import WorkerMessages from './pages/WorkerMessages';
-import WorkerSettings from './pages/WorkerSettings';
+
+// Admin Pages
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminPayments from './pages/AdminPayments';
+import AdminComplaints from './pages/AdminComplaints';
+import AdminReports from './pages/AdminReports';
+import AdminSettings from './pages/AdminSettings';
+import AdminMessages from './pages/AdminMessages';
+
+// Common Pages
+import Search from './pages/Search';
+import MyHires from './pages/MyHires';
+import Messages from './pages/Messages';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import About from './pages/About';
@@ -76,7 +84,7 @@ function App() {
       <Route path="/payment/:hireId" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
       <Route path="/job/:id" element={<ProtectedRoute><JobDetails /></ProtectedRoute>} />
 
-      {/* ========== WORKER ROUTES ========== */}
+      {/* ========== WORKER ROUTES (NEW DESIGN) ========== */}
       <Route path="/worker-dashboard" element={<ProtectedRoute requiredRole="WORKER"><WorkerDashboard /></ProtectedRoute>} />
       <Route path="/worker-offers" element={<ProtectedRoute requiredRole="WORKER"><WorkerOffers /></ProtectedRoute>} />
       <Route path="/worker-profile" element={<ProtectedRoute requiredRole="WORKER"><WorkerProfile /></ProtectedRoute>} />
@@ -84,7 +92,7 @@ function App() {
       <Route path="/worker-messages" element={<ProtectedRoute requiredRole="WORKER"><WorkerMessages /></ProtectedRoute>} />
       <Route path="/worker-settings" element={<ProtectedRoute requiredRole="WORKER"><WorkerSettings /></ProtectedRoute>} />
 
-      {/* ========== EMPLOYER ROUTES ========== */}
+      {/* ========== EMPLOYER ROUTES (NEW DESIGN) ========== */}
       <Route path="/employer-dashboard" element={<ProtectedRoute requiredRole="EMPLOYER"><EmployerDashboard /></ProtectedRoute>} />
       <Route path="/employer-search" element={<ProtectedRoute requiredRole="EMPLOYER"><EmployerSearch /></ProtectedRoute>} />
       <Route path="/employer-pending" element={<ProtectedRoute requiredRole="EMPLOYER"><EmployerPending /></ProtectedRoute>} />
