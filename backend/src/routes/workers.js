@@ -7,7 +7,7 @@ import {
   getTopRatedWorkers,
   getWorkerStats
 } from '../controllers/workerController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.get('/top-rated', getTopRatedWorkers);
 router.get('/:id', getWorkerById);
 
 // Protected routes
-router.put('/profile', authenticate, updateWorkerProfile);
-router.get('/stats', authenticate, getWorkerStats);
+router.put('/profile', authenticate, authorize(['WORKER', 'ADMIN']), updateWorkerProfile);
+router.get('/stats', authenticate, authorize(['ADMIN']), getWorkerStats);
 
 export default router;
