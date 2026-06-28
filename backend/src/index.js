@@ -33,10 +33,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
+
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/hires', hireRoutes);
