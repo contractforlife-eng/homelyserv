@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   Home, Briefcase, User, Search, Clock, DollarSign,
   MessageCircle, Settings, LogOut, Globe, MapPin,
-  Language, Lock, Shield, Bell, Save, CheckCircle,
+  Languages, Lock, Shield, Bell, Save, CheckCircle,
   AlertTriangle, Smartphone, CreditCard
 } from 'lucide-react';
 

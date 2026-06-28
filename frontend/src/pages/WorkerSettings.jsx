@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Home, Briefcase, User, AlertCircle, MessageCircle, 
-  Settings, LogOut, Globe, MapPin, Language, Lock,
+  Settings, LogOut, Globe, MapPin, Languages, Lock,
   Shield, Bell, Smartphone, CreditCard, Save,
   CheckCircle, XCircle, Clock, AlertTriangle
 } from 'lucide-react';
