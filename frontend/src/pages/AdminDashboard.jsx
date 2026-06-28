@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Home, Users, DollarSign, MessageCircle, Settings, LogOut, 
-  Bell, CheckCircle, XCircle, Clock, Star, UserCheck, UserX,
-  TrendingUp, TrendingDown, Eye, Edit, Trash2, Plus,
-  Search, Filter, Download, CreditCard, Wallet, Phone,
-  Mail, MapPin, Shield, Award, AlertCircle, Activity,
-  BarChart3, PieChart, LineChart, Calendar, FileText
+  Home, Users, Briefcase, DollarSign, Star, MessageCircle, 
+  FileText, Settings, HelpCircle, BarChart3, Calendar, 
+  CheckCircle, XCircle, Clock, AlertCircle, UserPlus, 
+  UserMinus, TrendingUp, TrendingDown, Eye, Edit, 
+  Trash2, Shield, Award, Zap, Activity, PieChart, 
+  LineChart, Bell, LogOut, Search, Filter, Download,
+  CreditCard, Wallet, Phone, Mail, MapPin, Globe, Plus
 } from 'lucide-react';
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -48,22 +50,20 @@ function AdminDashboard() {
   }
 
   // Sample data
-  const dashboardStats = {
-    totalUsers: 25680,
-    totalPayments: 48650,
-    totalComplaints: 127,
-    onlineWorkers: 342,
-    offlineWorkers: 8090,
-    onlineEmployers: 156,
-    offlineEmployers: 1078
-  };
+  const stats = [
+    { label: 'Total Users', value: '25,680', icon: <Users size={24} />, change: '+12%', color: 'blue' },
+    { label: 'Total Workers', value: '8,432', icon: <Briefcase size={24} />, change: '+8%', color: 'green' },
+    { label: 'Job Requests', value: '3,215', icon: <FileText size={24} />, change: '+15%', color: 'purple' },
+    { label: 'Active Bookings', value: '2,845', icon: <Calendar size={24} />, change: '+5%', color: 'orange' },
+    { label: 'Total Revenue', value: '$48,650', icon: <DollarSign size={24} />, change: '+18%', color: 'red' }
+  ];
 
   const users = [
-    { id: 1, name: 'Ahmed Ali', email: 'ahmed@example.com', role: 'worker', status: 'active', phone: '+201234567890', idNumber: '12345678901234', country: 'Egypt', city: 'Cairo', transactions: 12 },
-    { id: 2, name: 'Sara Mohamed', email: 'sara@example.com', role: 'employer', status: 'active', phone: '+201234567891', idNumber: '12345678901235', country: 'Egypt', city: 'Alexandria', transactions: 8 },
-    { id: 3, name: 'Khaled Mostafa', email: 'khaled@example.com', role: 'worker', status: 'suspended', phone: '+201234567892', idNumber: '12345678901236', country: 'Egypt', city: 'Giza', transactions: 5 },
-    { id: 4, name: 'Nadia Ibrahim', email: 'nadia@example.com', role: 'employer', status: 'pending', phone: '+201234567893', idNumber: '12345678901237', country: 'UAE', city: 'Dubai', transactions: 0 },
-    { id: 5, name: 'Youssef Hassan', email: 'youssef@example.com', role: 'worker', status: 'active', phone: '+201234567894', idNumber: '12345678901238', country: 'Egypt', city: 'Cairo', transactions: 25 }
+    { id: 1, name: 'Ahmed Ali', email: 'ahmed@example.com', role: 'worker', status: 'active', phone: '+201234567890', idNumber: '12345678901234', country: 'Egypt', city: 'Cairo', transactions: 12, joined: '2026-01-15' },
+    { id: 2, name: 'Sara Mohamed', email: 'sara@example.com', role: 'employer', status: 'active', phone: '+201234567891', idNumber: '12345678901235', country: 'Egypt', city: 'Alexandria', transactions: 8, joined: '2026-02-20' },
+    { id: 3, name: 'Khaled Mostafa', email: 'khaled@example.com', role: 'worker', status: 'suspended', phone: '+201234567892', idNumber: '12345678901236', country: 'Egypt', city: 'Giza', transactions: 5, joined: '2026-03-10' },
+    { id: 4, name: 'Nadia Ibrahim', email: 'nadia@example.com', role: 'employer', status: 'pending', phone: '+201234567893', idNumber: '12345678901237', country: 'UAE', city: 'Dubai', transactions: 0, joined: '2026-04-05' },
+    { id: 5, name: 'Youssef Hassan', email: 'youssef@example.com', role: 'worker', status: 'active', phone: '+201234567894', idNumber: '12345678901238', country: 'Egypt', city: 'Cairo', transactions: 25, joined: '2026-05-12' }
   ];
 
   const payments = [
@@ -80,139 +80,115 @@ function AdminDashboard() {
     { id: 3, from: 'Khaled Mostafa', type: 'worker', message: 'Payment delay from employer', date: '2026-06-15', status: 'pending' }
   ];
 
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const renderContent = () => {
     switch(activeTab) {
-      case 'dashboard':
+      case 'overview':
         return (
           <>
-            {/* Stats Cards */}
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              {stats.map((stat, i) => (
+                <div key={i} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">{stat.label}</p>
+                      <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                    </div>
+                    <div className={`w-10 h-10 bg-${stat.color}-50 rounded-lg flex items-center justify-center text-${stat.color}-600`}>
+                      {stat.icon}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs">
+                    <TrendingUp size={14} className="text-green-500" />
+                    <span className="text-green-500">{stat.change}</span>
+                    <span className="text-gray-400">vs last month</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Users</p>
-                    <p className="text-2xl font-bold text-gray-800">{dashboardStats.totalUsers.toLocaleString()}</p>
-                  </div>
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Users size={20} className="text-blue-600" />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500">+12%</span>
-                  <span className="text-gray-400">vs last month</span>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-center gap-3">
+                <UserPlus size={24} className="text-blue-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">Add New User</p>
+                  <p className="text-xs text-gray-500">Create new account</p>
                 </div>
               </div>
-
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Payments</p>
-                    <p className="text-2xl font-bold text-gray-800">${dashboardStats.totalPayments.toLocaleString()}</p>
-                  </div>
-                  <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                    <DollarSign size={20} className="text-green-600" />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500">+18%</span>
-                  <span className="text-gray-400">vs last month</span>
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
+                <Shield size={24} className="text-green-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">Verify Workers</p>
+                  <p className="text-xs text-gray-500">Pending: 45</p>
                 </div>
               </div>
-
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Complaints</p>
-                    <p className="text-2xl font-bold text-red-600">{dashboardStats.totalComplaints}</p>
-                  </div>
-                  <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-                    <AlertCircle size={20} className="text-red-600" />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-xs">
-                  <TrendingDown size={14} className="text-red-500" />
-                  <span className="text-red-500">-5%</span>
-                  <span className="text-gray-400">vs last month</span>
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex items-center gap-3">
+                <DollarSign size={24} className="text-yellow-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">Process Payments</p>
+                  <p className="text-xs text-gray-500">Pending: 28</p>
                 </div>
               </div>
-
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Active Users</p>
-                    <p className="text-2xl font-bold text-gray-800">2,845</p>
-                  </div>
-                  <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                    <Activity size={20} className="text-purple-600" />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500">+8%</span>
-                  <span className="text-gray-400">vs last month</span>
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 flex items-center gap-3">
+                <FileText size={24} className="text-purple-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">Generate Report</p>
+                  <p className="text-xs text-gray-500">Monthly summary</p>
                 </div>
               </div>
             </div>
 
-            {/* Online/Offline Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Workers Status</h4>
-                <div className="flex gap-4">
-                  <div className="flex-1 text-center p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Online</p>
-                    <p className="text-2xl font-bold text-green-600">{dashboardStats.onlineWorkers}</p>
-                  </div>
-                  <div className="flex-1 text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Offline</p>
-                    <p className="text-2xl font-bold text-gray-600">{dashboardStats.offlineWorkers}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Employers Status</h4>
-                <div className="flex gap-4">
-                  <div className="flex-1 text-center p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Online</p>
-                    <p className="text-2xl font-bold text-blue-600">{dashboardStats.onlineEmployers}</p>
-                  </div>
-                  <div className="flex-1 text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Offline</p>
-                    <p className="text-2xl font-bold text-gray-600">{dashboardStats.offlineEmployers}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Users */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-gray-800">Recent Users</h3>
-                <button className="text-sm text-red-600 hover:underline">View All</button>
-              </div>
-              <div className="space-y-3">
-                {users.slice(0, 3).map((user) => (
-                  <div key={user.id} className="flex justify-between items-center border-b border-gray-100 py-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-sm">
-                        {user.name.charAt(0)}
-                      </div>
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <FileText size={18} className="text-red-600" /> Recent Job Requests
+                </h3>
+                <div className="space-y-3">
+                  {complaints.slice(0, 3).map((item, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
                       <div>
-                        <p className="font-medium text-gray-800">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.role} • {user.city}</p>
+                        <p className="font-medium text-gray-800 text-sm">{item.from}</p>
+                        <p className="text-xs text-gray-500">{item.message.substring(0, 40)}...</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <DollarSign size={18} className="text-green-600" /> Recent Payments
+                </h3>
+                <div className="space-y-3">
+                  {payments.slice(0, 3).map((payment, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-sm text-gray-800">{payment.user}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-800">${payment.amount}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {payment.status}
+                        </span>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      user.status === 'active' ? 'bg-green-100 text-green-800' :
-                      user.status === 'suspended' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </>
@@ -229,6 +205,8 @@ function AdminDashboard() {
                   <input
                     type="text"
                     placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                   />
                 </div>
@@ -248,12 +226,12 @@ function AdminDashboard() {
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Phone</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">ID</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Location</th>
-                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Transactions</th>
+                    <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
                     <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3">
                         <div>
@@ -282,7 +260,7 @@ function AdminDashboard() {
                       <td className="py-3 text-sm text-gray-600">{user.phone}</td>
                       <td className="py-3 text-sm text-gray-600">{user.idNumber}</td>
                       <td className="py-3 text-sm text-gray-600">{user.city}, {user.country}</td>
-                      <td className="py-3 text-sm text-gray-600">{user.transactions}</td>
+                      <td className="py-3 text-sm text-gray-600">{user.joined}</td>
                       <td className="py-3">
                         <div className="flex gap-2">
                           <button className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Eye size={16} /></button>
@@ -308,20 +286,26 @@ function AdminDashboard() {
               </button>
             </div>
 
-            {/* Payment Info */}
+            {/* Payment Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">InstaPay</h4>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Wallet size={18} className="text-blue-600" /> InstaPay
+                </h4>
                 <p className="text-sm text-gray-600">Number: <span className="font-medium">01009189851</span></p>
                 <button className="mt-2 text-xs text-red-600 hover:underline">Edit</button>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Vodafone Cash</h4>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Phone size={18} className="text-green-600" /> Vodafone Cash
+                </h4>
                 <p className="text-sm text-gray-600">Number: <span className="font-medium">01009189851</span></p>
                 <button className="mt-2 text-xs text-red-600 hover:underline">Edit</button>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Bank Transfer</h4>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <CreditCard size={18} className="text-purple-600" /> Bank Transfer
+                </h4>
                 <p className="text-sm text-gray-600">Account: <span className="font-medium">1002425938683</span></p>
                 <p className="text-xs text-gray-500">IBAN: EG580037000908181002425938683</p>
                 <button className="mt-2 text-xs text-red-600 hover:underline">Edit</button>
@@ -367,10 +351,10 @@ function AdminDashboard() {
           </div>
         );
 
-      case 'messages':
+      case 'complaints':
         return (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Messages & Complaints</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Complaints Management</h3>
             <div className="space-y-4">
               {complaints.map((complaint) => (
                 <div key={complaint.id} className={`border rounded-lg p-4 ${
@@ -413,40 +397,41 @@ function AdminDashboard() {
           </div>
         );
 
+      case 'messages':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Messages & Responses</h3>
+            <div className="space-y-4">
+              <div className="border-b border-gray-100 pb-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-gray-800">Admin Response</p>
+                    <p className="text-sm text-gray-600">Your complaint has been received and is being reviewed.</p>
+                    <p className="text-xs text-gray-400 mt-1">2026-06-25 14:30</p>
+                  </div>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">Read</span>
+                </div>
+              </div>
+              <div className="border-b border-gray-100 pb-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-gray-800">Worker: Ahmed Ali</p>
+                    <p className="text-sm text-gray-600">I am interested in the position. When can I start?</p>
+                    <p className="text-xs text-gray-400 mt-1">2026-06-24 09:15</p>
+                  </div>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">Unread</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'settings':
         return (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Site Settings</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Admin Settings</h3>
             
             <div className="space-y-6">
-              {/* Payment Settings */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Payment Settings</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">InstaPay Number</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="01009189851" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Vodafone Cash Number</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="01009189851" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Bank Account Number</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="1002425938683" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">IBAN</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="EG580037000908181002425938683" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">SWIFT Code</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="QNBAEGCXXXX" />
-                  </div>
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Save Payment Settings</button>
-                </div>
-              </div>
-
               {/* Commission Settings */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-800 mb-3">Commission Settings</h4>
@@ -470,26 +455,6 @@ function AdminDashboard() {
                     <option>Türkçe</option>
                     <option>Nederlands</option>
                   </select>
-                </div>
-              </div>
-
-              {/* Site Settings */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Site Settings</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Site Name</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="HomelyServ" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Support Email</label>
-                    <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="support@homelyserv.com" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Support Phone</label>
-                    <input type="tel" className="w-full px-3 py-2 border border-gray-300 rounded-lg" defaultValue="+201009189851" />
-                  </div>
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Save Site Settings</button>
                 </div>
               </div>
             </div>
@@ -521,47 +486,23 @@ function AdminDashboard() {
           </div>
         </div>
         <nav className="p-4 space-y-1">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'dashboard' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Home size={20} /> Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'users' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Users size={20} /> Users
-          </button>
-          <button 
-            onClick={() => setActiveTab('payments')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'payments' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <DollarSign size={20} /> Payments
-          </button>
-          <button 
-            onClick={() => setActiveTab('messages')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'messages' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <MessageCircle size={20} /> Messages
-            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">3</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'settings' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Settings size={20} /> Settings
-          </button>
+          {['overview', 'users', 'payments', 'complaints', 'messages', 'settings'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                activeTab === tab ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {tab === 'overview' && <BarChart3 size={20} />}
+              {tab === 'users' && <Users size={20} />}
+              {tab === 'payments' && <DollarSign size={20} />}
+              {tab === 'complaints' && <AlertCircle size={20} />}
+              {tab === 'messages' && <MessageCircle size={20} />}
+              {tab === 'settings' && <Settings size={20} />}
+              <span className="capitalize">{tab}</span>
+            </button>
+          ))}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition">
