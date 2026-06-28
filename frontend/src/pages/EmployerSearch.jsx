@@ -4,7 +4,7 @@ import {
   Search, Filter, Star, MapPin, DollarSign, Clock, 
   CheckCircle, XCircle, Eye, MessageCircle, Heart,
   Share2, Award, Shield, Briefcase, Calendar, User,
-  Phone, Mail, Bookmark, BookmarkCheck, ChevronDown,
+  Phone, Mail, Bookmark, ChevronDown,
   ChevronUp, Sliders, Grid, List, Users, Building,
   Home, Car, Utensils, Heart as HeartIcon, Shield as ShieldIcon,
   Sprout, Activity, Lock, Plus, Minus, X
