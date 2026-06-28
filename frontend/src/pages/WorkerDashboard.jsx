@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Home, Briefcase, User, FileText, Search, MessageCircle, 
   Settings, LogOut, Bell, Clock, CheckCircle, XCircle,
-  TrendingUp, Award, Shield, Star, Calendar, Users
+  TrendingUp, Award, Shield, Star, Calendar, Users,
+  DollarSign, MapPin, Phone, Mail
 } from 'lucide-react';
 
 function WorkerDashboard() {
@@ -66,13 +67,10 @@ function WorkerDashboard() {
             <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
           </Link>
           <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <User size={20} /> My Profile
-          </Link>
-          <Link to="/applications" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <FileText size={20} /> Applications
+            <User size={20} /> Profile
           </Link>
           <Link to="/search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Search size={20} /> Find Jobs
+            <Search size={20} /> Search
           </Link>
           <Link to="/messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
             <MessageCircle size={20} /> Messages
@@ -177,8 +175,8 @@ function WorkerDashboard() {
                 <Briefcase size={20} className="text-green-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-800">Offers</p>
-                <p className="text-xs text-gray-500">Track your offers</p>
+                <p className="font-semibold text-gray-800">My Offers</p>
+                <p className="text-xs text-gray-500">View your offers</p>
               </div>
             </Link>
           </div>
