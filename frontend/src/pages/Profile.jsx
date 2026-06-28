@@ -14,6 +14,7 @@ function Profile() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const [profile, setProfile] = useState({
     fullName: '',
@@ -59,6 +60,7 @@ function Profile() {
         };
         setProfile(profileData);
         setEditData(profileData);
+        setImageLoaded(true);
       } catch (e) {
         console.error('Error parsing user data:', e);
         navigate('/login');
@@ -75,9 +77,23 @@ function Profile() {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Compress image before saving
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditData(prev => ({ ...prev, image: reader.result }));
+        // Create image to compress
+        const img = new Image();
+        img.onload = () => {
+          // Compress to 200x200
+          const canvas = document.createElement('canvas');
+          canvas.width = 200;
+          canvas.height = 200;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 200, 200);
+          const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
+          
+          setEditData(prev => ({ ...prev, image: compressedImage }));
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
@@ -116,7 +132,7 @@ function Profile() {
         workType: editData.workType,
         bio: editData.bio,
         skills: editData.skills,
-        image: editData.image
+        image: editData.image // Save the compressed image
       };
       
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -194,11 +210,20 @@ function Profile() {
           {/* Profile Image */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
             <div className="relative">
-              <img 
-                src={editData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'} 
-                alt={profile.fullName} 
-                className="w-24 h-24 rounded-full object-cover border-4 border-gray-200" 
-              />
+              {editData.image ? (
+                <img 
+                  src={editData.image} 
+                  alt={profile.fullName} 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+                  }}
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center text-3xl font-bold text-gray-500">
+                  {profile.fullName?.charAt(0) || 'U'}
+                </div>
+              )}
               <button 
                 onClick={handlePhotoClick}
                 className="absolute bottom-0 right-0 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
