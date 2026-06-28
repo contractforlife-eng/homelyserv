@@ -11,15 +11,27 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// ✅ Add your local IP to CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://homelyserv-nznn.vercel.app',
+  'https://gas-clapped-copper.ngrok-free.dev',
+  'http://192.168.100.12:5173',  // ✅ Add your IP here
+  'http://192.168.100.12:3000',  // ✅ Add your IP here
+  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{4,5}$/ // ✅ Allow any device on network
+];
+
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'https://homelyserv-nznn.vercel.app', 'https://gas-clapped-copper.ngrok-free.dev'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST']
   }
 });
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://homelyserv-nznn.vercel.app', 'https://gas-clapped-copper.ngrok-free.dev'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
@@ -61,6 +73,8 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {  // ✅ Listen on all network interfaces
   console.log(`HomelyServ server running on port ${PORT}`);
+  console.log(`📍 Local: http://localhost:${PORT}`);
+  console.log(`📍 Network: http://192.168.100.12:${PORT}`);
 });
