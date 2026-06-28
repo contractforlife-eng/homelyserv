@@ -1,595 +1,713 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../store/authStore';
-import api from '../utils/api';
-import toast from 'react-hot-toast';
-import AdminLayout from '../components/AdminLayout';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  Settings, Save, X, Edit, Eye, EyeOff, 
+  Globe, DollarSign, Percent, Phone, Mail,
+  Building, Users, Shield, Award, Bell,
+  Clock, Calendar, MapPin, CreditCard,
+  Wallet, Banknote, ArrowLeft, RefreshCw,
+  CheckCircle, AlertCircle, ChevronDown, ChevronUp,
+  Smartphone, Database, Server, Lock, Key,
+  UserCheck, UserX, MessageCircle, FileText,
+  Home, Briefcase, Star, TrendingUp
+} from 'lucide-react';
 
-export default function AdminSettings() {
+function AdminSettings() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('general');
-  const [loading, setLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      if (parsed.role !== 'ADMIN') {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/login');
+    }
+    setLoading(false);
+  }, [navigate]);
 
-  // General Settings
-  const [generalSettings, setGeneralSettings] = useState({
-    appName: 'HomelyServ',
-    appDescription: 'Home Services Platform',
-    contactEmail: 'info@homelyserv.com',
-    contactPhone: '+20 100 000 0000',
-    currency: 'EGP',
+  // Settings state
+  const [settings, setSettings] = useState({
+    // General Settings
+    siteName: 'HomelyServ',
+    siteDescription: 'Your Home, Our Priority',
+    supportEmail: 'support@homelyserv.com',
+    supportPhone: '+201009189851',
+    defaultLanguage: 'en',
+    defaultCurrency: 'EGP',
     timezone: 'Africa/Cairo',
-    language: 'en',
-  });
+    dateFormat: 'DD/MM/YYYY',
+    timeFormat: '24h',
 
-  // Payment Gateway Settings
-  const [paymentSettings, setPaymentSettings] = useState({
-    instapay: true,
-    vodafoneCash: true,
-    bankTransfer: true,
-    bitcoin: true,
-    usdc: true,
+    // Commission Settings
     commissionRate: 6.5,
     vatRate: 14,
     minCommission: 50,
     maxCommission: 5000,
-  });
+    commissionType: 'percentage',
 
-  // Email Settings
-  const [emailSettings, setEmailSettings] = useState({
-    smtpHost: 'smtp.gmail.com',
-    smtpPort: 587,
-    smtpUser: 'notifications@homelyserv.com',
-    smtpPass: '********',
-    fromEmail: 'noreply@homelyserv.com',
-    fromName: 'HomelyServ',
-    notifyOnHire: true,
-    notifyOnPayment: true,
-    notifyOnProfile: true,
-  });
+    // Payment Settings
+    instapayNumber: '01009189851',
+    vodafoneNumber: '01009189851',
+    bankAccountName: 'HomelyServ',
+    bankAccountNumber: '1002425938683',
+    bankName: 'QNB Alahli',
+    bankIBAN: 'EG580037000908181002425938683',
+    bankSWIFT: 'QNBAEGCXXXX',
+    bankBranch: 'Cairo Main Branch',
 
-  // Security Settings
-  const [securitySettings, setSecuritySettings] = useState({
+    // Notification Settings
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
+    jobAlerts: true,
+    paymentAlerts: true,
+    complaintAlerts: true,
+
+    // Security Settings
     twoFactorAuth: false,
-    sessionTimeout: 60,
+    passwordExpiry: 90,
     maxLoginAttempts: 5,
+    sessionTimeout: 60,
     requireEmailVerification: true,
-    allowSocialLogin: true,
-    ipWhitelist: '',
+    requirePhoneVerification: false,
+
+    // Feature Settings
+    enableChat: true,
+    enablePayments: true,
+    enableReviews: true,
+    enableComplaints: true,
+    enableWhatsApp: true,
+    enableMultiLanguage: true,
+    enableDarkMode: false
   });
 
-  // Mobile App Settings
-  const [mobileSettings, setMobileSettings] = useState({
-    appVersion: '1.0.0',
-    minVersion: '1.0.0',
-    forceUpdate: false,
-    enablePush: true,
-    enableBiometric: false,
-    debugMode: false,
-  });
+  const [editForm, setEditForm] = useState(settings);
 
-  // Analytics Settings
-  const [analyticsSettings, setAnalyticsSettings] = useState({
-    enableAnalytics: true,
-    trackUserActivity: true,
-    trackHires: true,
-    trackPayments: true,
-    retentionPeriod: 30,
-    autoReport: true,
-    reportFrequency: 'monthly',
-  });
-
-  const handleGeneralChange = (e) => {
-    const { name, value } = e.target;
-    setGeneralSettings({ ...generalSettings, [name]: value });
+  const handleSave = () => {
+    setSettings(editForm);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
-  const handlePaymentChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setPaymentSettings({
-      ...paymentSettings,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+  const handleChange = (field, value) => {
+    setEditForm({...editForm, [field]: value});
   };
 
-  const handleEmailChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEmailSettings({
-      ...emailSettings,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const handleSecurityChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSecuritySettings({
-      ...securitySettings,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const handleMobileChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setMobileSettings({
-      ...mobileSettings,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const handleAnalyticsChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setAnalyticsSettings({
-      ...analyticsSettings,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-  };
-
-  const saveSettings = async () => {
-    setLoading(true);
-    try {
-      // In production, save to database
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Settings saved successfully!');
-    } catch (err) {
-      toast.error('Failed to save settings');
-    }
-    setLoading(false);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      </div>
+    );
+  }
 
   const sections = [
-    { key: 'general', label: 'General Settings', icon: '🔧' },
-    { key: 'payment', label: 'Payment Gateway', icon: '💳' },
-    { key: 'email', label: 'Email Settings', icon: '📧' },
-    { key: 'security', label: 'Security', icon: '🔒' },
-    { key: 'mobile', label: 'Mobile App', icon: '📱' },
-    { key: 'analytics', label: 'Analytics', icon: '📊' },
+    { id: 'general', label: 'General', icon: <Settings size={18} /> },
+    { id: 'commission', label: 'Commission', icon: <Percent size={18} /> },
+    { id: 'payment', label: 'Payment', icon: <CreditCard size={18} /> },
+    { id: 'notification', label: 'Notifications', icon: <Bell size={18} /> },
+    { id: 'security', label: 'Security', icon: <Lock size={18} /> },
+    { id: 'features', label: 'Features', icon: <Award size={18} /> }
   ];
 
-  const renderGeneralSettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        General Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            App Name
-          </label>
-          <input
-            name="appName"
-            value={generalSettings.appName}
-            onChange={handleGeneralChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            App Description
-          </label>
-          <input
-            name="appDescription"
-            value={generalSettings.appDescription}
-            onChange={handleGeneralChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Contact Email
-          </label>
-          <input
-            name="contactEmail"
-            value={generalSettings.contactEmail}
-            onChange={handleGeneralChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Contact Phone
-          </label>
-          <input
-            name="contactPhone"
-            value={generalSettings.contactPhone}
-            onChange={handleGeneralChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Currency
-          </label>
-          <select name="currency" value={generalSettings.currency} onChange={handleGeneralChange} className="form-input">
-            <option value="EGP">EGP - Egyptian Pound</option>
-            <option value="USD">USD - US Dollar</option>
-            <option value="EUR">EUR - Euro</option>
-            <option value="GBP">GBP - British Pound</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Language
-          </label>
-          <select name="language" value={generalSettings.language} onChange={handleGeneralChange} className="form-input">
-            <option value="en">English</option>
-            <option value="ar">العربية</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="tr">Türkçe</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPaymentSettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Payment Gateway Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Commission Rate (%)
-          </label>
-          <input
-            name="commissionRate"
-            type="number"
-            step="0.1"
-            value={paymentSettings.commissionRate}
-            onChange={handlePaymentChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            VAT Rate (%)
-          </label>
-          <input
-            name="vatRate"
-            type="number"
-            step="0.1"
-            value={paymentSettings.vatRate}
-            onChange={handlePaymentChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Min Commission (EGP)
-          </label>
-          <input
-            name="minCommission"
-            type="number"
-            value={paymentSettings.minCommission}
-            onChange={handlePaymentChange}
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Max Commission (EGP)
-          </label>
-          <input
-            name="maxCommission"
-            type="number"
-            value={paymentSettings.maxCommission}
-            onChange={handlePaymentChange}
-            className="form-input"
-          />
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="instapay" type="checkbox" checked={paymentSettings.instapay} onChange={handlePaymentChange} />
-            InstaPay
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="vodafoneCash" type="checkbox" checked={paymentSettings.vodafoneCash} onChange={handlePaymentChange} />
-            Vodafone Cash
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="bankTransfer" type="checkbox" checked={paymentSettings.bankTransfer} onChange={handlePaymentChange} />
-            Bank Transfer
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="bitcoin" type="checkbox" checked={paymentSettings.bitcoin} onChange={handlePaymentChange} />
-            Bitcoin
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="usdc" type="checkbox" checked={paymentSettings.usdc} onChange={handlePaymentChange} />
-            USDC (Solana)
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderEmailSettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Email Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            SMTP Host
-          </label>
-          <input name="smtpHost" value={emailSettings.smtpHost} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            SMTP Port
-          </label>
-          <input name="smtpPort" type="number" value={emailSettings.smtpPort} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            SMTP Username
-          </label>
-          <input name="smtpUser" value={emailSettings.smtpUser} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            SMTP Password
-          </label>
-          <input name="smtpPass" type="password" value={emailSettings.smtpPass} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            From Email
-          </label>
-          <input name="fromEmail" value={emailSettings.fromEmail} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            From Name
-          </label>
-          <input name="fromName" value={emailSettings.fromName} onChange={handleEmailChange} className="form-input" />
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="notifyOnHire" type="checkbox" checked={emailSettings.notifyOnHire} onChange={handleEmailChange} />
-            Notify on New Hire
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="notifyOnPayment" type="checkbox" checked={emailSettings.notifyOnPayment} onChange={handleEmailChange} />
-            Notify on Payment
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="notifyOnProfile" type="checkbox" checked={emailSettings.notifyOnProfile} onChange={handleEmailChange} />
-            Notify on Profile Update
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderSecuritySettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Security Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Session Timeout (minutes)
-          </label>
-          <input name="sessionTimeout" type="number" value={securitySettings.sessionTimeout} onChange={handleSecurityChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Max Login Attempts
-          </label>
-          <input name="maxLoginAttempts" type="number" value={securitySettings.maxLoginAttempts} onChange={handleSecurityChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            IP Whitelist
-          </label>
-          <input name="ipWhitelist" value={securitySettings.ipWhitelist} onChange={handleSecurityChange} placeholder="127.0.0.1, 192.168.1.1" className="form-input" />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="twoFactorAuth" type="checkbox" checked={securitySettings.twoFactorAuth} onChange={handleSecurityChange} />
-            Enable Two-Factor Authentication
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="requireEmailVerification" type="checkbox" checked={securitySettings.requireEmailVerification} onChange={handleSecurityChange} />
-            Require Email Verification
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="allowSocialLogin" type="checkbox" checked={securitySettings.allowSocialLogin} onChange={handleSecurityChange} />
-            Allow Social Login
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMobileSettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Mobile App Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            App Version
-          </label>
-          <input name="appVersion" value={mobileSettings.appVersion} onChange={handleMobileChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Minimum Version
-          </label>
-          <input name="minVersion" value={mobileSettings.minVersion} onChange={handleMobileChange} className="form-input" />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="forceUpdate" type="checkbox" checked={mobileSettings.forceUpdate} onChange={handleMobileChange} />
-            Force Update (Users must update to continue)
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="enablePush" type="checkbox" checked={mobileSettings.enablePush} onChange={handleMobileChange} />
-            Enable Push Notifications
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="enableBiometric" type="checkbox" checked={mobileSettings.enableBiometric} onChange={handleMobileChange} />
-            Enable Biometric Login
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="debugMode" type="checkbox" checked={mobileSettings.debugMode} onChange={handleMobileChange} />
-            Enable Debug Mode
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAnalyticsSettings = () => (
-    <div>
-      <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: '600', color: '#1a3a1a', marginBottom: '16px' }}>
-        Analytics Settings
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Data Retention (days)
-          </label>
-          <input name="retentionPeriod" type="number" value={analyticsSettings.retentionPeriod} onChange={handleAnalyticsChange} className="form-input" />
-        </div>
-        <div>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: '#5a7a5a', display: 'block', marginBottom: '4px' }}>
-            Report Frequency
-          </label>
-          <select name="reportFrequency" value={analyticsSettings.reportFrequency} onChange={handleAnalyticsChange} className="form-input">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="enableAnalytics" type="checkbox" checked={analyticsSettings.enableAnalytics} onChange={handleAnalyticsChange} />
-            Enable Analytics
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="trackUserActivity" type="checkbox" checked={analyticsSettings.trackUserActivity} onChange={handleAnalyticsChange} />
-            Track User Activity
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="trackHires" type="checkbox" checked={analyticsSettings.trackHires} onChange={handleAnalyticsChange} />
-            Track Hires
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="trackPayments" type="checkbox" checked={analyticsSettings.trackPayments} onChange={handleAnalyticsChange} />
-            Track Payments
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5a7a5a', cursor: 'pointer' }}>
-            <input name="autoReport" type="checkbox" checked={analyticsSettings.autoReport} onChange={handleAnalyticsChange} />
-            Auto-Generate Reports
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderContent = () => {
+  const renderSection = () => {
     switch(activeSection) {
-      case 'general': return renderGeneralSettings();
-      case 'payment': return renderPaymentSettings();
-      case 'email': return renderEmailSettings();
-      case 'security': return renderSecuritySettings();
-      case 'mobile': return renderMobileSettings();
-      case 'analytics': return renderAnalyticsSettings();
-      default: return renderGeneralSettings();
+      case 'general':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">General Settings</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
+                <input
+                  type="text"
+                  value={editForm.siteName}
+                  onChange={(e) => handleChange('siteName', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Site Description</label>
+                <input
+                  type="text"
+                  value={editForm.siteDescription}
+                  onChange={(e) => handleChange('siteDescription', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
+                <input
+                  type="email"
+                  value={editForm.supportEmail}
+                  onChange={(e) => handleChange('supportEmail', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Support Phone</label>
+                <input
+                  type="tel"
+                  value={editForm.supportPhone}
+                  onChange={(e) => handleChange('supportPhone', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Language</label>
+                <select
+                  value={editForm.defaultLanguage}
+                  onChange={(e) => handleChange('defaultLanguage', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                  <option value="fr">Français</option>
+                  <option value="ru">Русский</option>
+                  <option value="tr">Türkçe</option>
+                  <option value="nl">Nederlands</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+                <select
+                  value={editForm.defaultCurrency}
+                  onChange={(e) => handleChange('defaultCurrency', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="EGP">EGP - Egyptian Pound</option>
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="AED">AED - UAE Dirham</option>
+                  <option value="SAR">SAR - Saudi Riyal</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                <select
+                  value={editForm.timezone}
+                  onChange={(e) => handleChange('timezone', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="Africa/Cairo">Africa/Cairo (GMT+2)</option>
+                  <option value="Africa/Casablanca">Africa/Casablanca (GMT+1)</option>
+                  <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                  <option value="Europe/London">Europe/London (GMT+0)</option>
+                  <option value="America/New_York">America/New_York (GMT-4)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date Format</label>
+                <select
+                  value={editForm.dateFormat}
+                  onChange={(e) => handleChange('dateFormat', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time Format</label>
+                <select
+                  value={editForm.timeFormat}
+                  onChange={(e) => handleChange('timeFormat', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="12h">12-hour</option>
+                  <option value="24h">24-hour</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'commission':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Commission Settings</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                <input
+                  type="number"
+                  value={editForm.commissionRate}
+                  onChange={(e) => handleChange('commissionRate', parseFloat(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">VAT Rate (%)</label>
+                <input
+                  type="number"
+                  value={editForm.vatRate}
+                  onChange={(e) => handleChange('vatRate', parseFloat(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Commission</label>
+                <input
+                  type="number"
+                  value={editForm.minCommission}
+                  onChange={(e) => handleChange('minCommission', parseFloat(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Commission</label>
+                <input
+                  type="number"
+                  value={editForm.maxCommission}
+                  onChange={(e) => handleChange('maxCommission', parseFloat(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Type</label>
+                <select
+                  value={editForm.commissionType}
+                  onChange={(e) => handleChange('commissionType', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-sm text-yellow-800 flex items-center gap-2">
+                <AlertCircle size={16} />
+                Commission is calculated as {editForm.commissionRate}% of the agreed salary + {editForm.vatRate}% VAT
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'payment':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Payment Settings</h3>
+            
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+              <h4 className="font-semibold text-blue-800 mb-2">Mobile Payment</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">InstaPay Number</label>
+                  <input
+                    type="text"
+                    value={editForm.instapayNumber}
+                    onChange={(e) => handleChange('instapayNumber', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vodafone Cash Number</label>
+                  <input
+                    type="text"
+                    value={editForm.vodafoneNumber}
+                    onChange={(e) => handleChange('vodafoneNumber', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-800 mb-2">Bank Transfer</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                  <input
+                    type="text"
+                    value={editForm.bankName}
+                    onChange={(e) => handleChange('bankName', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                  <input
+                    type="text"
+                    value={editForm.bankAccountName}
+                    onChange={(e) => handleChange('bankAccountName', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                  <input
+                    type="text"
+                    value={editForm.bankAccountNumber}
+                    onChange={(e) => handleChange('bankAccountNumber', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                  <input
+                    type="text"
+                    value={editForm.bankIBAN}
+                    onChange={(e) => handleChange('bankIBAN', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
+                  <input
+                    type="text"
+                    value={editForm.bankSWIFT}
+                    onChange={(e) => handleChange('bankSWIFT', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                  <input
+                    type="text"
+                    value={editForm.bankBranch}
+                    onChange={(e) => handleChange('bankBranch', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'notification':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Notification Settings</h3>
+            
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Email Notifications</p>
+                  <p className="text-sm text-gray-500">Receive notifications via email</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.emailNotifications}
+                  onChange={(e) => handleChange('emailNotifications', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">SMS Notifications</p>
+                  <p className="text-sm text-gray-500">Receive notifications via SMS</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.smsNotifications}
+                  onChange={(e) => handleChange('smsNotifications', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Push Notifications</p>
+                  <p className="text-sm text-gray-500">Receive push notifications on your device</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.pushNotifications}
+                  onChange={(e) => handleChange('pushNotifications', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Job Alerts</p>
+                  <p className="text-sm text-gray-500">Get notified about new job opportunities</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.jobAlerts}
+                  onChange={(e) => handleChange('jobAlerts', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Payment Alerts</p>
+                  <p className="text-sm text-gray-500">Get notified about payment transactions</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.paymentAlerts}
+                  onChange={(e) => handleChange('paymentAlerts', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Complaint Alerts</p>
+                  <p className="text-sm text-gray-500">Get notified about new complaints</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.complaintAlerts}
+                  onChange={(e) => handleChange('complaintAlerts', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+            </div>
+          </div>
+        );
+
+      case 'security':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Security Settings</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password Expiry (days)</label>
+                <input
+                  type="number"
+                  value={editForm.passwordExpiry}
+                  onChange={(e) => handleChange('passwordExpiry', parseInt(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Login Attempts</label>
+                <input
+                  type="number"
+                  value={editForm.maxLoginAttempts}
+                  onChange={(e) => handleChange('maxLoginAttempts', parseInt(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Session Timeout (minutes)</label>
+                <input
+                  type="number"
+                  value={editForm.sessionTimeout}
+                  onChange={(e) => handleChange('sessionTimeout', parseInt(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 mt-4">
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Two-Factor Authentication</p>
+                  <p className="text-sm text-gray-500">Require 2FA for admin accounts</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.twoFactorAuth}
+                  onChange={(e) => handleChange('twoFactorAuth', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Email Verification</p>
+                  <p className="text-sm text-gray-500">Require email verification for new users</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.requireEmailVerification}
+                  onChange={(e) => handleChange('requireEmailVerification', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Phone Verification</p>
+                  <p className="text-sm text-gray-500">Require phone verification for new users</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.requirePhoneVerification}
+                  onChange={(e) => handleChange('requirePhoneVerification', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+            </div>
+          </div>
+        );
+
+      case 'features':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Feature Settings</h3>
+            
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Chat</p>
+                  <p className="text-sm text-gray-500">Allow users to chat with each other</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableChat}
+                  onChange={(e) => handleChange('enableChat', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Payments</p>
+                  <p className="text-sm text-gray-500">Allow users to make payments</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enablePayments}
+                  onChange={(e) => handleChange('enablePayments', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Reviews</p>
+                  <p className="text-sm text-gray-500">Allow users to leave reviews</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableReviews}
+                  onChange={(e) => handleChange('enableReviews', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Complaints</p>
+                  <p className="text-sm text-gray-500">Allow users to submit complaints</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableComplaints}
+                  onChange={(e) => handleChange('enableComplaints', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable WhatsApp</p>
+                  <p className="text-sm text-gray-500">Allow WhatsApp integration for communication</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableWhatsApp}
+                  onChange={(e) => handleChange('enableWhatsApp', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Multi-Language</p>
+                  <p className="text-sm text-gray-500">Allow users to switch between languages</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableMultiLanguage}
+                  onChange={(e) => handleChange('enableMultiLanguage', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p className="font-medium text-gray-700">Enable Dark Mode</p>
+                  <p className="text-sm text-gray-500">Allow users to switch to dark theme</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.enableDarkMode}
+                  onChange={(e) => handleChange('enableDarkMode', e.target.checked)}
+                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </label>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
   return (
-    <AdminLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '20px' : '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#1a2a3a', marginBottom: '4px' }}>
-            Settings
-          </h1>
-          <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
-            Configure your platform settings
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Link to="/admin" className="text-gray-600 hover:text-red-600 transition">
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-800">Admin Settings</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {saved && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle size={16} /> Saved successfully!
+              </span>
+            )}
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+            >
+              <Save size={18} /> Save Settings
+            </button>
+          </div>
         </div>
-        <button
-          onClick={saveSettings}
-          disabled={loading}
-          style={{
-            padding: isMobile ? '8px 16px' : '10px 24px',
-            background: '#2e7d32',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: isMobile ? '13px' : '14px',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            width: isMobile ? '100%' : 'auto',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-        >
-          {loading ? 'Saving...' : '💾 Save Settings'}
-        </button>
-      </div>
+      </header>
 
-      <div style={{
-        display: 'flex',
-        gap: isMobile ? '8px' : '16px',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-      }}>
-        {sections.map((section) => (
-          <button
-            key={section.key}
-            onClick={() => setActiveSection(section.key)}
-            style={{
-              padding: isMobile ? '8px 14px' : '10px 20px',
-              borderRadius: '8px',
-              background: activeSection === section.key ? '#2e7d32' : '#fff',
-              color: activeSection === section.key ? '#fff' : '#5a7a5a',
-              border: activeSection === section.key ? 'none' : '1px solid #d4e8d4',
-              cursor: 'pointer',
-              fontSize: isMobile ? '13px' : '14px',
-              fontWeight: activeSection === section.key ? '600' : '400',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span>{section.icon}</span>
-            {section.label}
-          </button>
-        ))}
-      </div>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="md:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sticky top-4">
+              <div className="space-y-1">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
+                      activeSection === section.id 
+                        ? 'bg-red-50 text-red-600' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {section.icon}
+                    <span className="text-sm">{section.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-      <div style={{
-        background: '#ffffff',
-        borderRadius: isMobile ? '12px' : '16px',
-        padding: isMobile ? '16px' : '24px',
-        border: '1px solid #d4e8d4',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      }}>
-        {renderContent()}
+          {/* Main Content */}
+          <div className="md:col-span-3">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              {renderSection()}
+            </div>
+          </div>
+        </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
+
+export default AdminSettings;
