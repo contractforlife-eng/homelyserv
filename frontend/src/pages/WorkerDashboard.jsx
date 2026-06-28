@@ -201,14 +201,12 @@ function WorkerDashboard() {
             <Briefcase size={20} /> Offers
             <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">2</span>
           </Link>
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              activeTab === 'profile' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <User size={20} /> My Profile
-          </button>
+          <Link 
+  to="/profile"
+  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+>
+  <User size={20} /> My Profile
+</Link>
           <button 
             onClick={() => setActiveTab('applications')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
