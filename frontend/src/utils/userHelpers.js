@@ -1,5 +1,8 @@
 // frontend/src/utils/userHelpers.js
 
+// Default image
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+
 // Get user data with fallback for image
 export const getUser = () => {
   try {
@@ -8,7 +11,7 @@ export const getUser = () => {
       const user = JSON.parse(userData);
       // Ensure image field exists
       if (!user.image) {
-        user.image = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+        user.image = DEFAULT_IMAGE;
         localStorage.setItem('user', JSON.stringify(user));
       }
       return user;
@@ -24,11 +27,30 @@ export const getUser = () => {
 export const updateUser = (userData) => {
   try {
     const currentUser = getUser();
-    const updatedUser = { ...currentUser, ...userData };
+    const updatedUser = { 
+      ...currentUser, 
+      ...userData,
+      image: userData.image || DEFAULT_IMAGE
+    };
     localStorage.setItem('user', JSON.stringify(updatedUser));
     return updatedUser;
   } catch (e) {
     console.error('Error updating user:', e);
+    return null;
+  }
+};
+
+// Save user data to localStorage (for login/register)
+export const saveUser = (userData) => {
+  try {
+    const userToSave = {
+      ...userData,
+      image: userData.image || DEFAULT_IMAGE
+    };
+    localStorage.setItem('user', JSON.stringify(userToSave));
+    return userToSave;
+  } catch (e) {
+    console.error('Error saving user:', e);
     return null;
   }
 };
@@ -39,7 +61,7 @@ export const getUserImage = () => {
   if (user && user.image) {
     return user.image;
   }
-  return 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
+  return DEFAULT_IMAGE;
 };
 
 // Get user name with fallback

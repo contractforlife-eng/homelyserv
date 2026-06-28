@@ -90,47 +90,45 @@ function Profile() {
   };
 
   const handleSave = () => {
-    setError('');
+  setError('');
+  
+  if (!editData.fullName.trim()) {
+    setError('Full name is required');
+    return;
+  }
+  if (!editData.email.trim()) {
+    setError('Email is required');
+    return;
+  }
+  
+  setProfile(editData);
+  
+  if (user) {
+    const updatedUser = { 
+      ...user, 
+      ...editData,
+      fullName: editData.fullName,
+      email: editData.email,
+      phone: editData.phone || '',
+      city: editData.city || '',
+      category: editData.category,
+      experience: editData.experience,
+      salary: editData.salary,
+      availability: editData.availability,
+      workType: editData.workType,
+      bio: editData.bio,
+      skills: editData.skills,
+      image: editData.image
+    };
     
-    // Validate required fields
-    if (!editData.fullName.trim()) {
-      setError('Full name is required');
-      return;
-    }
-    if (!editData.email.trim()) {
-      setError('Email is required');
-      return;
-    }
-    
-    // Update profile state
-    setProfile(editData);
-    
-    // Update localStorage using the helper
-    if (user) {
-      const updatedUser = { 
-        ...user, 
-        ...editData,
-        fullName: editData.fullName,
-        email: editData.email,
-        phone: editData.phone || '',
-        city: editData.city || '',
-        category: editData.category,
-        experience: editData.experience,
-        salary: editData.salary,
-        availability: editData.availability,
-        workType: editData.workType,
-        bio: editData.bio,
-        skills: editData.skills,
-        image: editData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
-      };
-      
-      const savedUser = updateUser(updatedUser);
-      setUser(savedUser);
-    }
-    
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    const savedUser = updateUser(updatedUser);
+    setUser(savedUser);
+  }
+  
+  setIsEditing(false);
+  setSaved(true);
+  setTimeout(() => setSaved(false), 3000);
+
   };
 
   const handleCancel = () => {
