@@ -1,52 +1,26 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import EmployerDashboard from './pages/EmployerDashboard';
-import WorkerDashboard from './pages/WorkerDashboard';
-import WorkerOffers from './pages/WorkerOffers';
-import Profile from './pages/Profile';
-import Search from './pages/Search';
-import MyHires from './pages/MyHires';
-import WorkerProfile from './pages/WorkerProfile';
-import Payment from './pages/Payment';
-import Notifications from './pages/Notifications';
-import Messages from './pages/Messages';
-import Settings from './pages/Settings';
-import JobDetails from './pages/JobDetails';
-import ForgotPassword from './pages/ForgotPassword';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Terms from './pages/Terms';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import MobileLogin from './pages/MobileLogin';
+import MobileDashboard from './pages/MobileDashboard';
+import './i18n/index.js';
 
 function App() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
+
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/employer-dashboard" element={<EmployerDashboard />} />
-      <Route path="/worker-dashboard" element={<WorkerDashboard />} />
-      <Route path="/worker-offers" element={<WorkerOffers />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/my-hires" element={<MyHires />} />
-      <Route path="/worker/:id" element={<WorkerProfile />} />
-      <Route path="/payment/:hireId" element={<Payment />} />
-      <Route path="/notifications" element={<Notifications />} />
-      <Route path="/messages" element={<Messages />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/job/:id" element={<JobDetails />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<MobileLogin />} />
+        <Route path="/dashboard" element={<MobileDashboard />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
