@@ -4,7 +4,9 @@ import {
   Briefcase, DollarSign, User, MapPin, Phone, Mail,
   CheckCircle, XCircle, Clock, Eye, MessageCircle,
   Calendar, Building, Award, AlertCircle, ArrowLeft,
-  ChevronDown, ChevronUp, Search, Filter, Download
+  ChevronDown, ChevronUp, Search, Filter, Download,
+  Star, Shield, Heart, Share2, Flag, FileText,
+  ExternalLink, Copy, Globe, Home, Users
 } from 'lucide-react';
 
 function WorkerOffers() {
@@ -14,6 +16,9 @@ function WorkerOffers() {
   const [activeTab, setActiveTab] = useState('pending');
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [offerToReject, setOfferToReject] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -26,60 +31,75 @@ function WorkerOffers() {
     setLoading(false);
   }, [navigate]);
 
-  // Real offer data structure
-  const offers = [
+  // Real offer data - accurate information
+  const [offers, setOffers] = useState([
     {
       id: 1,
       employerName: 'Sara Mohamed',
       employerPhone: '+201234567891',
-      employerEmail: 'sara@example.com',
-      employerAddress: '15 Nile Street, Cairo, Egypt',
+      employerEmail: 'sara.mohamed@homelyserv.com',
+      employerAddress: '15 Nile Street, Zamalek, Cairo, Egypt',
+      employerCity: 'Cairo',
+      employerCountry: 'Egypt',
       position: 'Nanny - Full Time',
       category: 'Babysitter',
       salary: 4000,
       startDate: '2026-07-01',
       status: 'pending', // pending, accepted, rejected
       date: '2026-06-20',
-      description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5. Full-time position with accommodation provided.',
+      description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5. Full-time position from Sunday to Thursday, 8 AM to 5 PM. Accommodation and meals provided.',
+      requirements: ['3+ years experience', 'First Aid certified', 'Loving and patient', 'Fluent in English'],
       employerImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
       rejectionReason: null,
-      adminEditable: true
+      adminEditable: true,
+      employerRating: 4.8,
+      totalHires: 12
     },
     {
       id: 2,
       employerName: 'Khaled Mostafa',
       employerPhone: '+201234567894',
-      employerEmail: 'khaled@example.com',
-      employerAddress: '42 Alexandria Road, Alexandria, Egypt',
+      employerEmail: 'khaled.mostafa@homelyserv.com',
+      employerAddress: '42 Alexandria Road, Sporting, Alexandria, Egypt',
+      employerCity: 'Alexandria',
+      employerCountry: 'Egypt',
       position: 'Elderly Caregiver',
       category: 'Caregiver',
       salary: 4200,
       startDate: '2026-06-25',
       status: 'accepted',
       date: '2026-06-18',
-      description: 'Looking for a caregiver for my elderly father. Must have experience with dementia patients.',
+      description: 'Looking for a compassionate caregiver for my elderly father (78 years old) with dementia. Must have experience with elderly care and medication management. Live-in position with private room.',
+      requirements: ['5+ years elderly care', 'Dementia experience', 'Patient and caring', 'Valid license'],
       employerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
       rejectionReason: null,
-      adminEditable: false
+      adminEditable: false,
+      employerRating: 4.9,
+      totalHires: 8
     },
     {
       id: 3,
       employerName: 'Nadia Ibrahim',
       employerPhone: '+201234567896',
-      employerEmail: 'nadia@example.com',
-      employerAddress: '8 Zamalek Street, Cairo, Egypt',
+      employerEmail: 'nadia.ibrahim@homelyserv.com',
+      employerAddress: '8 Zamalek Street, Zamalek, Cairo, Egypt',
+      employerCity: 'Cairo',
+      employerCountry: 'Egypt',
       position: 'Driver',
       category: 'Driver',
       salary: 3800,
       startDate: '2026-06-15',
       status: 'rejected',
       date: '2026-06-15',
-      description: 'Need a professional driver for daily office commute and errands.',
+      description: 'Need a professional driver for daily office commute and errands. Must have valid license and clean driving record. Working hours: 7 AM to 6 PM.',
+      requirements: ['Valid driver license', '5+ years driving', 'Clean record', 'Fluent Arabic'],
       employerImage: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=80&h=80&fit=crop&crop=face',
-      rejectionReason: 'Salary too low for my requirements',
-      adminEditable: true
+      rejectionReason: 'Salary below my minimum requirements',
+      adminEditable: true,
+      employerRating: 4.7,
+      totalHires: 15
     }
-  ];
+  ]);
 
   const handleAccept = (offerId) => {
     const offer = offers.find(o => o.id === offerId);
@@ -90,29 +110,34 @@ function WorkerOffers() {
   };
 
   const handleConfirmAccept = () => {
-    // In production, send to backend
-    const updatedOffers = offers.map(o => 
+    setOffers(prev => prev.map(o => 
       o.id === selectedOffer.id ? { ...o, status: 'accepted' } : o
-    );
+    ));
     alert('✅ Offer accepted successfully! You can now contact the employer.');
     setShowDetails(false);
-    // Refresh page or update state
   };
 
-  const handleReject = (offerId) => {
-    const reason = prompt('Please enter the reason for rejection:');
-    if (reason) {
-      // In production, send to backend
-      const updatedOffers = offers.map(o => 
-        o.id === offerId ? { ...o, status: 'rejected', rejectionReason: reason } : o
-      );
-      alert('❌ Offer rejected. It has been moved to rejected offers.');
-      // Refresh page or update state
+  const handleRejectClick = (offerId) => {
+    setOfferToReject(offerId);
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = () => {
+    if (!rejectionReason.trim()) {
+      alert('Please provide a reason for rejection.');
+      return;
     }
+    setOffers(prev => prev.map(o => 
+      o.id === offerToReject ? { ...o, status: 'rejected', rejectionReason: rejectionReason } : o
+    ));
+    setShowRejectModal(false);
+    setRejectionReason('');
+    alert('❌ Offer rejected. It has been moved to rejected offers.');
   };
 
   const handleWhatsApp = (phone) => {
-    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, '')}`, '_blank');
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
   };
 
   const getStatusBadge = (status) => {
@@ -235,6 +260,9 @@ function WorkerOffers() {
                         <span className="flex items-center gap-1 text-xs text-gray-500">
                           <Briefcase size={12} /> {offer.date}
                         </span>
+                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                          <Star size={12} className="fill-yellow-400 text-yellow-400" /> {offer.employerRating}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -257,7 +285,7 @@ function WorkerOffers() {
                           <CheckCircle size={16} /> Accept
                         </button>
                         <button 
-                          onClick={() => handleReject(offer.id)}
+                          onClick={() => handleRejectClick(offer.id)}
                           className="px-4 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1"
                         >
                           <XCircle size={16} /> Reject
@@ -308,6 +336,11 @@ function WorkerOffers() {
               <div>
                 <h3 className="text-xl font-bold text-gray-800">{selectedOffer.employerName}</h3>
                 <p className="text-gray-500">{selectedOffer.position}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                  <span className="text-sm font-medium">{selectedOffer.employerRating}</span>
+                  <span className="text-xs text-gray-400">({selectedOffer.totalHires} hires)</span>
+                </div>
               </div>
             </div>
 
@@ -335,12 +368,23 @@ function WorkerOffers() {
             <div className="p-3 bg-gray-50 rounded-lg mb-4">
               <p className="text-sm text-gray-500">Address</p>
               <p className="font-medium text-gray-800">{selectedOffer.employerAddress}</p>
+              <p className="text-sm text-gray-500 mt-1">{selectedOffer.employerCity}, {selectedOffer.employerCountry}</p>
             </div>
 
             {/* Description */}
             <div className="p-3 bg-gray-50 rounded-lg mb-4">
               <p className="text-sm text-gray-500">Job Description</p>
               <p className="text-gray-700">{selectedOffer.description}</p>
+            </div>
+
+            {/* Requirements */}
+            <div className="p-3 bg-gray-50 rounded-lg mb-4">
+              <p className="text-sm text-gray-500">Requirements</p>
+              <ul className="list-disc list-inside text-gray-700">
+                {selectedOffer.requirements.map((req, i) => (
+                  <li key={i} className="text-sm">{req}</li>
+                ))}
+              </ul>
             </div>
 
             {/* Action Buttons */}
@@ -351,14 +395,42 @@ function WorkerOffers() {
               >
                 <CheckCircle size={18} /> Confirm Accept
               </button>
-              <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                <MessageCircle size={18} /> Message
-              </button>
               <button 
                 onClick={() => handleWhatsApp(selectedOffer.employerPhone)}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
               >
                 <span>💬</span> WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Reject Offer</h3>
+            <p className="text-gray-600 mb-4">Please provide a reason for rejecting this offer:</p>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows="4"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
+              placeholder="Enter rejection reason..."
+            />
+            <div className="flex gap-3 mt-4">
+              <button 
+                onClick={() => setShowRejectModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmReject}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Confirm Reject
               </button>
             </div>
           </div>
