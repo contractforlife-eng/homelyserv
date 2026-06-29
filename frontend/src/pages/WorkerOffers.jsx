@@ -152,15 +152,23 @@ const WorkerSidebar = ({
           </button>
         </div>
 
-        {/* User Profile */}
+        {/* User Profile - Shows logged-in user */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.fullName} 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-red-600" />
+              )}
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user?.fullName || 'Ahmed Ali'}</p>
+                <p className="font-medium text-gray-800 truncate">{user?.fullName || 'Worker'}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
@@ -493,28 +501,48 @@ const WorkerOffers = () => {
 
   const t = translations[language];
 
+  // Get logged-in user from localStorage
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
     }
+    
+    // Get the logged-in user data
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        console.log('Logged-in user:', parsedUser); // Debug: Check which user is logged in
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        // If no user found, redirect to login
+        navigate('/login');
+      }
+    } else {
+      // No user found, redirect to login
+      navigate('/login');
     }
-    const saved = localStorage.getItem('worker_saved_offers');
+
+    // Load saved offers for this user
+    const savedKey = `worker_saved_offers_${userData ? JSON.parse(userData).id : 'default'}`;
+    const saved = localStorage.getItem(savedKey);
     if (saved) {
       setSavedOffers(JSON.parse(saved));
     }
-    const applied = localStorage.getItem('worker_applied_offers');
+
+    const appliedKey = `worker_applied_offers_${userData ? JSON.parse(userData).id : 'default'}`;
+    const applied = localStorage.getItem(appliedKey);
     if (applied) {
       setAppliedOffers(JSON.parse(applied));
     }
+
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -542,220 +570,17 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Fetch offers
+  // Fetch offers based on logged-in user
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
       try {
         await new Promise(resolve => setTimeout(resolve, 1200));
 
-        const demoOffers = [
-          {
-            id: 'OFF-2026-001',
-            title: 'Senior Nanny - Full Time',
-            company: 'Elite Family Services',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'Cairo, Egypt',
-            salary: { min: 3500, max: 4500 },
-            currency: 'EGP',
-            type: 'Full Time',
-            experience: '3+ years',
-            skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
-            benefits: ['Health Insurance', 'Paid Vacation', 'Transportation', 'Training'],
-            description: 'We are looking for an experienced and caring nanny to join our family.',
-            requirements: ['Minimum 3 years of experience', 'First Aid certified', 'Valid ID'],
-            responsibilities: ['Child supervision', 'Educational activities', 'Meal preparation'],
-            postedBy: {
-              name: 'Ahmed Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
-            postedAt: '2026-06-25T10:30:00Z',
-            applicants: 12,
-            matchScore: 92,
-            status: 'new',
-            isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-15',
-            deadline: '2026-07-10',
-            contractType: 'Permanent',
-            workSchedule: 'Sunday - Thursday, 8AM - 5PM',
-            companyInfo: {
-              industry: 'Family Services',
-              size: '10-50 employees',
-              description: 'Leading provider of premium home services'
-            },
-            applicationStatus: null,
-            isSaved: false,
-            isApplied: false
-          },
-          {
-            id: 'OFF-2026-002',
-            title: 'Elderly Caregiver - Part Time',
-            company: 'CarePlus Egypt',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'Alexandria, Egypt',
-            salary: { min: 2800, max: 3600 },
-            currency: 'EGP',
-            type: 'Part Time',
-            experience: '2+ years',
-            skills: ['Elderly Care', 'Medication Management', 'Empathy'],
-            benefits: ['Flexible Hours', 'Paid Leave', 'Career Growth'],
-            description: 'Seeking compassionate caregiver for elderly gentleman with mobility issues.',
-            requirements: ['2+ years elderly care experience', 'First Aid certification'],
-            responsibilities: ['Daily living assistance', 'Medication reminders', 'Mobility support'],
-            postedBy: {
-              name: 'Dr. Mohamed',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
-            postedAt: '2026-06-24T14:20:00Z',
-            applicants: 8,
-            matchScore: 78,
-            status: 'new',
-            isUrgent: false,
-            isFeatured: false,
-            startDate: '2026-07-01',
-            deadline: '2026-06-30',
-            contractType: 'Contract',
-            workSchedule: 'Alternate days, 4 hours/day',
-            companyInfo: {
-              industry: 'Healthcare',
-              size: '50-200 employees',
-              description: 'Specialized in home healthcare services'
-            },
-            applicationStatus: null,
-            isSaved: false,
-            isApplied: false
-          },
-          {
-            id: 'OFF-2026-003',
-            title: 'Private Driver - Full Time',
-            company: 'VIP Transport Services',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'Giza, Egypt',
-            salary: { min: 4000, max: 5500 },
-            currency: 'EGP',
-            type: 'Full Time',
-            experience: '5+ years',
-            skills: ['Safe Driving', 'Vehicle Maintenance', 'Navigation'],
-            benefits: ['Company Car', 'Fuel Allowance', 'Bonus', 'Insurance'],
-            description: 'Seeking professional driver for private family.',
-            requirements: ['Valid Egyptian driver\'s license', '5+ years experience'],
-            responsibilities: ['Transportation of family members', 'Vehicle maintenance'],
-            postedBy: {
-              name: 'El-Shazly Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
-            postedAt: '2026-06-23T09:15:00Z',
-            applicants: 15,
-            matchScore: 85,
-            status: 'applied',
-            isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-10',
-            deadline: '2026-07-05',
-            contractType: 'Permanent',
-            workSchedule: 'Flexible, 6 days/week',
-            companyInfo: {
-              industry: 'Transportation',
-              size: '10-50 employees',
-              description: 'Premium private transport services'
-            },
-            applicationStatus: {
-              status: 'pending_review',
-              date: '2026-06-24',
-              note: 'Application under review'
-            },
-            isSaved: false,
-            isApplied: true
-          },
-          {
-            id: 'OFF-2026-004',
-            title: 'Professional Cook - Part Time',
-            company: 'Gourmet Home Kitchen',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'New Cairo, Egypt',
-            salary: { min: 3000, max: 4000 },
-            currency: 'EGP',
-            type: 'Part Time',
-            experience: '4+ years',
-            skills: ['Cooking', 'Menu Planning', 'Nutrition', 'Food Safety'],
-            benefits: ['Meal Allowance', 'Flexible Schedule', 'Training'],
-            description: 'Experienced cook needed for private family.',
-            requirements: ['4+ years cooking experience', 'Food safety certification'],
-            responsibilities: ['Meal preparation', 'Menu planning', 'Kitchen hygiene'],
-            postedBy: {
-              name: 'Hassan Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
-            postedAt: '2026-06-22T16:45:00Z',
-            applicants: 6,
-            matchScore: 70,
-            status: 'saved',
-            isUrgent: false,
-            isFeatured: false,
-            startDate: '2026-07-20',
-            deadline: '2026-07-15',
-            contractType: 'Contract',
-            workSchedule: '6 days/week, 4 hours/day',
-            companyInfo: {
-              industry: 'Food Services',
-              size: '5-10 employees',
-              description: 'Specialized in private home dining'
-            },
-            applicationStatus: null,
-            isSaved: true,
-            isApplied: false
-          },
-          {
-            id: 'OFF-2026-005',
-            title: 'House Manager - Full Time',
-            company: 'Premium Home Solutions',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'Maadi, Egypt',
-            salary: { min: 5000, max: 7000 },
-            currency: 'EGP',
-            type: 'Full Time',
-            experience: '5+ years',
-            skills: ['Management', 'Organization', 'Communication'],
-            benefits: ['Health Insurance', 'Bonus', 'Paid Leave'],
-            description: 'Experienced house manager to oversee daily operations.',
-            requirements: ['5+ years house management experience', 'Strong leadership skills'],
-            responsibilities: ['Staff supervision', 'Budget management', 'Event planning'],
-            postedBy: {
-              name: 'El-Gamal Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
-            postedAt: '2026-06-21T11:00:00Z',
-            applicants: 9,
-            matchScore: 88,
-            status: 'interview',
-            isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-01',
-            deadline: '2026-06-28',
-            contractType: 'Permanent',
-            workSchedule: 'Sunday - Thursday, 9AM - 6PM',
-            companyInfo: {
-              industry: 'Property Management',
-              size: '20-50 employees',
-              description: 'Luxury property management services'
-            },
-            applicationStatus: {
-              status: 'interview_scheduled',
-              date: '2026-06-25',
-              note: 'Interview scheduled for June 28'
-            },
-            isSaved: false,
-            isApplied: true
-          }
-        ];
-
-        const mergedOffers = demoOffers.map(offer => ({
+        // Generate user-specific offers based on logged-in user
+        const userOffers = getOffersForUser(user);
+        
+        const mergedOffers = userOffers.map(offer => ({
           ...offer,
           isSaved: savedOffers.includes(offer.id),
           isApplied: appliedOffers.includes(offer.id)
@@ -770,8 +595,242 @@ const WorkerOffers = () => {
       }
     };
 
-    fetchOffers();
-  }, []);
+    if (user) {
+      fetchOffers();
+    }
+  }, [user]);
+
+  // Function to get offers for specific user
+  const getOffersForUser = (currentUser) => {
+    // Base offers that all users see
+    const baseOffers = [
+      {
+        id: 'OFF-2026-001',
+        title: 'Senior Nanny - Full Time',
+        company: 'Elite Family Services',
+        companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+        location: 'Cairo, Egypt',
+        salary: { min: 3500, max: 4500 },
+        currency: 'EGP',
+        type: 'Full Time',
+        experience: '3+ years',
+        skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
+        benefits: ['Health Insurance', 'Paid Vacation', 'Transportation', 'Training'],
+        description: 'We are looking for an experienced and caring nanny to join our family.',
+        requirements: ['Minimum 3 years of experience', 'First Aid certified', 'Valid ID'],
+        responsibilities: ['Child supervision', 'Educational activities', 'Meal preparation'],
+        postedBy: {
+          name: 'Ahmed Family',
+          role: 'Employer',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+        },
+        postedAt: '2026-06-25T10:30:00Z',
+        applicants: 12,
+        matchScore: 92,
+        status: 'new',
+        isUrgent: true,
+        isFeatured: true,
+        startDate: '2026-07-15',
+        deadline: '2026-07-10',
+        contractType: 'Permanent',
+        workSchedule: 'Sunday - Thursday, 8AM - 5PM',
+        companyInfo: {
+          industry: 'Family Services',
+          size: '10-50 employees',
+          description: 'Leading provider of premium home services'
+        },
+        applicationStatus: null,
+        isSaved: false,
+        isApplied: false
+      },
+      {
+        id: 'OFF-2026-002',
+        title: 'Elderly Caregiver - Part Time',
+        company: 'CarePlus Egypt',
+        companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+        location: 'Alexandria, Egypt',
+        salary: { min: 2800, max: 3600 },
+        currency: 'EGP',
+        type: 'Part Time',
+        experience: '2+ years',
+        skills: ['Elderly Care', 'Medication Management', 'Empathy'],
+        benefits: ['Flexible Hours', 'Paid Leave', 'Career Growth'],
+        description: 'Seeking compassionate caregiver for elderly gentleman with mobility issues.',
+        requirements: ['2+ years elderly care experience', 'First Aid certification'],
+        responsibilities: ['Daily living assistance', 'Medication reminders', 'Mobility support'],
+        postedBy: {
+          name: 'Dr. Mohamed',
+          role: 'Employer',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+        },
+        postedAt: '2026-06-24T14:20:00Z',
+        applicants: 8,
+        matchScore: 78,
+        status: 'new',
+        isUrgent: false,
+        isFeatured: false,
+        startDate: '2026-07-01',
+        deadline: '2026-06-30',
+        contractType: 'Contract',
+        workSchedule: 'Alternate days, 4 hours/day',
+        companyInfo: {
+          industry: 'Healthcare',
+          size: '50-200 employees',
+          description: 'Specialized in home healthcare services'
+        },
+        applicationStatus: null,
+        isSaved: false,
+        isApplied: false
+      },
+      {
+        id: 'OFF-2026-003',
+        title: 'Private Driver - Full Time',
+        company: 'VIP Transport Services',
+        companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+        location: 'Giza, Egypt',
+        salary: { min: 4000, max: 5500 },
+        currency: 'EGP',
+        type: 'Full Time',
+        experience: '5+ years',
+        skills: ['Safe Driving', 'Vehicle Maintenance', 'Navigation'],
+        benefits: ['Company Car', 'Fuel Allowance', 'Bonus', 'Insurance'],
+        description: 'Seeking professional driver for private family.',
+        requirements: ['Valid Egyptian driver\'s license', '5+ years experience'],
+        responsibilities: ['Transportation of family members', 'Vehicle maintenance'],
+        postedBy: {
+          name: 'El-Shazly Family',
+          role: 'Employer',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+        },
+        postedAt: '2026-06-23T09:15:00Z',
+        applicants: 15,
+        matchScore: 85,
+        status: 'applied',
+        isUrgent: true,
+        isFeatured: true,
+        startDate: '2026-07-10',
+        deadline: '2026-07-05',
+        contractType: 'Permanent',
+        workSchedule: 'Flexible, 6 days/week',
+        companyInfo: {
+          industry: 'Transportation',
+          size: '10-50 employees',
+          description: 'Premium private transport services'
+        },
+        applicationStatus: {
+          status: 'pending_review',
+          date: '2026-06-24',
+          note: 'Application under review'
+        },
+        isSaved: false,
+        isApplied: true
+      },
+      {
+        id: 'OFF-2026-004',
+        title: 'Professional Cook - Part Time',
+        company: 'Gourmet Home Kitchen',
+        companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+        location: 'New Cairo, Egypt',
+        salary: { min: 3000, max: 4000 },
+        currency: 'EGP',
+        type: 'Part Time',
+        experience: '4+ years',
+        skills: ['Cooking', 'Menu Planning', 'Nutrition', 'Food Safety'],
+        benefits: ['Meal Allowance', 'Flexible Schedule', 'Training'],
+        description: 'Experienced cook needed for private family.',
+        requirements: ['4+ years cooking experience', 'Food safety certification'],
+        responsibilities: ['Meal preparation', 'Menu planning', 'Kitchen hygiene'],
+        postedBy: {
+          name: 'Hassan Family',
+          role: 'Employer',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+        },
+        postedAt: '2026-06-22T16:45:00Z',
+        applicants: 6,
+        matchScore: 70,
+        status: 'saved',
+        isUrgent: false,
+        isFeatured: false,
+        startDate: '2026-07-20',
+        deadline: '2026-07-15',
+        contractType: 'Contract',
+        workSchedule: '6 days/week, 4 hours/day',
+        companyInfo: {
+          industry: 'Food Services',
+          size: '5-10 employees',
+          description: 'Specialized in private home dining'
+        },
+        applicationStatus: null,
+        isSaved: true,
+        isApplied: false
+      },
+      {
+        id: 'OFF-2026-005',
+        title: 'House Manager - Full Time',
+        company: 'Premium Home Solutions',
+        companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+        location: 'Maadi, Egypt',
+        salary: { min: 5000, max: 7000 },
+        currency: 'EGP',
+        type: 'Full Time',
+        experience: '5+ years',
+        skills: ['Management', 'Organization', 'Communication'],
+        benefits: ['Health Insurance', 'Bonus', 'Paid Leave'],
+        description: 'Experienced house manager to oversee daily operations.',
+        requirements: ['5+ years house management experience', 'Strong leadership skills'],
+        responsibilities: ['Staff supervision', 'Budget management', 'Event planning'],
+        postedBy: {
+          name: 'El-Gamal Family',
+          role: 'Employer',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+        },
+        postedAt: '2026-06-21T11:00:00Z',
+        applicants: 9,
+        matchScore: 88,
+        status: 'interview',
+        isUrgent: true,
+        isFeatured: true,
+        startDate: '2026-07-01',
+        deadline: '2026-06-28',
+        contractType: 'Permanent',
+        workSchedule: 'Sunday - Thursday, 9AM - 6PM',
+        companyInfo: {
+          industry: 'Property Management',
+          size: '20-50 employees',
+          description: 'Luxury property management services'
+        },
+        applicationStatus: {
+          status: 'interview_scheduled',
+          date: '2026-06-25',
+          note: 'Interview scheduled for June 28'
+        },
+        isSaved: false,
+        isApplied: true
+      }
+    ];
+
+    // If there's a logged-in user, we can personalize offers
+    if (currentUser) {
+      // You can add user-specific logic here
+      // For example, show offers based on user's skills, location, etc.
+      return baseOffers.map(offer => {
+        // Adjust match score based on user's skills
+        if (currentUser.skills) {
+          const matchingSkills = offer.skills.filter(skill => 
+            currentUser.skills.includes(skill)
+          );
+          const matchPercentage = Math.round((matchingSkills.length / offer.skills.length) * 100);
+          return {
+            ...offer,
+            matchScore: Math.min(offer.matchScore + (matchPercentage - offer.matchScore) * 0.5, 100)
+          };
+        }
+        return offer;
+      });
+    }
+
+    return baseOffers;
+  };
 
   // Filter and search
   useEffect(() => {
@@ -819,6 +878,7 @@ const WorkerOffers = () => {
   };
 
   const toggleSaveOffer = (offerId) => {
+    const userKey = user ? user.id : 'default';
     let newSaved;
     if (savedOffers.includes(offerId)) {
       newSaved = savedOffers.filter(id => id !== offerId);
@@ -826,7 +886,7 @@ const WorkerOffers = () => {
       newSaved = [...savedOffers, offerId];
     }
     setSavedOffers(newSaved);
-    localStorage.setItem('worker_saved_offers', JSON.stringify(newSaved));
+    localStorage.setItem(`worker_saved_offers_${userKey}`, JSON.stringify(newSaved));
     
     setOffers(prev => prev.map(offer => 
       offer.id === offerId 
@@ -843,9 +903,10 @@ const WorkerOffers = () => {
 
   const confirmApply = () => {
     if (selectedOffer) {
+      const userKey = user ? user.id : 'default';
       const newApplied = [...appliedOffers, selectedOffer.id];
       setAppliedOffers(newApplied);
-      localStorage.setItem('worker_applied_offers', JSON.stringify(newApplied));
+      localStorage.setItem(`worker_applied_offers_${userKey}`, JSON.stringify(newApplied));
       
       setOffers(prev => prev.map(offer => 
         offer.id === selectedOffer.id 
@@ -935,6 +996,18 @@ const WorkerOffers = () => {
     interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
   };
 
+  // Redirect if no user is logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1016,7 +1089,7 @@ const WorkerOffers = () => {
 
         {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header */}
+          {/* Page Header with dynamic user name */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -1025,7 +1098,7 @@ const WorkerOffers = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-red-100">
-                  {t.welcome}, {user?.fullName || 'Ahmed'}
+                  {t.welcome}, {user?.fullName || 'Worker'}
                 </span>
               </div>
             </div>
