@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Briefcase,
   MapPin,
@@ -23,11 +23,26 @@ import {
   LayoutGrid,
   List,
   ThumbsUp,
-  BriefcaseIcon
+  BriefcaseIcon,
+  Home,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  Bell,
+  Calendar,
+  FileText,
+  Award,
+  TrendingUp,
+  Shield,
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const WorkerOffers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -39,15 +54,28 @@ const WorkerOffers = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [savedOffers, setSavedOffers] = useState([]);
   const [appliedOffers, setAppliedOffers] = useState([]);
+  const [user, setUser] = useState(null);
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Translations
   const translations = {
     en: {
       title: 'Job Offers',
       subtitle: 'Discover opportunities that match your skills and preferences',
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myOffers: 'My Offers',
+      myHires: 'My Hires',
+      messages: 'Messages',
+      calendar: 'Calendar',
+      documents: 'Documents',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
       stats: {
         available: 'Available Offers',
         applied: 'Applied',
@@ -143,11 +171,23 @@ const WorkerOffers = () => {
         cancel: 'Cancel',
         success: 'Application submitted successfully!',
         note: 'You will be notified about the application status via email.'
-      }
+      },
+      welcome: 'Welcome back',
+      notifications: 'Notifications'
     },
     ar: {
       title: 'عروض العمل',
       subtitle: 'اكتشف الفرص التي تناسب مهاراتك وتفضيلاتك',
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myOffers: 'عروضي',
+      myHires: 'توظيفاتي',
+      messages: 'الرسائل',
+      calendar: 'التقويم',
+      documents: 'المستندات',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
       stats: {
         available: 'العروض المتاحة',
         applied: 'تم التقديم',
@@ -243,11 +283,24 @@ const WorkerOffers = () => {
         cancel: 'إلغاء',
         success: 'تم تقديم الطلب بنجاح!',
         note: 'سيتم إعلامك بحالة الطلب عبر البريد الإلكتروني.'
-      }
+      },
+      welcome: 'مرحباً بعودتك',
+      notifications: 'الإشعارات'
     }
   };
 
   const t = translations[language];
+
+  // Dashboard menu items
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/profile' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+    { id: 'hires', label: t.myHires, icon: Users, path: '/my-hires' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/messages' },
+    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
+    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
+  ];
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -266,6 +319,11 @@ const WorkerOffers = () => {
     if (applied) {
       setAppliedOffers(JSON.parse(applied));
     }
+    // Check if sidebar state is stored
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
   }, []);
 
   useEffect(() => {
@@ -279,6 +337,22 @@ const WorkerOffers = () => {
     localStorage.setItem('homelyserv_language', newLang);
   };
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  // Fetch offers
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
@@ -509,6 +583,7 @@ const WorkerOffers = () => {
     fetchOffers();
   }, []);
 
+  // Filter and search
   useEffect(() => {
     let filtered = [...offers];
 
@@ -670,6 +745,10 @@ const WorkerOffers = () => {
     interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
   };
 
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -682,7 +761,7 @@ const WorkerOffers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-4 right-4 z-50 animate-slide-down">
@@ -704,413 +783,548 @@ const WorkerOffers = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 md:p-8 mb-8 text-white">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
-              <p className="text-red-100 mt-1">{t.subtitle}</p>
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
+          )}
+          {sidebarCollapsed && (
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">H</span>
+            </div>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* User Profile */}
+        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <User size={20} className="text-red-600" />
+            </div>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{user?.fullName || 'Ahmed Ali'}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email || 'worker@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                isActive(item.path)
+                  ? 'bg-red-50 text-red-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-200 my-3"></div>
+
+          {/* Bottom menu items */}
+          <Link
+            to="/settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+          </button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+              </button>
               <button
                 onClick={toggleLanguage}
-                className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm font-medium transition-colors hidden sm:flex items-center gap-2"
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:flex"
               >
-                {viewMode === 'grid' ? (
-                  <>
-                    <List size={16} />
-                    {t.switchToList}
-                  </>
-                ) : (
-                  <>
-                    <LayoutGrid size={16} />
-                    {t.switchToGrid}
-                  </>
-                )}
+                {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
               </button>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">{t.stats.available}</p>
-              <Zap size={20} className="text-blue-500" />
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Page Header */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">{t.title}</h1>
+                <p className="text-red-100 mt-1">{t.subtitle}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-red-100">
+                  {t.welcome}, {user?.fullName || 'Ahmed'}
+                </span>
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{stats.available}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">{t.stats.applied}</p>
-              <Clock size={20} className="text-yellow-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{stats.applied}</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">{t.stats.saved}</p>
-              <Heart size={20} className="text-red-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{stats.saved}</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">{t.stats.interviews}</p>
-              <Users size={20} className="text-purple-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
-          </div>
-        </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder={language === 'en' ? 'Search offers by title, company, or skills...' : 'ابحث عن عروض حسب العنوان أو الشركة أو المهارات...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.available}</p>
+                <Zap size={20} className="text-blue-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.available}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.applied}</p>
+                <Clock size={20} className="text-yellow-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.applied}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.saved}</p>
+                <Heart size={20} className="text-red-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.saved}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.interviews}</p>
+                <Users size={20} className="text-purple-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={language === 'en' ? 'Search offers by title, company, or skills...' : 'ابحث عن عروض حسب العنوان أو الشركة أو المهارات...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                >
+                  <option value="all">{t.filters.all}</option>
+                  <option value="new">{t.filters.new}</option>
+                  <option value="applied">{t.filters.applied}</option>
+                  <option value="saved">{t.filters.saved}</option>
+                  <option value="interview">{t.filters.interview}</option>
+                  <option value="offered">{t.filters.offered}</option>
+                  <option value="rejected">{t.filters.rejected}</option>
+                  <option value="expired">{t.filters.expired}</option>
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                >
+                  <option value="newest">{t.sort.newest}</option>
+                  <option value="oldest">{t.sort.oldest}</option>
+                  <option value="salary_high">{t.sort.salary_high}</option>
+                  <option value="salary_low">{t.sort.salary_low}</option>
+                  <option value="popular">{t.sort.popular}</option>
+                  <option value="nearby">{t.sort.nearby}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-500">
+              {language === 'en' ? 'Showing ' : 'عرض '}
+              <span className="font-semibold text-gray-700">{filteredOffers.length}</span>
+              {language === 'en' ? ' offers' : ' عرض'}
+            </p>
+          </div>
+
+          {/* Offers Grid/List */}
+          {filteredOffers.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
+              <p className="text-gray-500">{t.empty.description}</p>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setSortBy('newest');
+                }}
+                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
-                <option value="all">{t.filters.all}</option>
-                <option value="new">{t.filters.new}</option>
-                <option value="applied">{t.filters.applied}</option>
-                <option value="saved">{t.filters.saved}</option>
-                <option value="interview">{t.filters.interview}</option>
-                <option value="offered">{t.filters.offered}</option>
-                <option value="rejected">{t.filters.rejected}</option>
-                <option value="expired">{t.filters.expired}</option>
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
-              >
-                <option value="newest">{t.sort.newest}</option>
-                <option value="oldest">{t.sort.oldest}</option>
-                <option value="salary_high">{t.sort.salary_high}</option>
-                <option value="salary_low">{t.sort.salary_low}</option>
-                <option value="popular">{t.sort.popular}</option>
-                <option value="nearby">{t.sort.nearby}</option>
-              </select>
+                {t.empty.reset}
+              </button>
             </div>
-          </div>
-        </div>
-
-        {/* Results Count */}
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-sm text-gray-500">
-            {language === 'en' ? 'Showing ' : 'عرض '}
-            <span className="font-semibold text-gray-700">{filteredOffers.length}</span>
-            {language === 'en' ? ' offers' : ' عرض'}
-          </p>
-        </div>
-
-        {/* Offers Grid/List */}
-        {filteredOffers.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
-            <p className="text-gray-500">{t.empty.description}</p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setStatusFilter('all');
-                setSortBy('newest');
-              }}
-              className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              {t.empty.reset}
-            </button>
-          </div>
-        ) : (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-            : 'space-y-4'
-          }>
-            {filteredOffers.map((offer) => (
-              <div
-                key={offer.id}
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
-                  viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
-                }`}
-              >
-                <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={offer.companyLogo}
-                      alt={offer.company}
-                      className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-gray-800 truncate">{offer.title}</h3>
-                          <p className="text-sm text-gray-500">{offer.company}</p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
-                          {offer.isUrgent && (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                              {t.card.urgent}
-                            </span>
-                          )}
-                          {offer.isFeatured && (
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                              {t.card.featured}
-                            </span>
-                          )}
-                          {offer.status === 'new' && !offer.isSaved && !offer.isApplied && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                              {t.card.new}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Match Score */}
-                      <div className="mt-2 flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                offer.matchScore >= 80 ? 'bg-green-500' :
-                                offer.matchScore >= 60 ? 'bg-yellow-500' :
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${offer.matchScore}%` }}
-                            />
+          ) : (
+            <div className={viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+              : 'space-y-4'
+            }>
+              {filteredOffers.map((offer) => (
+                <div
+                  key={offer.id}
+                  className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
+                    viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
+                  }`}
+                >
+                  <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={offer.companyLogo}
+                        alt={offer.company}
+                        className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-800 truncate">{offer.title}</h3>
+                            <p className="text-sm text-gray-500">{offer.company}</p>
                           </div>
-                          <span className="text-xs font-medium text-gray-600">{offer.matchScore}%</span>
+                          <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
+                            {offer.isUrgent && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                {t.card.urgent}
+                              </span>
+                            )}
+                            {offer.isFeatured && (
+                              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                                {t.card.featured}
+                              </span>
+                            )}
+                            {offer.status === 'new' && !offer.isSaved && !offer.isApplied && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                {t.card.new}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-400">{t.card.matchScore}</span>
-                      </div>
 
-                      {/* Key Info */}
-                      <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-                          <span className="truncate">{offer.location}</span>
+                        {/* Match Score */}
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  offer.matchScore >= 80 ? 'bg-green-500' :
+                                  offer.matchScore >= 60 ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${offer.matchScore}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-gray-600">{offer.matchScore}%</span>
+                          </div>
+                          <span className="text-xs text-gray-400">{t.card.matchScore}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <DollarSign size={14} className="text-gray-400 flex-shrink-0" />
-                          <span>EGP {formatSalary(offer.salary)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <Briefcase size={14} className="text-gray-400 flex-shrink-0" />
-                          <span>{offer.type}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <Clock size={14} className="text-gray-400 flex-shrink-0" />
-                          <span>{formatDate(offer.postedAt)}</span>
-                        </div>
-                      </div>
 
-                      {/* Status Badges */}
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
-                          {getStatusIcon(offer.status)}
-                          {getStatusLabel(offer.status)}
-                        </span>
-                        {offer.applicationStatus && (
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getApplicationStatusColor(offer.applicationStatus.status)}`}>
-                            {getApplicationStatusLabel(offer.applicationStatus.status)}
-                          </span>
-                        )}
-                        {offer.isApplied && (
-                          <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
-                            <CheckCircle size={12} />
-                            {t.card.applied}
-                          </span>
-                        )}
-                        {offer.isSaved && !offer.isApplied && (
-                          <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
-                            <Heart size={12} className="fill-current" />
-                            {t.card.saved}
-                          </span>
-                        )}
-                        <span className="text-xs text-gray-400">{offer.applicants} {t.card.applicants}</span>
-                      </div>
+                        {/* Key Info */}
+                        <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{offer.location}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <DollarSign size={14} className="text-gray-400 flex-shrink-0" />
+                            <span>EGP {formatSalary(offer.salary)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Briefcase size={14} className="text-gray-400 flex-shrink-0" />
+                            <span>{offer.type}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                            <span>{formatDate(offer.postedAt)}</span>
+                          </div>
+                        </div>
 
-                      {/* Action Buttons */}
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => toggleExpand(offer.id)}
-                          className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                        >
-                          <Eye size={16} />
-                          {t.card.viewDetails}
-                        </button>
-                        {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
+                        {/* Status Badges */}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
+                            {getStatusIcon(offer.status)}
+                            {getStatusLabel(offer.status)}
+                          </span>
+                          {offer.applicationStatus && (
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getApplicationStatusColor(offer.applicationStatus.status)}`}>
+                              {getApplicationStatusLabel(offer.applicationStatus.status)}
+                            </span>
+                          )}
+                          {offer.isApplied && (
+                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
+                              <CheckCircle size={12} />
+                              {t.card.applied}
+                            </span>
+                          )}
+                          {offer.isSaved && !offer.isApplied && (
+                            <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
+                              <Heart size={12} className="fill-current" />
+                              {t.card.saved}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">{offer.applicants} {t.card.applicants}</span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
-                            onClick={() => handleApply(offer.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
+                            onClick={() => toggleExpand(offer.id)}
+                            className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
                           >
-                            <BriefcaseIcon size={14} />
-                            {t.card.applyNow}
+                            <Eye size={16} />
+                            {t.card.viewDetails}
                           </button>
-                        )}
-                        {offer.isApplied && (
-                          <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                            <CheckCircle size={16} />
-                            {t.actions.applied}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => toggleSaveOffer(offer.id)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            offer.isSaved
-                              ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                          }`}
-                        >
-                          <Heart size={18} className={offer.isSaved ? 'fill-current' : ''} />
-                        </button>
-                        <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                          <Share2 size={18} />
-                        </button>
+                          {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
+                            <button
+                              onClick={() => handleApply(offer.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
+                            >
+                              <BriefcaseIcon size={14} />
+                              {t.card.applyNow}
+                            </button>
+                          )}
+                          {offer.isApplied && (
+                            <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                              <CheckCircle size={16} />
+                              {t.actions.applied}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => toggleSaveOffer(offer.id)}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              offer.isSaved
+                                ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                            }`}
+                          >
+                            <Heart size={18} className={offer.isSaved ? 'fill-current' : ''} />
+                          </button>
+                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                            <Share2 size={18} />
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Expanded Details */}
+                    {expandedOffer === offer.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.about}</h4>
+                            <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
+                            
+                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.requirements}</h5>
+                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside mb-3">
+                              {offer.requirements.map((req, idx) => (
+                                <li key={idx}>{req}</li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.responsibilities}</h5>
+                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside">
+                              {offer.responsibilities.map((resp, idx) => (
+                                <li key={idx}>{resp}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.benefits}</h4>
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              {offer.benefits.map((benefit, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+                                  {benefit}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="space-y-1.5 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">{t.details.contractType}</span>
+                                <span className="font-medium">{offer.contractType}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">{t.details.workSchedule}</span>
+                                <span className="font-medium">{offer.workSchedule}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">{t.details.startDate}</span>
+                                <span className="font-medium">{new Date(offer.startDate).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">{t.details.applicationDeadline}</span>
+                                <span className="font-medium text-red-600">{new Date(offer.deadline).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                              <h5 className="font-semibold text-gray-700 text-sm mb-1">{t.details.company}</h5>
+                              <p className="text-sm text-gray-600">{offer.companyInfo.description}</p>
+                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                                <span>{offer.companyInfo.industry}</span>
+                                <span>•</span>
+                                <span>{offer.companyInfo.size}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
+                            <button
+                              onClick={() => handleApply(offer.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                            >
+                              <BriefcaseIcon size={18} />
+                              {t.actions.apply}
+                            </button>
+                          )}
+                          {offer.isApplied && (
+                            <span className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                              <CheckCircle size={18} />
+                              {t.actions.applied}
+                            </span>
+                          )}
+                          <button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                            <MessageCircle size={18} />
+                            {language === 'en' ? 'Contact' : 'اتصال'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Expanded Details */}
-                  {expandedOffer === offer.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-semibold text-gray-700 mb-2">{t.details.about}</h4>
-                          <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
-                          
-                          <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.requirements}</h5>
-                          <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside mb-3">
-                            {offer.requirements.map((req, idx) => (
-                              <li key={idx}>{req}</li>
-                            ))}
-                          </ul>
-
-                          <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.responsibilities}</h5>
-                          <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside">
-                            {offer.responsibilities.map((resp, idx) => (
-                              <li key={idx}>{resp}</li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        <div>
-                          <h4 className="font-semibold text-gray-700 mb-2">{t.details.benefits}</h4>
-                          <div className="flex flex-wrap gap-1.5 mb-3">
-                            {offer.benefits.map((benefit, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
-                                {benefit}
-                              </span>
-                            ))}
-                          </div>
-
-                          <div className="space-y-1.5 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">{t.details.contractType}</span>
-                              <span className="font-medium">{offer.contractType}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">{t.details.workSchedule}</span>
-                              <span className="font-medium">{offer.workSchedule}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">{t.details.startDate}</span>
-                              <span className="font-medium">{new Date(offer.startDate).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">{t.details.applicationDeadline}</span>
-                              <span className="font-medium text-red-600">{new Date(offer.deadline).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                            <h5 className="font-semibold text-gray-700 text-sm mb-1">{t.details.company}</h5>
-                            <p className="text-sm text-gray-600">{offer.companyInfo.description}</p>
-                            <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                              <span>{offer.companyInfo.industry}</span>
-                              <span>•</span>
-                              <span>{offer.companyInfo.size}</span>
-                            </div>
-                          </div>
-                        </div>
+                  {viewMode === 'list' && (
+                    <div className="md:w-48 bg-gray-50 p-4 border-t md:border-t-0 md:border-l border-gray-100 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-3">
+                      <div className="text-center md:text-left">
+                        <p className="text-xs text-gray-500">{t.card.salaryPerMonth}</p>
+                        <p className="font-bold text-gray-800 text-lg">
+                          EGP {formatSalary(offer.salary)}
+                        </p>
                       </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
-                          <button
-                            onClick={() => handleApply(offer.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            <BriefcaseIcon size={18} />
-                            {t.actions.apply}
-                          </button>
-                        )}
-                        {offer.isApplied && (
-                          <span className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                            <CheckCircle size={18} />
-                            {t.actions.applied}
-                          </span>
-                        )}
-                        <button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                          <MessageCircle size={18} />
-                          {language === 'en' ? 'Contact' : 'اتصال'}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => toggleExpand(offer.id)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        {expandedOffer === offer.id ? (language === 'en' ? 'Hide Details' : 'إخفاء التفاصيل') : (language === 'en' ? 'View Details' : 'عرض التفاصيل')}
+                        {expandedOffer === offer.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
                     </div>
                   )}
                 </div>
+              ))}
+            </div>
+          )}
 
-                {viewMode === 'list' && (
-                  <div className="md:w-48 bg-gray-50 p-4 border-t md:border-t-0 md:border-l border-gray-100 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-3">
-                    <div className="text-center md:text-left">
-                      <p className="text-xs text-gray-500">{t.card.salaryPerMonth}</p>
-                      <p className="font-bold text-gray-800 text-lg">
-                        EGP {formatSalary(offer.salary)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleExpand(offer.id)}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
-                    >
-                      {expandedOffer === offer.id ? (language === 'en' ? 'Hide Details' : 'إخفاء التفاصيل') : (language === 'en' ? 'View Details' : 'عرض التفاصيل')}
-                      {expandedOffer === offer.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Load More */}
-        {filteredOffers.length > 0 && filteredOffers.length < offers.length && (
-          <div className="mt-8 text-center">
-            <button className="px-8 py-3 border border-gray-300 hover:border-red-300 text-gray-700 hover:text-red-600 rounded-lg font-medium transition-colors">
-              {t.actions.loadMore}
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Load More */}
+          {filteredOffers.length > 0 && filteredOffers.length < offers.length && (
+            <div className="mt-6 text-center">
+              <button className="px-8 py-3 border border-gray-300 hover:border-red-300 text-gray-700 hover:text-red-600 rounded-lg font-medium transition-colors">
+                {t.actions.loadMore}
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
 
       {/* Apply Modal */}
       {showApplyModal && selectedOffer && (
