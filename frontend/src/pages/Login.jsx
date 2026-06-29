@@ -11,7 +11,6 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
-  const [role, setRole] = useState('WORKER'); // Default role
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -36,7 +35,7 @@ function Login() {
         } else if (user.role === 'EMPLOYER') {
           navigate('/employer-dashboard');
         } else if (user.role === 'WORKER') {
-          navigate('/worker/offers');
+          navigate('/worker-dashboard');
         } else {
           navigate('/dashboard');
         }
@@ -52,7 +51,7 @@ function Login() {
     setLoading(true);
 
     try {
-      console.log('🔄 Attempting login with:', { email, role });
+      console.log('🔄 Attempting login with:', { email });
       
       const response = await axios.post(`${API_URL}/auth/login`, { 
         email, 
@@ -78,7 +77,7 @@ function Login() {
         } else if (user.role === 'EMPLOYER') {
           navigate('/employer-dashboard');
         } else if (user.role === 'WORKER') {
-          navigate('/worker/offers');
+          navigate('/worker-dashboard'); // Redirect to Worker Dashboard
         } else {
           navigate('/dashboard');
         }
@@ -147,8 +146,10 @@ function Login() {
         navigate('/admin');
       } else if (user.role === 'EMPLOYER') {
         navigate('/employer-dashboard');
+      } else if (user.role === 'WORKER') {
+        navigate('/worker-dashboard'); // Redirect to Worker Dashboard
       } else {
-        navigate('/worker/offers');
+        navigate('/dashboard');
       }
       
       setLoading(false);
