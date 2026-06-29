@@ -29,6 +29,7 @@ function Login() {
     if (token && userData) {
       try {
         const user = JSON.parse(userData);
+        console.log('🔄 User already logged in:', user.fullName);
         // Redirect based on role
         if (user.role === 'ADMIN') {
           navigate('/admin');
@@ -45,6 +46,7 @@ function Login() {
     }
   }, [navigate]);
 
+  // Handle form submission with backend
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -64,7 +66,7 @@ function Login() {
         const user = response.data.user;
         const token = response.data.token;
         
-        // Store with correct keys for your app
+        // Store with correct keys
         localStorage.setItem('homelyserv_token', token);
         localStorage.setItem('homelyserv_user', JSON.stringify(user));
         
@@ -72,88 +74,96 @@ function Login() {
         console.log('✅ User role:', user.role);
 
         // Redirect based on role
-        if (user.role === 'ADMIN') {
-          navigate('/admin');
-        } else if (user.role === 'EMPLOYER') {
-          navigate('/employer-dashboard');
-        } else if (user.role === 'WORKER') {
-          navigate('/worker-dashboard'); // Redirect to Worker Dashboard
-        } else {
-          navigate('/dashboard');
-        }
+        redirectUser(user);
       } else {
         setError(response.data.message || 'Login failed');
+        setLoading(false);
       }
     } catch (err) {
       console.error('❌ Login error:', err);
       setError(err.response?.data?.message || 'Server error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
 
-  // Demo login for testing without backend
+  // Redirect function
+  const redirectUser = (user) => {
+    setLoading(false);
+    if (user.role === 'ADMIN') {
+      navigate('/admin');
+    } else if (user.role === 'EMPLOYER') {
+      navigate('/employer-dashboard');
+    } else if (user.role === 'WORKER') {
+      navigate('/worker-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  // Demo login - THIS IS THE FIX
   const handleDemoLogin = (demoRole) => {
-    setLoading(true);
+    console.log('🔄 Demo login clicked for role:', demoRole);
     setError('');
+    setLoading(true);
 
+    // Create user data based on role
+    let user = {};
+    let token = '';
+
+    if (demoRole === 'WORKER') {
+      user = {
+        id: 'worker_001',
+        fullName: 'Ahmed Ali',
+        email: 'worker@homelyserv.com',
+        role: 'WORKER',
+        profileComplete: true,
+        phone: '+201234567890',
+        location: 'Cairo, Egypt'
+      };
+      token = 'demo_worker_token_12345';
+    } else if (demoRole === 'EMPLOYER') {
+      user = {
+        id: 'employer_001',
+        fullName: 'Sara Mohamed',
+        email: 'employer@homelyserv.com',
+        role: 'EMPLOYER',
+        companyName: 'Elite Family Services',
+        phone: '+201234567891',
+        location: 'Cairo, Egypt'
+      };
+      token = 'demo_employer_token_12345';
+    } else if (demoRole === 'ADMIN') {
+      user = {
+        id: 'admin_001',
+        fullName: 'Admin User',
+        email: 'admin@homelyserv.com',
+        role: 'ADMIN',
+        phone: '+201234567892'
+      };
+      token = 'demo_admin_token_12345';
+    }
+
+    // Store in localStorage
+    localStorage.setItem('homelyserv_token', token);
+    localStorage.setItem('homelyserv_user', JSON.stringify(user));
+    
+    console.log('✅ Demo login successful:', user.fullName);
+    console.log('✅ User role:', user.role);
+    console.log('✅ Token stored:', token);
+    
+    // Redirect after a small delay
     setTimeout(() => {
-      let user = {};
-      let token = '';
-
-      if (demoRole === 'WORKER') {
-        user = {
-          id: 'worker_001',
-          fullName: 'Ahmed Ali',
-          email: 'worker@homelyserv.com',
-          role: 'WORKER',
-          profileComplete: true,
-          phone: '+201234567890',
-          location: 'Cairo, Egypt'
-        };
-        token = 'demo_worker_token_12345';
-      } else if (demoRole === 'EMPLOYER') {
-        user = {
-          id: 'employer_001',
-          fullName: 'Sara Mohamed',
-          email: 'employer@homelyserv.com',
-          role: 'EMPLOYER',
-          companyName: 'Elite Family Services',
-          phone: '+201234567891',
-          location: 'Cairo, Egypt'
-        };
-        token = 'demo_employer_token_12345';
-      } else if (demoRole === 'ADMIN') {
-        user = {
-          id: 'admin_001',
-          fullName: 'Admin User',
-          email: 'admin@homelyserv.com',
-          role: 'ADMIN',
-          phone: '+201234567892'
-        };
-        token = 'demo_admin_token_12345';
-      }
-
-      // Store with correct keys
-      localStorage.setItem('homelyserv_token', token);
-      localStorage.setItem('homelyserv_user', JSON.stringify(user));
-      
-      console.log('✅ Demo login successful:', user.fullName);
-      console.log('✅ User role:', user.role);
-
-      // Redirect based on role
+      setLoading(false);
       if (user.role === 'ADMIN') {
         navigate('/admin');
       } else if (user.role === 'EMPLOYER') {
         navigate('/employer-dashboard');
       } else if (user.role === 'WORKER') {
-        navigate('/worker-dashboard'); // Redirect to Worker Dashboard
+        navigate('/worker-dashboard');
       } else {
         navigate('/dashboard');
       }
-      
-      setLoading(false);
-    }, 800);
+    }, 300);
   };
 
   return (
@@ -203,6 +213,43 @@ function Login() {
               <AlertCircle size={16} /> {error}
             </div>
           )}
+
+          {/* Demo Login Buttons - Moved to top for easy access */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-xs text-gray-600 text-center mb-3 font-medium">🚀 Quick Demo Login (No backend required)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleDemoLogin('WORKER')}
+                disabled={loading}
+                className="px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition flex items-center justify-center gap-1"
+              >
+                {loading ? '...' : '👤 Worker'}
+              </button>
+              <button
+                onClick={() => handleDemoLogin('EMPLOYER')}
+                disabled={loading}
+                className="px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition flex items-center justify-center gap-1"
+              >
+                {loading ? '...' : '🏢 Employer'}
+              </button>
+              <button
+                onClick={() => handleDemoLogin('ADMIN')}
+                disabled={loading}
+                className="px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition flex items-center justify-center gap-1"
+              >
+                {loading ? '...' : '🔐 Admin'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Click any button to instantly login without credentials
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 border-t border-gray-200"></div>
+            <span className="text-sm text-gray-400">Or login with email</span>
+            <div className="flex-1 border-t border-gray-200"></div>
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -294,34 +341,6 @@ function Login() {
               Create one
             </Link>
           </p>
-
-          {/* Demo Login Buttons */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-400 text-center mb-3">⚠️ Demo Login (No backend required)</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => handleDemoLogin('WORKER')}
-                disabled={loading}
-                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition border border-blue-200"
-              >
-                👤 Worker
-              </button>
-              <button
-                onClick={() => handleDemoLogin('EMPLOYER')}
-                disabled={loading}
-                className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium rounded-lg transition border border-green-200"
-              >
-                🏢 Employer
-              </button>
-              <button
-                onClick={() => handleDemoLogin('ADMIN')}
-                disabled={loading}
-                className="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium rounded-lg transition border border-purple-200"
-              >
-                🔐 Admin
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
