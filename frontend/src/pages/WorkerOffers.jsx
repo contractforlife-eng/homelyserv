@@ -37,7 +37,9 @@ import {
   Shield,
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3,
+  FileCheck
 } from 'lucide-react';
 
 const WorkerOffers = () => {
@@ -173,7 +175,9 @@ const WorkerOffers = () => {
         note: 'You will be notified about the application status via email.'
       },
       welcome: 'Welcome back',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      overview: 'Overview',
+      findJobs: 'Find Jobs'
     },
     ar: {
       title: 'عروض العمل',
@@ -285,18 +289,20 @@ const WorkerOffers = () => {
         note: 'سيتم إعلامك بحالة الطلب عبر البريد الإلكتروني.'
       },
       welcome: 'مرحباً بعودتك',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      overview: 'نظرة عامة',
+      findJobs: 'البحث عن وظائف'
     }
   };
 
   const t = translations[language];
 
-  // Dashboard menu items
+  // Dashboard menu items with icons
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'hires', label: t.myHires, icon: Users, path: '/my-hires' },
+    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/messages' },
     { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
     { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
@@ -319,7 +325,6 @@ const WorkerOffers = () => {
     if (applied) {
       setAppliedOffers(JSON.parse(applied));
     }
-    // Check if sidebar state is stored
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -791,7 +796,7 @@ const WorkerOffers = () => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed left navigation */}
       <aside 
         className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
@@ -800,17 +805,17 @@ const WorkerOffers = () => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
+            <Link to="/dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
-            </div>
+            </Link>
           )}
           {sidebarCollapsed && (
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+            <Link to="/dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
               <span className="text-white font-bold text-sm">H</span>
-            </div>
+            </Link>
           )}
           <button
             onClick={toggleSidebar}
@@ -841,13 +846,25 @@ const WorkerOffers = () => {
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation Menu */}
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {/* Overview Section */}
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
           {menuItems.map((item) => (
             <Link
               key={item.id}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
                   ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
@@ -860,38 +877,62 @@ const WorkerOffers = () => {
                   {item.label}
                 </div>
               )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+              )}
             </Link>
           ))}
 
           <div className="border-t border-gray-200 my-3"></div>
 
           {/* Bottom menu items */}
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.settings}
+            </div>
+          )}
+          
           <Link
             to="/settings"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
             <Settings size={20} />
             {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
           </Link>
           <Link
             to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
             <HelpCircle size={20} />
             {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
             <LogOut size={20} />
             {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.logout}
+              </div>
+            )}
           </button>
         </nav>
       </aside>
