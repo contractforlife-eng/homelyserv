@@ -15,20 +15,14 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid,
-  List,
   Zap,
   Clock,
   Users,
   Heart,
   TrendingUp,
-  Award,
-  Shield,
-  BarChart3,
-  DollarSign,
-  Star,
   Globe,
-  X
+  X,
+  CheckCircle
 } from 'lucide-react';
 
 // Sidebar Component
@@ -77,7 +71,7 @@ const WorkerSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker-offers' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
@@ -238,12 +232,12 @@ const WorkerDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
-    totalApplications: 0,
-    activeOffers: 0,
-    interviews: 0,
-    savedJobs: 0,
-    profileViews: 0,
-    messages: 0
+    totalApplications: 12,
+    activeOffers: 5,
+    interviews: 3,
+    savedJobs: 8,
+    profileViews: 45,
+    messages: 7
   });
 
   const translations = {
@@ -298,15 +292,19 @@ const WorkerDashboard = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
+    
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        console.log('✅ User loaded in dashboard:', parsedUser.fullName);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
       }
     } else {
+      console.log('❌ No user data found, redirecting to login');
       navigate('/login');
     }
 
@@ -323,18 +321,6 @@ const WorkerDashboard = () => {
       } catch (error) {
         console.error('Error parsing stats:', error);
       }
-    } else {
-      // Set demo stats
-      const demoStats = {
-        totalApplications: 12,
-        activeOffers: 5,
-        interviews: 3,
-        savedJobs: 8,
-        profileViews: 45,
-        messages: 7
-      };
-      setStats(demoStats);
-      localStorage.setItem('worker_stats', JSON.stringify(demoStats));
     }
   }, [navigate]);
 
@@ -433,7 +419,7 @@ const WorkerDashboard = () => {
               </div>
               <div className="flex gap-3">
                 <Link
-                  to="/worker-offers"
+                  to="/worker/offers"
                   className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Briefcase size={16} />
@@ -501,14 +487,14 @@ const WorkerDashboard = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Link
-                to="/worker-offers"
+                to="/worker/offers"
                 className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
               >
                 <Briefcase size={20} className="text-blue-600" />
                 <span className="font-medium text-blue-700">{t.findJobs}</span>
               </Link>
               <Link
-                to="/worker-offers"
+                to="/worker/offers"
                 className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
               >
                 <FileCheck size={20} className="text-green-600" />
