@@ -6,7 +6,8 @@ import {
   TrendingUp, Award, Shield, Star, Calendar, Users,
   DollarSign, MapPin, Phone, Mail, AlertCircle,
   Activity, PieChart, BarChart3, Sparkles, Zap,
-  ThumbsUp, ThumbsDown, Heart, Share2, Bookmark
+  ThumbsUp, ThumbsDown, Heart, Share2, Bookmark,
+  ChevronRight
 } from 'lucide-react';
 
 function WorkerDashboard() {
@@ -77,7 +78,7 @@ function WorkerDashboard() {
       </div>
 
       <div className="flex">
-        {/* Sidebar - Modern Glass Effect */}
+        {/* Sidebar */}
         <div className="hidden md:block w-72 bg-white/80 backdrop-blur-xl shadow-lg border-r border-gray-100 min-h-screen fixed">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -165,7 +166,7 @@ function WorkerDashboard() {
           </header>
 
           <div className="p-4 md:p-8">
-            {/* Stats Cards - Modern Grid */}
+            {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
                 <div className="flex items-center justify-between">
