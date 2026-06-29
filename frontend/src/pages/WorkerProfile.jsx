@@ -1,110 +1,379 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  User, Mail, Phone, MapPin, Briefcase, Calendar, 
-  Star, CheckCircle, XCircle, Clock, Edit, Save, 
-  X, Camera, Shield, Award, FileText, Download,
-  ArrowLeft, AlertCircle, Plus, Trash2
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  Edit,
+  Save,
+  X,
+  Camera,
+  Globe,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  FileCheck,
+  MessageCircle,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Star,
+  Award,
+  Clock,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 
-function WorkerProfile() {
+// Sidebar Component
+const WorkerSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
+
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myOffers: 'My Offers',
+      messages: 'Messages',
+      calendar: 'Calendar',
+      documents: 'Documents',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myOffers: 'عروضي',
+      messages: 'الرسائل',
+      calendar: 'التقويم',
+      documents: 'المستندات',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
+    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
+    { id: 'documents', label: t.documents, icon: FileCheck, path: '/documents' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <Link to="/worker-dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <User size={20} className="text-red-600" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-red-50 text-red-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-200 my-3"></div>
+
+          <Link
+            to="/worker-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.logout}
+              </div>
+            )}
+          </button>
+        </nav>
+      </aside>
+    </>
+  );
+};
+
+// Main WorkerProfile Component
+const WorkerProfile = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
+  const location = useLocation();
+  const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-  
-  const [profile, setProfile] = useState({
+  const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    city: '',
-    age: 28,
-    role: 'worker',
-    category: 'Nanny',
-    experience: 5,
-    salary: 3500,
-    availability: 'Available',
-    workType: 'Full-Time',
+    location: '',
     bio: '',
-    skills: ['Childcare', 'First Aid', 'Teaching'],
-    rating: 4.9,
-    performance: 4.8,
-    honesty: 4.9,
-    speed: 4.7,
-    accuracy: 4.8,
-    image: '',
-    documents: [
-      { name: 'ID Card.pdf', type: 'Identity', size: '2.4 MB', verified: true },
-      { name: 'Certificate.pdf', type: 'Professional', size: '1.8 MB', verified: true }
-    ]
+    skills: [],
+    experience: '',
+    hourlyRate: ''
   });
-
-  const [editData, setEditData] = useState(profile);
   const [newSkill, setNewSkill] = useState('');
 
+  const translations = {
+    en: {
+      title: 'My Profile',
+      subtitle: 'Manage your personal information and preferences',
+      personalInfo: 'Personal Information',
+      fullName: 'Full Name',
+      email: 'Email Address',
+      phone: 'Phone Number',
+      location: 'Location',
+      bio: 'About Me',
+      skills: 'Skills',
+      experience: 'Years of Experience',
+      hourlyRate: 'Hourly Rate (EGP)',
+      editProfile: 'Edit Profile',
+      saveChanges: 'Save Changes',
+      cancel: 'Cancel',
+      addSkill: 'Add Skill',
+      profileComplete: 'Profile Complete',
+      memberSince: 'Member Since',
+      rating: 'Rating',
+      jobsCompleted: 'Jobs Completed',
+      languages: 'Languages',
+      notifications: 'Notifications',
+      languageToggle: 'العربية'
+    },
+    ar: {
+      title: 'ملفي الشخصي',
+      subtitle: 'إدارة معلوماتك الشخصية وتفضيلاتك',
+      personalInfo: 'المعلومات الشخصية',
+      fullName: 'الاسم الكامل',
+      email: 'البريد الإلكتروني',
+      phone: 'رقم الهاتف',
+      location: 'الموقع',
+      bio: 'عني',
+      skills: 'المهارات',
+      experience: 'سنوات الخبرة',
+      hourlyRate: 'السعر بالساعة (جنيه)',
+      editProfile: 'تعديل الملف',
+      saveChanges: 'حفظ التغييرات',
+      cancel: 'إلغاء',
+      addSkill: 'إضافة مهارة',
+      profileComplete: 'الملف مكتمل',
+      memberSince: 'عضو منذ',
+      rating: 'التقييم',
+      jobsCompleted: 'الوظائف المكتملة',
+      languages: 'اللغات',
+      notifications: 'الإشعارات',
+      languageToggle: 'English'
+    }
+  };
+
+  const t = translations[language];
+
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      const profileData = {
-        ...profile,
-        fullName: parsed.fullName || '',
-        email: parsed.email || '',
-        phone: parsed.phone || '',
-        city: parsed.city || '',
-        image: parsed.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
-      };
-      setProfile(profileData);
-      setEditData(profileData);
-      setLoading(false);
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setFormData({
+          fullName: parsedUser.fullName || '',
+          email: parsedUser.email || '',
+          phone: parsedUser.phone || '',
+          location: parsedUser.location || '',
+          bio: parsedUser.bio || 'Experienced professional in home services.',
+          skills: parsedUser.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: parsedUser.experience || '3 years',
+          hourlyRate: parsedUser.hourlyRate || '35'
+        });
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
     } else {
       navigate('/login');
     }
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
   }, [navigate]);
 
-  const handlePhotoClick = () => {
-    fileInputRef.current?.click();
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
   };
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditData(prev => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
   };
 
-  const handleSave = () => {
-    setError('');
-    
-    if (!editData.fullName.trim()) {
-      setError('Full name is required');
-      return;
-    }
-    
-    setProfile(editData);
-    
-    if (user) {
-      const updatedUser = { ...user, ...editData };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-    }
-    
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleAddSkill = () => {
-    if (newSkill.trim() && !editData.skills.includes(newSkill.trim())) {
-      setEditData(prev => ({
+    if (newSkill.trim()) {
+      setFormData(prev => ({
         ...prev,
         skills: [...prev.skills, newSkill.trim()]
       }));
@@ -113,16 +382,37 @@ function WorkerProfile() {
   };
 
   const handleRemoveSkill = (skillToRemove) => {
-    setEditData(prev => ({
+    setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(s => s !== skillToRemove)
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
     }));
   };
 
-  if (loading) {
+  const handleSave = () => {
+    // Save to localStorage
+    const updatedUser = {
+      ...user,
+      fullName: formData.fullName,
+      phone: formData.phone,
+      location: formData.location,
+      bio: formData.bio,
+      skills: formData.skills,
+      experience: formData.experience,
+      hourlyRate: formData.hourlyRate
+    };
+    localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    setIsEditing(false);
+    alert('Profile updated successfully!');
+  };
+
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -130,310 +420,300 @@ function WorkerProfile() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
-          <p className="text-xs text-gray-500 mt-1">Worker Panel</p>
-        </div>
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">
-              {user?.fullName?.charAt(0) || 'U'}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">{user?.fullName || 'User'}</p>
-              <p className="text-xs text-gray-500">Worker</p>
-            </div>
-          </div>
-        </div>
-        <nav className="p-4 space-y-1">
-          <Link to="/worker-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Home size={20} /> Dashboard
-          </Link>
-          <Link to="/worker-offers" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Briefcase size={20} /> Offers
-          </Link>
-          <Link to="/worker-profile" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
-            <User size={20} /> Profile
-          </Link>
-          <Link to="/worker-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <AlertCircle size={20} /> Complaints
-          </Link>
-          <Link to="/worker-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <MessageCircle size={20} /> Messages
-          </Link>
-          <Link to="/worker-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Settings size={20} /> Settings
-          </Link>
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
-            <LogOut size={20} /> Logout
-          </button>
-        </div>
-      </div>
+      <WorkerSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
       {/* Main Content */}
-      <div className="ml-64 flex-1">
-        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">My Profile</h2>
-              <p className="text-gray-500 text-sm">View and edit your profile</p>
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+              </div>
             </div>
-            <div className="flex gap-3">
-              {saved && (
-                <span className="text-sm text-green-600 flex items-center gap-1">
-                  <CheckCircle size={16} /> Saved!
-                </span>
-              )}
-              {isEditing ? (
-                <>
-                  <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                    <Save size={18} /> Save
-                  </button>
-                  <button onClick={() => { setIsEditing(false); setEditData(profile); }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
-                    <X size={18} /> Cancel
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
-                  <Edit size={18} /> Edit Profile
-                </button>
-              )}
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
+              </button>
             </div>
           </div>
         </header>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
-              <AlertCircle size={18} /> {error}
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Profile Header */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">{t.title}</h1>
+                <p className="text-red-100 mt-1">{t.subtitle}</p>
+              </div>
+              <button
+                onClick={handleEditToggle}
+                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                {isEditing ? <X size={16} /> : <Edit size={16} />}
+                {isEditing ? t.cancel : t.editProfile}
+              </button>
             </div>
-          )}
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Profile Info */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-4">
-                {/* Profile Image */}
-                <div className="relative">
-                  <img 
-                    src={editData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'} 
-                    alt={editData.fullName} 
-                    className="w-full rounded-lg object-cover aspect-square"
-                    onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
-                    }}
-                  />
-                  <button 
-                    onClick={handlePhotoClick}
-                    className="absolute bottom-3 right-3 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition shadow-lg"
-                    title="Change Photo"
-                  >
-                    <Camera size={18} />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Name & Rating */}
-                <div className="mt-4">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.fullName}
-                      onChange={(e) => setEditData({...editData, fullName: e.target.value})}
-                      className="text-2xl font-bold text-gray-800 w-full px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                    />
-                  ) : (
-                    <h2 className="text-2xl font-bold text-gray-800">{editData.fullName}</h2>
-                  )}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-800">Worker</span>
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{editData.rating}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">{editData.category} • {editData.age} years old</p>
-                </div>
-
-                {/* Ratings */}
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-gray-500">Performance</p>
-                    <p className="font-bold text-gray-800">{editData.performance}</p>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-gray-500">Honesty</p>
-                    <p className="font-bold text-gray-800">{editData.honesty}</p>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-gray-500">Speed</p>
-                    <p className="font-bold text-gray-800">{editData.speed}</p>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-gray-500">Accuracy</p>
-                    <p className="font-bold text-gray-800">{editData.accuracy}</p>
-                  </div>
-                </div>
-
-                {/* Quick Info */}
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin size={16} className="text-gray-400" />
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.city}
-                        onChange={(e) => setEditData({...editData, city: e.target.value})}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
-                      />
-                    ) : (
-                      <span>{editData.city}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Phone size={16} className="text-gray-400" />
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={editData.phone}
-                        onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
-                      />
-                    ) : (
-                      <span>{editData.phone}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail size={16} className="text-gray-400" />
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        value={editData.email}
-                        onChange={(e) => setEditData({...editData, email: e.target.value})}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
-                      />
-                    ) : (
-                      <span>{editData.email}</span>
-                    )}
-                  </div>
-                </div>
+          {/* Profile Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.memberSince}</p>
+                <Calendar size={20} className="text-blue-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">June 2025</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.rating}</p>
+                <Star size={20} className="text-yellow-500" />
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-lg font-bold text-gray-800">4.8</span>
+                <span className="text-sm text-gray-400">/ 5.0</span>
               </div>
             </div>
-
-            {/* Right Column - Details */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                {/* Bio */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">About</h3>
-                  {isEditing ? (
-                    <textarea
-                      value={editData.bio}
-                      onChange={(e) => setEditData({...editData, bio: e.target.value})}
-                      rows="3"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-                    />
-                  ) : (
-                    <p className="text-gray-600">{editData.bio || 'No bio provided'}</p>
-                  )}
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.jobsCompleted}</p>
+                <CheckCircle size={20} className="text-green-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">24</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.profileComplete}</p>
+                <Award size={20} className="text-purple-500" />
+              </div>
+              <div className="mt-1">
+                <div className="w-full h-2 bg-gray-200 rounded-full">
+                  <div className="h-2 bg-purple-500 rounded-full" style={{ width: '85%' }}></div>
                 </div>
-
-                {/* Skills */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">Skills</h3>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {editData.skills.map((skill, i) => (
-                          <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm flex items-center gap-1">
-                            {skill}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSkill(skill)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X size={14} />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newSkill}
-                          onChange={(e) => setNewSkill(e.target.value)}
-                          placeholder="Add a skill..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddSkill}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {editData.skills.map((skill, i) => (
-                        <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Documents */}
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Documents</h3>
-                  <div className="space-y-2">
-                    {editData.documents.map((doc, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <FileText size={20} className="text-red-600" />
-                          <div>
-                            <p className="font-medium text-gray-800">{doc.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                              <span>{doc.type}</span>
-                              <span>{doc.size}</span>
-                              {doc.verified ? (
-                                <span className="text-green-600 flex items-center gap-1">
-                                  <CheckCircle size={12} /> Verified
-                                </span>
-                              ) : (
-                                <span className="text-yellow-600 flex items-center gap-1">
-                                  <Clock size={12} /> Pending
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 transition">
-                          <Download size={18} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <span className="text-xs text-gray-500 mt-1">85%</span>
               </div>
             </div>
           </div>
+
+          {/* Profile Form */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
+                <div className="relative">
+                  <User size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    disabled
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-100 bg-gray-50 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.phone}</label>
+                <div className="relative">
+                  <Phone size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
+                <div className="relative">
+                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Experience */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.experience}</label>
+                <div className="relative">
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    name="experience"
+                    value={formData.experience}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Hourly Rate */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.hourlyRate}</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-400">EGP</span>
+                  <input
+                    type="text"
+                    name="hourlyRate"
+                    value={formData.hourlyRate}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.bio}</label>
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  rows="3"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                    isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                  }`}
+                />
+              </div>
+
+              {/* Skills */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.skills}</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {formData.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm flex items-center gap-1"
+                    >
+                      {skill}
+                      {isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSkill(skill)}
+                          className="hover:text-red-900"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                {isEditing && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      placeholder={t.addSkill}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSkill}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                    >
+                      {t.addSkill}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            {isEditing && (
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                >
+                  <Save size={18} />
+                  {t.saveChanges}
+                </button>
+                <button
+                  onClick={handleEditToggle}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
 
 export default WorkerProfile;
