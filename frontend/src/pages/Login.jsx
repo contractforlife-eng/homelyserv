@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle } from 'lucide-react';
 import axios from 'axios';
@@ -11,6 +11,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
+  const [role, setRole] = useState('WORKER'); // Default role
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -22,32 +23,136 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('homelyserv_token');
+    const userData = localStorage.getItem('homelyserv_user');
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData);
+        // Redirect based on role
+        if (user.role === 'ADMIN') {
+          navigate('/admin');
+        } else if (user.role === 'EMPLOYER') {
+          navigate('/employer-dashboard');
+        } else if (user.role === 'WORKER') {
+          navigate('/worker/offers');
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      console.log('🔄 Attempting login with:', { email, role });
+      
+      const response = await axios.post(`${API_URL}/auth/login`, { 
+        email, 
+        password 
+      });
+      
+      console.log('📥 Login response:', response.data);
+
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        const role = response.data.user.role;
-        if (role === 'ADMIN') {
+        const user = response.data.user;
+        const token = response.data.token;
+        
+        // Store with correct keys for your app
+        localStorage.setItem('homelyserv_token', token);
+        localStorage.setItem('homelyserv_user', JSON.stringify(user));
+        
+        console.log('✅ User logged in:', user.fullName || user.email);
+        console.log('✅ User role:', user.role);
+
+        // Redirect based on role
+        if (user.role === 'ADMIN') {
           navigate('/admin');
-        } else if (role === 'EMPLOYER') {
+        } else if (user.role === 'EMPLOYER') {
           navigate('/employer-dashboard');
+        } else if (user.role === 'WORKER') {
+          navigate('/worker/offers');
         } else {
-          navigate('/worker-dashboard');
+          navigate('/dashboard');
         }
       } else {
         setError(response.data.message || 'Login failed');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Server error');
+      console.error('❌ Login error:', err);
+      setError(err.response?.data?.message || 'Server error. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Demo login for testing without backend
+  const handleDemoLogin = (demoRole) => {
+    setLoading(true);
+    setError('');
+
+    setTimeout(() => {
+      let user = {};
+      let token = '';
+
+      if (demoRole === 'WORKER') {
+        user = {
+          id: 'worker_001',
+          fullName: 'Ahmed Ali',
+          email: 'worker@homelyserv.com',
+          role: 'WORKER',
+          profileComplete: true,
+          phone: '+201234567890',
+          location: 'Cairo, Egypt'
+        };
+        token = 'demo_worker_token_12345';
+      } else if (demoRole === 'EMPLOYER') {
+        user = {
+          id: 'employer_001',
+          fullName: 'Sara Mohamed',
+          email: 'employer@homelyserv.com',
+          role: 'EMPLOYER',
+          companyName: 'Elite Family Services',
+          phone: '+201234567891',
+          location: 'Cairo, Egypt'
+        };
+        token = 'demo_employer_token_12345';
+      } else if (demoRole === 'ADMIN') {
+        user = {
+          id: 'admin_001',
+          fullName: 'Admin User',
+          email: 'admin@homelyserv.com',
+          role: 'ADMIN',
+          phone: '+201234567892'
+        };
+        token = 'demo_admin_token_12345';
+      }
+
+      // Store with correct keys
+      localStorage.setItem('homelyserv_token', token);
+      localStorage.setItem('homelyserv_user', JSON.stringify(user));
+      
+      console.log('✅ Demo login successful:', user.fullName);
+      console.log('✅ User role:', user.role);
+
+      // Redirect based on role
+      if (user.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (user.role === 'EMPLOYER') {
+        navigate('/employer-dashboard');
+      } else {
+        navigate('/worker/offers');
+      }
+      
+      setLoading(false);
+    }, 800);
   };
 
   return (
@@ -56,7 +161,7 @@ function Login() {
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 relative">
           
-          {/* Language Selector - Inside Frame, Top Right */}
+          {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
@@ -188,6 +293,34 @@ function Login() {
               Create one
             </Link>
           </p>
+
+          {/* Demo Login Buttons */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-400 text-center mb-3">⚠️ Demo Login (No backend required)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleDemoLogin('WORKER')}
+                disabled={loading}
+                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition border border-blue-200"
+              >
+                👤 Worker
+              </button>
+              <button
+                onClick={() => handleDemoLogin('EMPLOYER')}
+                disabled={loading}
+                className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium rounded-lg transition border border-green-200"
+              >
+                🏢 Employer
+              </button>
+              <button
+                onClick={() => handleDemoLogin('ADMIN')}
+                disabled={loading}
+                className="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium rounded-lg transition border border-purple-200"
+              >
+                🔐 Admin
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
