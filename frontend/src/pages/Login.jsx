@@ -1,478 +1,197 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  User,
-  Briefcase,
-  AlertCircle,
-  CheckCircle,
-  Globe
-} from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
-const Login = () => {
+function Login() {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    role: 'WORKER' // 'WORKER' or 'EMPLOYER'
-  });
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLanguages, setShowLanguages] = useState(false);
 
-  // Translations
-  const translations = {
-    en: {
-      title: 'Welcome Back',
-      subtitle: 'Sign in to your account to continue',
-      emailLabel: 'Email Address',
-      emailPlaceholder: 'you@example.com',
-      passwordLabel: 'Password',
-      passwordPlaceholder: 'Enter your password',
-      loginAs: 'Login as',
-      worker: 'Job Seeker',
-      employer: 'Employer',
-      loginButton: 'Sign In',
-      loading: 'Signing in...',
-      forgotPassword: 'Forgot Password?',
-      noAccount: "Don't have an account?",
-      register: 'Register Now',
-      errors: {
-        emailRequired: 'Email is required',
-        emailInvalid: 'Please enter a valid email',
-        passwordRequired: 'Password is required',
-        passwordMin: 'Password must be at least 6 characters',
-        invalidCredentials: 'Invalid email or password',
-        accountSuspended: 'Your account has been suspended. Please contact support.',
-        notVerified: 'Please verify your email address first.',
-        roleRequired: 'Please select a role'
-      },
-      success: {
-        loginSuccess: 'Login successful! Redirecting...'
-      }
-    },
-    ar: {
-      title: 'مرحباً بعودتك',
-      subtitle: 'سجل الدخول إلى حسابك للمتابعة',
-      emailLabel: 'البريد الإلكتروني',
-      emailPlaceholder: 'example@you.com',
-      passwordLabel: 'كلمة المرور',
-      passwordPlaceholder: 'أدخل كلمة المرور',
-      loginAs: 'تسجيل الدخول كـ',
-      worker: 'باحث عن عمل',
-      employer: 'صاحب عمل',
-      loginButton: 'تسجيل الدخول',
-      loading: 'جاري التسجيل...',
-      forgotPassword: 'نسيت كلمة المرور؟',
-      noAccount: 'ليس لديك حساب؟',
-      register: 'إنشاء حساب',
-      errors: {
-        emailRequired: 'البريد الإلكتروني مطلوب',
-        emailInvalid: 'يرجى إدخال بريد إلكتروني صحيح',
-        passwordRequired: 'كلمة المرور مطلوبة',
-        passwordMin: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-        invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-        accountSuspended: 'تم تعليق حسابك. يرجى الاتصال بالدعم.',
-        notVerified: 'يرجى تأكيد بريدك الإلكتروني أولاً.',
-        roleRequired: 'يرجى اختيار دور'
-      },
-      success: {
-        loginSuccess: 'تم تسجيل الدخول بنجاح! جاري التحويل...'
-      }
-    }
-  };
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-  const t = translations[language];
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
+  ];
 
-  // Check for language preference in localStorage
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
-  // Toggle language
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLang;
-  };
-
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = t.errors.emailRequired;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t.errors.emailInvalid;
-    }
-
-    if (!formData.password) {
-      newErrors.password = t.errors.passwordRequired;
-    } else if (formData.password.length < 6) {
-      newErrors.password = t.errors.passwordMin;
-    }
-
-    if (!formData.role) {
-      newErrors.role = t.errors.roleRequired;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+    setError('');
     setLoading(true);
-    setSuccessMessage('');
-    setErrors({});
 
     try {
-      // Simulate API call with demo accounts
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Demo accounts with proper role names matching the backend
-      const demoAccounts = {
-        'worker@homelyserv.com': {
-          password: 'password123',
-          user: {
-            id: 'worker_001',
-            fullName: 'Ahmed Ali',
-            email: 'worker@homelyserv.com',
-            role: 'WORKER',
-            profileComplete: true,
-            phone: '+201234567890',
-            location: 'Cairo, Egypt'
-          },
-          token: 'demo_worker_token_12345'
-        },
-        'employer@homelyserv.com': {
-          password: 'password123',
-          user: {
-            id: 'employer_001',
-            fullName: 'Sara Mohamed',
-            email: 'employer@homelyserv.com',
-            role: 'EMPLOYER',
-            companyName: 'Elite Family Services',
-            phone: '+201234567891',
-            location: 'Cairo, Egypt'
-          },
-          token: 'demo_employer_token_12345'
-        },
-        'admin@homelyserv.com': {
-          password: 'password123',
-          user: {
-            id: 'admin_001',
-            fullName: 'Admin User',
-            email: 'admin@homelyserv.com',
-            role: 'ADMIN',
-            phone: '+201234567892'
-          },
-          token: 'demo_admin_token_12345'
-        }
-      };
-
-      // Check if the email exists in demo accounts
-      const demoUser = demoAccounts[formData.email];
-      
-      if (demoUser && demoUser.password === formData.password) {
-        // Check if the role matches
-        if (demoUser.user.role !== formData.role) {
-          setErrors({
-            general: `This account is registered as ${demoUser.user.role}. Please select the correct role.`
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Store user data and token with correct keys
-        localStorage.setItem('homelyserv_token', demoUser.token);
-        localStorage.setItem('homelyserv_user', JSON.stringify(demoUser.user));
-        
-        setSuccessMessage(t.success.loginSuccess);
-        
-        // Redirect based on role
-        setTimeout(() => {
-          if (demoUser.user.role === 'WORKER') {
-            navigate('/worker/offers');
-          } else if (demoUser.user.role === 'EMPLOYER') {
-            navigate('/employer-dashboard');
-          } else if (demoUser.user.role === 'ADMIN') {
-            navigate('/admin');
-          } else {
-            navigate('/dashboard');
-          }
-        }, 1500);
-      } else {
-        // Check if email exists but password is wrong
-        if (demoAccounts[formData.email]) {
-          setErrors({ general: 'Invalid password. Please try again.' });
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        const role = response.data.user.role;
+        if (role === 'ADMIN') {
+          navigate('/admin');
+        } else if (role === 'EMPLOYER') {
+          navigate('/employer-dashboard');
         } else {
-          setErrors({ general: t.errors.invalidCredentials });
+          navigate('/worker-dashboard');
         }
+      } else {
+        setError(response.data.message || 'Login failed');
       }
-
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({
-        general: error.message || t.errors.invalidCredentials
-      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Server error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle role selection
-  const handleRoleSelect = (role) => {
-    setFormData(prev => ({
-      ...prev,
-      role
-    }));
-    if (errors.role) {
-      setErrors(prev => ({
-        ...prev,
-        role: ''
-      }));
-    }
-  };
-
-  const isRTL = language === 'ar';
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-white flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        {/* Language Toggle */}
-        <div className="flex justify-end mb-6">
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-red-300 transition-colors text-sm"
-          >
-            <Globe size={16} className="text-gray-600" />
-            <span className="font-medium">{language === 'en' ? 'العربية' : 'English'}</span>
-          </button>
-        </div>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <User size={32} className="text-red-600" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">{t.title}</h1>
-          <p className="text-gray-500 mt-1">{t.subtitle}</p>
-        </div>
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-            <CheckCircle size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-            <span className="text-sm text-green-700">{successMessage}</span>
-          </div>
-        )}
-
-        {/* General Error */}
-        {errors.general && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-            <span className="text-sm text-red-700">{errors.general}</span>
-          </div>
-        )}
-
-        {/* Role Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t.loginAs}
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleRoleSelect('WORKER')}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                formData.role === 'WORKER'
-                  ? 'border-red-500 bg-red-50 text-red-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
-              }`}
-            >
-              <Briefcase size={20} className="mx-auto mb-1" />
-              <span className="text-sm font-medium">{t.worker}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleSelect('EMPLOYER')}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                formData.role === 'EMPLOYER'
-                  ? 'border-red-500 bg-red-50 text-red-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
-              }`}
-            >
-              <User size={20} className="mx-auto mb-1" />
-              <span className="text-sm font-medium">{t.employer}</span>
-            </button>
-          </div>
-          {errors.role && (
-            <p className="mt-1 text-sm text-red-500">{errors.role}</p>
-          )}
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              {t.emailLabel}
-            </label>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 p-4">
+      <div className="w-full max-w-md">
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8 relative">
+          
+          {/* Language Selector - Inside Frame, Top Right */}
+          <div className="absolute top-4 right-4">
             <div className="relative">
-              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                id="email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={t.emailPlaceholder}
-                className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                  errors.email ? 'border-red-500' : 'border-gray-200'
-                } focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent`}
-                dir={isRTL ? 'rtl' : 'ltr'}
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              {t.passwordLabel}
-            </label>
-            <div className="relative">
-              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder={t.passwordPlaceholder}
-                className={`w-full pl-10 pr-12 py-2.5 rounded-lg border ${
-                  errors.password ? 'border-red-500' : 'border-gray-200'
-                } focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent`}
-                dir={isRTL ? 'rtl' : 'ltr'}
-              />
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setShowLanguages(!showLanguages)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-gray-100 transition text-sm"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                <Globe size={15} className="text-gray-500" />
+                <span className="text-gray-600 text-xs font-medium">EN</span>
               </button>
+              {showLanguages && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => { setShowLanguages(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm"
+                    >
+                      <span className="text-lg">{lang.flag}</span>
+                      <span className="text-gray-700">{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-            )}
           </div>
 
-          {/* Forgot Password */}
-          <div className="text-right">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
+          {/* Logo */}
+          <div className="text-center mb-6 pt-2">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
+              <span className="text-white text-3xl font-bold">H</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mt-4">Welcome Back</h1>
+            <p className="text-gray-500 text-sm">Sign in to your account</p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle size={16} /> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-6">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input type="checkbox" className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500" />
+                Remember me
+              </label>
+              <Link to="/forgot-password" className="text-sm text-red-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {t.forgotPassword}
+              {loading ? 'Loading...' : 'Sign In'}
+              <LogIn size={20} />
+            </button>
+          </form>
+
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 border-t border-gray-200"></div>
+            <span className="text-sm text-gray-400">Or continue with</span>
+            <div className="flex-1 border-t border-gray-200"></div>
+          </div>
+
+          <div className="flex justify-center gap-4">
+            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 transition flex items-center justify-center">
+              <svg className="w-6 h-6" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+            </button>
+            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 transition flex items-center justify-center text-blue-600 font-bold">
+              f
+            </button>
+            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 transition flex items-center justify-center text-black font-bold">
+              𝕏
+            </button>
+            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 transition flex items-center justify-center text-green-600 font-bold">
+              💬
+            </button>
+          </div>
+
+          <p className="text-center text-gray-600 mt-6">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-red-600 font-semibold hover:underline">
+              Create one
             </Link>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {t.loading}
-              </>
-            ) : (
-              t.loginButton
-            )}
-          </button>
-        </form>
-
-        {/* Register Link */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          {t.noAccount}{' '}
-          <Link
-            to="/register"
-            className="text-red-600 hover:text-red-700 font-semibold"
-          >
-            {t.register}
-          </Link>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs text-gray-500 mb-2 font-medium">Demo Accounts (for testing):</p>
-          <div className="space-y-1.5 text-xs text-gray-600">
-            <div className="flex justify-between">
-              <span className="font-medium text-red-600">Worker:</span>
-              <span>worker@homelyserv.com</span>
-              <span className="font-mono">password123</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium text-red-600">Employer:</span>
-              <span>employer@homelyserv.com</span>
-              <span className="font-mono">password123</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium text-red-600">Admin:</span>
-              <span>admin@homelyserv.com</span>
-              <span className="font-mono">password123</span>
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">
-            ⚠️ Make sure to select the correct role before logging in
           </p>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Login;
