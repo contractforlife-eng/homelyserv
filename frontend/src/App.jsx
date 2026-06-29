@@ -146,6 +146,8 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
+        {/* BOTH ROUTES FOR WORKER OFFERS - Ensures compatibility */}
         <Route 
           path="/worker/offers" 
           element={
@@ -162,6 +164,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/worker-profile" 
           element={

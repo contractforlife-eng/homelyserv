@@ -1,402 +1,576 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Home, Briefcase, User, FileText, Search, MessageCircle, 
-  Settings, LogOut, Bell, Clock, CheckCircle, XCircle,
-  TrendingUp, Award, Shield, Star, Calendar, Users,
-  DollarSign, MapPin, Phone, Mail, AlertCircle,
-  Activity, PieChart, BarChart3, Sparkles, Zap,
-  ThumbsUp, ThumbsDown, Heart, Share2, Bookmark,
-  ChevronRight
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home,
+  User,
+  Briefcase,
+  FileCheck,
+  MessageCircle,
+  Calendar,
+  FileText,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  List,
+  Zap,
+  Clock,
+  Users,
+  Heart,
+  TrendingUp,
+  Award,
+  Shield,
+  BarChart3,
+  DollarSign,
+  Star,
+  Globe,
+  X
 } from 'lucide-react';
 
-function WorkerDashboard() {
+// Sidebar Component
+const WorkerSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
+
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myOffers: 'My Offers',
+      myHires: 'My Hires',
+      messages: 'Messages',
+      calendar: 'Calendar',
+      documents: 'Documents',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myOffers: 'عروضي',
+      myHires: 'توظيفاتي',
+      messages: 'الرسائل',
+      calendar: 'التقويم',
+      documents: 'المستندات',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker-offers' },
+    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
+    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
+    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <Link to="/worker-dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <User size={20} className="text-red-600" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-red-50 text-red-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-200 my-3"></div>
+
+          <Link
+            to="/worker-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.logout}
+              </div>
+            )}
+          </button>
+        </nav>
+      </aside>
+    </>
+  );
+};
+
+// Main WorkerDashboard Component
+const WorkerDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [stats, setStats] = useState({
+    totalApplications: 0,
+    activeOffers: 0,
+    interviews: 0,
+    savedJobs: 0,
+    profileViews: 0,
+    messages: 0
+  });
+
+  const translations = {
+    en: {
+      welcome: 'Welcome back',
+      dashboard: 'Dashboard',
+      overview: 'Overview',
+      stats: {
+        applications: 'Applications',
+        activeOffers: 'Active Offers',
+        interviews: 'Interviews',
+        savedJobs: 'Saved Jobs',
+        profileViews: 'Profile Views',
+        messages: 'Messages'
+      },
+      recentActivity: 'Recent Activity',
+      quickActions: 'Quick Actions',
+      findJobs: 'Find Jobs',
+      viewOffers: 'View Offers',
+      viewProfile: 'View Profile',
+      viewMessages: 'View Messages',
+      notifications: 'Notifications',
+      languageToggle: 'العربية'
+    },
+    ar: {
+      welcome: 'مرحباً بعودتك',
+      dashboard: 'لوحة التحكم',
+      overview: 'نظرة عامة',
+      stats: {
+        applications: 'الطلبات',
+        activeOffers: 'العروض النشطة',
+        interviews: 'المقابلات',
+        savedJobs: 'الوظائف المحفوظة',
+        profileViews: 'مشاهدات الملف',
+        messages: 'الرسائل'
+      },
+      recentActivity: 'النشاط الأخير',
+      quickActions: 'إجراءات سريعة',
+      findJobs: 'البحث عن وظائف',
+      viewOffers: 'عرض العروض',
+      viewProfile: 'عرض الملف الشخصي',
+      viewMessages: 'عرض الرسائل',
+      notifications: 'الإشعارات',
+      languageToggle: 'English'
+    }
+  };
+
+  const t = translations[language];
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      setUser(JSON.parse(userData));
-      setLoading(false);
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
     } else {
       navigate('/login');
     }
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+
+    // Load stats from localStorage
+    const savedStats = localStorage.getItem('worker_stats');
+    if (savedStats) {
+      try {
+        setStats(JSON.parse(savedStats));
+      } catch (error) {
+        console.error('Error parsing stats:', error);
+      }
+    } else {
+      // Set demo stats
+      const demoStats = {
+        totalApplications: 12,
+        activeOffers: 5,
+        interviews: 3,
+        savedJobs: 8,
+        profileViews: 45,
+        messages: 7
+      };
+      setStats(demoStats);
+      localStorage.setItem('worker_stats', JSON.stringify(demoStats));
+    }
   }, [navigate]);
 
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
     navigate('/login');
   };
 
-  if (loading) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-gray-500 font-medium">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Stats data
-  const stats = {
-    applications: 24,
-    interviews: 3,
-    offers: 2,
-    rating: 4.9,
-    completionRate: 78,
-    totalTasks: 45,
-    completedTasks: 35,
-    pendingTasks: 8,
-    rejectedTasks: 2
-  };
-
-  // Recent activity data
-  const recentActivities = [
-    { id: 1, type: 'offer', title: 'New Job Offer', description: 'Sara Mohamed sent you a job offer', time: '2 hours ago', icon: <Briefcase size={16} />, color: 'green' },
-    { id: 2, type: 'message', title: 'New Message', description: 'Khaled Mostafa replied to your application', time: '5 hours ago', icon: <MessageCircle size={16} />, color: 'blue' },
-    { id: 3, type: 'interview', title: 'Interview Scheduled', description: 'Interview with Nadia Ibrahim tomorrow', time: '1 day ago', icon: <Calendar size={16} />, color: 'purple' }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-white shadow-sm px-4 py-3 flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
-            <span className="text-white font-bold text-lg">H</span>
-          </div>
-          <h1 className="text-xl font-bold text-red-600">HomelyServ</h1>
-        </div>
-        <button className="relative">
-          <Bell size={22} className="text-gray-600" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <WorkerSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="hidden md:block w-72 bg-white/80 backdrop-blur-xl shadow-lg border-r border-gray-100 min-h-screen fixed">
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
-                <span className="text-white font-bold text-lg">H</span>
-              </div>
-              <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
-            </div>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Worker Panel</p>
-          </div>
-          
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-white rounded-xl">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-500/20">
-                  {user?.fullName?.charAt(0) || 'U'}
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 truncate">{user?.fullName || 'User'}</p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
-                  Online
-                </p>
-              </div>
-              <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
-                <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-bold text-gray-700">{stats.rating}</span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="p-3 space-y-1">
-            <Link to="/worker-dashboard" className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-50 to-red-100 text-red-600 rounded-xl font-medium transition-all shadow-sm">
-              <Home size={20} /> Dashboard
-              <span className="ml-auto bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">New</span>
-            </Link>
-            <Link to="/worker-offers" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-all group">
-              <Briefcase size={20} className="group-hover:text-red-600 transition-colors" /> Offers
-              <span className="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">2</span>
-            </Link>
-            <Link to="/worker-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-all group">
-              <User size={20} className="group-hover:text-red-600 transition-colors" /> Profile
-            </Link>
-            <Link to="/worker-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-all group">
-              <AlertCircle size={20} className="group-hover:text-red-600 transition-colors" /> Complaints
-            </Link>
-            <Link to="/worker-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-all group">
-              <MessageCircle size={20} className="group-hover:text-red-600 transition-colors" /> Messages
-              <span className="ml-auto bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">3</span>
-            </Link>
-            <Link to="/worker-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition-all group">
-              <Settings size={20} className="group-hover:text-red-600 transition-colors" /> Settings
-            </Link>
-          </nav>
-
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white/50 backdrop-blur-sm">
-            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all group">
-              <LogOut size={20} className="group-hover:rotate-180 transition-transform duration-300" /> Logout
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 md:ml-72">
-          {/* Desktop Header */}
-          <header className="hidden md:flex bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-100 px-8 py-4 justify-between items-center sticky top-0 z-30">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-              <p className="text-gray-500 text-sm flex items-center gap-2">
-                <Sparkles size={16} className="text-yellow-400" />
-                Welcome back, {user?.fullName || 'User'}!
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-xl transition-all">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <Menu size={20} />
               </button>
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-red-500/20">
-                {user?.fullName?.charAt(0) || 'U'}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.dashboard}</h2>
               </div>
             </div>
-          </header>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
+              </button>
+            </div>
+          </div>
+        </header>
 
-          <div className="p-4 md:p-8">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">Applications</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{stats.applications}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileText size={24} className="text-blue-600" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500 font-medium">+12%</span>
-                  <span className="text-gray-400">vs last month</span>
-                </div>
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Welcome Section */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
+                <p className="text-red-100 mt-1">{t.overview}</p>
               </div>
-
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">Interviews</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Calendar size={24} className="text-purple-600" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500 font-medium">+5%</span>
-                  <span className="text-gray-400">vs last month</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">Offers</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{stats.offers}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Award size={24} className="text-green-600" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500 font-medium">+8%</span>
-                  <span className="text-gray-400">vs last month</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">Rating</p>
-                    <p className="text-3xl font-bold text-gray-800 mt-1">{stats.rating} ★</p>
-                  </div>
-                  <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Star size={24} className="text-yellow-600" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-xs">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-green-500 font-medium">+0.2</span>
-                  <span className="text-gray-400">vs last month</span>
-                </div>
+              <div className="flex gap-3">
+                <Link
+                  to="/worker-offers"
+                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Briefcase size={16} />
+                  {t.viewOffers}
+                </Link>
+                <Link
+                  to="/worker-profile"
+                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <User size={16} />
+                  {t.viewProfile}
+                </Link>
               </div>
             </div>
+          </div>
 
-            {/* Completion Rate Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6 hover:shadow-md transition-all">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="relative w-32 h-32 flex-shrink-0">
-                  <svg className="w-32 h-32 transform -rotate-90">
-                    <circle cx="64" cy="64" r="56" fill="none" stroke="#f1f5f9" strokeWidth="12" />
-                    <circle cx="64" cy="64" r="56" fill="none" stroke="#dc2626" strokeWidth="12" 
-                      strokeDasharray={`${stats.completionRate * 3.52} 352`} strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-gray-800">{stats.completionRate}%</span>
-                    <span className="text-xs text-gray-500">Completion</span>
-                  </div>
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="font-semibold text-gray-800 text-lg">Task Completion Rate</h3>
-                  <p className="text-gray-500 text-sm mt-1">You have completed <strong className="text-gray-800">{stats.completedTasks}</strong> out of <strong className="text-gray-800">{stats.totalTasks}</strong> tasks</p>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3">
-                    <span className="flex items-center gap-2 text-sm bg-green-50 px-3 py-1.5 rounded-full">
-                      <CheckCircle size={14} className="text-green-500" />
-                      <span className="text-gray-700">{stats.completedTasks} Completed</span>
-                    </span>
-                    <span className="flex items-center gap-2 text-sm bg-yellow-50 px-3 py-1.5 rounded-full">
-                      <Clock size={14} className="text-yellow-500" />
-                      <span className="text-gray-700">{stats.pendingTasks} Pending</span>
-                    </span>
-                    <span className="flex items-center gap-2 text-sm bg-red-50 px-3 py-1.5 rounded-full">
-                      <XCircle size={14} className="text-red-500" />
-                      <span className="text-gray-700">{stats.rejectedTasks} Rejected</span>
-                    </span>
-                  </div>
-                </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.applications}</p>
+                <Briefcase size={20} className="text-blue-500" />
               </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalApplications}</p>
             </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.activeOffers}</p>
+                <Zap size={20} className="text-yellow-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.activeOffers}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.interviews}</p>
+                <Users size={20} className="text-purple-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.savedJobs}</p>
+                <Heart size={20} className="text-red-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.savedJobs}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.profileViews}</p>
+                <TrendingUp size={20} className="text-green-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.profileViews}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.messages}</p>
+                <MessageCircle size={20} className="text-indigo-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.messages}</p>
+            </div>
+          </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Link to="/search" className="group bg-gradient-to-r from-red-600 to-red-700 p-5 rounded-2xl shadow-lg shadow-red-500/20 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
-                    <Search size={24} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">Find Jobs</h3>
-                    <p className="text-red-200 text-sm">Search for new opportunities</p>
-                  </div>
-                </div>
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link
+                to="/worker-offers"
+                className="flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+              >
+                <Briefcase size={20} className="text-blue-600" />
+                <span className="font-medium text-blue-700">{t.findJobs}</span>
               </Link>
-
-              <Link to="/worker-profile" className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <User size={24} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-gray-800 font-semibold text-lg">My Profile</h3>
-                    <p className="text-gray-500 text-sm">View and edit your profile</p>
-                  </div>
-                </div>
+              <Link
+                to="/worker-offers"
+                className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+              >
+                <FileCheck size={20} className="text-green-600" />
+                <span className="font-medium text-green-700">{t.viewOffers}</span>
               </Link>
-
-              <Link to="/worker-offers" className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-green-200 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Briefcase size={24} className="text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-gray-800 font-semibold text-lg">My Offers</h3>
-                    <p className="text-gray-500 text-sm">View and manage offers</p>
-                  </div>
-                </div>
+              <Link
+                to="/worker-profile"
+                className="flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+              >
+                <User size={20} className="text-purple-600" />
+                <span className="font-medium text-purple-700">{t.viewProfile}</span>
+              </Link>
+              <Link
+                to="/worker-messages"
+                className="flex items-center gap-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
+              >
+                <MessageCircle size={20} className="text-orange-600" />
+                <span className="font-medium text-orange-700">{t.viewMessages}</span>
               </Link>
             </div>
+          </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Activity size={18} className="text-red-600" />
-                    Recent Activity
-                  </h3>
-                  <button className="text-sm text-red-600 hover:underline font-medium">View All</button>
+          {/* Recent Activity */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Briefcase size={16} className="text-blue-600" />
                 </div>
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        activity.color === 'green' ? 'bg-green-100 text-green-600' :
-                        activity.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                        'bg-purple-100 text-purple-600'
-                      }`}>
-                        {activity.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm">{activity.title}</p>
-                        <p className="text-sm text-gray-500 truncate">{activity.description}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{activity.time}</p>
-                      </div>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-white transition-all">
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  ))}
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800">Applied for Senior Nanny position</p>
+                  <p className="text-sm text-gray-500">2 hours ago</p>
                 </div>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
               </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <MessageCircle size={18} className="text-blue-600" />
-                    Recent Messages
-                  </h3>
-                  <Link to="/worker-messages" className="text-sm text-red-600 hover:underline font-medium">View All</Link>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle size={16} className="text-green-600" />
                 </div>
-                <div className="space-y-4">
-                  <div className="p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
-                        S
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm">Sara Mohamed</p>
-                        <p className="text-sm text-gray-500 truncate">When can you start working?</p>
-                      </div>
-                      <span className="text-xs text-gray-400">2h ago</span>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20">
-                        K
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm">Khaled Mostafa</p>
-                        <p className="text-sm text-gray-500 truncate">I'm interested in your profile</p>
-                      </div>
-                      <span className="text-xs text-gray-400">5h ago</span>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-green-500/20">
-                        N
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm">Nadia Ibrahim</p>
-                        <p className="text-sm text-gray-500 truncate">Thank you for your application</p>
-                      </div>
-                      <span className="text-xs text-gray-400">1d ago</span>
-                    </div>
-                  </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800">Interview scheduled for Driver position</p>
+                  <p className="text-sm text-gray-500">1 day ago</p>
                 </div>
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Confirmed</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Heart size={16} className="text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800">Saved House Manager position</p>
+                  <p className="text-sm text-gray-500">2 days ago</p>
+                </div>
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Saved</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
 
 export default WorkerDashboard;
