@@ -6,8 +6,6 @@ import {
   Briefcase,
   FileCheck,
   MessageCircle,
-  Calendar,
-  FileText,
   Settings,
   HelpCircle,
   LogOut,
@@ -30,7 +28,7 @@ import {
   Star
 } from 'lucide-react';
 
-// Employer Sidebar Component - Blue/Teal Theme
+// Employer Sidebar Component - Teal Theme
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -49,8 +47,7 @@ const EmployerSidebar = ({
       myHires: 'My Hires',
       search: 'Search Workers',
       messages: 'Messages',
-      calendar: 'Calendar',
-      documents: 'Documents',
+      complaints: 'Complaints',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -62,8 +59,7 @@ const EmployerSidebar = ({
       myHires: 'توظيفاتي',
       search: 'البحث عن عمال',
       messages: 'الرسائل',
-      calendar: 'التقويم',
-      documents: 'المستندات',
+      complaints: 'الشكاوى',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -79,8 +75,7 @@ const EmployerSidebar = ({
     { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
-    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
   ];
 
   const isActive = (path) => {

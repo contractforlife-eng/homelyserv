@@ -62,12 +62,13 @@ const WorkerSidebar = ({
   const t = translations[language];
 
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-  ];
+  { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
+  { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
+  { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
+  { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
+  { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
+  { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+];
 
   const isActive = (path) => {
     return location.pathname === path;

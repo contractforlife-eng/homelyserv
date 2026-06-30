@@ -1,608 +1,850 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Search, Filter, Star, MapPin, DollarSign, Clock, 
-  CheckCircle, XCircle, Eye, MessageCircle, Heart,
-  Share2, Award, Shield, Briefcase, Calendar, User,
-  Phone, Mail, Bookmark, ChevronDown,
-  ChevronUp, Sliders, Grid, List, Users, Building,
-  Home, Car, Utensils, Heart as HeartIcon, Shield as ShieldIcon,
-  Sprout, Activity, Lock, Plus, Minus, X
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home,
+  User,
+  Briefcase,
+  FileCheck,
+  MessageCircle,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
+  AlertTriangle,
+  Search,
+  DollarSign,
+  Clock,
+  Calendar,
+  Star,
+  MapPin,
+  Phone,
+  Mail,
+  Users,
+  Filter,
+  FileText,
+  Search as SearchIcon,
+  UserCheck,
+  Building2,
+  MapPinned,
+  Languages
 } from 'lucide-react';
-import axios from 'axios';
 
-function EmployerSearch() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('rating');
-  const [savedWorkers, setSavedWorkers] = useState([]);
-  const [selectedWorker, setSelectedWorker] = useState(null);
-  const [showWorkerModal, setShowWorkerModal] = useState(false);
-  const [workers, setWorkers] = useState([]);
-  const [filteredWorkers, setFilteredWorkers] = useState([]);
-  const [filters, setFilters] = useState({
-    minSalary: '',
-    maxSalary: '',
-    minRating: 0,
-    availability: 'all',
-    experience: 'all'
-  });
+// Employer Sidebar Component - Teal Theme
+const EmployerSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myHires: 'My Hires',
+      search: 'Search Workers',
+      messages: 'Messages',
+      complaints: 'Complaints',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myHires: 'توظيفاتي',
+      search: 'البحث عن عمال',
+      messages: 'الرسائل',
+      complaints: 'الشكاوى',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
 
-  // Worker categories with icons
-  const categories = [
-    { id: 'all', label: 'All', icon: <Users size={20} />, color: 'gray' },
-    { id: 'babysitter', label: 'Babysitter', icon: <User size={20} />, color: 'pink' },
-    { id: 'caregiver', label: 'Caregiver', icon: <HeartIcon size={20} />, color: 'blue' },
-    { id: 'driver', label: 'Driver', icon: <Car size={20} />, color: 'green' },
-    { id: 'cook', label: 'Cook', icon: <Utensils size={20} />, color: 'orange' },
-    { id: 'house-manager', label: 'House Manager', icon: <Home size={20} />, color: 'purple' },
-    { id: 'gardener', label: 'Gardener', icon: <Sprout size={20} />, color: 'green' },
-    { id: 'nurse', label: 'Nurse', icon: <Activity size={20} />, color: 'blue' },
-    { id: 'bodyguard', label: 'Bodyguard', icon: <ShieldIcon size={20} />, color: 'red' },
-    { id: 'security', label: 'Security Guard', icon: <Lock size={20} />, color: 'gray' }
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
+    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
+    { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
   ];
 
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <Link to="/employer-dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+              <User size={20} className="text-teal-600" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-teal-50 text-teal-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-teal-600' : ''} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-200 my-3"></div>
+
+          <Link
+            to="/employer-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-teal-600 hover:bg-teal-50 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.logout}
+              </div>
+            )}
+          </button>
+        </nav>
+      </aside>
+    </>
+  );
+};
+
+// Main EmployerSearch Component
+const EmployerSearch = () => {
+  const navigate = useNavigate();
+  const [language, setLanguage] = useState('en');
+  const [user, setUser] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  
+  // Search form fields
+  const [searchParams, setSearchParams] = useState({
+    languageGroup: '',
+    country: '',
+    city: '',
+    jobType: '',
+    jobTitle: ''
+  });
+
+  // Countries by language
+  const languageGroups = [
+    {
+      id: 'arabic',
+      name: 'Arabic',
+      flag: '🇸🇦',
+      countries: [
+        'Algeria', 'Bahrain', 'Comoros', 'Djibouti', 'Egypt', 
+        'Iraq', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 
+        'Mauritania', 'Morocco', 'Oman', 'Palestine', 'Qatar', 
+        'Saudi Arabia', 'Somalia', 'Sudan', 'Syria', 'Tunisia', 
+        'United Arab Emirates', 'Yemen'
+      ]
+    },
+    {
+      id: 'english',
+      name: 'English',
+      flag: '🇬🇧',
+      countries: [
+        'Australia', 'Bahamas', 'Barbados', 'Belize', 'Botswana', 
+        'Canada', 'Gambia', 'Ghana', 'Guyana', 'India', 
+        'Ireland', 'Jamaica', 'Kenya', 'Liberia', 'Malawi', 
+        'Namibia', 'New Zealand', 'Nigeria', 'Pakistan', 'Philippines', 
+        'Sierra Leone', 'Singapore', 'South Africa', 'Tanzania', 'Trinidad and Tobago', 
+        'Uganda', 'United Kingdom', 'United States', 'Zambia', 'Zimbabwe'
+      ]
+    },
+    {
+      id: 'french',
+      name: 'French',
+      flag: '🇫🇷',
+      countries: [
+        'Belgium', 'Benin', 'Burkina Faso', 'Burundi', 'Cameroon', 
+        'Canada', 'Central African Republic', 'Chad', 'Comoros', 'Congo', 
+        'Democratic Republic of the Congo', 'Djibouti', 'Equatorial Guinea', 'France', 
+        'Gabon', 'Guinea', 'Haiti', 'Ivory Coast', 'Luxembourg', 
+        'Madagascar', 'Mali', 'Mauritius', 'Monaco', 'Niger', 
+        'Rwanda', 'Senegal', 'Seychelles', 'Switzerland', 'Togo', 
+        'Vanuatu'
+      ]
+    },
+    {
+      id: 'german',
+      name: 'German',
+      flag: '🇩🇪',
+      countries: [
+        'Austria', 'Belgium', 'Germany', 'Liechtenstein', 
+        'Luxembourg', 'Switzerland'
+      ]
+    },
+    {
+      id: 'turkish',
+      name: 'Turkish',
+      flag: '🇹🇷',
+      countries: [
+        'Turkey', 'Northern Cyprus'
+      ]
+    },
+    {
+      id: 'spanish',
+      name: 'Spanish',
+      flag: '🇪🇸',
+      countries: [
+        'Argentina', 'Bolivia', 'Chile', 'Colombia', 'Costa Rica', 
+        'Cuba', 'Dominican Republic', 'Ecuador', 'El Salvador', 'Equatorial Guinea', 
+        'Guatemala', 'Honduras', 'Mexico', 'Nicaragua', 'Panama', 
+        'Paraguay', 'Peru', 'Puerto Rico', 'Spain', 'Uruguay', 
+        'Venezuela'
+      ]
+    }
+  ];
+
+  // Cities by country
+  const citiesByCountry = {
+    'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Luxor', 'Aswan', 'Hurghada', 'Port Said', 'Suez'],
+    'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Taif', 'Abha'],
+    'UAE': ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'],
+    'Kuwait': ['Kuwait City', 'Salmiya', 'Hawally', 'Farwaniya', 'Mubarak Al-Kabeer'],
+    'Qatar': ['Doha', 'Al Wakrah', 'Al Rayyan', 'Lusail', 'Al Khor'],
+    'Oman': ['Muscat', 'Salalah', 'Sohar', 'Nizwa', 'Sur'],
+    'Bahrain': ['Manama', 'Muharraq', 'Riffa', 'Hamad Town', 'Isa Town'],
+    'Jordan': ['Amman', 'Zarqa', 'Irbid', 'Aqaba', 'Madaba'],
+    'Lebanon': ['Beirut', 'Tripoli', 'Sidon', 'Tyre', 'Jounieh'],
+    'Morocco': ['Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier', 'Agadir'],
+    'Tunisia': ['Tunis', 'Sfax', 'Sousse', 'Bizerte', 'Gabès'],
+    'Algeria': ['Algiers', 'Oran', 'Constantine', 'Annaba', 'Blida'],
+    'Libya': ['Tripoli', 'Benghazi', 'Misrata', 'Sabha', 'Tobruk'],
+    'Sudan': ['Khartoum', 'Omdurman', 'Port Sudan', 'Kassala'],
+    'Somalia': ['Mogadishu', 'Hargeisa', 'Kismayo', 'Baidoa'],
+    'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Bordeaux', 'Lille', 'Strasbourg'],
+    'Germany': ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund'],
+    'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Edinburgh', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield'],
+    'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego'],
+    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton', 'Ottawa', 'Quebec City', 'Winnipeg'],
+    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Canberra', 'Hobart'],
+    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad'],
+    'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 'Peshawar'],
+    'Philippines': ['Manila', 'Quezon City', 'Davao City', 'Cebu City', 'Makati', 'Taguig', 'Pasig'],
+    'Singapore': ['Singapore'],
+    'South Africa': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth', 'Bloemfontein'],
+    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Port Harcourt', 'Benin City'],
+    'Kenya': ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika'],
+    'Ghana': ['Accra', 'Kumasi', 'Tamale', 'Sekondi-Takoradi', 'Tema'],
+    'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Adana', 'Gaziantep', 'Konya'],
+    'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Málaga', 'Bilbao', 'Zaragoza', 'Palma'],
+    'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'León', 'Juárez'],
+    'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Mar del Plata'],
+    'Colombia': ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Bucaramanga'],
+    'Chile': ['Santiago', 'Valparaíso', 'Concepción', 'La Serena', 'Antofagasta', 'Temuco'],
+    'Peru': ['Lima', 'Arequipa', 'Trujillo', 'Cusco', 'Piura', 'Chiclayo'],
+    'Switzerland': ['Zurich', 'Geneva', 'Bern', 'Lausanne', 'Basel', 'Lucerne'],
+    'Austria': ['Vienna', 'Graz', 'Linz', 'Salzburg', 'Innsbruck', 'Klagenfurt'],
+    'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Bruges', 'Liege', 'Charleroi'],
+    'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven', 'Groningen'],
+    'Portugal': ['Lisbon', 'Porto', 'Braga', 'Coimbra', 'Faro'],
+    'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna'],
+    'Greece': ['Athens', 'Thessaloniki', 'Patras', 'Heraklion', 'Larissa'],
+    'Poland': ['Warsaw', 'Krakow', 'Wroclaw', 'Poznan', 'Gdansk', 'Lodz'],
+    'Czech Republic': ['Prague', 'Brno', 'Ostrava', 'Plzen', 'Liberec'],
+    'Hungary': ['Budapest', 'Debrecen', 'Szeged', 'Miskolc', 'Pécs'],
+    'Romania': ['Bucharest', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Constanța'],
+    'Bulgaria': ['Sofia', 'Plovdiv', 'Varna', 'Burgas', 'Ruse'],
+    'Croatia': ['Zagreb', 'Split', 'Rijeka', 'Osijek', 'Zadar'],
+    'Serbia': ['Belgrade', 'Novi Sad', 'Niš', 'Kragujevac', 'Subotica'],
+    'Slovakia': ['Bratislava', 'Košice', 'Prešov', 'Žilina', 'Nitra'],
+    'Slovenia': ['Ljubljana', 'Maribor', 'Celje', 'Kranj', 'Novo Mesto'],
+    'Lithuania': ['Vilnius', 'Kaunas', 'Klaipėda', 'Šiauliai', 'Panevėžys'],
+    'Latvia': ['Riga', 'Daugavpils', 'Liepāja', 'Jelgava', 'Jūrmala'],
+    'Estonia': ['Tallinn', 'Tartu', 'Narva', 'Pärnu', 'Kohtla-Järve'],
+    'Finland': ['Helsinki', 'Espoo', 'Tampere', 'Vantaa', 'Oulu'],
+    'Sweden': ['Stockholm', 'Gothenburg', 'Malmö', 'Uppsala', 'Västerås'],
+    'Norway': ['Oslo', 'Bergen', 'Trondheim', 'Stavanger', 'Drammen'],
+    'Denmark': ['Copenhagen', 'Aarhus', 'Odense', 'Aalborg', 'Esbjerg'],
+    'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga'],
+    'Malaysia': ['Kuala Lumpur', 'George Town', 'Johor Bahru', 'Petaling Jaya', 'Shah Alam'],
+    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Semarang'],
+    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Hat Yai'],
+    'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Hai Phong', 'Can Tho'],
+    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon'],
+    'Japan': ['Tokyo', 'Osaka', 'Nagoya', 'Sapporo', 'Fukuoka'],
+    'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu'],
+    'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg', 'Kazan'],
+    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
+    'Ireland': ['Dublin', 'Cork', 'Limerick', 'Galway', 'Waterford'],
+    'Northern Cyprus': ['Nicosia', 'Famagusta', 'Kyrenia', 'Morphou', 'Trikomo']
+  };
+
+  const jobTypes = [
+    { value: 'full-time', label: 'Full Time' },
+    { value: 'part-time', label: 'Part Time' },
+    { value: 'fixed-hours', label: 'Fixed Hours' }
+  ];
+
+  const jobTitles = [
+    'Nanny',
+    'Baby Sitter',
+    'Elderly Caregiver',
+    'Driver',
+    'Cook',
+    'House Manager',
+    'Gardener',
+    'Nurse',
+    'Tutor',
+    'Housekeeper',
+    'Personal Assistant',
+    'Cleaner',
+    'Security Guard',
+    'Maintenance Worker',
+    'Teacher'
+  ];
+
+  const translations = {
+    en: {
+      title: 'Search Workers',
+      subtitle: 'Find the perfect worker for your needs',
+      searchFields: 'Search Fields',
+      language: 'Language',
+      selectLanguage: 'Select Language',
+      country: 'Country',
+      selectCountry: 'Select Country',
+      city: 'City',
+      selectCity: 'Select City',
+      jobType: 'Job Type',
+      selectJobType: 'Select Job Type',
+      jobTitle: 'Job Title',
+      selectJobTitle: 'Select Job Title',
+      searchNow: 'Search Now',
+      results: 'Search Results',
+      noResults: 'No workers found matching your criteria',
+      tryAgain: 'Try adjusting your search filters',
+      worker: 'Worker',
+      location: 'Location',
+      experience: 'Experience',
+      rating: 'Rating',
+      hourlyRate: 'Hourly Rate',
+      viewProfile: 'View Profile',
+      hire: 'Hire Now',
+      languageToggle: 'العربية',
+      notifications: 'Notifications',
+      loading: 'Searching for workers...',
+      clearFilters: 'Clear Filters'
+    },
+    ar: {
+      title: 'البحث عن عمال',
+      subtitle: 'ابحث عن العامل المثالي لاحتياجاتك',
+      searchFields: 'حقول البحث',
+      language: 'اللغة',
+      selectLanguage: 'اختر اللغة',
+      country: 'الدولة',
+      selectCountry: 'اختر الدولة',
+      city: 'المدينة',
+      selectCity: 'اختر المدينة',
+      jobType: 'نوع الوظيفة',
+      selectJobType: 'اختر نوع الوظيفة',
+      jobTitle: 'المسمى الوظيفي',
+      selectJobTitle: 'اختر المسمى الوظيفي',
+      searchNow: 'بحث الآن',
+      results: 'نتائج البحث',
+      noResults: 'لا يوجد عمال مطابقين لمعايير البحث',
+      tryAgain: 'حاول تعديل فلاتر البحث',
+      worker: 'العامل',
+      location: 'الموقع',
+      experience: 'الخبرة',
+      rating: 'التقييم',
+      hourlyRate: 'السعر بالساعة',
+      viewProfile: 'عرض الملف الشخصي',
+      hire: 'توظيف الآن',
+      languageToggle: 'English',
+      notifications: 'الإشعارات',
+      loading: 'جاري البحث عن عمال...',
+      clearFilters: 'مسح الفلاتر'
+    }
+  };
+
+  const t = translations[language];
+
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
     } else {
       navigate('/login');
     }
-    fetchWorkers();
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
   }, [navigate]);
 
-  // Fetch workers from backend
-  const fetchWorkers = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/workers`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      // Transform worker data to match the expected format
-      const transformedWorkers = response.data.map(worker => ({
-        id: worker.id,
-        name: worker.fullName || 'Unknown',
-        category: worker.category || 'general',
-        categoryLabel: worker.category || 'Worker',
-        rating: worker.rating || 4.5,
-        reviewCount: worker.reviewCount || 0,
-        location: worker.city || 'Not specified',
-        phone: worker.phone || '',
-        email: worker.email || '',
-        salary: worker.expectedSalary || 0,
-        availability: worker.availability || 'Available',
-        experience: worker.experienceYears || 0,
-        verified: worker.isVerified || false,
-        age: worker.age || 25,
-        image: worker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face',
-        skills: worker.skills || [],
-        bio: worker.bio || '',
-        languages: worker.languages || ['English'],
-        education: worker.education || '',
-        documents: worker.documents || []
-      }));
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
-      setWorkers(transformedWorkers);
-      setFilteredWorkers(transformedWorkers);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setSearchParams(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const getAvailableCountries = () => {
+    if (!searchParams.languageGroup) return [];
+    const group = languageGroups.find(g => g.id === searchParams.languageGroup);
+    return group ? group.countries : [];
+  };
+
+  const getAvailableCities = () => {
+    if (!searchParams.country) return [];
+    return citiesByCountry[searchParams.country] || [];
+  };
+
+  const clearFilters = () => {
+    setSearchParams({
+      languageGroup: '',
+      country: '',
+      city: '',
+      jobType: '',
+      jobTitle: ''
+    });
+    setShowResults(false);
+    setSearchResults([]);
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setShowResults(false);
+
+    try {
+      // This is where you would call your actual API
+      // For now, we'll simulate a search with a message
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // In production, this would be an API call to your backend:
+      // const response = await fetch('/api/workers/search', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(searchParams)
+      // });
+      // const data = await response.json();
+      // setSearchResults(data.workers);
+      
+      // For demo, we'll show a message indicating search was performed
+      setSearchResults([]);
+      setShowResults(true);
+      
+      // The actual search would return real worker data from your database
+      // Example success message
+      alert(`Search performed with: 
+        Language: ${searchParams.languageGroup || 'Any'}
+        Country: ${searchParams.country || 'Any'}
+        City: ${searchParams.city || 'Any'}
+        Job Type: ${searchParams.jobType || 'Any'}
+        Job Title: ${searchParams.jobTitle || 'Any'}`);
+        
     } catch (error) {
-      console.error('Error fetching workers:', error);
-      // If API fails, show empty state
-      setWorkers([]);
-      setFilteredWorkers([]);
+      console.error('Error searching workers:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter and sort workers
-  useEffect(() => {
-    let filtered = [...workers];
-
-    // Search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(worker =>
-        worker.name.toLowerCase().includes(term) ||
-        worker.categoryLabel.toLowerCase().includes(term) ||
-        worker.location.toLowerCase().includes(term) ||
-        worker.skills.some(s => s.toLowerCase().includes(term))
-      );
-    }
-
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(worker => 
-        worker.category === selectedCategory || 
-        worker.categoryLabel?.toLowerCase().includes(selectedCategory)
-      );
-    }
-
-    // Salary filters
-    if (filters.minSalary) {
-      filtered = filtered.filter(worker => worker.salary >= parseInt(filters.minSalary));
-    }
-    if (filters.maxSalary) {
-      filtered = filtered.filter(worker => worker.salary <= parseInt(filters.maxSalary));
-    }
-
-    // Rating filter
-    if (filters.minRating) {
-      filtered = filtered.filter(worker => worker.rating >= filters.minRating);
-    }
-
-    // Availability filter
-    if (filters.availability !== 'all') {
-      filtered = filtered.filter(worker => 
-        worker.availability?.toLowerCase() === filters.availability.toLowerCase()
-      );
-    }
-
-    // Experience filter
-    if (filters.experience !== 'all') {
-      filtered = filtered.filter(worker => {
-        const exp = worker.experience || 0;
-        switch(filters.experience) {
-          case '0-2': return exp <= 2;
-          case '3-5': return exp >= 3 && exp <= 5;
-          case '6-10': return exp >= 6 && exp <= 10;
-          case '10+': return exp > 10;
-          default: return true;
-        }
-      });
-    }
-
-    // Sort
-    switch(sortBy) {
-      case 'rating':
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'salary-low':
-        filtered.sort((a, b) => (a.salary || 0) - (b.salary || 0));
-        break;
-      case 'salary-high':
-        filtered.sort((a, b) => (b.salary || 0) - (a.salary || 0));
-        break;
-      case 'experience':
-        filtered.sort((a, b) => (b.experience || 0) - (a.experience || 0));
-        break;
-      default:
-        break;
-    }
-
-    setFilteredWorkers(filtered);
-  }, [workers, searchTerm, selectedCategory, filters, sortBy]);
-
-  const toggleSave = (workerId) => {
-    setSavedWorkers(prev => 
-      prev.includes(workerId) 
-        ? prev.filter(id => id !== workerId)
-        : [...prev, workerId]
-    );
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
   };
 
-  const handleWorkerClick = (worker) => {
-    setSelectedWorker(worker);
-    setShowWorkerModal(true);
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
   };
 
-  if (loading) {
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/employer-dashboard" className="text-gray-600 hover:text-red-600 transition">
-              ← Back
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Find Workers</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <Grid size={18} />
-            </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <List size={18} />
-            </button>
-            <span className="text-sm text-gray-500">{filteredWorkers.length} workers found</span>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <EmployerSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, category, location, or skill..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-              />
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+              </div>
             </div>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
-            >
-              <Sliders size={18} />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </button>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-            >
-              <option value="rating">Sort by Rating</option>
-              <option value="salary-low">Salary: Low to High</option>
-              <option value="salary-high">Salary: High to Low</option>
-              <option value="experience">Sort by Experience</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Page Header - Teal Theme */}
+          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+            </div>
           </div>
 
-          {/* Filters */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Salary</label>
-                <input
-                  type="number"
-                  placeholder="EGP"
-                  value={filters.minSalary}
-                  onChange={(e) => setFilters({...filters, minSalary: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
+          {/* Search Form - Teal Theme */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.searchFields}</h3>
+            <form onSubmit={handleSearch}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Language */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.language}
+                  </label>
+                  <select
+                    name="languageGroup"
+                    value={searchParams.languageGroup}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{t.selectLanguage}</option>
+                    {languageGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.flag} {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Country */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.country}
+                  </label>
+                  <select
+                    name="country"
+                    value={searchParams.country}
+                    onChange={handleInputChange}
+                    disabled={!searchParams.languageGroup}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{t.selectCountry}</option>
+                    {getAvailableCountries().map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.city}
+                  </label>
+                  <select
+                    name="city"
+                    value={searchParams.city}
+                    onChange={handleInputChange}
+                    disabled={!searchParams.country}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{t.selectCity}</option>
+                    {getAvailableCities().map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Job Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.jobType}
+                  </label>
+                  <select
+                    name="jobType"
+                    value={searchParams.jobType}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{t.selectJobType}</option>
+                    {jobTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Job Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.jobTitle}
+                  </label>
+                  <select
+                    name="jobTitle"
+                    value={searchParams.jobTitle}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{t.selectJobTitle}</option>
+                    {jobTitles.map((title) => (
+                      <option key={title} value={title}>
+                        {title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search & Clear Buttons */}
+                <div className="flex items-end gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        {t.loading}
+                      </>
+                    ) : (
+                      <>
+                        <SearchIcon size={18} />
+                        {t.searchNow}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Salary</label>
-                <input
-                  type="number"
-                  placeholder="EGP"
-                  value={filters.maxSalary}
-                  onChange={(e) => setFilters({...filters, maxSalary: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
-                <select
-                  value={filters.minRating}
-                  onChange={(e) => setFilters({...filters, minRating: parseFloat(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="0">Any</option>
-                  <option value="3">3+ Stars</option>
-                  <option value="4">4+ Stars</option>
-                  <option value="4.5">4.5+ Stars</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
-                <select
-                  value={filters.availability}
-                  onChange={(e) => setFilters({...filters, availability: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="all">All</option>
-                  <option value="available">Available</option>
-                  <option value="part-time">Part-Time</option>
-                  <option value="full-time">Full-Time</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
-                <select
-                  value={filters.experience}
-                  onChange={(e) => setFilters({...filters, experience: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="all">All</option>
-                  <option value="0-2">0-2 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="6-10">6-10 years</option>
-                  <option value="10+">10+ years</option>
-                </select>
-              </div>
+            </form>
+          </div>
+
+          {/* Results Section */}
+          {showResults && (
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.results}</h3>
+              
+              {/* No Results Message */}
+              {searchResults.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noResults}</h3>
+                  <p className="text-gray-500">{t.tryAgain}</p>
+                  <button
+                    onClick={clearFilters}
+                    className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    {t.clearFilters}
+                  </button>
+                </div>
+              )}
+
+              {/* Results would be displayed here from your API */}
+              {searchResults.length > 0 && (
+                <div className="space-y-4">
+                  {/* Worker cards would be rendered here */}
+                  <p className="text-gray-500 text-center">Worker results will appear here after connecting to your backend API.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {/* Categories */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full border transition flex items-center gap-2 ${
-                selectedCategory === cat.id 
-                  ? 'border-red-500 bg-red-50 text-red-600' 
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
-              }`}
-            >
-              {cat.icon}
-              <span className="text-sm font-medium">{cat.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Workers Grid */}
-        {filteredWorkers.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No workers found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
-            <button 
-              onClick={() => {
-                setSearchTerm('');
-                setFilters({minSalary: '', maxSalary: '', minRating: 0, availability: 'all', experience: 'all'});
-                setSelectedCategory('all');
-              }}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              Clear All Filters
-            </button>
-          </div>
-        ) : (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-            : 'space-y-4'
-          }>
-            {filteredWorkers.map((worker) => (
-              <div 
-                key={worker.id} 
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer ${
-                  viewMode === 'list' ? 'flex flex-col sm:flex-row p-4' : 'p-4'
-                }`}
-                onClick={() => handleWorkerClick(worker)}
-              >
-                {/* Image */}
-                <div className={viewMode === 'list' ? 'sm:w-32 sm:flex-shrink-0' : ''}>
-                  <div className="relative">
-                    <img
-                      src={worker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face'}
-                      alt={worker.name}
-                      className={`rounded-lg object-cover ${
-                        viewMode === 'list' ? 'w-full h-32' : 'w-full h-48'
-                      }`}
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face';
-                      }}
-                    />
-                    {worker.verified && (
-                      <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
-                        <CheckCircle size={14} className="text-white" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className={`flex-1 ${viewMode === 'list' ? 'sm:ml-4 mt-3 sm:mt-0' : 'mt-3'}`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{worker.name}</h3>
-                      <p className="text-sm text-gray-500">{worker.categoryLabel}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{worker.rating || 0}</span>
-                      <span className="text-xs text-gray-400">({worker.reviewCount || 0})</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <MapPin size={14} className="text-gray-400" />
-                      {worker.location}
-                    </span>
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <DollarSign size={14} className="text-gray-400" />
-                      EGP {worker.salary?.toLocaleString() || 0}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      worker.availability?.toLowerCase() === 'available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {worker.availability || 'Not specified'}
-                    </span>
-                  </div>
-
-                  {worker.skills && worker.skills.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {worker.skills.slice(0, 3).map((skill, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
-                          {skill}
-                        </span>
-                      ))}
-                      {worker.skills.length > 3 && (
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-400">
-                          +{worker.skills.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleWorkerClick(worker);
-                      }}
-                      className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
-                    >
-                      View Profile
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/worker/${worker.id}`);
-                      }}
-                      className="p-1.5 text-gray-400 hover:text-red-600 transition"
-                    >
-                      <MessageCircle size={18} />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSave(worker.id);
-                      }}
-                      className="p-1.5 text-gray-400 hover:text-red-600 transition"
-                    >
-                      {savedWorkers.includes(worker.id) ? (
-                        <Bookmark size={18} className="text-red-600 fill-red-600" />
-                      ) : (
-                        <Bookmark size={18} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Worker Detail Modal */}
-      {showWorkerModal && selectedWorker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Worker Profile</h2>
-              <button onClick={() => setShowWorkerModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                <X size={24} className="text-gray-400" />
-              </button>
-            </div>
-
-            {/* Worker Info */}
-            <div className="flex items-start gap-4 mb-4">
-              <img 
-                src={selectedWorker.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face'} 
-                alt={selectedWorker.name} 
-                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=200&h=200&fit=crop&crop=face';
-                }}
-              />
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-800">{selectedWorker.name}</h3>
-                <p className="text-gray-500">{selectedWorker.categoryLabel}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{selectedWorker.rating || 0}</span>
-                  <span className="text-xs text-gray-400">({selectedWorker.reviewCount || 0} reviews)</span>
-                  {selectedWorker.verified && (
-                    <span className="text-xs text-green-600 flex items-center gap-1">
-                      <CheckCircle size={12} /> Verified
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <MapPin size={14} className="text-gray-400" /> {selectedWorker.location}
-                  </span>
-                  <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <DollarSign size={14} className="text-gray-400" /> EGP {selectedWorker.salary?.toLocaleString() || 0}/month
-                  </span>
-                  <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <Briefcase size={14} className="text-gray-400" /> {selectedWorker.experience || 0} years
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium text-gray-800">{selectedWorker.phone || 'Not provided'}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-800">{selectedWorker.email || 'Not provided'}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Languages</p>
-                <p className="font-medium text-gray-800">{selectedWorker.languages?.join(', ') || 'Not specified'}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Education</p>
-                <p className="font-medium text-gray-800">{selectedWorker.education || 'Not specified'}</p>
-              </div>
-            </div>
-
-            {/* Bio */}
-            {selectedWorker.bio && (
-              <div className="p-3 bg-gray-50 rounded-lg mb-4">
-                <p className="text-sm text-gray-500">Bio</p>
-                <p className="text-gray-700">{selectedWorker.bio}</p>
-              </div>
-            )}
-
-            {/* Skills */}
-            {selectedWorker.skills && selectedWorker.skills.length > 0 && (
-              <div className="p-3 bg-gray-50 rounded-lg mb-4">
-                <p className="text-sm text-gray-500">Skills</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedWorker.skills.map((skill, i) => (
-                    <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3">
-              <button className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2">
-                <Briefcase size={18} /> Hire Now
-              </button>
-              <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2">
-                <MessageCircle size={18} /> Message
-              </button>
-              <button 
-                onClick={() => {
-                  const phone = selectedWorker.phone?.replace(/[^0-9]/g, '');
-                  if (phone) {
-                    window.open(`https://wa.me/${phone}`, '_blank');
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-              >
-                <span>💬</span> WhatsApp
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </main>
     </div>
   );
-}
+};
 
 export default EmployerSearch;
