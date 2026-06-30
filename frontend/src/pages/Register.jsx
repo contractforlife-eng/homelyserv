@@ -12,8 +12,7 @@ import {
   CheckCircle,
   Briefcase,
   Phone,
-  MapPin,
-  Calendar
+  MapPin
 } from 'lucide-react';
 
 function Register() {
@@ -165,37 +164,6 @@ function Register() {
     }
   };
 
-  // Demo quick registration (for testing)
-  const quickRegister = (role) => {
-    setLoading(true);
-    setErrors({});
-    
-    const user = {
-      id: `user_${Date.now()}`,
-      fullName: role === 'WORKER' ? 'John Worker' : 'Jane Employer',
-      email: role === 'WORKER' ? 'worker@demo.com' : 'employer@demo.com',
-      role: role,
-      phone: '+20123456789',
-      location: 'Cairo, Egypt',
-      createdAt: new Date().toISOString(),
-      profileComplete: false
-    };
-
-    const existingUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const userExists = existingUsers.find(u => u.email === user.email);
-    
-    if (!userExists) {
-      existingUsers.push(user);
-      localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
-    }
-
-    setSuccess(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/login');
-    }, 1500);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 p-4">
       <div className="w-full max-w-lg">
@@ -251,27 +219,6 @@ function Register() {
               <AlertCircle size={16} /> {errors.general}
             </div>
           )}
-
-          {/* Quick Register Buttons - For testing */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-2">Quick Test Registration</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => quickRegister('WORKER')}
-                disabled={loading}
-                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium rounded-lg transition border border-blue-200"
-              >
-                👤 Create Worker
-              </button>
-              <button
-                onClick={() => quickRegister('EMPLOYER')}
-                disabled={loading}
-                className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 text-sm font-medium rounded-lg transition border border-green-200"
-              >
-                🏢 Create Employer
-              </button>
-            </div>
-          </div>
 
           <form onSubmit={handleSubmit}>
             {/* Full Name */}
