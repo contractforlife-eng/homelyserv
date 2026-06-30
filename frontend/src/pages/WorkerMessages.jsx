@@ -4,10 +4,7 @@ import {
   Home,
   User,
   Briefcase,
-  FileCheck,
   MessageCircle,
-  Calendar,
-  FileText,
   Settings,
   HelpCircle,
   LogOut,
@@ -15,19 +12,19 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  X,
+  AlertTriangle,
   Search,
   Send,
-  Paperclip,
   Phone,
   Video,
   MoreVertical,
-  Globe,
-  X,
   CheckCheck,
   Clock
 } from 'lucide-react';
 
-// Sidebar Component (same as dashboard)
+// Sidebar Component
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -40,39 +37,39 @@ const WorkerSidebar = ({
   const location = useLocation();
 
   const translations = {
-  en: {
-    dashboard: 'Dashboard',
-    myProfile: 'My Profile',
-    myOffers: 'My Offers',
-    messages: 'Messages',
-    complaints: 'Complaints',
-    settings: 'Settings',
-    help: 'Help & Support',
-    logout: 'Logout',
-    overview: 'Overview'
-  },
-  ar: {
-    dashboard: 'لوحة التحكم',
-    myProfile: 'ملفي الشخصي',
-    myOffers: 'عروضي',
-    messages: 'الرسائل',
-    complaints: 'الشكاوى',
-    settings: 'الإعدادات',
-    help: 'المساعدة والدعم',
-    logout: 'تسجيل الخروج',
-    overview: 'نظرة عامة'
-  }
-};
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myOffers: 'My Offers',
+      messages: 'Messages',
+      complaints: 'Complaints',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myOffers: 'عروضي',
+      messages: 'الرسائل',
+      complaints: 'الشكاوى',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
 
   const t = translations[language];
 
   const menuItems = [
-  { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-  { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-  { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-  { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-  { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-];
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+  ];
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -241,7 +238,6 @@ const WorkerMessages = () => {
       noConversationsDesc: 'Start applying for jobs to connect with employers',
       online: 'Online',
       offline: 'Offline',
-      typing: 'Typing...',
       languageToggle: 'العربية',
       notifications: 'Notifications'
     },
@@ -255,7 +251,6 @@ const WorkerMessages = () => {
       noConversationsDesc: 'ابدأ في التقديم على الوظائف للتواصل مع أصحاب العمل',
       online: 'متصل',
       offline: 'غير متصل',
-      typing: 'يكتب...',
       languageToggle: 'English',
       notifications: 'الإشعارات'
     }
@@ -297,7 +292,6 @@ const WorkerMessages = () => {
     }
   ];
 
-  // Demo messages for selected chat
   const messages = [
     { id: 1, sender: 'employer', text: 'Hello! We saw your profile and are interested.', time: '10:00 AM', read: true },
     { id: 2, sender: 'worker', text: 'Hi! Thank you for reaching out. I am interested.', time: '10:05 AM', read: true },
@@ -558,9 +552,6 @@ const WorkerMessages = () => {
                     {/* Message Input */}
                     <div className="p-4 border-t border-gray-200">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
-                        <button type="button" className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <Paperclip size={20} className="text-gray-500" />
-                        </button>
                         <input
                           type="text"
                           value={message}
