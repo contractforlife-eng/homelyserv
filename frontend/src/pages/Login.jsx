@@ -36,7 +36,7 @@ function Login() {
 
   // Redirect function
   const redirectUser = (user) => {
-    console.log('🔀 Redirecting user with role:', user.role);
+    console.log('🔀 Redirecting user with role:', user.role, 'name:', user.fullName);
     setLoading(false);
     
     if (user.role === 'ADMIN') {
@@ -54,11 +54,11 @@ function Login() {
   const checkRegisteredUser = (email) => {
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      console.log('📦 Checking registered users:', users);
+      console.log('📦 Checking registered users for email:', email);
       
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (user) {
-        console.log('✅ Found registered user:', user);
+        console.log('✅ Found registered user:', user.fullName);
         return user;
       }
     } catch (error) {
@@ -81,67 +81,80 @@ function Login() {
     return null;
   };
 
-  // Quick login function - NOW LOADS SAVED PROFILE DATA
-  const quickLogin = (role, email) => {
-    console.log('🔄 Quick login for role:', role, 'email:', email);
+  // Login function - loads the correct user
+  const loginUser = (userData, role, email) => {
+    console.log('🔄 Logging in user:', email, 'role:', role);
     setError('');
     setLoading(true);
 
     let user = {};
     let token = '';
 
-    // First check if there's saved profile data for this email
-    const savedProfile = email ? getSavedProfileData(email) : null;
-
-    if (role === 'WORKER') {
-      user = {
-        id: 'worker_001',
-        fullName: savedProfile?.fullName || 'Ahmed Ali',
-        email: email || 'worker@homelyserv.com',
-        role: 'WORKER',
-        profileComplete: true,
-        phone: savedProfile?.phone || '+201234567890',
-        location: savedProfile?.location || 'Cairo, Egypt',
-        bio: savedProfile?.bio || 'Experienced professional in home services with over 3 years of experience.',
-        skills: savedProfile?.skills || ['Child Care', 'First Aid', 'Communication', 'Patience'],
-        experience: savedProfile?.experience || '3 years',
-        hourlyRate: savedProfile?.hourlyRate || '35'
-      };
-      token = 'demo_worker_token_12345';
-    } else if (role === 'EMPLOYER') {
-      user = {
-        id: 'employer_001',
-        fullName: savedProfile?.fullName || 'Sara Mohamed',
-        email: email || 'employer@homelyserv.com',
-        role: 'EMPLOYER',
-        companyName: savedProfile?.companyName || 'Elite Family Services',
-        phone: savedProfile?.phone || '+201234567891',
-        location: savedProfile?.location || 'Cairo, Egypt',
-        bio: savedProfile?.bio || 'Looking for professional home service providers.'
-      };
-      token = 'demo_employer_token_12345';
-    } else if (role === 'ADMIN') {
-      user = {
-        id: 'admin_001',
-        fullName: 'Admin User',
-        email: 'admin@homelyserv.com',
-        role: 'ADMIN',
-        phone: '+201234567892'
-      };
-      token = 'demo_admin_token_12345';
+    // If we have existing user data, use it
+    if (userData) {
+      user = { ...userData };
+      token = `user_token_${Date.now()}`;
+      console.log('✅ Using existing user data:', user.fullName);
+    } else {
+      // Create new user based on role
+      if (role === 'WORKER') {
+        user = {
+          id: `worker_${Date.now()}`,
+          fullName: email === 'worker@homelyserv.com' ? 'Ahmed Ali' : 'Worker',
+          email: email || 'worker@homelyserv.com',
+          role: 'WORKER',
+          profileComplete: true,
+          phone: '+201234567890',
+          location: 'Cairo, Egypt',
+          bio: 'Experienced professional in home services.',
+          skills: ['Child Care', 'First Aid', 'Communication'],
+          experience: '3 years',
+          hourlyRate: '35'
+        };
+        token = `worker_token_${Date.now()}`;
+      } else if (role === 'EMPLOYER') {
+        user = {
+          id: `employer_${Date.now()}`,
+          fullName: email === 'employer@homelyserv.com' ? 'Sara Mohamed' : 'Employer',
+          email: email || 'employer@homelyserv.com',
+          role: 'EMPLOYER',
+          companyName: 'Company Name',
+          phone: '+201234567891',
+          location: 'Cairo, Egypt',
+          bio: 'Looking for professional home service providers.'
+        };
+        token = `employer_token_${Date.now()}`;
+      } else if (role === 'ADMIN') {
+        user = {
+          id: `admin_${Date.now()}`,
+          fullName: 'Admin User',
+          email: email || 'admin@homelyserv.com',
+          role: 'ADMIN',
+          phone: '+201234567892'
+        };
+        token = `admin_token_${Date.now()}`;
+      } else {
+        setError('Invalid role selected');
+        setLoading(false);
+        return;
+      }
+      console.log('🆕 Created new user:', user.fullName);
     }
 
-    // Store in localStorage with correct keys
+    // Check for saved profile data and merge
+    const savedProfile = getSavedProfileData(user.email);
+    if (savedProfile) {
+      user = { ...user, ...savedProfile };
+      console.log('📥 Merged saved profile data');
+    }
+
+    // Store in localStorage
     localStorage.setItem('homelyserv_token', token);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
     
-    console.log('✅ Login successful with profile data:', {
-      fullName: user.fullName,
-      bio: user.bio,
-      skills: user.skills,
-      experience: user.experience,
-      hourlyRate: user.hourlyRate
-    });
+    console.log('✅ Login successful:', user.fullName);
+    console.log('✅ User role:', user.role);
+    console.log('✅ User email:', user.email);
     
     // Redirect after a small delay
     setTimeout(() => {
@@ -167,18 +180,17 @@ function Login() {
     const registeredUser = checkRegisteredUser(email);
     if (registeredUser) {
       console.log('✅ Found registered user, logging in:', registeredUser.fullName);
-      // Login with saved profile data if available
-      quickLogin(registeredUser.role, email);
+      loginUser(registeredUser, registeredUser.role, email);
       return;
     }
 
     // SECOND: Check demo accounts
     if (email.toLowerCase() === 'worker@homelyserv.com' || email.toLowerCase() === 'worker') {
-      quickLogin('WORKER', email);
+      loginUser(null, 'WORKER', email);
     } else if (email.toLowerCase() === 'employer@homelyserv.com' || email.toLowerCase() === 'employer') {
-      quickLogin('EMPLOYER', email);
+      loginUser(null, 'EMPLOYER', email);
     } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
-      quickLogin('ADMIN', email);
+      loginUser(null, 'ADMIN', email);
     } else {
       setError('Invalid email or password. Please try again.');
       setLoading(false);
@@ -322,6 +334,29 @@ function Login() {
               Create one
             </Link>
           </p>
+
+          {/* Demo Accounts Info */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-500 text-center font-medium">Demo Accounts:</p>
+            <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+              <div className="text-center">
+                <span className="text-blue-600 font-medium">Worker</span>
+                <br />
+                <span className="text-gray-500">worker@homelyserv.com</span>
+              </div>
+              <div className="text-center">
+                <span className="text-green-600 font-medium">Employer</span>
+                <br />
+                <span className="text-gray-500">employer@homelyserv.com</span>
+              </div>
+              <div className="text-center">
+                <span className="text-purple-600 font-medium">Admin</span>
+                <br />
+                <span className="text-gray-500">admin@homelyserv.com</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-2">Password: any (e.g., password123)</p>
+          </div>
         </div>
       </div>
     </div>
