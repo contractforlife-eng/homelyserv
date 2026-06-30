@@ -5,8 +5,6 @@ import {
   User,
   Briefcase,
   MessageCircle,
-  Calendar,
-  FileText,
   Settings,
   HelpCircle,
   LogOut,
@@ -21,7 +19,8 @@ import {
   TrendingUp,
   Globe,
   X,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 
 // Sidebar Component
@@ -42,8 +41,7 @@ const WorkerSidebar = ({
       myProfile: 'My Profile',
       myOffers: 'My Offers',
       messages: 'Messages',
-      calendar: 'Calendar',
-      documents: 'Documents',
+      complaints: 'Complaints',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -54,8 +52,7 @@ const WorkerSidebar = ({
       myProfile: 'ملفي الشخصي',
       myOffers: 'عروضي',
       messages: 'الرسائل',
-      calendar: 'التقويم',
-      documents: 'المستندات',
+      complaints: 'الشكاوى',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -70,8 +67,7 @@ const WorkerSidebar = ({
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
-    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
   ];
 
   const isActive = (path) => {

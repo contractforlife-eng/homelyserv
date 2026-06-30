@@ -42,42 +42,38 @@ const WorkerSidebar = ({
   const location = useLocation();
 
   const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      myProfile: 'My Profile',
-      myOffers: 'My Offers',
-      messages: 'Messages',
-      calendar: 'Calendar',
-      documents: 'Documents',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      myProfile: 'ملفي الشخصي',
-      myOffers: 'عروضي',
-      messages: 'الرسائل',
-      calendar: 'التقويم',
-      documents: 'المستندات',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
-    }
-  };
-
+  en: {
+    dashboard: 'Dashboard',
+    myProfile: 'My Profile',
+    myOffers: 'My Offers',
+    messages: 'Messages',
+    complaints: 'Complaints',
+    settings: 'Settings',
+    help: 'Help & Support',
+    logout: 'Logout',
+    overview: 'Overview'
+  },
+  ar: {
+    dashboard: 'لوحة التحكم',
+    myProfile: 'ملفي الشخصي',
+    myOffers: 'عروضي',
+    messages: 'الرسائل',
+    complaints: 'الشكاوى',
+    settings: 'الإعدادات',
+    help: 'المساعدة والدعم',
+    logout: 'تسجيل الخروج',
+    overview: 'نظرة عامة'
+  }
+};
   const t = translations[language];
 
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-    { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
-    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
-  ];
+  { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+  { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
+  { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+  { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
+  { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+];
 
   const isActive = (path) => {
     return location.pathname === path;
