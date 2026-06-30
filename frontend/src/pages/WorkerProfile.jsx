@@ -222,7 +222,6 @@ const WorkerSidebar = ({
 // Main WorkerProfile Component
 const WorkerProfile = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -239,6 +238,7 @@ const WorkerProfile = () => {
     hourlyRate: ''
   });
   const [newSkill, setNewSkill] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const translations = {
     en: {
@@ -261,8 +261,10 @@ const WorkerProfile = () => {
       memberSince: 'Member Since',
       rating: 'Rating',
       jobsCompleted: 'Jobs Completed',
+      languages: 'Languages',
+      notifications: 'Notifications',
       languageToggle: 'العربية',
-      notifications: 'Notifications'
+      saved: 'Profile updated successfully!'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -284,19 +286,17 @@ const WorkerProfile = () => {
       memberSince: 'عضو منذ',
       rating: 'التقييم',
       jobsCompleted: 'الوظائف المكتملة',
+      languages: 'اللغات',
+      notifications: 'الإشعارات',
       languageToggle: 'English',
-      notifications: 'الإشعارات'
+      saved: 'تم تحديث الملف الشخصي بنجاح!'
     }
   };
 
   const t = translations[language];
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
+  // Load user data - FIXED to always load from localStorage
+  const loadUserData = () => {
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
@@ -312,11 +312,23 @@ const WorkerProfile = () => {
           experience: parsedUser.experience || '3 years',
           hourlyRate: parsedUser.hourlyRate || '35'
         });
+        return parsedUser;
       } catch (error) {
         console.error('Error parsing user data:', error);
-        navigate('/login');
+        return null;
       }
-    } else {
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = loadUserData();
+    if (!userData) {
       navigate('/login');
     }
 
@@ -353,7 +365,24 @@ const WorkerProfile = () => {
   };
 
   const handleEditToggle = () => {
+    if (isEditing) {
+      // Reload original data when canceling
+      const userData = loadUserData();
+      if (userData) {
+        setFormData({
+          fullName: userData.fullName || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          location: userData.location || '',
+          bio: userData.bio || 'Experienced professional in home services.',
+          skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: userData.experience || '3 years',
+          hourlyRate: userData.hourlyRate || '35'
+        });
+      }
+    }
     setIsEditing(!isEditing);
+    setSaveSuccess(false);
   };
 
   const handleInputChange = (e) => {
@@ -382,6 +411,7 @@ const WorkerProfile = () => {
   };
 
   const handleSave = () => {
+    // Create updated user object
     const updatedUser = {
       ...user,
       fullName: formData.fullName,
@@ -392,10 +422,22 @@ const WorkerProfile = () => {
       experience: formData.experience,
       hourlyRate: formData.hourlyRate
     };
+
+    // Save to localStorage - THIS IS THE FIX
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+    
+    // Update state
     setUser(updatedUser);
     setIsEditing(false);
-    alert('Profile updated successfully!');
+    setSaveSuccess(true);
+    
+    // Show success message
+    alert(t.saved);
+    
+    // Reload the page to reflect changes everywhere
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   if (!user) {
@@ -474,6 +516,14 @@ const WorkerProfile = () => {
               </button>
             </div>
           </div>
+
+          {/* Success Message */}
+          {saveSuccess && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+              <CheckCircle size={16} />
+              {t.saved}
+            </div>
+          )}
 
           {/* Profile Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

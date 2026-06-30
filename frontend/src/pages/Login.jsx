@@ -37,11 +37,8 @@ function Login() {
   // Redirect function
   const redirectUser = (user) => {
     console.log('🔀 Redirecting user with role:', user.role);
-    
-    // Clear any existing state
     setLoading(false);
     
-    // Redirect based on role
     if (user.role === 'ADMIN') {
       navigate('/admin');
     } else if (user.role === 'EMPLOYER') {
@@ -53,13 +50,12 @@ function Login() {
     }
   };
 
-  // Quick login function (kept for form submission)
+  // Quick login function - THIS IS THE FIX
   const quickLogin = (role) => {
     console.log('🔄 Quick login for role:', role);
     setError('');
     setLoading(true);
 
-    // Create user data based on role
     let user = {};
     let token = '';
 
@@ -71,7 +67,11 @@ function Login() {
         role: 'WORKER',
         profileComplete: true,
         phone: '+201234567890',
-        location: 'Cairo, Egypt'
+        location: 'Cairo, Egypt',
+        bio: 'Experienced professional in home services with over 3 years of experience.',
+        skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
+        experience: '3 years',
+        hourlyRate: '35'
       };
       token = 'demo_worker_token_12345';
     } else if (role === 'EMPLOYER') {
@@ -82,7 +82,8 @@ function Login() {
         role: 'EMPLOYER',
         companyName: 'Elite Family Services',
         phone: '+201234567891',
-        location: 'Cairo, Egypt'
+        location: 'Cairo, Egypt',
+        bio: 'Looking for professional home service providers.'
       };
       token = 'demo_employer_token_12345';
     } else if (role === 'ADMIN') {
@@ -96,17 +97,17 @@ function Login() {
       token = 'demo_admin_token_12345';
     }
 
-    // Store in localStorage
+    // Store in localStorage with correct keys
     localStorage.setItem('homelyserv_token', token);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
     
     console.log('✅ Login successful:', user.fullName);
     console.log('✅ User role:', user.role);
     
-    // Redirect after a small delay to ensure state updates
+    // Redirect after a small delay
     setTimeout(() => {
       redirectUser(user);
-    }, 300);
+    }, 500);
   };
 
   // Handle form submission
@@ -129,8 +130,7 @@ function Login() {
     } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
       quickLogin('ADMIN');
     } else {
-      // Default to worker if email doesn't match any demo account
-      setError('No account found with this email. Please try again.');
+      setError('No account found with this email. Please use demo accounts below.');
       setLoading(false);
     }
   };
@@ -181,6 +181,43 @@ function Login() {
               <AlertCircle size={16} /> {error}
             </div>
           )}
+
+          {/* QUICK LOGIN BUTTONS */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+            <p className="text-xs text-gray-600 text-center mb-3 font-bold">🚀 Quick Login (Click to Login)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => quickLogin('WORKER')}
+                disabled={loading}
+                className="px-3 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '👤 Worker'}
+              </button>
+              <button
+                onClick={() => quickLogin('EMPLOYER')}
+                disabled={loading}
+                className="px-3 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '🏢 Employer'}
+              </button>
+              <button
+                onClick={() => quickLogin('ADMIN')}
+                disabled={loading}
+                className="px-3 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '🔐 Admin'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Click any button to instantly login
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 border-t border-gray-200"></div>
+            <span className="text-sm text-gray-400">Or login with email</span>
+            <div className="flex-1 border-t border-gray-200"></div>
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
