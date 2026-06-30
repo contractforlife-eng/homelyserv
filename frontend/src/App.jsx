@@ -19,6 +19,7 @@ import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
+import Help from './pages/Help';  // Changed from HelpSupport to Help
 
 // Worker Pages
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -27,7 +28,6 @@ import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
-import HelpSupport from './pages/Help';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -74,7 +74,6 @@ function App() {
   return (
     <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
-      {/* Root path now redirects to login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -203,14 +202,6 @@ function App() {
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerSettings />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/help" 
-        element={
-          <ProtectedRoute requiredRole="WORKER">
-            <HelpSupport />
           </ProtectedRoute>
         } 
       />
@@ -351,6 +342,16 @@ function App() {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminHires />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========== HELP ROUTE - WORKS FOR BOTH WORKER AND EMPLOYER ========== */}
+      <Route 
+        path="/help" 
+        element={
+          <ProtectedRoute>
+            <Help />
           </ProtectedRoute>
         } 
       />
