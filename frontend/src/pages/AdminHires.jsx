@@ -1,349 +1,345 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
-import useAuthStore from '../store/authStore';
-import toast from 'react-hot-toast';
-import AdminLayout from '../components/AdminLayout';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Briefcase,
+  Users,
+  Calendar,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Eye,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Star
+} from 'lucide-react';
 
-export default function AdminHires() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const [hires, setHires] = useState([]);
+const AdminHires = () => {
   const [loading, setLoading] = useState(true);
+  const [hires, setHires] = useState([]);
+  const [filteredHires, setFilteredHires] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [isMobile, setIsMobile] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [expandedHire, setExpandedHire] = useState(null);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    // Simulate fetching data
+    setTimeout(() => {
+      const demoHires = [
+        {
+          id: 'HS-2026-001',
+          worker: {
+            name: 'Ahmed Ali',
+            category: 'Nanny',
+            rating: 4.9,
+            location: 'Cairo, Egypt',
+            phone: '+201234567890',
+            email: 'ahmed@example.com'
+          },
+          employer: {
+            name: 'Sara Mohamed',
+            phone: '+201234567891',
+            email: 'sara@example.com'
+          },
+          position: 'Nanny - Full Time',
+          salary: 3500,
+          status: 'active',
+          startDate: '2026-07-01',
+          createdAt: '2026-06-15',
+          paymentStatus: 'confirmed'
+        },
+        {
+          id: 'HS-2026-002',
+          worker: {
+            name: 'Mona Hassan',
+            category: 'Elderly Caregiver',
+            rating: 4.8,
+            location: 'Alexandria, Egypt',
+            phone: '+201234567892',
+            email: 'mona@example.com'
+          },
+          employer: {
+            name: 'Khaled Mostafa',
+            phone: '+201234567893',
+            email: 'khaled@example.com'
+          },
+          position: 'Elderly Caregiver - Part Time',
+          salary: 4200,
+          status: 'pending',
+          startDate: null,
+          createdAt: '2026-06-18',
+          paymentStatus: 'pending'
+        },
+        {
+          id: 'HS-2026-003',
+          worker: {
+            name: 'Khaled Mostafa',
+            category: 'Driver',
+            rating: 4.7,
+            location: 'Giza, Egypt',
+            phone: '+201234567894',
+            email: 'khaled.driver@example.com'
+          },
+          employer: {
+            name: 'Nadia Ibrahim',
+            phone: '+201234567895',
+            email: 'nadia@example.com'
+          },
+          position: 'Driver - Full Time',
+          salary: 3800,
+          status: 'completed',
+          startDate: '2026-05-01',
+          createdAt: '2026-04-25',
+          paymentStatus: 'confirmed'
+        }
+      ];
+
+      setHires(demoHires);
+      setFilteredHires(demoHires);
+      setLoading(false);
+    }, 1000);
   }, []);
 
+  // Filter and search
   useEffect(() => {
-    if (user?.role !== 'ADMIN') {
-      navigate('/');
-      return;
+    let filtered = hires;
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(h => h.status === statusFilter);
     }
-    fetchHires();
-  }, []);
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(h =>
+        h.worker.name.toLowerCase().includes(searchLower) ||
+        h.employer.name.toLowerCase().includes(searchLower) ||
+        h.position.toLowerCase().includes(searchLower) ||
+        h.id.toLowerCase().includes(searchLower)
+      );
+    }
+    setFilteredHires(filtered);
+  }, [hires, statusFilter, searchTerm]);
 
-  const fetchHires = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/hires/all');
-      setHires(res.data || []);
-    } catch (err) {
-      console.error('Failed to fetch hires:', err);
-      toast.error('Failed to fetch hires');
-    }
-    setLoading(false);
+  const toggleExpand = (hireId) => {
+    setExpandedHire(expandedHire === hireId ? null : hireId);
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'active': return { bg: '#e8f5e9', color: '#1b5e20' };
-      case 'accepted': return { bg: '#e3f2fd', color: '#0d47a1' };
-      case 'pending': return { bg: '#fff3e0', color: '#bf360c' };
-      case 'rejected': return { bg: '#fce4ec', color: '#c62828' };
-      case 'completed': return { bg: '#f3e5f5', color: '#4a148c' };
-      default: return { bg: '#f5f5f5', color: '#5a7a5a' };
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'active': return 'Active';
-      case 'accepted': return 'Accepted';
-      case 'pending': return 'Pending';
-      case 'rejected': return 'Rejected';
-      case 'completed': return 'Completed';
-      default: return status || 'Unknown';
-    }
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      active: 'bg-green-100 text-green-800',
+      completed: 'bg-blue-100 text-blue-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status) => {
-    switch(status) {
-      case 'active': return '✅';
-      case 'accepted': return '📌';
-      case 'pending': return '⏳';
-      case 'rejected': return '❌';
-      case 'completed': return '📋';
-      default: return '📌';
+    switch (status) {
+      case 'pending': return <Clock size={16} />;
+      case 'active': return <CheckCircle size={16} />;
+      case 'completed': return <CheckCircle size={16} />;
+      case 'cancelled': return <XCircle size={16} />;
+      default: return <AlertCircle size={16} />;
     }
   };
-
-  const getPaymentStatusColor = (status) => {
-    switch(status) {
-      case 'confirmed': return '#2e7d32';
-      case 'pending': return '#f39c12';
-      case 'rejected': return '#c62828';
-      default: return '#5a7a5a';
-    }
-  };
-
-  const filteredHires = hires.filter(hire => {
-    const matchesSearch = 
-      hire.worker?.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hire.employer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hire.paymentReference?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || hire.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const stats = {
-    total: hires.length,
-    active: hires.filter(h => h.status === 'active').length,
-    pending: hires.filter(h => h.status === 'pending' || h.paymentStatus === 'pending').length,
-    completed: hires.filter(h => h.status === 'completed').length,
-    rejected: hires.filter(h => h.status === 'rejected').length,
-  };
-
-  const statusOptions = ['all', 'pending', 'accepted', 'active', 'rejected', 'completed'];
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6a8bb0' }}>Loading hires...</div>
-      </AdminLayout>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading hires...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
-        <h1 style={{ 
-          fontSize: isMobile ? '22px' : '28px', 
-          fontWeight: '700', 
-          color: '#1a2a3a', 
-          marginBottom: '4px' 
-        }}>
-          Hires
-        </h1>
-        <p style={{ color: '#6a8bb0', fontSize: isMobile ? '14px' : '15px' }}>
-          View and manage all hiring activity
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Hire Management</h1>
+          <p className="text-gray-500">Manage all hires across the platform</p>
+        </div>
 
-      {/* Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'repeat(5, 1fr)',
-        gap: isMobile ? '8px' : '16px',
-        marginBottom: isMobile ? '16px' : '24px',
-      }}>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '10px',
-          padding: isMobile ? '12px' : '16px',
-          border: '1px solid #e8edf4',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#1a2a3a' }}>{stats.total}</div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Total</div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <p className="text-sm text-gray-500">Total Hires</p>
+            <p className="text-2xl font-bold text-gray-800">{hires.length}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <p className="text-sm text-gray-500">Active</p>
+            <p className="text-2xl font-bold text-green-600">
+              {hires.filter(h => h.status === 'active').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <p className="text-sm text-gray-500">Pending</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {hires.filter(h => h.status === 'pending').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <p className="text-sm text-gray-500">Completed</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {hires.filter(h => h.status === 'completed').length}
+            </p>
+          </div>
         </div>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '10px',
-          padding: isMobile ? '12px' : '16px',
-          border: '1px solid #e8edf4',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#43e97b' }}>{stats.active}</div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Active</div>
-        </div>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '10px',
-          padding: isMobile ? '12px' : '16px',
-          border: '1px solid #e8edf4',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#f093fb' }}>{stats.pending}</div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Pending</div>
-        </div>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '10px',
-          padding: isMobile ? '12px' : '16px',
-          border: '1px solid #e8edf4',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#4facfe' }}>{stats.completed}</div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Completed</div>
-        </div>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '10px',
-          padding: isMobile ? '12px' : '16px',
-          border: '1px solid #e8edf4',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '700', color: '#f5576c' }}>{stats.rejected}</div>
-          <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#6a8bb0' }}>Rejected</div>
-        </div>
-      </div>
 
-      {/* Search and Filter */}
-      <div style={{
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: '12px',
-        marginBottom: '20px',
-        flexWrap: 'wrap',
-      }}>
-        <input
-          type="text"
-          placeholder="Search by worker, employer, or reference..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '10px 16px',
-            border: '1px solid #e0e8f0',
-            borderRadius: '10px',
-            fontSize: '14px',
-            outline: 'none',
-            background: '#ffffff',
-            minWidth: '200px',
-            transition: 'border-color 0.2s ease',
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#4facfe'}
-          onBlur={(e) => e.target.style.borderColor = '#e0e8f0'}
-        />
-        
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {statusOptions.map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '20px',
-                border: filterStatus === status ? '2px solid #4facfe' : '1px solid #e0e8f0',
-                background: filterStatus === status ? '#e3f2fd' : '#ffffff',
-                color: filterStatus === status ? '#0d47a1' : '#6a8bb0',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: filterStatus === status ? '600' : '400',
-                transition: 'all 0.2s ease',
-              }}
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search hires..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      {/* Hires Table */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: isMobile ? '12px' : '16px',
-        border: '1px solid #e8edf4',
-        overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      }}>
+        {/* Hires List */}
         {filteredHires.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#6a8bb0' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
-            <h3 style={{ fontSize: '18px', color: '#1a2a3a', marginBottom: '4px' }}>No hires found</h3>
-            <p>{searchTerm ? 'Try adjusting your search or filters.' : 'No hiring activity recorded yet.'}</p>
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No hires found</h3>
+            <p className="text-gray-500">No hires match your search criteria</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ 
-              width: '100%', 
-              borderCollapse: 'collapse', 
-              fontSize: isMobile ? '12px' : '14px' 
-            }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e8edf4' }}>
-                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Worker
-                  </th>
-                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Employer
-                  </th>
-                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Salary
-                  </th>
-                  {!isMobile && (
-                    <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Commission
-                    </th>
-                  )}
-                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Status
-                  </th>
-                  <th style={{ padding: isMobile ? '10px 12px' : '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: isMobile ? '10px' : '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Payment
-                  </th>
-                  {!isMobile && (
-                    <th style={{ padding: '14px 18px', textAlign: 'left', color: '#6a8bb0', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Date
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHires.map(hire => {
-                  const statusStyle = getStatusColor(hire.status);
-                  const paymentColor = getPaymentStatusColor(hire.paymentStatus);
-                  return (
-                    <tr key={hire.id} style={{ borderBottom: '1px solid #f0f4f8' }}>
-                      <td style={{ padding: isMobile ? '10px 12px' : '12px 18px', fontWeight: '500', color: '#1a2a3a' }}>
-                        {hire.worker?.user?.fullName || 'N/A'}
-                      </td>
-                      <td style={{ padding: isMobile ? '10px 12px' : '12px 18px', color: '#6a8bb0' }}>
-                        {hire.employer?.fullName || 'N/A'}
-                      </td>
-                      <td style={{ padding: isMobile ? '10px 12px' : '12px 18px', fontWeight: '600', color: '#1a2a3a' }}>
-                        EGP {hire.agreedSalary}
-                      </td>
-                      {!isMobile && (
-                        <td style={{ padding: '12px 18px', color: '#6a8bb0', fontSize: '12px' }}>
-                          EGP {hire.commissionAmount?.toFixed(2)}
-                        </td>
-                      )}
-                      <td style={{ padding: isMobile ? '10px 12px' : '12px 18px' }}>
-                        <span style={{
-                          padding: '3px 10px',
-                          borderRadius: '12px',
-                          fontSize: isMobile ? '10px' : '11px',
-                          fontWeight: '600',
-                          background: statusStyle.bg,
-                          color: statusStyle.color,
-                        }}>
-                          {getStatusIcon(hire.status)} {getStatusLabel(hire.status)}
+          <div className="space-y-4">
+            {filteredHires.map((hire) => (
+              <div
+                key={hire.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition"
+              >
+                <div className="p-4 cursor-pointer" onClick={() => toggleExpand(hire.id)}>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                          <User size={20} className="text-red-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800">{hire.worker.name}</h3>
+                          <p className="text-sm text-gray-500">{hire.position}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                            <span className="flex items-center gap-1">
+                              <MapPin size={12} />
+                              {hire.worker.location}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                              {hire.worker.rating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign size={16} className="text-gray-400" />
+                        <span className="font-semibold text-gray-800">
+                          EGP {hire.salary.toLocaleString()}
                         </span>
-                      </td>
-                      <td style={{ padding: isMobile ? '10px 12px' : '12px 18px' }}>
-                        <span style={{
-                          color: paymentColor,
-                          fontWeight: '600',
-                          fontSize: isMobile ? '11px' : '13px'
-                        }}>
-                          {hire.paymentStatus || 'N/A'}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(hire.status)}`}>
+                          {getStatusIcon(hire.status)}
+                          {hire.status.charAt(0).toUpperCase() + hire.status.slice(1)}
                         </span>
-                      </td>
-                      {!isMobile && (
-                        <td style={{ padding: '12px 18px', color: '#6a8bb0', fontSize: '12px' }}>
-                          {new Date(hire.createdAt).toLocaleDateString()}
-                        </td>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(hire.createdAt).toLocaleDateString()}
+                      </div>
+                      {expandedHire === hire.id ? (
+                        <ChevronUp size={18} className="text-gray-400" />
+                      ) : (
+                        <ChevronDown size={18} className="text-gray-400" />
                       )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+
+                {expandedHire === hire.id && (
+                  <div className="border-t border-gray-100 p-4 bg-gray-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-700 mb-2">Worker Details</h4>
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Mail size={14} className="text-gray-400" />
+                            <span>{hire.worker.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="text-gray-400" />
+                            <span>{hire.worker.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Briefcase size={14} className="text-gray-400" />
+                            <span>{hire.worker.category}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-700 mb-2">Employer Details</h4>
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex items-center gap-2">
+                            <User size={14} className="text-gray-400" />
+                            <span>{hire.employer.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail size={14} className="text-gray-400" />
+                            <span>{hire.employer.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="text-gray-400" />
+                            <span>{hire.employer.phone}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition">
+                        View Details
+                      </button>
+                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+                        Contact
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
-    </AdminLayout>
+    </div>
   );
-}
+};
+
+export default AdminHires;
