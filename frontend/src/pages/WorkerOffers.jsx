@@ -35,10 +35,11 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  FileCheck
+  FileCheck,
+  Star
 } from 'lucide-react';
 
-// Sidebar Component - Reusable across all worker pages
+// Sidebar Component
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -55,7 +56,6 @@ const WorkerSidebar = ({
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       myOffers: 'My Offers',
-      myHires: 'My Hires',
       messages: 'Messages',
       calendar: 'Calendar',
       documents: 'Documents',
@@ -68,7 +68,6 @@ const WorkerSidebar = ({
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي الشخصي',
       myOffers: 'عروضي',
-      myHires: 'توظيفاتي',
       messages: 'الرسائل',
       calendar: 'التقويم',
       documents: 'المستندات',
@@ -82,11 +81,10 @@ const WorkerSidebar = ({
   const t = translations[language];
 
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/profile' },
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/messages' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
     { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
   ];
@@ -97,7 +95,6 @@ const WorkerSidebar = ({
 
   return (
     <>
-      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -105,16 +102,14 @@ const WorkerSidebar = ({
         />
       )}
 
-      {/* Sidebar */}
       <aside 
         className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
-            <Link to="/dashboard" className="flex items-center gap-2">
+            <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">H</span>
               </div>
@@ -122,7 +117,7 @@ const WorkerSidebar = ({
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
               <span className="text-white font-bold text-sm">H</span>
             </Link>
           )}
@@ -140,7 +135,6 @@ const WorkerSidebar = ({
           </button>
         </div>
 
-        {/* User Profile */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -155,7 +149,6 @@ const WorkerSidebar = ({
           </div>
         </div>
 
-        {/* Navigation Menu */}
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
           {!sidebarCollapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -194,7 +187,7 @@ const WorkerSidebar = ({
           <div className="border-t border-gray-200 my-3"></div>
 
           <Link
-            to="/settings"
+            to="/worker-settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
@@ -262,9 +255,7 @@ const WorkerOffers = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Translations for page content
   const translations = {
     en: {
       title: 'Job Offers',
@@ -299,7 +290,6 @@ const WorkerOffers = () => {
         saveOffer: 'Save Offer',
         share: 'Share',
         salaryPerMonth: 'EGP/month',
-        postedBy: 'Posted by',
         location: 'Location',
         experience: 'Experience',
         type: 'Employment Type',
@@ -330,8 +320,7 @@ const WorkerOffers = () => {
         industry: 'Industry',
         companySize: 'Company Size',
         companyDescription: 'About the Employer',
-        applicationStatus: 'Application Status',
-        applyNow: 'Apply Now'
+        applicationStatus: 'Application Status'
       },
       actions: {
         apply: 'Apply Now',
@@ -348,12 +337,9 @@ const WorkerOffers = () => {
       empty: {
         title: 'No offers found',
         description: "We couldn't find any offers matching your criteria",
-        reset: 'Reset Filters',
-        browse: 'Browse All Offers'
+        reset: 'Reset Filters'
       },
       loading: 'Loading offers...',
-      error: 'Error loading offers. Please try again.',
-      retry: 'Retry',
       languageToggle: 'العربية',
       switchToList: 'List View',
       switchToGrid: 'Grid View',
@@ -401,7 +387,6 @@ const WorkerOffers = () => {
         saveOffer: 'حفظ العرض',
         share: 'مشاركة',
         salaryPerMonth: 'جنيه/شهر',
-        postedBy: 'نشر بواسطة',
         location: 'الموقع',
         experience: 'الخبرة',
         type: 'نوع التوظيف',
@@ -432,8 +417,7 @@ const WorkerOffers = () => {
         industry: 'المجال',
         companySize: 'حجم الشركة',
         companyDescription: 'عن صاحب العمل',
-        applicationStatus: 'حالة التقديم',
-        applyNow: 'تقديم الآن'
+        applicationStatus: 'حالة التقديم'
       },
       actions: {
         apply: 'تقديم الآن',
@@ -450,12 +434,9 @@ const WorkerOffers = () => {
       empty: {
         title: 'لا توجد عروض',
         description: 'لم نجد أي عروض تطابق معايير البحث الخاصة بك',
-        reset: 'إعادة تعيين الفلاتر',
-        browse: 'تصفح جميع العروض'
+        reset: 'إعادة تعيين الفلاتر'
       },
       loading: 'جاري تحميل العروض...',
-      error: 'حدث خطأ في تحميل العروض. يرجى المحاولة مرة أخرى.',
-      retry: 'إعادة المحاولة',
       languageToggle: 'English',
       switchToList: 'عرض القائمة',
       switchToGrid: 'عرض الشبكة',
@@ -474,62 +455,38 @@ const WorkerOffers = () => {
 
   const t = translations[language];
 
-  // Check authentication on component mount
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('homelyserv_token');
-      const userData = localStorage.getItem('homelyserv_user');
-      
-      if (token && userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          setIsAuthenticated(true);
-          console.log('✅ User authenticated:', parsedUser.fullName || parsedUser.email);
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-          setIsAuthenticated(false);
-          navigate('/login');
-        }
-      } else {
-        console.log('❌ No user data found, redirecting to login');
-        setIsAuthenticated(false);
-        navigate('/login');
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  // Load language and sidebar state
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
     }
+    
+    const userData = localStorage.getItem('homelyserv_user');
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
+    } else {
+      navigate('/login');
+    }
 
+    const saved = localStorage.getItem('worker_saved_offers');
+    if (saved) {
+      setSavedOffers(JSON.parse(saved));
+    }
+    const applied = localStorage.getItem('worker_applied_offers');
+    if (applied) {
+      setAppliedOffers(JSON.parse(applied));
+    }
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, []);
-
-  // Load saved and applied offers for the user
-  useEffect(() => {
-    if (user) {
-      const savedKey = `worker_saved_offers_${user.id || 'default'}`;
-      const saved = localStorage.getItem(savedKey);
-      if (saved) {
-        setSavedOffers(JSON.parse(saved));
-      }
-
-      const appliedKey = `worker_applied_offers_${user.id || 'default'}`;
-      const applied = localStorage.getItem(appliedKey);
-      if (applied) {
-        setAppliedOffers(JSON.parse(applied));
-      }
-    }
-  }, [user]);
+  }, [navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -560,13 +517,10 @@ const WorkerOffers = () => {
   // Fetch offers
   useEffect(() => {
     const fetchOffers = async () => {
-      if (!user) return;
-      
       setLoading(true);
       try {
         await new Promise(resolve => setTimeout(resolve, 1200));
 
-        // Demo offers data
         const demoOffers = [
           {
             id: 'OFF-2026-001',
@@ -583,11 +537,6 @@ const WorkerOffers = () => {
             description: 'We are looking for an experienced and caring nanny to join our family.',
             requirements: ['Minimum 3 years of experience', 'First Aid certified', 'Valid ID'],
             responsibilities: ['Child supervision', 'Educational activities', 'Meal preparation'],
-            postedBy: {
-              name: 'Ahmed Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
             postedAt: '2026-06-25T10:30:00Z',
             applicants: 12,
             matchScore: 92,
@@ -622,11 +571,6 @@ const WorkerOffers = () => {
             description: 'Seeking compassionate caregiver for elderly gentleman with mobility issues.',
             requirements: ['2+ years elderly care experience', 'First Aid certification'],
             responsibilities: ['Daily living assistance', 'Medication reminders', 'Mobility support'],
-            postedBy: {
-              name: 'Dr. Mohamed',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
             postedAt: '2026-06-24T14:20:00Z',
             applicants: 8,
             matchScore: 78,
@@ -661,11 +605,6 @@ const WorkerOffers = () => {
             description: 'Seeking professional driver for private family.',
             requirements: ['Valid Egyptian driver\'s license', '5+ years experience'],
             responsibilities: ['Transportation of family members', 'Vehicle maintenance'],
-            postedBy: {
-              name: 'El-Shazly Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
             postedAt: '2026-06-23T09:15:00Z',
             applicants: 15,
             matchScore: 85,
@@ -704,11 +643,6 @@ const WorkerOffers = () => {
             description: 'Experienced cook needed for private family.',
             requirements: ['4+ years cooking experience', 'Food safety certification'],
             responsibilities: ['Meal preparation', 'Menu planning', 'Kitchen hygiene'],
-            postedBy: {
-              name: 'Hassan Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
             postedAt: '2026-06-22T16:45:00Z',
             applicants: 6,
             matchScore: 70,
@@ -743,11 +677,6 @@ const WorkerOffers = () => {
             description: 'Experienced house manager to oversee daily operations.',
             requirements: ['5+ years house management experience', 'Strong leadership skills'],
             responsibilities: ['Staff supervision', 'Budget management', 'Event planning'],
-            postedBy: {
-              name: 'El-Gamal Family',
-              role: 'Employer',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-            },
             postedAt: '2026-06-21T11:00:00Z',
             applicants: 9,
             matchScore: 88,
@@ -773,7 +702,6 @@ const WorkerOffers = () => {
           }
         ];
 
-        // Merge saved and applied status
         const mergedOffers = demoOffers.map(offer => ({
           ...offer,
           isSaved: savedOffers.includes(offer.id),
@@ -790,9 +718,8 @@ const WorkerOffers = () => {
     };
 
     fetchOffers();
-  }, [user, savedOffers, appliedOffers]);
+  }, [savedOffers, appliedOffers]);
 
-  // Filter and search
   useEffect(() => {
     let filtered = [...offers];
 
@@ -838,7 +765,6 @@ const WorkerOffers = () => {
   };
 
   const toggleSaveOffer = (offerId) => {
-    const userKey = user ? user.id : 'default';
     let newSaved;
     if (savedOffers.includes(offerId)) {
       newSaved = savedOffers.filter(id => id !== offerId);
@@ -846,7 +772,7 @@ const WorkerOffers = () => {
       newSaved = [...savedOffers, offerId];
     }
     setSavedOffers(newSaved);
-    localStorage.setItem(`worker_saved_offers_${userKey}`, JSON.stringify(newSaved));
+    localStorage.setItem('worker_saved_offers', JSON.stringify(newSaved));
     
     setOffers(prev => prev.map(offer => 
       offer.id === offerId 
@@ -863,10 +789,9 @@ const WorkerOffers = () => {
 
   const confirmApply = () => {
     if (selectedOffer) {
-      const userKey = user ? user.id : 'default';
       const newApplied = [...appliedOffers, selectedOffer.id];
       setAppliedOffers(newApplied);
-      localStorage.setItem(`worker_applied_offers_${userKey}`, JSON.stringify(newApplied));
+      localStorage.setItem('worker_applied_offers', JSON.stringify(newApplied));
       
       setOffers(prev => prev.map(offer => 
         offer.id === selectedOffer.id 
@@ -956,21 +881,15 @@ const WorkerOffers = () => {
     interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
   };
 
-  // Show loading state while checking authentication
-  if (!isAuthenticated && loading) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
-  }
-
-  // If not authenticated, don't render the page (will redirect)
-  if (!isAuthenticated) {
-    return null;
   }
 
   if (loading) {
@@ -1221,7 +1140,6 @@ const WorkerOffers = () => {
                           </div>
                         </div>
 
-                        {/* Match Score */}
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -1239,7 +1157,6 @@ const WorkerOffers = () => {
                           <span className="text-xs text-gray-400">{t.card.matchScore}</span>
                         </div>
 
-                        {/* Key Info */}
                         <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
                           <div className="flex items-center gap-1.5 text-gray-600">
                             <MapPin size={14} className="text-gray-400 flex-shrink-0" />
@@ -1259,7 +1176,6 @@ const WorkerOffers = () => {
                           </div>
                         </div>
 
-                        {/* Status Badges */}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
                             {getStatusIcon(offer.status)}
@@ -1285,7 +1201,6 @@ const WorkerOffers = () => {
                           <span className="text-xs text-gray-400">{offer.applicants} {t.card.applicants}</span>
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => toggleExpand(offer.id)}
@@ -1326,7 +1241,6 @@ const WorkerOffers = () => {
                       </div>
                     </div>
 
-                    {/* Expanded Details */}
                     {expandedOffer === offer.id && (
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1437,7 +1351,6 @@ const WorkerOffers = () => {
             </div>
           )}
 
-          {/* Load More */}
           {filteredOffers.length > 0 && filteredOffers.length < offers.length && (
             <div className="mt-6 text-center">
               <button className="px-8 py-3 border border-gray-300 hover:border-red-300 text-gray-700 hover:text-red-600 rounded-lg font-medium transition-colors">

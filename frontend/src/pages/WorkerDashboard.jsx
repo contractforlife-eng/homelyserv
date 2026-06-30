@@ -4,7 +4,6 @@ import {
   Home,
   User,
   Briefcase,
-  FileCheck,
   MessageCircle,
   Calendar,
   FileText,
@@ -42,7 +41,6 @@ const WorkerSidebar = ({
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       myOffers: 'My Offers',
-      myHires: 'My Hires',
       messages: 'Messages',
       calendar: 'Calendar',
       documents: 'Documents',
@@ -55,7 +53,6 @@ const WorkerSidebar = ({
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي الشخصي',
       myOffers: 'عروضي',
-      myHires: 'توظيفاتي',
       messages: 'الرسائل',
       calendar: 'التقويم',
       documents: 'المستندات',
@@ -72,7 +69,6 @@ const WorkerSidebar = ({
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
     { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
@@ -495,7 +491,7 @@ const WorkerDashboard = () => {
                 to="/worker/offers"
                 className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
               >
-                <FileCheck size={20} className="text-green-600" />
+                <Briefcase size={20} className="text-green-600" />
                 <span className="font-medium text-green-700">{t.viewOffers}</span>
               </Link>
               <Link

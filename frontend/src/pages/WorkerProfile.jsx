@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  FileCheck,
   MessageCircle,
   Settings,
   HelpCircle,
@@ -26,7 +25,8 @@ import {
   Award,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 
 // Sidebar Component
@@ -76,7 +76,7 @@ const WorkerSidebar = ({
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'calendar', label: t.calendar, icon: Calendar, path: '/calendar' },
-    { id: 'documents', label: t.documents, icon: FileCheck, path: '/documents' },
+    { id: 'documents', label: t.documents, icon: FileText, path: '/documents' },
   ];
 
   const isActive = (path) => {
@@ -389,7 +389,6 @@ const WorkerProfile = () => {
   };
 
   const handleSave = () => {
-    // Save to localStorage
     const updatedUser = {
       ...user,
       fullName: formData.fullName,
@@ -528,7 +527,6 @@ const WorkerProfile = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
                 <div className="relative">
@@ -546,7 +544,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
                 <div className="relative">
@@ -561,7 +558,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.phone}</label>
                 <div className="relative">
@@ -579,7 +575,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Location */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
                 <div className="relative">
@@ -597,7 +592,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Experience */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.experience}</label>
                 <div className="relative">
@@ -615,7 +609,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Hourly Rate */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.hourlyRate}</label>
                 <div className="relative">
@@ -633,7 +626,6 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Bio */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.bio}</label>
                 <textarea
@@ -648,7 +640,6 @@ const WorkerProfile = () => {
                 />
               </div>
 
-              {/* Skills */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.skills}</label>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -691,7 +682,6 @@ const WorkerProfile = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             {isEditing && (
               <div className="mt-6 flex gap-3">
                 <button
