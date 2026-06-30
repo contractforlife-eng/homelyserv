@@ -264,7 +264,7 @@ const WorkerProfile = () => {
       languages: 'Languages',
       notifications: 'Notifications',
       languageToggle: 'العربية',
-      saved: 'Profile updated successfully!'
+      saved: '✅ Profile updated successfully!'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -289,46 +289,48 @@ const WorkerProfile = () => {
       languages: 'اللغات',
       notifications: 'الإشعارات',
       languageToggle: 'English',
-      saved: 'تم تحديث الملف الشخصي بنجاح!'
+      saved: '✅ تم تحديث الملف الشخصي بنجاح!'
     }
   };
 
   const t = translations[language];
 
-  // Load user data - FIXED to always load from localStorage
+  // Load user data from localStorage
   const loadUserData = () => {
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
+    try {
+      const userData = localStorage.getItem('homelyserv_user');
+      if (userData) {
         const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setFormData({
-          fullName: parsedUser.fullName || '',
-          email: parsedUser.email || '',
-          phone: parsedUser.phone || '',
-          location: parsedUser.location || '',
-          bio: parsedUser.bio || 'Experienced professional in home services.',
-          skills: parsedUser.skills || ['Child Care', 'First Aid', 'Communication'],
-          experience: parsedUser.experience || '3 years',
-          hourlyRate: parsedUser.hourlyRate || '35'
-        });
+        console.log('📥 Loading user data:', parsedUser);
         return parsedUser;
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        return null;
       }
+    } catch (error) {
+      console.error('Error loading user data:', error);
     }
     return null;
   };
 
+  // Initialize data on mount
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
     }
-    
+
     const userData = loadUserData();
-    if (!userData) {
+    if (userData) {
+      setUser(userData);
+      setFormData({
+        fullName: userData.fullName || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        location: userData.location || '',
+        bio: userData.bio || 'Experienced professional in home services.',
+        skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
+        experience: userData.experience || '3 years',
+        hourlyRate: userData.hourlyRate || '35'
+      });
+    } else {
       navigate('/login');
     }
 
@@ -411,7 +413,9 @@ const WorkerProfile = () => {
   };
 
   const handleSave = () => {
-    // Create updated user object
+    console.log('💾 Saving profile data...');
+
+    // Create updated user object with ALL fields
     const updatedUser = {
       ...user,
       fullName: formData.fullName,
@@ -420,24 +424,29 @@ const WorkerProfile = () => {
       bio: formData.bio,
       skills: formData.skills,
       experience: formData.experience,
-      hourlyRate: formData.hourlyRate
+      hourlyRate: formData.hourlyRate,
+      // Keep email unchanged
     };
 
-    // Save to localStorage - THIS IS THE FIX
+    console.log('📝 Updated user data:', updatedUser);
+
+    // Save to localStorage
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
     // Update state
     setUser(updatedUser);
     setIsEditing(false);
     setSaveSuccess(true);
-    
+
     // Show success message
     alert(t.saved);
-    
-    // Reload the page to reflect changes everywhere
+
+    console.log('✅ Profile saved successfully!');
+
+    // Reload the page after a short delay to refresh all components
     setTimeout(() => {
       window.location.reload();
-    }, 500);
+    }, 800);
   };
 
   if (!user) {
