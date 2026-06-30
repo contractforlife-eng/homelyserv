@@ -1,329 +1,471 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  UserPlus, 
+  Globe, 
+  AlertCircle, 
+  CheckCircle,
+  Briefcase,
+  Phone,
+  MapPin,
+  Calendar
+} from 'lucide-react';
 
 function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLanguages, setShowLanguages] = useState(false);
+  const [success, setSuccess] = useState(false);
+  
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
-    role: 'worker',
+    confirmPassword: '',
     phone: '',
-    city: '',
-    country: '',
-    category: '',
-    experience: '',
-    expectedSalary: '',
-    availability: '',
-    workType: 'full-time',
-    bio: '',
-    idType: 'national',
-    idNumber: ''
+    location: '',
+    role: 'WORKER'
   });
+  
+  const [errors, setErrors] = useState({});
 
-  const categories = [
-    { name: 'Nanny', icon: '👶' },
-    { name: 'Babysitter', icon: '🍼' },
-    { name: 'Elderly Caregiver', icon: '👴' },
-    { name: 'Driver', icon: '🚗' },
-    { name: 'Cook', icon: '🍳' },
-    { name: 'House Manager', icon: '🏠' },
-    { name: 'Gardener', icon: '🌿' },
-    { name: 'Nurse', icon: '💉' }
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
+    { code: 'fr', name: 'French', flag: '🇫🇷' },
+    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  // Handle input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.fullName) {
+      newErrors.fullName = 'Full name is required';
+    } else if (formData.fullName.length < 2) {
+      newErrors.fullName = 'Name must be at least 2 characters';
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Please select a role';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
+    setSuccess(false);
+    setErrors({});
 
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, formData, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      // Simulate API call - DEMO REGISTRATION
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Create user data
+      const newUser = {
+        id: `user_${Date.now()}`,
+        fullName: formData.fullName,
+        email: formData.email,
+        role: formData.role,
+        phone: formData.phone || '',
+        location: formData.location || '',
+        createdAt: new Date().toISOString(),
+        profileComplete: false
+      };
+
+      // Store in localStorage for demo purposes
+      const existingUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const userExists = existingUsers.find(u => u.email === formData.email);
       
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        const userRole = response.data.user.role;
-        if (userRole === 'ADMIN') {
-          navigate('/admin');
-        } else if (userRole === 'EMPLOYER') {
-          navigate('/employer-dashboard');
-        } else {
-          navigate('/worker-dashboard');
-        }
-      } else {
-        setError(response.data.message || 'Registration failed');
+      if (userExists) {
+        setErrors({ general: 'User with this email already exists' });
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Server error. Please try again.');
+
+      existingUsers.push(newUser);
+      localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
+
+      setSuccess(true);
+      
+      // Clear form
+      setFormData({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        phone: '',
+        location: '',
+        role: 'WORKER'
+      });
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ 
+        general: error.message || 'Registration failed. Please try again.' 
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Demo quick registration (for testing)
+  const quickRegister = (role) => {
+    setLoading(true);
+    setErrors({});
+    
+    const user = {
+      id: `user_${Date.now()}`,
+      fullName: role === 'WORKER' ? 'John Worker' : 'Jane Employer',
+      email: role === 'WORKER' ? 'worker@demo.com' : 'employer@demo.com',
+      role: role,
+      phone: '+20123456789',
+      location: 'Cairo, Egypt',
+      createdAt: new Date().toISOString(),
+      profileComplete: false
+    };
+
+    const existingUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+    const userExists = existingUsers.find(u => u.email === user.email);
+    
+    if (!userExists) {
+      existingUsers.push(user);
+      localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
+    }
+
+    setSuccess(true);
+    setTimeout(() => {
+      setLoading(false);
+      navigate('/login');
+    }, 1500);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-4 py-8">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Logo */}
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="relative">
-            <div className="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12">
-                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-              </svg>
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white text-lg">♥</span>
-            </div>
-          </div>
-          <div className="mt-3 text-center">
-            <div className="flex items-center justify-center gap-1">
-              <span className="text-3xl font-bold text-red-600 tracking-tight">Homey</span>
-              <span className="text-3xl font-bold text-gray-800 tracking-tight">Serv</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium tracking-wider mt-1">YOUR HOME, OUR PRIORITY</p>
-          </div>
-        </div>
-        
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">REGISTER</h2>
-        <p className="text-gray-500 text-center text-sm mb-6">Join HomelyServ today</p>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {/* Full Name */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">FULL NAME</label>
-            <input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
-
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">EMAIL ADDRESS</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">PASSWORD</label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          {/* Role */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">ROLE</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-            >
-              <option value="worker">Service Provider (Job Seeker)</option>
-              <option value="employer">Employer</option>
-            </select>
-          </div>
-
-          {/* Phone */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">PHONE NUMBER</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your phone number"
-              required
-            />
-          </div>
-
-          {/* Country */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">COUNTRY</label>
-            <input
-              type="text"
-              value={formData.country}
-              onChange={(e) => setFormData({...formData, country: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your country"
-            />
-          </div>
-
-          {/* City */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">CITY</label>
-            <input
-              type="text"
-              value={formData.city}
-              onChange={(e) => setFormData({...formData, city: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder="Enter your city"
-            />
-          </div>
-
-          {/* Category (for workers) */}
-          {formData.role === 'worker' && (
-            <>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">CATEGORY</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {categories.map((cat) => (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 p-4">
+      <div className="w-full max-w-lg">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 relative">
+          
+          {/* Language Selector */}
+          <div className="absolute top-4 right-4">
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguages(!showLanguages)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-gray-100 transition text-sm"
+              >
+                <Globe size={15} className="text-gray-500" />
+                <span className="text-gray-600 text-xs font-medium">EN</span>
+              </button>
+              {showLanguages && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  {languages.map((lang) => (
                     <button
-                      key={cat.name}
-                      type="button"
-                      onClick={() => setFormData({...formData, category: cat.name})}
-                      className={`p-3 rounded-lg border-2 text-center transition ${
-                        formData.category === cat.name
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      key={lang.code}
+                      onClick={() => { setShowLanguages(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm"
                     >
-                      <div className="text-2xl">{cat.icon}</div>
-                      <p className="text-xs mt-1 font-medium text-gray-700">{cat.name}</p>
+                      <span className="text-lg">{lang.flag}</span>
+                      <span className="text-gray-700">{lang.name}</span>
                     </button>
                   ))}
                 </div>
-                <input type="hidden" name="category" value={formData.category} required />
-              </div>
+              )}
+            </div>
+          </div>
 
-              {/* Experience */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">YEARS OF EXPERIENCE</label>
-                <input
-                  type="number"
-                  value={formData.experience}
-                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-                  placeholder="Years of experience"
-                />
-              </div>
+          {/* Logo */}
+          <div className="text-center mb-6 pt-2">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
+              <span className="text-white text-3xl font-bold">H</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mt-4">Create Account</h1>
+            <p className="text-gray-500 text-sm">Join HomelyServ today</p>
+          </div>
 
-              {/* Expected Salary */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">EXPECTED SALARY (EGP/month)</label>
-                <input
-                  type="number"
-                  value={formData.expectedSalary}
-                  onChange={(e) => setFormData({...formData, expectedSalary: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-                  placeholder="Expected salary"
-                />
-              </div>
-
-              {/* Availability */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">AVAILABILITY</label>
-                <select
-                  value={formData.availability}
-                  onChange={(e) => setFormData({...formData, availability: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="available">Available</option>
-                  <option value="part-time">Part-Time</option>
-                  <option value="full-time">Full-Time</option>
-                  <option value="not-available">Not Available</option>
-                </select>
-              </div>
-
-              {/* Work Type */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">WORK TYPE</label>
-                <select
-                  value={formData.workType}
-                  onChange={(e) => setFormData({...formData, workType: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="full-time">Full-Time</option>
-                  <option value="part-time">Part-Time</option>
-                  <option value="contract">Contract</option>
-                  <option value="temporary">Temporary</option>
-                </select>
-              </div>
-
-              {/* Bio */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">BIO / DESCRIPTION</label>
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                  rows="3"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 resize-none"
-                  placeholder="Tell employers about yourself..."
-                />
-              </div>
-            </>
+          {/* Success Message */}
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+              <CheckCircle size={16} />
+              Account created successfully! Redirecting to login...
+            </div>
           )}
 
-          {/* ID Type */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">ID TYPE</label>
-            <select
-              value={formData.idType}
-              onChange={(e) => setFormData({...formData, idType: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
+          {/* General Error */}
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle size={16} /> {errors.general}
+            </div>
+          )}
+
+          {/* Quick Register Buttons - For testing */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-xs text-gray-500 text-center mb-2">Quick Test Registration</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => quickRegister('WORKER')}
+                disabled={loading}
+                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium rounded-lg transition border border-blue-200"
+              >
+                👤 Create Worker
+              </button>
+              <button
+                onClick={() => quickRegister('EMPLOYER')}
+                disabled={loading}
+                className="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 text-sm font-medium rounded-lg transition border border-green-200"
+              >
+                🏢 Create Employer
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            {/* Full Name */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <div className="relative">
+                <User size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${
+                    errors.fullName ? 'border-red-500' : 'border-gray-200'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition`}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+              {errors.fullName && (
+                <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-200'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition`}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
+              <div className="relative">
+                <Phone size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location (Optional)</label>
+              <div className="relative">
+                <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  placeholder="Enter your location"
+                />
+              </div>
+            </div>
+
+            {/* Role Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Register as</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
+                  className={`p-3 rounded-xl border-2 transition ${
+                    formData.role === 'WORKER'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  <Briefcase size={20} className="mx-auto mb-1" />
+                  <span className="text-sm font-medium">Job Seeker</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
+                  className={`p-3 rounded-xl border-2 transition ${
+                    formData.role === 'EMPLOYER'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  <User size={20} className="mx-auto mb-1" />
+                  <span className="text-sm font-medium">Employer</span>
+                </button>
+              </div>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-500">{errors.role}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-12 py-3 bg-gray-50 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-200'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition`}
+                  placeholder="Create a password (min 6 characters)"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-12 py-3 bg-gray-50 border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition`}
+                  placeholder="Confirm your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <option value="national">National ID Card</option>
-              <option value="passport">Passport</option>
-            </select>
+              {loading ? 'Creating Account...' : 'Create Account'}
+              <UserPlus size={20} />
+            </button>
+          </form>
+
+          <p className="text-center text-gray-600 mt-6">
+            Already have an account?{' '}
+            <Link to="/login" className="text-red-600 font-semibold hover:underline">
+              Sign In
+            </Link>
+          </p>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-400">
+              By creating an account, you agree to our{' '}
+              <Link to="/terms" className="text-red-500 hover:underline">Terms of Service</Link>
+            </p>
           </div>
-
-          {/* ID Number */}
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">ID NUMBER</label>
-            <input
-              type="text"
-              value={formData.idNumber}
-              onChange={(e) => setFormData({...formData, idNumber: e.target.value})}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
-              placeholder={formData.idType === 'national' ? 'Enter your National ID number' : 'Enter your Passport number'}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="text-center text-gray-600 mt-6">
-          Already have an account? <Link to="/login" className="text-red-600 font-semibold hover:underline">Sign in</Link>
-        </p>
+        </div>
       </div>
     </div>
   );

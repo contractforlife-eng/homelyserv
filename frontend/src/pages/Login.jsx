@@ -50,7 +50,7 @@ function Login() {
     }
   };
 
-  // Quick login function - NOW PRESERVES PROFILE DATA
+  // Quick login function - Preserves profile data
   const quickLogin = (role) => {
     console.log('🔄 Quick login for role:', role);
     setError('');
@@ -123,12 +123,6 @@ function Login() {
     
     console.log('✅ Login successful:', user.fullName);
     console.log('✅ User role:', user.role);
-    console.log('✅ Profile data saved:', {
-      bio: user.bio,
-      skills: user.skills,
-      experience: user.experience,
-      hourlyRate: user.hourlyRate
-    });
     
     // Redirect after a small delay
     setTimeout(() => {
@@ -156,7 +150,7 @@ function Login() {
     } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
       quickLogin('ADMIN');
     } else {
-      setError('No account found with this email. Please use demo accounts below.');
+      setError('Invalid email or password. Please try again.');
       setLoading(false);
     }
   };
@@ -207,43 +201,6 @@ function Login() {
               <AlertCircle size={16} /> {error}
             </div>
           )}
-
-          {/* QUICK LOGIN BUTTONS */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-            <p className="text-xs text-gray-600 text-center mb-3 font-bold">🚀 Quick Login (Click to Login)</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => quickLogin('WORKER')}
-                disabled={loading}
-                className="px-3 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-              >
-                {loading ? '...' : '👤 Worker'}
-              </button>
-              <button
-                onClick={() => quickLogin('EMPLOYER')}
-                disabled={loading}
-                className="px-3 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-              >
-                {loading ? '...' : '🏢 Employer'}
-              </button>
-              <button
-                onClick={() => quickLogin('ADMIN')}
-                disabled={loading}
-                className="px-3 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-              >
-                {loading ? '...' : '🔐 Admin'}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Click any button to instantly login
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="text-sm text-gray-400">Or login with email</span>
-            <div className="flex-1 border-t border-gray-200"></div>
-          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -335,25 +292,6 @@ function Login() {
               Create one
             </Link>
           </p>
-
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs text-gray-400 text-center">💡 Demo credentials:</p>
-            <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-500">
-              <div className="text-center">
-                <span className="font-medium text-blue-600">Worker:</span>
-                <br />worker@homelyserv.com
-              </div>
-              <div className="text-center">
-                <span className="font-medium text-green-600">Employer:</span>
-                <br />employer@homelyserv.com
-              </div>
-              <div className="text-center">
-                <span className="font-medium text-purple-600">Admin:</span>
-                <br />admin@homelyserv.com
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 text-center mt-2">Password: any (e.g., password123)</p>
-          </div>
         </div>
       </div>
     </div>
