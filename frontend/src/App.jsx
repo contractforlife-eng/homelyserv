@@ -19,7 +19,6 @@ import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
-import Help from './pages/Help';
 
 // Worker Pages
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -28,8 +27,7 @@ import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
-import Help from './pages/Help';
-
+import HelpSupport from './pages/Help';  // Changed from Help to HelpSupport
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -168,6 +166,14 @@ function App() {
         } 
       />
       <Route 
+        path="/worker-offers" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <WorkerOffers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/worker-profile" 
         element={
           <ProtectedRoute requiredRole="WORKER">
@@ -199,14 +205,15 @@ function App() {
           </ProtectedRoute>
         } 
       />
-<Route 
-  path="/help" 
-  element={
-    <ProtectedRoute requiredRole="WORKER">
-      <Help />
-    </ProtectedRoute>
-  } 
-/>
+      <Route 
+        path="/help" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <HelpSupport />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* ========== EMPLOYER ROUTES ========== */}
       <Route 
         path="/employer-dashboard" 
