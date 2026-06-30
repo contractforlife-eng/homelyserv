@@ -10,7 +10,6 @@ import {
   Edit,
   Save,
   X,
-  Camera,
   Globe,
   Menu,
   Bell,
@@ -25,8 +24,7 @@ import {
   Award,
   Clock,
   CheckCircle,
-  AlertCircle,
-  FileText
+  AlertTriangle
 } from 'lucide-react';
 
 // Sidebar Component
@@ -42,38 +40,39 @@ const WorkerSidebar = ({
   const location = useLocation();
 
   const translations = {
-  en: {
-    dashboard: 'Dashboard',
-    myProfile: 'My Profile',
-    myOffers: 'My Offers',
-    messages: 'Messages',
-    complaints: 'Complaints',
-    settings: 'Settings',
-    help: 'Help & Support',
-    logout: 'Logout',
-    overview: 'Overview'
-  },
-  ar: {
-    dashboard: 'لوحة التحكم',
-    myProfile: 'ملفي الشخصي',
-    myOffers: 'عروضي',
-    messages: 'الرسائل',
-    complaints: 'الشكاوى',
-    settings: 'الإعدادات',
-    help: 'المساعدة والدعم',
-    logout: 'تسجيل الخروج',
-    overview: 'نظرة عامة'
-  }
-};
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myOffers: 'My Offers',
+      messages: 'Messages',
+      complaints: 'Complaints',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myOffers: 'عروضي',
+      messages: 'الرسائل',
+      complaints: 'الشكاوى',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
   const t = translations[language];
 
   const menuItems = [
-  { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-  { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-  { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-  { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-  { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-];
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
+    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+  ];
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -262,9 +261,8 @@ const WorkerProfile = () => {
       memberSince: 'Member Since',
       rating: 'Rating',
       jobsCompleted: 'Jobs Completed',
-      languages: 'Languages',
-      notifications: 'Notifications',
-      languageToggle: 'العربية'
+      languageToggle: 'العربية',
+      notifications: 'Notifications'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -286,9 +284,8 @@ const WorkerProfile = () => {
       memberSince: 'عضو منذ',
       rating: 'التقييم',
       jobsCompleted: 'الوظائف المكتملة',
-      languages: 'اللغات',
-      notifications: 'الإشعارات',
-      languageToggle: 'English'
+      languageToggle: 'English',
+      notifications: 'الإشعارات'
     }
   };
 

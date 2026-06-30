@@ -14,14 +14,12 @@ import {
   ChevronRight,
   Globe,
   X,
-  Shield,
-  Lock,
-  Bell as BellIcon,
-  Moon,
-  Sun,
   AlertTriangle,
-  Save,
-  RefreshCw
+  Mail,
+  Phone,
+  MessageSquare,
+  FileQuestion,
+  BookOpen
 } from 'lucide-react';
 
 // Sidebar Component
@@ -168,6 +166,20 @@ const WorkerSidebar = ({
 
           <div className="border-t border-gray-200 my-3"></div>
 
+          <Link
+            to="/worker-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
           <button
             onClick={handleLogout}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
@@ -188,60 +200,54 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerSettings Component
-const WorkerSettings = () => {
+// Main Help Component
+const Help = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const translations = {
     en: {
-      title: 'Settings',
-      subtitle: 'Manage your account preferences',
-      preferences: 'Preferences',
-      language: 'Language',
-      languageDesc: 'Choose your preferred language',
-      darkMode: 'Dark Mode',
-      darkModeDesc: 'Switch between light and dark theme',
-      notifications: 'Notifications',
-      notificationsDesc: 'Enable or disable notifications',
-      emailNotifications: 'Email Notifications',
-      emailNotificationsDesc: 'Receive updates via email',
-      account: 'Account',
-      security: 'Security',
-      changePassword: 'Change Password',
-      privacy: 'Privacy',
-      saveChanges: 'Save Changes',
-      saved: 'Settings saved successfully!',
+      title: 'Help & Support',
+      subtitle: 'Find answers to your questions and get support',
+      faq: 'Frequently Asked Questions',
+      contact: 'Contact Support',
+      email: 'Email Us',
+      phone: 'Call Us',
+      chat: 'Live Chat',
+      documentation: 'Documentation',
+      faq1: 'How do I apply for a job?',
+      faq1Answer: 'Browse available offers and click "Apply Now" on any position that matches your skills.',
+      faq2: 'How do I update my profile?',
+      faq2Answer: 'Go to "My Profile" in the sidebar and click "Edit Profile" to update your information.',
+      faq3: 'How do I contact an employer?',
+      faq3Answer: 'Use the "Messages" section to communicate with employers directly.',
+      faq4: 'How do I report a problem?',
+      faq4Answer: 'Go to "Complaints" in the sidebar to submit a report.',
       languageToggle: 'العربية',
-      notificationsTitle: 'Notifications'
+      notifications: 'Notifications'
     },
     ar: {
-      title: 'الإعدادات',
-      subtitle: 'إدارة تفضيلات حسابك',
-      preferences: 'التفضيلات',
-      language: 'اللغة',
-      languageDesc: 'اختر لغتك المفضلة',
-      darkMode: 'الوضع الداكن',
-      darkModeDesc: 'التبديل بين الوضع الفاتح والداكن',
-      notifications: 'الإشعارات',
-      notificationsDesc: 'تفعيل أو تعطيل الإشعارات',
-      emailNotifications: 'الإشعارات البريدية',
-      emailNotificationsDesc: 'تلقي التحديثات عبر البريد الإلكتروني',
-      account: 'الحساب',
-      security: 'الأمان',
-      changePassword: 'تغيير كلمة المرور',
-      privacy: 'الخصوصية',
-      saveChanges: 'حفظ التغييرات',
-      saved: 'تم حفظ الإعدادات بنجاح!',
+      title: 'المساعدة والدعم',
+      subtitle: 'ابحث عن إجابات لأسئلتك واحصل على الدعم',
+      faq: 'الأسئلة الشائعة',
+      contact: 'اتصل بالدعم',
+      email: 'راسلنا عبر البريد الإلكتروني',
+      phone: 'اتصل بنا',
+      chat: 'الدردشة المباشرة',
+      documentation: 'التوثيق',
+      faq1: 'كيف يمكنني التقديم على وظيفة؟',
+      faq1Answer: 'تصفح العروض المتاحة وانقر على "تقديم الآن" لأي منصب يناسب مهاراتك.',
+      faq2: 'كيف يمكنني تحديث ملفي الشخصي؟',
+      faq2Answer: 'اذهب إلى "ملفي الشخصي" في الشريط الجانبي وانقر على "تعديل الملف" لتحديث معلوماتك.',
+      faq3: 'كيف يمكنني التواصل مع صاحب العمل؟',
+      faq3Answer: 'استخدم قسم "الرسائل" للتواصل مباشرة مع أصحاب العمل.',
+      faq4: 'كيف يمكنني الإبلاغ عن مشكلة؟',
+      faq4Answer: 'اذهب إلى "الشكاوى" في الشريط الجانبي لتقديم بلاغ.',
       languageToggle: 'English',
-      notificationsTitle: 'الإشعارات'
+      notifications: 'الإشعارات'
     }
   };
 
@@ -295,14 +301,6 @@ const WorkerSettings = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
     navigate('/login');
-  };
-
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      alert(t.saved);
-    }, 1000);
   };
 
   if (!user) {
@@ -373,128 +371,62 @@ const WorkerSettings = () => {
             </div>
           </div>
 
-          {/* Settings */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Preferences */}
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.preferences}</h3>
-              <div className="space-y-4">
-                {/* Language */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">{t.language}</p>
-                    <p className="text-sm text-gray-500">{t.languageDesc}</p>
-                  </div>
-                  <select
-                    value={language}
-                    onChange={(e) => {
-                      setLanguage(e.target.value);
-                      localStorage.setItem('homelyserv_language', e.target.value);
-                    }}
-                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                  </select>
-                </div>
-
-                {/* Dark Mode */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">{t.darkMode}</p>
-                    <p className="text-sm text-gray-500">{t.darkModeDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      darkMode ? 'bg-gray-800' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        darkMode ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
+          {/* Quick Contact Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
+              <Mail size={24} className="mx-auto text-red-600 mb-2" />
+              <p className="font-medium text-gray-800">{t.email}</p>
+              <p className="text-xs text-gray-500">support@homelyserv.com</p>
             </div>
-
-            {/* Notifications */}
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.notificationsTitle}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">{t.notifications}</p>
-                    <p className="text-sm text-gray-500">{t.notificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => setNotifications(!notifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      notifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        notifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">{t.emailNotifications}</p>
-                    <p className="text-sm text-gray-500">{t.emailNotificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => setEmailNotifications(!emailNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      emailNotifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        emailNotifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
+              <Phone size={24} className="mx-auto text-red-600 mb-2" />
+              <p className="font-medium text-gray-800">{t.phone}</p>
+              <p className="text-xs text-gray-500">+20 123 456 789</p>
             </div>
-
-            {/* Account Security */}
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.security}</h3>
-              <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                  <div className="flex items-center gap-3">
-                    <Lock size={20} className="text-gray-600" />
-                    <span className="font-medium text-gray-700">{t.changePassword}</span>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                  <div className="flex items-center gap-3">
-                    <Shield size={20} className="text-gray-600" />
-                    <span className="font-medium text-gray-700">{t.privacy}</span>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400" />
-                </button>
-              </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
+              <MessageSquare size={24} className="mx-auto text-red-600 mb-2" />
+              <p className="font-medium text-gray-800">{t.chat}</p>
+              <p className="text-xs text-gray-500">Available 24/7</p>
             </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
+              <BookOpen size={24} className="mx-auto text-red-600 mb-2" />
+              <p className="font-medium text-gray-800">{t.documentation}</p>
+              <p className="text-xs text-gray-500">User Guide</p>
+            </div>
+          </div>
 
-            {/* Save Button */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50"
-              >
-                {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-                {saving ? 'Saving...' : t.saveChanges}
-              </button>
+          {/* FAQ Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.faq}</h3>
+            <div className="space-y-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileQuestion size={18} className="text-red-600" />
+                  <p className="font-medium text-gray-800">{t.faq1}</p>
+                </div>
+                <p className="text-sm text-gray-600 ml-7">{t.faq1Answer}</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileQuestion size={18} className="text-red-600" />
+                  <p className="font-medium text-gray-800">{t.faq2}</p>
+                </div>
+                <p className="text-sm text-gray-600 ml-7">{t.faq2Answer}</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileQuestion size={18} className="text-red-600" />
+                  <p className="font-medium text-gray-800">{t.faq3}</p>
+                </div>
+                <p className="text-sm text-gray-600 ml-7">{t.faq3Answer}</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileQuestion size={18} className="text-red-600" />
+                  <p className="font-medium text-gray-800">{t.faq4}</p>
+                </div>
+                <p className="text-sm text-gray-600 ml-7">{t.faq4Answer}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -503,4 +435,4 @@ const WorkerSettings = () => {
   );
 };
 
-export default WorkerSettings;
+export default Help;
