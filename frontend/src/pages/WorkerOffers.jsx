@@ -2,28 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Briefcase,
-  MapPin,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  MessageCircle,
-  Eye,
-  Heart,
-  Share2,
-  Filter,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Users,
-  Zap,
-  Globe,
-  X,
-  LayoutGrid,
-  List,
-  ThumbsUp,
-  BriefcaseIcon,
   Home,
   User,
   Settings,
@@ -31,7 +9,23 @@ import {
   LogOut,
   Menu,
   Bell,
-  AlertTriangle
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
+  AlertTriangle,
+  Search,
+  MapPin,
+  DollarSign,
+  Clock,
+  Heart,
+  Eye,
+  Share2,
+  Zap,
+  Users,
+  CheckCircle,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 // Sidebar Component
@@ -226,201 +220,34 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerOffers Component
+// Main WorkerOffers Component - SIMPLIFIED WORKING VERSION
 const WorkerOffers = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
-  const [loading, setLoading] = useState(true);
-  const [offers, setOffers] = useState([]);
-  const [filteredOffers, setFilteredOffers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-  const [expandedOffer, setExpandedOffer] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const [savedOffers, setSavedOffers] = useState([]);
-  const [appliedOffers, setAppliedOffers] = useState([]);
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const translations = {
     en: {
       title: 'Job Offers',
-      subtitle: 'Discover opportunities that match your skills and preferences',
-      stats: {
-        available: 'Available Offers',
-        applied: 'Applied',
-        saved: 'Saved',
-        interviews: 'Interviews'
-      },
-      filters: {
-        all: 'All Offers',
-        new: 'New',
-        applied: 'Applied',
-        saved: 'Saved',
-        interview: 'Interview',
-        offered: 'Offered',
-        rejected: 'Rejected',
-        expired: 'Expired'
-      },
-      sort: {
-        newest: 'Newest First',
-        oldest: 'Oldest First',
-        salary_high: 'Highest Salary',
-        salary_low: 'Lowest Salary',
-        popular: 'Most Popular',
-        nearby: 'Nearest Location'
-      },
-      card: {
-        viewDetails: 'View Details',
-        applyNow: 'Apply Now',
-        saveOffer: 'Save Offer',
-        share: 'Share',
-        salaryPerMonth: 'EGP/month',
-        location: 'Location',
-        experience: 'Experience',
-        type: 'Employment Type',
-        skills: 'Skills Required',
-        benefits: 'Benefits',
-        postedAgo: 'Posted',
-        applicants: 'applicants',
-        matchScore: 'Match Score',
-        urgent: 'Urgent',
-        featured: 'Featured',
-        new: 'New',
-        applied: 'Applied',
-        saved: 'Saved'
-      },
-      details: {
-        title: 'Offer Details',
-        about: 'About the Position',
-        description: 'Job Description',
-        requirements: 'Requirements',
-        responsibilities: 'Responsibilities',
-        benefits: 'Benefits & Perks',
-        salaryRange: 'Salary Range',
-        contractType: 'Contract Type',
-        workSchedule: 'Work Schedule',
-        startDate: 'Expected Start Date',
-        applicationDeadline: 'Application Deadline',
-        company: 'Company',
-        industry: 'Industry',
-        companySize: 'Company Size',
-        companyDescription: 'About the Employer',
-        applicationStatus: 'Application Status'
-      },
-      actions: {
-        apply: 'Apply Now',
-        applied: 'Applied',
-        saved: 'Saved',
-        unsave: 'Unsave',
-        share: 'Share',
-        view: 'View Details',
-        close: 'Close',
-        loadMore: 'Load More Offers',
-        confirmApply: 'Confirm Application',
-        cancel: 'Cancel'
-      },
-      empty: {
-        title: 'No offers found',
-        description: "We couldn't find any offers matching your criteria",
-        reset: 'Reset Filters'
-      },
-      loading: 'Loading offers...',
-      languageToggle: 'العربية',
-      switchToList: 'List View',
-      switchToGrid: 'Grid View',
+      subtitle: 'Discover opportunities that match your skills',
+      searchPlaceholder: 'Search offers...',
+      noOffers: 'No offers found',
       welcome: 'Welcome back',
+      languageToggle: 'العربية',
       notifications: 'Notifications'
     },
     ar: {
       title: 'عروض العمل',
-      subtitle: 'اكتشف الفرص التي تناسب مهاراتك وتفضيلاتك',
-      stats: {
-        available: 'العروض المتاحة',
-        applied: 'تم التقديم',
-        saved: 'المحفوظة',
-        interviews: 'المقابلات'
-      },
-      filters: {
-        all: 'جميع العروض',
-        new: 'جديد',
-        applied: 'مقدم عليها',
-        saved: 'محفوظة',
-        interview: 'مقابلة',
-        offered: 'تم العرض',
-        rejected: 'مرفوض',
-        expired: 'منتهي'
-      },
-      sort: {
-        newest: 'الأحدث أولاً',
-        oldest: 'الأقدم أولاً',
-        salary_high: 'أعلى راتب',
-        salary_low: 'أقل راتب',
-        popular: 'الأكثر شهرة',
-        nearby: 'الأقرب موقعاً'
-      },
-      card: {
-        viewDetails: 'عرض التفاصيل',
-        applyNow: 'تقديم الآن',
-        saveOffer: 'حفظ العرض',
-        share: 'مشاركة',
-        salaryPerMonth: 'جنيه/شهر',
-        location: 'الموقع',
-        experience: 'الخبرة',
-        type: 'نوع التوظيف',
-        skills: 'المهارات المطلوبة',
-        benefits: 'المزايا',
-        postedAgo: 'نشر منذ',
-        applicants: 'متقدم',
-        matchScore: 'نسبة التطابق',
-        urgent: 'عاجل',
-        featured: 'مميز',
-        new: 'جديد',
-        applied: 'مقدم عليها',
-        saved: 'محفوظة'
-      },
-      details: {
-        title: 'تفاصيل العرض',
-        about: 'عن الوظيفة',
-        description: 'الوصف الوظيفي',
-        requirements: 'المتطلبات',
-        responsibilities: 'المسؤوليات',
-        benefits: 'المزايا والإضافات',
-        salaryRange: 'نطاق الراتب',
-        contractType: 'نوع العقد',
-        workSchedule: 'جدول العمل',
-        startDate: 'تاريخ البدء المتوقع',
-        applicationDeadline: 'موعد التقديم',
-        company: 'الشركة',
-        industry: 'المجال',
-        companySize: 'حجم الشركة',
-        companyDescription: 'عن صاحب العمل',
-        applicationStatus: 'حالة التقديم'
-      },
-      actions: {
-        apply: 'تقديم الآن',
-        applied: 'تم التقديم',
-        saved: 'محفوظة',
-        unsave: 'إلغاء الحفظ',
-        share: 'مشاركة',
-        view: 'عرض التفاصيل',
-        close: 'إغلاق',
-        loadMore: 'تحميل المزيد من العروض',
-        confirmApply: 'تأكيد التقديم',
-        cancel: 'إلغاء'
-      },
-      empty: {
-        title: 'لا توجد عروض',
-        description: 'لم نجد أي عروض تطابق معايير البحث الخاصة بك',
-        reset: 'إعادة تعيين الفلاتر'
-      },
-      loading: 'جاري تحميل العروض...',
-      languageToggle: 'English',
-      switchToList: 'عرض القائمة',
-      switchToGrid: 'عرض الشبكة',
+      subtitle: 'اكتشف الفرص التي تناسب مهاراتك',
+      searchPlaceholder: 'ابحث عن عروض...',
+      noOffers: 'لا توجد عروض',
       welcome: 'مرحباً بعودتك',
+      languageToggle: 'English',
       notifications: 'الإشعارات'
     }
   };
@@ -447,14 +274,6 @@ const WorkerOffers = () => {
       navigate('/login');
     }
 
-    const saved = localStorage.getItem('worker_saved_offers');
-    if (saved) {
-      setSavedOffers(JSON.parse(saved));
-    }
-    const applied = localStorage.getItem('worker_applied_offers');
-    if (applied) {
-      setAppliedOffers(JSON.parse(applied));
-    }
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -487,286 +306,82 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Fetch offers - SIMPLIFIED
+  // Load offers
   useEffect(() => {
-    const fetchOffers = async () => {
+    const loadOffers = () => {
       setLoading(true);
       try {
-        // Simple demo data - no complex logic
         const demoOffers = [
           {
-            id: 'OFF-2026-001',
+            id: 1,
             title: 'Senior Nanny - Full Time',
             company: 'Elite Family Services',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Cairo, Egypt',
-            salary: { min: 3500, max: 4500 },
+            salary: '3,500 - 4,500 EGP',
             type: 'Full Time',
-            skills: ['Child Care', 'First Aid', 'Communication'],
-            benefits: ['Health Insurance', 'Paid Vacation'],
-            description: 'Experienced nanny needed for a loving family.',
-            requirements: ['3+ years experience', 'First Aid certified'],
-            responsibilities: ['Child supervision', 'Meal preparation'],
-            postedAt: '2026-06-25T10:30:00Z',
-            applicants: 12,
-            matchScore: 92,
-            status: 'new',
+            posted: '2 days ago',
             isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-15',
-            deadline: '2026-07-10',
-            contractType: 'Permanent',
-            workSchedule: 'Sunday - Thursday, 8AM - 5PM',
-            companyInfo: {
-              industry: 'Family Services',
-              size: '10-50 employees',
-              description: 'Premium home services provider'
-            },
-            isSaved: false,
-            isApplied: false
+            isFeatured: true
           },
           {
-            id: 'OFF-2026-002',
+            id: 2,
             title: 'Elderly Caregiver - Part Time',
             company: 'CarePlus Egypt',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Alexandria, Egypt',
-            salary: { min: 2800, max: 3600 },
+            salary: '2,800 - 3,600 EGP',
             type: 'Part Time',
-            skills: ['Elderly Care', 'Medication Management'],
-            benefits: ['Flexible Hours', 'Paid Leave'],
-            description: 'Compassionate caregiver needed for elderly gentleman.',
-            requirements: ['2+ years experience', 'First Aid certification'],
-            responsibilities: ['Daily living assistance', 'Medication reminders'],
-            postedAt: '2026-06-24T14:20:00Z',
-            applicants: 8,
-            matchScore: 78,
-            status: 'new',
+            posted: '3 days ago',
             isUrgent: false,
-            isFeatured: false,
-            startDate: '2026-07-01',
-            deadline: '2026-06-30',
-            contractType: 'Contract',
-            workSchedule: 'Alternate days, 4 hours/day',
-            companyInfo: {
-              industry: 'Healthcare',
-              size: '50-200 employees',
-              description: 'Home healthcare services'
-            },
-            isSaved: false,
-            isApplied: false
+            isFeatured: false
           },
           {
-            id: 'OFF-2026-003',
+            id: 3,
             title: 'Private Driver - Full Time',
             company: 'VIP Transport Services',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Giza, Egypt',
-            salary: { min: 4000, max: 5500 },
+            salary: '4,000 - 5,500 EGP',
             type: 'Full Time',
-            skills: ['Safe Driving', 'Vehicle Maintenance'],
-            benefits: ['Company Car', 'Fuel Allowance'],
-            description: 'Professional driver needed for private family.',
-            requirements: ['Valid license', '5+ years experience'],
-            responsibilities: ['Transportation', 'Vehicle maintenance'],
-            postedAt: '2026-06-23T09:15:00Z',
-            applicants: 15,
-            matchScore: 85,
-            status: 'applied',
+            posted: '4 days ago',
             isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-10',
-            deadline: '2026-07-05',
-            contractType: 'Permanent',
-            workSchedule: 'Flexible, 6 days/week',
-            companyInfo: {
-              industry: 'Transportation',
-              size: '10-50 employees',
-              description: 'Premium transport services'
-            },
-            isSaved: false,
-            isApplied: true
-          },
-          {
-            id: 'OFF-2026-004',
-            title: 'Professional Cook - Part Time',
-            company: 'Gourmet Home Kitchen',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'New Cairo, Egypt',
-            salary: { min: 3000, max: 4000 },
-            type: 'Part Time',
-            skills: ['Cooking', 'Menu Planning', 'Food Safety'],
-            benefits: ['Meal Allowance', 'Flexible Schedule'],
-            description: 'Experienced cook needed for private family.',
-            requirements: ['4+ years experience', 'Food safety certification'],
-            responsibilities: ['Meal preparation', 'Menu planning'],
-            postedAt: '2026-06-22T16:45:00Z',
-            applicants: 6,
-            matchScore: 70,
-            status: 'saved',
-            isUrgent: false,
-            isFeatured: false,
-            startDate: '2026-07-20',
-            deadline: '2026-07-15',
-            contractType: 'Contract',
-            workSchedule: '6 days/week, 4 hours/day',
-            companyInfo: {
-              industry: 'Food Services',
-              size: '5-10 employees',
-              description: 'Private home dining'
-            },
-            isSaved: true,
-            isApplied: false
+            isFeatured: true
           }
         ];
-
-        // Merge saved and applied status
-        const mergedOffers = demoOffers.map(offer => ({
-          ...offer,
-          isSaved: savedOffers.includes(offer.id),
-          isApplied: appliedOffers.includes(offer.id)
-        }));
-
-        console.log('✅ Offers loaded:', mergedOffers.length);
-        setOffers(mergedOffers);
-        setFilteredOffers(mergedOffers);
+        setOffers(demoOffers);
+        console.log('✅ Offers loaded:', demoOffers.length);
       } catch (error) {
-        console.error('Error fetching offers:', error);
+        console.error('Error loading offers:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOffers();
-  }, [savedOffers, appliedOffers]);
+    loadOffers();
+  }, []);
 
-  // Filter and search
-  useEffect(() => {
-    let filtered = [...offers];
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(offer => offer.status === statusFilter);
-    }
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(offer =>
-        offer.title.toLowerCase().includes(searchLower) ||
-        offer.company.toLowerCase().includes(searchLower) ||
-        offer.location.toLowerCase().includes(searchLower)
-      );
-    }
-
-    switch (sortBy) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
-        break;
-      case 'salary_high':
-        filtered.sort((a, b) => b.salary.max - a.salary.max);
-        break;
-      case 'salary_low':
-        filtered.sort((a, b) => a.salary.min - b.salary.min);
-        break;
-      default:
-        break;
-    }
-
-    setFilteredOffers(filtered);
-  }, [offers, statusFilter, searchTerm, sortBy]);
-
-  const toggleExpand = (offerId) => {
-    setExpandedOffer(expandedOffer === offerId ? null : offerId);
-  };
-
-  const toggleSaveOffer = (offerId) => {
-    let newSaved;
-    if (savedOffers.includes(offerId)) {
-      newSaved = savedOffers.filter(id => id !== offerId);
-    } else {
-      newSaved = [...savedOffers, offerId];
-    }
-    setSavedOffers(newSaved);
-    localStorage.setItem('worker_saved_offers', JSON.stringify(newSaved));
-    
-    setOffers(prev => prev.map(offer => 
-      offer.id === offerId 
-        ? { ...offer, isSaved: !offer.isSaved, status: !offer.isSaved ? 'saved' : 'new' }
-        : offer
-    ));
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      new: 'bg-blue-100 text-blue-800',
-      applied: 'bg-yellow-100 text-yellow-800',
-      saved: 'bg-purple-100 text-purple-800',
-      interview: 'bg-indigo-100 text-indigo-800',
-      offered: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      expired: 'bg-gray-100 text-gray-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'new': return <Zap size={16} />;
-      case 'applied': return <Clock size={16} />;
-      case 'saved': return <Heart size={16} />;
-      case 'interview': return <Users size={16} />;
-      case 'offered': return <CheckCircle size={16} />;
-      case 'rejected': return <XCircle size={16} />;
-      case 'expired': return <AlertCircle size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    return t.filters[status] || status;
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const formatSalary = (salary) => {
-    if (salary.min === salary.max) {
-      return `${salary.min.toLocaleString()}`;
-    }
-    return `${salary.min.toLocaleString()} - ${salary.max.toLocaleString()}`;
-  };
-
-  const stats = {
-    available: offers.filter(o => o.status === 'new' || o.status === 'saved').length,
-    applied: offers.filter(o => o.status === 'applied').length,
-    saved: savedOffers.length,
-    interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
-  };
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading offers...</p>
-        </div>
-      </div>
-    );
-  }
+  // Filter offers
+  const filteredOffers = offers.filter(offer =>
+    offer.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    offer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    offer.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting to login...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading offers...</p>
         </div>
       </div>
     );
@@ -815,12 +430,6 @@ const WorkerOffers = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
-              <button
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:flex"
-              >
-                {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
-              </button>
             </div>
           </div>
         </header>
@@ -842,86 +451,24 @@ const WorkerOffers = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.available}</p>
-                <Zap size={20} className="text-blue-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.available}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.applied}</p>
-                <Clock size={20} className="text-yellow-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.applied}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.saved}</p>
-                <Heart size={20} className="text-red-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.saved}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.interviews}</p>
-                <Users size={20} className="text-purple-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
+          {/* Search Bar */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={language === 'en' ? 'Search offers...' : 'ابحث عن عروض...'}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="new">{t.filters.new}</option>
-                  <option value="applied">{t.filters.applied}</option>
-                  <option value="saved">{t.filters.saved}</option>
-                  <option value="interview">{t.filters.interview}</option>
-                  <option value="offered">{t.filters.offered}</option>
-                  <option value="rejected">{t.filters.rejected}</option>
-                  <option value="expired">{t.filters.expired}</option>
-                </select>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                >
-                  <option value="newest">{t.sort.newest}</option>
-                  <option value="salary_high">{t.sort.salary_high}</option>
-                  <option value="salary_low">{t.sort.salary_low}</option>
-                  <option value="popular">{t.sort.popular}</option>
-                </select>
-              </div>
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
             </div>
           </div>
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">
-              {language === 'en' ? 'Showing ' : 'عرض '}
-              <span className="font-semibold text-gray-700">{filteredOffers.length}</span>
-              {language === 'en' ? ' offers' : ' عرض'}
+              Showing <span className="font-semibold text-gray-700">{filteredOffers.length}</span> offers
             </p>
           </div>
 
@@ -929,187 +476,57 @@ const WorkerOffers = () => {
           {filteredOffers.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500">{t.empty.description}</p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setSortBy('newest');
-                }}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
-              >
-                {t.empty.reset}
-              </button>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noOffers}</h3>
+              <p className="text-gray-500">Try adjusting your search or filters</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOffers.map((offer) => (
                 <div
                   key={offer.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 p-4"
                 >
-                  <div className="p-4">
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={offer.companyLogo}
-                        alt={offer.company}
-                        className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-800 truncate">{offer.title}</h3>
-                            <p className="text-sm text-gray-500">{offer.company}</p>
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
-                            {offer.isUrgent && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                                {t.card.urgent}
-                              </span>
-                            )}
-                            {offer.isFeatured && (
-                              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                                {t.card.featured}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Match Score */}
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  offer.matchScore >= 80 ? 'bg-green-500' :
-                                  offer.matchScore >= 60 ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`}
-                                style={{ width: `${offer.matchScore}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-gray-600">{offer.matchScore}%</span>
-                          </div>
-                          <span className="text-xs text-gray-400">{t.card.matchScore}</span>
-                        </div>
-
-                        {/* Key Info */}
-                        <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <MapPin size={14} className="text-gray-400" />
-                            <span className="truncate">{offer.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <DollarSign size={14} className="text-gray-400" />
-                            <span>EGP {formatSalary(offer.salary)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Briefcase size={14} className="text-gray-400" />
-                            <span>{offer.type}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Clock size={14} className="text-gray-400" />
-                            <span>{formatDate(offer.postedAt)}</span>
-                          </div>
-                        </div>
-
-                        {/* Status Badges */}
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
-                            {getStatusIcon(offer.status)}
-                            {getStatusLabel(offer.status)}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {offer.isUrgent && (
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                            Urgent
                           </span>
-                          {offer.isApplied && (
-                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
-                              <CheckCircle size={12} />
-                              {t.card.applied}
-                            </span>
-                          )}
-                          {offer.isSaved && !offer.isApplied && (
-                            <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
-                              <Heart size={12} className="fill-current" />
-                              {t.card.saved}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-400">{offer.applicants} {t.card.applicants}</span>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => toggleExpand(offer.id)}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                          >
-                            <Eye size={16} />
-                            {t.card.viewDetails}
-                          </button>
-                          <button
-                            onClick={() => toggleSaveOffer(offer.id)}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              offer.isSaved
-                                ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                          >
-                            <Heart size={18} className={offer.isSaved ? 'fill-current' : ''} />
-                          </button>
-                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-                            <Share2 size={18} />
-                          </button>
-                        </div>
+                        )}
+                        {offer.isFeatured && (
+                          <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                            Featured
+                          </span>
+                        )}
                       </div>
+                      <h3 className="font-semibold text-gray-800 mt-1">{offer.title}</h3>
+                      <p className="text-sm text-gray-500">{offer.company}</p>
                     </div>
-
-                    {/* Expanded Details */}
-                    {expandedOffer === offer.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.about}</h4>
-                            <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
-                            
-                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.requirements}</h5>
-                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside mb-3">
-                              {offer.requirements.map((req, idx) => (
-                                <li key={idx}>{req}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.benefits}</h4>
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                              {offer.benefits.map((benefit, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
-                                  {benefit}
-                                </span>
-                              ))}
-                            </div>
-
-                            <div className="space-y-1.5 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.contractType}</span>
-                                <span className="font-medium">{offer.contractType}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.workSchedule}</span>
-                                <span className="font-medium">{offer.workSchedule}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.startDate}</span>
-                                <span className="font-medium">{new Date(offer.startDate).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.applicationDeadline}</span>
-                                <span className="font-medium text-red-600">{new Date(offer.deadline).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
+
+                  <div className="mt-3 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <MapPin size={14} className="text-gray-400" />
+                      <span>{offer.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <DollarSign size={14} className="text-gray-400" />
+                      <span>{offer.salary}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Briefcase size={14} className="text-gray-400" />
+                      <span>{offer.type}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Clock size={14} className="text-gray-400" />
+                      <span>{offer.posted}</span>
+                    </div>
+                  </div>
+
+                  <button className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                    View Details
+                  </button>
                 </div>
               ))}
             </div>
