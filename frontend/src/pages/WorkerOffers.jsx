@@ -32,11 +32,9 @@ import {
   Menu,
   Bell,
   AlertTriangle,
-  Star,
-  Award,
-  TrendingUp,
-  Calendar,
-  FileText
+  ChevronLeft,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 
 // ============ SIDEBAR COMPONENT (SAME AS DASHBOARD) ============
