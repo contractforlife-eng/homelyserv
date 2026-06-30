@@ -50,6 +50,27 @@ function Login() {
     }
   };
 
+  // Check if user is registered in localStorage
+  const checkRegisteredUser = (email, password) => {
+    try {
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      console.log('📦 Checking registered users:', users);
+      
+      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (user) {
+        console.log('✅ Found registered user:', user);
+        // Auto-login the registered user
+        const token = `user_token_${Date.now()}`;
+        localStorage.setItem('homelyserv_token', token);
+        localStorage.setItem('homelyserv_user', JSON.stringify(user));
+        return user;
+      }
+    } catch (error) {
+      console.error('Error checking registered users:', error);
+    }
+    return null;
+  };
+
   // Quick login function - Preserves profile data
   const quickLogin = (role) => {
     console.log('🔄 Quick login for role:', role);
@@ -136,13 +157,25 @@ function Login() {
     console.log('🔄 Form submitted with email:', email);
     
     setError('');
+    setLoading(true);
     
     if (!email || !password) {
       setError('Please enter both email and password');
+      setLoading(false);
       return;
     }
 
-    // Use quick login based on email
+    // FIRST: Check if user is registered in homelyserv_users
+    const registeredUser = checkRegisteredUser(email, password);
+    if (registeredUser) {
+      console.log('✅ Registered user logged in:', registeredUser.fullName);
+      setTimeout(() => {
+        redirectUser(registeredUser);
+      }, 500);
+      return;
+    }
+
+    // SECOND: Check demo accounts
     if (email.toLowerCase() === 'worker@homelyserv.com' || email.toLowerCase() === 'worker') {
       quickLogin('WORKER');
     } else if (email.toLowerCase() === 'employer@homelyserv.com' || email.toLowerCase() === 'employer') {

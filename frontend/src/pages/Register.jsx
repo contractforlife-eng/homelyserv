@@ -99,7 +99,10 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('🔄 Form submitted with data:', formData);
+    
     if (!validateForm()) {
+      console.log('❌ Validation failed:', errors);
       return;
     }
 
@@ -108,10 +111,10 @@ function Register() {
     setErrors({});
 
     try {
-      // Simulate API call - DEMO REGISTRATION
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Create user data
+      // Create user data with ALL fields
       const newUser = {
         id: `user_${Date.now()}`,
         fullName: formData.fullName,
@@ -120,21 +123,59 @@ function Register() {
         phone: formData.phone || '',
         location: formData.location || '',
         createdAt: new Date().toISOString(),
-        profileComplete: false
+        profileComplete: false,
+        // Add profile fields for worker
+        bio: '',
+        skills: [],
+        experience: '',
+        hourlyRate: ''
       };
 
-      // Store in localStorage for demo purposes
-      const existingUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userExists = existingUsers.find(u => u.email === formData.email);
-      
+      console.log('📝 Creating new user:', newUser);
+
+      // Get existing users
+      let existingUsers = [];
+      try {
+        const storedUsers = localStorage.getItem('homelyserv_users');
+        existingUsers = storedUsers ? JSON.parse(storedUsers) : [];
+        console.log('📦 Existing users:', existingUsers);
+      } catch (error) {
+        console.error('Error parsing existing users:', error);
+        existingUsers = [];
+      }
+
+      // Check if user already exists
+      const userExists = existingUsers.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
       if (userExists) {
-        setErrors({ general: 'User with this email already exists' });
+        console.log('⚠️ User already exists:', userExists);
+        setErrors({ general: 'User with this email already exists. Please login.' });
         setLoading(false);
         return;
       }
 
+      // Add new user
       existingUsers.push(newUser);
       localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
+      
+      // Also store as separate user data for login
+      const userData = {
+        id: newUser.id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        role: newUser.role,
+        phone: newUser.phone,
+        location: newUser.location,
+        bio: '',
+        skills: [],
+        experience: '',
+        hourlyRate: ''
+      };
+      
+      // Store as homelyserv_user for immediate login if needed
+      localStorage.setItem('homelyserv_user', JSON.stringify(userData));
+      
+      console.log('✅ User created successfully:', newUser);
+      console.log('✅ All users:', JSON.parse(localStorage.getItem('homelyserv_users')));
 
       setSuccess(true);
       
@@ -155,7 +196,7 @@ function Register() {
       }, 2000);
 
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('❌ Registration error:', error);
       setErrors({ 
         general: error.message || 'Registration failed. Please try again.' 
       });
