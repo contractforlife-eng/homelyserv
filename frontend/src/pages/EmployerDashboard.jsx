@@ -231,12 +231,12 @@ const EmployerDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
-    activeHires: 5,
-    pendingApplications: 12,
-    totalWorkers: 8,
-    messages: 7,
-    completedHires: 24,
-    savedWorkers: 6
+    activeHires: 0,
+    pendingApplications: 0,
+    totalWorkers: 0,
+    messages: 0,
+    completedHires: 0,
+    savedWorkers: 0
   });
 
   const translations = {
@@ -259,7 +259,8 @@ const EmployerDashboard = () => {
       viewProfile: 'View Profile',
       viewMessages: 'View Messages',
       notifications: 'Notifications',
-      languageToggle: 'العربية'
+      languageToggle: 'العربية',
+      noActivity: 'No recent activity'
     },
     ar: {
       welcome: 'مرحباً بعودتك',
@@ -280,7 +281,8 @@ const EmployerDashboard = () => {
       viewProfile: 'عرض الملف الشخصي',
       viewMessages: 'عرض الرسائل',
       notifications: 'الإشعارات',
-      languageToggle: 'English'
+      languageToggle: 'English',
+      noActivity: 'لا يوجد نشاط حديث'
     }
   };
 
@@ -312,6 +314,7 @@ const EmployerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
+    // Load real stats from localStorage if available
     const savedStats = localStorage.getItem('employer_stats');
     if (savedStats) {
       try {
@@ -434,7 +437,7 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Teal Theme */}
+          {/* Stats Grid - Teal Theme - All set to 0 or dynamic */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -533,40 +536,12 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity - No fake data */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                  <UserPlus size={16} className="text-teal-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">New application from Ahmed Ali</p>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle size={16} className="text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">Hire confirmed with Mona Hassan</p>
-                  <p className="text-sm text-gray-500">1 day ago</p>
-                </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Confirmed</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Heart size={16} className="text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">Saved worker profile: Khaled Mostafa</p>
-                  <p className="text-sm text-gray-500">2 days ago</p>
-                </div>
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Saved</span>
-              </div>
+            <div className="text-center py-8 text-gray-500">
+              <p>{t.noActivity}</p>
+              <p className="text-sm mt-2">Start hiring workers to see activity here</p>
             </div>
           </div>
         </div>
