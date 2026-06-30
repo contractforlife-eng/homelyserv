@@ -334,29 +334,6 @@ function Login() {
               Create one
             </Link>
           </p>
-
-          {/* Demo Accounts Info */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs text-gray-500 text-center font-medium">Demo Accounts:</p>
-            <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-              <div className="text-center">
-                <span className="text-blue-600 font-medium">Worker</span>
-                <br />
-                <span className="text-gray-500">worker@homelyserv.com</span>
-              </div>
-              <div className="text-center">
-                <span className="text-green-600 font-medium">Employer</span>
-                <br />
-                <span className="text-gray-500">employer@homelyserv.com</span>
-              </div>
-              <div className="text-center">
-                <span className="text-purple-600 font-medium">Admin</span>
-                <br />
-                <span className="text-gray-500">admin@homelyserv.com</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 text-center mt-2">Password: any (e.g., password123)</p>
-          </div>
         </div>
       </div>
     </div>
