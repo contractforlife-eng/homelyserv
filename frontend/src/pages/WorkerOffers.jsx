@@ -31,8 +31,7 @@ import {
   LogOut,
   Menu,
   Bell,
-  AlertTriangle,
-  Star
+  AlertTriangle
 } from 'lucide-react';
 
 // Sidebar Component
@@ -230,7 +229,6 @@ const WorkerSidebar = ({
 // Main WorkerOffers Component
 const WorkerOffers = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -243,9 +241,6 @@ const WorkerOffers = () => {
   const [savedOffers, setSavedOffers] = useState([]);
   const [appliedOffers, setAppliedOffers] = useState([]);
   const [user, setUser] = useState(null);
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -336,14 +331,6 @@ const WorkerOffers = () => {
       languageToggle: 'العربية',
       switchToList: 'List View',
       switchToGrid: 'Grid View',
-      applyModal: {
-        title: 'Apply for Position',
-        message: 'Are you sure you want to apply for this position?',
-        confirm: 'Yes, Apply Now',
-        cancel: 'Cancel',
-        success: 'Application submitted successfully!',
-        note: 'You will be notified about the application status via email.'
-      },
       welcome: 'Welcome back',
       notifications: 'Notifications'
     },
@@ -433,14 +420,6 @@ const WorkerOffers = () => {
       languageToggle: 'English',
       switchToList: 'عرض القائمة',
       switchToGrid: 'عرض الشبكة',
-      applyModal: {
-        title: 'تقديم على الوظيفة',
-        message: 'هل أنت متأكد من رغبتك في التقديم على هذه الوظيفة؟',
-        confirm: 'نعم، تقديم الآن',
-        cancel: 'إلغاء',
-        success: 'تم تقديم الطلب بنجاح!',
-        note: 'سيتم إعلامك بحالة الطلب عبر البريد الإلكتروني.'
-      },
       welcome: 'مرحباً بعودتك',
       notifications: 'الإشعارات'
     }
@@ -459,6 +438,7 @@ const WorkerOffers = () => {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+        console.log('✅ User loaded:', parsedUser.fullName);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -507,13 +487,12 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Fetch offers
+  // Fetch offers - SIMPLIFIED
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1200));
-
+        // Simple demo data - no complex logic
         const demoOffers = [
           {
             id: 'OFF-2026-001',
@@ -522,14 +501,12 @@ const WorkerOffers = () => {
             companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Cairo, Egypt',
             salary: { min: 3500, max: 4500 },
-            currency: 'EGP',
             type: 'Full Time',
-            experience: '3+ years',
-            skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
-            benefits: ['Health Insurance', 'Paid Vacation', 'Transportation', 'Training'],
-            description: 'We are looking for an experienced and caring nanny to join our family.',
-            requirements: ['Minimum 3 years of experience', 'First Aid certified', 'Valid ID'],
-            responsibilities: ['Child supervision', 'Educational activities', 'Meal preparation'],
+            skills: ['Child Care', 'First Aid', 'Communication'],
+            benefits: ['Health Insurance', 'Paid Vacation'],
+            description: 'Experienced nanny needed for a loving family.',
+            requirements: ['3+ years experience', 'First Aid certified'],
+            responsibilities: ['Child supervision', 'Meal preparation'],
             postedAt: '2026-06-25T10:30:00Z',
             applicants: 12,
             matchScore: 92,
@@ -543,9 +520,8 @@ const WorkerOffers = () => {
             companyInfo: {
               industry: 'Family Services',
               size: '10-50 employees',
-              description: 'Leading provider of premium home services'
+              description: 'Premium home services provider'
             },
-            applicationStatus: null,
             isSaved: false,
             isApplied: false
           },
@@ -556,14 +532,12 @@ const WorkerOffers = () => {
             companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Alexandria, Egypt',
             salary: { min: 2800, max: 3600 },
-            currency: 'EGP',
             type: 'Part Time',
-            experience: '2+ years',
-            skills: ['Elderly Care', 'Medication Management', 'Empathy'],
-            benefits: ['Flexible Hours', 'Paid Leave', 'Career Growth'],
-            description: 'Seeking compassionate caregiver for elderly gentleman with mobility issues.',
-            requirements: ['2+ years elderly care experience', 'First Aid certification'],
-            responsibilities: ['Daily living assistance', 'Medication reminders', 'Mobility support'],
+            skills: ['Elderly Care', 'Medication Management'],
+            benefits: ['Flexible Hours', 'Paid Leave'],
+            description: 'Compassionate caregiver needed for elderly gentleman.',
+            requirements: ['2+ years experience', 'First Aid certification'],
+            responsibilities: ['Daily living assistance', 'Medication reminders'],
             postedAt: '2026-06-24T14:20:00Z',
             applicants: 8,
             matchScore: 78,
@@ -577,9 +551,8 @@ const WorkerOffers = () => {
             companyInfo: {
               industry: 'Healthcare',
               size: '50-200 employees',
-              description: 'Specialized in home healthcare services'
+              description: 'Home healthcare services'
             },
-            applicationStatus: null,
             isSaved: false,
             isApplied: false
           },
@@ -590,14 +563,12 @@ const WorkerOffers = () => {
             companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'Giza, Egypt',
             salary: { min: 4000, max: 5500 },
-            currency: 'EGP',
             type: 'Full Time',
-            experience: '5+ years',
-            skills: ['Safe Driving', 'Vehicle Maintenance', 'Navigation'],
-            benefits: ['Company Car', 'Fuel Allowance', 'Bonus', 'Insurance'],
-            description: 'Seeking professional driver for private family.',
-            requirements: ['Valid Egyptian driver\'s license', '5+ years experience'],
-            responsibilities: ['Transportation of family members', 'Vehicle maintenance'],
+            skills: ['Safe Driving', 'Vehicle Maintenance'],
+            benefits: ['Company Car', 'Fuel Allowance'],
+            description: 'Professional driver needed for private family.',
+            requirements: ['Valid license', '5+ years experience'],
+            responsibilities: ['Transportation', 'Vehicle maintenance'],
             postedAt: '2026-06-23T09:15:00Z',
             applicants: 15,
             matchScore: 85,
@@ -611,12 +582,7 @@ const WorkerOffers = () => {
             companyInfo: {
               industry: 'Transportation',
               size: '10-50 employees',
-              description: 'Premium private transport services'
-            },
-            applicationStatus: {
-              status: 'pending_review',
-              date: '2026-06-24',
-              note: 'Application under review'
+              description: 'Premium transport services'
             },
             isSaved: false,
             isApplied: true
@@ -628,14 +594,12 @@ const WorkerOffers = () => {
             companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
             location: 'New Cairo, Egypt',
             salary: { min: 3000, max: 4000 },
-            currency: 'EGP',
             type: 'Part Time',
-            experience: '4+ years',
-            skills: ['Cooking', 'Menu Planning', 'Nutrition', 'Food Safety'],
-            benefits: ['Meal Allowance', 'Flexible Schedule', 'Training'],
+            skills: ['Cooking', 'Menu Planning', 'Food Safety'],
+            benefits: ['Meal Allowance', 'Flexible Schedule'],
             description: 'Experienced cook needed for private family.',
-            requirements: ['4+ years cooking experience', 'Food safety certification'],
-            responsibilities: ['Meal preparation', 'Menu planning', 'Kitchen hygiene'],
+            requirements: ['4+ years experience', 'Food safety certification'],
+            responsibilities: ['Meal preparation', 'Menu planning'],
             postedAt: '2026-06-22T16:45:00Z',
             applicants: 6,
             matchScore: 70,
@@ -649,58 +613,21 @@ const WorkerOffers = () => {
             companyInfo: {
               industry: 'Food Services',
               size: '5-10 employees',
-              description: 'Specialized in private home dining'
+              description: 'Private home dining'
             },
-            applicationStatus: null,
             isSaved: true,
             isApplied: false
-          },
-          {
-            id: 'OFF-2026-005',
-            title: 'House Manager - Full Time',
-            company: 'Premium Home Solutions',
-            companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-            location: 'Maadi, Egypt',
-            salary: { min: 5000, max: 7000 },
-            currency: 'EGP',
-            type: 'Full Time',
-            experience: '5+ years',
-            skills: ['Management', 'Organization', 'Communication'],
-            benefits: ['Health Insurance', 'Bonus', 'Paid Leave'],
-            description: 'Experienced house manager to oversee daily operations.',
-            requirements: ['5+ years house management experience', 'Strong leadership skills'],
-            responsibilities: ['Staff supervision', 'Budget management', 'Event planning'],
-            postedAt: '2026-06-21T11:00:00Z',
-            applicants: 9,
-            matchScore: 88,
-            status: 'interview',
-            isUrgent: true,
-            isFeatured: true,
-            startDate: '2026-07-01',
-            deadline: '2026-06-28',
-            contractType: 'Permanent',
-            workSchedule: 'Sunday - Thursday, 9AM - 6PM',
-            companyInfo: {
-              industry: 'Property Management',
-              size: '20-50 employees',
-              description: 'Luxury property management services'
-            },
-            applicationStatus: {
-              status: 'interview_scheduled',
-              date: '2026-06-25',
-              note: 'Interview scheduled for June 28'
-            },
-            isSaved: false,
-            isApplied: true
           }
         ];
 
+        // Merge saved and applied status
         const mergedOffers = demoOffers.map(offer => ({
           ...offer,
           isSaved: savedOffers.includes(offer.id),
           isApplied: appliedOffers.includes(offer.id)
         }));
 
+        console.log('✅ Offers loaded:', mergedOffers.length);
         setOffers(mergedOffers);
         setFilteredOffers(mergedOffers);
       } catch (error) {
@@ -711,7 +638,7 @@ const WorkerOffers = () => {
     };
 
     fetchOffers();
-  }, []);
+  }, [savedOffers, appliedOffers]);
 
   // Filter and search
   useEffect(() => {
@@ -726,8 +653,7 @@ const WorkerOffers = () => {
       filtered = filtered.filter(offer =>
         offer.title.toLowerCase().includes(searchLower) ||
         offer.company.toLowerCase().includes(searchLower) ||
-        offer.location.toLowerCase().includes(searchLower) ||
-        offer.skills.some(skill => skill.toLowerCase().includes(searchLower))
+        offer.location.toLowerCase().includes(searchLower)
       );
     }
 
@@ -735,17 +661,11 @@ const WorkerOffers = () => {
       case 'newest':
         filtered.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
         break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.postedAt) - new Date(b.postedAt));
-        break;
       case 'salary_high':
         filtered.sort((a, b) => b.salary.max - a.salary.max);
         break;
       case 'salary_low':
         filtered.sort((a, b) => a.salary.min - b.salary.min);
-        break;
-      case 'popular':
-        filtered.sort((a, b) => b.applicants - a.applicants);
         break;
       default:
         break;
@@ -773,30 +693,6 @@ const WorkerOffers = () => {
         ? { ...offer, isSaved: !offer.isSaved, status: !offer.isSaved ? 'saved' : 'new' }
         : offer
     ));
-  };
-
-  const handleApply = (offerId) => {
-    const offer = offers.find(o => o.id === offerId);
-    setSelectedOffer(offer);
-    setShowApplyModal(true);
-  };
-
-  const confirmApply = () => {
-    if (selectedOffer) {
-      const newApplied = [...appliedOffers, selectedOffer.id];
-      setAppliedOffers(newApplied);
-      localStorage.setItem('worker_applied_offers', JSON.stringify(newApplied));
-      
-      setOffers(prev => prev.map(offer => 
-        offer.id === selectedOffer.id 
-          ? { ...offer, isApplied: true, status: 'applied' }
-          : offer
-      ));
-      
-      setShowApplyModal(false);
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 5000);
-    }
   };
 
   const getStatusColor = (status) => {
@@ -829,28 +725,6 @@ const WorkerOffers = () => {
     return t.filters[status] || status;
   };
 
-  const getApplicationStatusColor = (status) => {
-    const colors = {
-      pending_review: 'bg-yellow-100 text-yellow-800',
-      interview_scheduled: 'bg-indigo-100 text-indigo-800',
-      offered: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      accepted: 'bg-emerald-100 text-emerald-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getApplicationStatusLabel = (status) => {
-    const labels = {
-      pending_review: 'Pending Review',
-      interview_scheduled: 'Interview Scheduled',
-      offered: 'Offer Extended',
-      rejected: 'Rejected',
-      accepted: 'Accepted'
-    };
-    return labels[status] || status;
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -875,23 +749,24 @@ const WorkerOffers = () => {
     interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600">Loading offers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -899,27 +774,6 @@ const WorkerOffers = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-down">
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 shadow-lg max-w-md">
-            <div className="flex items-start gap-3">
-              <CheckCircle size={20} className="text-green-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-green-800">{t.applyModal.success}</h4>
-                <p className="text-sm text-green-600">{t.applyModal.note}</p>
-              </div>
-              <button 
-                onClick={() => setShowSuccessToast(false)}
-                className="text-green-500 hover:text-green-700"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Sidebar */}
       <WorkerSidebar
         language={language}
@@ -1027,17 +881,17 @@ const WorkerOffers = () => {
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={language === 'en' ? 'Search offers by title, company, or skills...' : 'ابحث عن عروض حسب العنوان أو الشركة أو المهارات...'}
+                  placeholder={language === 'en' ? 'Search offers...' : 'ابحث عن عروض...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="new">{t.filters.new}</option>
@@ -1051,14 +905,12 @@ const WorkerOffers = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                 >
                   <option value="newest">{t.sort.newest}</option>
-                  <option value="oldest">{t.sort.oldest}</option>
                   <option value="salary_high">{t.sort.salary_high}</option>
                   <option value="salary_low">{t.sort.salary_low}</option>
                   <option value="popular">{t.sort.popular}</option>
-                  <option value="nearby">{t.sort.nearby}</option>
                 </select>
               </div>
             </div>
@@ -1073,7 +925,7 @@ const WorkerOffers = () => {
             </p>
           </div>
 
-          {/* Offers Grid/List */}
+          {/* Offers Grid */}
           {filteredOffers.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">🔍</div>
@@ -1085,24 +937,19 @@ const WorkerOffers = () => {
                   setStatusFilter('all');
                   setSortBy('newest');
                 }}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
               >
                 {t.empty.reset}
               </button>
             </div>
           ) : (
-            <div className={viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-              : 'space-y-4'
-            }>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredOffers.map((offer) => (
                 <div
                   key={offer.id}
-                  className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
-                    viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
-                  }`}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
                 >
-                  <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                  <div className="p-4">
                     <div className="flex items-start gap-4">
                       <img
                         src={offer.companyLogo}
@@ -1126,14 +973,10 @@ const WorkerOffers = () => {
                                 {t.card.featured}
                               </span>
                             )}
-                            {offer.status === 'new' && !offer.isSaved && !offer.isApplied && (
-                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                                {t.card.new}
-                              </span>
-                            )}
                           </div>
                         </div>
 
+                        {/* Match Score */}
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -1151,35 +994,32 @@ const WorkerOffers = () => {
                           <span className="text-xs text-gray-400">{t.card.matchScore}</span>
                         </div>
 
+                        {/* Key Info */}
                         <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
                           <div className="flex items-center gap-1.5 text-gray-600">
-                            <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+                            <MapPin size={14} className="text-gray-400" />
                             <span className="truncate">{offer.location}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-gray-600">
-                            <DollarSign size={14} className="text-gray-400 flex-shrink-0" />
+                            <DollarSign size={14} className="text-gray-400" />
                             <span>EGP {formatSalary(offer.salary)}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-gray-600">
-                            <Briefcase size={14} className="text-gray-400 flex-shrink-0" />
+                            <Briefcase size={14} className="text-gray-400" />
                             <span>{offer.type}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-gray-600">
-                            <Clock size={14} className="text-gray-400 flex-shrink-0" />
+                            <Clock size={14} className="text-gray-400" />
                             <span>{formatDate(offer.postedAt)}</span>
                           </div>
                         </div>
 
+                        {/* Status Badges */}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
                             {getStatusIcon(offer.status)}
                             {getStatusLabel(offer.status)}
                           </span>
-                          {offer.applicationStatus && (
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getApplicationStatusColor(offer.applicationStatus.status)}`}>
-                              {getApplicationStatusLabel(offer.applicationStatus.status)}
-                            </span>
-                          )}
                           {offer.isApplied && (
                             <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
                               <CheckCircle size={12} />
@@ -1195,6 +1035,7 @@ const WorkerOffers = () => {
                           <span className="text-xs text-gray-400">{offer.applicants} {t.card.applicants}</span>
                         </div>
 
+                        {/* Action Buttons */}
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => toggleExpand(offer.id)}
@@ -1203,21 +1044,6 @@ const WorkerOffers = () => {
                             <Eye size={16} />
                             {t.card.viewDetails}
                           </button>
-                          {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
-                            <button
-                              onClick={() => handleApply(offer.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
-                            >
-                              <BriefcaseIcon size={14} />
-                              {t.card.applyNow}
-                            </button>
-                          )}
-                          {offer.isApplied && (
-                            <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                              <CheckCircle size={16} />
-                              {t.actions.applied}
-                            </span>
-                          )}
                           <button
                             onClick={() => toggleSaveOffer(offer.id)}
                             className={`p-1.5 rounded-lg transition-colors ${
@@ -1228,13 +1054,14 @@ const WorkerOffers = () => {
                           >
                             <Heart size={18} className={offer.isSaved ? 'fill-current' : ''} />
                           </button>
-                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
                             <Share2 size={18} />
                           </button>
                         </div>
                       </div>
                     </div>
 
+                    {/* Expanded Details */}
                     {expandedOffer === offer.id && (
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1246,13 +1073,6 @@ const WorkerOffers = () => {
                             <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside mb-3">
                               {offer.requirements.map((req, idx) => (
                                 <li key={idx}>{req}</li>
-                              ))}
-                            </ul>
-
-                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.responsibilities}</h5>
-                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside">
-                              {offer.responsibilities.map((resp, idx) => (
-                                <li key={idx}>{resp}</li>
                               ))}
                             </ul>
                           </div>
@@ -1285,124 +1105,17 @@ const WorkerOffers = () => {
                                 <span className="font-medium text-red-600">{new Date(offer.deadline).toLocaleDateString()}</span>
                               </div>
                             </div>
-
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                              <h5 className="font-semibold text-gray-700 text-sm mb-1">{t.details.company}</h5>
-                              <p className="text-sm text-gray-600">{offer.companyInfo.description}</p>
-                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                                <span>{offer.companyInfo.industry}</span>
-                                <span>•</span>
-                                <span>{offer.companyInfo.size}</span>
-                              </div>
-                            </div>
                           </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {!offer.isApplied && offer.status !== 'offered' && offer.status !== 'rejected' && offer.status !== 'expired' && (
-                            <button
-                              onClick={() => handleApply(offer.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            >
-                              <BriefcaseIcon size={18} />
-                              {t.actions.apply}
-                            </button>
-                          )}
-                          {offer.isApplied && (
-                            <span className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                              <CheckCircle size={18} />
-                              {t.actions.applied}
-                            </span>
-                          )}
-                          <button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                            <MessageCircle size={18} />
-                            {language === 'en' ? 'Contact' : 'اتصال'}
-                          </button>
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {viewMode === 'list' && (
-                    <div className="md:w-48 bg-gray-50 p-4 border-t md:border-t-0 md:border-l border-gray-100 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-3">
-                      <div className="text-center md:text-left">
-                        <p className="text-xs text-gray-500">{t.card.salaryPerMonth}</p>
-                        <p className="font-bold text-gray-800 text-lg">
-                          EGP {formatSalary(offer.salary)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => toggleExpand(offer.id)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
-                      >
-                        {expandedOffer === offer.id ? (language === 'en' ? 'Hide Details' : 'إخفاء التفاصيل') : (language === 'en' ? 'View Details' : 'عرض التفاصيل')}
-                        {expandedOffer === offer.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           )}
-
-          {filteredOffers.length > 0 && filteredOffers.length < offers.length && (
-            <div className="mt-6 text-center">
-              <button className="px-8 py-3 border border-gray-300 hover:border-red-300 text-gray-700 hover:text-red-600 rounded-lg font-medium transition-colors">
-                {t.actions.loadMore}
-              </button>
-            </div>
-          )}
         </div>
       </main>
-
-      {/* Apply Modal */}
-      {showApplyModal && selectedOffer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 animate-scale-in">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BriefcaseIcon size={28} className="text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{t.applyModal.title}</h3>
-              <p className="text-gray-600 mb-1">{t.applyModal.message}</p>
-              <p className="text-sm text-gray-500 mt-2">{t.applyModal.note}</p>
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-left">
-                <p className="font-medium text-gray-800">{selectedOffer.title}</p>
-                <p className="text-sm text-gray-500">{selectedOffer.company}</p>
-                <p className="text-sm text-gray-500">EGP {formatSalary(selectedOffer.salary)}</p>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowApplyModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {t.actions.cancel}
-              </button>
-              <button
-                onClick={confirmApply}
-                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <ThumbsUp size={18} />
-                {t.actions.confirmApply}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slide-down {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scale-in {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-slide-down { animation: slide-down 0.3s ease-out; }
-        .animate-scale-in { animation: scale-in 0.2s ease-out; }
-      `}</style>
     </div>
   );
 };
