@@ -51,7 +51,7 @@ function Login() {
   };
 
   // Check if user is registered in localStorage
-  const checkRegisteredUser = (email, password) => {
+  const checkRegisteredUser = (email) => {
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       console.log('📦 Checking registered users:', users);
@@ -59,10 +59,6 @@ function Login() {
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (user) {
         console.log('✅ Found registered user:', user);
-        // Auto-login the registered user
-        const token = `user_token_${Date.now()}`;
-        localStorage.setItem('homelyserv_token', token);
-        localStorage.setItem('homelyserv_user', JSON.stringify(user));
         return user;
       }
     } catch (error) {
@@ -71,79 +67,81 @@ function Login() {
     return null;
   };
 
-  // Quick login function - Preserves profile data
-  const quickLogin = (role) => {
-    console.log('🔄 Quick login for role:', role);
+  // Get saved profile data for a user
+  const getSavedProfileData = (email) => {
+    try {
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (profiles[email]) {
+        console.log('📥 Found saved profile data for:', email);
+        return profiles[email];
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+    return null;
+  };
+
+  // Quick login function - NOW LOADS SAVED PROFILE DATA
+  const quickLogin = (role, email) => {
+    console.log('🔄 Quick login for role:', role, 'email:', email);
     setError('');
     setLoading(true);
-
-    // Check if user data already exists in localStorage
-    const existingUserData = localStorage.getItem('homelyserv_user');
-    let existingUser = null;
-    if (existingUserData) {
-      try {
-        existingUser = JSON.parse(existingUserData);
-        console.log('📦 Found existing user data:', existingUser);
-      } catch (error) {
-        console.error('Error parsing existing user data:', error);
-      }
-    }
 
     let user = {};
     let token = '';
 
-    // If existing user exists and has the same role, keep the existing data
-    if (existingUser && existingUser.role === role) {
-      user = existingUser;
-      console.log('✅ Using existing user data with all profile fields');
-    } else {
-      // Create new user with complete profile data
-      if (role === 'WORKER') {
-        user = {
-          id: 'worker_001',
-          fullName: 'Ahmed Ali',
-          email: 'worker@homelyserv.com',
-          role: 'WORKER',
-          profileComplete: true,
-          phone: '+201234567890',
-          location: 'Cairo, Egypt',
-          bio: 'Experienced professional in home services with over 3 years of experience.',
-          skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
-          experience: '3 years',
-          hourlyRate: '35'
-        };
-        token = 'demo_worker_token_12345';
-      } else if (role === 'EMPLOYER') {
-        user = {
-          id: 'employer_001',
-          fullName: 'Sara Mohamed',
-          email: 'employer@homelyserv.com',
-          role: 'EMPLOYER',
-          companyName: 'Elite Family Services',
-          phone: '+201234567891',
-          location: 'Cairo, Egypt',
-          bio: 'Looking for professional home service providers.'
-        };
-        token = 'demo_employer_token_12345';
-      } else if (role === 'ADMIN') {
-        user = {
-          id: 'admin_001',
-          fullName: 'Admin User',
-          email: 'admin@homelyserv.com',
-          role: 'ADMIN',
-          phone: '+201234567892'
-        };
-        token = 'demo_admin_token_12345';
-      }
-      console.log('🆕 Created new user data for role:', role);
+    // First check if there's saved profile data for this email
+    const savedProfile = email ? getSavedProfileData(email) : null;
+
+    if (role === 'WORKER') {
+      user = {
+        id: 'worker_001',
+        fullName: savedProfile?.fullName || 'Ahmed Ali',
+        email: email || 'worker@homelyserv.com',
+        role: 'WORKER',
+        profileComplete: true,
+        phone: savedProfile?.phone || '+201234567890',
+        location: savedProfile?.location || 'Cairo, Egypt',
+        bio: savedProfile?.bio || 'Experienced professional in home services with over 3 years of experience.',
+        skills: savedProfile?.skills || ['Child Care', 'First Aid', 'Communication', 'Patience'],
+        experience: savedProfile?.experience || '3 years',
+        hourlyRate: savedProfile?.hourlyRate || '35'
+      };
+      token = 'demo_worker_token_12345';
+    } else if (role === 'EMPLOYER') {
+      user = {
+        id: 'employer_001',
+        fullName: savedProfile?.fullName || 'Sara Mohamed',
+        email: email || 'employer@homelyserv.com',
+        role: 'EMPLOYER',
+        companyName: savedProfile?.companyName || 'Elite Family Services',
+        phone: savedProfile?.phone || '+201234567891',
+        location: savedProfile?.location || 'Cairo, Egypt',
+        bio: savedProfile?.bio || 'Looking for professional home service providers.'
+      };
+      token = 'demo_employer_token_12345';
+    } else if (role === 'ADMIN') {
+      user = {
+        id: 'admin_001',
+        fullName: 'Admin User',
+        email: 'admin@homelyserv.com',
+        role: 'ADMIN',
+        phone: '+201234567892'
+      };
+      token = 'demo_admin_token_12345';
     }
 
     // Store in localStorage with correct keys
     localStorage.setItem('homelyserv_token', token);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
     
-    console.log('✅ Login successful:', user.fullName);
-    console.log('✅ User role:', user.role);
+    console.log('✅ Login successful with profile data:', {
+      fullName: user.fullName,
+      bio: user.bio,
+      skills: user.skills,
+      experience: user.experience,
+      hourlyRate: user.hourlyRate
+    });
     
     // Redirect after a small delay
     setTimeout(() => {
@@ -166,22 +164,21 @@ function Login() {
     }
 
     // FIRST: Check if user is registered in homelyserv_users
-    const registeredUser = checkRegisteredUser(email, password);
+    const registeredUser = checkRegisteredUser(email);
     if (registeredUser) {
-      console.log('✅ Registered user logged in:', registeredUser.fullName);
-      setTimeout(() => {
-        redirectUser(registeredUser);
-      }, 500);
+      console.log('✅ Found registered user, logging in:', registeredUser.fullName);
+      // Login with saved profile data if available
+      quickLogin(registeredUser.role, email);
       return;
     }
 
     // SECOND: Check demo accounts
     if (email.toLowerCase() === 'worker@homelyserv.com' || email.toLowerCase() === 'worker') {
-      quickLogin('WORKER');
+      quickLogin('WORKER', email);
     } else if (email.toLowerCase() === 'employer@homelyserv.com' || email.toLowerCase() === 'employer') {
-      quickLogin('EMPLOYER');
+      quickLogin('EMPLOYER', email);
     } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
-      quickLogin('ADMIN');
+      quickLogin('ADMIN', email);
     } else {
       setError('Invalid email or password. Please try again.');
       setLoading(false);

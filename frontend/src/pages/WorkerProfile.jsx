@@ -310,6 +310,20 @@ const WorkerProfile = () => {
     return null;
   };
 
+  // Load saved profile data
+  const loadSavedProfile = (email) => {
+    try {
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (email && profiles[email]) {
+        console.log('📥 Loading saved profile for:', email);
+        return profiles[email];
+      }
+    } catch (error) {
+      console.error('Error loading saved profile:', error);
+    }
+    return null;
+  };
+
   // Initialize data on mount
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -319,17 +333,38 @@ const WorkerProfile = () => {
 
     const userData = loadUserData();
     if (userData) {
-      setUser(userData);
-      setFormData({
-        fullName: userData.fullName || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        location: userData.location || '',
-        bio: userData.bio || 'Experienced professional in home services.',
-        skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
-        experience: userData.experience || '3 years',
-        hourlyRate: userData.hourlyRate || '35'
-      });
+      // Check if there's saved profile data
+      const savedProfile = loadSavedProfile(userData.email);
+      
+      if (savedProfile) {
+        console.log('✅ Using saved profile data');
+        setUser({
+          ...userData,
+          ...savedProfile
+        });
+        setFormData({
+          fullName: savedProfile.fullName || userData.fullName || '',
+          email: userData.email || '',
+          phone: savedProfile.phone || userData.phone || '',
+          location: savedProfile.location || userData.location || '',
+          bio: savedProfile.bio || userData.bio || 'Experienced professional in home services.',
+          skills: savedProfile.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: savedProfile.experience || userData.experience || '3 years',
+          hourlyRate: savedProfile.hourlyRate || userData.hourlyRate || '35'
+        });
+      } else {
+        setUser(userData);
+        setFormData({
+          fullName: userData.fullName || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          location: userData.location || '',
+          bio: userData.bio || 'Experienced professional in home services.',
+          skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: userData.experience || '3 years',
+          hourlyRate: userData.hourlyRate || '35'
+        });
+      }
     } else {
       navigate('/login');
     }
@@ -425,13 +460,48 @@ const WorkerProfile = () => {
       skills: formData.skills,
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
-      // Keep email unchanged
     };
 
     console.log('📝 Updated user data:', updatedUser);
 
-    // Save to localStorage
+    // 1. Save to localStorage - main user data
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+    
+    // 2. Save profile data separately to preserve across logins
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    profiles[user.email] = {
+      fullName: formData.fullName,
+      phone: formData.phone,
+      location: formData.location,
+      bio: formData.bio,
+      skills: formData.skills,
+      experience: formData.experience,
+      hourlyRate: formData.hourlyRate,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+    
+    // 3. Also update in users list if registered
+    try {
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const userIndex = users.findIndex(u => u.email === user.email);
+      if (userIndex !== -1) {
+        users[userIndex] = {
+          ...users[userIndex],
+          fullName: formData.fullName,
+          phone: formData.phone,
+          location: formData.location,
+          bio: formData.bio,
+          skills: formData.skills,
+          experience: formData.experience,
+          hourlyRate: formData.hourlyRate
+        };
+        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        console.log('✅ Updated user in users list');
+      }
+    } catch (error) {
+      console.error('Error updating users list:', error);
+    }
     
     // Update state
     setUser(updatedUser);
@@ -442,8 +512,9 @@ const WorkerProfile = () => {
     alert(t.saved);
 
     console.log('✅ Profile saved successfully!');
+    console.log('📦 Saved profiles:', JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}'));
 
-    // Reload the page after a short delay to refresh all components
+    // Reload the page after a short delay
     setTimeout(() => {
       window.location.reload();
     }, 800);
