@@ -167,6 +167,7 @@ const WorkerSidebar = ({
 
           <div className="border-t border-gray-200 my-3"></div>
 
+          {/* Settings and Help & Support - Now included in the sidebar */}
           <Link
             to="/worker-settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
