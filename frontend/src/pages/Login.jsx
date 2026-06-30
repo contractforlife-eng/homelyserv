@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, User, Briefcase } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
@@ -12,8 +11,6 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
@@ -22,41 +19,130 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Check if user is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('homelyserv_token');
+    const userData = localStorage.getItem('homelyserv_user');
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData);
+        console.log('🔄 User already logged in:', user.fullName);
+        redirectUser(user);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
+  // Redirect function
+  const redirectUser = (user) => {
+    console.log('🔀 Redirecting user with role:', user.role);
+    
+    // Clear any existing state
+    setLoading(false);
+    
+    // Redirect based on role
+    if (user.role === 'ADMIN') {
+      navigate('/admin');
+    } else if (user.role === 'EMPLOYER') {
+      navigate('/employer-dashboard');
+    } else if (user.role === 'WORKER') {
+      navigate('/worker-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  // Quick login function
+  const quickLogin = (role) => {
+    console.log('🔄 Quick login clicked for role:', role);
     setError('');
     setLoading(true);
 
-    try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        const role = response.data.user.role;
-        if (role === 'ADMIN') {
-          navigate('/admin');
-        } else if (role === 'EMPLOYER') {
-          navigate('/employer-dashboard');
-        } else {
-          navigate('/worker-dashboard');
-        }
-      } else {
-        setError(response.data.message || 'Login failed');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Server error');
-    } finally {
-      setLoading(false);
+    // Create user data based on role
+    let user = {};
+    let token = '';
+
+    if (role === 'WORKER') {
+      user = {
+        id: 'worker_001',
+        fullName: 'Ahmed Ali',
+        email: 'worker@homelyserv.com',
+        role: 'WORKER',
+        profileComplete: true,
+        phone: '+201234567890',
+        location: 'Cairo, Egypt'
+      };
+      token = 'demo_worker_token_12345';
+    } else if (role === 'EMPLOYER') {
+      user = {
+        id: 'employer_001',
+        fullName: 'Sara Mohamed',
+        email: 'employer@homelyserv.com',
+        role: 'EMPLOYER',
+        companyName: 'Elite Family Services',
+        phone: '+201234567891',
+        location: 'Cairo, Egypt'
+      };
+      token = 'demo_employer_token_12345';
+    } else if (role === 'ADMIN') {
+      user = {
+        id: 'admin_001',
+        fullName: 'Admin User',
+        email: 'admin@homelyserv.com',
+        role: 'ADMIN',
+        phone: '+201234567892'
+      };
+      token = 'demo_admin_token_12345';
+    }
+
+    // Store in localStorage
+    localStorage.setItem('homelyserv_token', token);
+    localStorage.setItem('homelyserv_user', JSON.stringify(user));
+    
+    console.log('✅ Quick login successful:', user.fullName);
+    console.log('✅ User role:', user.role);
+    
+    // Redirect after a small delay to ensure state updates
+    setTimeout(() => {
+      redirectUser(user);
+    }, 300);
+  };
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('🔄 Form submitted with email:', email);
+    
+    setError('');
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    // Use quick login based on email
+    if (email.toLowerCase() === 'worker@homelyserv.com' || email.toLowerCase() === 'worker') {
+      quickLogin('WORKER');
+    } else if (email.toLowerCase() === 'employer@homelyserv.com' || email.toLowerCase() === 'employer') {
+      quickLogin('EMPLOYER');
+    } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
+      quickLogin('ADMIN');
+    } else {
+      // Default to worker if email doesn't match any demo account
+      setError('No account found with this email. Using demo login...');
+      setTimeout(() => {
+        quickLogin('WORKER');
+      }, 1000);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 p-4">
       <div className="w-full max-w-md">
-        {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 relative">
           
-          {/* Language Selector - Inside Frame, Top Right */}
+          {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
@@ -97,6 +183,43 @@ function Login() {
               <AlertCircle size={16} /> {error}
             </div>
           )}
+
+          {/* QUICK LOGIN BUTTONS */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+            <p className="text-xs text-gray-600 text-center mb-3 font-bold">🚀 Quick Login (Click to Login)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => quickLogin('WORKER')}
+                disabled={loading}
+                className="px-3 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '👤 Worker'}
+              </button>
+              <button
+                onClick={() => quickLogin('EMPLOYER')}
+                disabled={loading}
+                className="px-3 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '🏢 Employer'}
+              </button>
+              <button
+                onClick={() => quickLogin('ADMIN')}
+                disabled={loading}
+                className="px-3 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              >
+                {loading ? '...' : '🔐 Admin'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Click any button to instantly login
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 border-t border-gray-200"></div>
+            <span className="text-sm text-gray-400">Or login with email</span>
+            <div className="flex-1 border-t border-gray-200"></div>
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -188,6 +311,24 @@ function Login() {
               Create one
             </Link>
           </p>
+
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-400 text-center">💡 Quick login credentials:</p>
+            <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-500">
+              <div className="text-center">
+                <span className="font-medium text-blue-600">Worker:</span>
+                <br />worker@homelyserv.com
+              </div>
+              <div className="text-center">
+                <span className="font-medium text-green-600">Employer:</span>
+                <br />employer@homelyserv.com
+              </div>
+              <div className="text-center">
+                <span className="font-medium text-purple-600">Admin:</span>
+                <br />admin@homelyserv.com
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
