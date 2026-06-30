@@ -14,14 +14,15 @@ import {
   ChevronRight,
   Globe,
   X,
+  AlertTriangle,
   Shield,
   Lock,
   Bell as BellIcon,
   Moon,
   Sun,
-  AlertTriangle,
   Save,
-  RefreshCw
+  RefreshCw,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 
 // Sidebar Component
@@ -168,6 +169,35 @@ const WorkerSidebar = ({
 
           <div className="border-t border-gray-200 my-3"></div>
 
+          {/* Settings and Help & Support - NOW INCLUDED */}
+          <Link
+            to="/worker-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
+          </Link>
           <button
             onClick={handleLogout}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
@@ -473,14 +503,14 @@ const WorkerSettings = () => {
                     <Lock size={20} className="text-gray-600" />
                     <span className="font-medium text-gray-700">{t.changePassword}</span>
                   </div>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <ChevronRightIcon size={18} className="text-gray-400" />
                 </button>
                 <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                   <div className="flex items-center gap-3">
                     <Shield size={20} className="text-gray-600" />
                     <span className="font-medium text-gray-700">{t.privacy}</span>
                   </div>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <ChevronRightIcon size={18} className="text-gray-400" />
                 </button>
               </div>
             </div>
