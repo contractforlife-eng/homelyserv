@@ -50,51 +50,71 @@ function Login() {
     }
   };
 
-  // Quick login function - THIS IS THE FIX
+  // Quick login function - NOW PRESERVES PROFILE DATA
   const quickLogin = (role) => {
     console.log('🔄 Quick login for role:', role);
     setError('');
     setLoading(true);
 
+    // Check if user data already exists in localStorage
+    const existingUserData = localStorage.getItem('homelyserv_user');
+    let existingUser = null;
+    if (existingUserData) {
+      try {
+        existingUser = JSON.parse(existingUserData);
+        console.log('📦 Found existing user data:', existingUser);
+      } catch (error) {
+        console.error('Error parsing existing user data:', error);
+      }
+    }
+
     let user = {};
     let token = '';
 
-    if (role === 'WORKER') {
-      user = {
-        id: 'worker_001',
-        fullName: 'Ahmed Ali',
-        email: 'worker@homelyserv.com',
-        role: 'WORKER',
-        profileComplete: true,
-        phone: '+201234567890',
-        location: 'Cairo, Egypt',
-        bio: 'Experienced professional in home services with over 3 years of experience.',
-        skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
-        experience: '3 years',
-        hourlyRate: '35'
-      };
-      token = 'demo_worker_token_12345';
-    } else if (role === 'EMPLOYER') {
-      user = {
-        id: 'employer_001',
-        fullName: 'Sara Mohamed',
-        email: 'employer@homelyserv.com',
-        role: 'EMPLOYER',
-        companyName: 'Elite Family Services',
-        phone: '+201234567891',
-        location: 'Cairo, Egypt',
-        bio: 'Looking for professional home service providers.'
-      };
-      token = 'demo_employer_token_12345';
-    } else if (role === 'ADMIN') {
-      user = {
-        id: 'admin_001',
-        fullName: 'Admin User',
-        email: 'admin@homelyserv.com',
-        role: 'ADMIN',
-        phone: '+201234567892'
-      };
-      token = 'demo_admin_token_12345';
+    // If existing user exists and has the same role, keep the existing data
+    if (existingUser && existingUser.role === role) {
+      user = existingUser;
+      console.log('✅ Using existing user data with all profile fields');
+    } else {
+      // Create new user with complete profile data
+      if (role === 'WORKER') {
+        user = {
+          id: 'worker_001',
+          fullName: 'Ahmed Ali',
+          email: 'worker@homelyserv.com',
+          role: 'WORKER',
+          profileComplete: true,
+          phone: '+201234567890',
+          location: 'Cairo, Egypt',
+          bio: 'Experienced professional in home services with over 3 years of experience.',
+          skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
+          experience: '3 years',
+          hourlyRate: '35'
+        };
+        token = 'demo_worker_token_12345';
+      } else if (role === 'EMPLOYER') {
+        user = {
+          id: 'employer_001',
+          fullName: 'Sara Mohamed',
+          email: 'employer@homelyserv.com',
+          role: 'EMPLOYER',
+          companyName: 'Elite Family Services',
+          phone: '+201234567891',
+          location: 'Cairo, Egypt',
+          bio: 'Looking for professional home service providers.'
+        };
+        token = 'demo_employer_token_12345';
+      } else if (role === 'ADMIN') {
+        user = {
+          id: 'admin_001',
+          fullName: 'Admin User',
+          email: 'admin@homelyserv.com',
+          role: 'ADMIN',
+          phone: '+201234567892'
+        };
+        token = 'demo_admin_token_12345';
+      }
+      console.log('🆕 Created new user data for role:', role);
     }
 
     // Store in localStorage with correct keys
@@ -103,6 +123,12 @@ function Login() {
     
     console.log('✅ Login successful:', user.fullName);
     console.log('✅ User role:', user.role);
+    console.log('✅ Profile data saved:', {
+      bio: user.bio,
+      skills: user.skills,
+      experience: user.experience,
+      hourlyRate: user.hourlyRate
+    });
     
     // Redirect after a small delay
     setTimeout(() => {
