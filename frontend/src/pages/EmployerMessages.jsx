@@ -1,217 +1,588 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Home, Briefcase, User, Search, Clock, DollarSign,
-  MessageCircle, Settings, LogOut, Send,
-  Search as SearchIcon, Phone, Mail, ArrowLeft
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home,
+  User,
+  Briefcase,
+  MessageCircle,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
+  AlertTriangle,
+  Search,
+  Send,
+  Phone,
+  Video,
+  MoreVertical,
+  CheckCheck,
+  Clock,
+  FileCheck
 } from 'lucide-react';
 
-function EmployerMessages() {
-  const userData = JSON.parse(localStorage.getItem('user') || '{}');
-  const [message, setMessage] = useState('');
-  const [activeChat, setActiveChat] = useState(null);
+// Employer Sidebar Component - Teal Theme
+const EmployerSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
 
-  const chats = [
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      myProfile: 'My Profile',
+      myHires: 'My Hires',
+      search: 'Search Workers',
+      messages: 'Messages',
+      complaints: 'Complaints',
+      settings: 'Settings',
+      help: 'Help & Support',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      myProfile: 'ملفي الشخصي',
+      myHires: 'توظيفاتي',
+      search: 'البحث عن عمال',
+      messages: 'الرسائل',
+      complaints: 'الشكاوى',
+      settings: 'الإعدادات',
+      help: 'المساعدة والدعم',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
+    { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
+    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
+    { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <Link to="/employer-dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+              <User size={20} className="text-teal-600" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-teal-50 text-teal-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-teal-600' : ''} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-200 my-3"></div>
+
+          <Link
+            to="/employer-settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <Settings size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.settings}
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/help"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <HelpCircle size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.help}
+              </div>
+            )}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-teal-600 hover:bg-teal-50 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {t.logout}
+              </div>
+            )}
+          </button>
+        </nav>
+      </aside>
+    </>
+  );
+};
+
+// Main EmployerMessages Component
+const EmployerMessages = () => {
+  const navigate = useNavigate();
+  const [language, setLanguage] = useState('en');
+  const [user, setUser] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [message, setMessage] = useState('');
+
+  const translations = {
+    en: {
+      title: 'Messages',
+      subtitle: 'Communicate with workers and professionals',
+      searchPlaceholder: 'Search conversations...',
+      typeMessage: 'Type a message...',
+      send: 'Send',
+      noConversations: 'No conversations yet',
+      noConversationsDesc: 'Start hiring workers to connect with them',
+      online: 'Online',
+      offline: 'Offline',
+      languageToggle: 'العربية',
+      notifications: 'Notifications'
+    },
+    ar: {
+      title: 'الرسائل',
+      subtitle: 'تواصل مع العمال والمتخصصين',
+      searchPlaceholder: 'ابحث في المحادثات...',
+      typeMessage: 'اكتب رسالة...',
+      send: 'إرسال',
+      noConversations: 'لا توجد محادثات بعد',
+      noConversationsDesc: 'ابدأ في توظيف العمال للتواصل معهم',
+      online: 'متصل',
+      offline: 'غير متصل',
+      languageToggle: 'English',
+      notifications: 'الإشعارات'
+    }
+  };
+
+  const t = translations[language];
+
+  // Demo conversations
+  const conversations = [
     {
       id: 1,
       name: 'Ahmed Ali',
-      messages: [
-        { sender: 'worker', text: 'I am interested in the position.', time: '2:00 PM' },
-        { sender: 'me', text: 'Great! When can you start?', time: '2:15 PM' },
-        { sender: 'worker', text: 'I can start next week.', time: '2:30 PM' }
-      ],
-      unread: 1
+      role: 'Worker',
+      lastMessage: 'I am available for the position',
+      time: '10:30 AM',
+      unread: 2,
+      online: true,
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
     },
     {
       id: 2,
-      name: 'Admin Support',
-      messages: [
-        { sender: 'admin', text: 'Your complaint has been reviewed.', time: 'Yesterday' }
-      ],
-      unread: 0
+      name: 'Mona Hassan',
+      role: 'Worker',
+      lastMessage: 'Thank you for the opportunity',
+      time: 'Yesterday',
+      unread: 0,
+      online: false,
+      avatar: 'https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=40&h=40&fit=crop'
+    },
+    {
+      id: 3,
+      name: 'Khaled Mostafa',
+      role: 'Worker',
+      lastMessage: 'When can we schedule the interview?',
+      time: '2 days ago',
+      unread: 1,
+      online: true,
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
     }
   ];
 
-  const handleSend = () => {
+  const messages = [
+    { id: 1, sender: 'worker', text: 'Hello! I saw your job posting and I am interested.', time: '10:00 AM', read: true },
+    { id: 2, sender: 'employer', text: 'Great! Can you tell me more about your experience?', time: '10:05 AM', read: true },
+    { id: 3, sender: 'worker', text: 'I have 5 years of experience in this field.', time: '10:30 AM', read: false },
+  ];
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
+    } else {
+      navigate('/login');
+    }
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
     if (message.trim()) {
-      alert('Message sent!');
+      alert('Message sent to worker: ' + message);
       setMessage('');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
-          <p className="text-xs text-gray-500 mt-1">Employer Panel</p>
-        </div>
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
-              {userData.fullName?.charAt(0) || 'E'}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">{userData.fullName || 'Employer'}</p>
-              <p className="text-xs text-gray-500">Employer</p>
-            </div>
-          </div>
-        </div>
-        <nav className="p-4 space-y-1">
-          <Link to="/employer-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Home size={20} /> Dashboard
-          </Link>
-          <Link to="/employer-search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Search size={20} /> Search
-          </Link>
-          <Link to="/employer-pending" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Clock size={20} /> Pending
-          </Link>
-          <Link to="/employer-past" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Briefcase size={20} /> Past
-          </Link>
-          <Link to="/employer-payments" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <DollarSign size={20} /> Payments
-          </Link>
-          <Link to="/employer-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <User size={20} /> Profile
-          </Link>
-          <Link to="/employer-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <AlertCircle size={20} /> Complaints
-          </Link>
-          <Link to="/employer-messages" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
-            <MessageCircle size={20} /> Messages
-          </Link>
-          <Link to="/employer-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Settings size={20} /> Settings
-          </Link>
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
-            <LogOut size={20} /> Logout
-          </button>
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="ml-64 flex-1">
-        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Messages</h2>
-              <p className="text-gray-500 text-sm">Communicate with workers and admin</p>
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <EmployerSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
+
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
+              </button>
             </div>
           </div>
         </header>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Chat List */}
-            <div className="md:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100">
-              <div className="p-4 border-b border-gray-200">
-                <div className="relative">
-                  <SearchIcon size={18} className="absolute left-3 top-2.5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search messages..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
+        <div className="p-4 md:p-6">
+          {/* Page Header - Teal Theme */}
+          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+            </div>
+          </div>
+
+          {/* Messages Container */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
+              <div className="border-r border-gray-200">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={t.searchPlaceholder}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-y-auto h-[calc(600px-73px)]">
+                  {filteredConversations.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="text-4xl mb-3">💬</div>
+                      <p className="text-gray-500">{t.noConversations}</p>
+                      <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
+                    </div>
+                  ) : (
+                    filteredConversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => setSelectedChat(conv.id)}
+                        className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
+                          selectedChat === conv.id ? 'bg-teal-50' : ''
+                        }`}
+                      >
+                        <img
+                          src={conv.avatar}
+                          alt={conv.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex justify-between items-start">
+                            <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
+                            <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
+                              {conv.online ? t.online : t.offline}
+                            </span>
+                            {conv.unread > 0 && (
+                              <span className="px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full">
+                                {conv.unread}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
-              <div className="overflow-y-auto max-h-[600px]">
-                {chats.map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setActiveChat(chat)}
-                    className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                      activeChat?.id === chat.id ? 'bg-red-50' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-800">{chat.name}</p>
-                      {chat.unread > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{chat.unread}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-500 truncate">
-                      {chat.messages[chat.messages.length - 1].text}
-                    </p>
-                    <p className="text-xs text-gray-400">{chat.messages[chat.messages.length - 1].time}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Chat Window */}
-            <div className="md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
-              {activeChat ? (
-                <div className="flex flex-col h-[600px]">
-                  <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600">
-                      {activeChat.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">{activeChat.name}</p>
-                      <p className="text-xs text-gray-500">Online</p>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                    {activeChat.messages.map((msg, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[70%] p-3 rounded-lg ${
-                            msg.sender === 'me'
-                              ? 'bg-red-600 text-white'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          <p>{msg.text}</p>
-                          <p className={`text-xs mt-1 ${msg.sender === 'me' ? 'text-red-200' : 'text-gray-400'}`}>
-                            {msg.time}
+              {/* Chat Area */}
+              <div className="col-span-2 flex flex-col h-[600px]">
+                {selectedChat ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={conversations.find(c => c.id === selectedChat)?.avatar}
+                          alt="Chat"
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            {conversations.find(c => c.id === selectedChat)?.name}
                           </p>
+                          <p className="text-xs text-green-500">{t.online}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex gap-2">
+                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
+                          <Phone size={18} className="text-gray-600" />
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
+                          <Video size={18} className="text-gray-600" />
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
+                          <MoreVertical size={18} className="text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
 
-                  <div className="p-4 border-t border-gray-200">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500"
-                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                      />
-                      <button
-                        onClick={handleSend}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                      >
-                        <Send size={18} />
-                      </button>
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {messages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.sender === 'employer' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[70%] p-3 rounded-lg ${
+                              msg.sender === 'employer'
+                                ? 'bg-teal-600 text-white rounded-br-none'
+                                : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                            }`}
+                          >
+                            <p className="text-sm">{msg.text}</p>
+                            <p className={`text-xs mt-1 ${msg.sender === 'employer' ? 'text-teal-200' : 'text-gray-400'}`}>
+                              {msg.time}
+                              {msg.sender === 'employer' && (
+                                <CheckCheck size={14} className="inline ml-1" />
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-gray-200">
+                      <form onSubmit={handleSendMessage} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          placeholder={t.typeMessage}
+                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2"
+                        >
+                          <Send size={18} />
+                          {t.send}
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-center p-8">
+                    <div>
+                      <div className="text-6xl mb-4">💬</div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Select a conversation</h3>
+                      <p className="text-gray-500">Choose a conversation from the list to start messaging</p>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-[600px] text-gray-400">
-                  <div className="text-center">
-                    <MessageCircle size={48} className="mx-auto mb-3 text-gray-300" />
-                    <p>Select a conversation to start messaging</p>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
 
 export default EmployerMessages;
