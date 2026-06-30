@@ -25,7 +25,8 @@ import {
   DollarSign,
   Search,
   UserPlus,
-  Star
+  Star,
+  CreditCard
 } from 'lucide-react';
 
 // Employer Sidebar Component - Teal Theme
@@ -48,6 +49,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -60,6 +62,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -76,6 +79,7 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
   ];
 
   const isActive = (path) => {
@@ -314,7 +318,6 @@ const EmployerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load real stats from localStorage if available
     const savedStats = localStorage.getItem('employer_stats');
     if (savedStats) {
       try {
@@ -437,7 +440,7 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Teal Theme - All set to 0 or dynamic */}
+          {/* Stats Grid - Teal Theme */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
