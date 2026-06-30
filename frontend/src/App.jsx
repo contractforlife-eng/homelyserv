@@ -27,7 +27,7 @@ import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
-import HelpSupport from './pages/Help';  // Changed from Help to HelpSupport
+import HelpSupport from './pages/Help';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -74,7 +74,8 @@ function App() {
   return (
     <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
-      <Route path="/" element={<Home />} />
+      {/* Root path now redirects to login */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -355,7 +356,7 @@ function App() {
       />
 
       {/* ========== FALLBACK ========== */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   );
 }
