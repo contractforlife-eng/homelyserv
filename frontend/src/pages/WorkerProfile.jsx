@@ -46,6 +46,7 @@ const WorkerSidebar = ({
       myOffers: 'My Offers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -57,6 +58,7 @@ const WorkerSidebar = ({
       myOffers: 'عروضي',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -72,6 +74,7 @@ const WorkerSidebar = ({
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
   ];
 
   const isActive = (path) => {
