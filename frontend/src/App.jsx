@@ -197,12 +197,12 @@ function App() {
         }
         />
         <Route 
-  path="/worker/payment" 
-  element={
-    <ProtectedRoute requiredRole="WORKER">
-      <WorkerPayment />
-    </ProtectedRoute>
-  } 
+        path="/worker/payment" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <WorkerPayment />
+          </ProtectedRoute>
+       } 
       />
       <Route 
         path="/worker-messages" 
