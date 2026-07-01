@@ -4,7 +4,6 @@ import {
   Home,
   User,
   Briefcase,
-  FileCheck,
   MessageCircle,
   Settings,
   HelpCircle,
@@ -25,7 +24,8 @@ import {
   ChevronDown,
   ChevronUp,
   Headphones,
-  Clock
+  Clock,
+  CreditCard
 } from 'lucide-react';
 
 // Sidebar Component - Dynamic (works for both worker and employer)
@@ -50,6 +50,7 @@ const HelpSidebar = ({
       search: isEmployer ? 'Search Workers' : 'My Offers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -62,6 +63,7 @@ const HelpSidebar = ({
       search: isEmployer ? 'البحث عن عمال' : 'عروضي',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -81,6 +83,7 @@ const HelpSidebar = ({
       { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
       { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
       { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+      { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
     ];
   } else {
     menuItems = [
@@ -89,6 +92,7 @@ const HelpSidebar = ({
       { id: 'offers', label: t.search, icon: Briefcase, path: '/worker/offers' },
       { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
       { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+      { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
     ];
   }
 
@@ -376,7 +380,7 @@ const Help = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -429,7 +433,7 @@ const Help = () => {
             <div className="flex items-center gap-3">
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -444,7 +448,7 @@ const Help = () => {
 
         {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Theme matching */}
+          {/* Page Header */}
           <div className={`bg-gradient-to-r ${isTeal ? 'from-teal-600 to-teal-700' : 'from-red-600 to-red-700'} rounded-2xl p-6 mb-6 text-white`}>
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
