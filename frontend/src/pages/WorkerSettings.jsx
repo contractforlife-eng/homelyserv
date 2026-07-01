@@ -17,15 +17,12 @@ import {
   AlertTriangle,
   Shield,
   Lock,
-  Bell as BellIcon,
-  Moon,
-  Sun,
   Save,
   RefreshCw,
-  ChevronRight as ChevronRightIcon
+  CreditCard
 } from 'lucide-react';
 
-// Sidebar Component
+// Sidebar Component with Payment
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -172,7 +169,6 @@ const WorkerSidebar = ({
 
           <div className="border-t border-gray-200 my-3"></div>
 
-          {/* Settings and Help & Support - NOW INCLUDED */}
           <Link
             to="/worker-settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
@@ -351,7 +347,6 @@ const WorkerSettings = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -362,11 +357,9 @@ const WorkerSettings = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -396,9 +389,7 @@ const WorkerSettings = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
@@ -406,13 +397,10 @@ const WorkerSettings = () => {
             </div>
           </div>
 
-          {/* Settings */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Preferences */}
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.preferences}</h3>
               <div className="space-y-4">
-                {/* Language */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-700">{t.language}</p>
@@ -431,7 +419,6 @@ const WorkerSettings = () => {
                   </select>
                 </div>
 
-                {/* Dark Mode */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-700">{t.darkMode}</p>
@@ -453,7 +440,6 @@ const WorkerSettings = () => {
               </div>
             </div>
 
-            {/* Notifications */}
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.notificationsTitle}</h3>
               <div className="space-y-4">
@@ -497,7 +483,6 @@ const WorkerSettings = () => {
               </div>
             </div>
 
-            {/* Account Security */}
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.security}</h3>
               <div className="space-y-4">
@@ -506,19 +491,18 @@ const WorkerSettings = () => {
                     <Lock size={20} className="text-gray-600" />
                     <span className="font-medium text-gray-700">{t.changePassword}</span>
                   </div>
-                  <ChevronRightIcon size={18} className="text-gray-400" />
+                  <ChevronRight size={18} className="text-gray-400" />
                 </button>
                 <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                   <div className="flex items-center gap-3">
                     <Shield size={20} className="text-gray-600" />
                     <span className="font-medium text-gray-700">{t.privacy}</span>
                   </div>
-                  <ChevronRightIcon size={18} className="text-gray-400" />
+                  <ChevronRight size={18} className="text-gray-400" />
                 </button>
               </div>
             </div>
 
-            {/* Save Button */}
             <div className="p-6 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={handleSave}

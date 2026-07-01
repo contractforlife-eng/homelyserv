@@ -24,7 +24,8 @@ import {
   Award,
   Clock,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard
 } from 'lucide-react';
 
 // Sidebar Component
@@ -298,14 +299,11 @@ const WorkerProfile = () => {
 
   const t = translations[language];
 
-  // Load user data from localStorage
   const loadUserData = () => {
     try {
       const userData = localStorage.getItem('homelyserv_user');
       if (userData) {
-        const parsedUser = JSON.parse(userData);
-        console.log('📥 Loading user data:', parsedUser);
-        return parsedUser;
+        return JSON.parse(userData);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -313,12 +311,10 @@ const WorkerProfile = () => {
     return null;
   };
 
-  // Load saved profile data
   const loadSavedProfile = (email) => {
     try {
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       if (email && profiles[email]) {
-        console.log('📥 Loading saved profile for:', email);
         return profiles[email];
       }
     } catch (error) {
@@ -327,7 +323,6 @@ const WorkerProfile = () => {
     return null;
   };
 
-  // Initialize data on mount
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -336,15 +331,10 @@ const WorkerProfile = () => {
 
     const userData = loadUserData();
     if (userData) {
-      // Check if there's saved profile data
       const savedProfile = loadSavedProfile(userData.email);
       
       if (savedProfile) {
-        console.log('✅ Using saved profile data');
-        setUser({
-          ...userData,
-          ...savedProfile
-        });
+        setUser({ ...userData, ...savedProfile });
         setFormData({
           fullName: savedProfile.fullName || userData.fullName || '',
           email: userData.email || '',
@@ -406,7 +396,6 @@ const WorkerProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Reload original data when canceling
       const userData = loadUserData();
       if (userData) {
         setFormData({
@@ -451,9 +440,6 @@ const WorkerProfile = () => {
   };
 
   const handleSave = () => {
-    console.log('💾 Saving profile data...');
-
-    // Create updated user object with ALL fields
     const updatedUser = {
       ...user,
       fullName: formData.fullName,
@@ -465,12 +451,8 @@ const WorkerProfile = () => {
       hourlyRate: formData.hourlyRate,
     };
 
-    console.log('📝 Updated user data:', updatedUser);
-
-    // 1. Save to localStorage - main user data
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
-    // 2. Save profile data separately to preserve across logins
     const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
     profiles[user.email] = {
       fullName: formData.fullName,
@@ -484,7 +466,6 @@ const WorkerProfile = () => {
     };
     localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
     
-    // 3. Also update in users list if registered
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userIndex = users.findIndex(u => u.email === user.email);
@@ -500,24 +481,16 @@ const WorkerProfile = () => {
           hourlyRate: formData.hourlyRate
         };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
-        console.log('✅ Updated user in users list');
       }
     } catch (error) {
       console.error('Error updating users list:', error);
     }
     
-    // Update state
     setUser(updatedUser);
     setIsEditing(false);
     setSaveSuccess(true);
-
-    // Show success message
     alert(t.saved);
-
-    console.log('✅ Profile saved successfully!');
-    console.log('📦 Saved profiles:', JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}'));
-
-    // Reload the page after a short delay
+    
     setTimeout(() => {
       window.location.reload();
     }, 800);
@@ -536,7 +509,6 @@ const WorkerProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -547,11 +519,9 @@ const WorkerProfile = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -581,9 +551,7 @@ const WorkerProfile = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Profile Header */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -600,7 +568,6 @@ const WorkerProfile = () => {
             </div>
           </div>
 
-          {/* Success Message */}
           {saveSuccess && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
@@ -608,7 +575,6 @@ const WorkerProfile = () => {
             </div>
           )}
 
-          {/* Profile Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
@@ -648,7 +614,6 @@ const WorkerProfile = () => {
             </div>
           </div>
 
-          {/* Profile Form */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
             

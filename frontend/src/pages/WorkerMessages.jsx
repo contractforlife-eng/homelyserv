@@ -73,7 +73,7 @@ const WorkerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
-      ];
+  ];
 
   const isActive = (path) => {
     return location.pathname === path;
