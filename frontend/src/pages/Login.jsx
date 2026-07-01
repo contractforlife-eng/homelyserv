@@ -34,7 +34,7 @@ function Login() {
     }
   }, []);
 
-  // Redirect function
+  // Redirect function - FIXED FOR EMPLOYER
   const redirectUser = (user) => {
     console.log('🔀 Redirecting user with role:', user.role, 'name:', user.fullName);
     setLoading(false);
@@ -42,7 +42,7 @@ function Login() {
     if (user.role === 'ADMIN') {
       navigate('/admin');
     } else if (user.role === 'EMPLOYER') {
-      navigate('/employer-dashboard');
+      navigate('/employer-dashboard'); // <-- FIXED: Redirect to employer dashboard
     } else if (user.role === 'WORKER') {
       navigate('/worker-dashboard');
     } else {
