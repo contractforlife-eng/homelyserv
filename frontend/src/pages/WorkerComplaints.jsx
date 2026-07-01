@@ -20,7 +20,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  FileText
+  FileText,
+  Search
 } from 'lucide-react';
 
 // Sidebar Component
@@ -42,7 +43,6 @@ const WorkerSidebar = ({
       myOffers: 'My Offers',
       messages: 'Messages',
       complaints: 'Complaints',
-      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -54,7 +54,6 @@ const WorkerSidebar = ({
       myOffers: 'عروضي',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
-      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -217,7 +216,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerComplaints Component
+// Main WorkerComplaints Component - No Fake Data
 const WorkerComplaints = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -379,7 +378,7 @@ const WorkerComplaints = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load complaints from localStorage
+    // Load complaints from localStorage - NO FAKE DATA
     const savedComplaints = localStorage.getItem('worker_complaints');
     if (savedComplaints) {
       try {
