@@ -1,569 +1,662 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  AlertCircle, CheckCircle, XCircle, Clock, Eye, 
-  Edit, Trash2, Search, Filter, ArrowLeft, 
-  Download, Printer, RefreshCw, MessageCircle,
-  User, Phone, Mail, MapPin, Briefcase, Calendar,
-  Send, Reply, Save, X, ChevronDown, ChevronUp,
-  FileText, Award, Shield, Building, Star,
-  Users, DollarSign, TrendingUp, TrendingDown
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home,
+  Users,
+  MessageCircle,
+  Settings,
+  LogOut,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
+  CreditCard,
+  Search,
+  AlertTriangle,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Filter,
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  Trash2,
+  Eye
 } from 'lucide-react';
 
-function AdminComplaints() {
+// Admin Sidebar Component - Dark Theme
+const AdminSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
+
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      users: 'Users',
+      messages: 'Messages',
+      payments: 'Payments',
+      complaints: 'Complaints',
+      settings: 'Settings',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      users: 'المستخدمين',
+      messages: 'الرسائل',
+      payments: 'المدفوعات',
+      complaints: 'الشكاوى',
+      settings: 'الإعدادات',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
+    { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
+    { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+    { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/70 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-[#1a1a1a] border-r border-yellow-500/20 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-yellow-500/20">
+          {!sidebarCollapsed && (
+            <Link to="/admin" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                <span className="text-black font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-white text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/admin" className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-black font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors hidden lg:block text-gray-400 hover:text-yellow-500"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-yellow-500/20 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+              <UserIcon size={20} className="text-black" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-white truncate">{user.fullName || 'Admin'}</p>
+                <p className="text-xs text-gray-400 truncate">{user.email || 'admin@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-yellow-500 text-black'
+                  : 'text-gray-300 hover:bg-white/5 hover:text-yellow-500'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-black' : 'text-gray-400 group-hover:text-yellow-500'} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-yellow-500/20">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-400 hover:bg-red-500/10 hover:text-red-500 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">Logout</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Logout
+              </div>
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+};
+
+// Main AdminComplaints Component
+const AdminComplaints = () => {
   const navigate = useNavigate();
+  const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [complaints, setComplaints] = useState([]);
+  const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [showReplyModal, setShowReplyModal] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingComplaint, setEditingComplaint] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  const translations = {
+    en: {
+      title: 'Complaints',
+      subtitle: 'Manage all user complaints',
+      stats: {
+        total: 'Total Complaints',
+        pending: 'Pending',
+        resolved: 'Resolved',
+        rejected: 'Rejected'
+      },
+      filters: {
+        all: 'All Complaints',
+        pending: 'Pending',
+        resolved: 'Resolved',
+        rejected: 'Rejected'
+      },
+      table: {
+        title: 'Title',
+        user: 'User',
+        category: 'Category',
+        status: 'Status',
+        date: 'Date',
+        actions: 'Actions',
+        noResults: 'No complaints found',
+        searchPlaceholder: 'Search complaints...'
+      },
+      actions: {
+        view: 'View Details',
+        resolve: 'Resolve',
+        reject: 'Reject'
+      },
+      status: {
+        pending: 'Pending',
+        resolved: 'Resolved',
+        rejected: 'Rejected'
+      },
+      categories: {
+        general: 'General',
+        employer: 'Employer Issue',
+        payment: 'Payment Issue',
+        platform: 'Platform Issue',
+        worker: 'Worker Issue',
+        other: 'Other'
+      },
+      languageToggle: 'العربية',
+      notifications: 'Notifications',
+      loading: 'Loading complaints...',
+      noComplaints: 'No complaints yet'
+    },
+    ar: {
+      title: 'الشكاوى',
+      subtitle: 'إدارة جميع شكاوى المستخدمين',
+      stats: {
+        total: 'إجمالي الشكاوى',
+        pending: 'قيد الانتظار',
+        resolved: 'تم الحل',
+        rejected: 'مرفوض'
+      },
+      filters: {
+        all: 'جميع الشكاوى',
+        pending: 'قيد الانتظار',
+        resolved: 'تم الحل',
+        rejected: 'مرفوض'
+      },
+      table: {
+        title: 'العنوان',
+        user: 'المستخدم',
+        category: 'الفئة',
+        status: 'الحالة',
+        date: 'التاريخ',
+        actions: 'الإجراءات',
+        noResults: 'لا توجد شكاوى',
+        searchPlaceholder: 'ابحث عن شكاوى...'
+      },
+      actions: {
+        view: 'عرض التفاصيل',
+        resolve: 'حل',
+        reject: 'رفض'
+      },
+      status: {
+        pending: 'قيد الانتظار',
+        resolved: 'تم الحل',
+        rejected: 'مرفوض'
+      },
+      categories: {
+        general: 'عام',
+        employer: 'مشكلة مع صاحب العمل',
+        payment: 'مشكلة في الدفع',
+        platform: 'مشكلة في المنصة',
+        worker: 'مشكلة مع عامل',
+        other: 'أخرى'
+      },
+      languageToggle: 'English',
+      notifications: 'الإشعارات',
+      loading: 'جاري تحميل الشكاوى...',
+      noComplaints: 'لا توجد شكاوى حتى الآن'
+    }
+  };
+
+  const t = translations[language];
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      if (parsed.role !== 'ADMIN') {
-        navigate('/dashboard');
+      try {
+        const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'ADMIN') {
+          navigate('/login');
+          return;
+        }
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
       }
     } else {
       navigate('/login');
     }
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+
+    // Load complaints from localStorage
+    const storedComplaints = JSON.parse(localStorage.getItem('admin_complaints') || '[]');
+    setComplaints(storedComplaints);
+    setFilteredComplaints(storedComplaints);
     setLoading(false);
   }, [navigate]);
 
-  // Real complaint data - accurate information
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      type: 'worker',
-      complainantName: 'Ahmed Ali',
-      complainantPhone: '+201234567890',
-      complainantEmail: 'ahmed.ali@homelyserv.com',
-      complainantRole: 'worker',
-      employeeName: 'Sara Mohamed',
-      employeePhone: '+201234567891',
-      employeeId: '12345678901235',
-      employerName: 'Sara Mohamed',
-      employerPhone: '+201234567891',
-      employerId: '12345678901235',
-      subject: 'Employer not responding after hiring',
-      message: 'I was hired by Sara Mohamed for a Nanny position. After the initial agreement, she stopped responding to my messages. I have not received any communication for 5 days.',
-      date: '2026-06-20',
-      status: 'pending',
-      priority: 'high',
-      response: null,
-      resolvedDate: null,
-      category: 'communication',
-      attachments: ['contract.pdf', 'messages.png']
-    },
-    {
-      id: 2,
-      type: 'employer',
-      complainantName: 'Khaled Mostafa',
-      complainantPhone: '+201234567894',
-      complainantEmail: 'khaled.mostafa@homelyserv.com',
-      complainantRole: 'employer',
-      employeeName: 'Mona Hassan',
-      employeePhone: '+201234567895',
-      employeeId: '12345678901239',
-      employerName: 'Khaled Mostafa',
-      employerPhone: '+201234567894',
-      employerId: '12345678901240',
-      subject: 'Worker did not show up for work',
-      message: 'Mona Hassan was hired as an elderly caregiver for my father. She did not show up on the first day without any notice. I have been trying to contact her but no response.',
-      date: '2026-06-18',
-      status: 'resolved',
-      priority: 'medium',
-      response: 'We have contacted the worker and resolved the issue. She will start next week with a written commitment.',
-      resolvedDate: '2026-06-21',
-      category: 'attendance',
-      attachments: ['schedule.pdf']
-    },
-    {
-      id: 3,
-      type: 'worker',
-      complainantName: 'Youssef Hassan',
-      complainantPhone: '+201234567896',
-      complainantEmail: 'youssef.hassan@homelyserv.com',
-      complainantRole: 'worker',
-      employeeName: 'Nadia Ibrahim',
-      employeePhone: '+201234567897',
-      employeeId: '12345678901241',
-      employerName: 'Nadia Ibrahim',
-      employerPhone: '+201234567897',
-      employerId: '12345678901241',
-      subject: 'Payment delay from employer',
-      message: 'I have been working for Nadia Ibrahim for 2 months. My salary for the second month is delayed by 15 days. I have reminded her multiple times but she keeps delaying.',
-      date: '2026-06-15',
-      status: 'pending',
-      priority: 'high',
-      response: null,
-      resolvedDate: null,
-      category: 'payment',
-      attachments: ['contract.pdf', 'payment_screenshot.jpg']
-    },
-    {
-      id: 4,
-      type: 'employer',
-      complainantName: 'Sara Mohamed',
-      complainantPhone: '+201234567891',
-      complainantEmail: 'sara.mohamed@homelyserv.com',
-      complainantRole: 'employer',
-      employeeName: 'Ahmed Ali',
-      employeePhone: '+201234567890',
-      employeeId: '12345678901234',
-      employerName: 'Sara Mohamed',
-      employerPhone: '+201234567891',
-      employerId: '12345678901235',
-      subject: 'Worker left without notice',
-      message: 'Ahmed Ali left the job without any prior notice. He was supposed to work for 6 months but left after 3 months without informing us.',
-      date: '2026-06-10',
-      status: 'pending',
-      priority: 'medium',
-      response: null,
-      resolvedDate: null,
-      category: 'attendance',
-      attachments: ['contract.pdf']
-    }
-  ]);
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'pending':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium flex items-center gap-1"><Clock size={14} /> Pending</span>;
-      case 'resolved':
-        return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-1"><CheckCircle size={14} /> Resolved</span>;
-      case 'rejected':
-        return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium flex items-center gap-1"><XCircle size={14} /> Rejected</span>;
-      default:
-        return <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">{status}</span>;
+  // Filter complaints
+  useEffect(() => {
+    let filtered = complaints;
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === statusFilter);
+    }
+
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.title?.toLowerCase().includes(searchLower) ||
+        c.user?.toLowerCase().includes(searchLower) ||
+        c.category?.toLowerCase().includes(searchLower) ||
+        c.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    setFilteredComplaints(filtered);
+  }, [complaints, statusFilter, searchTerm]);
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  const updateComplaintStatus = (complaintId, newStatus) => {
+    const updatedComplaints = complaints.map(c => {
+      if (c.id === complaintId) {
+        return { ...c, status: newStatus };
+      }
+      return c;
+    });
+    setComplaints(updatedComplaints);
+    localStorage.setItem('admin_complaints', JSON.stringify(updatedComplaints));
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-500/20 text-yellow-400',
+      resolved: 'bg-green-500/20 text-green-400',
+      rejected: 'bg-red-500/20 text-red-400'
+    };
+    return colors[status] || 'bg-gray-500/20 text-gray-400';
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending': return <Clock size={16} className="text-yellow-400" />;
+      case 'resolved': return <CheckCircle size={16} className="text-green-400" />;
+      case 'rejected': return <X size={16} className="text-red-400" />;
+      default: return <AlertCircle size={16} className="text-gray-400" />;
     }
   };
 
-  const getPriorityBadge = (priority) => {
-    switch(priority) {
-      case 'high':
-        return <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs font-medium">High</span>;
-      case 'medium':
-        return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Medium</span>;
-      case 'low':
-        return <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-medium">Low</span>;
-      default:
-        return <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full text-xs">{priority}</span>;
-    }
+  const getCategoryColor = (category) => {
+    const colors = {
+      general: 'text-blue-400',
+      employer: 'text-purple-400',
+      payment: 'text-orange-400',
+      platform: 'text-pink-400',
+      worker: 'text-green-400',
+      other: 'text-gray-400'
+    };
+    return colors[category] || 'text-gray-400';
   };
-
-  const handleViewDetails = (complaint) => {
-    setSelectedComplaint(complaint);
-    setShowDetails(true);
-  };
-
-  const handleReply = (complaint) => {
-    setSelectedComplaint(complaint);
-    setShowReplyModal(true);
-  };
-
-  const handleSendReply = () => {
-    if (!replyText.trim()) {
-      alert('Please enter a reply message.');
-      return;
-    }
-    setComplaints(prev => prev.map(c => 
-      c.id === selectedComplaint.id ? { 
-        ...c, 
-        status: 'resolved', 
-        response: replyText,
-        resolvedDate: new Date().toISOString().split('T')[0]
-      } : c
-    ));
-    setShowReplyModal(false);
-    setReplyText('');
-    alert('✅ Reply sent successfully!');
-  };
-
-  const handleResolve = (complaintId) => {
-    setComplaints(prev => prev.map(c => 
-      c.id === complaintId ? { 
-        ...c, 
-        status: 'resolved',
-        resolvedDate: new Date().toISOString().split('T')[0]
-      } : c
-    ));
-  };
-
-  const handleReject = (complaintId) => {
-    if (window.confirm('Are you sure you want to reject this complaint?')) {
-      setComplaints(prev => prev.map(c => 
-        c.id === complaintId ? { ...c, status: 'rejected' } : c
-      ));
-    }
-  };
-
-  const handleDelete = (complaintId) => {
-    if (window.confirm('Are you sure you want to delete this complaint?')) {
-      setComplaints(prev => prev.filter(c => c.id !== complaintId));
-    }
-  };
-
-  const filteredComplaints = complaints.filter(c => {
-    const matchesSearch = c.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.complainantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.message.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = activeTab === 'all' || c.status === activeTab;
-    
-    return matchesSearch && matchesStatus;
-  });
 
   const stats = {
     total: complaints.length,
     pending: complaints.filter(c => c.status === 'pending').length,
     resolved: complaints.filter(c => c.status === 'resolved').length,
-    rejected: complaints.filter(c => c.status === 'rejected').length,
-    highPriority: complaints.filter(c => c.priority === 'high').length
+    rejected: complaints.filter(c => c.status === 'rejected').length
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">{t.loading}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/admin" className="text-gray-600 hover:text-red-600 transition">
-              <ArrowLeft size={20} />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Complaints Management</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-              <Download size={16} /> Export
-            </button>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-              <RefreshCw size={16} /> Refresh
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0a0a0a] flex">
+      {/* Sidebar */}
+      <AdminSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Total Complaints</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Resolved</p>
-            <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">Rejected</p>
-            <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500">High Priority</p>
-            <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
-          </div>
-        </div>
-
-        {/* Search & Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-3 top-2.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by subject, complainant, employee, or message..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">⏳ Pending</option>
-              <option value="resolved">✅ Resolved</option>
-              <option value="rejected">❌ Rejected</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Complaints List */}
-        {filteredComplaints.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No complaints found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredComplaints.map((complaint) => (
-              <div key={complaint.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Complaint Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="font-semibold text-gray-800">{complaint.subject}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        complaint.type === 'worker' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {complaint.type === 'worker' ? 'Worker' : 'Employer'}
-                      </span>
-                      {getPriorityBadge(complaint.priority)}
-                      {getStatusBadge(complaint.status)}
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      From: <span className="font-medium">{complaint.complainantName}</span> 
-                      {complaint.type === 'worker' ? ' → Employee: ' : ' → Employer: '}
-                      <span className="font-medium">{complaint.employeeName}</span>
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">{complaint.message.substring(0, 100)}...</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                      <span className="flex items-center gap-1"><Calendar size={12} /> {complaint.date}</span>
-                      <span className="flex items-center gap-1"><FileText size={12} /> {complaint.attachments.length} attachments</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col items-end justify-center gap-2 min-w-[180px]">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleViewDetails(complaint)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                        title="View Details"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleReply(complaint)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
-                        title="Reply"
-                        disabled={complaint.status === 'resolved' || complaint.status === 'rejected'}
-                      >
-                        <Reply size={18} />
-                      </button>
-                      {complaint.status === 'pending' && (
-                        <>
-                          <button 
-                            onClick={() => handleResolve(complaint.id)}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
-                            title="Resolve"
-                          >
-                            <CheckCircle size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleReject(complaint.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                            title="Reject"
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </>
-                      )}
-                      <button 
-                        onClick={() => handleDelete(complaint.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                    {complaint.status === 'pending' && (
-                      <span className="text-xs text-yellow-600">Awaiting response</span>
-                    )}
-                    {complaint.status === 'resolved' && (
-                      <span className="text-xs text-green-600">Resolved on {complaint.resolvedDate}</span>
-                    )}
-                  </div>
-                </div>
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-white hidden sm:block">{t.title}</h2>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Complaint Details Modal */}
-      {showDetails && selectedComplaint && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Complaint Details</h2>
-              <button onClick={() => setShowDetails(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                <XCircle size={24} className="text-gray-400" />
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500">
+                <Bell size={20} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
               </button>
             </div>
+          </div>
+        </header>
 
-            <div className="space-y-4">
-              {/* Header Info */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-xl font-bold text-gray-800">{selectedComplaint.subject}</h3>
-                {getPriorityBadge(selectedComplaint.priority)}
-                {getStatusBadge(selectedComplaint.status)}
-              </div>
-
-              {/* Complainant Info */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Complainant Information</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-gray-500">Name:</span> {selectedComplaint.complainantName}</div>
-                  <div><span className="text-gray-500">Phone:</span> {selectedComplaint.complainantPhone}</div>
-                  <div><span className="text-gray-500">Email:</span> {selectedComplaint.complainantEmail}</div>
-                  <div><span className="text-gray-500">Role:</span> {selectedComplaint.complainantRole}</div>
-                </div>
-              </div>
-
-              {/* Employee/Employer Info */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Subject Information</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-gray-500">Name:</span> {selectedComplaint.employeeName}</div>
-                  <div><span className="text-gray-500">Phone:</span> {selectedComplaint.employeePhone}</div>
-                  <div><span className="text-gray-500">ID:</span> {selectedComplaint.employeeId}</div>
-                  <div><span className="text-gray-500">Employer ID:</span> {selectedComplaint.employerId}</div>
-                </div>
-              </div>
-
-              {/* Message */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Message</h4>
-                <p className="text-gray-700">{selectedComplaint.message}</p>
-                <p className="text-xs text-gray-400 mt-2">Date: {selectedComplaint.date}</p>
-              </div>
-
-              {/* Attachments */}
-              {selectedComplaint.attachments.length > 0 && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-700 mb-2">Attachments</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedComplaint.attachments.map((att, i) => (
-                      <span key={i} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-1">
-                        <FileText size={14} /> {att}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Admin Response */}
-              {selectedComplaint.response && (
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-800 mb-2">Admin Response</h4>
-                  <p className="text-green-700">{selectedComplaint.response}</p>
-                  <p className="text-xs text-green-600 mt-2">Resolved on: {selectedComplaint.resolvedDate}</p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3">
-                {selectedComplaint.status === 'pending' && (
-                  <>
-                    <button 
-                      onClick={() => {
-                        setShowDetails(false);
-                        handleReply(selectedComplaint);
-                      }}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                    >
-                      <Reply size={18} /> Reply
-                    </button>
-                    <button 
-                      onClick={() => {
-                        handleResolve(selectedComplaint.id);
-                        setShowDetails(false);
-                      }}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle size={18} /> Resolve
-                    </button>
-                    <button 
-                      onClick={() => {
-                        handleReject(selectedComplaint.id);
-                        setShowDetails(false);
-                      }}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
-                    >
-                      <XCircle size={18} /> Reject
-                    </button>
-                  </>
-                )}
-                <button 
-                  onClick={() => {
-                    setShowDetails(false);
-                    handleDelete(selectedComplaint.id);
-                  }}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={18} /> Delete
-                </button>
-              </div>
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Page Header - Dark Theme */}
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+              <p className="text-black/70 mt-1">{t.subtitle}</p>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Reply Modal */}
-      {showReplyModal && selectedComplaint && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Reply to Complaint</h3>
-              <button onClick={() => setShowReplyModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
-                <X size={20} className="text-gray-400" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600">Subject: <span className="font-medium">{selectedComplaint.subject}</span></p>
-                <p className="text-sm text-gray-600 mt-1">From: <span className="font-medium">{selectedComplaint.complainantName}</span></p>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.total}</p>
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <FileText size={20} className="text-blue-400" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.pending}</p>
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.resolved}</p>
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} className="text-green-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.resolved}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.rejected}</p>
+                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                  <AlertCircle size={20} className="text-red-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.rejected}</p>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reply Message</label>
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  rows="5"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-                  placeholder="Type your reply here..."
+          {/* Search and Filters */}
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder={t.table.searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
                 />
               </div>
-
-              <button
-                onClick={handleSendReply}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-              >
-                <Send size={18} /> Send Reply
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                >
+                  <option value="all">{t.filters.all}</option>
+                  <option value="pending">{t.filters.pending}</option>
+                  <option value="resolved">{t.filters.resolved}</option>
+                  <option value="rejected">{t.filters.rejected}</option>
+                </select>
+              </div>
             </div>
           </div>
+
+          {/* Results Count */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-400">
+              Showing <span className="font-semibold text-white">{filteredComplaints.length}</span> complaints
+            </p>
+          </div>
+
+          {/* Complaints List */}
+          {filteredComplaints.length === 0 ? (
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-xl font-semibold text-white mb-2">{t.noComplaints}</h3>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredComplaints.map((complaint) => (
+                <div
+                  key={complaint.id}
+                  className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition"
+                >
+                  <div className="p-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle size={20} className="text-yellow-400" />
+                          <div>
+                            <h3 className="font-semibold text-white">{complaint.title}</h3>
+                            <p className="text-sm text-gray-400">{complaint.user}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1 line-clamp-2">{complaint.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+                          <span className={`text-xs font-medium ${getCategoryColor(complaint.category)}`}>
+                            {t.categories[complaint.category] || complaint.category}
+                          </span>
+                          <span className="text-gray-500">|</span>
+                          <span className="text-gray-500">{complaint.date}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
+                            {getStatusIcon(complaint.status)}
+                            {t.status[complaint.status] || complaint.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {complaint.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
+                              className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium hover:bg-green-500/30 transition"
+                            >
+                              {t.actions.resolve}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
+                              className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition"
+                            >
+                              {t.actions.reject}
+                            </button>
+                          </>
+                        )}
+                        <button className="px-3 py-1.5 bg-yellow-500/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-500/30 transition">
+                          <Eye size={14} className="inline mr-1" />
+                          {t.actions.view}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
-}
+};
 
 export default AdminComplaints;

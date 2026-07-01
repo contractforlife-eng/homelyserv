@@ -19,7 +19,7 @@ import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
-import Help from './pages/Help';  // Changed from HelpSupport to Help
+import Help from './pages/Help';
 
 // Worker Pages
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -45,10 +45,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminPayments from './pages/AdminPayments';
 import AdminComplaints from './pages/AdminComplaints';
-import AdminReports from './pages/AdminReports';
-import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
-import AdminHires from './pages/AdminHires';
+import AdminSettings from './pages/AdminSettings';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -144,6 +142,14 @@ function App() {
         element={
           <ProtectedRoute>
             <JobDetails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/help" 
+        element={
+          <ProtectedRoute>
+            <Help />
           </ProtectedRoute>
         } 
       />
@@ -314,14 +320,6 @@ function App() {
         } 
       />
       <Route 
-        path="/admin/reports" 
-        element={
-          <ProtectedRoute requiredRole="ADMIN">
-            <AdminReports />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
         path="/admin/messages" 
         element={
           <ProtectedRoute requiredRole="ADMIN">
@@ -334,24 +332,6 @@ function App() {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminSettings />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/hires" 
-        element={
-          <ProtectedRoute requiredRole="ADMIN">
-            <AdminHires />
-          </ProtectedRoute>
-        } 
-      />
-
-      {/* ========== HELP ROUTE - WORKS FOR BOTH WORKER AND EMPLOYER ========== */}
-      <Route 
-        path="/help" 
-        element={
-          <ProtectedRoute>
-            <Help />
           </ProtectedRoute>
         } 
       />
