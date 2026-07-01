@@ -20,7 +20,8 @@ import {
   Globe,
   X,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard
 } from 'lucide-react';
 
 // Sidebar Component
@@ -42,6 +43,7 @@ const WorkerSidebar = ({
       myOffers: 'My Offers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -53,6 +55,7 @@ const WorkerSidebar = ({
       myOffers: 'عروضي',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -68,6 +71,7 @@ const WorkerSidebar = ({
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
   ];
 
   const isActive = (path) => {
@@ -167,7 +171,6 @@ const WorkerSidebar = ({
 
           <div className="border-t border-gray-200 my-3"></div>
 
-          {/* Settings and Help & Support - Now included in the sidebar */}
           <Link
             to="/worker-settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
@@ -216,7 +219,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerDashboard Component
+// Main WorkerDashboard Component - REAL DATA ONLY
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -224,13 +227,14 @@ const WorkerDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
-    totalApplications: 12,
-    activeOffers: 5,
-    interviews: 3,
-    savedJobs: 8,
-    profileViews: 45,
-    messages: 7
+    totalApplications: 0,
+    activeOffers: 0,
+    interviews: 0,
+    savedJobs: 0,
+    profileViews: 0,
+    messages: 0
   });
+  const [recentActivity, setRecentActivity] = useState([]);
 
   const translations = {
     en: {
@@ -252,7 +256,8 @@ const WorkerDashboard = () => {
       viewProfile: 'View Profile',
       viewMessages: 'View Messages',
       notifications: 'Notifications',
-      languageToggle: 'العربية'
+      languageToggle: 'العربية',
+      noActivity: 'No recent activity'
     },
     ar: {
       welcome: 'مرحباً بعودتك',
@@ -273,7 +278,8 @@ const WorkerDashboard = () => {
       viewProfile: 'عرض الملف الشخصي',
       viewMessages: 'عرض الرسائل',
       notifications: 'الإشعارات',
-      languageToggle: 'English'
+      languageToggle: 'English',
+      noActivity: 'لا يوجد نشاط حديث'
     }
   };
 
@@ -305,13 +311,35 @@ const WorkerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
+    // Load REAL stats from localStorage - NO FAKE DATA
     const savedStats = localStorage.getItem('worker_stats');
     if (savedStats) {
       try {
-        setStats(JSON.parse(savedStats));
+        const parsedStats = JSON.parse(savedStats);
+        setStats({
+          totalApplications: parsedStats.totalApplications || 0,
+          activeOffers: parsedStats.activeOffers || 0,
+          interviews: parsedStats.interviews || 0,
+          savedJobs: parsedStats.savedJobs || 0,
+          profileViews: parsedStats.profileViews || 0,
+          messages: parsedStats.messages || 0
+        });
       } catch (error) {
         console.error('Error parsing stats:', error);
       }
+    }
+
+    // Load REAL recent activity from localStorage - NO FAKE DATA
+    const savedActivity = localStorage.getItem('worker_recent_activity');
+    if (savedActivity) {
+      try {
+        setRecentActivity(JSON.parse(savedActivity));
+      } catch (error) {
+        console.error('Error parsing recent activity:', error);
+        setRecentActivity([]);
+      }
+    } else {
+      setRecentActivity([]);
     }
   }, [navigate]);
 
@@ -427,7 +455,7 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid - REAL DATA from localStorage */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -508,41 +536,43 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity - REAL DATA from localStorage */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Briefcase size={16} className="text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">Applied for Senior Nanny position</p>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>{t.noActivity}</p>
+                <p className="text-sm mt-2">Start applying for jobs to see activity here</p>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle size={16} className="text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">Interview scheduled for Driver position</p>
-                  <p className="text-sm text-gray-500">1 day ago</p>
-                </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Confirmed</span>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      {activity.icon === 'application' && <Briefcase size={16} className="text-blue-600" />}
+                      {activity.icon === 'interview' && <CheckCircle size={16} className="text-green-600" />}
+                      {activity.icon === 'saved' && <Heart size={16} className="text-purple-600" />}
+                      {activity.icon === 'message' && <MessageCircle size={16} className="text-orange-600" />}
+                      {!activity.icon && <Briefcase size={16} className="text-blue-600" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">{activity.message}</p>
+                      <p className="text-sm text-gray-500">{activity.time}</p>
+                    </div>
+                    {activity.status && (
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                        activity.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
+                        activity.status === 'Saved' ? 'bg-purple-100 text-purple-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {activity.status}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Heart size={16} className="text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">Saved House Manager position</p>
-                  <p className="text-sm text-gray-500">2 days ago</p>
-                </div>
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Saved</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
