@@ -29,7 +29,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component - Teal Theme WITH PAYMENT
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -72,6 +72,7 @@ const EmployerSidebar = ({
 
   const t = translations[language];
 
+  // MENU ITEMS WITH PAYMENT INCLUDED
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -79,7 +80,7 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },  // <-- PAYMENT ADDED HERE
   ];
 
   const isActive = (path) => {
@@ -367,7 +368,7 @@ const EmployerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar - WITH PAYMENT */}
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
