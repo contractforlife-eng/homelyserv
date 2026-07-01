@@ -21,7 +21,8 @@ import {
   Video,
   MoreVertical,
   CheckCheck,
-  Clock
+  Clock,
+  CreditCard
 } from 'lucide-react';
 
 // Sidebar Component
@@ -216,7 +217,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component
+// Main WorkerMessages Component - REAL DATA ONLY
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -226,6 +227,9 @@ const WorkerMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChat, setSelectedChat] = useState(null);
   const [message, setMessage] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const translations = {
     en: {
@@ -239,7 +243,10 @@ const WorkerMessages = () => {
       online: 'Online',
       offline: 'Offline',
       languageToggle: 'العربية',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      loading: 'Loading messages...',
+      noMessages: 'No messages yet',
+      startConversation: 'Start the conversation!'
     },
     ar: {
       title: 'الرسائل',
@@ -252,51 +259,14 @@ const WorkerMessages = () => {
       online: 'متصل',
       offline: 'غير متصل',
       languageToggle: 'English',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      loading: 'جاري تحميل الرسائل...',
+      noMessages: 'لا توجد رسائل بعد',
+      startConversation: 'ابدأ المحادثة!'
     }
   };
 
   const t = translations[language];
-
-  // Demo conversations
-  const conversations = [
-    {
-      id: 1,
-      name: 'Ahmed Family',
-      role: 'Employer',
-      lastMessage: 'We would like to schedule an interview',
-      time: '10:30 AM',
-      unread: 2,
-      online: true,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    },
-    {
-      id: 2,
-      name: 'Dr. Mohamed',
-      role: 'Employer',
-      lastMessage: 'Thank you for your application',
-      time: 'Yesterday',
-      unread: 0,
-      online: false,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    },
-    {
-      id: 3,
-      name: 'El-Shazly Family',
-      role: 'Employer',
-      lastMessage: 'When can you start?',
-      time: '2 days ago',
-      unread: 1,
-      online: true,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    }
-  ];
-
-  const messages = [
-    { id: 1, sender: 'employer', text: 'Hello! We saw your profile and are interested.', time: '10:00 AM', read: true },
-    { id: 2, sender: 'worker', text: 'Hi! Thank you for reaching out. I am interested.', time: '10:05 AM', read: true },
-    { id: 3, sender: 'employer', text: 'We would like to schedule an interview.', time: '10:30 AM', read: false },
-  ];
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -320,6 +290,33 @@ const WorkerMessages = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+
+    // Load REAL conversations from localStorage - NO FAKE DATA
+    const savedConversations = localStorage.getItem('worker_conversations');
+    if (savedConversations) {
+      try {
+        setConversations(JSON.parse(savedConversations));
+      } catch (error) {
+        console.error('Error parsing conversations:', error);
+        setConversations([]);
+      }
+    } else {
+      setConversations([]);
+    }
+
+    // Load REAL messages from localStorage - NO FAKE DATA
+    const savedMessages = localStorage.getItem('worker_messages');
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (error) {
+        console.error('Error parsing messages:', error);
+        setMessages([]);
+      }
+    } else {
+      setMessages([]);
+    }
+    setLoading(false);
   }, [navigate]);
 
   useEffect(() => {
@@ -349,13 +346,33 @@ const WorkerMessages = () => {
   };
 
   const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (message.trim()) {
-      alert('Message sent: ' + message);
+    if (message.trim() && selectedChat) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'worker',
+        text: message,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: false
+      };
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      localStorage.setItem('worker_messages', JSON.stringify(updatedMessages));
+      
+      // Update last message in conversation
+      const updatedConversations = conversations.map(conv => {
+        if (conv.id === selectedChat) {
+          return { ...conv, lastMessage: message, time: newMessage.time, unread: 0 };
+        }
+        return conv;
+      });
+      setConversations(updatedConversations);
+      localStorage.setItem('worker_conversations', JSON.stringify(updatedConversations));
+      
       setMessage('');
     }
   };
@@ -366,6 +383,17 @@ const WorkerMessages = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
     );
@@ -464,7 +492,7 @@ const WorkerMessages = () => {
                         }`}
                       >
                         <img
-                          src={conv.avatar}
+                          src={conv.avatar || 'https://via.placeholder.com/40'}
                           alt={conv.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -499,7 +527,7 @@ const WorkerMessages = () => {
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChat)?.avatar}
+                          src={conversations.find(c => c.id === selectedChat)?.avatar || 'https://via.placeholder.com/40'}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -523,30 +551,37 @@ const WorkerMessages = () => {
                       </div>
                     </div>
 
-                    {/* Messages */}
+                    {/* Messages - REAL DATA */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                      {messages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={`flex ${msg.sender === 'worker' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[70%] p-3 rounded-lg ${
-                              msg.sender === 'worker'
-                                ? 'bg-red-600 text-white rounded-br-none'
-                                : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                            }`}
-                          >
-                            <p className="text-sm">{msg.text}</p>
-                            <p className={`text-xs mt-1 ${msg.sender === 'worker' ? 'text-red-200' : 'text-gray-400'}`}>
-                              {msg.time}
-                              {msg.sender === 'worker' && (
-                                <CheckCheck size={14} className="inline ml-1" />
-                              )}
-                            </p>
-                          </div>
+                      {messages.length === 0 ? (
+                        <div className="text-center text-gray-400 py-8">
+                          <p>{t.noMessages}</p>
+                          <p className="text-sm">{t.startConversation}</p>
                         </div>
-                      ))}
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.sender === 'worker' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[70%] p-3 rounded-lg ${
+                                msg.sender === 'worker'
+                                  ? 'bg-red-600 text-white rounded-br-none'
+                                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                              }`}
+                            >
+                              <p className="text-sm">{msg.text}</p>
+                              <p className={`text-xs mt-1 ${msg.sender === 'worker' ? 'text-red-200' : 'text-gray-400'}`}>
+                                {msg.time}
+                                {msg.sender === 'worker' && (
+                                  <CheckCheck size={14} className="inline ml-1" />
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
 
                     {/* Message Input */}
