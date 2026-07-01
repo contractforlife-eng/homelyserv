@@ -1,713 +1,542 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Settings, Save, X, Edit, Eye, EyeOff, 
-  Globe, DollarSign, Percent, Phone, Mail,
-  Building, Users, Shield, Award, Bell,
-  Clock, Calendar, MapPin, CreditCard,
-  Wallet, Banknote, ArrowLeft, RefreshCw,
-  CheckCircle, AlertCircle, ChevronDown, ChevronUp,
-  Smartphone, Database, Server, Lock, Key,
-  UserCheck, UserX, MessageCircle, FileText,
-  Home, Briefcase, Star, TrendingUp
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home,
+  Users,
+  MessageCircle,
+  Settings,
+  LogOut,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
+  CreditCard,
+  Save,
+  Shield,
+  Lock,
+  Bell as BellIcon,
+  Moon,
+  Sun,
+  RefreshCw,
+  User as UserIcon,
+  Database,
+  Server,
+  Mail,
+  AlertTriangle
 } from 'lucide-react';
 
-function AdminSettings() {
+// Admin Sidebar Component - Dark Theme
+const AdminSidebar = ({ 
+  language, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  mobileMenuOpen, 
+  toggleMobileMenu, 
+  user, 
+  handleLogout 
+}) => {
+  const location = useLocation();
+
+  const translations = {
+    en: {
+      dashboard: 'Dashboard',
+      users: 'Users',
+      messages: 'Messages',
+      payments: 'Payments',
+      settings: 'Settings',
+      logout: 'Logout',
+      overview: 'Overview'
+    },
+    ar: {
+      dashboard: 'لوحة التحكم',
+      users: 'المستخدمين',
+      messages: 'الرسائل',
+      payments: 'المدفوعات',
+      settings: 'الإعدادات',
+      logout: 'تسجيل الخروج',
+      overview: 'نظرة عامة'
+    }
+  };
+
+  const t = translations[language];
+
+  const menuItems = [
+    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
+    { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
+    { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
+  ];
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  return (
+    <>
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/70 z-40 lg:hidden"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      <aside 
+        className={`fixed top-0 left-0 h-full bg-[#1a1a1a] border-r border-yellow-500/20 z-50 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-yellow-500/20">
+          {!sidebarCollapsed && (
+            <Link to="/admin" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                <span className="text-black font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-white text-lg">HomelyServ</span>
+            </Link>
+          )}
+          {sidebarCollapsed && (
+            <Link to="/admin" className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center mx-auto">
+              <span className="text-black font-bold text-sm">H</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors hidden lg:block text-gray-400 hover:text-yellow-500"
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="p-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`p-4 border-b border-yellow-500/20 ${sidebarCollapsed ? 'text-center' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+              <UserIcon size={20} className="text-black" />
+            </div>
+            {!sidebarCollapsed && user && (
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-white truncate">{user.fullName || 'Admin'}</p>
+                <p className="text-xs text-gray-400 truncate">{user.email || 'admin@homelyserv.com'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {t.overview}
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+              •
+            </div>
+          )}
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                isActive(item.path)
+                  ? 'bg-yellow-500 text-black'
+                  : 'text-gray-300 hover:bg-white/5 hover:text-yellow-500'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <item.icon size={20} className={isActive(item.path) ? 'text-black' : 'text-gray-400 group-hover:text-yellow-500'} />
+              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
+              {isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-yellow-500/20">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-400 hover:bg-red-500/10 hover:text-red-500 group ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut size={20} />
+            {!sidebarCollapsed && <span className="text-sm font-medium">Logout</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Logout
+              </div>
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+};
+
+// Main AdminSettings Component
+const AdminSettings = () => {
   const navigate = useNavigate();
+  const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('general');
-  const [saved, setSaved] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const translations = {
+    en: {
+      title: 'Settings',
+      subtitle: 'Manage your admin preferences',
+      preferences: 'Preferences',
+      language: 'Language',
+      languageDesc: 'Choose your preferred language',
+      darkMode: 'Dark Mode',
+      darkModeDesc: 'Switch between light and dark theme',
+      notifications: 'System Notifications',
+      notificationsDesc: 'Enable or disable system notifications',
+      emailNotifications: 'Email Notifications',
+      emailNotificationsDesc: 'Receive updates via email',
+      security: 'Security',
+      changePassword: 'Change Password',
+      twoFactor: 'Two-Factor Authentication',
+      privacy: 'Privacy',
+      system: 'System',
+      clearCache: 'Clear Cache',
+      backupData: 'Backup Data',
+      saveChanges: 'Save Changes',
+      saved: 'Settings saved successfully!',
+      languageToggle: 'العربية',
+      notificationsTitle: 'Notifications'
+    },
+    ar: {
+      title: 'الإعدادات',
+      subtitle: 'إدارة تفضيلات المشرف',
+      preferences: 'التفضيلات',
+      language: 'اللغة',
+      languageDesc: 'اختر لغتك المفضلة',
+      darkMode: 'الوضع الداكن',
+      darkModeDesc: 'التبديل بين الوضع الفاتح والداكن',
+      notifications: 'إشعارات النظام',
+      notificationsDesc: 'تفعيل أو تعطيل إشعارات النظام',
+      emailNotifications: 'الإشعارات البريدية',
+      emailNotificationsDesc: 'تلقي التحديثات عبر البريد الإلكتروني',
+      security: 'الأمان',
+      changePassword: 'تغيير كلمة المرور',
+      twoFactor: 'المصادقة الثنائية',
+      privacy: 'الخصوصية',
+      system: 'النظام',
+      clearCache: 'مسح الذاكرة المؤقتة',
+      backupData: 'نسخ احتياطي للبيانات',
+      saveChanges: 'حفظ التغييرات',
+      saved: 'تم حفظ الإعدادات بنجاح!',
+      languageToggle: 'English',
+      notificationsTitle: 'الإشعارات'
+    }
+  };
+
+  const t = translations[language];
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      if (parsed.role !== 'ADMIN') {
-        navigate('/dashboard');
+      try {
+        const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'ADMIN') {
+          navigate('/login');
+          return;
+        }
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
       }
     } else {
       navigate('/login');
     }
-    setLoading(false);
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
   }, [navigate]);
 
-  // Settings state
-  const [settings, setSettings] = useState({
-    // General Settings
-    siteName: 'HomelyServ',
-    siteDescription: 'Your Home, Our Priority',
-    supportEmail: 'support@homelyserv.com',
-    supportPhone: '+201009189851',
-    defaultLanguage: 'en',
-    defaultCurrency: 'EGP',
-    timezone: 'Africa/Cairo',
-    dateFormat: 'DD/MM/YYYY',
-    timeFormat: '24h',
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
-    // Commission Settings
-    commissionRate: 6.5,
-    vatRate: 14,
-    minCommission: 50,
-    maxCommission: 5000,
-    commissionType: 'percentage',
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
 
-    // Payment Settings
-    instapayNumber: '01009189851',
-    vodafoneNumber: '01009189851',
-    bankAccountName: 'HomelyServ',
-    bankAccountNumber: '1002425938683',
-    bankName: 'QNB Alahli',
-    bankIBAN: 'EG580037000908181002425938683',
-    bankSWIFT: 'QNBAEGCXXXX',
-    bankBranch: 'Cairo Main Branch',
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
 
-    // Notification Settings
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    jobAlerts: true,
-    paymentAlerts: true,
-    complaintAlerts: true,
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
-    // Security Settings
-    twoFactorAuth: false,
-    passwordExpiry: 90,
-    maxLoginAttempts: 5,
-    sessionTimeout: 60,
-    requireEmailVerification: true,
-    requirePhoneVerification: false,
-
-    // Feature Settings
-    enableChat: true,
-    enablePayments: true,
-    enableReviews: true,
-    enableComplaints: true,
-    enableWhatsApp: true,
-    enableMultiLanguage: true,
-    enableDarkMode: false
-  });
-
-  const [editForm, setEditForm] = useState(settings);
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
 
   const handleSave = () => {
-    setSettings(editForm);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      alert(t.saved);
+    }, 1000);
   };
 
-  const handleChange = (field, value) => {
-    setEditForm({...editForm, [field]: value});
-  };
-
-  if (loading) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  const sections = [
-    { id: 'general', label: 'General', icon: <Settings size={18} /> },
-    { id: 'commission', label: 'Commission', icon: <Percent size={18} /> },
-    { id: 'payment', label: 'Payment', icon: <CreditCard size={18} /> },
-    { id: 'notification', label: 'Notifications', icon: <Bell size={18} /> },
-    { id: 'security', label: 'Security', icon: <Lock size={18} /> },
-    { id: 'features', label: 'Features', icon: <Award size={18} /> }
-  ];
-
-  const renderSection = () => {
-    switch(activeSection) {
-      case 'general':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">General Settings</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
-                <input
-                  type="text"
-                  value={editForm.siteName}
-                  onChange={(e) => handleChange('siteName', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Site Description</label>
-                <input
-                  type="text"
-                  value={editForm.siteDescription}
-                  onChange={(e) => handleChange('siteDescription', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
-                <input
-                  type="email"
-                  value={editForm.supportEmail}
-                  onChange={(e) => handleChange('supportEmail', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Support Phone</label>
-                <input
-                  type="tel"
-                  value={editForm.supportPhone}
-                  onChange={(e) => handleChange('supportPhone', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Default Language</label>
-                <select
-                  value={editForm.defaultLanguage}
-                  onChange={(e) => handleChange('defaultLanguage', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="en">English</option>
-                  <option value="ar">العربية</option>
-                  <option value="fr">Français</option>
-                  <option value="ru">Русский</option>
-                  <option value="tr">Türkçe</option>
-                  <option value="nl">Nederlands</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
-                <select
-                  value={editForm.defaultCurrency}
-                  onChange={(e) => handleChange('defaultCurrency', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="EGP">EGP - Egyptian Pound</option>
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="AED">AED - UAE Dirham</option>
-                  <option value="SAR">SAR - Saudi Riyal</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
-                <select
-                  value={editForm.timezone}
-                  onChange={(e) => handleChange('timezone', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="Africa/Cairo">Africa/Cairo (GMT+2)</option>
-                  <option value="Africa/Casablanca">Africa/Casablanca (GMT+1)</option>
-                  <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
-                  <option value="Europe/London">Europe/London (GMT+0)</option>
-                  <option value="America/New_York">America/New_York (GMT-4)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date Format</label>
-                <select
-                  value={editForm.dateFormat}
-                  onChange={(e) => handleChange('dateFormat', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time Format</label>
-                <select
-                  value={editForm.timeFormat}
-                  onChange={(e) => handleChange('timeFormat', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="12h">12-hour</option>
-                  <option value="24h">24-hour</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'commission':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">Commission Settings</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
-                <input
-                  type="number"
-                  value={editForm.commissionRate}
-                  onChange={(e) => handleChange('commissionRate', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">VAT Rate (%)</label>
-                <input
-                  type="number"
-                  value={editForm.vatRate}
-                  onChange={(e) => handleChange('vatRate', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Commission</label>
-                <input
-                  type="number"
-                  value={editForm.minCommission}
-                  onChange={(e) => handleChange('minCommission', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Commission</label>
-                <input
-                  type="number"
-                  value={editForm.maxCommission}
-                  onChange={(e) => handleChange('maxCommission', parseFloat(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Type</label>
-                <select
-                  value={editForm.commissionType}
-                  onChange={(e) => handleChange('commissionType', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="percentage">Percentage</option>
-                  <option value="fixed">Fixed Amount</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <p className="text-sm text-yellow-800 flex items-center gap-2">
-                <AlertCircle size={16} />
-                Commission is calculated as {editForm.commissionRate}% of the agreed salary + {editForm.vatRate}% VAT
-              </p>
-            </div>
-          </div>
-        );
-
-      case 'payment':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">Payment Settings</h3>
-            
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
-              <h4 className="font-semibold text-blue-800 mb-2">Mobile Payment</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">InstaPay Number</label>
-                  <input
-                    type="text"
-                    value={editForm.instapayNumber}
-                    onChange={(e) => handleChange('instapayNumber', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vodafone Cash Number</label>
-                  <input
-                    type="text"
-                    value={editForm.vodafoneNumber}
-                    onChange={(e) => handleChange('vodafoneNumber', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-800 mb-2">Bank Transfer</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                  <input
-                    type="text"
-                    value={editForm.bankName}
-                    onChange={(e) => handleChange('bankName', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
-                  <input
-                    type="text"
-                    value={editForm.bankAccountName}
-                    onChange={(e) => handleChange('bankAccountName', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                  <input
-                    type="text"
-                    value={editForm.bankAccountNumber}
-                    onChange={(e) => handleChange('bankAccountNumber', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
-                  <input
-                    type="text"
-                    value={editForm.bankIBAN}
-                    onChange={(e) => handleChange('bankIBAN', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
-                  <input
-                    type="text"
-                    value={editForm.bankSWIFT}
-                    onChange={(e) => handleChange('bankSWIFT', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                  <input
-                    type="text"
-                    value={editForm.bankBranch}
-                    onChange={(e) => handleChange('bankBranch', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'notification':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">Notification Settings</h3>
-            
-            <div className="space-y-3">
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Email Notifications</p>
-                  <p className="text-sm text-gray-500">Receive notifications via email</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.emailNotifications}
-                  onChange={(e) => handleChange('emailNotifications', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">SMS Notifications</p>
-                  <p className="text-sm text-gray-500">Receive notifications via SMS</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.smsNotifications}
-                  onChange={(e) => handleChange('smsNotifications', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Push Notifications</p>
-                  <p className="text-sm text-gray-500">Receive push notifications on your device</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.pushNotifications}
-                  onChange={(e) => handleChange('pushNotifications', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Job Alerts</p>
-                  <p className="text-sm text-gray-500">Get notified about new job opportunities</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.jobAlerts}
-                  onChange={(e) => handleChange('jobAlerts', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Payment Alerts</p>
-                  <p className="text-sm text-gray-500">Get notified about payment transactions</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.paymentAlerts}
-                  onChange={(e) => handleChange('paymentAlerts', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Complaint Alerts</p>
-                  <p className="text-sm text-gray-500">Get notified about new complaints</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.complaintAlerts}
-                  onChange={(e) => handleChange('complaintAlerts', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-            </div>
-          </div>
-        );
-
-      case 'security':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">Security Settings</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password Expiry (days)</label>
-                <input
-                  type="number"
-                  value={editForm.passwordExpiry}
-                  onChange={(e) => handleChange('passwordExpiry', parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Login Attempts</label>
-                <input
-                  type="number"
-                  value={editForm.maxLoginAttempts}
-                  onChange={(e) => handleChange('maxLoginAttempts', parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Session Timeout (minutes)</label>
-                <input
-                  type="number"
-                  value={editForm.sessionTimeout}
-                  onChange={(e) => handleChange('sessionTimeout', parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3 mt-4">
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Two-Factor Authentication</p>
-                  <p className="text-sm text-gray-500">Require 2FA for admin accounts</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.twoFactorAuth}
-                  onChange={(e) => handleChange('twoFactorAuth', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Email Verification</p>
-                  <p className="text-sm text-gray-500">Require email verification for new users</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.requireEmailVerification}
-                  onChange={(e) => handleChange('requireEmailVerification', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Phone Verification</p>
-                  <p className="text-sm text-gray-500">Require phone verification for new users</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.requirePhoneVerification}
-                  onChange={(e) => handleChange('requirePhoneVerification', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-            </div>
-          </div>
-        );
-
-      case 'features':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-800">Feature Settings</h3>
-            
-            <div className="space-y-3">
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Chat</p>
-                  <p className="text-sm text-gray-500">Allow users to chat with each other</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableChat}
-                  onChange={(e) => handleChange('enableChat', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Payments</p>
-                  <p className="text-sm text-gray-500">Allow users to make payments</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enablePayments}
-                  onChange={(e) => handleChange('enablePayments', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Reviews</p>
-                  <p className="text-sm text-gray-500">Allow users to leave reviews</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableReviews}
-                  onChange={(e) => handleChange('enableReviews', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Complaints</p>
-                  <p className="text-sm text-gray-500">Allow users to submit complaints</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableComplaints}
-                  onChange={(e) => handleChange('enableComplaints', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable WhatsApp</p>
-                  <p className="text-sm text-gray-500">Allow WhatsApp integration for communication</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableWhatsApp}
-                  onChange={(e) => handleChange('enableWhatsApp', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Multi-Language</p>
-                  <p className="text-sm text-gray-500">Allow users to switch between languages</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableMultiLanguage}
-                  onChange={(e) => handleChange('enableMultiLanguage', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div>
-                  <p className="font-medium text-gray-700">Enable Dark Mode</p>
-                  <p className="text-sm text-gray-500">Allow users to switch to dark theme</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={editForm.enableDarkMode}
-                  onChange={(e) => handleChange('enableDarkMode', e.target.checked)}
-                  className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-              </label>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link to="/admin" className="text-gray-600 hover:text-red-600 transition">
-              <ArrowLeft size={20} />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Admin Settings</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {saved && (
-              <span className="text-sm text-green-600 flex items-center gap-1">
-                <CheckCircle size={16} /> Saved successfully!
-              </span>
-            )}
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-            >
-              <Save size={18} /> Save Settings
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0a0a0a] flex">
+      {/* Sidebar */}
+      <AdminSidebar
+        language={language}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="md:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sticky top-4">
-              <div className="space-y-1">
-                {sections.map((section) => (
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } ml-0`}>
+        {/* Top Header Bar */}
+        <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+              >
+                <Menu size={20} />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-white hidden sm:block">{t.title}</h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500">
+                <Bell size={20} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full"></span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
+              >
+                <Globe size={16} />
+                {t.languageToggle}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="p-4 md:p-6">
+          {/* Page Header - Dark Theme */}
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+              <p className="text-black/70 mt-1">{t.subtitle}</p>
+            </div>
+          </div>
+
+          {/* Settings */}
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+            {/* Preferences */}
+            <div className="p-6 border-b border-yellow-500/20">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.preferences}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-300">{t.language}</p>
+                    <p className="text-sm text-gray-500">{t.languageDesc}</p>
+                  </div>
+                  <select
+                    value={language}
+                    onChange={(e) => {
+                      setLanguage(e.target.value);
+                      localStorage.setItem('homelyserv_language', e.target.value);
+                    }}
+                    className="px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  >
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-300">{t.darkMode}</p>
+                    <p className="text-sm text-gray-500">{t.darkModeDesc}</p>
+                  </div>
                   <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                      activeSection === section.id 
-                        ? 'bg-red-50 text-red-600' 
-                        : 'text-gray-600 hover:bg-gray-50'
+                    onClick={() => setDarkMode(!darkMode)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      darkMode ? 'bg-yellow-500' : 'bg-gray-600'
                     }`}
                   >
-                    {section.icon}
-                    <span className="text-sm">{section.label}</span>
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        darkMode ? 'right-1' : 'left-1'
+                      }`}
+                    />
                   </button>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Main Content */}
-          <div className="md:col-span-3">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              {renderSection()}
+            {/* Notifications */}
+            <div className="p-6 border-b border-yellow-500/20">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.notificationsTitle}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-300">{t.notifications}</p>
+                    <p className="text-sm text-gray-500">{t.notificationsDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => setNotifications(!notifications)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      notifications ? 'bg-yellow-500' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        notifications ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-300">{t.emailNotifications}</p>
+                    <p className="text-sm text-gray-500">{t.emailNotificationsDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => setEmailNotifications(!emailNotifications)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      emailNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        emailNotifications ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className="p-6 border-b border-yellow-500/20">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.security}</h3>
+              <div className="space-y-4">
+                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-yellow-400" />
+                    <span className="font-medium text-gray-300">{t.changePassword}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-500" />
+                </button>
+                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Shield size={20} className="text-yellow-400" />
+                    <span className="font-medium text-gray-300">{t.twoFactor}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-500" />
+                </button>
+                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-yellow-400" />
+                    <span className="font-medium text-gray-300">{t.privacy}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* System */}
+            <div className="p-6 border-b border-yellow-500/20">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.system}</h3>
+              <div className="space-y-4">
+                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Database size={20} className="text-yellow-400" />
+                    <span className="font-medium text-gray-300">{t.clearCache}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-500" />
+                </button>
+                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Server size={20} className="text-yellow-400" />
+                    <span className="font-medium text-gray-300">{t.backupData}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="p-6 bg-[#0a0a0a]">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
+              >
+                {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+                {saving ? 'Saving...' : t.saveChanges}
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
 
 export default AdminSettings;
