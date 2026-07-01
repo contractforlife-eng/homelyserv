@@ -21,10 +21,11 @@ import {
   CheckCircle,
   AlertCircle,
   FileText,
-  Search
+  Search,
+  CreditCard
 } from 'lucide-react';
 
-// Sidebar Component
+// Sidebar Component with Payment
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -216,7 +217,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerComplaints Component - No Fake Data
+// Main WorkerComplaints Component - REAL DATA ONLY
 const WorkerComplaints = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -378,22 +379,23 @@ const WorkerComplaints = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load complaints from localStorage - NO FAKE DATA
+    // Load REAL complaints from localStorage - NO FAKE DATA
     const savedComplaints = localStorage.getItem('worker_complaints');
     if (savedComplaints) {
       try {
-        setComplaints(JSON.parse(savedComplaints));
-        setFilteredComplaints(JSON.parse(savedComplaints));
-        setLoading(false);
+        const parsedComplaints = JSON.parse(savedComplaints);
+        setComplaints(parsedComplaints);
+        setFilteredComplaints(parsedComplaints);
       } catch (error) {
         console.error('Error parsing complaints:', error);
-        setLoading(false);
+        setComplaints([]);
+        setFilteredComplaints([]);
       }
     } else {
       setComplaints([]);
       setFilteredComplaints([]);
-      setLoading(false);
     }
+    setLoading(false);
   }, [navigate]);
 
   useEffect(() => {
@@ -412,8 +414,8 @@ const WorkerComplaints = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(c =>
-        c.title.toLowerCase().includes(searchLower) ||
-        c.description.toLowerCase().includes(searchLower) ||
+        c.title?.toLowerCase().includes(searchLower) ||
+        c.description?.toLowerCase().includes(searchLower) ||
         t.categories[c.category]?.toLowerCase().includes(searchLower)
       );
     }
@@ -729,7 +731,7 @@ const WorkerComplaints = () => {
             </p>
           </div>
 
-          {/* Complaints List */}
+          {/* Complaints List - REAL DATA */}
           {filteredComplaints.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">📋</div>
@@ -773,7 +775,7 @@ const WorkerComplaints = () => {
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions - Only show for pending complaints */}
                     {complaint.status === 'pending' && (
                       <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
                         <button
