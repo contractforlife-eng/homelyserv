@@ -377,16 +377,6 @@ function Login() {
               Create one
             </Link>
           </p>
-
-          {/* Admin Credentials Info */}
-          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-xs text-purple-600 text-center font-medium">👑 Admin Login</p>
-            <div className="text-center text-xs text-gray-600 mt-1">
-              <span className="font-mono">emad@homelyserv.com</span>
-              <span className="mx-2">|</span>
-              <span className="font-mono">killuemad</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
