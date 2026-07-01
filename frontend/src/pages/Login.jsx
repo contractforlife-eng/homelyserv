@@ -19,6 +19,49 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
+  // Create admin user on component mount
+  useEffect(() => {
+    // Create admin user if it doesn't exist
+    const createAdminUser = () => {
+      const adminUser = {
+        id: 'admin_emad',
+        fullName: 'Emad',
+        email: 'emad@homelyserv.com',
+        role: 'ADMIN',
+        phone: '+201234567890',
+        location: 'Cairo, Egypt',
+        bio: 'System Administrator',
+        skills: ['Management', 'Administration'],
+        experience: '5 years',
+        hourlyRate: '0',
+        createdAt: new Date().toISOString(),
+        profileComplete: true
+      };
+
+      // Get existing users
+      let existingUsers = [];
+      try {
+        const storedUsers = localStorage.getItem('homelyserv_users');
+        existingUsers = storedUsers ? JSON.parse(storedUsers) : [];
+      } catch (error) {
+        console.error('Error parsing existing users:', error);
+        existingUsers = [];
+      }
+
+      // Check if admin already exists
+      const adminExists = existingUsers.find(u => u.email.toLowerCase() === 'emad@homelyserv.com');
+      if (!adminExists) {
+        existingUsers.push(adminUser);
+        localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
+        console.log('✅ Admin user created: emad@homelyserv.com');
+      } else {
+        console.log('ℹ️ Admin user already exists');
+      }
+    };
+
+    createAdminUser();
+  }, []);
+
   // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem('homelyserv_token');
@@ -34,7 +77,7 @@ function Login() {
     }
   }, []);
 
-  // Redirect function - FIXED FOR EMPLOYER
+  // Redirect function
   const redirectUser = (user) => {
     console.log('🔀 Redirecting user with role:', user.role, 'name:', user.fullName);
     setLoading(false);
@@ -42,7 +85,7 @@ function Login() {
     if (user.role === 'ADMIN') {
       navigate('/admin');
     } else if (user.role === 'EMPLOYER') {
-      navigate('/employer-dashboard'); // <-- FIXED: Redirect to employer dashboard
+      navigate('/employer-dashboard');
     } else if (user.role === 'WORKER') {
       navigate('/worker-dashboard');
     } else {
@@ -334,6 +377,16 @@ function Login() {
               Create one
             </Link>
           </p>
+
+          {/* Admin Credentials Info */}
+          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-xs text-purple-600 text-center font-medium">👑 Admin Login</p>
+            <div className="text-center text-xs text-gray-600 mt-1">
+              <span className="font-mono">emad@homelyserv.com</span>
+              <span className="mx-2">|</span>
+              <span className="font-mono">killuemad</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
