@@ -26,9 +26,9 @@ import WorkerDashboard from './pages/WorkerDashboard';
 import WorkerOffers from './pages/WorkerOffers';
 import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
-import WorkerPayment from './pages/WorkerPayment';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
+import WorkerPayment from './pages/WorkerPayment';  // <-- ADD THIS
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -46,8 +46,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminPayments from './pages/AdminPayments';
 import AdminComplaints from './pages/AdminComplaints';
-import AdminMessages from './pages/AdminMessages';
+import AdminReports from './pages/AdminReports';
 import AdminSettings from './pages/AdminSettings';
+import AdminMessages from './pages/AdminMessages';
+import AdminHires from './pages/AdminHires';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -131,14 +133,6 @@ function App() {
         } 
       />
       <Route 
-        path="/payment/:hireId" 
-        element={
-          <ProtectedRoute>
-            <Payment />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
         path="/job/:id" 
         element={
           <ProtectedRoute>
@@ -194,15 +188,7 @@ function App() {
           <ProtectedRoute requiredRole="WORKER">
             <WorkerComplaints />
           </ProtectedRoute>
-        }
-        />
-        <Route 
-        path="/worker/payment" 
-        element={
-          <ProtectedRoute requiredRole="WORKER">
-            <WorkerPayment />
-          </ProtectedRoute>
-       } 
+        } 
       />
       <Route 
         path="/worker-messages" 
@@ -217,6 +203,15 @@ function App() {
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerSettings />
+          </ProtectedRoute>
+        } 
+      />
+      {/* PAYMENT ROUTE - ADD THIS */}
+      <Route 
+        path="/payment" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <WorkerPayment />
           </ProtectedRoute>
         } 
       />
@@ -329,6 +324,14 @@ function App() {
         } 
       />
       <Route 
+        path="/admin/reports" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminReports />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/admin/messages" 
         element={
           <ProtectedRoute requiredRole="ADMIN">
@@ -341,6 +344,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/hires" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminHires />
           </ProtectedRoute>
         } 
       />
