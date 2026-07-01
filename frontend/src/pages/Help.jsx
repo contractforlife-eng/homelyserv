@@ -25,7 +25,8 @@ import {
   ChevronUp,
   Headphones,
   Clock,
-  CreditCard
+  CreditCard,
+  FileCheck
 } from 'lucide-react';
 
 // Sidebar Component - Dynamic (works for both worker and employer)
