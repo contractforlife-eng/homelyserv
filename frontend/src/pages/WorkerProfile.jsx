@@ -25,7 +25,8 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  CreditCard
+  CreditCard,
+  Camera
 } from 'lucide-react';
 
 // Sidebar Component
@@ -239,10 +240,12 @@ const WorkerProfile = () => {
     bio: '',
     skills: [],
     experience: '',
-    hourlyRate: ''
+    hourlyRate: '',
+    profileImage: '' // Add profileImage field
   });
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [imagePreview, setImagePreview] = useState('');
 
   const translations = {
     en: {
@@ -268,7 +271,9 @@ const WorkerProfile = () => {
       languages: 'Languages',
       notifications: 'Notifications',
       languageToggle: 'العربية',
-      saved: '✅ Profile updated successfully!'
+      saved: '✅ Profile updated successfully!',
+      profilePhoto: 'Profile Photo',
+      changePhoto: 'Click to change photo'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -293,7 +298,9 @@ const WorkerProfile = () => {
       languages: 'اللغات',
       notifications: 'الإشعارات',
       languageToggle: 'English',
-      saved: '✅ تم تحديث الملف الشخصي بنجاح!'
+      saved: '✅ تم تحديث الملف الشخصي بنجاح!',
+      profilePhoto: 'الصورة الشخصية',
+      changePhoto: 'انقر لتغيير الصورة'
     }
   };
 
@@ -343,8 +350,10 @@ const WorkerProfile = () => {
           bio: savedProfile.bio || userData.bio || 'Experienced professional in home services.',
           skills: savedProfile.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
           experience: savedProfile.experience || userData.experience || '3 years',
-          hourlyRate: savedProfile.hourlyRate || userData.hourlyRate || '35'
+          hourlyRate: savedProfile.hourlyRate || userData.hourlyRate || '35',
+          profileImage: savedProfile.profileImage || userData.profileImage || ''
         });
+        setImagePreview(savedProfile.profileImage || userData.profileImage || '');
       } else {
         setUser(userData);
         setFormData({
@@ -355,8 +364,10 @@ const WorkerProfile = () => {
           bio: userData.bio || 'Experienced professional in home services.',
           skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
           experience: userData.experience || '3 years',
-          hourlyRate: userData.hourlyRate || '35'
+          hourlyRate: userData.hourlyRate || '35',
+          profileImage: userData.profileImage || ''
         });
+        setImagePreview(userData.profileImage || '');
       }
     } else {
       navigate('/login');
@@ -398,16 +409,19 @@ const WorkerProfile = () => {
     if (isEditing) {
       const userData = loadUserData();
       if (userData) {
+        const savedProfile = loadSavedProfile(userData.email);
         setFormData({
-          fullName: userData.fullName || '',
+          fullName: savedProfile?.fullName || userData.fullName || '',
           email: userData.email || '',
-          phone: userData.phone || '',
-          location: userData.location || '',
-          bio: userData.bio || 'Experienced professional in home services.',
-          skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
-          experience: userData.experience || '3 years',
-          hourlyRate: userData.hourlyRate || '35'
+          phone: savedProfile?.phone || userData.phone || '',
+          location: savedProfile?.location || userData.location || '',
+          bio: savedProfile?.bio || userData.bio || 'Experienced professional in home services.',
+          skills: savedProfile?.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: savedProfile?.experience || userData.experience || '3 years',
+          hourlyRate: savedProfile?.hourlyRate || userData.hourlyRate || '35',
+          profileImage: savedProfile?.profileImage || userData.profileImage || ''
         });
+        setImagePreview(savedProfile?.profileImage || userData.profileImage || '');
       }
     }
     setIsEditing(!isEditing);
@@ -420,6 +434,28 @@ const WorkerProfile = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageData = reader.result;
+        setImagePreview(imageData);
+        setFormData(prev => ({
+          ...prev,
+          profileImage: imageData
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddSkill = () => {
@@ -449,10 +485,13 @@ const WorkerProfile = () => {
       skills: formData.skills,
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
+      profileImage: formData.profileImage
     };
 
+    // Save to homelyserv_user
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
+    // Save to profiles
     const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
     profiles[user.email] = {
       fullName: formData.fullName,
@@ -462,10 +501,12 @@ const WorkerProfile = () => {
       skills: formData.skills,
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
+      profileImage: formData.profileImage,
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
     
+    // Update in users list
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userIndex = users.findIndex(u => u.email === user.email);
@@ -478,7 +519,8 @@ const WorkerProfile = () => {
           bio: formData.bio,
           skills: formData.skills,
           experience: formData.experience,
-          hourlyRate: formData.hourlyRate
+          hourlyRate: formData.hourlyRate,
+          profileImage: formData.profileImage
         };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
       }
@@ -575,6 +617,45 @@ const WorkerProfile = () => {
             </div>
           )}
 
+          {/* Profile Photo Section - New */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-200 bg-gray-100">
+                  {imagePreview ? (
+                    <img 
+                      src={imagePreview} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-red-50">
+                      <User size={48} className="text-red-300" />
+                    </div>
+                  )}
+                </div>
+                {isEditing && (
+                  <label className="absolute bottom-0 right-0 p-2 bg-red-600 rounded-full cursor-pointer hover:bg-red-700 transition shadow-lg">
+                    <Camera size={18} className="text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+              {isEditing && (
+                <p className="text-sm text-gray-500 mt-2">{t.changePhoto}</p>
+              )}
+              {!isEditing && imagePreview && (
+                <p className="text-xs text-gray-400 mt-2">Photo uploaded</p>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
@@ -607,9 +688,9 @@ const WorkerProfile = () => {
               </div>
               <div className="mt-1">
                 <div className="w-full h-2 bg-gray-200 rounded-full">
-                  <div className="h-2 bg-purple-500 rounded-full" style={{ width: '85%' }}></div>
+                  <div className="h-2 bg-purple-500 rounded-full" style={{ width: '90%' }}></div>
                 </div>
-                <span className="text-xs text-gray-500 mt-1">85%</span>
+                <span className="text-xs text-gray-500 mt-1">90%</span>
               </div>
             </div>
           </div>

@@ -232,8 +232,8 @@ const WorkerSidebar = ({
   );
 };
 
-// Main Payment Component - Worker Payment Page
-const Payment = () => {
+// Main WorkerPayment Component
+const WorkerPayment = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
@@ -245,6 +245,7 @@ const Payment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   
+  // Worker payment info
   const [workerPaymentInfo, setWorkerPaymentInfo] = useState({
     walletNumber: '',
     instapayNumber: '',
@@ -256,6 +257,7 @@ const Payment = () => {
   const [isEditingPaymentInfo, setIsEditingPaymentInfo] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Worker stats
   const [workerStats, setWorkerStats] = useState({
     totalTasksCompleted: 0,
     totalEarned: 0,
@@ -382,15 +384,18 @@ const Payment = () => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
         
+        // Load worker payment info
         const savedPaymentInfo = localStorage.getItem(`worker_payment_info_${parsedUser.id}`);
         if (savedPaymentInfo) {
           setWorkerPaymentInfo(JSON.parse(savedPaymentInfo));
         }
         
+        // Load worker stats
         const savedStats = localStorage.getItem(`worker_stats_${parsedUser.id}`);
         if (savedStats) {
           setWorkerStats(JSON.parse(savedStats));
         } else {
+          // Default stats
           const defaultStats = {
             totalTasksCompleted: 0,
             totalEarned: 0,
@@ -401,10 +406,14 @@ const Payment = () => {
           localStorage.setItem(`worker_stats_${parsedUser.id}`, JSON.stringify(defaultStats));
         }
         
+        // Load payment history
         const savedPayments = localStorage.getItem(`worker_payments_${parsedUser.id}`);
         if (savedPayments) {
           setPayments(JSON.parse(savedPayments));
           setFilteredPayments(JSON.parse(savedPayments));
+        } else {
+          setPayments([]);
+          setFilteredPayments([]);
         }
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -426,6 +435,7 @@ const Payment = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // Filter payments
   useEffect(() => {
     let filtered = payments;
 
@@ -438,6 +448,7 @@ const Payment = () => {
       filtered = filtered.filter(p =>
         p.id?.toLowerCase().includes(searchLower) ||
         p.employer?.name?.toLowerCase().includes(searchLower) ||
+        p.employer?.id?.toLowerCase().includes(searchLower) ||
         p.description?.toLowerCase().includes(searchLower)
       );
     }
@@ -536,6 +547,7 @@ const Payment = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -546,9 +558,11 @@ const Payment = () => {
         handleLogout={handleLogout}
       />
 
+      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
+        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -578,7 +592,9 @@ const Payment = () => {
           </div>
         </header>
 
+        {/* Page Content */}
         <div className="p-4 md:p-6">
+          {/* Page Header */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -593,6 +609,7 @@ const Payment = () => {
             </div>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -632,6 +649,7 @@ const Payment = () => {
             </div>
           </div>
 
+          {/* Payment Information Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">{t.paymentInfo.title}</h3>
@@ -758,11 +776,13 @@ const Payment = () => {
             </div>
           </div>
 
+          {/* Payment History Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">{t.paymentHistory.title}</h3>
             </div>
 
+            {/* Search and Filters */}
             <div className="p-4 border-b border-gray-200">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
@@ -790,12 +810,14 @@ const Payment = () => {
               </div>
             </div>
 
+            {/* Results Count */}
             <div className="flex justify-between items-center px-6 py-3 border-b border-gray-200">
               <p className="text-sm text-gray-500">
                 Showing <span className="font-semibold text-gray-700">{filteredPayments.length}</span> payments
               </p>
             </div>
 
+            {/* Payments List */}
             {filteredPayments.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="text-6xl mb-4">💳</div>
@@ -863,4 +885,4 @@ const Payment = () => {
   );
 };
 
-export default Payment;
+export default WorkerPayment;

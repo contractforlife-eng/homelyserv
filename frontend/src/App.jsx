@@ -26,6 +26,7 @@ import WorkerDashboard from './pages/WorkerDashboard';
 import WorkerOffers from './pages/WorkerOffers';
 import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
+import WorkerPayment from './pages/WorkerPayment';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
 
@@ -193,7 +194,15 @@ function App() {
           <ProtectedRoute requiredRole="WORKER">
             <WorkerComplaints />
           </ProtectedRoute>
-        } 
+        }
+        />
+        <Route 
+  path="/worker/payment" 
+  element={
+    <ProtectedRoute requiredRole="WORKER">
+      <WorkerPayment />
+    </ProtectedRoute>
+  } 
       />
       <Route 
         path="/worker-messages" 
