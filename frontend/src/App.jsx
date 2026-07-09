@@ -41,6 +41,7 @@ import EmployerComplaints from './pages/EmployerComplaints';
 import EmployerMessages from './pages/EmployerMessages';
 import EmployerSettings from './pages/EmployerSettings';
 import PaymentOptions from './pages/PaymentOptions';
+import WorkerProfileView from './pages/WorkerProfileView';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -298,6 +299,14 @@ function App() {
           </ProtectedRoute>
   }  
       />
+      <Route 
+  path="/worker-profile-view" 
+  element={
+    <ProtectedRoute requiredRole="EMPLOYER">
+      <WorkerProfileView />
+    </ProtectedRoute>
+  } 
+/>
       {/* ========== ADMIN ROUTES ========== */}
       <Route 
         path="/admin" 
