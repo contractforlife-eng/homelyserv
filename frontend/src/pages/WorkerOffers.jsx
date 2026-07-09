@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - REAL DATA ONLY (NO FAKE DATA)
+// src/pages/WorkerOffers.jsx - ADDED CLEAR FAKE OFFERS BUTTON
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -35,10 +35,11 @@ import {
   List,
   ThumbsUp,
   BriefcaseIcon,
-  Star
+  Star,
+  Trash2
 } from 'lucide-react';
 
-// Sidebar Component (keep your existing code - simplified)
+// Sidebar Component (keep your existing code - same as before)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -93,7 +94,6 @@ const WorkerSidebar = ({
   };
 
   return (
-    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -234,7 +234,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerOffers Component - REAL DATA ONLY
+// Main WorkerOffers Component - WITH CLEAR FAKE OFFERS BUTTON
 const WorkerOffers = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -251,6 +251,7 @@ const WorkerOffers = () => {
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const translations = {
     en: {
@@ -323,7 +324,8 @@ const WorkerOffers = () => {
         share: 'Share',
         view: 'View Details',
         close: 'Close',
-        loadMore: 'Load More Offers'
+        loadMore: 'Load More Offers',
+        clearFakeOffers: 'Clear Fake Offers'
       },
       empty: {
         title: 'No offers available',
@@ -335,7 +337,9 @@ const WorkerOffers = () => {
       switchToList: 'List View',
       switchToGrid: 'Grid View',
       welcome: 'Welcome back',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      clearConfirm: 'Are you sure you want to clear all fake offers?',
+      clearSuccess: 'Fake offers cleared successfully!'
     },
     ar: {
       title: 'عروض العمل',
@@ -407,7 +411,8 @@ const WorkerOffers = () => {
         share: 'مشاركة',
         view: 'عرض التفاصيل',
         close: 'إغلاق',
-        loadMore: 'تحميل المزيد من العروض'
+        loadMore: 'تحميل المزيد من العروض',
+        clearFakeOffers: 'مسح العروض الوهمية'
       },
       empty: {
         title: 'لا توجد عروض',
@@ -419,7 +424,9 @@ const WorkerOffers = () => {
       switchToList: 'عرض القائمة',
       switchToGrid: 'عرض الشبكة',
       welcome: 'مرحباً بعودتك',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      clearConfirm: 'هل أنت متأكد من رغبتك في مسح جميع العروض الوهمية؟',
+      clearSuccess: 'تم مسح العروض الوهمية بنجاح!'
     }
   };
 
@@ -446,57 +453,56 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Load REAL offers from employers - NO FAKE DATA
+  // Load ONLY REAL offers from employers
   const loadOffers = () => {
     try {
       let allOffers = [];
       
-      // 1. Load from employer_offers (offers posted by employers)
+      // ONLY load from employer_offers (real offers from employers)
       const employerOffers = localStorage.getItem('employer_offers');
       if (employerOffers) {
         try {
           const parsed = JSON.parse(employerOffers);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            allOffers = [...allOffers, ...parsed];
-            console.log('✅ Loaded employer offers:', parsed.length);
+            allOffers = parsed;
+            console.log('✅ Loaded real employer offers:', parsed.length);
           }
         } catch (e) {
           console.error('Error parsing employer_offers:', e);
         }
       }
       
-      // 2. Load from homelyserv_offers (central offers storage)
-      const centralOffers = localStorage.getItem('homelyserv_offers');
-      if (centralOffers) {
-        try {
-          const parsed = JSON.parse(centralOffers);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            allOffers = [...allOffers, ...parsed];
-            console.log('✅ Loaded central offers:', parsed.length);
-          }
-        } catch (e) {
-          console.error('Error parsing homelyserv_offers:', e);
-        }
-      }
-      
-      // Remove duplicates by id
-      const uniqueOffers = allOffers.filter((offer, index, self) =>
-        index === self.findIndex((o) => o.id === offer.id)
-      );
-      
-      console.log('✅ Total unique offers loaded:', uniqueOffers.length);
-      
-      if (uniqueOffers.length === 0) {
-        console.log('ℹ️ No offers found in localStorage. Please post a job from employer dashboard.');
-      }
-      
-      setOffers(uniqueOffers);
-      setFilteredOffers(uniqueOffers);
+      setOffers(allOffers);
+      setFilteredOffers(allOffers);
     } catch (error) {
       console.error('Error loading offers:', error);
       setOffers([]);
       setFilteredOffers([]);
     }
+  };
+
+  // Clear fake offers from localStorage
+  const clearFakeOffers = () => {
+    localStorage.removeItem('worker_offers');
+    localStorage.removeItem('homelyserv_offers');
+    // Also clear any other fake data
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('offer') && !key.includes('employer_offers')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(data) && data.length > 0 && data[0].title === 'Senior Nanny - Full Time') {
+            localStorage.removeItem(key);
+          }
+        } catch (e) {
+          // Skip if not JSON
+        }
+      }
+    });
+    
+    setShowClearConfirm(false);
+    loadOffers();
+    alert(t.clearSuccess);
   };
 
   useEffect(() => {
@@ -719,9 +725,45 @@ const WorkerOffers = () => {
               >
                 {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
               </button>
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition flex items-center gap-1"
+              >
+                <Trash2 size={16} />
+                {t.actions.clearFakeOffers}
+              </button>
             </div>
           </div>
         </header>
+
+        {/* Clear Confirmation Modal */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 size={28} className="text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Clear Fake Offers</h3>
+                <p className="text-gray-600 mb-6">{t.clearConfirm}</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={clearFakeOffers}
+                  className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
@@ -834,12 +876,6 @@ const WorkerOffers = () => {
                   className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
                 >
                   {t.empty.reset}
-                </button>
-                <button
-                  onClick={() => navigate('/employer-search')}
-                  className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50"
-                >
-                  Browse Workers
                 </button>
               </div>
             </div>
