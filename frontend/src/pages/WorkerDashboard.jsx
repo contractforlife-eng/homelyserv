@@ -1,3 +1,4 @@
+// src/pages/WorkerDashboard.jsx - WITH REAL DATA
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -24,7 +25,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Sidebar Component
+// Sidebar Component (keep your existing code)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -79,6 +80,7 @@ const WorkerSidebar = ({
   };
 
   return (
+    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -219,7 +221,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerDashboard Component - REAL DATA ONLY
+// Main WorkerDashboard Component - REAL DATA
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -285,6 +287,7 @@ const WorkerDashboard = () => {
 
   const t = translations[language];
 
+  // Load REAL data from actual sources
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -311,37 +314,114 @@ const WorkerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load REAL stats from localStorage - NO FAKE DATA
-    const savedStats = localStorage.getItem('worker_stats');
-    if (savedStats) {
-      try {
-        const parsedStats = JSON.parse(savedStats);
-        setStats({
-          totalApplications: parsedStats.totalApplications || 0,
-          activeOffers: parsedStats.activeOffers || 0,
-          interviews: parsedStats.interviews || 0,
-          savedJobs: parsedStats.savedJobs || 0,
-          profileViews: parsedStats.profileViews || 0,
-          messages: parsedStats.messages || 0
-        });
-      } catch (error) {
-        console.error('Error parsing stats:', error);
-      }
-    }
-
-    // Load REAL recent activity from localStorage - NO FAKE DATA
-    const savedActivity = localStorage.getItem('worker_recent_activity');
-    if (savedActivity) {
-      try {
-        setRecentActivity(JSON.parse(savedActivity));
-      } catch (error) {
-        console.error('Error parsing recent activity:', error);
-        setRecentActivity([]);
-      }
-    } else {
-      setRecentActivity([]);
-    }
+    // Load REAL stats from actual data sources
+    loadRealStats();
   }, [navigate]);
+
+  // Load real data from localStorage
+  const loadRealStats = () => {
+    try {
+      // Get applied offers from worker_applied_offers
+      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
+      const totalApplications = appliedOffers.length;
+      
+      // Get saved offers from worker_saved_offers
+      const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
+      const savedJobs = savedOffers.length;
+      
+      // Get messages from worker messages
+      const userId = user?.id || user?.email;
+      let messagesCount = 0;
+      if (userId) {
+        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+        // Count messages where this user is recipient
+        Object.keys(allMessages).forEach(convId => {
+          const msgs = allMessages[convId] || [];
+          msgs.forEach(msg => {
+            if (msg.recipientId === userId || msg.senderId === userId) {
+              messagesCount++;
+            }
+          });
+        });
+      }
+      
+      // Get offers from employer_offers (active offers)
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const activeOffers = employerOffers.length;
+      
+      // Get interviews count (from applied offers that have interview status)
+      const interviews = appliedOffers.filter(id => {
+        // Check if any offer has interview status
+        const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+        return offers.some(o => o.id === id && o.status === 'interview');
+      }).length;
+      
+      // Get profile views (from profile views tracking)
+      const profileViews = parseInt(localStorage.getItem('worker_profile_views') || '0');
+      
+      // Update stats
+      setStats({
+        totalApplications: totalApplications,
+        activeOffers: activeOffers,
+        interviews: interviews,
+        savedJobs: savedJobs,
+        profileViews: profileViews,
+        messages: messagesCount
+      });
+      
+      // Generate recent activity from real data
+      generateRecentActivity(appliedOffers, savedOffers);
+      
+      console.log('✅ Stats loaded:', {
+        totalApplications, activeOffers, interviews, savedJobs, profileViews, messagesCount
+      });
+      
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  // Generate recent activity from real data
+  const generateRecentActivity = (appliedOffers, savedOffers) => {
+    const activities = [];
+    
+    // Get applied offers with details
+    const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    appliedOffers.forEach(offerId => {
+      const offer = allOffers.find(o => o.id === offerId);
+      if (offer) {
+        activities.push({
+          icon: 'application',
+          message: `Applied for ${offer.title} at ${offer.company}`,
+          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
+          status: 'Pending'
+        });
+      }
+    });
+    
+    // Get saved offers
+    savedOffers.forEach(offerId => {
+      const offer = allOffers.find(o => o.id === offerId);
+      if (offer) {
+        activities.push({
+          icon: 'saved',
+          message: `Saved job: ${offer.title} at ${offer.company}`,
+          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
+          status: 'Saved'
+        });
+      }
+    });
+    
+    // Sort by time (most recent first)
+    activities.sort((a, b) => {
+      const dateA = new Date(a.time);
+      const dateB = new Date(b.time);
+      return dateB - dateA;
+    });
+    
+    // Limit to 10 most recent
+    setRecentActivity(activities.slice(0, 10));
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -382,7 +462,6 @@ const WorkerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -393,11 +472,9 @@ const WorkerDashboard = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -427,7 +504,6 @@ const WorkerDashboard = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
           {/* Welcome Section */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
@@ -455,7 +531,7 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - REAL DATA from localStorage */}
+          {/* Stats Grid - REAL DATA */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -536,7 +612,7 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity - REAL DATA from localStorage */}
+          {/* Recent Activity - REAL DATA */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
             {recentActivity.length === 0 ? (
@@ -550,7 +626,6 @@ const WorkerDashboard = () => {
                   <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                       {activity.icon === 'application' && <Briefcase size={16} className="text-blue-600" />}
-                      {activity.icon === 'interview' && <CheckCircle size={16} className="text-green-600" />}
                       {activity.icon === 'saved' && <Heart size={16} className="text-purple-600" />}
                       {activity.icon === 'message' && <MessageCircle size={16} className="text-orange-600" />}
                       {!activity.icon && <Briefcase size={16} className="text-blue-600" />}
@@ -562,7 +637,6 @@ const WorkerDashboard = () => {
                     {activity.status && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                        activity.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
                         activity.status === 'Saved' ? 'bg-purple-100 text-purple-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>

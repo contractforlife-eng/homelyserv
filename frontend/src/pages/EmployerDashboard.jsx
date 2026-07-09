@@ -1,3 +1,4 @@
+// src/pages/EmployerDashboard.jsx - WITH REAL DATA
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -227,7 +228,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerDashboard Component
+// Main EmployerDashboard Component - REAL DATA
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -242,6 +243,7 @@ const EmployerDashboard = () => {
     completedHires: 0,
     savedWorkers: 0
   });
+  const [recentActivity, setRecentActivity] = useState([]);
 
   const translations = {
     en: {
@@ -292,6 +294,7 @@ const EmployerDashboard = () => {
 
   const t = translations[language];
 
+  // Load REAL data from actual sources
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -318,15 +321,103 @@ const EmployerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    const savedStats = localStorage.getItem('employer_stats');
-    if (savedStats) {
-      try {
-        setStats(JSON.parse(savedStats));
-      } catch (error) {
-        console.error('Error parsing stats:', error);
-      }
-    }
+    // Load REAL stats from actual data sources
+    loadRealStats();
   }, [navigate]);
+
+  // Load real data from localStorage
+  const loadRealStats = () => {
+    try {
+      // Get hires from homelyserv_hires
+      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      const activeHires = hires.filter(h => h.status === 'active' || h.status === 'completed').length;
+      const completedHires = hires.filter(h => h.status === 'completed').length;
+      
+      // Get total workers from homelyserv_users
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const totalWorkers = users.filter(u => u.role === 'WORKER').length;
+      
+      // Get messages count
+      const employerId = user?.id || user?.email;
+      let messagesCount = 0;
+      if (employerId) {
+        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+        Object.keys(allMessages).forEach(convId => {
+          const msgs = allMessages[convId] || [];
+          msgs.forEach(msg => {
+            if (msg.recipientId === employerId || msg.senderId === employerId) {
+              messagesCount++;
+            }
+          });
+        });
+      }
+      
+      // Get saved workers from employer_saved_workers
+      const savedWorkers = JSON.parse(localStorage.getItem('employer_saved_workers') || '[]');
+      
+      // Get pending applications from offers
+      const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const pendingApplications = offers.filter(o => o.status === 'new' || o.status === 'applied').length;
+      
+      // Update stats
+      setStats({
+        activeHires: activeHires,
+        pendingApplications: pendingApplications,
+        totalWorkers: totalWorkers,
+        messages: messagesCount,
+        completedHires: completedHires,
+        savedWorkers: savedWorkers.length
+      });
+      
+      // Generate recent activity from hires and offers
+      generateRecentActivity(hires, offers);
+      
+      console.log('✅ Employer stats loaded:', {
+        activeHires, pendingApplications, totalWorkers, messagesCount, completedHires, savedWorkers: savedWorkers.length
+      });
+      
+    } catch (error) {
+      console.error('Error loading employer stats:', error);
+    }
+  };
+
+  // Generate recent activity from real data
+  const generateRecentActivity = (hires, offers) => {
+    const activities = [];
+    
+    // Add hire activities
+    hires.slice(0, 5).forEach(hire => {
+      const workerName = hire.workerName || 'Worker';
+      activities.push({
+        icon: 'hire',
+        message: `Hired ${workerName}`,
+        time: hire.date ? new Date(hire.date).toLocaleDateString() : 'Recently',
+        status: hire.status === 'active' ? 'Active' : 'Completed'
+      });
+    });
+    
+    // Add offer activities
+    offers.slice(0, 5).forEach(offer => {
+      if (offer.status === 'new') {
+        activities.push({
+          icon: 'offer',
+          message: `Posted job: ${offer.title}`,
+          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
+          status: 'Active'
+        });
+      }
+    });
+    
+    // Sort by time (most recent first)
+    activities.sort((a, b) => {
+      const dateA = new Date(a.time);
+      const dateB = new Date(b.time);
+      return dateB - dateA;
+    });
+    
+    // Limit to 10 most recent
+    setRecentActivity(activities.slice(0, 10));
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -367,7 +458,6 @@ const EmployerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -378,11 +468,9 @@ const EmployerDashboard = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -412,9 +500,7 @@ const EmployerDashboard = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Welcome Section - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -440,7 +526,6 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Teal Theme */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -504,7 +589,6 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -539,13 +623,40 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity - No fake data */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
-            <div className="text-center py-8 text-gray-500">
-              <p>{t.noActivity}</p>
-              <p className="text-sm mt-2">Start hiring workers to see activity here</p>
-            </div>
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>{t.noActivity}</p>
+                <p className="text-sm mt-2">Start hiring workers to see activity here</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                      {activity.icon === 'hire' && <UserPlus size={16} className="text-teal-600" />}
+                      {activity.icon === 'offer' && <Briefcase size={16} className="text-blue-600" />}
+                      {activity.icon === 'message' && <MessageCircle size={16} className="text-orange-600" />}
+                      {!activity.icon && <Briefcase size={16} className="text-teal-600" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">{activity.message}</p>
+                      <p className="text-sm text-gray-500">{activity.time}</p>
+                    </div>
+                    {activity.status && (
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        activity.status === 'Active' ? 'bg-green-100 text-green-700' :
+                        activity.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {activity.status}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
