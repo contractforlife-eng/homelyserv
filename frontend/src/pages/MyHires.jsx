@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Updated Chat Functionality
+// src/pages/MyHires.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -236,7 +236,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main MyHires Component - FIXED CHAT
+// Main MyHires Component
 const MyHires = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -560,25 +560,24 @@ const MyHires = () => {
     }
   };
 
-  // FIXED: Chat functionality - opens chat directly with the worker
+  // ===== FIXED: Chat functionality - opens chat directly with the worker =====
   const handleChat = (worker) => {
+    console.log('📨 Starting chat with worker:', worker);
+    
     // Save the chat recipient data
     const chatData = {
-      id: worker.id,
-      name: worker.name,
+      id: worker.id || worker.email || `worker_${Date.now()}`,
+      name: worker.name || 'Worker',
       email: worker.email || '',
       phone: worker.phone || '',
-      image: worker.image || '',
+      image: worker.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`,
       role: 'worker'
     };
     
     localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
-    localStorage.setItem('homelyserv_active_chat', JSON.stringify({
-      recipientId: worker.id,
-      recipientName: worker.name,
-      recipientImage: worker.image || '',
-      isWorker: true
-    }));
+    localStorage.setItem('homelyserv_open_chat_on_load', 'true');
+    
+    console.log('✅ Chat data saved, navigating to messages...');
     
     // Navigate to messages page
     navigate('/employer-messages');
