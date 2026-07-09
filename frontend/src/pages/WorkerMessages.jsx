@@ -1,3 +1,4 @@
+// src/pages/worker/WorkerMessages.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -220,7 +221,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - REAL DATA ONLY
+// Main WorkerMessages Component - REAL CHAT
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -228,7 +229,7 @@ const WorkerMessages = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -271,6 +272,12 @@ const WorkerMessages = () => {
 
   const t = translations[language];
 
+  // Get current user ID
+  const getUserId = () => {
+    if (!user) return null;
+    return user.id || user.email || 'worker_' + Date.now();
+  };
+
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -280,7 +287,8 @@ const WorkerMessages = () => {
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -294,33 +302,62 @@ const WorkerMessages = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load REAL conversations from localStorage - NO FAKE DATA
-    const savedConversations = localStorage.getItem('worker_conversations');
-    if (savedConversations) {
-      try {
-        setConversations(JSON.parse(savedConversations));
-      } catch (error) {
-        console.error('Error parsing conversations:', error);
-        setConversations([]);
-      }
-    } else {
-      setConversations([]);
-    }
-
-    // Load REAL messages from localStorage - NO FAKE DATA
-    const savedMessages = localStorage.getItem('worker_messages');
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (error) {
-        console.error('Error parsing messages:', error);
-        setMessages([]);
-      }
-    } else {
-      setMessages([]);
-    }
+    loadChatData();
     setLoading(false);
   }, [navigate]);
+
+  // Load chat data from localStorage
+  const loadChatData = () => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    // Load conversations for this user
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '{}');
+    const userConversations = allConversations[userId] || [];
+    setConversations(userConversations);
+
+    // Load messages for this user
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_messages') || '{}');
+    const userMessages = allMessages[userId] || [];
+    setMessages(userMessages);
+  };
+
+  // Save chat data to localStorage
+  const saveChatData = (newConversations, newMessages) => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    // Save conversations
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '{}');
+    allConversations[userId] = newConversations;
+    localStorage.setItem('homelyserv_conversations', JSON.stringify(allConversations));
+
+    // Save messages
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_messages') || '{}');
+    allMessages[userId] = newMessages;
+    localStorage.setItem('homelyserv_messages', JSON.stringify(allMessages));
+  };
+
+  // Create a new conversation
+  const createConversation = (employerName, employerId, employerAvatar) => {
+    const newConversation = {
+      id: Date.now(),
+      name: employerName || 'Employer',
+      role: 'Employer',
+      employerId: employerId || 'employer_' + Date.now(),
+      lastMessage: 'Start your conversation here',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      unread: 0,
+      online: true,
+      avatar: employerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+    };
+
+    const updatedConversations = [...conversations, newConversation];
+    setConversations(updatedConversations);
+    saveChatData(updatedConversations, messages);
+    setSelectedChatId(newConversation.id);
+    return newConversation;
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -354,29 +391,42 @@ const WorkerMessages = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (message.trim() && selectedChat) {
-      const newMessage = {
-        id: Date.now(),
-        sender: 'worker',
-        text: message,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        read: false
-      };
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      localStorage.setItem('worker_messages', JSON.stringify(updatedMessages));
-      
-      // Update last message in conversation
-      const updatedConversations = conversations.map(conv => {
-        if (conv.id === selectedChat) {
-          return { ...conv, lastMessage: message, time: newMessage.time, unread: 0 };
-        }
-        return conv;
-      });
-      setConversations(updatedConversations);
-      localStorage.setItem('worker_conversations', JSON.stringify(updatedConversations));
-      
-      setMessage('');
+    if (!message.trim() || !selectedChatId) return;
+
+    const newMessage = {
+      id: Date.now(),
+      sender: 'worker',
+      text: message,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    
+    // Update conversation last message
+    const updatedConversations = conversations.map(conv => {
+      if (conv.id === selectedChatId) {
+        return { 
+          ...conv, 
+          lastMessage: message, 
+          time: newMessage.time,
+          unread: 0 
+        };
+      }
+      return conv;
+    });
+    setConversations(updatedConversations);
+    
+    saveChatData(updatedConversations, updatedMessages);
+    setMessage('');
+  };
+
+  // Add a new conversation (for testing/demo purposes)
+  const addDemoConversation = () => {
+    const employerName = prompt('Enter employer name:', 'Ahmed Ali');
+    if (employerName) {
+      createConversation(employerName);
     }
   };
 
@@ -404,7 +454,6 @@ const WorkerMessages = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -415,11 +464,9 @@ const WorkerMessages = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -445,23 +492,31 @@ const WorkerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={addDemoConversation}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+              >
+                + New Chat
+              </button>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold">{t.title}</h1>
                 <p className="text-red-100 mt-1">{t.subtitle}</p>
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-red-100">
+                  {conversations.length} conversations
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Messages Container */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
               {/* Conversations List */}
@@ -484,14 +539,20 @@ const WorkerMessages = () => {
                       <div className="text-4xl mb-3">💬</div>
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
+                      <button
+                        onClick={addDemoConversation}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      >
+                        Start a conversation
+                      </button>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
                       <button
                         key={conv.id}
-                        onClick={() => setSelectedChat(conv.id)}
+                        onClick={() => setSelectedChatId(conv.id)}
                         className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedChat === conv.id ? 'bg-red-50' : ''
+                          selectedChatId === conv.id ? 'bg-red-50' : ''
                         }`}
                       >
                         <img
@@ -504,7 +565,7 @@ const WorkerMessages = () => {
                             <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
                             <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
+                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage || 'No messages'}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
                               {conv.online ? t.online : t.offline}
@@ -524,19 +585,18 @@ const WorkerMessages = () => {
 
               {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
-                {selectedChat ? (
+                {selectedChatId ? (
                   <>
-                    {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChat)?.avatar || 'https://via.placeholder.com/40'}
+                          src={conversations.find(c => c.id === selectedChatId)?.avatar || 'https://via.placeholder.com/40'}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {conversations.find(c => c.id === selectedChat)?.name}
+                            {conversations.find(c => c.id === selectedChatId)?.name}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
@@ -554,7 +614,6 @@ const WorkerMessages = () => {
                       </div>
                     </div>
 
-                    {/* Messages - REAL DATA */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 py-8">
@@ -587,7 +646,6 @@ const WorkerMessages = () => {
                       )}
                     </div>
 
-                    {/* Message Input */}
                     <div className="p-4 border-t border-gray-200">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input

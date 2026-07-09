@@ -1,3 +1,4 @@
+// src/pages/employer/EmployerMessages.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -25,7 +26,7 @@ import {
   FileCheck
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -220,7 +221,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component
+// Main EmployerMessages Component - REAL CHAT
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -228,8 +229,11 @@ const EmployerMessages = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const translations = {
     en: {
@@ -243,7 +247,10 @@ const EmployerMessages = () => {
       online: 'Online',
       offline: 'Offline',
       languageToggle: 'العربية',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      loading: 'Loading messages...',
+      noMessages: 'No messages yet',
+      startConversation: 'Start the conversation!'
     },
     ar: {
       title: 'الرسائل',
@@ -256,51 +263,20 @@ const EmployerMessages = () => {
       online: 'متصل',
       offline: 'غير متصل',
       languageToggle: 'English',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      loading: 'جاري تحميل الرسائل...',
+      noMessages: 'لا توجد رسائل بعد',
+      startConversation: 'ابدأ المحادثة!'
     }
   };
 
   const t = translations[language];
 
-  // Demo conversations
-  const conversations = [
-    {
-      id: 1,
-      name: 'Ahmed Ali',
-      role: 'Worker',
-      lastMessage: 'I am available for the position',
-      time: '10:30 AM',
-      unread: 2,
-      online: true,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    },
-    {
-      id: 2,
-      name: 'Mona Hassan',
-      role: 'Worker',
-      lastMessage: 'Thank you for the opportunity',
-      time: 'Yesterday',
-      unread: 0,
-      online: false,
-      avatar: 'https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=40&h=40&fit=crop'
-    },
-    {
-      id: 3,
-      name: 'Khaled Mostafa',
-      role: 'Worker',
-      lastMessage: 'When can we schedule the interview?',
-      time: '2 days ago',
-      unread: 1,
-      online: true,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    }
-  ];
-
-  const messages = [
-    { id: 1, sender: 'worker', text: 'Hello! I saw your job posting and I am interested.', time: '10:00 AM', read: true },
-    { id: 2, sender: 'employer', text: 'Great! Can you tell me more about your experience?', time: '10:05 AM', read: true },
-    { id: 3, sender: 'worker', text: 'I have 5 years of experience in this field.', time: '10:30 AM', read: false },
-  ];
+  // Get current user ID
+  const getUserId = () => {
+    if (!user) return null;
+    return user.id || user.email || 'employer_' + Date.now();
+  };
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -311,7 +287,8 @@ const EmployerMessages = () => {
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -324,7 +301,59 @@ const EmployerMessages = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+
+    loadChatData();
+    setLoading(false);
   }, [navigate]);
+
+  // Load chat data from localStorage
+  const loadChatData = () => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_employer_conversations') || '{}');
+    const userConversations = allConversations[userId] || [];
+    setConversations(userConversations);
+
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_employer_messages') || '{}');
+    const userMessages = allMessages[userId] || [];
+    setMessages(userMessages);
+  };
+
+  // Save chat data to localStorage
+  const saveChatData = (newConversations, newMessages) => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_employer_conversations') || '{}');
+    allConversations[userId] = newConversations;
+    localStorage.setItem('homelyserv_employer_conversations', JSON.stringify(allConversations));
+
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_employer_messages') || '{}');
+    allMessages[userId] = newMessages;
+    localStorage.setItem('homelyserv_employer_messages', JSON.stringify(allMessages));
+  };
+
+  // Create a new conversation
+  const createConversation = (workerName, workerId, workerAvatar) => {
+    const newConversation = {
+      id: Date.now(),
+      name: workerName || 'Worker',
+      role: 'Worker',
+      workerId: workerId || 'worker_' + Date.now(),
+      lastMessage: 'Start your conversation here',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      unread: 0,
+      online: true,
+      avatar: workerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
+    };
+
+    const updatedConversations = [...conversations, newConversation];
+    setConversations(updatedConversations);
+    saveChatData(updatedConversations, messages);
+    setSelectedChatId(newConversation.id);
+    return newConversation;
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -353,14 +382,46 @@ const EmployerMessages = () => {
   };
 
   const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (message.trim()) {
-      alert('Message sent to worker: ' + message);
-      setMessage('');
+    if (!message.trim() || !selectedChatId) return;
+
+    const newMessage = {
+      id: Date.now(),
+      sender: 'employer',
+      text: message,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    
+    const updatedConversations = conversations.map(conv => {
+      if (conv.id === selectedChatId) {
+        return { 
+          ...conv, 
+          lastMessage: message, 
+          time: newMessage.time,
+          unread: 0 
+        };
+      }
+      return conv;
+    });
+    setConversations(updatedConversations);
+    
+    saveChatData(updatedConversations, updatedMessages);
+    setMessage('');
+  };
+
+  // Add a new conversation (for testing/demo purposes)
+  const addDemoConversation = () => {
+    const workerName = prompt('Enter worker name:', 'Ahmed Ali');
+    if (workerName) {
+      createConversation(workerName);
     }
   };
 
@@ -370,6 +431,17 @@ const EmployerMessages = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
     );
@@ -415,20 +487,31 @@ const EmployerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={addDemoConversation}
+                className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition"
+              >
+                + New Chat
+              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Page Header - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">{t.title}</h1>
+                <p className="text-teal-100 mt-1">{t.subtitle}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-teal-100">
+                  {conversations.length} conversations
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Messages Container */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
               {/* Conversations List */}
@@ -451,18 +534,24 @@ const EmployerMessages = () => {
                       <div className="text-4xl mb-3">💬</div>
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
+                      <button
+                        onClick={addDemoConversation}
+                        className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                      >
+                        Start a conversation
+                      </button>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
                       <button
                         key={conv.id}
-                        onClick={() => setSelectedChat(conv.id)}
+                        onClick={() => setSelectedChatId(conv.id)}
                         className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedChat === conv.id ? 'bg-teal-50' : ''
+                          selectedChatId === conv.id ? 'bg-teal-50' : ''
                         }`}
                       >
                         <img
-                          src={conv.avatar}
+                          src={conv.avatar || 'https://via.placeholder.com/40'}
                           alt={conv.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -471,7 +560,7 @@ const EmployerMessages = () => {
                             <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
                             <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
+                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage || 'No messages'}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
                               {conv.online ? t.online : t.offline}
@@ -491,19 +580,18 @@ const EmployerMessages = () => {
 
               {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
-                {selectedChat ? (
+                {selectedChatId ? (
                   <>
-                    {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChat)?.avatar}
+                          src={conversations.find(c => c.id === selectedChatId)?.avatar || 'https://via.placeholder.com/40'}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {conversations.find(c => c.id === selectedChat)?.name}
+                            {conversations.find(c => c.id === selectedChatId)?.name}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
@@ -521,33 +609,38 @@ const EmployerMessages = () => {
                       </div>
                     </div>
 
-                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                      {messages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={`flex ${msg.sender === 'employer' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[70%] p-3 rounded-lg ${
-                              msg.sender === 'employer'
-                                ? 'bg-teal-600 text-white rounded-br-none'
-                                : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                            }`}
-                          >
-                            <p className="text-sm">{msg.text}</p>
-                            <p className={`text-xs mt-1 ${msg.sender === 'employer' ? 'text-teal-200' : 'text-gray-400'}`}>
-                              {msg.time}
-                              {msg.sender === 'employer' && (
-                                <CheckCheck size={14} className="inline ml-1" />
-                              )}
-                            </p>
-                          </div>
+                      {messages.length === 0 ? (
+                        <div className="text-center text-gray-400 py-8">
+                          <p>{t.noMessages}</p>
+                          <p className="text-sm">{t.startConversation}</p>
                         </div>
-                      ))}
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.sender === 'employer' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[70%] p-3 rounded-lg ${
+                                msg.sender === 'employer'
+                                  ? 'bg-teal-600 text-white rounded-br-none'
+                                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                              }`}
+                            >
+                              <p className="text-sm">{msg.text}</p>
+                              <p className={`text-xs mt-1 ${msg.sender === 'employer' ? 'text-teal-200' : 'text-gray-400'}`}>
+                                {msg.time}
+                                {msg.sender === 'employer' && (
+                                  <CheckCheck size={14} className="inline ml-1" />
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
 
-                    {/* Message Input */}
                     <div className="p-4 border-t border-gray-200">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
