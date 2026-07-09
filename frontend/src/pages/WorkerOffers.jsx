@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - REAL DATA ONLY (no fake data)
+// src/pages/WorkerOffers.jsx - REAL DATA ONLY (NO FAKE DATA)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -38,7 +38,7 @@ import {
   Star
 } from 'lucide-react';
 
-// Sidebar Component (keep your existing code)
+// Sidebar Component (keep your existing code - simplified)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -93,6 +93,7 @@ const WorkerSidebar = ({
   };
 
   return (
+    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -326,7 +327,7 @@ const WorkerOffers = () => {
       },
       empty: {
         title: 'No offers available',
-        description: 'No job offers have been posted yet',
+        description: 'No job offers have been posted by employers yet',
         reset: 'Refresh'
       },
       loading: 'Loading offers...',
@@ -410,7 +411,7 @@ const WorkerOffers = () => {
       },
       empty: {
         title: 'لا توجد عروض',
-        description: 'لم يتم نشر أي عروض عمل بعد',
+        description: 'لم يتم نشر أي عروض عمل من قبل أصحاب العمل حتى الآن',
         reset: 'تحديث'
       },
       loading: 'جاري تحميل العروض...',
@@ -445,7 +446,7 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Load REAL offers from employers
+  // Load REAL offers from employers - NO FAKE DATA
   const loadOffers = () => {
     try {
       let allOffers = [];
@@ -478,20 +479,6 @@ const WorkerOffers = () => {
         }
       }
       
-      // 3. Load from worker_offers (if any exist)
-      const workerOffers = localStorage.getItem('worker_offers');
-      if (workerOffers) {
-        try {
-          const parsed = JSON.parse(workerOffers);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            allOffers = [...allOffers, ...parsed];
-            console.log('✅ Loaded worker offers:', parsed.length);
-          }
-        } catch (e) {
-          console.error('Error parsing worker_offers:', e);
-        }
-      }
-      
       // Remove duplicates by id
       const uniqueOffers = allOffers.filter((offer, index, self) =>
         index === self.findIndex((o) => o.id === offer.id)
@@ -500,7 +487,7 @@ const WorkerOffers = () => {
       console.log('✅ Total unique offers loaded:', uniqueOffers.length);
       
       if (uniqueOffers.length === 0) {
-        console.log('ℹ️ No offers found in localStorage');
+        console.log('ℹ️ No offers found in localStorage. Please post a job from employer dashboard.');
       }
       
       setOffers(uniqueOffers);
@@ -847,6 +834,12 @@ const WorkerOffers = () => {
                   className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
                 >
                   {t.empty.reset}
+                </button>
+                <button
+                  onClick={() => navigate('/employer-search')}
+                  className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50"
+                >
+                  Browse Workers
                 </button>
               </div>
             </div>
