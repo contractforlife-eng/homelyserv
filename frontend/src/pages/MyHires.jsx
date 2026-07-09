@@ -1,3 +1,4 @@
+// src/pages/MyHires.jsx - Updated to use homelyserv_hires
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -39,7 +40,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component - Teal Theme (same as before)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -94,6 +95,7 @@ const EmployerSidebar = ({
   };
 
   return (
+    // ... (same sidebar code as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -234,7 +236,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main MyHires Component
+// Main MyHires Component - UPDATED
 const MyHires = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -389,24 +391,62 @@ const MyHires = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load hires from localStorage
-    const savedHires = localStorage.getItem('employer_hires');
-    if (savedHires) {
-      try {
-        setHires(JSON.parse(savedHires));
-        setFilteredHires(JSON.parse(savedHires));
-        setLoading(false);
-      } catch (error) {
-        console.error('Error parsing hires:', error);
-        setLoading(false);
+    // Load hires from localStorage - USE homelyserv_hires
+    loadHiresFromStorage();
+  }, [navigate]);
+
+  const loadHiresFromStorage = () => {
+    try {
+      // Try to load from homelyserv_hires first (where payment saves hires)
+      let savedHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      
+      // If no hires in homelyserv_hires, check employer_hires (for backward compatibility)
+      if (savedHires.length === 0) {
+        const oldHires = JSON.parse(localStorage.getItem('employer_hires') || '[]');
+        if (oldHires.length > 0) {
+          savedHires = oldHires;
+          // Migrate to new storage
+          localStorage.setItem('homelyserv_hires', JSON.stringify(oldHires));
+        }
       }
-    } else {
-      // If no hires exist, set empty array
+      
+      console.log(`✅ Loaded ${savedHires.length} hires from localStorage`);
+      
+      // Transform hires to the format expected by the component
+      const formattedHires = savedHires.map((hire, index) => ({
+        id: hire.id || `hire_${index}`,
+        worker: {
+          id: hire.workerId || hire.worker?.id || `worker_${index}`,
+          name: hire.workerName || hire.worker?.name || 'Unknown Worker',
+          email: hire.workerEmail || hire.worker?.email || '',
+          phone: hire.workerPhone || hire.worker?.phone || '',
+          location: hire.workerLocation || hire.worker?.location || 'Not specified',
+          category: hire.desiredJob || hire.worker?.category || 'Worker',
+          image: hire.workerPhoto || hire.worker?.image || 'https://via.placeholder.com/40',
+          rating: hire.workerRating || hire.worker?.rating || 4.5
+        },
+        position: hire.desiredJob || hire.position || 'Worker',
+        hoursWorked: hire.hoursWorked || 0,
+        salary: hire.amount || hire.salary || 0,
+        status: hire.status || 'active',
+        startDate: hire.startDate || hire.date || new Date().toISOString().split('T')[0],
+        contractType: hire.contractType || 'Full Time',
+        workSchedule: hire.workSchedule || 'Sunday - Thursday, 9AM - 5PM',
+        documents: hire.documents || [],
+        paymentMethod: hire.paymentMethod || 'Not specified',
+        commission: hire.commission || 0
+      }));
+      
+      setHires(formattedHires);
+      setFilteredHires(formattedHires);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading hires:', error);
       setHires([]);
       setFilteredHires([]);
       setLoading(false);
     }
-  }, [navigate]);
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -481,7 +521,25 @@ const MyHires = () => {
         return hire;
       });
       setHires(updatedHires);
-      localStorage.setItem('employer_hires', JSON.stringify(updatedHires));
+      
+      // Save to localStorage
+      const hiresToSave = updatedHires.map(hire => ({
+        id: hire.id,
+        workerId: hire.worker.id,
+        workerName: hire.worker.name,
+        workerEmail: hire.worker.email,
+        workerPhone: hire.worker.phone,
+        workerLocation: hire.worker.location,
+        desiredJob: hire.position,
+        amount: hire.salary,
+        status: hire.status,
+        date: hire.startDate,
+        hoursWorked: hire.hoursWorked,
+        commission: hire.commission,
+        paymentMethod: hire.paymentMethod
+      }));
+      localStorage.setItem('homelyserv_hires', JSON.stringify(hiresToSave));
+      
       setShowConfirmModal(null);
       setActionType('');
     }
@@ -547,7 +605,6 @@ const MyHires = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -558,11 +615,9 @@ const MyHires = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -592,9 +647,7 @@ const MyHires = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -611,7 +664,7 @@ const MyHires = () => {
             </div>
           </div>
 
-          {/* Stats Cards - Teal Theme */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -671,14 +724,12 @@ const MyHires = () => {
             </div>
           </div>
 
-          {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">
               Showing <span className="font-semibold text-gray-700">{filteredHires.length}</span> employees
             </p>
           </div>
 
-          {/* Hires List */}
           {filteredHires.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">👥</div>
@@ -698,7 +749,6 @@ const MyHires = () => {
                   key={hire.id}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition"
                 >
-                  {/* Summary Row */}
                   <div className="p-4 cursor-pointer" onClick={() => toggleExpand(hire.id)}>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="flex items-center gap-4">
@@ -724,21 +774,18 @@ const MyHires = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                        {/* Hours Worked */}
                         <div className="flex items-center gap-2">
                           <Clock size={16} className="text-gray-400" />
                           <span className="font-semibold text-gray-800">
                             {hire.hoursWorked}h
                           </span>
                         </div>
-                        {/* Salary */}
                         <div className="flex items-center gap-2">
                           <DollarSign size={16} className="text-gray-400" />
                           <span className="font-semibold text-gray-800">
                             EGP {hire.salary.toLocaleString()}
                           </span>
                         </div>
-                        {/* Status */}
                         <div className="flex items-center gap-1.5">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(hire.status)}`}>
                             {getStatusIcon(hire.status)}
@@ -756,11 +803,9 @@ const MyHires = () => {
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
                   {expandedHire === hire.id && (
                     <div className="border-t border-gray-100 p-4 bg-gray-50">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Worker Info */}
                         <div>
                           <h4 className="font-semibold text-gray-700 mb-3">Employee Details</h4>
                           <div className="space-y-2 text-sm">
@@ -787,7 +832,6 @@ const MyHires = () => {
                           </div>
                         </div>
 
-                        {/* Contract Details */}
                         <div>
                           <h4 className="font-semibold text-gray-700 mb-3">Contract Details</h4>
                           <div className="space-y-2 text-sm">
@@ -811,14 +855,18 @@ const MyHires = () => {
                               <span className="text-gray-500">{t.hoursWorked}</span>
                               <span className="font-medium">{hire.hoursWorked} hours</span>
                             </div>
+                            {hire.paymentMethod && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Payment Method</span>
+                                <span className="font-medium">{hire.paymentMethod}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Actions */}
                         <div>
                           <h4 className="font-semibold text-gray-700 mb-3">Actions</h4>
                           <div className="flex flex-wrap gap-2">
-                            {/* Chat Button */}
                             <button
                               onClick={() => handleChat(hire.worker.id, hire.worker.name)}
                               className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition flex items-center gap-1"
@@ -827,7 +875,6 @@ const MyHires = () => {
                               {t.actions.chat}
                             </button>
                             
-                            {/* Status-specific actions */}
                             {hire.status === 'active' && (
                               <>
                                 <button
@@ -871,17 +918,6 @@ const MyHires = () => {
                               </span>
                             )}
                           </div>
-                          {hire.documents && hire.documents.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs text-gray-500 mb-1">Documents</p>
-                              {hire.documents.map((doc, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                  <FileText size={14} />
-                                  <span>{doc}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
