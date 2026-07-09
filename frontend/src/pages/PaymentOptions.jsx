@@ -229,7 +229,6 @@ const EmployerSidebar = ({
 // Main PaymentOptions Component
 const PaymentOptions = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -602,6 +601,13 @@ const PaymentOptions = () => {
             </div>
           ) : (
             <>
+              <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
+                <div>
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
+                </div>
+              </div>
+
               {/* Worker Summary */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
