@@ -1,4 +1,4 @@
-// src/pages/EmployerDashboard.jsx - WITH REAL DATA
+// src/pages/EmployerDashboard.jsx - WITH PROFILE IMAGE
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -30,7 +30,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component - WITH PROFILE IMAGE
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -87,6 +87,14 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  // Get profile image from user
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -131,8 +139,16 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -228,7 +244,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerDashboard Component - REAL DATA
+// Main EmployerDashboard Component - WITH PROFILE IMAGE
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -294,7 +310,6 @@ const EmployerDashboard = () => {
 
   const t = translations[language];
 
-  // Load REAL data from actual sources
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -321,23 +336,18 @@ const EmployerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load REAL stats from actual data sources
     loadRealStats();
   }, [navigate]);
 
-  // Load real data from localStorage
   const loadRealStats = () => {
     try {
-      // Get hires from homelyserv_hires
       const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       const activeHires = hires.filter(h => h.status === 'active' || h.status === 'completed').length;
       const completedHires = hires.filter(h => h.status === 'completed').length;
       
-      // Get total workers from homelyserv_users
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const totalWorkers = users.filter(u => u.role === 'WORKER').length;
       
-      // Get messages count
       const employerId = user?.id || user?.email;
       let messagesCount = 0;
       if (employerId) {
@@ -352,14 +362,11 @@ const EmployerDashboard = () => {
         });
       }
       
-      // Get saved workers from employer_saved_workers
       const savedWorkers = JSON.parse(localStorage.getItem('employer_saved_workers') || '[]');
       
-      // Get pending applications from offers
       const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const pendingApplications = offers.filter(o => o.status === 'new' || o.status === 'applied').length;
       
-      // Update stats
       setStats({
         activeHires: activeHires,
         pendingApplications: pendingApplications,
@@ -369,23 +376,16 @@ const EmployerDashboard = () => {
         savedWorkers: savedWorkers.length
       });
       
-      // Generate recent activity from hires and offers
       generateRecentActivity(hires, offers);
-      
-      console.log('✅ Employer stats loaded:', {
-        activeHires, pendingApplications, totalWorkers, messagesCount, completedHires, savedWorkers: savedWorkers.length
-      });
       
     } catch (error) {
       console.error('Error loading employer stats:', error);
     }
   };
 
-  // Generate recent activity from real data
   const generateRecentActivity = (hires, offers) => {
     const activities = [];
     
-    // Add hire activities
     hires.slice(0, 5).forEach(hire => {
       const workerName = hire.workerName || 'Worker';
       activities.push({
@@ -396,7 +396,6 @@ const EmployerDashboard = () => {
       });
     });
     
-    // Add offer activities
     offers.slice(0, 5).forEach(offer => {
       if (offer.status === 'new') {
         activities.push({
@@ -408,14 +407,12 @@ const EmployerDashboard = () => {
       }
     });
     
-    // Sort by time (most recent first)
     activities.sort((a, b) => {
       const dateA = new Date(a.time);
       const dateB = new Date(b.time);
       return dateB - dateA;
     });
     
-    // Limit to 10 most recent
     setRecentActivity(activities.slice(0, 10));
   };
 
@@ -485,6 +482,22 @@ const EmployerDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-teal-600 m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Employer'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
@@ -503,9 +516,22 @@ const EmployerDashboard = () => {
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
-                <p className="text-teal-100 mt-1">{t.overview}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
+                  <p className="text-teal-100 mt-1">{t.overview}</p>
+                </div>
               </div>
               <div className="flex gap-3">
                 <Link
