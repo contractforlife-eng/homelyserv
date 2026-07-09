@@ -35,7 +35,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar Component (keep your existing code - simplified)
+// Employer Sidebar (keep your existing code - simplified)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -230,7 +230,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - PERSISTENT CHAT
+// Main EmployerMessages Component - FIXED
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -326,8 +326,14 @@ const EmployerMessages = () => {
     // Restore selected conversation from localStorage
     const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
     if (savedConversationId) {
-      setSelectedConversationId(savedConversationId);
-      loadMessagesForConversation(savedConversationId);
+      // Check if the conversation still exists
+      const exists = conversations.some(c => c.id === savedConversationId);
+      if (exists) {
+        setSelectedConversationId(savedConversationId);
+        loadMessagesForConversation(savedConversationId);
+      } else {
+        localStorage.removeItem('homelyserv_selected_conversation_employer');
+      }
     }
     
     setLoading(false);
@@ -341,7 +347,7 @@ const EmployerMessages = () => {
     }
 
     const userConversations = getUserConversations(userId);
-    console.log('📋 Loaded conversations:', userConversations);
+    console.log('📋 Loaded conversations for employer:', userConversations);
     setConversations(userConversations);
   };
 
@@ -470,6 +476,7 @@ const EmployerMessages = () => {
 
     if (result) {
       console.log('✅ Message sent successfully');
+      // Reload messages and conversations
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
