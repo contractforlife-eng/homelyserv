@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Updated to fix profile pictures
+// src/pages/MyHires.jsx - Fixed profile pictures
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -37,7 +37,8 @@ import {
   Play,
   UserMinus,
   UserCheck,
-  MoreVertical
+  MoreVertical,
+  Image as ImageIcon
 } from 'lucide-react';
 
 // Employer Sidebar Component (keep the same)
@@ -412,23 +413,37 @@ const MyHires = () => {
       
       const formattedHires = savedHires.map((hire, index) => {
         // Get worker profile image from profiles if available
-        let profileImage = hire.workerPhoto || hire.worker?.image || '';
+        let profileImage = '';
         
-        // If we have the worker's email, try to get profile image
+        // Check if we have the worker's email and get profile image
         if (hire.workerEmail && profiles[hire.workerEmail]) {
-          profileImage = profiles[hire.workerEmail].profileImage || profileImage;
+          profileImage = profiles[hire.workerEmail].profileImage || '';
         }
+        
+        // If no profile image, check if workerPhoto was saved
+        if (!profileImage && hire.workerPhoto) {
+          profileImage = hire.workerPhoto;
+        }
+        
+        // If still no image, check if worker.image exists
+        if (!profileImage && hire.worker?.image) {
+          profileImage = hire.worker.image;
+        }
+        
+        // Generate fallback avatar using ui-avatars.com
+        const workerName = hire.workerName || 'Worker';
+        const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(workerName)}&background=teal&color=fff&size=100&bold=true`;
         
         return {
           id: hire.id || `hire_${index}`,
           worker: {
             id: hire.workerId || hire.worker?.id || `worker_${index}`,
-            name: hire.workerName || hire.worker?.name || 'Unknown Worker',
+            name: workerName,
             email: hire.workerEmail || hire.worker?.email || '',
             phone: hire.workerPhone || hire.worker?.phone || '',
             location: hire.workerLocation || hire.worker?.location || 'Not specified',
             category: hire.desiredJob || hire.worker?.category || 'Worker',
-            image: profileImage || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(hire.workerName || 'Worker') + '&background=teal&color=fff&size=100',
+            image: profileImage || fallbackImage,
             rating: hire.workerRating || hire.worker?.rating || 4.5
           },
           position: hire.desiredJob || hire.position || 'Worker',
@@ -765,7 +780,7 @@ const MyHires = () => {
                           className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hire.worker.name)}&background=teal&color=fff&size=100`;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hire.worker.name)}&background=teal&color=fff&size=100&bold=true`;
                           }}
                         />
                         <div>
