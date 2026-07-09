@@ -1,3 +1,4 @@
+// src/pages/worker/WorkerProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -26,7 +27,8 @@ import {
   CheckCircle,
   AlertTriangle,
   CreditCard,
-  Camera
+  Camera,
+  ChevronDown
 } from 'lucide-react';
 
 // Sidebar Component
@@ -241,11 +243,34 @@ const WorkerProfile = () => {
     skills: [],
     experience: '',
     hourlyRate: '',
-    profileImage: '' // Add profileImage field
+    profileImage: '',
+    desiredJob: '' // NEW FIELD: Desired job type
   });
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
+
+  // Job options for dropdown
+  const jobOptions = [
+    { value: 'nanny', label: 'Nanny / Childcare' },
+    { value: 'elderly_care', label: 'Elderly Caregiver' },
+    { value: 'housekeeper', label: 'Housekeeper / Maid' },
+    { value: 'cook', label: 'Cook / Chef' },
+    { value: 'driver', label: 'Private Driver' },
+    { value: 'gardener', label: 'Gardener / Landscaper' },
+    { value: 'house_manager', label: 'House Manager' },
+    { value: 'tutor', label: 'Tutor / Teacher' },
+    { value: 'pet_care', label: 'Pet Care / Sitter' },
+    { value: 'maintenance', label: 'Maintenance / Handyman' },
+    { value: 'security', label: 'Security Guard' },
+    { value: 'personal_assistant', label: 'Personal Assistant' },
+    { value: 'event_planner', label: 'Event Planner' },
+    { value: 'fitness_trainer', label: 'Fitness Trainer' },
+    { value: 'nurse', label: 'Registered Nurse' },
+    { value: 'therapist', label: 'Therapist / Counselor' },
+    { value: 'cleaner', label: 'Deep Cleaner' },
+    { value: 'other', label: 'Other' }
+  ];
 
   const translations = {
     en: {
@@ -260,6 +285,8 @@ const WorkerProfile = () => {
       skills: 'Skills',
       experience: 'Years of Experience',
       hourlyRate: 'Hourly Rate (EGP)',
+      desiredJob: 'Desired Job Type',
+      selectJob: 'Select a job type...',
       editProfile: 'Edit Profile',
       saveChanges: 'Save Changes',
       cancel: 'Cancel',
@@ -287,6 +314,8 @@ const WorkerProfile = () => {
       skills: 'المهارات',
       experience: 'سنوات الخبرة',
       hourlyRate: 'السعر بالساعة (جنيه)',
+      desiredJob: 'نوع الوظيفة المطلوبة',
+      selectJob: 'اختر نوع الوظيفة...',
       editProfile: 'تعديل الملف',
       saveChanges: 'حفظ التغييرات',
       cancel: 'إلغاء',
@@ -351,7 +380,8 @@ const WorkerProfile = () => {
           skills: savedProfile.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
           experience: savedProfile.experience || userData.experience || '3 years',
           hourlyRate: savedProfile.hourlyRate || userData.hourlyRate || '35',
-          profileImage: savedProfile.profileImage || userData.profileImage || ''
+          profileImage: savedProfile.profileImage || userData.profileImage || '',
+          desiredJob: savedProfile.desiredJob || userData.desiredJob || '' // Load desired job
         });
         setImagePreview(savedProfile.profileImage || userData.profileImage || '');
       } else {
@@ -365,7 +395,8 @@ const WorkerProfile = () => {
           skills: userData.skills || ['Child Care', 'First Aid', 'Communication'],
           experience: userData.experience || '3 years',
           hourlyRate: userData.hourlyRate || '35',
-          profileImage: userData.profileImage || ''
+          profileImage: userData.profileImage || '',
+          desiredJob: userData.desiredJob || '' // Load desired job
         });
         setImagePreview(userData.profileImage || '');
       }
@@ -419,7 +450,8 @@ const WorkerProfile = () => {
           skills: savedProfile?.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
           experience: savedProfile?.experience || userData.experience || '3 years',
           hourlyRate: savedProfile?.hourlyRate || userData.hourlyRate || '35',
-          profileImage: savedProfile?.profileImage || userData.profileImage || ''
+          profileImage: savedProfile?.profileImage || userData.profileImage || '',
+          desiredJob: savedProfile?.desiredJob || userData.desiredJob || ''
         });
         setImagePreview(savedProfile?.profileImage || userData.profileImage || '');
       }
@@ -439,7 +471,6 @@ const WorkerProfile = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('Image size should be less than 5MB');
         return;
@@ -485,13 +516,12 @@ const WorkerProfile = () => {
       skills: formData.skills,
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
-      profileImage: formData.profileImage
+      profileImage: formData.profileImage,
+      desiredJob: formData.desiredJob // Save desired job
     };
 
-    // Save to homelyserv_user
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
-    // Save to profiles
     const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
     profiles[user.email] = {
       fullName: formData.fullName,
@@ -502,11 +532,11 @@ const WorkerProfile = () => {
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
       profileImage: formData.profileImage,
+      desiredJob: formData.desiredJob, // Save desired job
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
     
-    // Update in users list
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userIndex = users.findIndex(u => u.email === user.email);
@@ -520,7 +550,8 @@ const WorkerProfile = () => {
           skills: formData.skills,
           experience: formData.experience,
           hourlyRate: formData.hourlyRate,
-          profileImage: formData.profileImage
+          profileImage: formData.profileImage,
+          desiredJob: formData.desiredJob // Save desired job
         };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
       }
@@ -536,6 +567,12 @@ const WorkerProfile = () => {
     setTimeout(() => {
       window.location.reload();
     }, 800);
+  };
+
+  // Get label for selected job
+  const getJobLabel = (value) => {
+    const job = jobOptions.find(j => j.value === value);
+    return job ? job.label : value || 'Not specified';
   };
 
   if (!user) {
@@ -617,7 +654,7 @@ const WorkerProfile = () => {
             </div>
           )}
 
-          {/* Profile Photo Section - New */}
+          {/* Profile Photo Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
             <div className="flex flex-col items-center">
@@ -796,6 +833,41 @@ const WorkerProfile = () => {
                     }`}
                   />
                 </div>
+              </div>
+
+              {/* NEW: Desired Job Dropdown Field */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t.desiredJob}
+                </label>
+                <div className="relative">
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 z-10" />
+                  <select
+                    name="desiredJob"
+                    value={formData.desiredJob}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    }`}
+                  >
+                    <option value="">{t.selectJob}</option>
+                    {jobOptions.map((job) => (
+                      <option key={job.value} value={job.value}>
+                        {job.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                </div>
+                {!isEditing && formData.desiredJob && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Selected:</span> {getJobLabel(formData.desiredJob)}
+                  </p>
+                )}
+                {!isEditing && !formData.desiredJob && (
+                  <p className="text-sm text-gray-400 mt-1">No job type selected</p>
+                )}
               </div>
 
               <div className="md:col-span-2">
