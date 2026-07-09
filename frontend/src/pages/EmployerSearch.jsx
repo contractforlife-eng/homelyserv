@@ -1,4 +1,4 @@
-// src/pages/employer/EmployerSearch.jsx
+// src/pages/employer/EmployerSearch.jsx - FIXED SEARCH
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -42,7 +42,7 @@ import {
   Shield
 } from 'lucide-react';
 
-// Employer Sidebar Component
+// Employer Sidebar Component (same as before - keeping it short)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -237,7 +237,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component - REDESIGNED
+// Main EmployerSearch Component - FIXED
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -380,9 +380,17 @@ const EmployerSearch = () => {
 
   const loadWorkersFromStorage = () => {
     try {
+      // Get all users
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      console.log('📋 All users from localStorage:', users);
+      
+      // Filter only workers
       const workers = users.filter(user => user.role === 'WORKER');
+      console.log('👷 Found workers:', workers);
+      
+      // Get profiles
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      console.log('📋 Profiles:', profiles);
       
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
@@ -406,8 +414,12 @@ const EmployerSearch = () => {
         };
       });
       
+      console.log('✅ Merged workers:', mergedWorkers);
       setAllWorkers(mergedWorkers);
-      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
+      
+      if (mergedWorkers.length === 0) {
+        console.warn('⚠️ No workers found in localStorage. Please register workers first.');
+      }
     } catch (error) {
       console.error('Error loading workers:', error);
       setAllWorkers([]);
@@ -449,11 +461,18 @@ const EmployerSearch = () => {
   };
 
   const handleSearch = () => {
+    console.log('🔍 Starting search...');
+    console.log('📊 All workers count:', allWorkers.length);
+    console.log('🔎 Search query:', searchQuery);
+    console.log('📌 Selected job:', selectedJob);
+    console.log('📍 Selected location:', selectedLocation);
+    
     setLoading(true);
     setShowResults(false);
 
     setTimeout(() => {
       let results = [...allWorkers];
+      console.log('📋 Initial results:', results.length);
       
       // Search by query
       if (searchQuery.trim()) {
@@ -464,26 +483,35 @@ const EmployerSearch = () => {
           const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
                           worker.jobTitle?.toLowerCase().includes(query);
           const bioMatch = worker.bio?.toLowerCase().includes(query);
-          return nameMatch || skillMatch || jobMatch || bioMatch;
+          const match = nameMatch || skillMatch || jobMatch || bioMatch;
+          if (match) console.log('✅ Match found:', worker.fullName);
+          return match;
         });
+        console.log('📊 After query filter:', results.length);
       }
       
       // Filter by job
       if (selectedJob) {
-        results = results.filter(worker => 
-          worker.desiredJob === selectedJob.toLowerCase().replace(/\s+/g, '_') ||
-          worker.jobTitle === selectedJob ||
-          worker.position === selectedJob
-        );
+        const jobLower = selectedJob.toLowerCase();
+        results = results.filter(worker => {
+          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
+                       worker.jobTitle?.toLowerCase().includes(jobLower) ||
+                       worker.position?.toLowerCase().includes(jobLower);
+          return match;
+        });
+        console.log('📊 After job filter:', results.length);
       }
       
       // Filter by location
       if (selectedLocation) {
+        const locLower = selectedLocation.toLowerCase();
         results = results.filter(worker => 
-          worker.location?.toLowerCase().includes(selectedLocation.toLowerCase())
+          worker.location?.toLowerCase().includes(locLower)
         );
+        console.log('📊 After location filter:', results.length);
       }
       
+      console.log('✅ Final results:', results.length);
       setSearchResults(results);
       setShowResults(true);
       setLoading(false);
