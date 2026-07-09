@@ -244,7 +244,7 @@ const WorkerProfile = () => {
     experience: '',
     hourlyRate: '',
     profileImage: '',
-    desiredJob: '' // NEW FIELD: Desired job type
+    desiredJob: ''
   });
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -381,7 +381,7 @@ const WorkerProfile = () => {
           experience: savedProfile.experience || userData.experience || '3 years',
           hourlyRate: savedProfile.hourlyRate || userData.hourlyRate || '35',
           profileImage: savedProfile.profileImage || userData.profileImage || '',
-          desiredJob: savedProfile.desiredJob || userData.desiredJob || '' // Load desired job
+          desiredJob: savedProfile.desiredJob || userData.desiredJob || ''
         });
         setImagePreview(savedProfile.profileImage || userData.profileImage || '');
       } else {
@@ -396,7 +396,7 @@ const WorkerProfile = () => {
           experience: userData.experience || '3 years',
           hourlyRate: userData.hourlyRate || '35',
           profileImage: userData.profileImage || '',
-          desiredJob: userData.desiredJob || '' // Load desired job
+          desiredJob: userData.desiredJob || ''
         });
         setImagePreview(userData.profileImage || '');
       }
@@ -517,7 +517,7 @@ const WorkerProfile = () => {
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
       profileImage: formData.profileImage,
-      desiredJob: formData.desiredJob // Save desired job
+      desiredJob: formData.desiredJob
     };
 
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
@@ -532,7 +532,7 @@ const WorkerProfile = () => {
       experience: formData.experience,
       hourlyRate: formData.hourlyRate,
       profileImage: formData.profileImage,
-      desiredJob: formData.desiredJob, // Save desired job
+      desiredJob: formData.desiredJob,
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
@@ -551,7 +551,7 @@ const WorkerProfile = () => {
           experience: formData.experience,
           hourlyRate: formData.hourlyRate,
           profileImage: formData.profileImage,
-          desiredJob: formData.desiredJob // Save desired job
+          desiredJob: formData.desiredJob
         };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
       }
@@ -835,7 +835,7 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* NEW: Desired Job Dropdown Field */}
+              {/* Desired Job Dropdown Field */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t.desiredJob}
@@ -950,4 +950,4 @@ const WorkerProfile = () => {
   );
 };
 
-export default WorkerProfile;ss
+export default WorkerProfile;
