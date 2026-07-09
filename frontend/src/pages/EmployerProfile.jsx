@@ -1,36 +1,37 @@
+// src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Edit,
-  Save,
-  X,
-  Globe,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
   Home,
+  User,
+  Briefcase,
+  FileCheck,
   MessageCircle,
   Settings,
   HelpCircle,
   LogOut,
-  Star,
-  Award,
-  CheckCircle,
+  Menu,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  X,
   AlertTriangle,
   Search,
-  FileCheck,
-  Building,
-  DollarSign
+  DollarSign,
+  Clock,
+  Calendar,
+  Star,
+  MapPin,
+  Phone,
+  Mail,
+  Edit,
+  Save,
+  Camera,
+  CreditCard
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -50,6 +51,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -62,6 +64,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -78,10 +81,18 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
   ];
 
   const isActive = (path) => {
     return location.pathname === path;
+  };
+
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
   };
 
   return (
@@ -128,8 +139,16 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -225,7 +244,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerProfile Component
+// Main EmployerProfile Component - WITH PHOTO UPLOAD
 const EmployerProfile = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -238,86 +257,123 @@ const EmployerProfile = () => {
     email: '',
     phone: '',
     location: '',
-    companyName: '',
     bio: '',
-    website: ''
+    company: '',
+    website: '',
+    profileImage: ''
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [imagePreview, setImagePreview] = useState('');
 
   const translations = {
     en: {
       title: 'My Profile',
-      subtitle: 'Manage your personal information and company details',
+      subtitle: 'Manage your personal information and preferences',
       personalInfo: 'Personal Information',
-      companyInfo: 'Company Information',
       fullName: 'Full Name',
       email: 'Email Address',
       phone: 'Phone Number',
       location: 'Location',
-      companyName: 'Company Name',
-      bio: 'About Me / Company Bio',
-      website: 'Website (Optional)',
+      bio: 'About Me',
+      company: 'Company Name',
+      website: 'Website',
       editProfile: 'Edit Profile',
       saveChanges: 'Save Changes',
       cancel: 'Cancel',
       profileComplete: 'Profile Complete',
       memberSince: 'Member Since',
-      rating: 'Rating',
-      hiresCompleted: 'Hires Completed',
-      languageToggle: 'العربية',
       notifications: 'Notifications',
-      saved: '✅ Profile updated successfully!'
+      languageToggle: 'العربية',
+      saved: '✅ Profile updated successfully!',
+      profilePhoto: 'Profile Photo',
+      changePhoto: 'Click to change photo'
     },
     ar: {
       title: 'ملفي الشخصي',
-      subtitle: 'إدارة معلوماتك الشخصية وتفاصيل الشركة',
+      subtitle: 'إدارة معلوماتك الشخصية وتفضيلاتك',
       personalInfo: 'المعلومات الشخصية',
-      companyInfo: 'معلومات الشركة',
       fullName: 'الاسم الكامل',
       email: 'البريد الإلكتروني',
       phone: 'رقم الهاتف',
       location: 'الموقع',
-      companyName: 'اسم الشركة',
-      bio: 'عني / نبذة عن الشركة',
-      website: 'الموقع الإلكتروني (اختياري)',
+      bio: 'عني',
+      company: 'اسم الشركة',
+      website: 'الموقع الإلكتروني',
       editProfile: 'تعديل الملف',
       saveChanges: 'حفظ التغييرات',
       cancel: 'إلغاء',
       profileComplete: 'الملف مكتمل',
       memberSince: 'عضو منذ',
-      rating: 'التقييم',
-      hiresCompleted: 'التوظيفات المكتملة',
-      languageToggle: 'English',
       notifications: 'الإشعارات',
-      saved: '✅ تم تحديث الملف الشخصي بنجاح!'
+      languageToggle: 'English',
+      saved: '✅ تم تحديث الملف الشخصي بنجاح!',
+      profilePhoto: 'الصورة الشخصية',
+      changePhoto: 'انقر لتغيير الصورة'
     }
   };
 
   const t = translations[language];
+
+  const loadUserData = () => {
+    try {
+      const userData = localStorage.getItem('homelyserv_user');
+      if (userData) {
+        return JSON.parse(userData);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+    return null;
+  };
+
+  const loadSavedProfile = (email) => {
+    try {
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (email && profiles[email]) {
+        return profiles[email];
+      }
+    } catch (error) {
+      console.error('Error loading saved profile:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
     }
-    
-    const userData = localStorage.getItem('homelyserv_user');
+
+    const userData = loadUserData();
     if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+      const savedProfile = loadSavedProfile(userData.email);
+      
+      if (savedProfile) {
+        setUser({ ...userData, ...savedProfile });
         setFormData({
-          fullName: parsedUser.fullName || '',
-          email: parsedUser.email || '',
-          phone: parsedUser.phone || '',
-          location: parsedUser.location || '',
-          companyName: parsedUser.companyName || '',
-          bio: parsedUser.bio || 'Looking for professional home service providers.',
-          website: parsedUser.website || ''
+          fullName: savedProfile.fullName || userData.fullName || '',
+          email: userData.email || '',
+          phone: savedProfile.phone || userData.phone || '',
+          location: savedProfile.location || userData.location || '',
+          bio: savedProfile.bio || userData.bio || '',
+          company: savedProfile.company || userData.company || '',
+          website: savedProfile.website || userData.website || '',
+          profileImage: savedProfile.profileImage || userData.profileImage || ''
         });
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
+        setImagePreview(savedProfile.profileImage || userData.profileImage || '');
+      } else {
+        setUser(userData);
+        setFormData({
+          fullName: userData.fullName || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          location: userData.location || '',
+          bio: userData.bio || '',
+          company: userData.company || '',
+          website: userData.website || '',
+          profileImage: userData.profileImage || ''
+        });
+        setImagePreview(userData.profileImage || '');
       }
     } else {
       navigate('/login');
@@ -356,6 +412,23 @@ const EmployerProfile = () => {
   };
 
   const handleEditToggle = () => {
+    if (isEditing) {
+      const userData = loadUserData();
+      if (userData) {
+        const savedProfile = loadSavedProfile(userData.email);
+        setFormData({
+          fullName: savedProfile?.fullName || userData.fullName || '',
+          email: userData.email || '',
+          phone: savedProfile?.phone || userData.phone || '',
+          location: savedProfile?.location || userData.location || '',
+          bio: savedProfile?.bio || userData.bio || '',
+          company: savedProfile?.company || userData.company || '',
+          website: savedProfile?.website || userData.website || '',
+          profileImage: savedProfile?.profileImage || userData.profileImage || ''
+        });
+        setImagePreview(savedProfile?.profileImage || userData.profileImage || '');
+      }
+    }
     setIsEditing(!isEditing);
     setSaveSuccess(false);
   };
@@ -368,26 +441,78 @@ const EmployerProfile = () => {
     }));
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageData = reader.result;
+        setImagePreview(imageData);
+        setFormData(prev => ({
+          ...prev,
+          profileImage: imageData
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = () => {
     const updatedUser = {
       ...user,
       fullName: formData.fullName,
       phone: formData.phone,
       location: formData.location,
-      companyName: formData.companyName,
       bio: formData.bio,
-      website: formData.website
+      company: formData.company,
+      website: formData.website,
+      profileImage: formData.profileImage
     };
 
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+    
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    profiles[user.email] = {
+      fullName: formData.fullName,
+      phone: formData.phone,
+      location: formData.location,
+      bio: formData.bio,
+      company: formData.company,
+      website: formData.website,
+      profileImage: formData.profileImage,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+    
+    try {
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const userIndex = users.findIndex(u => u.email === user.email);
+      if (userIndex !== -1) {
+        users[userIndex] = {
+          ...users[userIndex],
+          fullName: formData.fullName,
+          phone: formData.phone,
+          location: formData.location,
+          bio: formData.bio,
+          company: formData.company,
+          website: formData.website,
+          profileImage: formData.profileImage
+        };
+        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+      }
+    } catch (error) {
+      console.error('Error updating users list:', error);
+    }
+    
     setUser(updatedUser);
     setIsEditing(false);
     setSaveSuccess(true);
     alert(t.saved);
-    
-    setTimeout(() => {
-      window.location.reload();
-    }, 800);
   };
 
   if (!user) {
@@ -446,7 +571,6 @@ const EmployerProfile = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Profile Header - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -470,47 +594,45 @@ const EmployerProfile = () => {
             </div>
           )}
 
-          {/* Profile Stats - Teal Theme */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.memberSince}</p>
-                <Calendar size={20} className="text-teal-500" />
-              </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">June 2025</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.rating}</p>
-                <Star size={20} className="text-yellow-500" />
-              </div>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-lg font-bold text-gray-800">4.7</span>
-                <span className="text-sm text-gray-400">/ 5.0</span>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.hiresCompleted}</p>
-                <CheckCircle size={20} className="text-green-500" />
-              </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">18</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.profileComplete}</p>
-                <Award size={20} className="text-purple-500" />
-              </div>
-              <div className="mt-1">
-                <div className="w-full h-2 bg-gray-200 rounded-full">
-                  <div className="h-2 bg-purple-500 rounded-full" style={{ width: '80%' }}></div>
+          {/* Profile Photo Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100">
+                  {imagePreview ? (
+                    <img 
+                      src={imagePreview} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-teal-50">
+                      <User size={48} className="text-teal-300" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs text-gray-500 mt-1">80%</span>
+                {isEditing && (
+                  <label className="absolute bottom-0 right-0 p-2 bg-teal-600 rounded-full cursor-pointer hover:bg-teal-700 transition shadow-lg">
+                    <Camera size={18} className="text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
+              {isEditing && (
+                <p className="text-sm text-gray-500 mt-2">{t.changePhoto}</p>
+              )}
+              {!isEditing && imagePreview && (
+                <p className="text-xs text-gray-400 mt-2">Photo uploaded</p>
+              )}
             </div>
           </div>
 
-          {/* Profile Form */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
             
@@ -579,19 +701,15 @@ const EmployerProfile = () => {
                   />
                 </div>
               </div>
-            </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 mt-8 mb-6">{t.companyInfo}</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.companyName}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.company}</label>
                 <div className="relative">
-                  <Building size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400" />
                   <input
                     type="text"
-                    name="companyName"
-                    value={formData.companyName}
+                    name="company"
+                    value={formData.company}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
@@ -625,7 +743,7 @@ const EmployerProfile = () => {
                   value={formData.bio}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  rows="3"
+                  rows="4"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                     isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                   }`}
