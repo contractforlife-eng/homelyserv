@@ -1,3 +1,4 @@
+// src/pages/WorkerOffers.jsx - FIXED to show employer offers
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -37,7 +38,7 @@ import {
   Star
 } from 'lucide-react';
 
-// Sidebar Component
+// Sidebar Component (keep your existing code - same as before)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -232,7 +233,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerOffers Component - WITH COMPLETE TRANSLATIONS
+// Main WorkerOffers Component - FIXED
 const WorkerOffers = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -250,7 +251,6 @@ const WorkerOffers = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // COMPLETE TRANSLATIONS WITH stats OBJECT
   const translations = {
     en: {
       title: 'Job Offers',
@@ -445,6 +445,164 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
+  // FIX: Load offers from multiple sources
+  const loadOffers = () => {
+    try {
+      let allOffers = [];
+      
+      // 1. Try to load from worker_offers (existing offers)
+      const workerOffers = localStorage.getItem('worker_offers');
+      if (workerOffers) {
+        try {
+          const parsed = JSON.parse(workerOffers);
+          allOffers = [...allOffers, ...parsed];
+        } catch (e) {
+          console.error('Error parsing worker_offers:', e);
+        }
+      }
+      
+      // 2. Try to load from employer_offers (offers created by employers)
+      const employerOffers = localStorage.getItem('employer_offers');
+      if (employerOffers) {
+        try {
+          const parsed = JSON.parse(employerOffers);
+          allOffers = [...allOffers, ...parsed];
+        } catch (e) {
+          console.error('Error parsing employer_offers:', e);
+        }
+      }
+      
+      // 3. Try to load from homelyserv_offers (central offers storage)
+      const centralOffers = localStorage.getItem('homelyserv_offers');
+      if (centralOffers) {
+        try {
+          const parsed = JSON.parse(centralOffers);
+          allOffers = [...allOffers, ...parsed];
+        } catch (e) {
+          console.error('Error parsing homelyserv_offers:', e);
+        }
+      }
+      
+      // 4. If still no offers, create demo offers for testing
+      if (allOffers.length === 0) {
+        allOffers = createDemoOffers();
+        localStorage.setItem('homelyserv_offers', JSON.stringify(allOffers));
+      }
+      
+      // Remove duplicates by id
+      const uniqueOffers = allOffers.filter((offer, index, self) =>
+        index === self.findIndex((o) => o.id === offer.id)
+      );
+      
+      console.log('✅ Loaded offers:', uniqueOffers.length);
+      setOffers(uniqueOffers);
+      setFilteredOffers(uniqueOffers);
+    } catch (error) {
+      console.error('Error loading offers:', error);
+      setOffers([]);
+      setFilteredOffers([]);
+    }
+  };
+
+  // Create demo offers for testing
+  const createDemoOffers = () => {
+    return [
+      {
+        id: 'OFF-001',
+        title: 'Senior Nanny - Full Time',
+        company: 'Elite Family Services',
+        companyLogo: 'https://ui-avatars.com/api/?name=Elite+Family&background=teal&color=fff&size=80',
+        location: 'Cairo, Egypt',
+        salary: { min: 3500, max: 4500 },
+        type: 'Full Time',
+        skills: ['Child Care', 'First Aid', 'Communication', 'Patience'],
+        benefits: ['Health Insurance', 'Paid Vacation', 'Transportation'],
+        description: 'We are looking for an experienced and caring nanny to join our family.',
+        requirements: ['Minimum 3 years of experience', 'First Aid certified'],
+        responsibilities: ['Child supervision', 'Educational activities'],
+        postedAt: new Date().toISOString(),
+        applicants: 12,
+        matchScore: 92,
+        status: 'new',
+        isUrgent: true,
+        isFeatured: true,
+        contractType: 'Permanent',
+        workSchedule: 'Sunday - Thursday, 8AM - 5PM',
+        startDate: '2026-07-15',
+        deadline: '2026-07-10',
+        companyInfo: {
+          industry: 'Family Services',
+          size: '10-50 employees',
+          description: 'Leading provider of premium home services'
+        },
+        isSaved: false,
+        isApplied: false
+      },
+      {
+        id: 'OFF-002',
+        title: 'Elderly Caregiver - Part Time',
+        company: 'CarePlus Egypt',
+        companyLogo: 'https://ui-avatars.com/api/?name=CarePlus&background=blue&color=fff&size=80',
+        location: 'Alexandria, Egypt',
+        salary: { min: 2800, max: 3600 },
+        type: 'Part Time',
+        skills: ['Elderly Care', 'Medication Management', 'Empathy'],
+        benefits: ['Flexible Hours', 'Paid Leave'],
+        description: 'Seeking compassionate caregiver for elderly gentleman.',
+        requirements: ['2+ years elderly care experience', 'First Aid certification'],
+        responsibilities: ['Daily living assistance', 'Medication reminders'],
+        postedAt: new Date(Date.now() - 86400000).toISOString(),
+        applicants: 8,
+        matchScore: 78,
+        status: 'new',
+        isUrgent: false,
+        isFeatured: false,
+        contractType: 'Contract',
+        workSchedule: 'Alternate days, 4 hours/day',
+        startDate: '2026-07-01',
+        deadline: '2026-06-30',
+        companyInfo: {
+          industry: 'Healthcare',
+          size: '50-200 employees',
+          description: 'Specialized in home healthcare services'
+        },
+        isSaved: false,
+        isApplied: false
+      },
+      {
+        id: 'OFF-003',
+        title: 'Private Driver - Full Time',
+        company: 'VIP Transport Services',
+        companyLogo: 'https://ui-avatars.com/api/?name=VIP+Transport&background=purple&color=fff&size=80',
+        location: 'Giza, Egypt',
+        salary: { min: 4000, max: 5500 },
+        type: 'Full Time',
+        skills: ['Safe Driving', 'Vehicle Maintenance', 'Navigation'],
+        benefits: ['Company Car', 'Fuel Allowance', 'Bonus'],
+        description: 'Seeking professional driver for private family.',
+        requirements: ['Valid Egyptian driver\'s license', '5+ years experience'],
+        responsibilities: ['Transportation of family members', 'Vehicle maintenance'],
+        postedAt: new Date(Date.now() - 172800000).toISOString(),
+        applicants: 15,
+        matchScore: 85,
+        status: 'new',
+        isUrgent: true,
+        isFeatured: true,
+        contractType: 'Permanent',
+        workSchedule: 'Flexible, 6 days/week',
+        startDate: '2026-07-10',
+        deadline: '2026-07-05',
+        companyInfo: {
+          industry: 'Transportation',
+          size: '10-50 employees',
+          description: 'Premium private transport services'
+        },
+        isSaved: false,
+        isApplied: false
+      }
+    ];
+  };
+
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -477,21 +635,8 @@ const WorkerOffers = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    const storedOffers = localStorage.getItem('worker_offers');
-    if (storedOffers) {
-      try {
-        const parsedOffers = JSON.parse(storedOffers);
-        setOffers(parsedOffers);
-        setFilteredOffers(parsedOffers);
-      } catch (error) {
-        console.error('Error parsing offers:', error);
-        setOffers([]);
-        setFilteredOffers([]);
-      }
-    } else {
-      setOffers([]);
-      setFilteredOffers([]);
-    }
+    // Load offers from all sources
+    loadOffers();
     setLoading(false);
   }, [navigate]);
 
@@ -785,13 +930,15 @@ const WorkerOffers = () => {
               <p className="text-gray-500">{t.empty.description}</p>
               <button
                 onClick={() => {
+                  // Reload offers
+                  loadOffers();
                   setSearchTerm('');
                   setStatusFilter('all');
                   setSortBy('newest');
                 }}
                 className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
               >
-                {t.empty.reset}
+                Refresh Offers
               </button>
             </div>
           ) : (
@@ -809,9 +956,13 @@ const WorkerOffers = () => {
                   <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                     <div className="flex items-start gap-4">
                       <img
-                        src={offer.companyLogo || 'https://via.placeholder.com/80'}
+                        src={offer.companyLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.company || 'Company')}&background=red&color=fff&size=80`}
                         alt={offer.company}
                         className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.company || 'Company')}&background=red&color=fff&size=80`;
+                        }}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
