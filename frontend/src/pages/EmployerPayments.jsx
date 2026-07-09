@@ -1,759 +1,253 @@
-// src/pages/employer/EmployerPayments.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  User,
-  Briefcase,
-  DollarSign,
-  MapPin,
-  Star,
-  Clock,
-  CheckCircle,
-  CreditCard,
-  Wallet,
-  Banknote,
-  Shield,
-  AlertCircle,
-  Home,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  X,
-  FileCheck,
-  Search,
-  AlertTriangle,
-  UserCheck,
-  FileText
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Home, Briefcase, User, Search, Clock, DollarSign,
+  MessageCircle, Settings, LogOut, CreditCard,
+  Wallet, Banknote, Calendar, CheckCircle, XCircle,
+  Eye, Download, Printer, Phone, Mail, ArrowLeft
 } from 'lucide-react';
 
-// Employer Sidebar Component
-const EmployerSidebar = ({ 
-  language, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  mobileMenuOpen, 
-  toggleMobileMenu, 
-  user, 
-  handleLogout 
-}) => {
-  const location = useLocation();
-
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      myProfile: 'My Profile',
-      myHires: 'My Hires',
-      search: 'Search Workers',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview'
+function EmployerPayments() {
+  const [payments, setPayments] = useState([
+    {
+      id: 1,
+      workerName: 'Ahmed Ali',
+      position: 'Nanny - Full Time',
+      amount: 3500,
+      fee: 350,
+      total: 3850,
+      method: 'InstaPay',
+      status: 'completed',
+      date: '2026-06-20',
+      reference: 'HS-2026-0001'
     },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      myProfile: 'ملفي الشخصي',
-      myHires: 'توظيفاتي',
-      search: 'البحث عن عمال',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
-    }
-  };
-
-  const t = translations[language];
-
-  const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
-    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-    { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-  ];
-
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  return (
-    <>
-      {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={toggleMobileMenu}
-        />
-      )}
-
-      <aside 
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          {!sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
-              </div>
-              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
-            </Link>
-          )}
-          {sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
-            </Link>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
-          >
-            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-          <button
-            onClick={toggleMobileMenu}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
-            </div>
-            {!sidebarCollapsed && user && (
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
-          {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              {t.overview}
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
-              •
-            </div>
-          )}
-
-          {menuItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                isActive(item.path)
-                  ? 'bg-teal-50 text-teal-600'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
-            >
-              <item.icon size={20} className={isActive(item.path) ? 'text-teal-600' : ''} />
-              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  {item.label}
-                </div>
-              )}
-              {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
-              )}
-            </Link>
-          ))}
-
-          <div className="border-t border-gray-200 my-3"></div>
-
-          <Link
-            to="/employer-settings"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <Settings size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.settings}
-              </div>
-            )}
-          </Link>
-          <Link
-            to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <HelpCircle size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.help}
-              </div>
-            )}
-          </Link>
-          <button
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-teal-600 hover:bg-teal-50 group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
-              </div>
-            )}
-          </button>
-        </nav>
-      </aside>
-    </>
-  );
-};
-
-// Main EmployerPayments Component
-const EmployerPayments = () => {
-  const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [workerData, setWorkerData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  const translations = {
-    en: {
-      title: 'Payment Details',
-      subtitle: 'Review and confirm your hiring payment',
-      workerDetails: 'Worker Details',
-      paymentSummary: 'Payment Summary',
-      hourlyRate: 'Hourly Rate',
-      hoursPerWeek: 'Hours Per Week',
-      weeksPerMonth: 'Weeks Per Month',
-      subtotal: 'Subtotal',
-      commission: 'Commission (15%)',
-      total: 'Total Amount',
-      paymentMethod: 'Payment Method',
-      creditCard: 'Credit Card',
-      bankTransfer: 'Bank Transfer',
-      mobileWallet: 'Mobile Wallet',
-      confirmPayment: 'Confirm Payment',
-      processing: 'Processing...',
-      success: 'Payment Successful!',
-      successMessage: 'You have successfully hired this worker.',
-      backToSearch: 'Back to Search',
-      contactWorker: 'Contact Worker',
-      cardNumber: 'Card Number',
-      expiryDate: 'Expiry Date',
-      cvv: 'CVV',
-      cardholderName: 'Cardholder Name',
-      bankName: 'Bank Name',
-      accountNumber: 'Account Number',
-      walletNumber: 'Wallet Number',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading payment details...',
-      noWorkerData: 'No worker selected',
-      goBack: 'Go back and select a worker',
-      commissionNote: 'Commission is 15% of the total amount'
+    {
+      id: 2,
+      workerName: 'Mona Hassan',
+      position: 'Elderly Caregiver',
+      amount: 4200,
+      fee: 420,
+      total: 4620,
+      method: 'Vodafone Cash',
+      status: 'pending',
+      date: '2026-06-18',
+      reference: 'HS-2026-0002'
     },
-    ar: {
-      title: 'تفاصيل الدفع',
-      subtitle: 'مراجعة وتأكيد دفع التوظيف',
-      workerDetails: 'تفاصيل العامل',
-      paymentSummary: 'ملخص الدفع',
-      hourlyRate: 'السعر بالساعة',
-      hoursPerWeek: 'ساعات في الأسبوع',
-      weeksPerMonth: 'أسابيع في الشهر',
-      subtotal: 'المجموع الفرعي',
-      commission: 'العمولة (15%)',
-      total: 'المبلغ الإجمالي',
-      paymentMethod: 'طريقة الدفع',
-      creditCard: 'بطاقة ائتمان',
-      bankTransfer: 'تحويل بنكي',
-      mobileWallet: 'محفظة إلكترونية',
-      confirmPayment: 'تأكيد الدفع',
-      processing: 'جاري المعالجة...',
-      success: 'تم الدفع بنجاح!',
-      successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح.',
-      backToSearch: 'العودة إلى البحث',
-      contactWorker: 'تواصل مع العامل',
-      cardNumber: 'رقم البطاقة',
-      expiryDate: 'تاريخ الانتهاء',
-      cvv: 'رمز CVV',
-      cardholderName: 'اسم صاحب البطاقة',
-      bankName: 'اسم البنك',
-      accountNumber: 'رقم الحساب',
-      walletNumber: 'رقم المحفظة',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل تفاصيل الدفع...',
-      noWorkerData: 'لم يتم اختيار عامل',
-      goBack: 'ارجع واختر عاملاً',
-      commissionNote: 'العمولة هي 15% من المبلغ الإجمالي'
+    {
+      id: 3,
+      workerName: 'Khaled Mostafa',
+      position: 'Driver',
+      amount: 3800,
+      fee: 380,
+      total: 4180,
+      method: 'Bank Transfer',
+      status: 'failed',
+      date: '2026-06-15',
+      reference: 'HS-2026-0003'
+    }
+  ]);
+
+  const getStatusBadge = (status) => {
+    switch(status) {
+      case 'completed':
+        return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs flex items-center gap-1">
+          <CheckCircle size={12} /> Completed
+        </span>;
+      case 'pending':
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs flex items-center gap-1">
+          <Clock size={12} /> Pending
+        </span>;
+      case 'failed':
+        return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs flex items-center gap-1">
+          <XCircle size={12} /> Failed
+        </span>;
+      default:
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
     }
   };
 
-  const t = translations[language];
-
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
+  const getMethodIcon = (method) => {
+    switch(method) {
+      case 'InstaPay':
+        return <Wallet size={16} className="text-blue-600" />;
+      case 'Vodafone Cash':
+        return <Phone size={16} className="text-green-600" />;
+      case 'Bank Transfer':
+        return <Banknote size={16} className="text-purple-600" />;
+      default:
+        return <CreditCard size={16} className="text-gray-600" />;
     }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'EMPLOYER') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-
-    // Load selected worker data from localStorage
-    const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
-    if (selectedWorker) {
-      try {
-        setWorkerData(JSON.parse(selectedWorker));
-      } catch (error) {
-        console.error('Error parsing worker data:', error);
-        setWorkerData(null);
-      }
-    }
-    setLoading(false);
-  }, [navigate]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
   };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
-  const handleBack = () => {
-    navigate('/employer-search');
-  };
-
-  const handleConfirmPayment = async () => {
-    setIsProcessing(true);
-    
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentSuccess(true);
-      
-      // Save hire record
-      const hireRecord = {
-        id: 'hire_' + Date.now(),
-        workerId: workerData?.workerId,
-        workerName: workerData?.workerName,
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName,
-        amount: total,
-        commission: commissionAmount,
-        date: new Date().toISOString(),
-        status: 'completed',
-        paymentMethod: paymentMethod
-      };
-      
-      // Save to localStorage
-      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      hires.push(hireRecord);
-      localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
-      
-      // Clear selected worker
-      localStorage.removeItem('homelyserv_selected_worker');
-    }, 2000);
-  };
-
-  // Calculate payment
-  const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-  const hoursPerWeek = 40; // Default
-  const weeksPerMonth = 4; // Default
-  const subtotal = hourlyRate * hoursPerWeek * weeksPerMonth;
-  const commissionRate = 0.15;
-  const commissionAmount = subtotal * commissionRate;
-  const total = subtotal + commissionAmount;
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!workerData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <EmployerSidebar
-          language={language}
-          sidebarCollapsed={sidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-          mobileMenuOpen={mobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-          user={user}
-          handleLogout={handleLogout}
-        />
-        <main className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
-          <div className="p-4 md:p-6">
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-              <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noWorkerData}</h3>
-              <p className="text-gray-500">{t.goBack}</p>
-              <button
-                onClick={handleBack}
-                className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-              >
-                {t.backToSearch}
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        user={user}
-        handleLogout={handleLogout}
-      />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
-              </div>
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
+          <p className="text-xs text-gray-500 mt-1">Employer Panel</p>
+        </div>
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
+              E
             </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">Employer</p>
+              <p className="text-xs text-gray-500">Employer</p>
+            </div>
+          </div>
+        </div>
+        <nav className="p-4 space-y-1">
+          <Link to="/employer-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Home size={20} /> Dashboard
+          </Link>
+          <Link to="/employer-search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Search size={20} /> Search
+          </Link>
+          <Link to="/employer-pending" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Clock size={20} /> Pending
+          </Link>
+          <Link to="/employer-past" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Briefcase size={20} /> Past
+          </Link>
+          <Link to="/employer-payments" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
+            <DollarSign size={20} /> Payments
+          </Link>
+          <Link to="/employer-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <User size={20} /> Profile
+          </Link>
+          <Link to="/employer-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <AlertCircle size={20} /> Complaints
+          </Link>
+          <Link to="/employer-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <MessageCircle size={20} /> Messages
+          </Link>
+          <Link to="/employer-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+            <Settings size={20} /> Settings
+          </Link>
+        </nav>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
+            <LogOut size={20} /> Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="ml-64 flex-1">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Payments</h2>
+              <p className="text-gray-500 text-sm">Manage your payment history</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-1">
+                <Download size={16} /> Export
               </button>
             </div>
           </div>
         </header>
 
-        <div className="p-4 md:p-6">
-          {paymentSuccess ? (
-            // Success State
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-green-200">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle size={40} className="text-green-600" />
+        <div className="p-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Total Payments</p>
+              <p className="text-2xl font-bold text-gray-800">
+                EGP {payments.reduce((sum, p) => sum + p.total, 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Completed</p>
+              <p className="text-2xl font-bold text-green-600">
+                EGP {payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.total, 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                EGP {payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.total, 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+              <p className="text-sm text-gray-500">Failed</p>
+              <p className="text-2xl font-bold text-red-600">
+                EGP {payments.filter(p => p.status === 'failed').reduce((sum, p) => sum + p.total, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Payment Methods Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Payment Methods</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="font-medium text-blue-800 flex items-center gap-2">
+                  <Wallet size={18} /> InstaPay
+                </p>
+                <p className="text-sm text-blue-600">01009189851</p>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.success}</h2>
-              <p className="text-gray-600 mb-6">{t.successMessage}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => navigate('/employer-search')}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-                >
-                  {t.backToSearch}
-                </button>
-                <button
-                  onClick={() => navigate('/my-hires')}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  View My Hires
-                </button>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <p className="font-medium text-green-800 flex items-center gap-2">
+                  <Phone size={18} /> Vodafone Cash
+                </p>
+                <p className="text-sm text-green-600">01009189851</p>
+              </div>
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <p className="font-medium text-purple-800 flex items-center gap-2">
+                  <Banknote size={18} /> Bank Transfer
+                </p>
+                <p className="text-sm text-purple-600">1002425938683</p>
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Worker Details */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Worker Info */}
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.workerDetails}</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center">
-                      {workerData?.workerPhoto ? (
-                        <img src={workerData.workerPhoto} alt={workerData.workerName} className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        <User size={32} className="text-teal-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-800">{workerData?.workerName}</h4>
-                      <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          {workerData?.workerLocation || 'Location not specified'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-500" />
-                          {workerData?.rating || '4.5'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {workerData?.workerSkills?.slice(0, 5).map((skill, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm">
-                        {skill}
+          </div>
+
+          {/* Payments List */}
+          <div className="space-y-4">
+            {payments.map((payment) => (
+              <div key={payment.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800">{payment.workerName}</h3>
+                    <p className="text-sm text-gray-500">{payment.position}</p>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar size={12} /> {payment.date}
                       </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Payment Method */}
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentMethod}</h3>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'card' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <CreditCard size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.creditCard}</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('bank')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'bank' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <Building2 size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.bankTransfer}</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('wallet')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'wallet' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <Wallet size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.mobileWallet}</span>
-                    </button>
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        {getMethodIcon(payment.method)} {payment.method}
+                      </span>
+                      <span className="text-xs text-gray-500">{payment.reference}</span>
+                    </div>
                   </div>
 
-                  {/* Payment Form Fields */}
-                  <div className="space-y-3">
-                    {paymentMethod === 'card' && (
-                      <>
-                        <input
-                          type="text"
-                          placeholder={t.cardNumber}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            placeholder={t.expiryDate}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder={t.cvv}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder={t.cardholderName}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                      </>
+                  <div className="flex flex-col items-end justify-center min-w-[120px]">
+                    <p className="text-sm text-gray-500">Amount</p>
+                    <p className="font-bold text-gray-800 text-lg">EGP {payment.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-400">Fee: EGP {payment.fee}</p>
+                  </div>
+
+                  <div className="flex flex-col items-end justify-center gap-2 min-w-[130px]">
+                    {getStatusBadge(payment.status)}
+                    {payment.status === 'pending' && (
+                      <button className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1">
+                        <CreditCard size={14} /> Pay Now
+                      </button>
                     )}
-                    {paymentMethod === 'bank' && (
-                      <>
-                        <input
-                          type="text"
-                          placeholder={t.bankName}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        <input
-                          type="text"
-                          placeholder={t.accountNumber}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                      </>
-                    )}
-                    {paymentMethod === 'wallet' && (
-                      <input
-                        type="text"
-                        placeholder={t.walletNumber}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
-                    )}
+                    <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition">
+                      <Eye size={18} />
+                    </button>
                   </div>
                 </div>
               </div>
-
-              {/* Right Column - Payment Summary */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 sticky top-24">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentSummary}</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.hourlyRate}</span>
-                      <span className="font-medium">EGP {hourlyRate}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.hoursPerWeek}</span>
-                      <span className="font-medium">{hoursPerWeek} hrs</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.weeksPerMonth}</span>
-                      <span className="font-medium">{weeksPerMonth} weeks</span>
-                    </div>
-                    
-                    <div className="border-t border-gray-200 my-2 pt-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">{t.subtotal}</span>
-                        <span className="font-medium">EGP {subtotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">{t.commission}</span>
-                        <span className="font-medium text-red-500">+ EGP {commissionAmount.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-3">
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>{t.total}</span>
-                        <span className="text-teal-600">EGP {total.toFixed(2)}</span>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">{t.commissionNote}</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleConfirmPayment}
-                    disabled={isProcessing}
-                    className="w-full mt-4 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        {t.processing}
-                      </>
-                    ) : (
-                      <>
-                        <Shield size={18} />
-                        {t.confirmPayment}
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleBack}
-                    className="w-full mt-2 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
-                  >
-                    <ArrowLeft size={16} />
-                    {t.backToSearch}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
-};
+}
 
 export default EmployerPayments;
