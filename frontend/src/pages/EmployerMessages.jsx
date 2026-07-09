@@ -1,10 +1,11 @@
-// src/pages/employer/EmployerMessages.jsx
+// src/pages/employer/EmployerMessages.jsx - Updated to load chat from MyHires
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Home,
   User,
   Briefcase,
+  FileCheck,
   MessageCircle,
   Settings,
   HelpCircle,
@@ -23,7 +24,7 @@ import {
   MoreVertical,
   CheckCheck,
   Clock,
-  FileCheck
+  FileText
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -221,7 +222,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - REAL CHAT
+// Main EmployerMessages Component - UPDATED
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -231,9 +232,9 @@ const EmployerMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const translations = {
     en: {
@@ -272,12 +273,7 @@ const EmployerMessages = () => {
 
   const t = translations[language];
 
-  // Get current user ID
-  const getUserId = () => {
-    if (!user) return null;
-    return user.id || user.email || 'employer_' + Date.now();
-  };
-
+  // Load user and check for chat recipient from MyHires
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -288,6 +284,10 @@ const EmployerMessages = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'EMPLOYER') {
+          navigate('/login');
+          return;
+        }
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -303,18 +303,34 @@ const EmployerMessages = () => {
     }
 
     loadChatData();
+    
+    // Check if there's a chat recipient from MyHires
+    const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
+    if (chatRecipient) {
+      try {
+        const recipient = JSON.parse(chatRecipient);
+        console.log('📨 Chat recipient found:', recipient);
+        // Add to conversations if not already there
+        addChatRecipient(recipient);
+      } catch (error) {
+        console.error('Error parsing chat recipient:', error);
+      }
+    }
+    
     setLoading(false);
   }, [navigate]);
 
   // Load chat data from localStorage
   const loadChatData = () => {
-    const userId = getUserId();
+    const userId = user?.id || user?.email;
     if (!userId) return;
 
+    // Load employer conversations
     const allConversations = JSON.parse(localStorage.getItem('homelyserv_employer_conversations') || '{}');
     const userConversations = allConversations[userId] || [];
     setConversations(userConversations);
 
+    // Load employer messages
     const allMessages = JSON.parse(localStorage.getItem('homelyserv_employer_messages') || '{}');
     const userMessages = allMessages[userId] || [];
     setMessages(userMessages);
@@ -322,7 +338,7 @@ const EmployerMessages = () => {
 
   // Save chat data to localStorage
   const saveChatData = (newConversations, newMessages) => {
-    const userId = getUserId();
+    const userId = user?.id || user?.email;
     if (!userId) return;
 
     const allConversations = JSON.parse(localStorage.getItem('homelyserv_employer_conversations') || '{}');
@@ -334,25 +350,37 @@ const EmployerMessages = () => {
     localStorage.setItem('homelyserv_employer_messages', JSON.stringify(allMessages));
   };
 
-  // Create a new conversation
-  const createConversation = (workerName, workerId, workerAvatar) => {
-    const newConversation = {
-      id: Date.now(),
-      name: workerName || 'Worker',
-      role: 'Worker',
-      workerId: workerId || 'worker_' + Date.now(),
-      lastMessage: 'Start your conversation here',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      unread: 0,
-      online: true,
-      avatar: workerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    };
+  // Add chat recipient from MyHires
+  const addChatRecipient = (recipient) => {
+    // Check if conversation already exists
+    const exists = conversations.some(conv => conv.id === recipient.id);
+    if (!exists) {
+      const newConversation = {
+        id: recipient.id || `worker_${Date.now()}`,
+        name: recipient.name || 'Worker',
+        role: 'Worker',
+        workerId: recipient.id,
+        lastMessage: 'Start your conversation here',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread: 0,
+        online: true,
+        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
+      };
 
-    const updatedConversations = [...conversations, newConversation];
-    setConversations(updatedConversations);
-    saveChatData(updatedConversations, messages);
-    setSelectedChatId(newConversation.id);
-    return newConversation;
+      const updatedConversations = [newConversation, ...conversations];
+      setConversations(updatedConversations);
+      saveChatData(updatedConversations, messages);
+      setSelectedChatId(newConversation.id);
+      
+      // Clear the chat recipient from localStorage after adding
+      localStorage.removeItem('homelyserv_chat_recipient');
+    } else {
+      // If exists, select it
+      const existing = conversations.find(conv => conv.id === recipient.id);
+      if (existing) {
+        setSelectedChatId(existing.id);
+      }
+    }
   };
 
   useEffect(() => {
@@ -417,26 +445,7 @@ const EmployerMessages = () => {
     setMessage('');
   };
 
-  // Add a new conversation (for testing/demo purposes)
-  const addDemoConversation = () => {
-    const workerName = prompt('Enter worker name:', 'Ahmed Ali');
-    if (workerName) {
-      createConversation(workerName);
-    }
-  };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -487,28 +496,15 @@ const EmployerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
-              <button
-                onClick={addDemoConversation}
-                className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition"
-              >
-                + New Chat
-              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
-                <p className="text-teal-100 mt-1">{t.subtitle}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-teal-100">
-                  {conversations.length} conversations
-                </span>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-teal-100 mt-1">{t.subtitle}</p>
             </div>
           </div>
 
@@ -534,12 +530,6 @@ const EmployerMessages = () => {
                       <div className="text-4xl mb-3">💬</div>
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
-                      <button
-                        onClick={addDemoConversation}
-                        className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-                      >
-                        Start a conversation
-                      </button>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -551,16 +541,20 @@ const EmployerMessages = () => {
                         }`}
                       >
                         <img
-                          src={conv.avatar || 'https://via.placeholder.com/40'}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=teal&color=fff&size=100&bold=true`}
                           alt={conv.name}
                           className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=teal&color=fff&size=100&bold=true`;
+                          }}
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
                             <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
                             <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage || 'No messages'}</p>
+                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
                               {conv.online ? t.online : t.offline}
@@ -585,9 +579,13 @@ const EmployerMessages = () => {
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChatId)?.avatar || 'https://via.placeholder.com/40'}
+                          src={conversations.find(c => c.id === selectedChatId)?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`;
+                          }}
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
