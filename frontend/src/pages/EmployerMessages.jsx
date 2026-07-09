@@ -35,7 +35,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar Component (keep your existing code)
+// Employer Sidebar Component (keep your existing code - same as before)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -230,7 +230,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - FIXED
+// Main EmployerMessages Component
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -281,7 +281,6 @@ const EmployerMessages = () => {
 
   const t = translations[language];
 
-  // Load user and chat data
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -312,7 +311,6 @@ const EmployerMessages = () => {
 
     loadChatData();
     
-    // Check if there's a chat recipient from MyHires
     const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
     if (chatRecipient) {
       try {
@@ -327,7 +325,6 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Load chat data
   const loadChatData = () => {
     const userId = user?.id || user?.email;
     if (!userId) return;
@@ -336,26 +333,22 @@ const EmployerMessages = () => {
     setConversations(userConversations);
   };
 
-  // Load messages for a conversation
   const loadMessagesForConversation = (conversationId) => {
     const conversationMessages = getConversationMessages(conversationId);
     setMessages(conversationMessages);
     
-    // Mark messages as read
     const userId = user?.id || user?.email;
     if (userId) {
       markMessagesAsRead(conversationId, userId);
     }
   };
 
-  // Add chat recipient from MyHires - FIXED
   const addChatRecipient = (recipient) => {
     const userId = user?.id || user?.email;
     if (!userId) return;
 
     console.log('📨 Adding chat recipient:', recipient);
 
-    // Check if conversation already exists
     const exists = conversations.some(conv => conv.otherUserId === recipient.id);
     
     if (!exists) {
@@ -374,24 +367,18 @@ const EmployerMessages = () => {
       const updatedConversations = [newConversation, ...conversations];
       setConversations(updatedConversations);
       
-      // Save to storage
       saveUserConversations(userId, updatedConversations);
       
-      // Set the selected conversation
       setSelectedConversationId(conversationId);
-      // Load messages for this conversation
       loadMessagesForConversation(conversationId);
       
-      // Clear the chat recipient from localStorage after adding
       localStorage.removeItem('homelyserv_chat_recipient');
     } else {
-      // If exists, select it
       const existing = conversations.find(conv => conv.otherUserId === recipient.id);
       if (existing) {
         console.log('📨 Conversation exists, selecting:', existing.id);
         setSelectedConversationId(existing.id);
         loadMessagesForConversation(existing.id);
-        // Clear the chat recipient from localStorage
         localStorage.removeItem('homelyserv_chat_recipient');
       }
     }
@@ -439,7 +426,8 @@ const EmployerMessages = () => {
     const selectedConv = conversations.find(c => c.id === selectedConversationId);
     if (!selectedConv) return;
 
-    // Send message using chat service
+    console.log('📤 Sending message from employer to:', selectedConv.otherUserId);
+
     const result = sendMessage(
       user.id || user.email,
       user.fullName || 'Employer',
@@ -450,9 +438,7 @@ const EmployerMessages = () => {
     );
 
     if (result) {
-      // Update local messages
       loadMessagesForConversation(selectedConversationId);
-      // Update conversations
       loadChatData();
       setMessage('');
     }
@@ -523,7 +509,6 @@ const EmployerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -579,15 +564,13 @@ const EmployerMessages = () => {
                 </div>
               </div>
 
-              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
                         />

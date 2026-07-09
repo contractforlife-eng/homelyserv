@@ -60,7 +60,7 @@ export const saveUserConversations = (userId, conversations) => {
   }
 };
 
-// Send a message
+// Send a message - FIXED to ensure both users see it
 export const sendMessage = (senderId, senderName, senderRole, recipientId, recipientName, text) => {
   // Get or create conversation ID
   const conversationId = getConversation(senderId, recipientId);
@@ -86,7 +86,8 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
   messages.push(newMessage);
   saveConversationMessages(conversationId, messages);
   
-  // Update conversations for both users
+  // Update conversations for BOTH users
+  // For the sender
   updateUserConversation(senderId, {
     id: conversationId,
     otherUserId: recipientId,
@@ -94,9 +95,10 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     lastMessage: text,
     time: newMessage.time,
     unread: 0,
-    role: senderRole
+    role: senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER'
   });
   
+  // For the recipient - IMPORTANT: This ensures the worker sees the message
   updateUserConversation(recipientId, {
     id: conversationId,
     otherUserId: senderId,
@@ -104,7 +106,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     lastMessage: text,
     time: newMessage.time,
     unread: 1,
-    role: senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER'
+    role: senderRole
   });
   
   return newMessage;
@@ -145,4 +147,16 @@ export const markMessagesAsRead = (conversationId, userId) => {
     }
   });
   localStorage.setItem('homelyserv_chat_conversations', JSON.stringify(allConversations));
+};
+
+// Check if a conversation exists between two users
+export const conversationExists = (user1Id, user2Id) => {
+  const conversationId = getConversation(user1Id, user2Id);
+  const messages = getConversationMessages(conversationId);
+  return messages.length > 0;
+};
+
+// Get conversation ID between two users (creates if doesn't exist)
+export const getOrCreateConversation = (user1Id, user2Id) => {
+  return getConversation(user1Id, user2Id);
 };

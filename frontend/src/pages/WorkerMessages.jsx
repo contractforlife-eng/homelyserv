@@ -30,7 +30,8 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  getConversation
+  getConversation,
+  saveUserConversations
 } from '../utils/chatService';
 
 // Worker Sidebar Component
@@ -88,7 +89,6 @@ const WorkerSidebar = ({
   };
 
   return (
-    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -229,7 +229,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - FIXED
+// Main WorkerMessages Component
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -280,7 +280,6 @@ const WorkerMessages = () => {
 
   const t = translations[language];
 
-  // Load user and chat data
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -313,7 +312,6 @@ const WorkerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Load chat data
   const loadChatData = () => {
     const userId = user?.id || user?.email;
     if (!userId) return;
@@ -322,12 +320,10 @@ const WorkerMessages = () => {
     setConversations(userConversations);
   };
 
-  // Load messages for a conversation
   const loadMessagesForConversation = (conversationId) => {
     const conversationMessages = getConversationMessages(conversationId);
     setMessages(conversationMessages);
     
-    // Mark messages as read
     const userId = user?.id || user?.email;
     if (userId) {
       markMessagesAsRead(conversationId, userId);
@@ -376,7 +372,8 @@ const WorkerMessages = () => {
     const selectedConv = conversations.find(c => c.id === selectedConversationId);
     if (!selectedConv) return;
 
-    // Send message using chat service
+    console.log('📤 Sending message from worker to:', selectedConv.otherUserId);
+
     const result = sendMessage(
       user.id || user.email,
       user.fullName || 'Worker',
@@ -387,9 +384,7 @@ const WorkerMessages = () => {
     );
 
     if (result) {
-      // Update local messages
       loadMessagesForConversation(selectedConversationId);
-      // Update conversations
       loadChatData();
       setMessage('');
     }
@@ -460,7 +455,6 @@ const WorkerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -516,7 +510,6 @@ const WorkerMessages = () => {
                 </div>
               </div>
 
-              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
