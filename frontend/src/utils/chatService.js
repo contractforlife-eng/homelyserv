@@ -1,11 +1,8 @@
-// src/utils/chatService.js - Complete file with all exports
+// src/utils/chatService.js - COMPLETE FIXED
 export const getConversationId = (user1Id, user2Id) => {
   const ids = [user1Id, user2Id].sort();
   return `conv_${ids.join('_')}`;
 };
-
-// Alias for backward compatibility
-export const getConversation = getConversationId;
 
 export const getUserConversations = (userId) => {
   try {
@@ -75,6 +72,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
   messages.push(newMessage);
   saveConversationMessages(conversationId, messages);
   
+  // Update sender's conversation
   updateUserConversation(senderId, {
     id: conversationId,
     otherUserId: recipientId,
@@ -85,6 +83,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     role: senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER'
   });
   
+  // Update recipient's conversation
   updateUserConversation(recipientId, {
     id: conversationId,
     otherUserId: senderId,
@@ -141,4 +140,52 @@ export const conversationExists = (user1Id, user2Id) => {
 
 export const getOrCreateConversation = (user1Id, user2Id) => {
   return getConversationId(user1Id, user2Id);
+};
+
+// ===== NEW: Ensure conversation is saved for both users =====
+export const ensureConversationExists = (user1Id, user1Name, user1Role, user2Id, user2Name, user2Role) => {
+  const conversationId = getConversationId(user1Id, user2Id);
+  const messages = getConversationMessages(conversationId);
+  
+  // If no messages, create a placeholder message
+  if (messages.length === 0) {
+    const placeholderMessage = {
+      id: Date.now(),
+      senderId: 'system',
+      senderName: 'System',
+      senderRole: 'SYSTEM',
+      recipientId: user1Id,
+      recipientName: user1Name,
+      text: 'Start your conversation here',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toISOString(),
+      read: true
+    };
+    saveConversationMessages(conversationId, [placeholderMessage]);
+  }
+  
+  // Update both users' conversations
+  updateUserConversation(user1Id, {
+    id: conversationId,
+    otherUserId: user2Id,
+    otherUserName: user2Name,
+    lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    unread: 0,
+    role: user2Role,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user2Name)}&background=teal&color=fff&size=100&bold=true`
+  });
+  
+  updateUserConversation(user2Id, {
+    id: conversationId,
+    otherUserId: user1Id,
+    otherUserName: user1Name,
+    lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    unread: 0,
+    role: user1Role,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user1Name)}&background=teal&color=fff&size=100&bold=true`
+  });
+  
+  return conversationId;
 };

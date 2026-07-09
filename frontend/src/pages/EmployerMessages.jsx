@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - COMPLETE FIXED AUTO-OPEN
+// src/pages/EmployerMessages.jsx - COMPLETE WITH PERSISTENT CHAT
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -32,7 +32,8 @@ import {
   sendMessage,
   markMessagesAsRead,
   getConversationId,
-  saveUserConversations
+  saveUserConversations,
+  saveConversationMessages
 } from '../utils/chatService';
 
 // Employer Sidebar Component
@@ -230,7 +231,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - FIXED AUTO-OPEN
+// Main EmployerMessages Component
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -316,7 +317,7 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate, refreshKey]);
 
-  // Auto-open chat from MyHires - FIXED
+  // Auto-open chat from MyHires
   useEffect(() => {
     if (!loading && user) {
       const shouldOpenChat = localStorage.getItem('homelyserv_open_chat_on_load');
@@ -331,7 +332,6 @@ const EmployerMessages = () => {
             console.error('Error parsing chat recipient:', error);
           }
         }
-        // Clear flags regardless
         localStorage.removeItem('homelyserv_open_chat_on_load');
         localStorage.removeItem('homelyserv_chat_recipient');
       }
@@ -364,7 +364,73 @@ const EmployerMessages = () => {
     }
   };
 
-  // FIXED: Add chat recipient and auto-select
+  // ===== NEW: Ensure conversation exists for both users =====
+  const ensureConversation = (recipient) => {
+    const userId = user?.id || user?.email;
+    if (!userId || !recipient) return null;
+
+    const conversationId = getConversationId(userId, recipient.id);
+    const messages = getConversationMessages(conversationId);
+    
+    // Create system message if conversation doesn't exist
+    if (messages.length === 0) {
+      const systemMessage = {
+        id: Date.now(),
+        senderId: 'system',
+        senderName: 'System',
+        senderRole: 'SYSTEM',
+        recipientId: userId,
+        recipientName: user?.fullName || 'Employer',
+        text: 'Start your conversation here',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date().toISOString(),
+        read: true
+      };
+      saveConversationMessages(conversationId, [systemMessage]);
+    }
+    
+    // Update employer's conversation list
+    const employerConversations = getUserConversations(userId);
+    const exists = employerConversations.some(c => c.id === conversationId);
+    
+    if (!exists) {
+      const newConversation = {
+        id: conversationId,
+        otherUserId: recipient.id,
+        otherUserName: recipient.name || 'Worker',
+        lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread: 0,
+        role: 'WORKER',
+        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
+      };
+      employerConversations.unshift(newConversation);
+      saveUserConversations(userId, employerConversations);
+    }
+    
+    // Update worker's conversation list too
+    const workerConversations = getUserConversations(recipient.id);
+    const workerExists = workerConversations.some(c => c.id === conversationId);
+    
+    if (!workerExists) {
+      const workerNewConversation = {
+        id: conversationId,
+        otherUserId: userId,
+        otherUserName: user?.fullName || 'Employer',
+        lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread: 0,
+        role: 'EMPLOYER',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`
+      };
+      workerConversations.unshift(workerNewConversation);
+      saveUserConversations(recipient.id, workerConversations);
+    }
+    
+    return conversationId;
+  };
+
+  // ===== Updated: Add chat recipient =====
   const addChatRecipient = (recipient) => {
     const userId = user?.id || user?.email;
     if (!userId) {
@@ -374,37 +440,16 @@ const EmployerMessages = () => {
 
     console.log('📨 Adding chat recipient:', recipient);
 
-    // Check if conversation already exists
-    const exists = conversations.some(conv => conv.otherUserId === recipient.id);
+    // Ensure conversation exists for both users
+    const conversationId = ensureConversation(recipient);
     
-    if (!exists) {
-      const conversationId = getConversationId(userId, recipient.id);
-      const newConversation = {
-        id: conversationId,
-        otherUserId: recipient.id,
-        otherUserName: recipient.name || 'Worker',
-        lastMessage: 'Start your conversation here',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread: 0,
-        role: 'WORKER',
-        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
-      };
-
-      const updatedConversations = [newConversation, ...conversations];
-      setConversations(updatedConversations);
-      saveUserConversations(userId, updatedConversations);
-      
+    if (conversationId) {
+      // Reload conversations
+      loadChatData();
+      // Select the conversation
       setSelectedConversationId(conversationId);
       loadMessagesForConversation(conversationId);
-      console.log('✅ New conversation created and selected:', conversationId);
-    } else {
-      // If exists, select it
-      const existing = conversations.find(conv => conv.otherUserId === recipient.id);
-      if (existing) {
-        console.log('📨 Conversation exists, selecting:', existing.id);
-        setSelectedConversationId(existing.id);
-        loadMessagesForConversation(existing.id);
-      }
+      console.log('✅ Conversation ensured and selected:', conversationId);
     }
   };
 
@@ -557,6 +602,7 @@ const EmployerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -612,6 +658,7 @@ const EmployerMessages = () => {
                 </div>
               </div>
 
+              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
