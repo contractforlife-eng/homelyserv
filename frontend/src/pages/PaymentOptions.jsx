@@ -1,4 +1,4 @@
-// src/pages/employer/PaymentOptions.jsx
+// src/pages/PaymentOptions.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -28,7 +28,9 @@ import {
   Smartphone,
   Banknote,
   Lock,
-  Star
+  Star,
+  Copy,
+  Check
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -238,8 +240,42 @@ const PaymentOptions = () => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
 
+  // Payment methods (Cash removed)
   const paymentMethods = [
+    {
+      id: 'wallet',
+      name: 'Mobile Wallet',
+      icon: Smartphone,
+      description: 'Pay using your mobile wallet',
+      color: 'green',
+      details: {
+        walletNumber: '01009189851'
+      }
+    },
+    {
+      id: 'instapay',
+      name: 'InstaPay',
+      icon: Wallet,
+      description: 'Instant payment with InstaPay',
+      color: 'pink',
+      details: {
+        instapayNumber: '01009189851'
+      }
+    },
+    {
+      id: 'bank-transfer',
+      name: 'Bank Transfer',
+      icon: Building2,
+      description: 'Direct bank transfer',
+      color: 'orange',
+      details: {
+        accountNumber: '1002425938683',
+        iban: 'EG580037000908181002425938683',
+        swiftCode: 'QNBAEGCXXXX'
+      }
+    },
     {
       id: 'credit-card',
       name: 'Credit Card',
@@ -253,34 +289,6 @@ const PaymentOptions = () => {
       icon: CreditCard,
       description: 'Pay directly from your bank account',
       color: 'purple'
-    },
-    {
-      id: 'mobile-wallet',
-      name: 'Mobile Wallet',
-      icon: Smartphone,
-      description: 'Pay using your mobile wallet',
-      color: 'green'
-    },
-    {
-      id: 'bank-transfer',
-      name: 'Bank Transfer',
-      icon: Building2,
-      description: 'Direct bank transfer',
-      color: 'orange'
-    },
-    {
-      id: 'instapay',
-      name: 'InstaPay',
-      icon: Wallet,
-      description: 'Instant payment with InstaPay',
-      color: 'pink'
-    },
-    {
-      id: 'cash',
-      name: 'Cash',
-      icon: Banknote,
-      description: 'Pay in cash upon agreement',
-      color: 'teal'
     }
   ];
 
@@ -307,7 +315,15 @@ const PaymentOptions = () => {
       securePayment: 'Secure Payment',
       secureDescription: 'Your payment is encrypted and secure',
       chooseMethod: 'Choose your payment method below',
-      recommended: 'Recommended'
+      recommended: 'Recommended',
+      paymentDetails: 'Payment Details',
+      walletNumber: 'Wallet Number',
+      instapayNumber: 'InstaPay Number',
+      accountNumber: 'Account Number',
+      iban: 'IBAN',
+      swiftCode: 'Swift Code',
+      copy: 'Copy',
+      copied: 'Copied!'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -331,7 +347,15 @@ const PaymentOptions = () => {
       securePayment: 'دفع آمن',
       secureDescription: 'مدفوعاتك مشفرة وآمنة',
       chooseMethod: 'اختر طريقة الدفع أدناه',
-      recommended: 'موصى به'
+      recommended: 'موصى به',
+      paymentDetails: 'تفاصيل الدفع',
+      walletNumber: 'رقم المحفظة',
+      instapayNumber: 'رقم InstaPay',
+      accountNumber: 'رقم الحساب',
+      iban: 'IBAN',
+      swiftCode: 'رمز سويفت',
+      copy: 'نسخ',
+      copied: 'تم النسخ!'
     }
   };
 
@@ -411,6 +435,12 @@ const PaymentOptions = () => {
     setSelectedMethod(methodId);
   };
 
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const handleConfirmPayment = () => {
     if (!selectedMethod) {
       alert('Please select a payment method');
@@ -486,6 +516,109 @@ const PaymentOptions = () => {
       teal: 'border-teal-500 bg-teal-50 ring-2 ring-teal-500'
     };
     return colors[color] || colors.blue;
+  };
+
+  const renderPaymentDetails = () => {
+    const method = paymentMethods.find(m => m.id === selectedMethod);
+    if (!method || !method.details) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.paymentDetails}</h4>
+        <div className="space-y-2">
+          {method.details.walletNumber && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.walletNumber}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium">{method.details.walletNumber}</span>
+                <button
+                  onClick={() => handleCopy(method.details.walletNumber, 'wallet')}
+                  className="p-1 hover:bg-gray-200 rounded transition"
+                >
+                  {copiedField === 'wallet' ? (
+                    <Check size={14} className="text-green-500" />
+                  ) : (
+                    <Copy size={14} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          {method.details.instapayNumber && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.instapayNumber}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium">{method.details.instapayNumber}</span>
+                <button
+                  onClick={() => handleCopy(method.details.instapayNumber, 'instapay')}
+                  className="p-1 hover:bg-gray-200 rounded transition"
+                >
+                  {copiedField === 'instapay' ? (
+                    <Check size={14} className="text-green-500" />
+                  ) : (
+                    <Copy size={14} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          {method.details.accountNumber && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.accountNumber}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium">{method.details.accountNumber}</span>
+                <button
+                  onClick={() => handleCopy(method.details.accountNumber, 'account')}
+                  className="p-1 hover:bg-gray-200 rounded transition"
+                >
+                  {copiedField === 'account' ? (
+                    <Check size={14} className="text-green-500" />
+                  ) : (
+                    <Copy size={14} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          {method.details.iban && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.iban}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium">{method.details.iban}</span>
+                <button
+                  onClick={() => handleCopy(method.details.iban, 'iban')}
+                  className="p-1 hover:bg-gray-200 rounded transition"
+                >
+                  {copiedField === 'iban' ? (
+                    <Check size={14} className="text-green-500" />
+                  ) : (
+                    <Copy size={14} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          {method.details.swiftCode && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.swiftCode}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono font-medium">{method.details.swiftCode}</span>
+                <button
+                  onClick={() => handleCopy(method.details.swiftCode, 'swift')}
+                  className="p-1 hover:bg-gray-200 rounded transition"
+                >
+                  {copiedField === 'swift' ? (
+                    <Check size={14} className="text-green-500" />
+                  ) : (
+                    <Copy size={14} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (!user || loading) {
@@ -688,6 +821,9 @@ const PaymentOptions = () => {
                     );
                   })}
                 </div>
+
+                {/* Payment Details - Show when method with details is selected */}
+                {renderPaymentDetails()}
               </div>
 
               {/* Action Buttons */}
