@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Updated to use homelyserv_hires
+// src/pages/MyHires.jsx - Updated to fix profile pictures
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -40,7 +40,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme (same as before)
+// Employer Sidebar Component (keep the same)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -95,7 +95,6 @@ const EmployerSidebar = ({
   };
 
   return (
-    // ... (same sidebar code as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -236,7 +235,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main MyHires Component - UPDATED
+// Main MyHires Component - FIXED PROFILE PICTURES
 const MyHires = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -391,51 +390,59 @@ const MyHires = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load hires from localStorage - USE homelyserv_hires
     loadHiresFromStorage();
   }, [navigate]);
 
   const loadHiresFromStorage = () => {
     try {
-      // Try to load from homelyserv_hires first (where payment saves hires)
       let savedHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
-      // If no hires in homelyserv_hires, check employer_hires (for backward compatibility)
       if (savedHires.length === 0) {
         const oldHires = JSON.parse(localStorage.getItem('employer_hires') || '[]');
         if (oldHires.length > 0) {
           savedHires = oldHires;
-          // Migrate to new storage
           localStorage.setItem('homelyserv_hires', JSON.stringify(oldHires));
         }
       }
       
       console.log(`✅ Loaded ${savedHires.length} hires from localStorage`);
       
-      // Transform hires to the format expected by the component
-      const formattedHires = savedHires.map((hire, index) => ({
-        id: hire.id || `hire_${index}`,
-        worker: {
-          id: hire.workerId || hire.worker?.id || `worker_${index}`,
-          name: hire.workerName || hire.worker?.name || 'Unknown Worker',
-          email: hire.workerEmail || hire.worker?.email || '',
-          phone: hire.workerPhone || hire.worker?.phone || '',
-          location: hire.workerLocation || hire.worker?.location || 'Not specified',
-          category: hire.desiredJob || hire.worker?.category || 'Worker',
-          image: hire.workerPhoto || hire.worker?.image || 'https://via.placeholder.com/40',
-          rating: hire.workerRating || hire.worker?.rating || 4.5
-        },
-        position: hire.desiredJob || hire.position || 'Worker',
-        hoursWorked: hire.hoursWorked || 0,
-        salary: hire.amount || hire.salary || 0,
-        status: hire.status || 'active',
-        startDate: hire.startDate || hire.date || new Date().toISOString().split('T')[0],
-        contractType: hire.contractType || 'Full Time',
-        workSchedule: hire.workSchedule || 'Sunday - Thursday, 9AM - 5PM',
-        documents: hire.documents || [],
-        paymentMethod: hire.paymentMethod || 'Not specified',
-        commission: hire.commission || 0
-      }));
+      // Get profiles to get profile images
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      
+      const formattedHires = savedHires.map((hire, index) => {
+        // Get worker profile image from profiles if available
+        let profileImage = hire.workerPhoto || hire.worker?.image || '';
+        
+        // If we have the worker's email, try to get profile image
+        if (hire.workerEmail && profiles[hire.workerEmail]) {
+          profileImage = profiles[hire.workerEmail].profileImage || profileImage;
+        }
+        
+        return {
+          id: hire.id || `hire_${index}`,
+          worker: {
+            id: hire.workerId || hire.worker?.id || `worker_${index}`,
+            name: hire.workerName || hire.worker?.name || 'Unknown Worker',
+            email: hire.workerEmail || hire.worker?.email || '',
+            phone: hire.workerPhone || hire.worker?.phone || '',
+            location: hire.workerLocation || hire.worker?.location || 'Not specified',
+            category: hire.desiredJob || hire.worker?.category || 'Worker',
+            image: profileImage || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(hire.workerName || 'Worker') + '&background=teal&color=fff&size=100',
+            rating: hire.workerRating || hire.worker?.rating || 4.5
+          },
+          position: hire.desiredJob || hire.position || 'Worker',
+          hoursWorked: hire.hoursWorked || 0,
+          salary: hire.amount || hire.salary || 0,
+          status: hire.status || 'active',
+          startDate: hire.startDate || hire.date || new Date().toISOString().split('T')[0],
+          contractType: hire.contractType || 'Full Time',
+          workSchedule: hire.workSchedule || 'Sunday - Thursday, 9AM - 5PM',
+          documents: hire.documents || [],
+          paymentMethod: hire.paymentMethod || 'Not specified',
+          commission: hire.commission || 0
+        };
+      });
       
       setHires(formattedHires);
       setFilteredHires(formattedHires);
@@ -522,7 +529,6 @@ const MyHires = () => {
       });
       setHires(updatedHires);
       
-      // Save to localStorage
       const hiresToSave = updatedHires.map(hire => ({
         id: hire.id,
         workerId: hire.worker.id,
@@ -536,7 +542,8 @@ const MyHires = () => {
         date: hire.startDate,
         hoursWorked: hire.hoursWorked,
         commission: hire.commission,
-        paymentMethod: hire.paymentMethod
+        paymentMethod: hire.paymentMethod,
+        workerPhoto: hire.worker.image
       }));
       localStorage.setItem('homelyserv_hires', JSON.stringify(hiresToSave));
       
@@ -756,6 +763,10 @@ const MyHires = () => {
                           src={hire.worker.image}
                           alt={hire.worker.name}
                           className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hire.worker.name)}&background=teal&color=fff&size=100`;
+                          }}
                         />
                         <div>
                           <h3 className="font-semibold text-gray-800">{hire.worker.name}</h3>
