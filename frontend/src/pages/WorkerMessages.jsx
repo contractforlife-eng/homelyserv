@@ -1,4 +1,4 @@
-// src/pages/WorkerMessages.jsx - COMPLETE FIXED FILE
+// src/pages/WorkerMessages.jsx - FIXED
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -355,6 +355,12 @@ const WorkerMessages = () => {
     }
   };
 
+  // Refresh conversations
+  const refreshConversations = () => {
+    loadChatData();
+    setRefreshKey(prev => prev + 1);
+  };
+
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
@@ -424,12 +430,6 @@ const WorkerMessages = () => {
     } else {
       console.log('❌ Failed to send message');
     }
-  };
-
-  // Refresh conversations
-  const refreshConversations = () => {
-    loadChatData();
-    setRefreshKey(prev => prev + 1);
   };
 
   if (!user || loading) {
@@ -504,7 +504,6 @@ const WorkerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -560,7 +559,6 @@ const WorkerMessages = () => {
                 </div>
               </div>
 
-              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>

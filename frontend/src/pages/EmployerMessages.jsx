@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx
+// src/pages/EmployerMessages.jsx - FIXED
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -31,11 +31,11 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  getConversation,
+  getConversationId,
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar (keep your existing code - simplified)
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -243,6 +243,7 @@ const EmployerMessages = () => {
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const translations = {
     en: {
@@ -259,7 +260,8 @@ const EmployerMessages = () => {
       notifications: 'Notifications',
       loading: 'Loading messages...',
       noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!'
+      startConversation: 'Start the conversation!',
+      refresh: 'Refresh'
     },
     ar: {
       title: 'الرسائل',
@@ -275,7 +277,8 @@ const EmployerMessages = () => {
       notifications: 'الإشعارات',
       loading: 'جاري تحميل الرسائل...',
       noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!'
+      startConversation: 'ابدأ المحادثة!',
+      refresh: 'تحديث'
     }
   };
 
@@ -326,8 +329,8 @@ const EmployerMessages = () => {
     // Restore selected conversation from localStorage
     const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
     if (savedConversationId) {
-      // Check if the conversation still exists
-      const exists = conversations.some(c => c.id === savedConversationId);
+      const convs = getUserConversations(user?.id || user?.email || '');
+      const exists = convs.some(c => c.id === savedConversationId);
       if (exists) {
         setSelectedConversationId(savedConversationId);
         loadMessagesForConversation(savedConversationId);
@@ -337,7 +340,7 @@ const EmployerMessages = () => {
     }
     
     setLoading(false);
-  }, [navigate]);
+  }, [navigate, refreshKey]);
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
@@ -357,7 +360,6 @@ const EmployerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    // Save selected conversation to localStorage
     localStorage.setItem('homelyserv_selected_conversation_employer', conversationId);
     
     const userId = user?.id || user?.email;
@@ -379,7 +381,7 @@ const EmployerMessages = () => {
     const exists = conversations.some(conv => conv.otherUserId === recipient.id);
     
     if (!exists) {
-      const conversationId = getConversation(userId, recipient.id);
+      const conversationId = getConversationId(userId, recipient.id);
       const newConversation = {
         id: conversationId,
         otherUserId: recipient.id,
@@ -399,10 +401,8 @@ const EmployerMessages = () => {
       setSelectedConversationId(conversationId);
       loadMessagesForConversation(conversationId);
       
-      // Clear the chat recipient from localStorage after adding
       localStorage.removeItem('homelyserv_chat_recipient');
     } else {
-      // If exists, select it
       const existing = conversations.find(conv => conv.otherUserId === recipient.id);
       if (existing) {
         console.log('📨 Conversation exists, selecting:', existing.id);
@@ -411,6 +411,12 @@ const EmployerMessages = () => {
         localStorage.removeItem('homelyserv_chat_recipient');
       }
     }
+  };
+
+  // Refresh conversations
+  const refreshConversations = () => {
+    loadChatData();
+    setRefreshKey(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -476,7 +482,6 @@ const EmployerMessages = () => {
 
     if (result) {
       console.log('✅ Message sent successfully');
-      // Reload messages and conversations
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
@@ -536,6 +541,13 @@ const EmployerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={refreshConversations}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Clock size={16} />
+                {t.refresh}
+              </button>
             </div>
           </div>
         </header>
@@ -550,7 +562,6 @@ const EmployerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -606,14 +617,14 @@ const EmployerMessages = () => {
                 </div>
               </div>
 
-              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
+                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
                         />
