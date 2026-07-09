@@ -31,10 +31,11 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  getConversation
+  getConversation,
+  saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar Component
+// Employer Sidebar Component (keep your existing code)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -89,7 +90,6 @@ const EmployerSidebar = ({
   };
 
   return (
-    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -348,13 +348,16 @@ const EmployerMessages = () => {
     }
   };
 
-  // Add chat recipient from MyHires
+  // Add chat recipient from MyHires - FIXED
   const addChatRecipient = (recipient) => {
     const userId = user?.id || user?.email;
     if (!userId) return;
 
+    console.log('📨 Adding chat recipient:', recipient);
+
     // Check if conversation already exists
     const exists = conversations.some(conv => conv.otherUserId === recipient.id);
+    
     if (!exists) {
       const conversationId = getConversation(userId, recipient.id);
       const newConversation = {
@@ -364,18 +367,19 @@ const EmployerMessages = () => {
         lastMessage: 'Start your conversation here',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         unread: 0,
-        role: 'WORKER'
+        role: 'WORKER',
+        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
       };
 
       const updatedConversations = [newConversation, ...conversations];
       setConversations(updatedConversations);
       
       // Save to storage
-      import('../utils/chatService').then(({ saveUserConversations }) => {
-        saveUserConversations(userId, updatedConversations);
-      });
+      saveUserConversations(userId, updatedConversations);
       
+      // Set the selected conversation
       setSelectedConversationId(conversationId);
+      // Load messages for this conversation
       loadMessagesForConversation(conversationId);
       
       // Clear the chat recipient from localStorage after adding
@@ -384,8 +388,11 @@ const EmployerMessages = () => {
       // If exists, select it
       const existing = conversations.find(conv => conv.otherUserId === recipient.id);
       if (existing) {
+        console.log('📨 Conversation exists, selecting:', existing.id);
         setSelectedConversationId(existing.id);
         loadMessagesForConversation(existing.id);
+        // Clear the chat recipient from localStorage
+        localStorage.removeItem('homelyserv_chat_recipient');
       }
     }
   };
@@ -547,7 +554,7 @@ const EmployerMessages = () => {
                         }`}
                       >
                         <img
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
                           alt={conv.otherUserName}
                           className="w-12 h-12 rounded-full object-cover"
                         />
