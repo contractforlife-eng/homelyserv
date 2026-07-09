@@ -35,7 +35,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar (keep your existing code - I'll keep it short here)
+// Employer Sidebar Component (keep your existing code - simplified)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -230,7 +230,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component
+// Main EmployerMessages Component - PERSISTENT CHAT
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -323,6 +323,13 @@ const EmployerMessages = () => {
       }
     }
     
+    // Restore selected conversation from localStorage
+    const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
+    if (savedConversationId) {
+      setSelectedConversationId(savedConversationId);
+      loadMessagesForConversation(savedConversationId);
+    }
+    
     setLoading(false);
   }, [navigate]);
 
@@ -343,6 +350,9 @@ const EmployerMessages = () => {
     const conversationMessages = getConversationMessages(conversationId);
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
+    
+    // Save selected conversation to localStorage
+    localStorage.setItem('homelyserv_selected_conversation_employer', conversationId);
     
     const userId = user?.id || user?.email;
     if (userId) {
@@ -420,6 +430,7 @@ const EmployerMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
+    localStorage.removeItem('homelyserv_selected_conversation_employer');
     navigate('/login');
   };
 
@@ -459,7 +470,6 @@ const EmployerMessages = () => {
 
     if (result) {
       console.log('✅ Message sent successfully');
-      // Reload messages and conversations
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
