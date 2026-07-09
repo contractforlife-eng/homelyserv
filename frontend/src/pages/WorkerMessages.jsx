@@ -32,8 +32,7 @@ import {
   markMessagesAsRead,
   getConversationId,
   saveUserConversations,
-  createTestConversation
-} from '../utils/chatService';
+ } from '../utils/chatService';
 
 // Worker Sidebar Component (keep your existing code)
 const WorkerSidebar = ({ 
@@ -435,39 +434,6 @@ const WorkerMessages = () => {
       setMessage('');
     } else {
       console.log('❌ Failed to send message');
-    }
-  };
-
-  // Create a demo conversation for testing
-  const handleStartConversation = () => {
-    if (!user) return;
-    
-    const testEmployerId = 'employer_test@homelyserv.com';
-    const testEmployerName = 'Test Employer';
-    
-    // Send a message to create the conversation
-    const result = sendMessage(
-      user.id || user.email,
-      user.fullName || 'Worker',
-      'WORKER',
-      testEmployerId,
-      testEmployerName,
-      'Hello! I am interested in the position.'
-    );
-    
-    if (result) {
-      console.log('✅ Test conversation created');
-      refreshConversations();
-      
-      // Select the new conversation
-      setTimeout(() => {
-        const convs = getUserConversations(user.id || user.email);
-        const newConv = convs.find(c => c.otherUserId === testEmployerId);
-        if (newConv) {
-          setSelectedConversationId(newConv.id);
-          loadMessagesForConversation(newConv.id);
-        }
-      }, 500);
     }
   };
 
