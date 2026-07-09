@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - ADDED CLEAR FAKE OFFERS BUTTON
+// src/pages/WorkerOffers.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -39,7 +39,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-// Sidebar Component (keep your existing code - same as before)
+// Sidebar Component
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -234,7 +234,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerOffers Component - WITH CLEAR FAKE OFFERS BUTTON
+// Main WorkerOffers Component
 const WorkerOffers = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -453,19 +453,18 @@ const WorkerOffers = () => {
     navigate('/login');
   };
 
-  // Load ONLY REAL offers from employers
+  // Load offers from localStorage
   const loadOffers = () => {
     try {
       let allOffers = [];
       
-      // ONLY load from employer_offers (real offers from employers)
       const employerOffers = localStorage.getItem('employer_offers');
       if (employerOffers) {
         try {
           const parsed = JSON.parse(employerOffers);
           if (Array.isArray(parsed) && parsed.length > 0) {
             allOffers = parsed;
-            console.log('✅ Loaded real employer offers:', parsed.length);
+            console.log('✅ Loaded employer offers:', parsed.length);
           }
         } catch (e) {
           console.error('Error parsing employer_offers:', e);
@@ -481,11 +480,10 @@ const WorkerOffers = () => {
     }
   };
 
-  // Clear fake offers from localStorage
+  // Clear fake offers
   const clearFakeOffers = () => {
     localStorage.removeItem('worker_offers');
     localStorage.removeItem('homelyserv_offers');
-    // Also clear any other fake data
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
       if (key.includes('offer') && !key.includes('employer_offers')) {
@@ -494,15 +492,89 @@ const WorkerOffers = () => {
           if (Array.isArray(data) && data.length > 0 && data[0].title === 'Senior Nanny - Full Time') {
             localStorage.removeItem(key);
           }
-        } catch (e) {
-          // Skip if not JSON
-        }
+        } catch (e) {}
       }
     });
     
     setShowClearConfirm(false);
     loadOffers();
     alert(t.clearSuccess);
+  };
+
+  // ===== NEW: Handle Apply Now =====
+  const handleApplyNow = (offer) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    if (appliedOffers.includes(offer.id)) {
+      alert('You have already applied for this position.');
+      return;
+    }
+    
+    const newApplied = [...appliedOffers, offer.id];
+    setAppliedOffers(newApplied);
+    localStorage.setItem('worker_applied_offers', JSON.stringify(newApplied));
+    
+    setOffers(prev => prev.map(o => 
+      o.id === offer.id 
+        ? { ...o, status: 'applied', isApplied: true }
+        : o
+    ));
+    
+    // Save notification for employer
+    const notification = {
+      id: 'notif_' + Date.now(),
+      type: 'job_application',
+      message: `${user.fullName || 'Worker'} has applied for ${offer.title}`,
+      workerId: user.id || user.email,
+      workerName: user.fullName || 'Worker',
+      offerId: offer.id,
+      offerTitle: offer.title,
+      employerId: offer.employerId || offer.postedBy || 'employer',
+      date: new Date().toISOString(),
+      read: false
+    };
+    
+    const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+    notifications.push(notification);
+    localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+    
+    alert(`✅ You have successfully applied for ${offer.title}!`);
+  };
+
+  // ===== NEW: Handle Contact =====
+  const handleContact = (offer) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    const employerName = offer.company || offer.postedBy || 'Employer';
+    const employerId = offer.employerId || offer.postedBy || 'employer';
+    
+    const chatData = {
+      id: employerId,
+      name: employerName,
+      role: 'employer',
+      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(employerName)}&background=teal&color=fff&size=100&bold=true`
+    };
+    
+    localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
+    
+    const conversationData = {
+      workerId: user.id || user.email,
+      workerName: user.fullName || 'Worker',
+      employerId: employerId,
+      employerName: employerName,
+      offerId: offer.id,
+      offerTitle: offer.title,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
+    
+    navigate('/worker-messages');
   };
 
   useEffect(() => {
@@ -1068,12 +1140,33 @@ const WorkerOffers = () => {
                           </div>
                         </div>
 
+                        {/* ===== UPDATED BUTTONS ===== */}
                         <div className="mt-4 flex flex-wrap gap-2">
-                          <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                            <BriefcaseIcon size={18} />
-                            {t.actions.apply}
+                          <button 
+                            onClick={() => handleApplyNow(offer)}
+                            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                              offer.isApplied || appliedOffers.includes(offer.id)
+                                ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 text-white'
+                            }`}
+                            disabled={offer.isApplied || appliedOffers.includes(offer.id)}
+                          >
+                            {offer.isApplied || appliedOffers.includes(offer.id) ? (
+                              <>
+                                <CheckCircle size={18} />
+                                Applied
+                              </>
+                            ) : (
+                              <>
+                                <BriefcaseIcon size={18} />
+                                {t.actions.apply}
+                              </>
+                            )}
                           </button>
-                          <button className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                          <button 
+                            onClick={() => handleContact(offer)}
+                            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                          >
                             <MessageCircle size={18} />
                             {language === 'en' ? 'Contact' : 'اتصال'}
                           </button>
