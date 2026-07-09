@@ -285,6 +285,7 @@ const EmployerMessages = () => {
 
   const t = translations[language];
 
+  // ===== FIXED: Initialize user and load conversations immediately =====
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -300,6 +301,28 @@ const EmployerMessages = () => {
           return;
         }
         setUser(parsedUser);
+        
+        // ===== FIX: Load conversations immediately using parsedUser =====
+        const userId = parsedUser.id || parsedUser.email;
+        if (userId) {
+          const userConversations = getUserConversations(userId);
+          console.log('📋 Initial load - employer conversations:', userConversations);
+          setConversations(userConversations);
+          
+          // Restore selected conversation
+          const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
+          if (savedConversationId) {
+            const exists = userConversations.some(c => c.id === savedConversationId);
+            if (exists) {
+              setSelectedConversationId(savedConversationId);
+              const conversationMessages = getConversationMessages(savedConversationId);
+              setMessages(conversationMessages);
+              markMessagesAsRead(savedConversationId, userId);
+            } else {
+              localStorage.removeItem('homelyserv_selected_conversation_employer');
+            }
+          }
+        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -313,9 +336,20 @@ const EmployerMessages = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    loadChatData();
     setLoading(false);
-  }, [navigate, refreshKey]);
+  }, [navigate]);
+
+  // ===== NEW: Separate effect for refreshKey that depends on user =====
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    const userConversations = getUserConversations(userId);
+    console.log('📋 Refresh load - employer conversations:', userConversations);
+    setConversations(userConversations);
+  }, [user, refreshKey]);
 
   // Auto-open chat from MyHires
   useEffect(() => {
@@ -526,7 +560,6 @@ const EmployerMessages = () => {
   };
 
   const refreshConversations = () => {
-    loadChatData();
     setRefreshKey(prev => prev + 1);
   };
 

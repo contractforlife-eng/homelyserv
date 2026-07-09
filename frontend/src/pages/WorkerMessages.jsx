@@ -283,6 +283,7 @@ const WorkerMessages = () => {
 
   const t = translations[language];
 
+  // ===== FIXED: Initialize user and load conversations immediately =====
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -298,6 +299,28 @@ const WorkerMessages = () => {
           return;
         }
         setUser(parsedUser);
+        
+        // ===== FIX: Load conversations immediately using parsedUser =====
+        const userId = parsedUser.id || parsedUser.email;
+        if (userId) {
+          const userConversations = getUserConversations(userId);
+          console.log('📋 Initial load - worker conversations:', userConversations);
+          setConversations(userConversations);
+          
+          // ===== FIX: Restore selected conversation using parsedUser, not stale user state =====
+          const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
+          if (savedConversationId) {
+            const exists = userConversations.some(c => c.id === savedConversationId);
+            if (exists) {
+              setSelectedConversationId(savedConversationId);
+              const conversationMessages = getConversationMessages(savedConversationId);
+              setMessages(conversationMessages);
+              markMessagesAsRead(savedConversationId, userId);
+            } else {
+              localStorage.removeItem('homelyserv_selected_conversation_worker');
+            }
+          }
+        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -311,23 +334,20 @@ const WorkerMessages = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    loadChatData();
-    
-    // Restore selected conversation from localStorage
-    const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
-    if (savedConversationId) {
-      const convs = getUserConversations(user?.id || user?.email || '');
-      const exists = convs.some(c => c.id === savedConversationId);
-      if (exists) {
-        setSelectedConversationId(savedConversationId);
-        loadMessagesForConversation(savedConversationId);
-      } else {
-        localStorage.removeItem('homelyserv_selected_conversation_worker');
-      }
-    }
-    
     setLoading(false);
-  }, [navigate, refreshKey]);
+  }, [navigate]);
+
+  // ===== NEW: Separate effect for refreshKey that depends on user =====
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    const userConversations = getUserConversations(userId);
+    console.log('📋 Refresh load - worker conversations:', userConversations);
+    setConversations(userConversations);
+  }, [user, refreshKey]);
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
@@ -353,12 +373,6 @@ const WorkerMessages = () => {
     if (userId) {
       markMessagesAsRead(conversationId, userId);
     }
-  };
-
-  // Refresh conversations
-  const refreshConversations = () => {
-    loadChatData();
-    setRefreshKey(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -430,6 +444,10 @@ const WorkerMessages = () => {
     } else {
       console.log('❌ Failed to send message');
     }
+  };
+
+  const refreshConversations = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   if (!user || loading) {
