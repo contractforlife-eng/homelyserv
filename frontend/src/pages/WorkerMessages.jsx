@@ -34,7 +34,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Worker Sidebar (keep your existing code - simplified)
+// Worker Sidebar Component (keep your existing code)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -229,7 +229,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - PERSISTENT CHAT
+// Main WorkerMessages Component - FIXED
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -313,8 +313,14 @@ const WorkerMessages = () => {
     // Restore selected conversation from localStorage
     const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
     if (savedConversationId) {
-      setSelectedConversationId(savedConversationId);
-      loadMessagesForConversation(savedConversationId);
+      // Check if the conversation still exists
+      const exists = conversations.some(c => c.id === savedConversationId);
+      if (exists) {
+        setSelectedConversationId(savedConversationId);
+        loadMessagesForConversation(savedConversationId);
+      } else {
+        localStorage.removeItem('homelyserv_selected_conversation_worker');
+      }
     }
     
     setLoading(false);
@@ -328,7 +334,7 @@ const WorkerMessages = () => {
     }
 
     const userConversations = getUserConversations(userId);
-    console.log('📋 Loaded conversations:', userConversations);
+    console.log('📋 Loaded conversations for worker:', userConversations);
     setConversations(userConversations);
   };
 
@@ -410,6 +416,7 @@ const WorkerMessages = () => {
 
     if (result) {
       console.log('✅ Message sent successfully');
+      // Reload messages and conversations
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
@@ -483,6 +490,7 @@ const WorkerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -502,6 +510,35 @@ const WorkerMessages = () => {
                       <div className="text-4xl mb-3">💬</div>
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
+                      <button
+                        onClick={() => {
+                          // Create a demo conversation for testing
+                          const testEmployerId = 'employer_test@homelyserv.com';
+                          const testEmployerName = 'Test Employer';
+                          
+                          const result = sendMessage(
+                            user.id || user.email,
+                            user.fullName || 'Worker',
+                            'WORKER',
+                            testEmployerId,
+                            testEmployerName,
+                            'Hello! I am interested in the position.'
+                          );
+                          
+                          if (result) {
+                            loadChatData();
+                            // Find the new conversation
+                            const newConv = conversations.find(c => c.otherUserId === testEmployerId);
+                            if (newConv) {
+                              setSelectedConversationId(newConv.id);
+                              loadMessagesForConversation(newConv.id);
+                            }
+                          }
+                        }}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      >
+                        Start a conversation
+                      </button>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -513,7 +550,7 @@ const WorkerMessages = () => {
                         }`}
                       >
                         <img
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=red&color=fff&size=100&bold=true`}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=red&color=fff&size=100&bold=true`}
                           alt={conv.otherUserName}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -538,6 +575,7 @@ const WorkerMessages = () => {
                 </div>
               </div>
 
+              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>

@@ -79,7 +79,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     role: senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER'
   });
   
-  // Update recipient's conversation
+  // Update recipient's conversation - CRITICAL: This ensures the worker sees the conversation
   updateUserConversation(recipientId, {
     id: conversationId,
     otherUserId: senderId,
@@ -89,6 +89,11 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     unread: 1,
     role: senderRole
   });
+  
+  console.log('📨 Message sent and both users updated');
+  console.log('📨 Sender:', senderId);
+  console.log('📨 Recipient:', recipientId);
+  console.log('📨 Conversation ID:', conversationId);
   
   return newMessage;
 };
@@ -104,6 +109,7 @@ const updateUserConversation = (userId, conversationData) => {
   }
   
   saveUserConversations(userId, conversations);
+  console.log(`📨 Updated conversations for user ${userId}:`, conversations);
 };
 
 export const markMessagesAsRead = (conversationId, userId) => {
