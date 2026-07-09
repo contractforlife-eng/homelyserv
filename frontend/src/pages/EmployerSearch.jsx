@@ -1,4 +1,4 @@
-// src/pages/employer/EmployerSearch.jsx - FIXED SEARCH
+// src/pages/employer/EmployerSearch.jsx - FIXED LOCATIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -42,7 +42,7 @@ import {
   Shield
 } from 'lucide-react';
 
-// Employer Sidebar Component (same as before - keeping it short)
+// Employer Sidebar Component (same as before)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -237,7 +237,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component - FIXED
+// Main EmployerSearch Component - FIXED LOCATIONS
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -272,16 +272,14 @@ const EmployerSearch = () => {
     'Teacher'
   ];
 
-  // Location options
-  const locationOptions = [
-    'Cairo, Egypt',
-    'Alexandria, Egypt',
-    'Giza, Egypt',
-    'Dubai, UAE',
-    'Riyadh, Saudi Arabia',
-    'London, UK',
-    'Casablanca, Morocco'
-  ];
+  // Get unique locations from workers
+  const getUniqueLocations = () => {
+    const locations = allWorkers
+      .map(worker => worker.location)
+      .filter(location => location && location !== 'Not specified' && location !== '')
+      .filter((value, index, self) => self.indexOf(value) === index);
+    return locations.sort();
+  };
 
   const translations = {
     en: {
@@ -311,7 +309,8 @@ const EmployerSearch = () => {
       filters: 'Filters',
       showFilters: 'Show Filters',
       hideFilters: 'Hide Filters',
-      popular: 'Popular'
+      popular: 'Popular',
+      noLocations: 'No locations available'
     },
     ar: {
       title: 'البحث عن عمال',
@@ -340,7 +339,8 @@ const EmployerSearch = () => {
       filters: 'فلاتر',
       showFilters: 'عرض الفلاتر',
       hideFilters: 'إخفاء الفلاتر',
-      popular: 'الأكثر شهرة'
+      popular: 'الأكثر شهرة',
+      noLocations: 'لا توجد مواقع متاحة'
     }
   };
 
@@ -380,15 +380,12 @@ const EmployerSearch = () => {
 
   const loadWorkersFromStorage = () => {
     try {
-      // Get all users
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       console.log('📋 All users from localStorage:', users);
       
-      // Filter only workers
       const workers = users.filter(user => user.role === 'WORKER');
       console.log('👷 Found workers:', workers);
       
-      // Get profiles
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       console.log('📋 Profiles:', profiles);
       
@@ -416,6 +413,12 @@ const EmployerSearch = () => {
       
       console.log('✅ Merged workers:', mergedWorkers);
       setAllWorkers(mergedWorkers);
+      
+      // Log unique locations
+      const locations = mergedWorkers
+        .map(w => w.location)
+        .filter(loc => loc && loc !== 'Not specified' && loc !== '');
+      console.log('📍 Unique locations found:', [...new Set(locations)]);
       
       if (mergedWorkers.length === 0) {
         console.warn('⚠️ No workers found in localStorage. Please register workers first.');
@@ -483,8 +486,8 @@ const EmployerSearch = () => {
           const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
                           worker.jobTitle?.toLowerCase().includes(query);
           const bioMatch = worker.bio?.toLowerCase().includes(query);
-          const match = nameMatch || skillMatch || jobMatch || bioMatch;
-          if (match) console.log('✅ Match found:', worker.fullName);
+          const locationMatch = worker.location?.toLowerCase().includes(query);
+          const match = nameMatch || skillMatch || jobMatch || bioMatch || locationMatch;
           return match;
         });
         console.log('📊 After query filter:', results.length);
@@ -564,6 +567,9 @@ const EmployerSearch = () => {
     };
     return jobMap[value] || value || 'Not specified';
   };
+
+  // Get unique locations from workers
+  const locationOptions = getUniqueLocations();
 
   if (!user) {
     return (
@@ -694,9 +700,13 @@ const EmployerSearch = () => {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   >
                     <option value="">{t.selectLocation}</option>
-                    {locationOptions.map((loc) => (
-                      <option key={loc} value={loc}>{loc}</option>
-                    ))}
+                    {locationOptions.length > 0 ? (
+                      locationOptions.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>{t.noLocations}</option>
+                    )}
                   </select>
                 </div>
                 <div className="md:col-span-2 flex justify-end">
