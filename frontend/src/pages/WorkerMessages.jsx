@@ -1,6 +1,6 @@
-// src/pages/worker/WorkerMessages.jsx
+// src/pages/WorkerMessages.jsx
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Home,
   User,
@@ -221,7 +221,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - UPDATED
+// Main WorkerMessages Component - WITH SHARED STORAGE
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -305,34 +305,36 @@ const WorkerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Load chat data from localStorage
+  // Load chat data from SHARED localStorage
   const loadChatData = () => {
     const userId = user?.id || user?.email;
     if (!userId) return;
 
-    // Load worker conversations
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_worker_conversations') || '{}');
+    // Load conversations from SHARED storage
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_chat_conversations') || '{}');
     const userConversations = allConversations[userId] || [];
     setConversations(userConversations);
 
-    // Load worker messages
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_worker_messages') || '{}');
+    // Load messages from SHARED storage
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
     const userMessages = allMessages[userId] || [];
     setMessages(userMessages);
   };
 
-  // Save chat data to localStorage
+  // Save chat data to SHARED localStorage
   const saveChatData = (newConversations, newMessages) => {
     const userId = user?.id || user?.email;
     if (!userId) return;
 
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_worker_conversations') || '{}');
+    // Save conversations to SHARED storage
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_chat_conversations') || '{}');
     allConversations[userId] = newConversations;
-    localStorage.setItem('homelyserv_worker_conversations', JSON.stringify(allConversations));
+    localStorage.setItem('homelyserv_chat_conversations', JSON.stringify(allConversations));
 
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_worker_messages') || '{}');
+    // Save messages to SHARED storage
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
     allMessages[userId] = newMessages;
-    localStorage.setItem('homelyserv_worker_messages', JSON.stringify(allMessages));
+    localStorage.setItem('homelyserv_chat_messages', JSON.stringify(allMessages));
   };
 
   useEffect(() => {
@@ -369,11 +371,23 @@ const WorkerMessages = () => {
     e.preventDefault();
     if (!message.trim() || !selectedChatId) return;
 
+    // Get the selected conversation to know who the recipient is
+    const selectedConv = conversations.find(c => c.id === selectedChatId);
+    if (!selectedConv) return;
+
+    // Get the employer's email (recipient)
+    const recipientEmail = selectedConv.employerEmail || selectedConv.email || selectedConv.id;
+
     const newMessage = {
       id: Date.now(),
-      sender: 'worker',
+      senderId: user?.id || user?.email,
+      senderName: user?.fullName || 'Worker',
+      senderRole: 'WORKER',
+      recipientId: recipientEmail,
+      recipientName: selectedConv.name,
       text: message,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toISOString(),
       read: false
     };
 
@@ -569,19 +583,19 @@ const WorkerMessages = () => {
                         messages.map((msg) => (
                           <div
                             key={msg.id}
-                            className={`flex ${msg.sender === 'worker' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${msg.senderRole === 'WORKER' ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
                               className={`max-w-[70%] p-3 rounded-lg ${
-                                msg.sender === 'worker'
+                                msg.senderRole === 'WORKER'
                                   ? 'bg-red-600 text-white rounded-br-none'
                                   : 'bg-gray-100 text-gray-800 rounded-bl-none'
                               }`}
                             >
                               <p className="text-sm">{msg.text}</p>
-                              <p className={`text-xs mt-1 ${msg.sender === 'worker' ? 'text-red-200' : 'text-gray-400'}`}>
+                              <p className={`text-xs mt-1 ${msg.senderRole === 'WORKER' ? 'text-red-200' : 'text-gray-400'}`}>
                                 {msg.time}
-                                {msg.sender === 'worker' && (
+                                {msg.senderRole === 'WORKER' && (
                                   <CheckCheck size={14} className="inline ml-1" />
                                 )}
                               </p>
