@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx
+// src/pages/PaymentOptions.jsx - Updated with Credit/Debit Card forms
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -30,10 +30,12 @@ import {
   Lock,
   Star,
   Copy,
-  Check
+  Check,
+  Calendar,
+  User as UserIcon
 } from 'lucide-react';
 
-// Employer Sidebar Component
+// Employer Sidebar Component (keep the same as before)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -241,8 +243,16 @@ const PaymentOptions = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+  
+  // Card form fields
+  const [cardForm, setCardForm] = useState({
+    cardNumber: '',
+    cardholderName: '',
+    expiryDate: '',
+    cvv: ''
+  });
 
-  // Payment methods (Cash removed)
+  // Payment methods
   const paymentMethods = [
     {
       id: 'wallet',
@@ -250,6 +260,7 @@ const PaymentOptions = () => {
       icon: Smartphone,
       description: 'Pay using your mobile wallet',
       color: 'green',
+      hasForm: false,
       details: {
         walletNumber: '01009189851'
       }
@@ -260,6 +271,7 @@ const PaymentOptions = () => {
       icon: Wallet,
       description: 'Instant payment with InstaPay',
       color: 'pink',
+      hasForm: false,
       details: {
         instapayNumber: '01009189851'
       }
@@ -270,6 +282,7 @@ const PaymentOptions = () => {
       icon: Building2,
       description: 'Direct bank transfer',
       color: 'orange',
+      hasForm: false,
       details: {
         accountNumber: '1002425938683',
         iban: 'EG580037000908181002425938683',
@@ -281,14 +294,18 @@ const PaymentOptions = () => {
       name: 'Credit Card',
       icon: CreditCard,
       description: 'Pay securely with your credit card',
-      color: 'blue'
+      color: 'blue',
+      hasForm: true,
+      formType: 'card'
     },
     {
       id: 'debit-card',
       name: 'Debit Card',
       icon: CreditCard,
       description: 'Pay directly from your bank account',
-      color: 'purple'
+      color: 'purple',
+      hasForm: true,
+      formType: 'card'
     }
   ];
 
@@ -313,7 +330,6 @@ const PaymentOptions = () => {
       noWorkerData: 'No worker selected',
       goBack: 'Go back and select a worker',
       securePayment: 'Secure Payment',
-      secureDescription: 'Your payment is encrypted and secure',
       chooseMethod: 'Choose your payment method below',
       recommended: 'Recommended',
       paymentDetails: 'Payment Details',
@@ -323,7 +339,15 @@ const PaymentOptions = () => {
       iban: 'IBAN',
       swiftCode: 'Swift Code',
       copy: 'Copy',
-      copied: 'Copied!'
+      copied: 'Copied!',
+      cardNumber: 'Card Number',
+      cardholderName: 'Cardholder Name',
+      expiryDate: 'Expiry Date (MM/YY)',
+      cvv: 'CVV',
+      enterCardNumber: 'Enter card number',
+      enterCardholderName: 'Enter cardholder name',
+      enterExpiryDate: 'MM/YY',
+      enterCvv: 'XXX'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -345,7 +369,6 @@ const PaymentOptions = () => {
       noWorkerData: 'لم يتم اختيار عامل',
       goBack: 'ارجع واختر عاملاً',
       securePayment: 'دفع آمن',
-      secureDescription: 'مدفوعاتك مشفرة وآمنة',
       chooseMethod: 'اختر طريقة الدفع أدناه',
       recommended: 'موصى به',
       paymentDetails: 'تفاصيل الدفع',
@@ -355,7 +378,15 @@ const PaymentOptions = () => {
       iban: 'IBAN',
       swiftCode: 'رمز سويفت',
       copy: 'نسخ',
-      copied: 'تم النسخ!'
+      copied: 'تم النسخ!',
+      cardNumber: 'رقم البطاقة',
+      cardholderName: 'اسم صاحب البطاقة',
+      expiryDate: 'تاريخ الانتهاء (شهر/سنة)',
+      cvv: 'رمز CVV',
+      enterCardNumber: 'أدخل رقم البطاقة',
+      enterCardholderName: 'أدخل اسم صاحب البطاقة',
+      enterExpiryDate: 'شهر/سنة',
+      enterCvv: 'XXX'
     }
   };
 
@@ -433,6 +464,23 @@ const PaymentOptions = () => {
 
   const handleSelectMethod = (methodId) => {
     setSelectedMethod(methodId);
+    // Reset card form when switching methods
+    if (methodId !== 'credit-card' && methodId !== 'debit-card') {
+      setCardForm({
+        cardNumber: '',
+        cardholderName: '',
+        expiryDate: '',
+        cvv: ''
+      });
+    }
+  };
+
+  const handleCardInputChange = (e) => {
+    const { name, value } = e.target;
+    setCardForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleCopy = (text, field) => {
@@ -445,6 +493,27 @@ const PaymentOptions = () => {
     if (!selectedMethod) {
       alert('Please select a payment method');
       return;
+    }
+
+    // Validate card form if credit/debit card is selected
+    const method = paymentMethods.find(m => m.id === selectedMethod);
+    if (method?.hasForm && method.formType === 'card') {
+      if (!cardForm.cardNumber || cardForm.cardNumber.length < 16) {
+        alert('Please enter a valid card number');
+        return;
+      }
+      if (!cardForm.cardholderName) {
+        alert('Please enter cardholder name');
+        return;
+      }
+      if (!cardForm.expiryDate || cardForm.expiryDate.length < 5) {
+        alert('Please enter expiry date (MM/YY)');
+        return;
+      }
+      if (!cardForm.cvv || cardForm.cvv.length < 3) {
+        alert('Please enter CVV');
+        return;
+      }
     }
     
     setIsProcessing(true);
@@ -520,105 +589,188 @@ const PaymentOptions = () => {
 
   const renderPaymentDetails = () => {
     const method = paymentMethods.find(m => m.id === selectedMethod);
-    if (!method || !method.details) return null;
+    if (!method) return null;
 
-    return (
-      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.paymentDetails}</h4>
-        <div className="space-y-2">
-          {method.details.walletNumber && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t.walletNumber}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono font-medium">{method.details.walletNumber}</span>
-                <button
-                  onClick={() => handleCopy(method.details.walletNumber, 'wallet')}
-                  className="p-1 hover:bg-gray-200 rounded transition"
-                >
-                  {copiedField === 'wallet' ? (
-                    <Check size={14} className="text-green-500" />
-                  ) : (
-                    <Copy size={14} className="text-gray-400" />
-                  )}
-                </button>
+    // Render card form for credit/debit card
+    if (method.hasForm && method.formType === 'card') {
+      return (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">{method.name} Details</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.cardNumber}</label>
+              <div className="relative">
+                <CreditCard size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="cardNumber"
+                  value={cardForm.cardNumber}
+                  onChange={handleCardInputChange}
+                  placeholder={t.enterCardNumber}
+                  maxLength="19"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  onKeyDown={(e) => {
+                    // Only allow numbers and backspace
+                    if (!/[\d\b]/.test(e.key) && e.key !== 'Backspace') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
               </div>
             </div>
-          )}
-          {method.details.instapayNumber && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t.instapayNumber}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono font-medium">{method.details.instapayNumber}</span>
-                <button
-                  onClick={() => handleCopy(method.details.instapayNumber, 'instapay')}
-                  className="p-1 hover:bg-gray-200 rounded transition"
-                >
-                  {copiedField === 'instapay' ? (
-                    <Check size={14} className="text-green-500" />
-                  ) : (
-                    <Copy size={14} className="text-gray-400" />
-                  )}
-                </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.cardholderName}</label>
+              <div className="relative">
+                <UserIcon size={18} className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="cardholderName"
+                  value={cardForm.cardholderName}
+                  onChange={handleCardInputChange}
+                  placeholder={t.enterCardholderName}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
               </div>
             </div>
-          )}
-          {method.details.accountNumber && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t.accountNumber}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono font-medium">{method.details.accountNumber}</span>
-                <button
-                  onClick={() => handleCopy(method.details.accountNumber, 'account')}
-                  className="p-1 hover:bg-gray-200 rounded transition"
-                >
-                  {copiedField === 'account' ? (
-                    <Check size={14} className="text-green-500" />
-                  ) : (
-                    <Copy size={14} className="text-gray-400" />
-                  )}
-                </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.expiryDate}</label>
+                <div className="relative">
+                  <Calendar size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="text"
+                    name="expiryDate"
+                    value={cardForm.expiryDate}
+                    onChange={handleCardInputChange}
+                    placeholder={t.enterExpiryDate}
+                    maxLength="5"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.cvv}</label>
+                <div className="relative">
+                  <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="password"
+                    name="cvv"
+                    value={cardForm.cvv}
+                    onChange={handleCardInputChange}
+                    placeholder={t.enterCvv}
+                    maxLength="4"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
               </div>
             </div>
-          )}
-          {method.details.iban && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t.iban}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono font-medium">{method.details.iban}</span>
-                <button
-                  onClick={() => handleCopy(method.details.iban, 'iban')}
-                  className="p-1 hover:bg-gray-200 rounded transition"
-                >
-                  {copiedField === 'iban' ? (
-                    <Check size={14} className="text-green-500" />
-                  ) : (
-                    <Copy size={14} className="text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-          {method.details.swiftCode && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t.swiftCode}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono font-medium">{method.details.swiftCode}</span>
-                <button
-                  onClick={() => handleCopy(method.details.swiftCode, 'swift')}
-                  className="p-1 hover:bg-gray-200 rounded transition"
-                >
-                  {copiedField === 'swift' ? (
-                    <Check size={14} className="text-green-500" />
-                  ) : (
-                    <Copy size={14} className="text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    // Render payment details for other methods
+    if (method.details) {
+      return (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.paymentDetails}</h4>
+          <div className="space-y-2">
+            {method.details.walletNumber && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t.walletNumber}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-medium">{method.details.walletNumber}</span>
+                  <button
+                    onClick={() => handleCopy(method.details.walletNumber, 'wallet')}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {copiedField === 'wallet' ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Copy size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            {method.details.instapayNumber && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t.instapayNumber}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-medium">{method.details.instapayNumber}</span>
+                  <button
+                    onClick={() => handleCopy(method.details.instapayNumber, 'instapay')}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {copiedField === 'instapay' ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Copy size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            {method.details.accountNumber && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t.accountNumber}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-medium">{method.details.accountNumber}</span>
+                  <button
+                    onClick={() => handleCopy(method.details.accountNumber, 'account')}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {copiedField === 'account' ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Copy size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            {method.details.iban && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t.iban}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-medium">{method.details.iban}</span>
+                  <button
+                    onClick={() => handleCopy(method.details.iban, 'iban')}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {copiedField === 'iban' ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Copy size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            {method.details.swiftCode && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t.swiftCode}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-medium">{method.details.swiftCode}</span>
+                  <button
+                    onClick={() => handleCopy(method.details.swiftCode, 'swift')}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {copiedField === 'swift' ? (
+                      <Check size={14} className="text-green-500" />
+                    ) : (
+                      <Copy size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   if (!user || loading) {
@@ -822,8 +974,8 @@ const PaymentOptions = () => {
                   })}
                 </div>
 
-                {/* Payment Details - Show when method with details is selected */}
-                {renderPaymentDetails()}
+                {/* Payment Details/Card Form */}
+                {selectedMethod && renderPaymentDetails()}
               </div>
 
               {/* Action Buttons */}
