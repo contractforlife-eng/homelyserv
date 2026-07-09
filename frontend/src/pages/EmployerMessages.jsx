@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - FIXED
+// src/pages/EmployerMessages.jsx - COMPLETE WITH AUTO-OPEN CHAT
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -35,7 +35,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar Component
+// Employer Sidebar Component (keep your existing code - simplified)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -90,6 +90,7 @@ const EmployerSidebar = ({
   };
 
   return (
+    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -230,7 +231,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - FIXED
+// Main EmployerMessages Component - WITH AUTO-OPEN CHAT
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -244,6 +245,7 @@ const EmployerMessages = () => {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [autoOpenDone, setAutoOpenDone] = useState(false);
 
   const translations = {
     en: {
@@ -314,33 +316,67 @@ const EmployerMessages = () => {
 
     loadChatData();
     
-    // Check for chat recipient from MyHires
-    const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
-    if (chatRecipient) {
-      try {
-        const recipient = JSON.parse(chatRecipient);
-        console.log('📨 Chat recipient found:', recipient);
-        addChatRecipient(recipient);
-      } catch (error) {
-        console.error('Error parsing chat recipient:', error);
-      }
-    }
-    
-    // Restore selected conversation from localStorage
-    const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
-    if (savedConversationId) {
-      const convs = getUserConversations(user?.id || user?.email || '');
-      const exists = convs.some(c => c.id === savedConversationId);
-      if (exists) {
-        setSelectedConversationId(savedConversationId);
-        loadMessagesForConversation(savedConversationId);
-      } else {
-        localStorage.removeItem('homelyserv_selected_conversation_employer');
-      }
-    }
-    
     setLoading(false);
   }, [navigate, refreshKey]);
+
+  // Auto-open chat from MyHires
+  useEffect(() => {
+    if (!loading && !autoOpenDone && conversations.length >= 0) {
+      const shouldOpenChat = localStorage.getItem('homelyserv_open_chat_on_load');
+      if (shouldOpenChat === 'true') {
+        const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
+        if (chatRecipient) {
+          try {
+            const recipient = JSON.parse(chatRecipient);
+            console.log('📨 Auto-opening chat with:', recipient);
+            
+            // Check if conversation already exists
+            const exists = conversations.some(conv => conv.otherUserId === recipient.id);
+            
+            if (!exists) {
+              // Create new conversation
+              const userId = user?.id || user?.email;
+              if (userId) {
+                const conversationId = getConversationId(userId, recipient.id);
+                const newConversation = {
+                  id: conversationId,
+                  otherUserId: recipient.id,
+                  otherUserName: recipient.name || 'Worker',
+                  lastMessage: 'Start your conversation here',
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  unread: 0,
+                  role: 'WORKER',
+                  avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
+                };
+
+                const updatedConversations = [newConversation, ...conversations];
+                setConversations(updatedConversations);
+                saveUserConversations(userId, updatedConversations);
+                
+                setSelectedConversationId(conversationId);
+                loadMessagesForConversation(conversationId);
+              }
+            } else {
+              // Select existing conversation
+              const existing = conversations.find(conv => conv.otherUserId === recipient.id);
+              if (existing) {
+                setSelectedConversationId(existing.id);
+                loadMessagesForConversation(existing.id);
+              }
+            }
+            
+            localStorage.removeItem('homelyserv_open_chat_on_load');
+            localStorage.removeItem('homelyserv_chat_recipient');
+            setAutoOpenDone(true);
+          } catch (error) {
+            console.error('Error parsing chat recipient:', error);
+            localStorage.removeItem('homelyserv_open_chat_on_load');
+            localStorage.removeItem('homelyserv_chat_recipient');
+          }
+        }
+      }
+    }
+  }, [loading, conversations, user, autoOpenDone]);
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
@@ -368,57 +404,6 @@ const EmployerMessages = () => {
     }
   };
 
-  const addChatRecipient = (recipient) => {
-    const userId = user?.id || user?.email;
-    if (!userId) {
-      console.log('No user ID');
-      return;
-    }
-
-    console.log('📨 Adding chat recipient:', recipient);
-
-    // Check if conversation already exists
-    const exists = conversations.some(conv => conv.otherUserId === recipient.id);
-    
-    if (!exists) {
-      const conversationId = getConversationId(userId, recipient.id);
-      const newConversation = {
-        id: conversationId,
-        otherUserId: recipient.id,
-        otherUserName: recipient.name || 'Worker',
-        lastMessage: 'Start your conversation here',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread: 0,
-        role: 'WORKER',
-        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
-      };
-
-      const updatedConversations = [newConversation, ...conversations];
-      setConversations(updatedConversations);
-      
-      saveUserConversations(userId, updatedConversations);
-      
-      setSelectedConversationId(conversationId);
-      loadMessagesForConversation(conversationId);
-      
-      localStorage.removeItem('homelyserv_chat_recipient');
-    } else {
-      const existing = conversations.find(conv => conv.otherUserId === recipient.id);
-      if (existing) {
-        console.log('📨 Conversation exists, selecting:', existing.id);
-        setSelectedConversationId(existing.id);
-        loadMessagesForConversation(existing.id);
-        localStorage.removeItem('homelyserv_chat_recipient');
-      }
-    }
-  };
-
-  // Refresh conversations
-  const refreshConversations = () => {
-    loadChatData();
-    setRefreshKey(prev => prev + 1);
-  };
-
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
@@ -443,6 +428,7 @@ const EmployerMessages = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
     localStorage.removeItem('homelyserv_selected_conversation_employer');
+    localStorage.removeItem('homelyserv_open_chat_on_load');
     navigate('/login');
   };
 
@@ -488,6 +474,12 @@ const EmployerMessages = () => {
     } else {
       console.log('❌ Failed to send message');
     }
+  };
+
+  // Refresh conversations
+  const refreshConversations = () => {
+    loadChatData();
+    setRefreshKey(prev => prev + 1);
   };
 
   if (!user || loading) {
