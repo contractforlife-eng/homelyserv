@@ -40,7 +40,7 @@ import EmployerProfile from './pages/EmployerProfile';
 import EmployerComplaints from './pages/EmployerComplaints';
 import EmployerMessages from './pages/EmployerMessages';
 import EmployerSettings from './pages/EmployerSettings';
-import PaymentOptions from './pages/employer/PaymentOptions';
+import PaymentOptions from './pages/PaymentOptions';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -293,11 +293,11 @@ function App() {
       <Route 
         path="/payment-options" 
         element={
-         <ProtectedRoute requiredRole="EMPLOYER">
-           <PaymentOptions />
-         </ProtectedRoute>
-  } 
-/>
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <PaymentOptions />
+          </ProtectedRoute>
+  }  
+      />
       {/* ========== ADMIN ROUTES ========== */}
       <Route 
         path="/admin" 
