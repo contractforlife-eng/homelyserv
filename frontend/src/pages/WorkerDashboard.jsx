@@ -1,4 +1,4 @@
-// src/pages/WorkerDashboard.jsx - WITH REAL DATA
+// src/pages/WorkerDashboard.jsx - Add profile image
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -25,7 +25,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Sidebar Component (keep your existing code)
+// Sidebar Component - UPDATED with profile image
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -79,8 +79,15 @@ const WorkerSidebar = ({
     return location.pathname === path;
   };
 
+  // Get profile image from user
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
-    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -124,8 +131,16 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-red-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -221,7 +236,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerDashboard Component - REAL DATA
+// Main WorkerDashboard Component
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -287,7 +302,6 @@ const WorkerDashboard = () => {
 
   const t = translations[language];
 
-  // Load REAL data from actual sources
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -314,27 +328,21 @@ const WorkerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load REAL stats from actual data sources
     loadRealStats();
   }, [navigate]);
 
-  // Load real data from localStorage
   const loadRealStats = () => {
     try {
-      // Get applied offers from worker_applied_offers
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       const totalApplications = appliedOffers.length;
       
-      // Get saved offers from worker_saved_offers
       const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
       const savedJobs = savedOffers.length;
       
-      // Get messages from worker messages
       const userId = user?.id || user?.email;
       let messagesCount = 0;
       if (userId) {
         const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
-        // Count messages where this user is recipient
         Object.keys(allMessages).forEach(convId => {
           const msgs = allMessages[convId] || [];
           msgs.forEach(msg => {
@@ -345,21 +353,16 @@ const WorkerDashboard = () => {
         });
       }
       
-      // Get offers from employer_offers (active offers)
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const activeOffers = employerOffers.length;
       
-      // Get interviews count (from applied offers that have interview status)
       const interviews = appliedOffers.filter(id => {
-        // Check if any offer has interview status
         const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
         return offers.some(o => o.id === id && o.status === 'interview');
       }).length;
       
-      // Get profile views (from profile views tracking)
       const profileViews = parseInt(localStorage.getItem('worker_profile_views') || '0');
       
-      // Update stats
       setStats({
         totalApplications: totalApplications,
         activeOffers: activeOffers,
@@ -369,24 +372,17 @@ const WorkerDashboard = () => {
         messages: messagesCount
       });
       
-      // Generate recent activity from real data
       generateRecentActivity(appliedOffers, savedOffers);
-      
-      console.log('✅ Stats loaded:', {
-        totalApplications, activeOffers, interviews, savedJobs, profileViews, messagesCount
-      });
       
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
 
-  // Generate recent activity from real data
   const generateRecentActivity = (appliedOffers, savedOffers) => {
     const activities = [];
-    
-    // Get applied offers with details
     const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    
     appliedOffers.forEach(offerId => {
       const offer = allOffers.find(o => o.id === offerId);
       if (offer) {
@@ -399,7 +395,6 @@ const WorkerDashboard = () => {
       }
     });
     
-    // Get saved offers
     savedOffers.forEach(offerId => {
       const offer = allOffers.find(o => o.id === offerId);
       if (offer) {
@@ -412,14 +407,12 @@ const WorkerDashboard = () => {
       }
     });
     
-    // Sort by time (most recent first)
     activities.sort((a, b) => {
       const dateA = new Date(a.time);
       const dateB = new Date(b.time);
       return dateB - dateA;
     });
     
-    // Limit to 10 most recent
     setRecentActivity(activities.slice(0, 10));
   };
 
@@ -489,6 +482,22 @@ const WorkerDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-red-100 overflow-hidden border-2 border-red-200">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-red-600 m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
@@ -505,12 +514,24 @@ const WorkerDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Section */}
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
-                <p className="text-red-100 mt-1">{t.overview}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
+                  <p className="text-red-100 mt-1">{t.overview}</p>
+                </div>
               </div>
               <div className="flex gap-3">
                 <Link
@@ -531,7 +552,6 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - REAL DATA */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -577,7 +597,6 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -612,7 +631,6 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity - REAL DATA */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
             {recentActivity.length === 0 ? (
