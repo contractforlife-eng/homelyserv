@@ -1,18 +1,13 @@
-// src/pages/employer/EmployerPayments.jsx
+// src/pages/employer/PaymentOptions.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  User,
-  Briefcase,
-  DollarSign,
-  MapPin,
-  Star,
-  CheckCircle,
   CreditCard,
   Wallet,
   Building2,
   Shield,
+  CheckCircle,
   Home,
   MessageCircle,
   Settings,
@@ -27,7 +22,13 @@ import {
   FileCheck,
   Search,
   AlertTriangle,
-  UserCheck
+  User,
+  MapPin,
+  DollarSign,
+  Smartphone,
+  Banknote,
+  Lock,
+  Star
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -225,54 +226,113 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerPayments Component
-const EmployerPayments = () => {
+// Main PaymentOptions Component
+const PaymentOptions = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workerData, setWorkerData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedMethod, setSelectedMethod] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const paymentMethods = [
+    {
+      id: 'credit-card',
+      name: 'Credit Card',
+      icon: CreditCard,
+      description: 'Pay securely with your credit card',
+      color: 'blue'
+    },
+    {
+      id: 'debit-card',
+      name: 'Debit Card',
+      icon: CreditCard,
+      description: 'Pay directly from your bank account',
+      color: 'purple'
+    },
+    {
+      id: 'mobile-wallet',
+      name: 'Mobile Wallet',
+      icon: Smartphone,
+      description: 'Pay using your mobile wallet',
+      color: 'green'
+    },
+    {
+      id: 'bank-transfer',
+      name: 'Bank Transfer',
+      icon: Building2,
+      description: 'Direct bank transfer',
+      color: 'orange'
+    },
+    {
+      id: 'instapay',
+      name: 'InstaPay',
+      icon: Wallet,
+      description: 'Instant payment with InstaPay',
+      color: 'pink'
+    },
+    {
+      id: 'cash',
+      name: 'Cash',
+      icon: Banknote,
+      description: 'Pay in cash upon agreement',
+      color: 'teal'
+    }
+  ];
 
   const translations = {
     en: {
-      title: 'Payment Details',
-      subtitle: 'Review and confirm your hiring payment',
-      workerDetails: 'Worker Details',
-      paymentSummary: 'Payment Summary',
-      hourlyRate: 'Hourly Rate',
-      subtotal: 'Subtotal',
-      commission: 'Commission (15%)',
-      total: 'Total Amount',
-      confirmPayment: 'Proceed to Payment',
+      title: 'Payment Options',
+      subtitle: 'Choose your preferred payment method',
+      selectedWorker: 'Selected Worker',
+      totalAmount: 'Total Amount',
+      commission: 'Commission (15%) included',
+      paymentMethods: 'Payment Methods',
+      selectMethod: 'Select a payment method',
+      confirmPayment: 'Confirm Payment',
+      processing: 'Processing...',
+      success: 'Payment Successful!',
+      successMessage: 'You have successfully hired this worker.',
       backToSearch: 'Back to Search',
+      back: 'Back',
       languageToggle: 'العربية',
       notifications: 'Notifications',
-      loading: 'Loading payment details...',
+      loading: 'Loading payment options...',
       noWorkerData: 'No worker selected',
       goBack: 'Go back and select a worker',
-      hoursPerWeek: 'Hours/Week',
-      weeksPerMonth: 'Weeks/Month'
+      securePayment: 'Secure Payment',
+      secureDescription: 'Your payment is encrypted and secure',
+      chooseMethod: 'Choose your payment method below',
+      recommended: 'Recommended'
     },
     ar: {
-      title: 'تفاصيل الدفع',
-      subtitle: 'مراجعة وتأكيد دفع التوظيف',
-      workerDetails: 'تفاصيل العامل',
-      paymentSummary: 'ملخص الدفع',
-      hourlyRate: 'السعر بالساعة',
-      subtotal: 'المجموع الفرعي',
-      commission: 'العمولة (15%)',
-      total: 'المبلغ الإجمالي',
-      confirmPayment: 'المتابعة للدفع',
+      title: 'خيارات الدفع',
+      subtitle: 'اختر طريقة الدفع المفضلة لديك',
+      selectedWorker: 'العامل المختار',
+      totalAmount: 'المبلغ الإجمالي',
+      commission: 'العمولة (15%) مشمولة',
+      paymentMethods: 'طرق الدفع',
+      selectMethod: 'اختر طريقة الدفع',
+      confirmPayment: 'تأكيد الدفع',
+      processing: 'جاري المعالجة...',
+      success: 'تم الدفع بنجاح!',
+      successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح.',
       backToSearch: 'العودة إلى البحث',
+      back: 'رجوع',
       languageToggle: 'English',
       notifications: 'الإشعارات',
-      loading: 'جاري تحميل تفاصيل الدفع...',
+      loading: 'جاري تحميل خيارات الدفع...',
       noWorkerData: 'لم يتم اختيار عامل',
       goBack: 'ارجع واختر عاملاً',
-      hoursPerWeek: 'ساعات/أسبوع',
-      weeksPerMonth: 'أسابيع/شهر'
+      securePayment: 'دفع آمن',
+      secureDescription: 'مدفوعاتك مشفرة وآمنة',
+      chooseMethod: 'اختر طريقة الدفع أدناه',
+      recommended: 'موصى به'
     }
   };
 
@@ -306,7 +366,6 @@ const EmployerPayments = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load selected worker data
     const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
     if (selectedWorker) {
       try {
@@ -346,12 +405,44 @@ const EmployerPayments = () => {
   };
 
   const handleBack = () => {
-    navigate('/employer-search');
+    navigate('/employer-payments');
   };
 
-  // Navigate to payment options page
-  const handleProceedToPayment = () => {
-    navigate('/payment-options');
+  const handleSelectMethod = (methodId) => {
+    setSelectedMethod(methodId);
+  };
+
+  const handleConfirmPayment = () => {
+    if (!selectedMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+    
+    setIsProcessing(true);
+    
+    setTimeout(() => {
+      setIsProcessing(false);
+      setPaymentSuccess(true);
+      
+      const hireRecord = {
+        id: 'hire_' + Date.now(),
+        workerId: workerData?.workerId,
+        workerName: workerData?.workerName,
+        employerId: user?.id || user?.email,
+        employerName: user?.fullName,
+        amount: total,
+        commission: commissionAmount,
+        paymentMethod: selectedMethod,
+        date: new Date().toISOString(),
+        status: 'completed'
+      };
+      
+      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      hires.push(hireRecord);
+      localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
+      
+      localStorage.removeItem('homelyserv_selected_worker');
+    }, 2500);
   };
 
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
@@ -361,6 +452,42 @@ const EmployerPayments = () => {
   const commissionRate = 0.15;
   const commissionAmount = subtotal * commissionRate;
   const total = subtotal + commissionAmount;
+
+  const getMethodColor = (color) => {
+    const colors = {
+      blue: 'border-blue-200 hover:border-blue-500 hover:bg-blue-50',
+      purple: 'border-purple-200 hover:border-purple-500 hover:bg-purple-50',
+      green: 'border-green-200 hover:border-green-500 hover:bg-green-50',
+      orange: 'border-orange-200 hover:border-orange-500 hover:bg-orange-50',
+      pink: 'border-pink-200 hover:border-pink-500 hover:bg-pink-50',
+      teal: 'border-teal-200 hover:border-teal-500 hover:bg-teal-50'
+    };
+    return colors[color] || colors.blue;
+  };
+
+  const getMethodBgColor = (color) => {
+    const colors = {
+      blue: 'bg-blue-100 text-blue-600',
+      purple: 'bg-purple-100 text-purple-600',
+      green: 'bg-green-100 text-green-600',
+      orange: 'bg-orange-100 text-orange-600',
+      pink: 'bg-pink-100 text-pink-600',
+      teal: 'bg-teal-100 text-teal-600'
+    };
+    return colors[color] || colors.blue;
+  };
+
+  const getSelectedColor = (color) => {
+    const colors = {
+      blue: 'border-blue-500 bg-blue-50 ring-2 ring-blue-500',
+      purple: 'border-purple-500 bg-purple-50 ring-2 ring-purple-500',
+      green: 'border-green-500 bg-green-50 ring-2 ring-green-500',
+      orange: 'border-orange-500 bg-orange-50 ring-2 ring-orange-500',
+      pink: 'border-pink-500 bg-pink-50 ring-2 ring-pink-500',
+      teal: 'border-teal-500 bg-teal-50 ring-2 ring-teal-500'
+    };
+    return colors[color] || colors.blue;
+  };
 
   if (!user || loading) {
     return (
@@ -394,7 +521,7 @@ const EmployerPayments = () => {
               <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noWorkerData}</h3>
               <p className="text-gray-500">{t.goBack}</p>
               <button
-                onClick={handleBack}
+                onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
               >
                 {t.backToSearch}
@@ -451,121 +578,149 @@ const EmployerPayments = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-teal-100 mt-1">{t.subtitle}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Worker Details - Left Column */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.workerDetails}</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center">
-                    {workerData?.workerPhoto ? (
-                      <img 
-                        src={workerData.workerPhoto} 
-                        alt={workerData.workerName} 
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User size={32} className="text-teal-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-800">{workerData?.workerName}</h4>
-                    <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        {workerData?.workerLocation || 'Location not specified'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Star size={14} className="text-yellow-500" />
-                        {workerData?.rating || '4.5'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {workerData?.workerSkills?.slice(0, 5).map((skill, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                  {workerData?.workerSkills?.length > 5 && (
-                    <span className="px-3 py-1 bg-gray-50 text-gray-500 rounded-full text-sm">
-                      +{workerData.workerSkills.length - 5} more
-                    </span>
-                  )}
-                </div>
+          {paymentSuccess ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-green-200">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={40} className="text-green-600" />
               </div>
-            </div>
-
-            {/* Payment Summary - Right Column */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 sticky top-24">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentSummary}</h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.hourlyRate}</span>
-                    <span className="font-medium">EGP {hourlyRate}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.hoursPerWeek}</span>
-                    <span className="font-medium">{hoursPerWeek} hrs</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.weeksPerMonth}</span>
-                    <span className="font-medium">{weeksPerMonth} weeks</span>
-                  </div>
-                  
-                  <div className="border-t border-gray-200 my-2 pt-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.subtotal}</span>
-                      <span className="font-medium">EGP {subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.commission}</span>
-                      <span className="font-medium text-red-500">+ EGP {commissionAmount.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-3">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>{t.total}</span>
-                      <span className="text-teal-600">EGP {total.toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{t.commission} included</p>
-                  </div>
-                </div>
-
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.success}</h2>
+              <p className="text-gray-600 mb-6">{t.successMessage}</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
-                  onClick={handleProceedToPayment}
-                  className="w-full mt-4 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition flex items-center justify-center gap-2"
+                  onClick={() => navigate('/employer-search')}
+                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
                 >
-                  <Shield size={18} />
-                  {t.confirmPayment}
-                </button>
-
-                <button
-                  onClick={handleBack}
-                  className="w-full mt-2 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft size={16} />
                   {t.backToSearch}
                 </button>
+                <button
+                  onClick={() => navigate('/my-hires')}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  View My Hires
+                </button>
               </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Worker Summary */}
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center">
+                      <User size={28} className="text-teal-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">{workerData?.workerName}</h3>
+                      <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin size={14} />
+                          {workerData?.workerLocation || 'Location not specified'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star size={14} className="text-yellow-500" />
+                          {workerData?.rating || '4.5'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">{t.totalAmount}</p>
+                    <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
+                    <p className="text-xs text-gray-400">{t.commission}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">{t.paymentMethods}</h3>
+                    <p className="text-sm text-gray-500">{t.chooseMethod}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Lock size={16} className="text-green-500" />
+                    <span>{t.securePayment}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {paymentMethods.map((method) => {
+                    const isSelected = selectedMethod === method.id;
+                    const Icon = method.icon;
+                    return (
+                      <button
+                        key={method.id}
+                        onClick={() => handleSelectMethod(method.id)}
+                        className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
+                          isSelected 
+                            ? getSelectedColor(method.color)
+                            : getMethodColor(method.color)
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getMethodBgColor(method.color)}`}>
+                            <Icon size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-800">{method.name}</p>
+                              {method.id === 'credit-card' && (
+                                <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-semibold rounded">
+                                  {t.recommended}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">{method.description}</p>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle size={18} className="text-teal-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleConfirmPayment}
+                  disabled={isProcessing || !selectedMethod}
+                  className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t.processing}
+                    </>
+                  ) : (
+                    <>
+                      <Shield size={18} />
+                      {t.confirmPayment}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleBack}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft size={18} />
+                  {t.back}
+                </button>
+              </div>
+
+              {!selectedMethod && (
+                <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
+              )}
+            </>
+          )}
         </div>
       </main>
     </div>
   );
 };
 
-export default EmployerPayments;
+export default PaymentOptions;
