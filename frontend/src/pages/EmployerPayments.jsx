@@ -8,13 +8,11 @@ import {
   DollarSign,
   MapPin,
   Star,
-  Clock,
   CheckCircle,
   CreditCard,
   Wallet,
-  Banknote,
+  Building2,
   Shield,
-  AlertCircle,
   Home,
   MessageCircle,
   Settings,
@@ -29,8 +27,7 @@ import {
   FileCheck,
   Search,
   AlertTriangle,
-  UserCheck,
-  FileText
+  UserCheck
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -228,7 +225,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerPayments Component
+// Main EmployerPayments Component - Simplified
 const EmployerPayments = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -237,7 +234,6 @@ const EmployerPayments = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workerData, setWorkerData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -248,34 +244,19 @@ const EmployerPayments = () => {
       workerDetails: 'Worker Details',
       paymentSummary: 'Payment Summary',
       hourlyRate: 'Hourly Rate',
-      hoursPerWeek: 'Hours Per Week',
-      weeksPerMonth: 'Weeks Per Month',
       subtotal: 'Subtotal',
       commission: 'Commission (15%)',
       total: 'Total Amount',
-      paymentMethod: 'Payment Method',
-      creditCard: 'Credit Card',
-      bankTransfer: 'Bank Transfer',
-      mobileWallet: 'Mobile Wallet',
       confirmPayment: 'Confirm Payment',
       processing: 'Processing...',
       success: 'Payment Successful!',
       successMessage: 'You have successfully hired this worker.',
       backToSearch: 'Back to Search',
-      contactWorker: 'Contact Worker',
-      cardNumber: 'Card Number',
-      expiryDate: 'Expiry Date',
-      cvv: 'CVV',
-      cardholderName: 'Cardholder Name',
-      bankName: 'Bank Name',
-      accountNumber: 'Account Number',
-      walletNumber: 'Wallet Number',
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Loading payment details...',
       noWorkerData: 'No worker selected',
-      goBack: 'Go back and select a worker',
-      commissionNote: 'Commission is 15% of the total amount'
+      goBack: 'Go back and select a worker'
     },
     ar: {
       title: 'تفاصيل الدفع',
@@ -283,34 +264,19 @@ const EmployerPayments = () => {
       workerDetails: 'تفاصيل العامل',
       paymentSummary: 'ملخص الدفع',
       hourlyRate: 'السعر بالساعة',
-      hoursPerWeek: 'ساعات في الأسبوع',
-      weeksPerMonth: 'أسابيع في الشهر',
       subtotal: 'المجموع الفرعي',
       commission: 'العمولة (15%)',
       total: 'المبلغ الإجمالي',
-      paymentMethod: 'طريقة الدفع',
-      creditCard: 'بطاقة ائتمان',
-      bankTransfer: 'تحويل بنكي',
-      mobileWallet: 'محفظة إلكترونية',
       confirmPayment: 'تأكيد الدفع',
       processing: 'جاري المعالجة...',
       success: 'تم الدفع بنجاح!',
       successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح.',
       backToSearch: 'العودة إلى البحث',
-      contactWorker: 'تواصل مع العامل',
-      cardNumber: 'رقم البطاقة',
-      expiryDate: 'تاريخ الانتهاء',
-      cvv: 'رمز CVV',
-      cardholderName: 'اسم صاحب البطاقة',
-      bankName: 'اسم البنك',
-      accountNumber: 'رقم الحساب',
-      walletNumber: 'رقم المحفظة',
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري تحميل تفاصيل الدفع...',
       noWorkerData: 'لم يتم اختيار عامل',
-      goBack: 'ارجع واختر عاملاً',
-      commissionNote: 'العمولة هي 15% من المبلغ الإجمالي'
+      goBack: 'ارجع واختر عاملاً'
     }
   };
 
@@ -344,7 +310,7 @@ const EmployerPayments = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load selected worker data from localStorage
+    // Load selected worker data
     const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
     if (selectedWorker) {
       try {
@@ -387,10 +353,9 @@ const EmployerPayments = () => {
     navigate('/employer-search');
   };
 
-  const handleConfirmPayment = async () => {
+  const handleConfirmPayment = () => {
     setIsProcessing(true);
     
-    // Simulate payment processing
     setTimeout(() => {
       setIsProcessing(false);
       setPaymentSuccess(true);
@@ -405,41 +370,26 @@ const EmployerPayments = () => {
         amount: total,
         commission: commissionAmount,
         date: new Date().toISOString(),
-        status: 'completed',
-        paymentMethod: paymentMethod
+        status: 'completed'
       };
       
-      // Save to localStorage
       const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       hires.push(hireRecord);
       localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
       
-      // Clear selected worker
       localStorage.removeItem('homelyserv_selected_worker');
     }, 2000);
   };
 
-  // Calculate payment
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-  const hoursPerWeek = 40; // Default
-  const weeksPerMonth = 4; // Default
+  const hoursPerWeek = 40;
+  const weeksPerMonth = 4;
   const subtotal = hourlyRate * hoursPerWeek * weeksPerMonth;
   const commissionRate = 0.15;
   const commissionAmount = subtotal * commissionRate;
   const total = subtotal + commissionAmount;
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -529,176 +479,58 @@ const EmployerPayments = () => {
 
         <div className="p-4 md:p-6">
           {paymentSuccess ? (
-            // Success State
             <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-green-200">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={40} className="text-green-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.success}</h2>
               <p className="text-gray-600 mb-6">{t.successMessage}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => navigate('/employer-search')}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-                >
-                  {t.backToSearch}
-                </button>
-                <button
-                  onClick={() => navigate('/my-hires')}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  View My Hires
-                </button>
-              </div>
+              <button
+                onClick={() => navigate('/employer-search')}
+                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+              >
+                {t.backToSearch}
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Worker Details */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Worker Info */}
+              <div className="lg:col-span-2">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.workerDetails}</h3>
                   <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center">
-                      {workerData?.workerPhoto ? (
-                        <img src={workerData.workerPhoto} alt={workerData.workerName} className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        <User size={32} className="text-teal-600" />
-                      )}
+                    <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center">
+                      <User size={32} className="text-teal-600" />
                     </div>
                     <div>
                       <h4 className="text-xl font-bold text-gray-800">{workerData?.workerName}</h4>
                       <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <MapPin size={14} />
                           {workerData?.workerLocation || 'Location not specified'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-500" />
-                          {workerData?.rating || '4.5'}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {workerData?.workerSkills?.slice(0, 5).map((skill, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Payment Method */}
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentMethod}</h3>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'card' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <CreditCard size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.creditCard}</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('bank')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'bank' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <Building2 size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.bankTransfer}</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('wallet')}
-                      className={`p-3 border rounded-lg text-center transition ${
-                        paymentMethod === 'wallet' 
-                          ? 'border-teal-500 bg-teal-50' 
-                          : 'border-gray-200 hover:border-teal-300'
-                      }`}
-                    >
-                      <Wallet size={24} className="mx-auto mb-1 text-gray-600" />
-                      <span className="text-xs font-medium">{t.mobileWallet}</span>
-                    </button>
-                  </div>
-
-                  {/* Payment Form Fields */}
-                  <div className="space-y-3">
-                    {paymentMethod === 'card' && (
-                      <>
-                        <input
-                          type="text"
-                          placeholder={t.cardNumber}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            placeholder={t.expiryDate}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder={t.cvv}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder={t.cardholderName}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                      </>
-                    )}
-                    {paymentMethod === 'bank' && (
-                      <>
-                        <input
-                          type="text"
-                          placeholder={t.bankName}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        <input
-                          type="text"
-                          placeholder={t.accountNumber}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                      </>
-                    )}
-                    {paymentMethod === 'wallet' && (
-                      <input
-                        type="text"
-                        placeholder={t.walletNumber}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
-                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column - Payment Summary */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 sticky top-24">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentSummary}</h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{t.hourlyRate}</span>
                       <span className="font-medium">EGP {hourlyRate}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.hoursPerWeek}</span>
-                      <span className="font-medium">{hoursPerWeek} hrs</span>
+                      <span className="text-gray-500">Hours/Week</span>
+                      <span className="font-medium">40 hrs</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.weeksPerMonth}</span>
-                      <span className="font-medium">{weeksPerMonth} weeks</span>
+                      <span className="text-gray-500">Weeks/Month</span>
+                      <span className="font-medium">4 weeks</span>
                     </div>
                     
                     <div className="border-t border-gray-200 my-2 pt-2">
@@ -717,7 +549,6 @@ const EmployerPayments = () => {
                         <span>{t.total}</span>
                         <span className="text-teal-600">EGP {total.toFixed(2)}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{t.commissionNote}</p>
                     </div>
                   </div>
 
