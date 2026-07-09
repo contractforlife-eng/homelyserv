@@ -28,7 +28,10 @@ import {
   FileCheck,
   Search,
   AlertTriangle,
-  Home
+  Home,
+  Send,
+  Copy,
+  Check
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -41,7 +44,7 @@ const EmployerSidebar = ({
   user, 
   handleLogout 
 }) => {
-  const location = useLocation(); // Now this works because useLocation is imported
+  const location = useLocation();
 
   const translations = {
     en: {
@@ -235,6 +238,8 @@ const WorkerProfileView = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showContactOptions, setShowContactOptions] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const translations = {
     en: {
@@ -253,7 +258,6 @@ const WorkerProfileView = () => {
       availability: 'Availability',
       available: 'Available',
       notAvailable: 'Not Available',
-      languages: 'Languages',
       contactInfo: 'Contact Information',
       email: 'Email',
       phone: 'Phone',
@@ -262,7 +266,15 @@ const WorkerProfileView = () => {
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Loading worker profile...',
-      noWorkerData: 'No worker data found'
+      noWorkerData: 'No worker data found',
+      contactOptions: 'Contact Options',
+      sendEmail: 'Send Email',
+      callPhone: 'Call Phone',
+      startChat: 'Start Chat',
+      copyEmail: 'Copy Email',
+      emailCopied: 'Email copied!',
+      phoneCopied: 'Phone copied!',
+      close: 'Close'
     },
     ar: {
       title: 'الملف الشخصي للعامل',
@@ -280,7 +292,6 @@ const WorkerProfileView = () => {
       availability: 'التوفر',
       available: 'متاح',
       notAvailable: 'غير متاح',
-      languages: 'اللغات',
       contactInfo: 'معلومات الاتصال',
       email: 'البريد الإلكتروني',
       phone: 'الهاتف',
@@ -289,7 +300,15 @@ const WorkerProfileView = () => {
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري تحميل الملف الشخصي...',
-      noWorkerData: 'لا توجد بيانات للعامل'
+      noWorkerData: 'لا توجد بيانات للعامل',
+      contactOptions: 'خيارات التواصل',
+      sendEmail: 'إرسال بريد إلكتروني',
+      callPhone: 'اتصال هاتفي',
+      startChat: 'بدء محادثة',
+      copyEmail: 'نسخ البريد الإلكتروني',
+      emailCopied: 'تم نسخ البريد الإلكتروني!',
+      phoneCopied: 'تم نسخ رقم الهاتف!',
+      close: 'إغلاق'
     }
   };
 
@@ -381,6 +400,66 @@ const WorkerProfileView = () => {
         workerLocation: worker.location || 'Not specified'
       }));
       navigate('/employer-payments');
+    }
+  };
+
+  // Contact Worker Functionality
+  const handleContactWorker = () => {
+    setShowContactOptions(true);
+  };
+
+  const handleSendEmail = () => {
+    if (worker?.email) {
+      window.location.href = `mailto:${worker.email}?subject=Job Opportunity on HomelyServ&body=Hello ${worker.fullName || 'Worker'},%0D%0A%0D%0AI came across your profile on HomelyServ and I'm interested in discussing a potential opportunity.%0D%0A%0D%0APlease let me know if you're available.%0D%0A%0D%0AThank you.`;
+    }
+    setShowContactOptions(false);
+  };
+
+  const handleCallPhone = () => {
+    if (worker?.phone) {
+      window.location.href = `tel:${worker.phone}`;
+    } else {
+      alert('Phone number not available');
+    }
+    setShowContactOptions(false);
+  };
+
+  const handleStartChat = () => {
+    // Save conversation data and navigate to messages
+    if (worker) {
+      const conversationData = {
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        employerId: user?.id || user?.email,
+        employerName: user?.fullName,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
+      
+      // Navigate to messages page
+      if (user?.role === 'EMPLOYER') {
+        navigate('/employer-messages');
+      } else {
+        navigate('/messages');
+      }
+    }
+    setShowContactOptions(false);
+  };
+
+  const handleCopyEmail = () => {
+    if (worker?.email) {
+      navigator.clipboard.writeText(worker.email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  const handleCopyPhone = () => {
+    if (worker?.phone) {
+      navigator.clipboard.writeText(worker.phone);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
     }
   };
 
@@ -557,6 +636,7 @@ const WorkerProfileView = () => {
                   {t.hire}
                 </button>
                 <button
+                  onClick={handleContactWorker}
                   className="px-6 py-2 border border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition flex items-center gap-2"
                 >
                   <MessageCircle size={18} />
@@ -619,13 +699,41 @@ const WorkerProfileView = () => {
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.contactInfo}</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail size={16} className="text-gray-400" />
-                    <span className="text-gray-600">{worker.email}</span>
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      <Mail size={16} className="text-gray-400" />
+                      <span className="text-gray-600">{worker.email}</span>
+                    </div>
+                    <button
+                      onClick={handleCopyEmail}
+                      className="p-1 hover:bg-gray-100 rounded transition"
+                      title={t.copyEmail}
+                    >
+                      {copied ? (
+                        <Check size={14} className="text-green-500" />
+                      ) : (
+                        <Copy size={14} className="text-gray-400" />
+                      )}
+                    </button>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone size={16} className="text-gray-400" />
-                    <span className="text-gray-600">{worker.phone || 'Not provided'}</span>
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      <Phone size={16} className="text-gray-400" />
+                      <span className="text-gray-600">{worker.phone || 'Not provided'}</span>
+                    </div>
+                    {worker.phone && (
+                      <button
+                        onClick={handleCopyPhone}
+                        className="p-1 hover:bg-gray-100 rounded transition"
+                        title={t.copyEmail}
+                      >
+                        {copied ? (
+                          <Check size={14} className="text-green-500" />
+                        ) : (
+                          <Copy size={14} className="text-gray-400" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -633,6 +741,65 @@ const WorkerProfileView = () => {
           </div>
         </div>
       </main>
+
+      {/* Contact Options Modal */}
+      {showContactOptions && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">{t.contactOptions}</h3>
+              <button
+                onClick={() => setShowContactOptions(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {worker?.email && (
+                <button
+                  onClick={handleSendEmail}
+                  className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+                >
+                  <Mail size={20} className="text-teal-600" />
+                  <div className="text-left">
+                    <p className="font-medium text-gray-800">{t.sendEmail}</p>
+                    <p className="text-sm text-gray-500">{worker.email}</p>
+                  </div>
+                </button>
+              )}
+              {worker?.phone && (
+                <button
+                  onClick={handleCallPhone}
+                  className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+                >
+                  <Phone size={20} className="text-teal-600" />
+                  <div className="text-left">
+                    <p className="font-medium text-gray-800">{t.callPhone}</p>
+                    <p className="text-sm text-gray-500">{worker.phone}</p>
+                  </div>
+                </button>
+              )}
+              <button
+                onClick={handleStartChat}
+                className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+              >
+                <MessageCircle size={20} className="text-teal-600" />
+                <div className="text-left">
+                  <p className="font-medium text-gray-800">{t.startChat}</p>
+                  <p className="text-sm text-gray-500">Start a conversation with {worker.fullName}</p>
+                </div>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowContactOptions(false)}
+              className="w-full mt-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            >
+              {t.close}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
