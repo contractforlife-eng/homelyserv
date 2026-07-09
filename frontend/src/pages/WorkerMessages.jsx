@@ -26,7 +26,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Sidebar Component
+// Worker Sidebar Component
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -221,7 +221,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - REAL CHAT
+// Main WorkerMessages Component - UPDATED
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -231,9 +231,9 @@ const WorkerMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const translations = {
     en: {
@@ -272,12 +272,7 @@ const WorkerMessages = () => {
 
   const t = translations[language];
 
-  // Get current user ID
-  const getUserId = () => {
-    if (!user) return null;
-    return user.id || user.email || 'worker_' + Date.now();
-  };
-
+  // Load user and chat data
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -288,6 +283,10 @@ const WorkerMessages = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'WORKER') {
+          navigate('/login');
+          return;
+        }
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -308,55 +307,32 @@ const WorkerMessages = () => {
 
   // Load chat data from localStorage
   const loadChatData = () => {
-    const userId = getUserId();
+    const userId = user?.id || user?.email;
     if (!userId) return;
 
-    // Load conversations for this user
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '{}');
+    // Load worker conversations
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_worker_conversations') || '{}');
     const userConversations = allConversations[userId] || [];
     setConversations(userConversations);
 
-    // Load messages for this user
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_messages') || '{}');
+    // Load worker messages
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_worker_messages') || '{}');
     const userMessages = allMessages[userId] || [];
     setMessages(userMessages);
   };
 
   // Save chat data to localStorage
   const saveChatData = (newConversations, newMessages) => {
-    const userId = getUserId();
+    const userId = user?.id || user?.email;
     if (!userId) return;
 
-    // Save conversations
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '{}');
+    const allConversations = JSON.parse(localStorage.getItem('homelyserv_worker_conversations') || '{}');
     allConversations[userId] = newConversations;
-    localStorage.setItem('homelyserv_conversations', JSON.stringify(allConversations));
+    localStorage.setItem('homelyserv_worker_conversations', JSON.stringify(allConversations));
 
-    // Save messages
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_messages') || '{}');
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_worker_messages') || '{}');
     allMessages[userId] = newMessages;
-    localStorage.setItem('homelyserv_messages', JSON.stringify(allMessages));
-  };
-
-  // Create a new conversation
-  const createConversation = (employerName, employerId, employerAvatar) => {
-    const newConversation = {
-      id: Date.now(),
-      name: employerName || 'Employer',
-      role: 'Employer',
-      employerId: employerId || 'employer_' + Date.now(),
-      lastMessage: 'Start your conversation here',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      unread: 0,
-      online: true,
-      avatar: employerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop'
-    };
-
-    const updatedConversations = [...conversations, newConversation];
-    setConversations(updatedConversations);
-    saveChatData(updatedConversations, messages);
-    setSelectedChatId(newConversation.id);
-    return newConversation;
+    localStorage.setItem('homelyserv_worker_messages', JSON.stringify(allMessages));
   };
 
   useEffect(() => {
@@ -404,7 +380,6 @@ const WorkerMessages = () => {
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     
-    // Update conversation last message
     const updatedConversations = conversations.map(conv => {
       if (conv.id === selectedChatId) {
         return { 
@@ -422,26 +397,7 @@ const WorkerMessages = () => {
     setMessage('');
   };
 
-  // Add a new conversation (for testing/demo purposes)
-  const addDemoConversation = () => {
-    const employerName = prompt('Enter employer name:', 'Ahmed Ali');
-    if (employerName) {
-      createConversation(employerName);
-    }
-  };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -492,28 +448,15 @@ const WorkerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
-              <button
-                onClick={addDemoConversation}
-                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
-              >
-                + New Chat
-              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
-                <p className="text-red-100 mt-1">{t.subtitle}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-red-100">
-                  {conversations.length} conversations
-                </span>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-red-100 mt-1">{t.subtitle}</p>
             </div>
           </div>
 
@@ -539,12 +482,6 @@ const WorkerMessages = () => {
                       <div className="text-4xl mb-3">💬</div>
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
-                      <button
-                        onClick={addDemoConversation}
-                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                      >
-                        Start a conversation
-                      </button>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -556,16 +493,20 @@ const WorkerMessages = () => {
                         }`}
                       >
                         <img
-                          src={conv.avatar || 'https://via.placeholder.com/40'}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=red&color=fff&size=100&bold=true`}
                           alt={conv.name}
                           className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=red&color=fff&size=100&bold=true`;
+                          }}
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
                             <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
                             <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage || 'No messages'}</p>
+                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
                               {conv.online ? t.online : t.offline}
@@ -590,9 +531,13 @@ const WorkerMessages = () => {
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChatId)?.avatar || 'https://via.placeholder.com/40'}
+                          src={conversations.find(c => c.id === selectedChatId)?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Employer')}&background=red&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Employer')}&background=red&color=fff&size=100&bold=true`;
+                          }}
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
