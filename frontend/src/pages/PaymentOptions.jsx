@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx - Updated with Credit/Debit Card forms
+// src/pages/PaymentOptions.jsx - COMPLETE UPDATED FILE
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -35,7 +35,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 
-// Employer Sidebar Component (keep the same as before)
+// Employer Sidebar Component (keep your existing code)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -321,7 +321,7 @@ const PaymentOptions = () => {
       confirmPayment: 'Confirm Payment',
       processing: 'Processing...',
       success: 'Payment Successful!',
-      successMessage: 'You have successfully hired this worker.',
+      successMessage: 'You have successfully hired this worker. An offer has been created for them.',
       backToSearch: 'Back to Search',
       back: 'Back',
       languageToggle: 'العربية',
@@ -360,7 +360,7 @@ const PaymentOptions = () => {
       confirmPayment: 'تأكيد الدفع',
       processing: 'جاري المعالجة...',
       success: 'تم الدفع بنجاح!',
-      successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح.',
+      successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح. تم إنشاء عرض عمل له.',
       backToSearch: 'العودة إلى البحث',
       back: 'رجوع',
       languageToggle: 'English',
@@ -464,7 +464,6 @@ const PaymentOptions = () => {
 
   const handleSelectMethod = (methodId) => {
     setSelectedMethod(methodId);
-    // Reset card form when switching methods
     if (methodId !== 'credit-card' && methodId !== 'debit-card') {
       setCardForm({
         cardNumber: '',
@@ -495,7 +494,6 @@ const PaymentOptions = () => {
       return;
     }
 
-    // Validate card form if credit/debit card is selected
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (method?.hasForm && method.formType === 'card') {
       if (!cardForm.cardNumber || cardForm.cardNumber.length < 16) {
@@ -522,10 +520,12 @@ const PaymentOptions = () => {
       setIsProcessing(false);
       setPaymentSuccess(true);
       
+      // Create hire record
       const hireRecord = {
         id: 'hire_' + Date.now(),
-        workerId: workerData?.workerId,
+        workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
+        workerEmail: workerData?.workerEmail,
         employerId: user?.id || user?.email,
         employerName: user?.fullName,
         amount: total,
@@ -535,9 +535,61 @@ const PaymentOptions = () => {
         status: 'completed'
       };
       
+      // Save hire record
       const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       hires.push(hireRecord);
       localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
+      
+      // ====== CREATE OFFER FOR THE WORKER ======
+      const newOffer = {
+        id: 'offer_' + Date.now(),
+        title: workerData?.desiredJob || 'Job Opportunity',
+        company: user?.fullName || 'Employer',
+        companyLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'Employer')}&background=teal&color=fff&size=80`,
+        location: workerData?.workerLocation || 'Not specified',
+        salary: { 
+          min: Math.round(workerData?.hourlyRate * 40 * 4 * 0.85),
+          max: Math.round(workerData?.hourlyRate * 40 * 4)
+        },
+        type: 'Full Time',
+        skills: workerData?.workerSkills || [],
+        benefits: ['Health Insurance', 'Paid Vacation', 'Transportation'],
+        description: `Hired by ${user?.fullName || 'Employer'} for ${workerData?.desiredJob || 'work'}. Payment completed on ${new Date().toLocaleDateString()}.`,
+        requirements: ['Minimum experience required', 'Valid identification'],
+        responsibilities: ['Perform assigned duties', 'Report to employer'],
+        postedBy: user?.fullName || 'Employer',
+        postedAt: new Date().toISOString(),
+        applicants: 1,
+        matchScore: 95,
+        status: 'new',
+        isUrgent: true,
+        isFeatured: true,
+        contractType: 'Permanent',
+        workSchedule: 'As agreed with employer',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        companyInfo: {
+          industry: 'Home Services',
+          size: 'Individual Employer',
+          description: `Employer: ${user?.fullName || 'Employer'}`
+        },
+        isSaved: false,
+        isApplied: false,
+        hireId: hireRecord.id,
+        employerId: user?.id || user?.email
+      };
+      
+      // Save to employer_offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      employerOffers.push(newOffer);
+      localStorage.setItem('employer_offers', JSON.stringify(employerOffers));
+      
+      // Save to homelyserv_offers
+      const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
+      centralOffers.push(newOffer);
+      localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
+      
+      console.log('✅ Offer created for worker:', newOffer);
       
       localStorage.removeItem('homelyserv_selected_worker');
     }, 2500);
@@ -591,7 +643,6 @@ const PaymentOptions = () => {
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (!method) return null;
 
-    // Render card form for credit/debit card
     if (method.hasForm && method.formType === 'card') {
       return (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -609,12 +660,6 @@ const PaymentOptions = () => {
                   placeholder={t.enterCardNumber}
                   maxLength="19"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  onKeyDown={(e) => {
-                    // Only allow numbers and backspace
-                    if (!/[\d\b]/.test(e.key) && e.key !== 'Backspace') {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
             </div>
@@ -669,7 +714,6 @@ const PaymentOptions = () => {
       );
     }
 
-    // Render payment details for other methods
     if (method.details) {
       return (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -893,7 +937,6 @@ const PaymentOptions = () => {
                 </div>
               </div>
 
-              {/* Worker Summary */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center gap-4">
@@ -923,7 +966,6 @@ const PaymentOptions = () => {
                 </div>
               </div>
 
-              {/* Payment Methods */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -974,11 +1016,9 @@ const PaymentOptions = () => {
                   })}
                 </div>
 
-                {/* Payment Details/Card Form */}
                 {selectedMethod && renderPaymentDetails()}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleConfirmPayment}
