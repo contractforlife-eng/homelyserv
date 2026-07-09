@@ -1,4 +1,4 @@
-// src/pages/employer/EmployerSearch.jsx - FIXED LOCATIONS
+// src/pages/employer/EmployerSearch.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -41,8 +41,9 @@ import {
   TrendingUp,
   Shield
 } from 'lucide-react';
+import { JOB_OPTIONS, getJobLabel, getJobLabels } from '../constants/jobOptions';
 
-// Employer Sidebar Component (same as before)
+// Employer Sidebar Component (keep your existing code)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -237,7 +238,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component - FIXED LOCATIONS
+// Main EmployerSearch Component - Using shared job options
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -253,24 +254,8 @@ const EmployerSearch = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Job options
-  const jobOptions = [
-    'Nanny',
-    'Baby Sitter',
-    'Elderly Caregiver',
-    'Driver',
-    'Cook',
-    'House Manager',
-    'Gardener',
-    'Nurse',
-    'Tutor',
-    'Housekeeper',
-    'Personal Assistant',
-    'Cleaner',
-    'Security Guard',
-    'Maintenance Worker',
-    'Teacher'
-  ];
+  // Use shared job options - just the labels for the dropdown
+  const jobLabels = getJobLabels();
 
   // Get unique locations from workers
   const getUniqueLocations = () => {
@@ -493,11 +478,19 @@ const EmployerSearch = () => {
         console.log('📊 After query filter:', results.length);
       }
       
-      // Filter by job
+      // Filter by job - using the shared job options
       if (selectedJob) {
         const jobLower = selectedJob.toLowerCase();
+        // Find the job value that matches the selected label
+        const matchedJob = JOB_OPTIONS.find(job => 
+          job.label.toLowerCase() === jobLower || 
+          job.value.toLowerCase() === jobLower
+        );
+        const jobValue = matchedJob ? matchedJob.value : selectedJob.toLowerCase().replace(/\s+/g, '_');
+        
         results = results.filter(worker => {
-          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
+          const match = worker.desiredJob?.toLowerCase() === jobValue ||
+                       worker.desiredJob?.toLowerCase().includes(jobValue) ||
                        worker.jobTitle?.toLowerCase().includes(jobLower) ||
                        worker.position?.toLowerCase().includes(jobLower);
           return match;
@@ -544,28 +537,9 @@ const EmployerSearch = () => {
     navigate('/worker-profile-view');
   };
 
-  const getJobLabel = (value) => {
-    const jobMap = {
-      'nanny': 'Nanny',
-      'elderly_care': 'Elderly Caregiver',
-      'housekeeper': 'Housekeeper',
-      'cook': 'Cook',
-      'driver': 'Driver',
-      'gardener': 'Gardener',
-      'house_manager': 'House Manager',
-      'tutor': 'Tutor',
-      'pet_care': 'Pet Care',
-      'maintenance': 'Maintenance',
-      'security': 'Security Guard',
-      'personal_assistant': 'Personal Assistant',
-      'event_planner': 'Event Planner',
-      'fitness_trainer': 'Fitness Trainer',
-      'nurse': 'Nurse',
-      'therapist': 'Therapist',
-      'cleaner': 'Cleaner',
-      'other': 'Other'
-    };
-    return jobMap[value] || value || 'Not specified';
+  // Use the shared getJobLabel function
+  const getJobLabelDisplay = (value) => {
+    return getJobLabel(value);
   };
 
   // Get unique locations from workers
@@ -687,7 +661,7 @@ const EmployerSearch = () => {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   >
                     <option value="">{t.selectJob}</option>
-                    {jobOptions.map((job) => (
+                    {jobLabels.map((job) => (
                       <option key={job} value={job}>{job}</option>
                     ))}
                   </select>
@@ -761,7 +735,7 @@ const EmployerSearch = () => {
                           <h4 className="font-semibold text-gray-800">{worker.fullName}</h4>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Briefcase size={14} />
-                            <span>{getJobLabel(worker.desiredJob)}</span>
+                            <span>{getJobLabelDisplay(worker.desiredJob)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <MapPin size={14} />

@@ -30,6 +30,7 @@ import {
   Camera,
   ChevronDown
 } from 'lucide-react';
+import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
 
 // Sidebar Component
 const WorkerSidebar = ({ 
@@ -250,27 +251,8 @@ const WorkerProfile = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
 
-  // Job options for dropdown
-  const jobOptions = [
-    { value: 'nanny', label: 'Nanny / Childcare' },
-    { value: 'elderly_care', label: 'Elderly Caregiver' },
-    { value: 'housekeeper', label: 'Housekeeper / Maid' },
-    { value: 'cook', label: 'Cook / Chef' },
-    { value: 'driver', label: 'Private Driver' },
-    { value: 'gardener', label: 'Gardener / Landscaper' },
-    { value: 'house_manager', label: 'House Manager' },
-    { value: 'tutor', label: 'Tutor / Teacher' },
-    { value: 'pet_care', label: 'Pet Care / Sitter' },
-    { value: 'maintenance', label: 'Maintenance / Handyman' },
-    { value: 'security', label: 'Security Guard' },
-    { value: 'personal_assistant', label: 'Personal Assistant' },
-    { value: 'event_planner', label: 'Event Planner' },
-    { value: 'fitness_trainer', label: 'Fitness Trainer' },
-    { value: 'nurse', label: 'Registered Nurse' },
-    { value: 'therapist', label: 'Therapist / Counselor' },
-    { value: 'cleaner', label: 'Deep Cleaner' },
-    { value: 'other', label: 'Other' }
-  ];
+  // Use imported JOB_OPTIONS instead of local
+  const jobOptions = JOB_OPTIONS;
 
   const translations = {
     en: {
@@ -835,7 +817,7 @@ const WorkerProfile = () => {
                 </div>
               </div>
 
-              {/* Desired Job Dropdown Field */}
+              {/* Desired Job Dropdown Field - Using shared job options */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t.desiredJob}

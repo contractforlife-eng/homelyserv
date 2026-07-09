@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Fixed profile pictures
+// src/pages/MyHires.jsx - Updated Chat Functionality
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -41,7 +41,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 
-// Employer Sidebar Component (keep the same)
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -236,7 +236,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main MyHires Component - FIXED PROFILE PICTURES
+// Main MyHires Component - FIXED CHAT
 const MyHires = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -408,29 +408,23 @@ const MyHires = () => {
       
       console.log(`✅ Loaded ${savedHires.length} hires from localStorage`);
       
-      // Get profiles to get profile images
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       
       const formattedHires = savedHires.map((hire, index) => {
-        // Get worker profile image from profiles if available
         let profileImage = '';
         
-        // Check if we have the worker's email and get profile image
         if (hire.workerEmail && profiles[hire.workerEmail]) {
           profileImage = profiles[hire.workerEmail].profileImage || '';
         }
         
-        // If no profile image, check if workerPhoto was saved
         if (!profileImage && hire.workerPhoto) {
           profileImage = hire.workerPhoto;
         }
         
-        // If still no image, check if worker.image exists
         if (!profileImage && hire.worker?.image) {
           profileImage = hire.worker.image;
         }
         
-        // Generate fallback avatar using ui-avatars.com
         const workerName = hire.workerName || 'Worker';
         const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(workerName)}&background=teal&color=fff&size=100&bold=true`;
         
@@ -475,7 +469,6 @@ const MyHires = () => {
     document.documentElement.lang = language;
   }, [language]);
 
-  // Filter and search
   useEffect(() => {
     let filtered = hires;
 
@@ -567,11 +560,27 @@ const MyHires = () => {
     }
   };
 
-  const handleChat = (workerId, workerName) => {
-    localStorage.setItem('chat_recipient', JSON.stringify({
-      id: workerId,
-      name: workerName
+  // FIXED: Chat functionality - opens chat directly with the worker
+  const handleChat = (worker) => {
+    // Save the chat recipient data
+    const chatData = {
+      id: worker.id,
+      name: worker.name,
+      email: worker.email || '',
+      phone: worker.phone || '',
+      image: worker.image || '',
+      role: 'worker'
+    };
+    
+    localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
+    localStorage.setItem('homelyserv_active_chat', JSON.stringify({
+      recipientId: worker.id,
+      recipientName: worker.name,
+      recipientImage: worker.image || '',
+      isWorker: true
     }));
+    
+    // Navigate to messages page
     navigate('/employer-messages');
   };
 
@@ -894,7 +903,7 @@ const MyHires = () => {
                           <h4 className="font-semibold text-gray-700 mb-3">Actions</h4>
                           <div className="flex flex-wrap gap-2">
                             <button
-                              onClick={() => handleChat(hire.worker.id, hire.worker.name)}
+                              onClick={() => handleChat(hire.worker)}
                               className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition flex items-center gap-1"
                             >
                               <MessageCircle size={14} />
