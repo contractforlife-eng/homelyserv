@@ -1,6 +1,6 @@
 // src/pages/WorkerProfileView.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   User,
@@ -41,7 +41,7 @@ const EmployerSidebar = ({
   user, 
   handleLogout 
 }) => {
-  const location = useLocation();
+  const location = useLocation(); // Now this works because useLocation is imported
 
   const translations = {
     en: {
