@@ -26,6 +26,13 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
+import {
+  getUserConversations,
+  getConversationMessages,
+  sendMessage,
+  markMessagesAsRead,
+  getConversation
+} from '../utils/chatService';
 
 // Employer Sidebar Component
 const EmployerSidebar = ({ 
@@ -82,6 +89,7 @@ const EmployerSidebar = ({
   };
 
   return (
+    // ... (keep your existing sidebar code - same as before)
     <>
       {mobileMenuOpen && (
         <div 
@@ -222,7 +230,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component - WITH SHARED STORAGE
+// Main EmployerMessages Component - FIXED
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -230,7 +238,7 @@ const EmployerMessages = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
@@ -273,7 +281,7 @@ const EmployerMessages = () => {
 
   const t = translations[language];
 
-  // Load user and check for chat recipient from MyHires
+  // Load user and chat data
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -319,67 +327,65 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Load chat data from SHARED localStorage
+  // Load chat data
   const loadChatData = () => {
     const userId = user?.id || user?.email;
     if (!userId) return;
 
-    // Load conversations from SHARED storage
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_chat_conversations') || '{}');
-    const userConversations = allConversations[userId] || [];
+    const userConversations = getUserConversations(userId);
     setConversations(userConversations);
-
-    // Load messages from SHARED storage
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
-    const userMessages = allMessages[userId] || [];
-    setMessages(userMessages);
   };
 
-  // Save chat data to SHARED localStorage
-  const saveChatData = (newConversations, newMessages) => {
+  // Load messages for a conversation
+  const loadMessagesForConversation = (conversationId) => {
+    const conversationMessages = getConversationMessages(conversationId);
+    setMessages(conversationMessages);
+    
+    // Mark messages as read
     const userId = user?.id || user?.email;
-    if (!userId) return;
-
-    // Save conversations to SHARED storage
-    const allConversations = JSON.parse(localStorage.getItem('homelyserv_chat_conversations') || '{}');
-    allConversations[userId] = newConversations;
-    localStorage.setItem('homelyserv_chat_conversations', JSON.stringify(allConversations));
-
-    // Save messages to SHARED storage
-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
-    allMessages[userId] = newMessages;
-    localStorage.setItem('homelyserv_chat_messages', JSON.stringify(allMessages));
+    if (userId) {
+      markMessagesAsRead(conversationId, userId);
+    }
   };
 
   // Add chat recipient from MyHires
   const addChatRecipient = (recipient) => {
+    const userId = user?.id || user?.email;
+    if (!userId) return;
+
     // Check if conversation already exists
-    const exists = conversations.some(conv => conv.id === recipient.id);
+    const exists = conversations.some(conv => conv.otherUserId === recipient.id);
     if (!exists) {
+      const conversationId = getConversation(userId, recipient.id);
       const newConversation = {
-        id: recipient.id || `worker_${Date.now()}`,
-        name: recipient.name || 'Worker',
-        role: 'Worker',
-        workerId: recipient.id,
+        id: conversationId,
+        otherUserId: recipient.id,
+        otherUserName: recipient.name || 'Worker',
         lastMessage: 'Start your conversation here',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         unread: 0,
-        online: true,
-        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
+        role: 'WORKER'
       };
 
       const updatedConversations = [newConversation, ...conversations];
       setConversations(updatedConversations);
-      saveChatData(updatedConversations, messages);
-      setSelectedChatId(newConversation.id);
+      
+      // Save to storage
+      import('../utils/chatService').then(({ saveUserConversations }) => {
+        saveUserConversations(userId, updatedConversations);
+      });
+      
+      setSelectedConversationId(conversationId);
+      loadMessagesForConversation(conversationId);
       
       // Clear the chat recipient from localStorage after adding
       localStorage.removeItem('homelyserv_chat_recipient');
     } else {
       // If exists, select it
-      const existing = conversations.find(conv => conv.id === recipient.id);
+      const existing = conversations.find(conv => conv.otherUserId === recipient.id);
       if (existing) {
-        setSelectedChatId(existing.id);
+        setSelectedConversationId(existing.id);
+        loadMessagesForConversation(existing.id);
       }
     }
   };
@@ -410,52 +416,39 @@ const EmployerMessages = () => {
     navigate('/login');
   };
 
+  const handleSelectConversation = (conversationId) => {
+    setSelectedConversationId(conversationId);
+    loadMessagesForConversation(conversationId);
+  };
+
   const filteredConversations = conversations.filter(conv =>
-    conv.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChatId) return;
+    if (!message.trim() || !selectedConversationId || !user) return;
 
-    // Get the selected conversation to know who the recipient is
-    const selectedConv = conversations.find(c => c.id === selectedChatId);
+    const selectedConv = conversations.find(c => c.id === selectedConversationId);
     if (!selectedConv) return;
 
-    // Get the worker's email (recipient)
-    const recipientEmail = selectedConv.workerEmail || selectedConv.email || selectedConv.id;
+    // Send message using chat service
+    const result = sendMessage(
+      user.id || user.email,
+      user.fullName || 'Employer',
+      'EMPLOYER',
+      selectedConv.otherUserId,
+      selectedConv.otherUserName,
+      message
+    );
 
-    const newMessage = {
-      id: Date.now(),
-      senderId: user?.id || user?.email,
-      senderName: user?.fullName || 'Employer',
-      senderRole: 'EMPLOYER',
-      recipientId: recipientEmail,
-      recipientName: selectedConv.name,
-      text: message,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      timestamp: new Date().toISOString(),
-      read: false
-    };
-
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    
-    const updatedConversations = conversations.map(conv => {
-      if (conv.id === selectedChatId) {
-        return { 
-          ...conv, 
-          lastMessage: message, 
-          time: newMessage.time,
-          unread: 0 
-        };
-      }
-      return conv;
-    });
-    setConversations(updatedConversations);
-    
-    saveChatData(updatedConversations, updatedMessages);
-    setMessage('');
+    if (result) {
+      // Update local messages
+      loadMessagesForConversation(selectedConversationId);
+      // Update conversations
+      loadChatData();
+      setMessage('');
+    }
   };
 
   if (!user || loading) {
@@ -548,30 +541,24 @@ const EmployerMessages = () => {
                     filteredConversations.map((conv) => (
                       <button
                         key={conv.id}
-                        onClick={() => setSelectedChatId(conv.id)}
+                        onClick={() => handleSelectConversation(conv.id)}
                         className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedChatId === conv.id ? 'bg-teal-50' : ''
+                          selectedConversationId === conv.id ? 'bg-teal-50' : ''
                         }`}
                       >
                         <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=teal&color=fff&size=100&bold=true`}
-                          alt={conv.name}
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
+                          alt={conv.otherUserName}
                           className="w-12 h-12 rounded-full object-cover"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.name)}&background=teal&color=fff&size=100&bold=true`;
-                          }}
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 truncate">{conv.name}</p>
+                            <p className="font-semibold text-gray-800 truncate">{conv.otherUserName}</p>
                             <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                           </div>
                           <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs ${conv.online ? 'text-green-500' : 'text-gray-400'}`}>
-                              {conv.online ? t.online : t.offline}
-                            </span>
+                            <span className="text-xs text-green-500">{t.online}</span>
                             {conv.unread > 0 && (
                               <span className="px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full">
                                 {conv.unread}
@@ -587,22 +574,19 @@ const EmployerMessages = () => {
 
               {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
-                {selectedChatId ? (
+                {selectedConversationId ? (
                   <>
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedChatId)?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
+                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedChatId)?.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`;
-                          }}
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {conversations.find(c => c.id === selectedChatId)?.name}
+                            {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
