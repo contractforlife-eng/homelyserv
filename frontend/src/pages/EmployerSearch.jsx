@@ -35,7 +35,8 @@ import {
   Languages,
   Star as StarIcon,
   CheckCircle,
-  Eye
+  Eye,
+  ChevronDown
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -233,7 +234,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component - REAL DATA ONLY
+// Main EmployerSearch Component - REDESIGNED
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -327,7 +328,7 @@ const EmployerSearch = () => {
     }
   ];
 
-  // Cities by country (simplified - you can expand this)
+  // Cities by country
   const citiesByCountry = {
     'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Luxor', 'Aswan', 'Hurghada', 'Port Said', 'Suez'],
     'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Taif', 'Abha'],
@@ -506,23 +507,16 @@ const EmployerSearch = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load workers from localStorage
     loadWorkersFromStorage();
   }, [navigate]);
 
   // Load workers from localStorage - REAL DATA ONLY
   const loadWorkersFromStorage = () => {
     try {
-      // Get all users from localStorage
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      
-      // Filter only workers
       const workers = users.filter(user => user.role === 'WORKER');
-      
-      // Get profiles for additional data
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       
-      // Merge profile data into workers
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
         return {
@@ -590,20 +584,82 @@ const EmployerSearch = () => {
     setSearchResults([]);
   };
 
-  // PERFORM ACTUAL SEARCH - REAL DATA
+  // Handle Hire Now - Navigate to payment with worker data
+  const handleHireNow = (worker) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    // Save selected worker to localStorage for payment page
+    localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
+      workerId: worker.id || worker.email,
+      workerName: worker.fullName,
+      workerEmail: worker.email,
+      hourlyRate: worker.hourlyRate,
+      desiredJob: worker.desiredJob,
+      commission: 15, // 15% commission
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName,
+      workerPhoto: worker.profileImage || '',
+      workerSkills: worker.skills || [],
+      workerExperience: worker.experience || '0 years',
+      workerLocation: worker.location || 'Not specified'
+    }));
+    
+    // Navigate to payment page
+    navigate('/employer-payments');
+  };
+
+  // Handle View Profile - Navigate to worker profile view
+  const handleViewProfile = (worker) => {
+    // Save worker data to view
+    localStorage.setItem('homelyserv_viewing_worker', JSON.stringify({
+      ...worker,
+      viewingAs: 'employer',
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName
+    }));
+    navigate('/worker-profile-view');
+  };
+
+  // Helper to get job label
+  const getJobLabel = (value) => {
+    const jobMap = {
+      'nanny': 'Nanny',
+      'elderly_care': 'Elderly Caregiver',
+      'housekeeper': 'Housekeeper',
+      'cook': 'Cook',
+      'driver': 'Driver',
+      'gardener': 'Gardener',
+      'house_manager': 'House Manager',
+      'tutor': 'Tutor',
+      'pet_care': 'Pet Care',
+      'maintenance': 'Maintenance',
+      'security': 'Security Guard',
+      'personal_assistant': 'Personal Assistant',
+      'event_planner': 'Event Planner',
+      'fitness_trainer': 'Fitness Trainer',
+      'nurse': 'Nurse',
+      'therapist': 'Therapist',
+      'cleaner': 'Cleaner',
+      'other': 'Other'
+    };
+    return jobMap[value] || value || 'Not specified';
+  };
+
+  // Perform actual search
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
     setShowResults(false);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Filter workers based on search criteria
       let results = [...allWorkers];
       
-      // Search by text query (name, skills, job title)
+      // Filter by search query (name, skills, job title)
       if (searchParams.searchQuery) {
         const query = searchParams.searchQuery.toLowerCase();
         results = results.filter(worker => {
@@ -625,22 +681,29 @@ const EmployerSearch = () => {
       
       // Filter by job title
       if (searchParams.jobTitle) {
-        results = results.filter(worker => 
-          worker.desiredJob === searchParams.jobTitle.toLowerCase().replace(/\s+/g, '_') ||
-          worker.jobTitle === searchParams.jobTitle
-        );
+        const jobTitleLower = searchParams.jobTitle.toLowerCase();
+        results = results.filter(worker => {
+          const desiredJob = worker.desiredJob?.toLowerCase() || '';
+          const jobTitle = worker.jobTitle?.toLowerCase() || '';
+          return desiredJob.includes(jobTitleLower) || 
+                 jobTitle.includes(jobTitleLower) ||
+                 desiredJob === jobTitleLower.replace(/\s+/g, '_');
+        });
       }
       
-      // Filter by location (country/city)
+      // Filter by country
       if (searchParams.country) {
+        const countryLower = searchParams.country.toLowerCase();
         results = results.filter(worker => 
-          worker.location?.includes(searchParams.country)
+          worker.location?.toLowerCase().includes(countryLower)
         );
       }
       
+      // Filter by city
       if (searchParams.city) {
+        const cityLower = searchParams.city.toLowerCase();
         results = results.filter(worker => 
-          worker.location?.includes(searchParams.city)
+          worker.location?.toLowerCase().includes(cityLower)
         );
       }
       
@@ -685,31 +748,6 @@ const EmployerSearch = () => {
       </div>
     );
   }
-
-  // Helper to get job label
-  const getJobLabel = (value) => {
-    const jobMap = {
-      'nanny': 'Nanny',
-      'elderly_care': 'Elderly Caregiver',
-      'housekeeper': 'Housekeeper',
-      'cook': 'Cook',
-      'driver': 'Driver',
-      'gardener': 'Gardener',
-      'house_manager': 'House Manager',
-      'tutor': 'Tutor',
-      'pet_care': 'Pet Care',
-      'maintenance': 'Maintenance',
-      'security': 'Security Guard',
-      'personal_assistant': 'Personal Assistant',
-      'event_planner': 'Event Planner',
-      'fitness_trainer': 'Fitness Trainer',
-      'nurse': 'Nurse',
-      'therapist': 'Therapist',
-      'cleaner': 'Cleaner',
-      'other': 'Other'
-    };
-    return jobMap[value] || value || 'Not specified';
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -763,7 +801,7 @@ const EmployerSearch = () => {
             </div>
           </div>
 
-          {/* Search Form */}
+          {/* Search Form - Enhanced with better UX */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.searchFields}</h3>
             <form onSubmit={handleSearch}>
@@ -890,6 +928,7 @@ const EmployerSearch = () => {
                     type="button"
                     onClick={clearFilters}
                     className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                    title="Clear all filters"
                   >
                     <X size={18} />
                   </button>
@@ -963,12 +1002,19 @@ const EmployerSearch = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <button className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition">
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleHireNow(worker)}
+                            className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center gap-1 whitespace-nowrap"
+                          >
+                            <UserCheck size={16} />
                             {t.hire}
                           </button>
-                          <button className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center gap-1">
-                            <Eye size={14} />
+                          <button
+                            onClick={() => handleViewProfile(worker)}
+                            className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center gap-1 whitespace-nowrap"
+                          >
+                            <Eye size={16} />
                             {t.viewProfile}
                           </button>
                         </div>
