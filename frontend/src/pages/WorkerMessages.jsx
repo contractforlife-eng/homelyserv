@@ -34,7 +34,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Worker Sidebar Component
+// Worker Sidebar (keep your existing code - I'll keep it short here)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -314,14 +314,20 @@ const WorkerMessages = () => {
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
-    if (!userId) return;
+    if (!userId) {
+      console.log('No user ID found');
+      return;
+    }
 
     const userConversations = getUserConversations(userId);
+    console.log('📋 Loaded conversations:', userConversations);
     setConversations(userConversations);
   };
 
   const loadMessagesForConversation = (conversationId) => {
+    console.log('📨 Loading messages for conversation:', conversationId);
     const conversationMessages = getConversationMessages(conversationId);
+    console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
     const userId = user?.id || user?.email;
@@ -357,6 +363,7 @@ const WorkerMessages = () => {
   };
 
   const handleSelectConversation = (conversationId) => {
+    console.log('📨 Selecting conversation:', conversationId);
     setSelectedConversationId(conversationId);
     loadMessagesForConversation(conversationId);
   };
@@ -367,10 +374,16 @@ const WorkerMessages = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedConversationId || !user) return;
+    if (!message.trim() || !selectedConversationId || !user) {
+      console.log('❌ Cannot send message: missing data');
+      return;
+    }
 
     const selectedConv = conversations.find(c => c.id === selectedConversationId);
-    if (!selectedConv) return;
+    if (!selectedConv) {
+      console.log('❌ Conversation not found');
+      return;
+    }
 
     console.log('📤 Sending message from worker to:', selectedConv.otherUserId);
 
@@ -384,9 +397,12 @@ const WorkerMessages = () => {
     );
 
     if (result) {
+      console.log('✅ Message sent successfully');
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
+    } else {
+      console.log('❌ Failed to send message');
     }
   };
 

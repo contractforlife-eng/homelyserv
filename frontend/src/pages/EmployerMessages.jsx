@@ -35,7 +35,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Employer Sidebar Component (keep your existing code - same as before)
+// Employer Sidebar (keep your existing code - I'll keep it short here)
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -311,6 +311,7 @@ const EmployerMessages = () => {
 
     loadChatData();
     
+    // Check for chat recipient from MyHires
     const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
     if (chatRecipient) {
       try {
@@ -327,14 +328,20 @@ const EmployerMessages = () => {
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
-    if (!userId) return;
+    if (!userId) {
+      console.log('No user ID found');
+      return;
+    }
 
     const userConversations = getUserConversations(userId);
+    console.log('📋 Loaded conversations:', userConversations);
     setConversations(userConversations);
   };
 
   const loadMessagesForConversation = (conversationId) => {
+    console.log('📨 Loading messages for conversation:', conversationId);
     const conversationMessages = getConversationMessages(conversationId);
+    console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
     const userId = user?.id || user?.email;
@@ -345,10 +352,14 @@ const EmployerMessages = () => {
 
   const addChatRecipient = (recipient) => {
     const userId = user?.id || user?.email;
-    if (!userId) return;
+    if (!userId) {
+      console.log('No user ID');
+      return;
+    }
 
     console.log('📨 Adding chat recipient:', recipient);
 
+    // Check if conversation already exists
     const exists = conversations.some(conv => conv.otherUserId === recipient.id);
     
     if (!exists) {
@@ -372,8 +383,10 @@ const EmployerMessages = () => {
       setSelectedConversationId(conversationId);
       loadMessagesForConversation(conversationId);
       
+      // Clear the chat recipient from localStorage after adding
       localStorage.removeItem('homelyserv_chat_recipient');
     } else {
+      // If exists, select it
       const existing = conversations.find(conv => conv.otherUserId === recipient.id);
       if (existing) {
         console.log('📨 Conversation exists, selecting:', existing.id);
@@ -411,6 +424,7 @@ const EmployerMessages = () => {
   };
 
   const handleSelectConversation = (conversationId) => {
+    console.log('📨 Selecting conversation:', conversationId);
     setSelectedConversationId(conversationId);
     loadMessagesForConversation(conversationId);
   };
@@ -421,10 +435,16 @@ const EmployerMessages = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedConversationId || !user) return;
+    if (!message.trim() || !selectedConversationId || !user) {
+      console.log('❌ Cannot send message: missing data');
+      return;
+    }
 
     const selectedConv = conversations.find(c => c.id === selectedConversationId);
-    if (!selectedConv) return;
+    if (!selectedConv) {
+      console.log('❌ Conversation not found');
+      return;
+    }
 
     console.log('📤 Sending message from employer to:', selectedConv.otherUserId);
 
@@ -438,9 +458,13 @@ const EmployerMessages = () => {
     );
 
     if (result) {
+      console.log('✅ Message sent successfully');
+      // Reload messages and conversations
       loadMessagesForConversation(selectedConversationId);
       loadChatData();
       setMessage('');
+    } else {
+      console.log('❌ Failed to send message');
     }
   };
 
@@ -509,6 +533,7 @@ const EmployerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -564,6 +589,7 @@ const EmployerMessages = () => {
                 </div>
               </div>
 
+              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
