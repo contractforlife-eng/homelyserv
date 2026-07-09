@@ -1,4 +1,4 @@
-// src/pages/WorkerMessages.jsx
+// src/pages/WorkerMessages.jsx - Fixed auto-load
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -30,8 +30,9 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  getConversation,
-  saveUserConversations
+  getConversationId,
+  saveUserConversations,
+  createTestConversation
 } from '../utils/chatService';
 
 // Worker Sidebar Component (keep your existing code)
@@ -242,6 +243,7 @@ const WorkerMessages = () => {
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const translations = {
     en: {
@@ -258,7 +260,8 @@ const WorkerMessages = () => {
       notifications: 'Notifications',
       loading: 'Loading messages...',
       noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!'
+      startConversation: 'Start the conversation!',
+      refresh: 'Refresh'
     },
     ar: {
       title: 'الرسائل',
@@ -274,12 +277,14 @@ const WorkerMessages = () => {
       notifications: 'الإشعارات',
       loading: 'جاري تحميل الرسائل...',
       noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!'
+      startConversation: 'ابدأ المحادثة!',
+      refresh: 'تحديث'
     }
   };
 
   const t = translations[language];
 
+  // Load user and chat data
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -308,13 +313,15 @@ const WorkerMessages = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
+    // Load conversations
     loadChatData();
     
     // Restore selected conversation from localStorage
     const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
     if (savedConversationId) {
       // Check if the conversation still exists
-      const exists = conversations.some(c => c.id === savedConversationId);
+      const convs = getUserConversations(userData ? JSON.parse(userData).id || JSON.parse(userData).email : '');
+      const exists = convs.some(c => c.id === savedConversationId);
       if (exists) {
         setSelectedConversationId(savedConversationId);
         loadMessagesForConversation(savedConversationId);
@@ -324,7 +331,7 @@ const WorkerMessages = () => {
     }
     
     setLoading(false);
-  }, [navigate]);
+  }, [navigate, refreshKey]);
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
@@ -351,6 +358,12 @@ const WorkerMessages = () => {
     if (userId) {
       markMessagesAsRead(conversationId, userId);
     }
+  };
+
+  // Force refresh conversations
+  const refreshConversations = () => {
+    loadChatData();
+    setRefreshKey(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -425,6 +438,39 @@ const WorkerMessages = () => {
     }
   };
 
+  // Create a demo conversation for testing
+  const handleStartConversation = () => {
+    if (!user) return;
+    
+    const testEmployerId = 'employer_test@homelyserv.com';
+    const testEmployerName = 'Test Employer';
+    
+    // Send a message to create the conversation
+    const result = sendMessage(
+      user.id || user.email,
+      user.fullName || 'Worker',
+      'WORKER',
+      testEmployerId,
+      testEmployerName,
+      'Hello! I am interested in the position.'
+    );
+    
+    if (result) {
+      console.log('✅ Test conversation created');
+      refreshConversations();
+      
+      // Select the new conversation
+      setTimeout(() => {
+        const convs = getUserConversations(user.id || user.email);
+        const newConv = convs.find(c => c.otherUserId === testEmployerId);
+        if (newConv) {
+          setSelectedConversationId(newConv.id);
+          loadMessagesForConversation(newConv.id);
+        }
+      }, 500);
+    }
+  };
+
   if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -476,6 +522,13 @@ const WorkerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={refreshConversations}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Clock size={16} />
+                {t.refresh}
+              </button>
             </div>
           </div>
         </header>
@@ -511,30 +564,7 @@ const WorkerMessages = () => {
                       <p className="text-gray-500">{t.noConversations}</p>
                       <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
                       <button
-                        onClick={() => {
-                          // Create a demo conversation for testing
-                          const testEmployerId = 'employer_test@homelyserv.com';
-                          const testEmployerName = 'Test Employer';
-                          
-                          const result = sendMessage(
-                            user.id || user.email,
-                            user.fullName || 'Worker',
-                            'WORKER',
-                            testEmployerId,
-                            testEmployerName,
-                            'Hello! I am interested in the position.'
-                          );
-                          
-                          if (result) {
-                            loadChatData();
-                            // Find the new conversation
-                            const newConv = conversations.find(c => c.otherUserId === testEmployerId);
-                            if (newConv) {
-                              setSelectedConversationId(newConv.id);
-                              loadMessagesForConversation(newConv.id);
-                            }
-                          }
-                        }}
+                        onClick={handleStartConversation}
                         className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                       >
                         Start a conversation
