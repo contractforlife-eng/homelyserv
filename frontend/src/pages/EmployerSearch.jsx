@@ -1,3 +1,4 @@
+// src/pages/employer/EmployerSearch.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -31,10 +32,13 @@ import {
   UserCheck,
   Building2,
   MapPinned,
-  Languages
+  Languages,
+  Star as StarIcon,
+  CheckCircle,
+  Eye
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -229,7 +233,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component
+// Main EmployerSearch Component - REAL DATA ONLY
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -239,6 +243,7 @@ const EmployerSearch = () => {
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [allWorkers, setAllWorkers] = useState([]);
   
   // Search form fields
   const [searchParams, setSearchParams] = useState({
@@ -246,10 +251,11 @@ const EmployerSearch = () => {
     country: '',
     city: '',
     jobType: '',
-    jobTitle: ''
+    jobTitle: '',
+    searchQuery: ''
   });
 
-  // Countries by language
+  // Language groups with countries
   const languageGroups = [
     {
       id: 'arabic',
@@ -321,7 +327,7 @@ const EmployerSearch = () => {
     }
   ];
 
-  // Cities by country
+  // Cities by country (simplified - you can expand this)
   const citiesByCountry = {
     'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Luxor', 'Aswan', 'Hurghada', 'Port Said', 'Suez'],
     'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Taif', 'Abha'],
@@ -403,21 +409,9 @@ const EmployerSearch = () => {
   ];
 
   const jobTitles = [
-    'Nanny',
-    'Baby Sitter',
-    'Elderly Caregiver',
-    'Driver',
-    'Cook',
-    'House Manager',
-    'Gardener',
-    'Nurse',
-    'Tutor',
-    'Housekeeper',
-    'Personal Assistant',
-    'Cleaner',
-    'Security Guard',
-    'Maintenance Worker',
-    'Teacher'
+    'Nanny', 'Baby Sitter', 'Elderly Caregiver', 'Driver', 'Cook',
+    'House Manager', 'Gardener', 'Nurse', 'Tutor', 'Housekeeper',
+    'Personal Assistant', 'Cleaner', 'Security Guard', 'Maintenance Worker', 'Teacher'
   ];
 
   const translations = {
@@ -449,7 +443,8 @@ const EmployerSearch = () => {
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Searching for workers...',
-      clearFilters: 'Clear Filters'
+      clearFilters: 'Clear Filters',
+      searchPlaceholder: 'Search by name, skills, or job title...'
     },
     ar: {
       title: 'البحث عن عمال',
@@ -479,12 +474,14 @@ const EmployerSearch = () => {
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري البحث عن عمال...',
-      clearFilters: 'مسح الفلاتر'
+      clearFilters: 'مسح الفلاتر',
+      searchPlaceholder: 'ابحث بالاسم أو المهارات أو المسمى الوظيفي...'
     }
   };
 
   const t = translations[language];
 
+  // Load workers from localStorage
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -508,7 +505,53 @@ const EmployerSearch = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+
+    // Load workers from localStorage
+    loadWorkersFromStorage();
   }, [navigate]);
+
+  // Load workers from localStorage - REAL DATA ONLY
+  const loadWorkersFromStorage = () => {
+    try {
+      // Get all users from localStorage
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      
+      // Filter only workers
+      const workers = users.filter(user => user.role === 'WORKER');
+      
+      // Get profiles for additional data
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      
+      // Merge profile data into workers
+      const mergedWorkers = workers.map(worker => {
+        const profile = profiles[worker.email] || {};
+        return {
+          ...worker,
+          ...profile,
+          fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
+          email: worker.email,
+          phone: profile.phone || worker.phone || '',
+          location: profile.location || worker.location || 'Not specified',
+          bio: profile.bio || worker.bio || '',
+          skills: profile.skills || worker.skills || [],
+          experience: profile.experience || worker.experience || '0 years',
+          hourlyRate: profile.hourlyRate || worker.hourlyRate || '30',
+          desiredJob: profile.desiredJob || worker.desiredJob || '',
+          profileImage: profile.profileImage || worker.profileImage || '',
+          rating: profile.rating || worker.rating || 4.5,
+          jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
+          available: profile.available !== undefined ? profile.available : true,
+          role: 'WORKER'
+        };
+      });
+      
+      setAllWorkers(mergedWorkers);
+      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
+    } catch (error) {
+      console.error('Error loading workers:', error);
+      setAllWorkers([]);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -540,44 +583,70 @@ const EmployerSearch = () => {
       country: '',
       city: '',
       jobType: '',
-      jobTitle: ''
+      jobTitle: '',
+      searchQuery: ''
     });
     setShowResults(false);
     setSearchResults([]);
   };
 
+  // PERFORM ACTUAL SEARCH - REAL DATA
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
     setShowResults(false);
 
     try {
-      // This is where you would call your actual API
-      // For now, we'll simulate a search with a message
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // In production, this would be an API call to your backend:
-      // const response = await fetch('/api/workers/search', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(searchParams)
-      // });
-      // const data = await response.json();
-      // setSearchResults(data.workers);
+      // Filter workers based on search criteria
+      let results = [...allWorkers];
       
-      // For demo, we'll show a message indicating search was performed
-      setSearchResults([]);
+      // Search by text query (name, skills, job title)
+      if (searchParams.searchQuery) {
+        const query = searchParams.searchQuery.toLowerCase();
+        results = results.filter(worker => {
+          const nameMatch = worker.fullName?.toLowerCase().includes(query);
+          const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
+          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
+                          worker.jobTitle?.toLowerCase().includes(query);
+          const bioMatch = worker.bio?.toLowerCase().includes(query);
+          return nameMatch || skillMatch || jobMatch || bioMatch;
+        });
+      }
+      
+      // Filter by job type
+      if (searchParams.jobType) {
+        results = results.filter(worker => 
+          worker.jobType === searchParams.jobType
+        );
+      }
+      
+      // Filter by job title
+      if (searchParams.jobTitle) {
+        results = results.filter(worker => 
+          worker.desiredJob === searchParams.jobTitle.toLowerCase().replace(/\s+/g, '_') ||
+          worker.jobTitle === searchParams.jobTitle
+        );
+      }
+      
+      // Filter by location (country/city)
+      if (searchParams.country) {
+        results = results.filter(worker => 
+          worker.location?.includes(searchParams.country)
+        );
+      }
+      
+      if (searchParams.city) {
+        results = results.filter(worker => 
+          worker.location?.includes(searchParams.city)
+        );
+      }
+      
+      setSearchResults(results);
       setShowResults(true);
       
-      // The actual search would return real worker data from your database
-      // Example success message
-      alert(`Search performed with: 
-        Language: ${searchParams.languageGroup || 'Any'}
-        Country: ${searchParams.country || 'Any'}
-        City: ${searchParams.city || 'Any'}
-        Job Type: ${searchParams.jobType || 'Any'}
-        Job Title: ${searchParams.jobTitle || 'Any'}`);
-        
     } catch (error) {
       console.error('Error searching workers:', error);
     } finally {
@@ -617,9 +686,33 @@ const EmployerSearch = () => {
     );
   }
 
+  // Helper to get job label
+  const getJobLabel = (value) => {
+    const jobMap = {
+      'nanny': 'Nanny',
+      'elderly_care': 'Elderly Caregiver',
+      'housekeeper': 'Housekeeper',
+      'cook': 'Cook',
+      'driver': 'Driver',
+      'gardener': 'Gardener',
+      'house_manager': 'House Manager',
+      'tutor': 'Tutor',
+      'pet_care': 'Pet Care',
+      'maintenance': 'Maintenance',
+      'security': 'Security Guard',
+      'personal_assistant': 'Personal Assistant',
+      'event_planner': 'Event Planner',
+      'fitness_trainer': 'Fitness Trainer',
+      'nurse': 'Nurse',
+      'therapist': 'Therapist',
+      'cleaner': 'Cleaner',
+      'other': 'Other'
+    };
+    return jobMap[value] || value || 'Not specified';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -630,11 +723,9 @@ const EmployerSearch = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -664,9 +755,7 @@ const EmployerSearch = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
@@ -674,16 +763,29 @@ const EmployerSearch = () => {
             </div>
           </div>
 
-          {/* Search Form - Teal Theme */}
+          {/* Search Form */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.searchFields}</h3>
             <form onSubmit={handleSearch}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Language */}
+                {/* Text Search */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.language}
+                    {t.searchPlaceholder}
                   </label>
+                  <input
+                    type="text"
+                    name="searchQuery"
+                    value={searchParams.searchQuery}
+                    onChange={handleInputChange}
+                    placeholder={t.searchPlaceholder}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Language */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.language}</label>
                   <select
                     name="languageGroup"
                     value={searchParams.languageGroup}
@@ -701,9 +803,7 @@ const EmployerSearch = () => {
 
                 {/* Country */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.country}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.country}</label>
                   <select
                     name="country"
                     value={searchParams.country}
@@ -713,18 +813,14 @@ const EmployerSearch = () => {
                   >
                     <option value="">{t.selectCountry}</option>
                     {getAvailableCountries().map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
+                      <option key={country} value={country}>{country}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.city}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.city}</label>
                   <select
                     name="city"
                     value={searchParams.city}
@@ -734,18 +830,14 @@ const EmployerSearch = () => {
                   >
                     <option value="">{t.selectCity}</option>
                     {getAvailableCities().map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
+                      <option key={city} value={city}>{city}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Job Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.jobType}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.jobType}</label>
                   <select
                     name="jobType"
                     value={searchParams.jobType}
@@ -754,18 +846,14 @@ const EmployerSearch = () => {
                   >
                     <option value="">{t.selectJobType}</option>
                     {jobTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
+                      <option key={type.value} value={type.value}>{type.label}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Job Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.jobTitle}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.jobTitle}</label>
                   <select
                     name="jobTitle"
                     value={searchParams.jobTitle}
@@ -774,9 +862,7 @@ const EmployerSearch = () => {
                   >
                     <option value="">{t.selectJobTitle}</option>
                     {jobTitles.map((title) => (
-                      <option key={title} value={title}>
-                        {title}
-                      </option>
+                      <option key={title} value={title}>{title}</option>
                     ))}
                   </select>
                 </div>
@@ -815,10 +901,14 @@ const EmployerSearch = () => {
           {/* Results Section */}
           {showResults && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.results}</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">{t.results}</h3>
+                <span className="text-sm text-gray-500">
+                  {searchResults.length} worker{searchResults.length !== 1 ? 's' : ''} found
+                </span>
+              </div>
               
-              {/* No Results Message */}
-              {searchResults.length === 0 && (
+              {searchResults.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🔍</div>
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noResults}</h3>
@@ -830,13 +920,61 @@ const EmployerSearch = () => {
                     {t.clearFilters}
                   </button>
                 </div>
-              )}
-
-              {/* Results would be displayed here from your API */}
-              {searchResults.length > 0 && (
-                <div className="space-y-4">
-                  {/* Worker cards would be rendered here */}
-                  <p className="text-gray-500 text-center">Worker results will appear here after connecting to your backend API.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {searchResults.map((worker) => (
+                    <div key={worker.id || worker.email} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+                          {worker.profileImage ? (
+                            <img src={worker.profileImage} alt={worker.fullName} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <User size={28} className="text-teal-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-800">{worker.fullName}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <MapPin size={14} />
+                            <span>{worker.location || 'Not specified'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                            <Briefcase size={14} />
+                            <span>{getJobLabel(worker.desiredJob)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <DollarSign size={14} />
+                            <span>EGP {worker.hourlyRate}/hr</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <StarIcon size={14} className="text-yellow-500" />
+                            <span>{worker.rating || 4.5} ★</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {worker.skills?.slice(0, 3).map((skill, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {worker.skills?.length > 3 && (
+                              <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
+                                +{worker.skills.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition">
+                            {t.hire}
+                          </button>
+                          <button className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center gap-1">
+                            <Eye size={14} />
+                            {t.viewProfile}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
