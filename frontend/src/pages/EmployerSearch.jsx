@@ -1,4 +1,4 @@
-// src/pages/EmployerSearch.jsx - COMPLETE FIXED VERSION
+// src/pages/EmployerSearch.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -49,7 +49,8 @@ import {
   ArrowUpDown,
   ThumbsUp,
   LayoutGrid,
-  List
+  List,
+  CreditCard
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -72,6 +73,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -84,6 +86,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -100,10 +103,18 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
   ];
 
   const isActive = (path) => {
     return location.pathname === path;
+  };
+
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
   };
 
   return (
@@ -151,10 +162,10 @@ const EmployerSidebar = ({
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {user?.profileImage ? (
+              {getProfileImage() ? (
                 <img 
-                  src={user.profileImage} 
-                  alt={user.fullName || 'Employer'} 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (

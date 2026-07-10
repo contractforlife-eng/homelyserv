@@ -1,3 +1,4 @@
+// src/pages/Help.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -26,10 +27,21 @@ import {
   Headphones,
   Clock,
   CreditCard,
-  FileCheck
+  FileCheck,
+  Send,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  Download,
+  ThumbsUp,
+  Shield,
+  Lock,
+  UserCheck,
+  Zap,
+  DollarSign
 } from 'lucide-react';
 
-// Sidebar Component - Dynamic (works for both worker and employer)
+// Sidebar Component - WITH PROFILE IMAGE
 const HelpSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -103,6 +115,14 @@ const HelpSidebar = ({
 
   const isTeal = isEmployer;
 
+  // Get profile image from user
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -145,10 +165,19 @@ const HelpSidebar = ({
           </button>
         </div>
 
+        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-red-100'} flex items-center justify-center flex-shrink-0`}>
-              <User size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
+            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-red-100'} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'User'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -246,7 +275,7 @@ const HelpSidebar = ({
   );
 };
 
-// Main Help Component
+// Main Help Component - ENHANCED
 const Help = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -255,6 +284,9 @@ const Help = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
 
   const translations = {
     en: {
@@ -279,12 +311,33 @@ const Help = () => {
       faq5Answer: 'Use the "Search Workers" page to find qualified candidates. You can view their profiles and send them a hire request.',
       faq6: 'How do I make a payment?',
       faq6Answer: 'Payments can be made securely through the platform using various payment methods including credit cards and bank transfers.',
+      faq7: 'What is the commission rate?',
+      faq7Answer: 'The platform charges a 15% commission on successful hires. This covers payment processing, support, and platform maintenance.',
+      faq8: 'How do I cancel a contract?',
+      faq8Answer: 'You can cancel a contract from the "My Hires" page. Select the worker and click "Cancel Contract". Please review the terms and conditions first.',
       languageToggle: 'العربية',
       notifications: 'Notifications',
       supportHours: 'Support Hours',
       supportHoursDesc: '24/7 available',
       responseTime: 'Average Response Time',
-      responseTimeDesc: 'Within 24 hours'
+      responseTimeDesc: 'Within 24 hours',
+      searchPlaceholder: 'Search help articles...',
+      noResults: 'No results found',
+      tryDifferent: 'Try using different keywords',
+      feedback: 'Was this helpful?',
+      yes: 'Yes',
+      no: 'No',
+      thankYou: 'Thank you for your feedback!',
+      sendFeedback: 'Send Feedback',
+      feedbackPlaceholder: 'Tell us how we can improve...',
+      submit: 'Submit',
+      popularTopics: 'Popular Topics',
+      gettingStarted: 'Getting Started',
+      accountManagement: 'Account Management',
+      hiring: 'Hiring & Jobs',
+      payments: 'Payments & Billing',
+      security: 'Security & Privacy',
+      troubleshooting: 'Troubleshooting'
     },
     ar: {
       title: 'المساعدة والدعم',
@@ -308,12 +361,33 @@ const Help = () => {
       faq5Answer: 'استخدم صفحة "البحث عن عمال" للعثور على مرشحين مؤهلين. يمكنك عرض ملفاتهم الشخصية وإرسال طلب توظيف.',
       faq6: 'كيف يمكنني إجراء دفعة؟',
       faq6Answer: 'يمكن إجراء الدفعات بشكل آمن من خلال المنصة باستخدام طرق دفع متنوعة بما في ذلك بطاقات الائتمان والتحويلات المصرفية.',
+      faq7: 'ما هي نسبة العمولة؟',
+      faq7Answer: 'تفرض المنصة عمولة 15% على التوظيفات الناجحة. تغطي هذه العمولة معالجة المدفوعات والدعم وصيانة المنصة.',
+      faq8: 'كيف يمكنني إلغاء عقد؟',
+      faq8Answer: 'يمكنك إلغاء العقد من صفحة "توظيفاتي". اختر العامل وانقر على "إلغاء العقد". يرجى مراجعة الشروط والأحكام أولاً.',
       languageToggle: 'English',
       notifications: 'الإشعارات',
       supportHours: 'ساعات الدعم',
       supportHoursDesc: 'متاح 24/7',
       responseTime: 'متوسط وقت الرد',
-      responseTimeDesc: 'خلال 24 ساعة'
+      responseTimeDesc: 'خلال 24 ساعة',
+      searchPlaceholder: 'ابحث في مقالات المساعدة...',
+      noResults: 'لا توجد نتائج',
+      tryDifferent: 'حاول استخدام كلمات مختلفة',
+      feedback: 'هل كان هذا مفيداً؟',
+      yes: 'نعم',
+      no: 'لا',
+      thankYou: 'شكراً لملاحظاتك!',
+      sendFeedback: 'إرسال ملاحظات',
+      feedbackPlaceholder: 'أخبرنا كيف يمكننا تحسين...',
+      submit: 'إرسال',
+      popularTopics: 'مواضيع شائعة',
+      gettingStarted: 'بدء الاستخدام',
+      accountManagement: 'إدارة الحساب',
+      hiring: 'التوظيف والوظائف',
+      payments: 'المدفوعات والفواتير',
+      security: 'الأمان والخصوصية',
+      troubleshooting: 'استكشاف الأخطاء'
     }
   };
 
@@ -375,7 +449,36 @@ const Help = () => {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
+  const handleFeedback = (type) => {
+    setFeedbackSubmitted(true);
+    setTimeout(() => {
+      setFeedbackSubmitted(false);
+    }, 3000);
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (feedbackText.trim()) {
+      alert(t.thankYou);
+      setFeedbackText('');
+    }
+  };
+
   const isEmployer = userRole === 'EMPLOYER';
+
+  // Filter FAQ based on search
+  const filteredFaqs = [
+    { question: t.faq1, answer: t.faq1Answer },
+    { question: t.faq2, answer: t.faq2Answer },
+    { question: t.faq3, answer: t.faq3Answer },
+    { question: t.faq4, answer: t.faq4Answer },
+    { question: t.faq5, answer: t.faq5Answer },
+    { question: t.faq6, answer: t.faq6Answer },
+    { question: t.faq7, answer: t.faq7Answer },
+    { question: t.faq8, answer: t.faq8Answer }
+  ].filter(faq => 
+    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (!user) {
     return (
@@ -394,7 +497,9 @@ const Help = () => {
     { question: t.faq3, answer: t.faq3Answer },
     { question: t.faq4, answer: t.faq4Answer },
     { question: t.faq5, answer: t.faq5Answer },
-    { question: t.faq6, answer: t.faq6Answer }
+    { question: t.faq6, answer: t.faq6Answer },
+    { question: t.faq7, answer: t.faq7Answer },
+    { question: t.faq8, answer: t.faq8Answer }
   ];
 
   const isTeal = isEmployer;
@@ -457,31 +562,76 @@ const Help = () => {
             </div>
           </div>
 
+          {/* Search */}
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+
+          {/* Popular Topics */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">{t.popularTopics}</h3>
+            <div className="flex flex-wrap gap-2">
+              <button className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm hover:bg-teal-100 transition">
+                <Zap size={14} className="inline mr-1" />
+                {t.gettingStarted}
+              </button>
+              <button className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100 transition">
+                <User size={14} className="inline mr-1" />
+                {t.accountManagement}
+              </button>
+              <button className="px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm hover:bg-green-100 transition">
+                <Briefcase size={14} className="inline mr-1" />
+                {t.hiring}
+              </button>
+              <button className="px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full text-sm hover:bg-yellow-100 transition">
+                <DollarSign size={14} className="inline mr-1" />
+                {t.payments}
+              </button>
+              <button className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100 transition">
+                <Shield size={14} className="inline mr-1" />
+                {t.security}
+              </button>
+              <button className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm hover:bg-red-100 transition">
+                <AlertCircle size={14} className="inline mr-1" />
+                {t.troubleshooting}
+              </button>
+            </div>
+          </div>
+
           {/* Quick Support Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Mail size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800">{t.email}</p>
               <p className="text-xs text-gray-500 mt-1">support@homelyserv.com</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Phone size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800">{t.phone}</p>
               <p className="text-xs text-gray-500 mt-1">+20 123 456 789</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <MessageSquare size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800">{t.chat}</p>
               <p className="text-xs text-gray-500 mt-1">Available 24/7</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <BookOpen size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800">{t.documentation}</p>
@@ -518,35 +668,95 @@ const Help = () => {
           {/* FAQ Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.faq}</h3>
-            <div className="space-y-3">
-              {faqItems.map((faq, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-lg overflow-hidden"
-                >
-                  <button
-                    onClick={() => toggleFaq(index)}
-                    className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition ${
-                      expandedFaq === index ? (isTeal ? 'bg-teal-50' : 'bg-red-50') : ''
-                    }`}
+            
+            {filteredFaqs.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-gray-500">{t.noResults}</p>
+                <p className="text-sm text-gray-400">{t.tryDifferent}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredFaqs.map((faq, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-lg overflow-hidden"
                   >
-                    <div className="flex items-center gap-3">
-                      <FileQuestion size={18} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
-                      <span className="font-medium text-gray-800">{faq.question}</span>
-                    </div>
-                    {expandedFaq === index ? (
-                      <ChevronUp size={18} className="text-gray-400" />
-                    ) : (
-                      <ChevronDown size={18} className="text-gray-400" />
+                    <button
+                      onClick={() => toggleFaq(index)}
+                      className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition ${
+                        expandedFaq === index ? (isTeal ? 'bg-teal-50' : 'bg-red-50') : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileQuestion size={18} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
+                        <span className="font-medium text-gray-800">{faq.question}</span>
+                      </div>
+                      {expandedFaq === index ? (
+                        <ChevronUp size={18} className="text-gray-400" />
+                      ) : (
+                        <ChevronDown size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                    {expandedFaq === index && (
+                      <div className="p-4 border-t border-gray-200 bg-gray-50">
+                        <p className="text-sm text-gray-600">{faq.answer}</p>
+                        
+                        {/* Feedback Section */}
+                        {!feedbackSubmitted ? (
+                          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-4">
+                            <span className="text-sm text-gray-500">{t.feedback}</span>
+                            <button
+                              onClick={() => handleFeedback('yes')}
+                              className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-sm"
+                            >
+                              <ThumbsUp size={14} />
+                              {t.yes}
+                            </button>
+                            <button
+                              onClick={() => handleFeedback('no')}
+                              className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition text-sm"
+                            >
+                              <ThumbsUp size={14} className="rotate-180" />
+                              {t.no}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle size={16} />
+                              <span className="text-sm">{t.thankYou}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </button>
-                  {expandedFaq === index && (
-                    <div className="p-4 border-t border-gray-200 bg-gray-50">
-                      <p className="text-sm text-gray-600">{faq.answer}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Feedback Section */}
+          <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{t.sendFeedback}</h3>
+            <p className="text-sm text-gray-500 mb-4">We value your feedback to improve our support</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder={t.feedbackPlaceholder}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                rows="2"
+              />
+              <button
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackText.trim()}
+                className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                <Send size={18} />
+                {t.submit}
+              </button>
             </div>
           </div>
         </div>

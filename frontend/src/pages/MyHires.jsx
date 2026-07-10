@@ -38,14 +38,15 @@ import {
   UserMinus,
   UserCheck,
   MoreVertical,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CreditCard
 } from 'lucide-react';
 
 // Employer Sidebar Component
 // src/pages/MyHires.jsx - Fix the EmployerSidebar component
 
 // Replace the EmployerSidebar component with this updated version:
-
+// src/pages/MyHires.jsx - Complete EmployerSidebar with Payment
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -65,6 +66,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -77,6 +79,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -93,6 +96,7 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },  // <-- ADDED
   ];
 
   const isActive = (path) => {
@@ -108,6 +112,7 @@ const EmployerSidebar = ({
   };
 
   return (
+    // ... rest of the sidebar JSX (keep the same)
     <>
       {mobileMenuOpen && (
         <div 
@@ -149,7 +154,6 @@ const EmployerSidebar = ({
           </button>
         </div>
 
-        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -256,7 +260,6 @@ const EmployerSidebar = ({
     </>
   );
 };
-
 // Main MyHires Component
 const MyHires = () => {
   const navigate = useNavigate();

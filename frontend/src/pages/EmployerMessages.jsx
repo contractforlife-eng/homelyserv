@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - WITH PROFILE IMAGE FIX
+// src/pages/EmployerMessages.jsx - COMPLETE WITH ALL IMPORTS
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -24,7 +24,8 @@ import {
   MoreVertical,
   CheckCheck,
   Clock,
-  FileText
+  FileText,
+  CreditCard  // <-- ADD THIS
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -36,7 +37,7 @@ import {
   saveConversationMessages
 } from '../utils/chatService';
 
-// Employer Sidebar Component - WITH PROFILE IMAGE
+// Employer Sidebar Component - WITH PROFILE IMAGE AND CREDIT CARD
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -56,6 +57,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -68,6 +70,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -84,13 +87,13 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },  // <-- ADD THIS
   ];
 
   const isActive = (path) => {
     return location.pathname === path;
   };
 
-  // ===== FIX: Get profile image from user =====
   const getProfileImage = () => {
     if (user?.profileImage) {
       return user.profileImage;
@@ -140,7 +143,6 @@ const EmployerSidebar = ({
           </button>
         </div>
 
-        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
