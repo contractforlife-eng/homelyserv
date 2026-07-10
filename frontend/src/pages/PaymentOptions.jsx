@@ -601,7 +601,143 @@ const PaymentOptions = () => {
       
       localStorage.removeItem('homelyserv_selected_worker');
     }, 2500);
-  };
+  };// src/pages/PaymentOptions.jsx - Update handleConfirmPayment function
+
+const handleConfirmPayment = () => {
+  if (!selectedMethod) {
+    alert('Please select a payment method');
+    return;
+  }
+
+  const method = paymentMethods.find(m => m.id === selectedMethod);
+  if (method?.hasForm && method.formType === 'card') {
+    if (!cardForm.cardNumber || cardForm.cardNumber.length < 16) {
+      alert('Please enter a valid card number');
+      return;
+    }
+    if (!cardForm.cardholderName) {
+      alert('Please enter cardholder name');
+      return;
+    }
+    if (!cardForm.expiryDate || cardForm.expiryDate.length < 5) {
+      alert('Please enter expiry date (MM/YY)');
+      return;
+    }
+    if (!cardForm.cvv || cardForm.cvv.length < 3) {
+      alert('Please enter CVV');
+      return;
+    }
+  }
+  
+  setIsProcessing(true);
+  
+  setTimeout(() => {
+    setIsProcessing(false);
+    setPaymentSuccess(true);
+    
+    // Create hire record
+    const hireRecord = {
+      id: 'hire_' + Date.now(),
+      workerId: workerData?.workerId || workerData?.workerEmail,
+      workerName: workerData?.workerName,
+      workerEmail: workerData?.workerEmail,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName,
+      amount: total,
+      commission: commissionAmount,
+      paymentMethod: selectedMethod,
+      date: new Date().toISOString(),
+      status: 'completed'
+    };
+    
+    // Save hire record
+    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+    hires.push(hireRecord);
+    localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
+    
+    // ===== SAVE WORKER TRANSACTION =====
+    // Save transaction for the worker
+    const workerTransaction = {
+      id: 'txn_' + Date.now(),
+      workerId: workerData?.workerId || workerData?.workerEmail,
+      workerName: workerData?.workerName,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName,
+      amount: total - commissionAmount, // Worker gets the amount minus commission
+      commission: commissionAmount,
+      paymentMethod: selectedMethod,
+      date: new Date().toISOString(),
+      status: 'completed',
+      description: `Payment from ${user?.fullName || 'Employer'} for ${workerData?.desiredJob || 'work'}`,
+      jobTitle: workerData?.desiredJob || 'Job Opportunity',
+      hireId: hireRecord.id
+    };
+    
+    const workerTransactions = JSON.parse(localStorage.getItem('worker_transactions') || '[]');
+    workerTransactions.push(workerTransaction);
+    localStorage.setItem('worker_transactions', JSON.stringify(workerTransactions));
+    
+    // Also update worker stats
+    const workerStats = JSON.parse(localStorage.getItem(`worker_stats_${workerData?.workerId || workerData?.workerEmail}`) || '{}');
+    workerStats.totalEarned = (workerStats.totalEarned || 0) + (total - commissionAmount);
+    workerStats.totalTasksCompleted = (workerStats.totalTasksCompleted || 0) + 1;
+    workerStats.lastPayment = new Date().toISOString();
+    localStorage.setItem(`worker_stats_${workerData?.workerId || workerData?.workerEmail}`, JSON.stringify(workerStats));
+    
+    // ===== CREATE OFFER FOR THE WORKER =====
+    const newOffer = {
+      id: 'offer_' + Date.now(),
+      title: workerData?.desiredJob || 'Job Opportunity',
+      company: user?.fullName || 'Employer',
+      companyLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'Employer')}&background=teal&color=fff&size=80`,
+      location: workerData?.workerLocation || 'Not specified',
+      salary: { 
+        min: Math.round(workerData?.hourlyRate * 40 * 4 * 0.85),
+        max: Math.round(workerData?.hourlyRate * 40 * 4)
+      },
+      type: 'Full Time',
+      skills: workerData?.workerSkills || [],
+      benefits: ['Health Insurance', 'Paid Vacation', 'Transportation'],
+      description: `Hired by ${user?.fullName || 'Employer'} for ${workerData?.desiredJob || 'work'}. Payment completed on ${new Date().toLocaleDateString()}.`,
+      requirements: ['Minimum experience required', 'Valid identification'],
+      responsibilities: ['Perform assigned duties', 'Report to employer'],
+      postedBy: user?.fullName || 'Employer',
+      postedAt: new Date().toISOString(),
+      applicants: 1,
+      matchScore: 95,
+      status: 'new',
+      isUrgent: true,
+      isFeatured: true,
+      contractType: 'Permanent',
+      workSchedule: 'As agreed with employer',
+      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      companyInfo: {
+        industry: 'Home Services',
+        size: 'Individual Employer',
+        description: `Employer: ${user?.fullName || 'Employer'}`
+      },
+      isSaved: false,
+      isApplied: false,
+      hireId: hireRecord.id,
+      employerId: user?.id || user?.email,
+      // Add transaction reference
+      transactionId: workerTransaction.id
+    };
+    
+    const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    employerOffers.push(newOffer);
+    localStorage.setItem('employer_offers', JSON.stringify(employerOffers));
+    
+    const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
+    centralOffers.push(newOffer);
+    localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
+    
+    localStorage.removeItem('homelyserv_selected_worker');
+    
+    console.log('✅ Payment completed! Transaction saved for worker:', workerTransaction);
+  }, 2500);
+};
 
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
   const hoursPerWeek = 40;
