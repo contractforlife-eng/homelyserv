@@ -77,7 +77,7 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },  // <-- ADD THIS
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },  // <-- ADD THIS
   ];
 
   const isActive = (path) => {
