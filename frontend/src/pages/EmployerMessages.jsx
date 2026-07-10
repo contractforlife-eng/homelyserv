@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - COMPLETE WITH PERSISTENT CHAT
+// src/pages/EmployerMessages.jsx - WITH PROFILE IMAGE FIX
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -36,7 +36,7 @@ import {
   saveConversationMessages
 } from '../utils/chatService';
 
-// Employer Sidebar Component
+// Employer Sidebar Component - WITH PROFILE IMAGE
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -90,6 +90,14 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  // ===== FIX: Get profile image from user =====
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -132,10 +140,19 @@ const EmployerSidebar = ({
           </button>
         </div>
 
+        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -285,7 +302,7 @@ const EmployerMessages = () => {
 
   const t = translations[language];
 
-  // ===== FIXED: Initialize user and load conversations immediately =====
+  // Initialize user and load conversations immediately
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -302,14 +319,12 @@ const EmployerMessages = () => {
         }
         setUser(parsedUser);
         
-        // ===== FIX: Load conversations immediately using parsedUser =====
         const userId = parsedUser.id || parsedUser.email;
         if (userId) {
           const userConversations = getUserConversations(userId);
           console.log('📋 Initial load - employer conversations:', userConversations);
           setConversations(userConversations);
           
-          // Restore selected conversation
           const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
           if (savedConversationId) {
             const exists = userConversations.some(c => c.id === savedConversationId);
@@ -339,7 +354,7 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // ===== NEW: Separate effect for refreshKey that depends on user =====
+  // Separate effect for refreshKey that depends on user
   useEffect(() => {
     if (!user) return;
     
@@ -398,7 +413,7 @@ const EmployerMessages = () => {
     }
   };
 
-  // ===== NEW: Ensure conversation exists for both users =====
+  // Ensure conversation exists for both users
   const ensureConversation = (recipient) => {
     const userId = user?.id || user?.email;
     if (!userId || !recipient) return null;
@@ -406,7 +421,6 @@ const EmployerMessages = () => {
     const conversationId = getConversationId(userId, recipient.id);
     const messages = getConversationMessages(conversationId);
     
-    // Create system message if conversation doesn't exist
     if (messages.length === 0) {
       const systemMessage = {
         id: Date.now(),
@@ -423,7 +437,6 @@ const EmployerMessages = () => {
       saveConversationMessages(conversationId, [systemMessage]);
     }
     
-    // Update employer's conversation list
     const employerConversations = getUserConversations(userId);
     const exists = employerConversations.some(c => c.id === conversationId);
     
@@ -442,7 +455,6 @@ const EmployerMessages = () => {
       saveUserConversations(userId, employerConversations);
     }
     
-    // Update worker's conversation list too
     const workerConversations = getUserConversations(recipient.id);
     const workerExists = workerConversations.some(c => c.id === conversationId);
     
@@ -464,7 +476,6 @@ const EmployerMessages = () => {
     return conversationId;
   };
 
-  // ===== Updated: Add chat recipient =====
   const addChatRecipient = (recipient) => {
     const userId = user?.id || user?.email;
     if (!userId) {
@@ -474,13 +485,10 @@ const EmployerMessages = () => {
 
     console.log('📨 Adding chat recipient:', recipient);
 
-    // Ensure conversation exists for both users
     const conversationId = ensureConversation(recipient);
     
     if (conversationId) {
-      // Reload conversations
       loadChatData();
-      // Select the conversation
       setSelectedConversationId(conversationId);
       loadMessagesForConversation(conversationId);
       console.log('✅ Conversation ensured and selected:', conversationId);
@@ -635,7 +643,6 @@ const EmployerMessages = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -691,7 +698,6 @@ const EmployerMessages = () => {
                 </div>
               </div>
 
-              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>

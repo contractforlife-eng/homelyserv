@@ -1,3 +1,4 @@
+// src/pages/EmployerComplaints.jsx - WITH PROFILE IMAGE
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -25,7 +26,7 @@ import {
   Filter
 } from 'lucide-react';
 
-// Employer Sidebar Component - Teal Theme
+// Employer Sidebar Component - WITH PROFILE IMAGE
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -79,6 +80,14 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  // ===== FIX: Get profile image from user =====
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -121,10 +130,19 @@ const EmployerSidebar = ({
           </button>
         </div>
 
+        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -531,7 +549,6 @@ const EmployerComplaints = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -542,11 +559,9 @@ const EmployerComplaints = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -576,9 +591,7 @@ const EmployerComplaints = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Teal Theme */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -595,7 +608,6 @@ const EmployerComplaints = () => {
             </div>
           </div>
 
-          {/* Stats Cards - Teal Theme */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -635,7 +647,6 @@ const EmployerComplaints = () => {
             </div>
           </div>
 
-          {/* Complaint Form */}
           {showForm && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.form.newComplaint}</h3>
@@ -697,7 +708,6 @@ const EmployerComplaints = () => {
             </div>
           )}
 
-          {/* Search and Filters */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
@@ -726,14 +736,12 @@ const EmployerComplaints = () => {
             </div>
           </div>
 
-          {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">
               Showing <span className="font-semibold text-gray-700">{filteredComplaints.length}</span> complaints
             </p>
           </div>
 
-          {/* Complaints List */}
           {filteredComplaints.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">📋</div>
@@ -777,7 +785,6 @@ const EmployerComplaints = () => {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     {complaint.status === 'pending' && (
                       <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
                         <button

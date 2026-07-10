@@ -42,6 +42,10 @@ import {
 } from 'lucide-react';
 
 // Employer Sidebar Component
+// src/pages/MyHires.jsx - Fix the EmployerSidebar component
+
+// Replace the EmployerSidebar component with this updated version:
+
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -95,6 +99,14 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  // Get profile image from user
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -137,10 +149,19 @@ const EmployerSidebar = ({
           </button>
         </div>
 
+        {/* ===== FIXED: Profile section with image ===== */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
