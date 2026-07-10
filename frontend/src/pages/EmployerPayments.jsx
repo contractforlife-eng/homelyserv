@@ -1,4 +1,4 @@
-// src/pages/employer/EmployerPayments.jsx
+// src/pages/EmployerPayments.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -84,6 +84,13 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -128,8 +135,16 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -306,7 +321,6 @@ const EmployerPayments = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load selected worker data
     const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
     if (selectedWorker) {
       try {
@@ -349,7 +363,6 @@ const EmployerPayments = () => {
     navigate('/employer-search');
   };
 
-  // Navigate to payment options page
   const handleProceedToPayment = () => {
     navigate('/payment-options');
   };
@@ -459,7 +472,6 @@ const EmployerPayments = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Worker Details - Left Column */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.workerDetails}</h3>
@@ -505,7 +517,6 @@ const EmployerPayments = () => {
               </div>
             </div>
 
-            {/* Payment Summary - Right Column */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 sticky top-24">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentSummary}</h3>

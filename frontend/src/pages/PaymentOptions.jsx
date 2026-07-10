@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx - COMPLETE UPDATED FILE
+// src/pages/PaymentOptions.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -35,7 +35,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 
-// Employer Sidebar Component (keep your existing code)
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -89,6 +89,13 @@ const EmployerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -133,8 +140,16 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -520,7 +535,6 @@ const PaymentOptions = () => {
       setIsProcessing(false);
       setPaymentSuccess(true);
       
-      // Create hire record
       const hireRecord = {
         id: 'hire_' + Date.now(),
         workerId: workerData?.workerId || workerData?.workerEmail,
@@ -535,12 +549,10 @@ const PaymentOptions = () => {
         status: 'completed'
       };
       
-      // Save hire record
       const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       hires.push(hireRecord);
       localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
       
-      // ====== CREATE OFFER FOR THE WORKER ======
       const newOffer = {
         id: 'offer_' + Date.now(),
         title: workerData?.desiredJob || 'Job Opportunity',
@@ -579,17 +591,13 @@ const PaymentOptions = () => {
         employerId: user?.id || user?.email
       };
       
-      // Save to employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       employerOffers.push(newOffer);
       localStorage.setItem('employer_offers', JSON.stringify(employerOffers));
       
-      // Save to homelyserv_offers
       const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
       centralOffers.push(newOffer);
       localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
-      
-      console.log('✅ Offer created for worker:', newOffer);
       
       localStorage.removeItem('homelyserv_selected_worker');
     }, 2500);
