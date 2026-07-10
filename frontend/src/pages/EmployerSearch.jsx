@@ -1,4 +1,4 @@
-// src/pages/employer/EmployerSearch.jsx
+// src/pages/EmployerSearch.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -39,11 +39,20 @@ import {
   ChevronDown,
   Sparkles,
   TrendingUp,
-  Shield
+  Shield,
+  Award,
+  Zap,
+  Heart,
+  UserPlus,
+  BarChart3,
+  SlidersHorizontal,
+  ArrowUpDown,
+  ThumbsUp,
+  LayoutGrid,
+  List
 } from 'lucide-react';
-import { JOB_OPTIONS, getJobLabel, getJobLabels } from '../constants/jobOptions';
 
-// Employer Sidebar Component (keep your existing code)
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -141,8 +150,16 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-teal-600" />
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.fullName || 'Employer'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-teal-600" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -238,7 +255,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component - Using shared job options
+// Main EmployerSearch Component
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -253,18 +270,66 @@ const EmployerSearch = () => {
   const [selectedJob, setSelectedJob] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [savedWorkers, setSavedWorkers] = useState([]);
+  
+  // Advanced Filters
+  const [advancedFilters, setAdvancedFilters] = useState({
+    minRating: 0,
+    minExperience: 0,
+    availability: 'all',
+    maxHourlyRate: 100,
+    language: 'all'
+  });
 
-  // Use shared job options - just the labels for the dropdown
-  const jobLabels = getJobLabels();
+  // Sort Options
+  const [sortBy, setSortBy] = useState('relevance');
 
-  // Get unique locations from workers
-  const getUniqueLocations = () => {
-    const locations = allWorkers
-      .map(worker => worker.location)
-      .filter(location => location && location !== 'Not specified' && location !== '')
-      .filter((value, index, self) => self.indexOf(value) === index);
-    return locations.sort();
-  };
+  // View Mode
+  const [viewMode, setViewMode] = useState('grid');
+
+  const jobOptions = [
+    'All Jobs',
+    'Nanny',
+    'Baby Sitter',
+    'Elderly Caregiver',
+    'Driver',
+    'Cook',
+    'House Manager',
+    'Gardener',
+    'Nurse',
+    'Tutor',
+    'Housekeeper',
+    'Personal Assistant',
+    'Cleaner',
+    'Security Guard',
+    'Maintenance Worker',
+    'Teacher'
+  ];
+
+  const experienceLevels = [
+    { value: 0, label: 'Any Experience' },
+    { value: 1, label: '1+ Years' },
+    { value: 2, label: '2+ Years' },
+    { value: 3, label: '3+ Years' },
+    { value: 5, label: '5+ Years' },
+    { value: 10, label: '10+ Years' }
+  ];
+
+  const ratingOptions = [
+    { value: 0, label: 'Any Rating' },
+    { value: 3, label: '3+ Stars' },
+    { value: 3.5, label: '3.5+ Stars' },
+    { value: 4, label: '4+ Stars' },
+    { value: 4.5, label: '4.5+ Stars' }
+  ];
+
+  const languageOptions = [
+    { value: 'all', label: 'All Languages' },
+    { value: 'arabic', label: '🇸🇦 Arabic' },
+    { value: 'english', label: '🇬🇧 English' },
+    { value: 'french', label: '🇫🇷 French' },
+    { value: 'turkish', label: '🇹🇷 Turkish' }
+  ];
 
   const translations = {
     en: {
@@ -295,7 +360,29 @@ const EmployerSearch = () => {
       showFilters: 'Show Filters',
       hideFilters: 'Hide Filters',
       popular: 'Popular',
-      noLocations: 'No locations available'
+      advancedFilters: 'Advanced Filters',
+      minRating: 'Minimum Rating',
+      minExperience: 'Minimum Experience',
+      availability: 'Availability',
+      available: 'Available',
+      unavailable: 'Unavailable',
+      maxHourlyRate: 'Max Hourly Rate (EGP)',
+      language: 'Language',
+      sortBy: 'Sort By',
+      relevance: 'Relevance',
+      ratingHigh: 'Highest Rating',
+      experienceHigh: 'Most Experienced',
+      hourlyLow: 'Lowest Rate',
+      hourlyHigh: 'Highest Rate',
+      distance: 'Nearest Location',
+      viewGrid: 'Grid View',
+      viewList: 'List View',
+      viewCompact: 'Compact View',
+      saveWorker: 'Save Worker',
+      compare: 'Compare',
+      quickHire: 'Quick Hire',
+      saved: 'Saved',
+      experienceYears: 'years experience'
     },
     ar: {
       title: 'البحث عن عمال',
@@ -325,13 +412,34 @@ const EmployerSearch = () => {
       showFilters: 'عرض الفلاتر',
       hideFilters: 'إخفاء الفلاتر',
       popular: 'الأكثر شهرة',
-      noLocations: 'لا توجد مواقع متاحة'
+      advancedFilters: 'فلاتر متقدمة',
+      minRating: 'الحد الأدنى للتقييم',
+      minExperience: 'الحد الأدنى للخبرة',
+      availability: 'التوفر',
+      available: 'متاح',
+      unavailable: 'غير متاح',
+      maxHourlyRate: 'الحد الأقصى للسعر (جنيه)',
+      language: 'اللغة',
+      sortBy: 'ترتيب حسب',
+      relevance: 'الصلة',
+      ratingHigh: 'أعلى تقييم',
+      experienceHigh: 'أكثر خبرة',
+      hourlyLow: 'أقل سعر',
+      hourlyHigh: 'أعلى سعر',
+      distance: 'الأقرب موقعاً',
+      viewGrid: 'عرض شبكي',
+      viewList: 'عرض قائمة',
+      viewCompact: 'عرض مدمج',
+      saveWorker: 'حفظ العامل',
+      compare: 'مقارنة',
+      quickHire: 'توظيف سريع',
+      saved: 'محفوظ',
+      experienceYears: 'سنوات الخبرة'
     }
   };
 
   const t = translations[language];
 
-  // Load workers from localStorage
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -360,19 +468,19 @@ const EmployerSearch = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
+    const saved = localStorage.getItem('employer_saved_workers');
+    if (saved) {
+      setSavedWorkers(JSON.parse(saved));
+    }
+
     loadWorkersFromStorage();
   }, [navigate]);
 
   const loadWorkersFromStorage = () => {
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      console.log('📋 All users from localStorage:', users);
-      
       const workers = users.filter(user => user.role === 'WORKER');
-      console.log('👷 Found workers:', workers);
-      
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      console.log('📋 Profiles:', profiles);
       
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
@@ -385,29 +493,20 @@ const EmployerSearch = () => {
           location: profile.location || worker.location || 'Not specified',
           bio: profile.bio || worker.bio || '',
           skills: profile.skills || worker.skills || [],
-          experience: profile.experience || worker.experience || '0 years',
-          hourlyRate: profile.hourlyRate || worker.hourlyRate || '30',
+          experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
+          hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
           desiredJob: profile.desiredJob || worker.desiredJob || '',
           profileImage: profile.profileImage || worker.profileImage || '',
           rating: profile.rating || worker.rating || 4.5,
           jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
           available: profile.available !== undefined ? profile.available : true,
-          role: 'WORKER'
+          role: 'WORKER',
+          languages: profile.languages || worker.languages || ['english']
         };
       });
       
-      console.log('✅ Merged workers:', mergedWorkers);
       setAllWorkers(mergedWorkers);
-      
-      // Log unique locations
-      const locations = mergedWorkers
-        .map(w => w.location)
-        .filter(loc => loc && loc !== 'Not specified' && loc !== '');
-      console.log('📍 Unique locations found:', [...new Set(locations)]);
-      
-      if (mergedWorkers.length === 0) {
-        console.warn('⚠️ No workers found in localStorage. Please register workers first.');
-      }
+      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
     } catch (error) {
       console.error('Error loading workers:', error);
       setAllWorkers([]);
@@ -444,25 +543,55 @@ const EmployerSearch = () => {
     setSearchQuery('');
     setSelectedJob('');
     setSelectedLocation('');
+    setAdvancedFilters({
+      minRating: 0,
+      minExperience: 0,
+      availability: 'all',
+      maxHourlyRate: 100,
+      language: 'all'
+    });
+    setSortBy('relevance');
     setShowResults(false);
     setSearchResults([]);
   };
 
+  const toggleSaveWorker = (workerId) => {
+    let newSaved;
+    if (savedWorkers.includes(workerId)) {
+      newSaved = savedWorkers.filter(id => id !== workerId);
+    } else {
+      newSaved = [...savedWorkers, workerId];
+    }
+    setSavedWorkers(newSaved);
+    localStorage.setItem('employer_saved_workers', JSON.stringify(newSaved));
+  };
+
+  const handleQuickHire = (worker) => {
+    localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
+      workerId: worker.id || worker.email,
+      workerName: worker.fullName,
+      workerEmail: worker.email,
+      hourlyRate: worker.hourlyRate,
+      desiredJob: worker.desiredJob,
+      commission: 15,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName,
+      workerPhoto: worker.profileImage || '',
+      workerSkills: worker.skills || [],
+      workerExperience: worker.experience || '0 years',
+      workerLocation: worker.location || 'Not specified'
+    }));
+    navigate('/employer-payments');
+  };
+
   const handleSearch = () => {
     console.log('🔍 Starting search...');
-    console.log('📊 All workers count:', allWorkers.length);
-    console.log('🔎 Search query:', searchQuery);
-    console.log('📌 Selected job:', selectedJob);
-    console.log('📍 Selected location:', selectedLocation);
-    
     setLoading(true);
     setShowResults(false);
 
     setTimeout(() => {
       let results = [...allWorkers];
-      console.log('📋 Initial results:', results.length);
       
-      // Search by query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         results = results.filter(worker => {
@@ -471,40 +600,69 @@ const EmployerSearch = () => {
           const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
                           worker.jobTitle?.toLowerCase().includes(query);
           const bioMatch = worker.bio?.toLowerCase().includes(query);
-          const locationMatch = worker.location?.toLowerCase().includes(query);
-          const match = nameMatch || skillMatch || jobMatch || bioMatch || locationMatch;
-          return match;
+          return nameMatch || skillMatch || jobMatch || bioMatch;
         });
-        console.log('📊 After query filter:', results.length);
       }
       
-      // Filter by job - using the shared job options
-      if (selectedJob) {
+      if (selectedJob && selectedJob !== 'All Jobs') {
         const jobLower = selectedJob.toLowerCase();
-        // Find the job value that matches the selected label
-        const matchedJob = JOB_OPTIONS.find(job => 
-          job.label.toLowerCase() === jobLower || 
-          job.value.toLowerCase() === jobLower
-        );
-        const jobValue = matchedJob ? matchedJob.value : selectedJob.toLowerCase().replace(/\s+/g, '_');
-        
         results = results.filter(worker => {
-          const match = worker.desiredJob?.toLowerCase() === jobValue ||
-                       worker.desiredJob?.toLowerCase().includes(jobValue) ||
+          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
                        worker.jobTitle?.toLowerCase().includes(jobLower) ||
                        worker.position?.toLowerCase().includes(jobLower);
           return match;
         });
-        console.log('📊 After job filter:', results.length);
       }
       
-      // Filter by location
-      if (selectedLocation) {
+      if (selectedLocation && selectedLocation !== 'All Locations') {
         const locLower = selectedLocation.toLowerCase();
         results = results.filter(worker => 
           worker.location?.toLowerCase().includes(locLower)
         );
-        console.log('📊 After location filter:', results.length);
+      }
+
+      // Advanced Filters
+      if (advancedFilters.minRating > 0) {
+        results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
+      }
+
+      if (advancedFilters.minExperience > 0) {
+        results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
+      }
+
+      if (advancedFilters.availability === 'available') {
+        results = results.filter(worker => worker.available === true);
+      } else if (advancedFilters.availability === 'unavailable') {
+        results = results.filter(worker => worker.available === false);
+      }
+
+      if (advancedFilters.maxHourlyRate < 100) {
+        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
+      }
+
+      if (advancedFilters.language !== 'all') {
+        results = results.filter(worker => 
+          worker.languages?.includes(advancedFilters.language)
+        );
+      }
+
+      // Sort Options
+      switch (sortBy) {
+        case 'rating':
+          results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'experience':
+          results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+          break;
+        case 'hourlyLow':
+          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+          break;
+        case 'hourlyHigh':
+          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+          break;
+        case 'relevance':
+        default:
+          break;
       }
       
       console.log('✅ Final results:', results.length);
@@ -537,13 +695,39 @@ const EmployerSearch = () => {
     navigate('/worker-profile-view');
   };
 
-  // Use the shared getJobLabel function
-  const getJobLabelDisplay = (value) => {
-    return getJobLabel(value);
+  const getJobLabel = (value) => {
+    const jobMap = {
+      'nanny': 'Nanny',
+      'elderly_care': 'Elderly Caregiver',
+      'housekeeper': 'Housekeeper',
+      'cook': 'Cook',
+      'driver': 'Driver',
+      'gardener': 'Gardener',
+      'house_manager': 'House Manager',
+      'tutor': 'Tutor',
+      'pet_care': 'Pet Care',
+      'maintenance': 'Maintenance',
+      'security': 'Security Guard',
+      'personal_assistant': 'Personal Assistant',
+      'event_planner': 'Event Planner',
+      'fitness_trainer': 'Fitness Trainer',
+      'nurse': 'Nurse',
+      'therapist': 'Therapist',
+      'cleaner': 'Cleaner',
+      'other': 'Other'
+    };
+    return jobMap[value] || value || 'Not specified';
   };
 
-  // Get unique locations from workers
-  const locationOptions = getUniqueLocations();
+  const getUniqueLocations = () => {
+    const locations = allWorkers
+      .map(worker => worker.location)
+      .filter(location => location && location !== 'Not specified' && location !== '')
+      .filter((value, index, self) => self.indexOf(value) === index);
+    return ['All Locations', ...locations.sort()];
+  };
+
+  const locationOptionsDynamic = getUniqueLocations();
 
   if (!user) {
     return (
@@ -596,12 +780,19 @@ const EmployerSearch = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'compact' : 'grid')}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                {viewMode === 'grid' && <LayoutGrid size={16} />}
+                {viewMode === 'list' && <List size={16} />}
+                {viewMode === 'compact' && <BarChart3 size={16} />}
+              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Hero Section */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 md:p-8 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
@@ -615,7 +806,6 @@ const EmployerSearch = () => {
             </div>
           </div>
 
-          {/* Search Bar */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1 relative">
@@ -633,7 +823,7 @@ const EmployerSearch = () => {
                 onClick={() => setShowFilters(!showFilters)}
                 className="px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-gray-600"
               >
-                <Filter size={18} />
+                <SlidersHorizontal size={18} />
                 {showFilters ? t.hideFilters : t.showFilters}
               </button>
               <button
@@ -650,40 +840,126 @@ const EmployerSearch = () => {
               </button>
             </div>
 
-            {/* Filters */}
             {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.jobType}</label>
-                  <select
-                    value={selectedJob}
-                    onChange={(e) => setSelectedJob(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-                  >
-                    <option value="">{t.selectJob}</option>
-                    {jobLabels.map((job) => (
-                      <option key={job} value={job}>{job}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-                  >
-                    <option value="">{t.selectLocation}</option>
-                    {locationOptions.length > 0 ? (
-                      locationOptions.map((loc) => (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.jobType}</label>
+                    <select
+                      value={selectedJob}
+                      onChange={(e) => setSelectedJob(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    >
+                      {jobOptions.map((job) => (
+                        <option key={job} value={job}>{job}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
+                    <select
+                      value={selectedLocation}
+                      onChange={(e) => setSelectedLocation(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    >
+                      {locationOptionsDynamic.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
-                      ))
-                    ) : (
-                      <option value="" disabled>{t.noLocations}</option>
-                    )}
-                  </select>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="md:col-span-2 flex justify-end">
+
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.advancedFilters}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.minRating}</label>
+                      <select
+                        value={advancedFilters.minRating}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minRating: parseFloat(e.target.value) }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                      >
+                        {ratingOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.minExperience}</label>
+                      <select
+                        value={advancedFilters.minExperience}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minExperience: parseInt(e.target.value) }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                      >
+                        {experienceLevels.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.availability}</label>
+                      <select
+                        value={advancedFilters.availability}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, availability: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                      >
+                        <option value="all">{t.filters.all}</option>
+                        <option value="available">{t.available}</option>
+                        <option value="unavailable">{t.unavailable}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.maxHourlyRate}</label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        step="5"
+                        value={advancedFilters.maxHourlyRate}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxHourlyRate: parseInt(e.target.value) }))}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>10</span>
+                        <span className="font-medium text-teal-600">{advancedFilters.maxHourlyRate} EGP</span>
+                        <span>100</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.language}</label>
+                      <select
+                        value={advancedFilters.language}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, language: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                      >
+                        {languageOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.sortBy}</label>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                      >
+                        <option value="relevance">{t.relevance}</option>
+                        <option value="rating">{t.ratingHigh}</option>
+                        <option value="experience">{t.experienceHigh}</option>
+                        <option value="hourlyLow">{t.hourlyLow}</option>
+                        <option value="hourlyHigh">{t.hourlyHigh}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
                   <button
                     onClick={clearFilters}
                     className="px-4 py-2 text-sm text-gray-600 hover:text-teal-600 transition"
@@ -695,7 +971,6 @@ const EmployerSearch = () => {
             )}
           </div>
 
-          {/* Results */}
           {showResults && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex justify-between items-center mb-4">
@@ -718,64 +993,99 @@ const EmployerSearch = () => {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={viewMode === 'grid' 
+                  ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
+                  : viewMode === 'list' 
+                  ? 'space-y-4'
+                  : 'grid grid-cols-1 md:grid-cols-3 gap-3'
+                }>
                   {searchResults.map((worker) => (
-                    <div key={worker.id || worker.email} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={worker.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.fullName)}&background=teal&color=fff&size=100&bold=true`}
-                          alt={worker.fullName}
-                          className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.fullName)}&background=teal&color=fff&size=100&bold=true`;
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-800">{worker.fullName}</h4>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Briefcase size={14} />
-                            <span>{getJobLabelDisplay(worker.desiredJob)}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <MapPin size={14} />
-                            <span>{worker.location || 'Not specified'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <DollarSign size={14} />
-                            <span>EGP {worker.hourlyRate}/hr</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <StarIcon size={14} className="text-yellow-500" />
-                            <span>{worker.rating || 4.5} ★</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {worker.skills?.slice(0, 3).map((skill, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full">
-                                {skill}
-                              </span>
-                            ))}
-                            {worker.skills?.length > 3 && (
-                              <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
-                                +{worker.skills.length - 3}
-                              </span>
+                    <div 
+                      key={worker.id || worker.email} 
+                      className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition ${
+                        viewMode === 'compact' ? 'p-3' : ''
+                      }`}
+                    >
+                      <div className={`flex ${viewMode === 'list' ? 'flex-row' : 'flex-col'} gap-4`}>
+                        <div className={`flex items-start gap-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                          <div className={`rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 ${
+                            viewMode === 'compact' ? 'w-12 h-12' : 'w-16 h-16'
+                          }`}>
+                            {worker.profileImage ? (
+                              <img 
+                                src={worker.profileImage} 
+                                alt={worker.fullName} 
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <User size={viewMode === 'compact' ? 20 : 28} className="text-teal-600" />
                             )}
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className={`font-semibold text-gray-800 ${viewMode === 'compact' ? 'text-sm' : ''}`}>
+                                {worker.fullName}
+                              </h4>
+                              <button
+                                onClick={() => toggleSaveWorker(worker.id || worker.email)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                              >
+                                <Heart 
+                                  size={viewMode === 'compact' ? 14 : 18} 
+                                  className={savedWorkers.includes(worker.id || worker.email) ? 'fill-red-500 text-red-500' : 'text-gray-400'} 
+                                />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Briefcase size={viewMode === 'compact' ? 12 : 14} />
+                              <span>{getJobLabel(worker.desiredJob)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <MapPin size={viewMode === 'compact' ? 12 : 14} />
+                              <span className="truncate">{worker.location || 'Not specified'}</span>
+                            </div>
+                            {viewMode !== 'compact' && (
+                              <>
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <DollarSign size={14} />
+                                  <span>EGP {worker.hourlyRate}/hr</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <StarIcon size={14} className="text-yellow-500" />
+                                  <span>{worker.rating || 4.5} ★</span>
+                                  <span className="text-gray-400">•</span>
+                                  <span>{worker.experience || 0} {t.experienceYears}</span>
+                                </div>
+                              </>
+                            )}
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {worker.skills?.slice(0, viewMode === 'compact' ? 2 : 3).map((skill, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full">
+                                  {skill}
+                                </span>
+                              ))}
+                              {worker.skills?.length > (viewMode === 'compact' ? 2 : 3) && (
+                                <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
+                                  +{worker.skills.length - (viewMode === 'compact' ? 2 : 3)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-2 flex-shrink-0">
+                        <div className={`flex gap-2 ${viewMode === 'list' ? 'flex-wrap items-center' : ''}`}>
                           <button
-                            onClick={() => handleHireNow(worker)}
-                            className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center gap-1 whitespace-nowrap"
+                            onClick={() => handleQuickHire(worker)}
+                            className="flex-1 px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center justify-center gap-1"
                           >
-                            <UserCheck size={16} />
-                            {t.hire}
+                            <Zap size={14} />
+                            {t.quickHire}
                           </button>
                           <button
                             onClick={() => handleViewProfile(worker)}
-                            className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center gap-1 whitespace-nowrap"
+                            className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1"
                           >
-                            <Eye size={16} />
-                            {t.viewProfile}
+                            <Eye size={14} />
+                            {viewMode === 'compact' ? '' : t.viewProfile}
                           </button>
                         </div>
                       </div>
