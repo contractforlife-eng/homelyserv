@@ -21,6 +21,8 @@ function Login() {
 
   // Create admin user on component mount
   useEffect(() => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
     // Create admin user if it doesn't exist
     const createAdminUser = () => {
       const adminUser = {
@@ -28,7 +30,7 @@ function Login() {
         fullName: 'Emad',
         email: 'emad@homelyserv.com',
         role: 'ADMIN',
-        phone: '+201234567890',
+        phone: '+201009189851',
         location: 'Cairo, Egypt',
         bio: 'System Administrator',
         skills: ['Management', 'Administration'],
@@ -79,19 +81,18 @@ function Login() {
 
   // Redirect function
   const redirectUser = (user) => {
-    console.log('🔀 Redirecting user with role:', user.role, 'name:', user.fullName);
-    setLoading(false);
-    
-    if (user.role === 'ADMIN') {
-      navigate('/admin');
-    } else if (user.role === 'EMPLOYER') {
-      navigate('/employer-dashboard');
-    } else if (user.role === 'WORKER') {
-      navigate('/worker-dashboard');
-    } else {
-      navigate('/dashboard');
-    }
-  };
+  const role = user?.role?.toUpperCase();
+
+  if (role === 'ADMIN') {
+    navigate('/admin');
+  } else if (role === 'EMPLOYER') {
+    navigate('/employer-dashboard');
+  } else if (role === 'WORKER') {
+    navigate('/worker-dashboard');
+  } else {
+    navigate('/login');
+  }
+};
 
   // Check if user is registered in localStorage
   const checkRegisteredUser = (email) => {
