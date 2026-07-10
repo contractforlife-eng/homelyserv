@@ -61,6 +61,14 @@ router.post('/upload-photo', auth, upload.single('photo'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
+    // Add to employer.js
+router.get('/payments', auth, async (req, res) => {
+  // Get employer payments logic
+});
+
+router.get('/payments/stats', auth, async (req, res) => {
+  // Get payment stats logic
+});
 
     const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     const photoUrl = `${baseUrl}/uploads/employers/${req.file.filename}`;

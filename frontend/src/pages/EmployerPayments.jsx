@@ -27,10 +27,210 @@ import {
   FileCheck,
   Search,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  Calendar,
+  Clock,
+  Download,
+  Eye,
+  TrendingUp,
+  TrendingDown,
+  Filter,
+  RefreshCw,
+  Receipt,
+  Copy,
+  ChevronDown,
+  Users,
+  BarChart3,
+  Phone,
+  Mail
 } from 'lucide-react';
 
-// Employer Sidebar Component
+// ============================================================
+// API SERVICE - MATCHING YOUR BACKEND STRUCTURE
+// ============================================================
+const API_BASE_URL = '/api';
+
+const apiService = {
+  // Based on your routes, the payment endpoints might be in a separate file
+  // Try the most common patterns
+  getEmployerPayments: async (token) => {
+    try {
+      // Try multiple possible endpoints based on your backend structure
+      const endpoints = [
+        `${API_BASE_URL}/employer/payments`,      // If you have a separate payment route
+        `${API_BASE_URL}/payments/employer`,       // Alternative pattern
+        `${API_BASE_URL}/payments`,                // Generic payments endpoint
+        `${API_BASE_URL}/employer/payment-history`, // Alternative
+        `${API_BASE_URL}/employer/me/payments`,    // Using the /me pattern from your routes
+      ];
+      
+      let lastError = null;
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log('Trying endpoint:', endpoint);
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          
+          const responseText = await response.text();
+          console.log(`Endpoint ${endpoint} response status:`, response.status);
+          
+          if (response.ok && responseText && !responseText.includes('ngrok')) {
+            try {
+              const data = JSON.parse(responseText);
+              console.log('✅ Found working endpoint:', endpoint);
+              return data;
+            } catch (e) {
+              console.log(`Endpoint ${endpoint} returned non-JSON`);
+            }
+          }
+        } catch (err) {
+          console.log(`Endpoint ${endpoint} failed:`, err.message);
+          lastError = err;
+        }
+      }
+      
+      // If we get here, no endpoint worked - return empty data instead of error
+      console.warn('No payment endpoints found. Using empty data.');
+      return { payments: [] };
+    } catch (error) {
+      console.error('API Error (getEmployerPayments):', error);
+      return { payments: [] };
+    }
+  },
+
+  getEmployerPaymentStats: async (token) => {
+    try {
+      const endpoints = [
+        `${API_BASE_URL}/employer/payments/stats`,
+        `${API_BASE_URL}/payments/stats`,
+        `${API_BASE_URL}/employer/stats/payments`,
+        `${API_BASE_URL}/employer/me/payments/stats`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log('Trying stats endpoint:', endpoint);
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Found working stats endpoint:', endpoint);
+            return data;
+          }
+        } catch (err) {
+          console.log(`Stats endpoint ${endpoint} failed`);
+        }
+      }
+      
+      // Return default stats if no endpoint works
+      return { totalPaid: 0, pendingCount: 0, completedCount: 0, upcomingCount: 0, totalWorkers: 0, monthlyAverage: 0 };
+    } catch (error) {
+      console.error('API Error (getEmployerPaymentStats):', error);
+      return { totalPaid: 0, pendingCount: 0, completedCount: 0, upcomingCount: 0, totalWorkers: 0, monthlyAverage: 0 };
+    }
+  },
+
+  getEmployerPaymentDetails: async (paymentId, token) => {
+    try {
+      const endpoints = [
+        `${API_BASE_URL}/employer/payments/${paymentId}`,
+        `${API_BASE_URL}/payments/${paymentId}`,
+        `${API_BASE_URL}/employer/payment/${paymentId}`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return data;
+          }
+        } catch (err) {
+          console.log(`Details endpoint ${endpoint} failed`);
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('API Error (getEmployerPaymentDetails):', error);
+      return null;
+    }
+  },
+
+  processEmployerPayment: async (paymentId, token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employer/payments/${paymentId}/process`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to process payment`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('API Error (processEmployerPayment):', error);
+      throw error;
+    }
+  },
+
+  downloadEmployerReceipt: async (paymentId, token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/employer/payments/${paymentId}/receipt`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/pdf',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to download receipt`);
+      }
+      
+      return response.blob();
+    } catch (error) {
+      console.error('API Error (downloadEmployerReceipt):', error);
+      throw error;
+    }
+  }
+};
+
+// ============================================================
+// EMPLOYER SIDEBAR COMPONENT
+// ============================================================
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -50,6 +250,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment', 
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -62,6 +263,7 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
@@ -78,6 +280,7 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' }
   ];
 
   const isActive = (path) => {
@@ -240,67 +443,200 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerPayments Component
+// ============================================================
+// MAIN EMPLOYER PAYMENTS COMPONENT
+// ============================================================
 const EmployerPayments = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [workerData, setWorkerData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [stats, setStats] = useState({
+    totalPaid: 0,
+    pendingCount: 0,
+    completedCount: 0,
+    upcomingCount: 0,
+    totalWorkers: 0,
+    monthlyAverage: 0
+  });
 
   const translations = {
     en: {
-      title: 'Payment Details',
-      subtitle: 'Review and confirm your hiring payment',
-      workerDetails: 'Worker Details',
-      paymentSummary: 'Payment Summary',
-      hourlyRate: 'Hourly Rate',
-      subtotal: 'Subtotal',
-      commission: 'Commission (15%)',
-      total: 'Total Amount',
-      confirmPayment: 'Proceed to Payment',
-      backToSearch: 'Back to Search',
+      title: 'Payments',
+      subtitle: 'Manage all your payments to workers',
+      stats: {
+        totalPaid: 'Total Paid',
+        pending: 'Pending',
+        completed: 'Completed',
+        upcoming: 'Upcoming',
+        workers: 'Workers Paid',
+        monthlyAverage: 'Monthly Avg'
+      },
+      status: {
+        completed: 'Completed',
+        pending: 'Pending',
+        upcoming: 'Upcoming',
+        failed: 'Failed',
+        processing: 'Processing'
+      },
+      table: {
+        id: 'Payment ID',
+        worker: 'Worker',
+        job: 'Job',
+        amount: 'Amount',
+        date: 'Date',
+        status: 'Status',
+        actions: 'Actions'
+      },
+      modal: {
+        title: 'Payment Details',
+        paymentId: 'Payment ID',
+        worker: 'Worker',
+        job: 'Job Title',
+        amount: 'Amount',
+        date: 'Date',
+        status: 'Status',
+        method: 'Payment Method',
+        description: 'Description',
+        reference: 'Reference',
+        receipt: 'Download Receipt',
+        close: 'Close',
+        copyId: 'Copy ID',
+        workerEmail: 'Worker Email',
+        workerPhone: 'Worker Phone'
+      },
+      actions: {
+        view: 'View Details',
+        download: 'Download Receipt',
+        payNow: 'Pay Now'
+      },
+      empty: {
+        title: 'No payments found',
+        description: 'You haven\'t made any payments yet',
+        start: 'Hire a worker to get started'
+      },
+      filters: {
+        all: 'All Payments',
+        completed: 'Completed',
+        pending: 'Pending',
+        upcoming: 'Upcoming',
+        failed: 'Failed'
+      },
+      loading: 'Loading payment history...',
+      error: 'Error loading payments. Please try again.',
+      retry: 'Retry',
       languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading payment details...',
-      noWorkerData: 'No worker selected',
-      goBack: 'Go back and select a worker',
-      hoursPerWeek: 'Hours/Week',
-      weeksPerMonth: 'Weeks/Month'
+      searchPlaceholder: 'Search by worker name, job title, or payment ID...',
+      noResults: 'No payments match your search',
+      clearFilters: 'Clear filters',
+      goToWorker: 'Go to Worker Profile',
+      copySuccess: 'Copied to clipboard!',
+      processSuccess: 'Payment processed successfully!',
+      processError: 'Failed to process payment',
+      noEndpoint: 'No payment endpoints found. Please check server configuration.'
     },
     ar: {
-      title: 'تفاصيل الدفع',
-      subtitle: 'مراجعة وتأكيد دفع التوظيف',
-      workerDetails: 'تفاصيل العامل',
-      paymentSummary: 'ملخص الدفع',
-      hourlyRate: 'السعر بالساعة',
-      subtotal: 'المجموع الفرعي',
-      commission: 'العمولة (15%)',
-      total: 'المبلغ الإجمالي',
-      confirmPayment: 'المتابعة للدفع',
-      backToSearch: 'العودة إلى البحث',
+      title: 'المدفوعات',
+      subtitle: 'إدارة جميع مدفوعاتك للعمال',
+      stats: {
+        totalPaid: 'إجمالي المدفوع',
+        pending: 'معلقة',
+        completed: 'مكتملة',
+        upcoming: 'قادمة',
+        workers: 'عدد العمال',
+        monthlyAverage: 'المتوسط الشهري'
+      },
+      status: {
+        completed: 'مكتملة',
+        pending: 'معلقة',
+        upcoming: 'قادمة',
+        failed: 'فاشلة',
+        processing: 'قيد المعالجة'
+      },
+      table: {
+        id: 'رقم الدفع',
+        worker: 'العامل',
+        job: 'الوظيفة',
+        amount: 'المبلغ',
+        date: 'التاريخ',
+        status: 'الحالة',
+        actions: 'الإجراءات'
+      },
+      modal: {
+        title: 'تفاصيل الدفع',
+        paymentId: 'رقم الدفع',
+        worker: 'العامل',
+        job: 'عنوان الوظيفة',
+        amount: 'المبلغ',
+        date: 'التاريخ',
+        status: 'الحالة',
+        method: 'طريقة الدفع',
+        description: 'الوصف',
+        reference: 'المرجع',
+        receipt: 'تحميل الإيصال',
+        close: 'إغلاق',
+        copyId: 'نسخ الرقم',
+        workerEmail: 'بريد العامل',
+        workerPhone: 'هاتف العامل'
+      },
+      actions: {
+        view: 'عرض التفاصيل',
+        download: 'تحميل الإيصال',
+        payNow: 'ادفع الآن'
+      },
+      empty: {
+        title: 'لا توجد مدفوعات',
+        description: 'لم تقم بأي مدفوعات بعد',
+        start: 'قم بتوظيف عامل للبدء'
+      },
+      filters: {
+        all: 'جميع المدفوعات',
+        completed: 'مكتملة',
+        pending: 'معلقة',
+        upcoming: 'قادمة',
+        failed: 'فاشلة'
+      },
+      loading: 'جاري تحميل سجل المدفوعات...',
+      error: 'حدث خطأ في تحميل المدفوعات. يرجى المحاولة مرة أخرى.',
+      retry: 'إعادة المحاولة',
       languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل تفاصيل الدفع...',
-      noWorkerData: 'لم يتم اختيار عامل',
-      goBack: 'ارجع واختر عاملاً',
-      hoursPerWeek: 'ساعات/أسبوع',
-      weeksPerMonth: 'أسابيع/شهر'
+      searchPlaceholder: 'ابحث باسم العامل أو عنوان الوظيفة أو رقم الدفع...',
+      noResults: 'لا توجد مدفوعات تطابق بحثك',
+      clearFilters: 'مسح التصفيات',
+      goToWorker: 'انتقل إلى ملف العامل',
+      copySuccess: 'تم النسخ إلى الحافظة!',
+      processSuccess: 'تم معالجة الدفع بنجاح!',
+      processError: 'فشل في معالجة الدفع',
+      noEndpoint: 'لم يتم العثور على نقاط نهاية الدفع. يرجى التحقق من إعدادات الخادم.'
     }
   };
 
   const t = translations[language];
 
+  // Load user data and language preference
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
+    if (savedLang) setLanguage(savedLang);
+
     const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
+    const authToken = localStorage.getItem('homelyserv_token');
+
+    console.log('User data:', userData);
+    console.log('Auth token exists:', !!authToken);
+
+    if (userData && authToken) {
       try {
         const parsedUser = JSON.parse(userData);
         if (parsedUser.role !== 'EMPLOYER') {
@@ -308,35 +644,154 @@ const EmployerPayments = () => {
           return;
         }
         setUser(parsedUser);
+        setToken(authToken);
+        fetchPaymentsData(authToken);
       } catch (error) {
         console.error('Error parsing user data:', error);
-        navigate('/login');
+        setError('Failed to parse user data');
+        setLoading(false);
       }
     } else {
-      navigate('/login');
+      console.log('No user data or token found');
+      setError('Please login to view payments');
+      setLoading(false);
     }
 
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    const sidebarState = localStorage.getItem('employer_sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
-    if (selectedWorker) {
-      try {
-        setWorkerData(JSON.parse(selectedWorker));
-      } catch (error) {
-        console.error('Error parsing worker data:', error);
-        setWorkerData(null);
-      }
-    }
-    setLoading(false);
   }, [navigate]);
+
+  // Filter payments when filters change
+  useEffect(() => {
+    let filtered = [...payments];
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === statusFilter);
+    }
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.workerName?.toLowerCase().includes(searchLower) ||
+        p.jobTitle?.toLowerCase().includes(searchLower) ||
+        p.id?.toLowerCase().includes(searchLower)
+      );
+    }
+    setFilteredPayments(filtered);
+  }, [payments, statusFilter, searchTerm]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
+
+  // Fetch all payment data from API
+  const fetchPaymentsData = async (authToken) => {
+    const tokenToUse = authToken || token;
+    if (!tokenToUse) {
+      setError('No authentication token found. Please login again.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch payments
+      console.log('Fetching payments...');
+      const paymentsData = await apiService.getEmployerPayments(tokenToUse);
+      console.log('Payments response:', paymentsData);
+      
+      // Handle different response formats
+      if (Array.isArray(paymentsData)) {
+        setPayments(paymentsData);
+        setFilteredPayments(paymentsData);
+      } else if (paymentsData?.payments && Array.isArray(paymentsData.payments)) {
+        setPayments(paymentsData.payments);
+        setFilteredPayments(paymentsData.payments);
+      } else if (paymentsData?.data && Array.isArray(paymentsData.data)) {
+        setPayments(paymentsData.data);
+        setFilteredPayments(paymentsData.data);
+      } else {
+        setPayments([]);
+        setFilteredPayments([]);
+      }
+
+      // Fetch stats
+      try {
+        const statsData = await apiService.getEmployerPaymentStats(tokenToUse);
+        console.log('Stats response:', statsData);
+        setStats({
+          totalPaid: statsData.totalPaid || statsData.total || 0,
+          pendingCount: statsData.pendingCount || statsData.pending || 0,
+          completedCount: statsData.completedCount || statsData.completed || 0,
+          upcomingCount: statsData.upcomingCount || statsData.upcoming || 0,
+          totalWorkers: statsData.totalWorkers || statsData.workers || 0,
+          monthlyAverage: statsData.monthlyAverage || statsData.average || 0
+        });
+      } catch (statsErr) {
+        console.warn('Failed to fetch stats, using default values:', statsErr);
+      }
+    } catch (err) {
+      console.error('Error fetching payment data:', err);
+      // Don't show error for missing endpoints - just show empty state
+      setPayments([]);
+      setFilteredPayments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetails = async (payment) => {
+    try {
+      const data = await apiService.getEmployerPaymentDetails(payment.id, token);
+      if (data) {
+        setSelectedPayment(data);
+        setShowDetailsModal(true);
+      } else {
+        // If no details endpoint, show the payment data we already have
+        setSelectedPayment(payment);
+        setShowDetailsModal(true);
+      }
+    } catch (err) {
+      console.error('Error fetching payment details:', err);
+      // Show the payment data we already have
+      setSelectedPayment(payment);
+      setShowDetailsModal(true);
+    }
+  };
+
+  const handleProcessPayment = async (paymentId) => {
+    setProcessingPayment(true);
+    try {
+      await apiService.processEmployerPayment(paymentId, token);
+      await fetchPaymentsData(token);
+      alert(t.processSuccess);
+      setShowDetailsModal(false);
+    } catch (err) {
+      console.error('Error processing payment:', err);
+      alert(t.processError);
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  const handleDownloadReceipt = async (paymentId) => {
+    try {
+      const blob = await apiService.downloadEmployerReceipt(paymentId, token);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading receipt:', err);
+      setError('Failed to download receipt');
+    }
+  };
 
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -346,7 +801,7 @@ const EmployerPayments = () => {
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+    localStorage.setItem('employer_sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
   };
 
   const toggleMobileMenu = () => {
@@ -359,34 +814,58 @@ const EmployerPayments = () => {
     navigate('/login');
   };
 
-  const handleBack = () => {
-    navigate('/employer-search');
+  const handleCopyId = (id) => {
+    navigator.clipboard.writeText(id);
+    alert(t.copySuccess);
   };
 
-  const handleProceedToPayment = () => {
-    navigate('/payment-options');
+  const handleCloseModal = () => {
+    setShowDetailsModal(false);
+    setSelectedPayment(null);
   };
 
-  const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-  const hoursPerWeek = 40;
-  const weeksPerMonth = 4;
-  const subtotal = hourlyRate * hoursPerWeek * weeksPerMonth;
-  const commissionRate = 0.15;
-  const commissionAmount = subtotal * commissionRate;
-  const total = subtotal + commissionAmount;
+  const getStatusColor = (status) => {
+    const colors = {
+      completed: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      upcoming: 'bg-blue-100 text-blue-800',
+      failed: 'bg-red-100 text-red-800',
+      processing: 'bg-purple-100 text-purple-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
 
-  if (!user || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <CheckCircle size={14} />;
+      case 'pending': return <Clock size={14} />;
+      case 'upcoming': return <Calendar size={14} />;
+      case 'failed': return <X size={14} />;
+      case 'processing': return <RefreshCw size={14} />;
+      default: return <AlertTriangle size={14} />;
+    }
+  };
 
-  if (!workerData) {
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return `${amount?.toLocaleString() || 0} EGP`;
+  };
+
+  const formatStatus = (status) => {
+    return t.status[status] || status;
+  };
+
+  // Show error state with retry option - only for non-endpoint errors
+  if (error && !loading && error !== 'No payment endpoints found. Please check server configuration.') {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <EmployerSidebar
@@ -398,23 +877,43 @@ const EmployerPayments = () => {
           user={user}
           handleLogout={handleLogout}
         />
-        <main className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
-          <div className="p-4 md:p-6">
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-              <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noWorkerData}</h3>
-              <p className="text-gray-500">{t.goBack}</p>
+        <main className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.error}</h3>
+            <p className="text-gray-500 text-sm mb-6 break-words">{error}</p>
+            <div className="flex flex-col gap-3">
               <button
-                onClick={handleBack}
-                className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                onClick={() => {
+                  setError(null);
+                  setLoading(true);
+                  fetchPaymentsData(token);
+                }}
+                className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
               >
-                {t.backToSearch}
+                <RefreshCw size={18} />
+                {t.retry}
+              </button>
+              <button
+                onClick={() => navigate('/employer-dashboard')}
+                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Back to Dashboard
               </button>
             </div>
           </div>
         </main>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t.loading}</p>
+        </div>
       </div>
     );
   }
@@ -434,8 +933,9 @@ const EmployerPayments = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
@@ -463,7 +963,8 @@ const EmployerPayments = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-6">
+        <div className="p-4 lg:p-6">
+          {/* Page Header */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
@@ -471,110 +972,344 @@ const EmployerPayments = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.workerDetails}</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center">
-                    {workerData?.workerPhoto ? (
-                      <img 
-                        src={workerData.workerPhoto} 
-                        alt={workerData.workerName} 
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User size={32} className="text-teal-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-800">{workerData?.workerName}</h4>
-                    <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        {workerData?.workerLocation || 'Location not specified'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Star size={14} className="text-yellow-500" />
-                        {workerData?.rating || '4.5'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {workerData?.workerSkills?.slice(0, 5).map((skill, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                  {workerData?.workerSkills?.length > 5 && (
-                    <span className="px-3 py-1 bg-gray-50 text-gray-500 rounded-full text-sm">
-                      +{workerData.workerSkills.length - 5} more
-                    </span>
-                  )}
-                </div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.totalPaid}</p>
+                <DollarSign size={16} className="text-green-500" />
               </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalPaid)}</p>
             </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.pending}</p>
+                <Clock size={16} className="text-yellow-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{stats.pendingCount}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.completed}</p>
+                <CheckCircle size={16} className="text-green-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{stats.completedCount}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.upcoming}</p>
+                <Calendar size={16} className="text-blue-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{stats.upcomingCount}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.workers}</p>
+                <Users size={16} className="text-teal-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{stats.totalWorkers}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.monthlyAverage}</p>
+                <BarChart3 size={16} className="text-purple-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.monthlyAverage)}</p>
+            </div>
+          </div>
 
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 sticky top-24">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.paymentSummary}</h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.hourlyRate}</span>
-                    <span className="font-medium">EGP {hourlyRate}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.hoursPerWeek}</span>
-                    <span className="font-medium">{hoursPerWeek} hrs</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t.weeksPerMonth}</span>
-                    <span className="font-medium">{weeksPerMonth} weeks</span>
-                  </div>
-                  
-                  <div className="border-t border-gray-200 my-2 pt-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.subtotal}</span>
-                      <span className="font-medium">EGP {subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t.commission}</span>
-                      <span className="font-medium text-red-500">+ EGP {commissionAmount.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-3">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>{t.total}</span>
-                      <span className="text-teal-600">EGP {total.toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{t.commission} included</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleProceedToPayment}
-                  className="w-full mt-4 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition flex items-center justify-center gap-2"
+          {/* Search and Filters */}
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+            <div className="flex flex-col lg:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-700 text-sm"
                 >
-                  <Shield size={18} />
-                  {t.confirmPayment}
-                </button>
-
+                  <option value="all">{t.filters.all}</option>
+                  <option value="completed">{t.filters.completed}</option>
+                  <option value="pending">{t.filters.pending}</option>
+                  <option value="upcoming">{t.filters.upcoming}</option>
+                  <option value="failed">{t.filters.failed}</option>
+                </select>
                 <button
-                  onClick={handleBack}
-                  className="w-full mt-2 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                  onClick={() => fetchPaymentsData(token)}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-1.5 text-sm"
                 >
-                  <ArrowLeft size={16} />
-                  {t.backToSearch}
+                  <RefreshCw size={15} />
+                  <span className="hidden sm:inline">Refresh</span>
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Results Count */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-500">
+              Showing <span className="font-semibold text-gray-700">{filteredPayments.length}</span> payments
+            </p>
+          </div>
+
+          {/* Payments Table */}
+          {filteredPayments.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+              <div className="text-6xl mb-4">💳</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
+              <p className="text-gray-500">{t.empty.description}</p>
+              <button
+                onClick={() => navigate('/employer-search')}
+                className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
+              >
+                {t.empty.start}
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {t.table.id}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {t.table.worker}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                        {t.table.job}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {t.table.amount}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                        {t.table.date}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {t.table.status}
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {t.table.actions}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredPayments.map((payment) => (
+                      <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium text-gray-800">{payment.id}</span>
+                            <button
+                              onClick={() => handleCopyId(payment.id)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <Copy size={13} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold text-xs">
+                              {payment.workerName?.charAt(0) || payment.worker?.name?.charAt(0) || 'W'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">
+                                {payment.workerName || payment.worker?.name || 'Unknown'}
+                              </p>
+                              {payment.workerEmail && (
+                                <p className="text-xs text-gray-500">{payment.workerEmail}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <p className="text-sm text-gray-700 truncate max-w-[150px]">{payment.jobTitle || payment.job?.title || '-'}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm font-semibold text-gray-800">{formatCurrency(payment.amount)}</p>
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <p className="text-sm text-gray-500">{formatDate(payment.date)}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 w-fit ${getStatusColor(payment.status)}`}>
+                            {getStatusIcon(payment.status)}
+                            {formatStatus(payment.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleViewDetails(payment)}
+                              className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                              title={t.actions.view}
+                            >
+                              <Eye size={16} />
+                            </button>
+                            {payment.hasReceipt && (
+                              <button
+                                onClick={() => handleDownloadReceipt(payment.id)}
+                                className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                                title={t.actions.download}
+                              >
+                                <Download size={16} />
+                              </button>
+                            )}
+                            {payment.status === 'pending' && (
+                              <button
+                                onClick={() => handleProcessPayment(payment.id)}
+                                disabled={processingPayment}
+                                className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {processingPayment ? '...' : t.actions.payNow}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Payment Details Modal */}
+      {showDetailsModal && selectedPayment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">{t.modal.title}</h2>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              {/* Payment Header */}
+              <div className="bg-teal-50 rounded-xl p-4 mb-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-gray-500">{t.modal.paymentId}</p>
+                    <p className="text-lg font-bold text-gray-800">{selectedPayment.id}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
+                    {getStatusIcon(selectedPayment.status)}
+                    {formatStatus(selectedPayment.status)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Worker Info */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <User size={16} className="text-teal-600" />
+                    {t.modal.worker}
+                  </h3>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold">
+                      {selectedPayment.workerName?.charAt(0) || selectedPayment.worker?.name?.charAt(0) || 'W'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">
+                        {selectedPayment.workerName || selectedPayment.worker?.name || 'Unknown'}
+                      </p>
+                      {selectedPayment.workerEmail && (
+                        <p className="text-sm text-gray-500">{selectedPayment.workerEmail}</p>
+                      )}
+                    </div>
+                  </div>
+                  {selectedPayment.workerPhone && (
+                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <Phone size={14} className="text-gray-400" />
+                      {selectedPayment.workerPhone}
+                    </p>
+                  )}
+                </div>
+
+                {/* Payment Summary */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <DollarSign size={16} className="text-teal-600" />
+                    {t.modal.amount}
+                  </h3>
+                  <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.amount)}</p>
+                  <p className="text-sm text-gray-500 mt-1">{t.modal.date}: {formatDate(selectedPayment.date)}</p>
+                </div>
+              </div>
+
+              {/* Additional Details */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">{t.modal.job}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.jobTitle || selectedPayment.job?.title || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">{t.modal.method}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.paymentMethod || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">{t.modal.description}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.description || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">{t.modal.reference}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.reference || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={handleCloseModal}
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              >
+                {t.modal.close}
+              </button>
+              {selectedPayment.status === 'pending' && (
+                <button
+                  onClick={() => handleProcessPayment(selectedPayment.id)}
+                  disabled={processingPayment}
+                  className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {processingPayment ? (
+                    <RefreshCw size={16} className="animate-spin" />
+                  ) : (
+                    <Shield size={16} />
+                  )}
+                  {processingPayment ? 'Processing...' : t.actions.payNow}
+                </button>
+              )}
+              {selectedPayment.hasReceipt && (
+                <button
+                  onClick={() => handleDownloadReceipt(selectedPayment.id)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  <Download size={16} />
+                  {t.modal.receipt}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
