@@ -1,3 +1,4 @@
+// src/pages/WorkerComplaints.jsx - UPDATED with logo, real data, and profile images
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -22,10 +23,12 @@ import {
   AlertCircle,
   FileText,
   Search,
-  CreditCard
+  CreditCard,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 
-// Sidebar Component with Payment
+// Sidebar Component with custom logo and profile image
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -79,6 +82,13 @@ const WorkerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -96,15 +106,17 @@ const WorkerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-amber-500" />
+                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/worker-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-amber-500" />
+              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -123,8 +135,16 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -153,11 +173,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
+                  ? 'bg-amber-50 text-amber-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -165,7 +185,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
               )}
             </Link>
           ))}
@@ -202,7 +222,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -368,6 +388,11 @@ const WorkerComplaints = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        // Load profile image from profiles storage
+        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
+        }
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -383,6 +408,11 @@ const WorkerComplaints = () => {
     }
 
     // Load REAL complaints from localStorage - NO FAKE DATA
+    loadComplaints();
+    setLoading(false);
+  }, [navigate]);
+
+  const loadComplaints = () => {
     const savedComplaints = localStorage.getItem('worker_complaints');
     if (savedComplaints) {
       try {
@@ -398,8 +428,7 @@ const WorkerComplaints = () => {
       setComplaints([]);
       setFilteredComplaints([]);
     }
-    setLoading(false);
-  }, [navigate]);
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -424,7 +453,7 @@ const WorkerComplaints = () => {
     }
 
     setFilteredComplaints(filtered);
-  }, [complaints, statusFilter, searchTerm]);
+  }, [complaints, statusFilter, searchTerm, t.categories]);
 
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -458,11 +487,15 @@ const WorkerComplaints = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const complaint = {
-      id: complaints.length + 1,
+      id: 'comp_' + Date.now(),
       ...newComplaint,
       status: 'pending',
       date: new Date().toISOString().split('T')[0],
-      response: null
+      createdAt: new Date().toISOString(),
+      response: null,
+      userId: user?.id || user?.email,
+      userEmail: user?.email,
+      userName: user?.fullName
     };
     const updatedComplaints = [complaint, ...complaints];
     setComplaints(updatedComplaints);
@@ -508,11 +541,14 @@ const WorkerComplaints = () => {
     resolved: complaints.filter(c => c.status === 'resolved').length
   };
 
+  // Get user profile image
+  const userProfileImage = user?.profileImage || null;
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -523,7 +559,7 @@ const WorkerComplaints = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
@@ -562,9 +598,26 @@ const WorkerComplaints = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* User profile picture in header */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-white m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -579,16 +632,29 @@ const WorkerComplaints = () => {
 
         {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Red Theme for Worker */}
-          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+          {/* Page Header with profile image */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
-                <p className="text-red-100 mt-1">{t.subtitle}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                </div>
               </div>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
               >
                 {showForm ? <X size={16} /> : <AlertTriangle size={16} />}
                 {showForm ? t.form.cancel : t.form.newComplaint}
@@ -596,13 +662,13 @@ const WorkerComplaints = () => {
             </div>
           </div>
 
-          {/* Stats Cards - Red Theme */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-                  <FileText size={20} className="text-red-600" />
+                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <FileText size={20} className="text-amber-600" />
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
@@ -649,7 +715,7 @@ const WorkerComplaints = () => {
                       name="title"
                       value={newComplaint.title}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -659,7 +725,7 @@ const WorkerComplaints = () => {
                       name="category"
                       value={newComplaint.category}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     >
                       {Object.entries(t.categories).map(([key, value]) => (
                         <option key={key} value={key}>{value}</option>
@@ -674,14 +740,14 @@ const WorkerComplaints = () => {
                     value={newComplaint.description}
                     onChange={handleInputChange}
                     rows="4"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div className="mt-4 flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    className="px-6 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
                   >
                     <Send size={18} />
                     {t.form.submit}
@@ -708,14 +774,14 @@ const WorkerComplaints = () => {
                   placeholder={t.table.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-700"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="pending">{t.filters.pending}</option>
@@ -742,7 +808,7 @@ const WorkerComplaints = () => {
               <p className="text-gray-500">{t.noComplaintsDesc}</p>
               <button
                 onClick={() => setShowForm(true)}
-                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="mt-4 px-6 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-colors"
               >
                 {t.form.newComplaint}
               </button>
@@ -758,7 +824,7 @@ const WorkerComplaints = () => {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <AlertTriangle size={20} className="text-red-600" />
+                          <AlertTriangle size={20} className="text-amber-600" />
                           <h3 className="font-semibold text-gray-800">{complaint.title}</h3>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">{complaint.description}</p>

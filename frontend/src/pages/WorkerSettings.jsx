@@ -1,3 +1,4 @@
+// src/pages/WorkerSettings.jsx - UPDATED with logo and profile images
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -19,10 +20,11 @@ import {
   Lock,
   Save,
   RefreshCw,
-  CreditCard
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
 
-// Sidebar Component with Payment
+// Sidebar Component with custom logo and profile image
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -76,6 +78,13 @@ const WorkerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -93,15 +102,17 @@ const WorkerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-amber-500" />
+                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/worker-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-amber-500" />
+              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -120,8 +131,16 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -150,11 +169,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
+                  ? 'bg-amber-50 text-amber-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -162,7 +181,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
               )}
             </Link>
           ))}
@@ -199,7 +218,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -228,6 +247,7 @@ const WorkerSettings = () => {
   const [notifications, setNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const translations = {
     en: {
@@ -285,7 +305,13 @@ const WorkerSettings = () => {
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        // Load profile image from profiles storage
+        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
+        }
+        setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -297,6 +323,19 @@ const WorkerSettings = () => {
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+
+    // Load saved settings
+    const savedSettings = localStorage.getItem('worker_settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setDarkMode(settings.darkMode || false);
+        setNotifications(settings.notifications !== undefined ? settings.notifications : true);
+        setEmailNotifications(settings.emailNotifications !== undefined ? settings.emailNotifications : true);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
     }
   }, [navigate]);
 
@@ -328,17 +367,33 @@ const WorkerSettings = () => {
 
   const handleSave = () => {
     setSaving(true);
+    setSaveSuccess(false);
+    
     setTimeout(() => {
+      const settings = {
+        darkMode,
+        notifications,
+        emailNotifications,
+        language,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('worker_settings', JSON.stringify(settings));
+      
       setSaving(false);
-      alert(t.saved);
+      setSaveSuccess(true);
+      
+      setTimeout(() => setSaveSuccess(false), 3000);
     }, 1000);
   };
+
+  // Get user profile image
+  const userProfileImage = user?.profileImage || null;
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -374,9 +429,26 @@ const WorkerSettings = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* User profile picture in header */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-white m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -390,12 +462,40 @@ const WorkerSettings = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-red-100 mt-1">{t.subtitle}</p>
+          {/* Welcome Banner with profile image */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/90">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
             </div>
           </div>
+
+          {saveSuccess && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+              <CheckCircle size={16} />
+              {t.saved}
+            </div>
+          )}
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-200">
@@ -412,7 +512,7 @@ const WorkerSettings = () => {
                       setLanguage(e.target.value);
                       localStorage.setItem('homelyserv_language', e.target.value);
                     }}
-                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -451,7 +551,7 @@ const WorkerSettings = () => {
                   <button
                     onClick={() => setNotifications(!notifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      notifications ? 'bg-red-600' : 'bg-gray-300'
+                      notifications ? 'bg-amber-500' : 'bg-gray-300'
                     }`}
                   >
                     <div
@@ -470,7 +570,7 @@ const WorkerSettings = () => {
                   <button
                     onClick={() => setEmailNotifications(!emailNotifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      emailNotifications ? 'bg-red-600' : 'bg-gray-300'
+                      emailNotifications ? 'bg-amber-500' : 'bg-gray-300'
                     }`}
                   >
                     <div
@@ -507,7 +607,7 @@ const WorkerSettings = () => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
               >
                 {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
                 {saving ? 'Saving...' : t.saveChanges}

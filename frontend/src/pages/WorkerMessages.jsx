@@ -1,4 +1,4 @@
-// src/pages/WorkerMessages.jsx - FIXED
+// src/pages/WorkerMessages.jsx - UPDATED with logo, real data, and profile images
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -23,7 +23,9 @@ import {
   MoreVertical,
   CheckCheck,
   Clock,
-  CreditCard
+  CreditCard,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -34,7 +36,7 @@ import {
   saveUserConversations
 } from '../utils/chatService';
 
-// Worker Sidebar Component
+// Worker Sidebar Component - Updated with custom logo and profile image
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -88,6 +90,13 @@ const WorkerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -105,15 +114,17 @@ const WorkerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-amber-500" />
+                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/worker-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-amber-500" />
+              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -132,8 +143,16 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -162,11 +181,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
+                  ? 'bg-amber-50 text-amber-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -174,7 +193,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
               )}
             </Link>
           ))}
@@ -211,7 +230,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -229,7 +248,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - FIXED
+// Main WorkerMessages Component - UPDATED
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -283,7 +302,7 @@ const WorkerMessages = () => {
 
   const t = translations[language];
 
-  // ===== FIXED: Initialize user and load conversations immediately =====
+  // Load user and conversations
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -298,16 +317,21 @@ const WorkerMessages = () => {
           navigate('/login');
           return;
         }
+        
+        // Load profile image from profiles storage
+        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
+        }
+        
         setUser(parsedUser);
         
-        // ===== FIX: Load conversations immediately using parsedUser =====
         const userId = parsedUser.id || parsedUser.email;
         if (userId) {
           const userConversations = getUserConversations(userId);
           console.log('📋 Initial load - worker conversations:', userConversations);
           setConversations(userConversations);
           
-          // ===== FIX: Restore selected conversation using parsedUser, not stale user state =====
           const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
           if (savedConversationId) {
             const exists = userConversations.some(c => c.id === savedConversationId);
@@ -337,7 +361,7 @@ const WorkerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // ===== NEW: Separate effect for refreshKey that depends on user =====
+  // Refresh conversations when refreshKey changes
   useEffect(() => {
     if (!user) return;
     
@@ -348,18 +372,6 @@ const WorkerMessages = () => {
     console.log('📋 Refresh load - worker conversations:', userConversations);
     setConversations(userConversations);
   }, [user, refreshKey]);
-
-  const loadChatData = () => {
-    const userId = user?.id || user?.email;
-    if (!userId) {
-      console.log('No user ID found');
-      return;
-    }
-
-    const userConversations = getUserConversations(userId);
-    console.log('📋 Loaded conversations for worker:', userConversations);
-    setConversations(userConversations);
-  };
 
   const loadMessagesForConversation = (conversationId) => {
     console.log('📨 Loading messages for conversation:', conversationId);
@@ -439,7 +451,8 @@ const WorkerMessages = () => {
     if (result) {
       console.log('✅ Message sent successfully');
       loadMessagesForConversation(selectedConversationId);
-      loadChatData();
+      // Refresh conversations to update last message
+      setRefreshKey(prev => prev + 1);
       setMessage('');
     } else {
       console.log('❌ Failed to send message');
@@ -450,11 +463,14 @@ const WorkerMessages = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Get user profile image
+  const userProfileImage = user?.profileImage || null;
+
   if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
@@ -490,9 +506,26 @@ const WorkerMessages = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* User profile picture in header */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-white m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -513,15 +546,37 @@ const WorkerMessages = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-red-100 mt-1">{t.subtitle}</p>
+          {/* Welcome Banner with user profile image */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/90">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
               <div className="border-r border-gray-200">
                 <div className="p-4 border-b border-gray-200">
                   <div className="relative">
@@ -531,7 +586,7 @@ const WorkerMessages = () => {
                       placeholder={t.searchPlaceholder}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
@@ -548,13 +603,14 @@ const WorkerMessages = () => {
                         key={conv.id}
                         onClick={() => handleSelectConversation(conv.id)}
                         className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedConversationId === conv.id ? 'bg-red-50' : ''
+                          selectedConversationId === conv.id ? 'bg-amber-50' : ''
                         }`}
                       >
+                        {/* Profile picture only - no name here */}
                         <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=red&color=fff&size=100&bold=true`}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=amber&color=fff&size=100&bold=true`}
                           alt={conv.otherUserName}
-                          className="w-12 h-12 rounded-full object-cover"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-100"
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
@@ -565,7 +621,7 @@ const WorkerMessages = () => {
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-green-500">{t.online}</span>
                             {conv.unread > 0 && (
-                              <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
+                              <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">
                                 {conv.unread}
                               </span>
                             )}
@@ -577,16 +633,18 @@ const WorkerMessages = () => {
                 </div>
               </div>
 
+              {/* Chat Area */}
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
+                    {/* Chat Header with profile picture and name */}
                     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Employer')}&background=red&color=fff&size=100&bold=true`}
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Employer')}&background=amber&color=fff&size=100&bold=true`}
                           alt="Chat"
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-amber-100"
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
@@ -608,6 +666,7 @@ const WorkerMessages = () => {
                       </div>
                     </div>
 
+                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 py-8">
@@ -623,12 +682,12 @@ const WorkerMessages = () => {
                             <div
                               className={`max-w-[70%] p-3 rounded-lg ${
                                 msg.senderRole === 'WORKER'
-                                  ? 'bg-red-600 text-white rounded-br-none'
+                                  ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-br-none'
                                   : 'bg-gray-100 text-gray-800 rounded-bl-none'
                               }`}
                             >
                               <p className="text-sm">{msg.text}</p>
-                              <p className={`text-xs mt-1 ${msg.senderRole === 'WORKER' ? 'text-red-200' : 'text-gray-400'}`}>
+                              <p className={`text-xs mt-1 ${msg.senderRole === 'WORKER' ? 'text-amber-100' : 'text-gray-400'}`}>
                                 {msg.time}
                                 {msg.senderRole === 'WORKER' && (
                                   <CheckCheck size={14} className="inline ml-1" />
@@ -640,6 +699,7 @@ const WorkerMessages = () => {
                       )}
                     </div>
 
+                    {/* Message Input */}
                     <div className="p-4 border-t border-gray-200">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
@@ -647,11 +707,11 @@ const WorkerMessages = () => {
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
                         <button
                           type="submit"
-                          className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
                         >
                           <Send size={18} />
                           {t.send}

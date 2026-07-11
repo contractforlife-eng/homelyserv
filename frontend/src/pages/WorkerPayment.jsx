@@ -1,3 +1,4 @@
+// src/pages/WorkerPayment.jsx - UPDATED with logo, real data, and profile images
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -27,10 +28,12 @@ import {
   Phone,
   Save,
   Edit,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 
-// Sidebar Component
+// Sidebar Component with custom logo and profile image
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -84,6 +87,13 @@ const WorkerSidebar = ({
     return location.pathname === path;
   };
 
+  const getProfileImage = () => {
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+    return null;
+  };
+
   return (
     <>
       {mobileMenuOpen && (
@@ -101,15 +111,17 @@ const WorkerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-amber-500" />
+                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/worker-dashboard" className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/worker-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-amber-500" />
+              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -128,8 +140,16 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {getProfileImage() ? (
+                <img 
+                  src={getProfileImage()} 
+                  alt={user?.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -158,11 +178,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
+                  ? 'bg-amber-50 text-amber-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -170,7 +190,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
               )}
             </Link>
           ))}
@@ -207,7 +227,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -306,7 +326,8 @@ const WorkerPayment = () => {
       notifications: 'Notifications',
       loading: 'Loading payment data...',
       noPayments: 'No payment history yet',
-      noPaymentsDesc: 'Your payment history will appear here once you complete tasks'
+      noPaymentsDesc: 'Your payment history will appear here once you complete tasks',
+      refresh: 'Refresh'
     },
     ar: {
       title: 'المدفوعات',
@@ -357,11 +378,101 @@ const WorkerPayment = () => {
       notifications: 'الإشعارات',
       loading: 'جاري تحميل بيانات الدفع...',
       noPayments: 'لا يوجد سجل مدفوعات بعد',
-      noPaymentsDesc: 'سيظهر سجل مدفوعاتك هنا بمجرد إكمال المهام'
+      noPaymentsDesc: 'سيظهر سجل مدفوعاتك هنا بمجرد إكمال المهام',
+      refresh: 'تحديث'
     }
   };
 
   const t = translations[language];
+
+  // Load payment data from localStorage
+  const loadPaymentData = () => {
+    if (!user) return;
+
+    try {
+      // Load payment info
+      const savedPaymentInfo = localStorage.getItem(`worker_payment_info_${user.id}`);
+      if (savedPaymentInfo) {
+        setWorkerPaymentInfo(JSON.parse(savedPaymentInfo));
+      }
+
+      // Load worker stats from real data
+      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      
+      // Calculate completed tasks
+      const completedTasks = appliedOffers.filter(id => {
+        return employerOffers.some(o => o.id === id && o.status === 'completed');
+      }).length;
+
+      // Calculate total earned from payments
+      const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${user.id}`) || '[]');
+      const totalEarned = savedPayments
+        .filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      // Get hourly rate from user profile
+      const hourlyRate = user.hourlyRate || 35;
+
+      // Calculate monthly salary (based on completed tasks * hourly rate * 160 hours)
+      const monthlySalary = completedTasks > 0 ? hourlyRate * 160 : 0;
+
+      const newStats = {
+        totalTasksCompleted: completedTasks,
+        totalEarned: totalEarned,
+        hourlyRate: hourlyRate,
+        monthlySalary: monthlySalary
+      };
+
+      setWorkerStats(newStats);
+      localStorage.setItem(`worker_stats_${user.id}`, JSON.stringify(newStats));
+
+      // Load payments
+      if (savedPayments.length > 0) {
+        setPayments(savedPayments);
+        setFilteredPayments(savedPayments);
+      } else {
+        // If no payments, generate from completed tasks
+        const generatedPayments = generatePaymentsFromCompletedTasks(appliedOffers, employerOffers);
+        if (generatedPayments.length > 0) {
+          setPayments(generatedPayments);
+          setFilteredPayments(generatedPayments);
+          localStorage.setItem(`worker_payments_${user.id}`, JSON.stringify(generatedPayments));
+        }
+      }
+
+    } catch (error) {
+      console.error('Error loading payment data:', error);
+    }
+  };
+
+  // Generate payments from completed tasks
+  const generatePaymentsFromCompletedTasks = (appliedOffers, employerOffers) => {
+    const payments = [];
+    const completedOfferIds = appliedOffers.filter(id => {
+      return employerOffers.some(o => o.id === id && o.status === 'completed');
+    });
+
+    completedOfferIds.forEach((offerId, index) => {
+      const offer = employerOffers.find(o => o.id === offerId);
+      if (offer) {
+        payments.push({
+          id: `PAY-${Date.now()}-${index}`,
+          employer: {
+            name: offer.company || 'Unknown Employer',
+            id: offer.employerId || 'EMP-001',
+            passportNumber: offer.employerPassport || 'N/A'
+          },
+          amount: (offer.salary?.max || 3500) / 2,
+          date: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+          status: 'completed',
+          description: `Payment for ${offer.title || 'service'}`
+        });
+      }
+    });
+
+    return payments;
+  };
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -373,33 +484,13 @@ const WorkerPayment = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        // Load profile image from profiles storage
+        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
+        }
         setUser(parsedUser);
         console.log('✅ User loaded in Payment page:', parsedUser.fullName);
-        
-        const savedPaymentInfo = localStorage.getItem(`worker_payment_info_${parsedUser.id}`);
-        if (savedPaymentInfo) {
-          setWorkerPaymentInfo(JSON.parse(savedPaymentInfo));
-        }
-        
-        const savedStats = localStorage.getItem(`worker_stats_${parsedUser.id}`);
-        if (savedStats) {
-          setWorkerStats(JSON.parse(savedStats));
-        } else {
-          const defaultStats = {
-            totalTasksCompleted: 0,
-            totalEarned: 0,
-            hourlyRate: parsedUser.hourlyRate || 35,
-            monthlySalary: 0
-          };
-          setWorkerStats(defaultStats);
-          localStorage.setItem(`worker_stats_${parsedUser.id}`, JSON.stringify(defaultStats));
-        }
-        
-        const savedPayments = localStorage.getItem(`worker_payments_${parsedUser.id}`);
-        if (savedPayments) {
-          setPayments(JSON.parse(savedPayments));
-          setFilteredPayments(JSON.parse(savedPayments));
-        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         setUser(null);
@@ -414,6 +505,13 @@ const WorkerPayment = () => {
     }
     setLoading(false);
   }, []);
+
+  // Load payment data after user is set
+  useEffect(() => {
+    if (user) {
+      loadPaymentData();
+    }
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -477,6 +575,10 @@ const WorkerPayment = () => {
     }
   };
 
+  const handleRefresh = () => {
+    loadPaymentData();
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       completed: 'bg-green-100 text-green-800',
@@ -506,11 +608,14 @@ const WorkerPayment = () => {
     monthlySalary: workerStats.monthlySalary || 0
   };
 
+  // Get user profile image
+  const userProfileImage = user?.profileImage || null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
@@ -521,11 +626,11 @@ const WorkerPayment = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Please login to view your payments</p>
           <button
             onClick={() => navigate('/login')}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition"
           >
             Go to Login
           </button>
@@ -563,9 +668,26 @@ const WorkerPayment = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* User profile picture in header */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-white m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -574,25 +696,47 @@ const WorkerPayment = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={handleRefresh}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw size={16} />
+                {t.refresh}
+              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner with profile image */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
-                <p className="text-red-100 mt-1">{t.subtitle}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Worker'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-red-100">
+                <span className="text-sm text-white/90">
                   {user?.fullName || 'Worker'}
                 </span>
               </div>
             </div>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -632,13 +776,14 @@ const WorkerPayment = () => {
             </div>
           </div>
 
+          {/* Payment Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">{t.paymentInfo.title}</h3>
               {!isEditingPaymentInfo ? (
                 <button
                   onClick={() => setIsEditingPaymentInfo(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition"
                 >
                   {t.paymentInfo.edit}
                 </button>
@@ -652,7 +797,7 @@ const WorkerPayment = () => {
                   </button>
                   <button
                     onClick={handleSavePaymentInfo}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                    className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition"
                   >
                     {t.paymentInfo.save}
                   </button>
@@ -679,7 +824,7 @@ const WorkerPayment = () => {
                       value={workerPaymentInfo.walletNumber || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                         isEditingPaymentInfo ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                       }`}
                       placeholder="Enter wallet number"
@@ -696,7 +841,7 @@ const WorkerPayment = () => {
                       value={workerPaymentInfo.instapayNumber || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                         isEditingPaymentInfo ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                       }`}
                       placeholder="Enter InstaPay number"
@@ -713,7 +858,7 @@ const WorkerPayment = () => {
                       value={workerPaymentInfo.bankAccountNumber || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                         isEditingPaymentInfo ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                       }`}
                       placeholder="Enter bank account number"
@@ -730,7 +875,7 @@ const WorkerPayment = () => {
                       value={workerPaymentInfo.bankName || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                         isEditingPaymentInfo ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                       }`}
                       placeholder="Enter bank name"
@@ -747,7 +892,7 @@ const WorkerPayment = () => {
                       value={workerPaymentInfo.accountHolderName || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
                         isEditingPaymentInfo ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                       }`}
                       placeholder="Enter account holder name"
@@ -758,6 +903,7 @@ const WorkerPayment = () => {
             </div>
           </div>
 
+          {/* Payment History */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">{t.paymentHistory.title}</h3>
@@ -772,14 +918,14 @@ const WorkerPayment = () => {
                     placeholder={t.paymentHistory.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-700"
                   >
                     <option value="all">{t.filters.all}</option>
                     <option value="completed">{t.filters.completed}</option>
