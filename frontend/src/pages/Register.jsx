@@ -119,19 +119,19 @@ function Register() {
 
       // Create user data with ALL fields
       const newUser = {
-        id: `user_${Date.now()}`,
-        fullName: formData.fullName,
-        email: formData.email,
-        role: formData.role,
-        phone: formData.phone || '',
-        location: formData.location || '',
-        createdAt: new Date().toISOString(),
-        profileComplete: false,
-        // Add profile fields for worker
-        bio: '',
-        skills: [],
-        experience: '',
-        hourlyRate: ''
+  id: `user_${Date.now()}`,
+  fullName: formData.fullName.trim(),
+  email: formData.email.trim().toLowerCase(),
+  password: formData.password,
+  role: formData.role,
+  phone: formData.phone || '',
+  location: formData.location || '',
+  createdAt: new Date().toISOString(),
+  profileComplete: false,
+  bio: '',
+  skills: [],
+  experience: '',
+  hourlyRate: ''
       };
 
       console.log('📝 Creating new user:', newUser);
@@ -148,7 +148,10 @@ function Register() {
       }
 
       // Check if user already exists
-      const userExists = existingUsers.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
+      const userExists = existingUsers.find(
+  u => u.email?.trim().toLowerCase() ===
+       formData.email.trim().toLowerCase()
+);
       if (userExists) {
         console.log('⚠️ User already exists:', userExists);
         setErrors({ general: 'User with this email already exists. Please login.' });
@@ -162,16 +165,17 @@ function Register() {
       
       // Also store as separate user data for login
       const userData = {
-        id: newUser.id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-        location: newUser.location,
-        bio: '',
-        skills: [],
-        experience: '',
-        hourlyRate: ''
+  id: newUser.id,
+  fullName: newUser.fullName,
+  email: newUser.email,
+  password: newUser.password,
+  role: newUser.role,
+  phone: newUser.phone,
+  location: newUser.location,
+  bio: '',
+  skills: [],
+  experience: '',
+  hourlyRate: ''
       };
       
       // Store as homelyserv_user for immediate login if needed

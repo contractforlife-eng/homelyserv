@@ -26,18 +26,19 @@ function Login() {
     // Create admin user if it doesn't exist
     const createAdminUser = () => {
       const adminUser = {
-        id: 'admin_emad',
-        fullName: 'Emad',
-        email: 'emad@homelyserv.com',
-        role: 'ADMIN',
-        phone: '+201009189851',
-        location: 'Cairo, Egypt',
-        bio: 'System Administrator',
-        skills: ['Management', 'Administration'],
-        experience: '5 years',
-        hourlyRate: '0',
-        createdAt: new Date().toISOString(),
-        profileComplete: true
+  id: 'admin_emad',
+  fullName: 'Emad',
+  email: 'emad@homelyserv.com',
+  password: 'killuemad',
+  role: 'ADMIN',
+  phone: '+201009189851',
+  location: 'Cairo, Egypt',
+  bio: 'System Administrator',
+  skills: ['Management', 'Administration'],
+  experience: '5 years',
+  hourlyRate: '0',
+  createdAt: new Date().toISOString(),
+  profileComplete: true
       };
 
       // Get existing users
@@ -221,23 +222,45 @@ function Login() {
     }
 
     // FIRST: Check if user is registered in homelyserv_users
-    const registeredUser = checkRegisteredUser(email);
-    if (registeredUser) {
-      console.log('✅ Found registered user, logging in:', registeredUser.fullName);
-      loginUser(registeredUser, registeredUser.role, email);
-      return;
+        const registeredUser = checkRegisteredUser(email);
+
+if (registeredUser) {
+  if (registeredUser.password !== password) {
+    setError('Invalid email or password');
+    setLoading(false);
+    return;
+  }
+
+  console.log('✅ Found registered user, logging in:', registeredUser.fullName);
+  loginUser(registeredUser, registeredUser.role, email);
+  return;
     }
 
     // SECOND: Check demo accounts
-    if (email.toLowerCase() === 'worker@homelyserv.com' || email.toLowerCase() === 'worker') {
-      loginUser(null, 'WORKER', email);
-    } else if (email.toLowerCase() === 'employer@homelyserv.com' || email.toLowerCase() === 'employer') {
-      loginUser(null, 'EMPLOYER', email);
-    } else if (email.toLowerCase() === 'admin@homelyserv.com' || email.toLowerCase() === 'admin') {
-      loginUser(null, 'ADMIN', email);
-    } else {
-      setError('Invalid email or password. Please try again.');
-      setLoading(false);
+    if (
+  (email.toLowerCase() === 'roro@homelyserv.com' ||
+    email.toLowerCase() === 'worker') &&
+  password === 'test1234'
+) {
+  loginUser(null, 'WORKER', email);
+}
+else if (
+  (email.toLowerCase() === 'mezo@homelyserv.com' ||
+    email.toLowerCase() === 'employer') &&
+  password === 'test1234'
+) {
+  loginUser(null, 'EMPLOYER', email);
+}
+else if (
+  (email.toLowerCase() === 'admin@homelyserv.com' ||
+    email.toLowerCase() === 'admin') &&
+  password === 'test1234'
+) {
+  loginUser(null, 'ADMIN', email);
+}
+else {
+  setError('Invalid email or password');
+  setLoading(false);
     }
   };
 
