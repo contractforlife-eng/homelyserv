@@ -1,12 +1,18 @@
-import { PrismaClient } from '@prisma/client'; 
-import { PrismaPg } from '@prisma/adapter-pg'; 
-import { Pool } from 'pg'; 
- 
-const pool = new Pool({ 
-  connectionString: "postgresql://postgres.uyzyxmrkdleywpogtpfs:Killuemad-123@aws-0-eu-west-1.pooler.supabase.com:5432/postgres", 
-}); 
- 
-const adapter = new PrismaPg(pool); 
-const prisma = new PrismaClient({ adapter }); 
- 
-export default prisma; 
+// backend/src/utils/prisma.js (MongoDB version)
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv');
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    return conn;
+  } catch (error) {
+    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+export default connectDB;

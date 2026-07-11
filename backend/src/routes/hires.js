@@ -1,45 +1,78 @@
+// backend/src/routes/hires.js
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
-// Get all hires
-router.get('/', authenticate, async (req, res) => {
+// ============================================================
+// Create a Hire
+// ============================================================
+router.post('/', async (req, res) => {
   try {
-    // Placeholder - implement actual logic
-    res.json({ message: 'Hires endpoint' });
+    const { workerId, employerId, jobTitle, description, amount, location, contractType } = req.body;
+    
+    // In production, create a Hire record
+    res.json({
+      success: true,
+      hire: {
+        id: 'hire_' + Date.now(),
+        workerId,
+        employerId,
+        jobTitle,
+        description,
+        amount,
+        location,
+        contractType,
+        status: 'PENDING',
+        createdAt: new Date().toISOString()
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Create hire error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create hire'
+    });
   }
 });
 
-// Get hire by ID
-router.get('/:id', authenticate, async (req, res) => {
+// ============================================================
+// Get Hires for a User
+// ============================================================
+router.get('/user/:userId', async (req, res) => {
   try {
-    // Placeholder - implement actual logic
-    res.json({ message: 'Hire details' });
+    // In production, fetch from Hire model
+    res.json({
+      success: true,
+      hires: []
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Get hires error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get hires'
+    });
   }
 });
 
-// Create hire
-router.post('/', authenticate, async (req, res) => {
+// ============================================================
+// Update Hire Status
+// ============================================================
+router.put('/:hireId/status', async (req, res) => {
   try {
-    // Placeholder - implement actual logic
-    res.status(201).json({ message: 'Hire created' });
+    const { status } = req.body;
+    // In production, update Hire record
+    res.json({
+      success: true,
+      message: 'Hire status updated successfully',
+      status
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Update hire status
-router.put('/:id/status', authenticate, async (req, res) => {
-  try {
-    // Placeholder - implement actual logic
-    res.json({ message: 'Hire status updated' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Update hire status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update hire status'
+    });
   }
 });
 
