@@ -323,39 +323,41 @@ const WorkerDashboard = () => {
   const t = translations[language];
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        // Check if user has a profile image in the profiles storage
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-        console.log('✅ User loaded in dashboard:', parsedUser.fullName);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
+  const savedLang = localStorage.getItem('homelyserv_language');
+  if (savedLang) {
+    setLanguage(savedLang);
+  }
+
+  const userData = localStorage.getItem('homelyserv_user');
+
+  if (userData) {
+    try {
+      const parsedUser = JSON.parse(userData);
+
+      const profiles = JSON.parse(
+        localStorage.getItem('homelyserv_profiles') || '{}'
+      );
+
+      if (profiles[parsedUser.email]) {
+        parsedUser.profileImage =
+          profiles[parsedUser.email].profileImage || null;
       }
-    } else {
-      console.log('❌ No user data found, redirecting to login');
+
+      setUser(parsedUser);
+    } catch (error) {
+      console.error(error);
       navigate('/login');
     }
+  } else {
+    navigate('/login');
+  }
 
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
+  const sidebarState = localStorage.getItem('sidebar_collapsed');
 
-    loadRealStats();
-    loadNotifications();
-  }, [navigate]);
+  if (sidebarState) {
+    setSidebarCollapsed(JSON.parse(sidebarState));
+  }
+}, [navigate]);
 
   const loadRealStats = () => {
     try {
@@ -425,14 +427,26 @@ const WorkerDashboard = () => {
         totalEarnings: totalEarnings
       });
       
-      generateRecentActivity(appliedOffers, savedOffers, employerOffers, payments);
+      generateRecentActivity(
+  appliedOffers,
+  savedOffers,
+  employerOffers,
+  payments,
+  user
+);
       
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
 
-  const generateRecentActivity = (appliedOffers, savedOffers, employerOffers, payments) => {
+  const generateRecentActivity = (
+  appliedOffers,
+  savedOffers,
+  employerOffers,
+  payments,
+  currentUser
+) => {
     const activities = [];
     
     // Applications activity
@@ -492,7 +506,12 @@ const WorkerDashboard = () => {
       setNotifications([]);
     }
   };
-
+useEffect(() => {
+  if (user) {
+    loadRealStats();
+    loadNotifications();
+  }
+}, [user]);
   const markNotificationRead = (id) => {
     const updated = notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
@@ -533,7 +552,7 @@ const WorkerDashboard = () => {
     navigate('/login');
   };
 
-  if (!user) {
+  if (user === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
