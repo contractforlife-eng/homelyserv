@@ -1,4 +1,4 @@
-// src/pages/EmployerDashboard.jsx - WITH PROFILE IMAGE
+// src/pages/EmployerDashboard.jsx - WITH PROFILE IMAGE & PAYMENT SUCCESS NOTIFICATION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -244,13 +244,16 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerDashboard Component - WITH PROFILE IMAGE
+// Main EmployerDashboard Component - WITH PROFILE IMAGE & PAYMENT SUCCESS
 const EmployerDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [stats, setStats] = useState({
     activeHires: 0,
     pendingApplications: 0,
@@ -282,7 +285,10 @@ const EmployerDashboard = () => {
       viewMessages: 'View Messages',
       notifications: 'Notifications',
       languageToggle: 'العربية',
-      noActivity: 'No recent activity'
+      noActivity: 'No recent activity',
+      paymentSuccess: '🎉 Payment Successful!',
+      hiredSuccess: 'Successfully hired {worker}!',
+      viewHireDetails: 'View Hire Details'
     },
     ar: {
       welcome: 'مرحباً بعودتك',
@@ -304,11 +310,37 @@ const EmployerDashboard = () => {
       viewMessages: 'عرض الرسائل',
       notifications: 'الإشعارات',
       languageToggle: 'English',
-      noActivity: 'لا يوجد نشاط حديث'
+      noActivity: 'لا يوجد نشاط حديث',
+      paymentSuccess: '🎉 تم الدفع بنجاح!',
+      hiredSuccess: 'تم توظيف {worker} بنجاح!',
+      viewHireDetails: 'عرض تفاصيل التوظيف'
     }
   };
 
   const t = translations[language];
+
+  // ============================================================
+  // FIX: Payment Success Notification
+  // ============================================================
+  useEffect(() => {
+    // Check for payment success from navigation state
+    if (location.state?.paymentSuccess) {
+      const workerName = location.state.worker || 'worker';
+      const message = t.hiredSuccess.replace('{worker}', workerName);
+      setSuccessMessage(message);
+      setShowSuccessBanner(true);
+      
+      // Auto-hide after 8 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessBanner(false);
+      }, 8000);
+      
+      // Clear the state so it doesn't show again on refresh
+      navigate('/employer-dashboard', { replace: true, state: {} });
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, navigate, t]);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -514,6 +546,37 @@ const EmployerDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
+          {/* ============================================================
+              FIX: Payment Success Banner
+              ============================================================ */}
+          {showSuccessBanner && (
+            <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between animate-slideDown">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle size={24} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-green-800">{t.paymentSuccess}</p>
+                  <p className="text-sm text-green-700">{successMessage}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/my-hires"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  {t.viewHireDetails}
+                </Link>
+                <button
+                  onClick={() => setShowSuccessBanner(false)}
+                  className="p-2 hover:bg-green-100 rounded-lg transition-colors"
+                >
+                  <X size={18} className="text-green-600" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
@@ -690,4 +753,4 @@ const EmployerDashboard = () => {
   );
 };
 
-export default EmployerDashboard;
+export default EmployerDashboard; 

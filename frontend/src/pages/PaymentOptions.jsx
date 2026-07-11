@@ -248,6 +248,7 @@ const EmployerSidebar = ({
 // Main PaymentOptions Component
 const PaymentOptions = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -435,14 +436,19 @@ const PaymentOptions = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
+    // Check for worker data from localStorage
     const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
     if (selectedWorker) {
       try {
-        setWorkerData(JSON.parse(selectedWorker));
+        const parsedWorker = JSON.parse(selectedWorker);
+        setWorkerData(parsedWorker);
+        console.log('✅ Worker data loaded:', parsedWorker);
       } catch (error) {
         console.error('Error parsing worker data:', error);
         setWorkerData(null);
       }
+    } else {
+      console.log('❌ No worker data found');
     }
     setLoading(false);
   }, [navigate]);
@@ -503,6 +509,9 @@ const PaymentOptions = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // ============================================================
+  // FIX: handleConfirmPayment - Redirect to dashboard with success
+  // ============================================================
   const handleConfirmPayment = () => {
     if (!selectedMethod) {
       alert('Please select a payment method');
@@ -599,9 +608,22 @@ const PaymentOptions = () => {
       centralOffers.push(newOffer);
       localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
       
+      // Clear the selected worker data
       localStorage.removeItem('homelyserv_selected_worker');
+      localStorage.removeItem('homelyserv_pending_payment');
+      localStorage.removeItem('homelyserv_quick_hire_data');
+      
+      // Redirect to dashboard with success message
+      setTimeout(() => {
+        navigate('/employer-dashboard', { 
+          state: { 
+            paymentSuccess: true, 
+            worker: workerData?.workerName || 'worker' 
+          } 
+        });
+      }, 1500);
     }, 2500);
-  };// src/pages/PaymentOptions.jsx - Update handleConfirmPayment function
+  };
 
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
   const hoursPerWeek = 40;

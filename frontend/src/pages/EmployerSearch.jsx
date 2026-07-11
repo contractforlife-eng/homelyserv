@@ -269,6 +269,7 @@ const EmployerSidebar = ({
 // Main EmployerSearch Component
 const EmployerSearch = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -283,7 +284,6 @@ const EmployerSearch = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [savedWorkers, setSavedWorkers] = useState([]);
   
-  // Advanced Filters
   const [advancedFilters, setAdvancedFilters] = useState({
     minRating: 0,
     minExperience: 0,
@@ -292,10 +292,7 @@ const EmployerSearch = () => {
     language: 'all'
   });
 
-  // Sort Options
   const [sortBy, setSortBy] = useState('relevance');
-
-  // View Mode
   const [viewMode, setViewMode] = useState('grid');
 
   const jobOptions = [
@@ -577,128 +574,40 @@ const EmployerSearch = () => {
     localStorage.setItem('employer_saved_workers', JSON.stringify(newSaved));
   };
 
+  // ============================================================
+  // handleQuickHire - Creates pending payment and navigates to payment page
+  // ============================================================
   const handleQuickHire = (worker) => {
-    localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
-      workerId: worker.id || worker.email,
+    const hireData = {
+      id: `PAY-${Date.now()}`,
       workerName: worker.fullName,
       workerEmail: worker.email,
-      hourlyRate: worker.hourlyRate,
-      desiredJob: worker.desiredJob,
-      commission: 15,
-      employerId: user?.id || user?.email,
-      employerName: user?.fullName,
-      workerPhoto: worker.profileImage || '',
-      workerSkills: worker.skills || [],
-      workerExperience: worker.experience || '0 years',
-      workerLocation: worker.location || 'Not specified'
-    }));
-    navigate('/employer-payments');
-  };
-
-  const handleSearch = () => {
-    console.log('🔍 Starting search...');
-    setLoading(true);
-    setShowResults(false);
-
-    setTimeout(() => {
-      let results = [...allWorkers];
-      
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        results = results.filter(worker => {
-          const nameMatch = worker.fullName?.toLowerCase().includes(query);
-          const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
-          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
-                          worker.jobTitle?.toLowerCase().includes(query);
-          const bioMatch = worker.bio?.toLowerCase().includes(query);
-          return nameMatch || skillMatch || jobMatch || bioMatch;
-        });
-      }
-      
-      if (selectedJob && selectedJob !== 'All Jobs') {
-        const jobLower = selectedJob.toLowerCase();
-        results = results.filter(worker => {
-          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
-                       worker.jobTitle?.toLowerCase().includes(jobLower) ||
-                       worker.position?.toLowerCase().includes(jobLower);
-          return match;
-        });
-      }
-      
-      if (selectedLocation && selectedLocation !== 'All Locations') {
-        const locLower = selectedLocation.toLowerCase();
-        results = results.filter(worker => 
-          worker.location?.toLowerCase().includes(locLower)
-        );
-      }
-
-      // Advanced Filters
-      if (advancedFilters.minRating > 0) {
-        results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
-      }
-
-      if (advancedFilters.minExperience > 0) {
-        results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
-      }
-
-      if (advancedFilters.availability === 'available') {
-        results = results.filter(worker => worker.available === true);
-      } else if (advancedFilters.availability === 'unavailable') {
-        results = results.filter(worker => worker.available === false);
-      }
-
-      if (advancedFilters.maxHourlyRate < 100) {
-        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
-      }
-
-      if (advancedFilters.language !== 'all') {
-        results = results.filter(worker => 
-          worker.languages?.includes(advancedFilters.language)
-        );
-      }
-
-      // Sort Options
-      switch (sortBy) {
-        case 'rating':
-          results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-          break;
-        case 'experience':
-          results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
-          break;
-        case 'hourlyLow':
-          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
-          break;
-        case 'hourlyHigh':
-          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
-          break;
-        case 'relevance':
-        default:
-          break;
-      }
-      
-      console.log('✅ Final results:', results.length);
-      setSearchResults(results);
-      setShowResults(true);
-      setLoading(false);
-    }, 500);
-  };
-
-  const handleHireNow = (worker) => {
-    localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
+      workerPhone: worker.phone || '',
       workerId: worker.id || worker.email,
-      workerName: worker.fullName,
-      workerEmail: worker.email,
-      hourlyRate: worker.hourlyRate,
-      desiredJob: worker.desiredJob,
-      commission: 15,
-      employerId: user?.id || user?.email,
-      employerName: user?.fullName,
-      workerPhoto: worker.profileImage || '',
+      jobTitle: worker.desiredJob || worker.jobTitle || 'Service Provider',
+      amount: (worker.hourlyRate || 30) * 160,
+      currency: 'EGP',
+      status: 'pending',
+      date: new Date().toISOString(),
+      description: `Monthly payment for ${worker.fullName} - ${worker.desiredJob || 'Service Provider'}`,
+      paymentMethod: 'Credit Card',
+      reference: `REF-${Date.now()}`,
+      hasReceipt: false,
+      workerImage: worker.profileImage || '',
+      workerRating: worker.rating || 4.5,
+      workerExperience: worker.experience || 0,
       workerSkills: worker.skills || [],
-      workerExperience: worker.experience || '0 years',
       workerLocation: worker.location || 'Not specified'
-    }));
-    navigate('/employer-payments');
+    };
+
+    localStorage.setItem('homelyserv_quick_hire_data', JSON.stringify(hireData));
+    
+    navigate('/employer-payments', { 
+      state: { 
+        quickHireData: hireData,
+        from: 'quick-hire'
+      } 
+    });
   };
 
   const handleViewProfile = (worker) => {
@@ -739,6 +648,92 @@ const EmployerSearch = () => {
   };
 
   const locationOptionsDynamic = getUniqueLocations();
+
+  const handleSearch = () => {
+    console.log('🔍 Starting search...');
+    setLoading(true);
+    setShowResults(false);
+
+    setTimeout(() => {
+      let results = [...allWorkers];
+      
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        results = results.filter(worker => {
+          const nameMatch = worker.fullName?.toLowerCase().includes(query);
+          const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
+          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
+                          worker.jobTitle?.toLowerCase().includes(query);
+          const bioMatch = worker.bio?.toLowerCase().includes(query);
+          return nameMatch || skillMatch || jobMatch || bioMatch;
+        });
+      }
+      
+      if (selectedJob && selectedJob !== 'All Jobs') {
+        const jobLower = selectedJob.toLowerCase();
+        results = results.filter(worker => {
+          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
+                       worker.jobTitle?.toLowerCase().includes(jobLower) ||
+                       worker.position?.toLowerCase().includes(jobLower);
+          return match;
+        });
+      }
+      
+      if (selectedLocation && selectedLocation !== 'All Locations') {
+        const locLower = selectedLocation.toLowerCase();
+        results = results.filter(worker => 
+          worker.location?.toLowerCase().includes(locLower)
+        );
+      }
+
+      if (advancedFilters.minRating > 0) {
+        results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
+      }
+
+      if (advancedFilters.minExperience > 0) {
+        results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
+      }
+
+      if (advancedFilters.availability === 'available') {
+        results = results.filter(worker => worker.available === true);
+      } else if (advancedFilters.availability === 'unavailable') {
+        results = results.filter(worker => worker.available === false);
+      }
+
+      if (advancedFilters.maxHourlyRate < 100) {
+        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
+      }
+
+      if (advancedFilters.language !== 'all') {
+        results = results.filter(worker => 
+          worker.languages?.includes(advancedFilters.language)
+        );
+      }
+
+      switch (sortBy) {
+        case 'rating':
+          results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'experience':
+          results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+          break;
+        case 'hourlyLow':
+          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+          break;
+        case 'hourlyHigh':
+          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+          break;
+        case 'relevance':
+        default:
+          break;
+      }
+      
+      console.log('✅ Final results:', results.length);
+      setSearchResults(results);
+      setShowResults(true);
+      setLoading(false);
+    }, 500);
+  };
 
   if (!user) {
     return (
@@ -916,7 +911,7 @@ const EmployerSearch = () => {
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, availability: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
                       >
-                        <option value="all">{t.filters.all}</option>
+                        <option value="all">All</option>
                         <option value="available">{t.available}</option>
                         <option value="unavailable">{t.unavailable}</option>
                       </select>
