@@ -285,39 +285,52 @@ const AdminPayments = () => {
   const t = translations[language];
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'ADMIN') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+  const savedLang = localStorage.getItem('homelyserv_language');
+  if (savedLang) {
+    setLanguage(savedLang);
+  }
+  
+  // ✅ تحميل المستخدم من localStorage
+  const userData = localStorage.getItem('homelyserv_user');
+  console.log('📌 User data from localStorage:', userData);
+  
+  if (userData) {
+    try {
+      const parsedUser = JSON.parse(userData);
+      console.log('📌 Parsed user:', parsedUser);
+      console.log('📌 User role:', parsedUser.role);
+      
+      // ✅ السماح للادمن فقط
+      if (parsedUser.role !== 'ADMIN') {
+        console.log('❌ User is not admin, redirecting to login');
         navigate('/login');
+        return;
       }
-    } else {
+      
+      setUser(parsedUser);
+      console.log('✅ Admin loaded successfully:', parsedUser.fullName);
+      
+    } catch (error) {
+      console.error('Error parsing user data:', error);
       navigate('/login');
     }
+  } else {
+    console.log('❌ No user data found, redirecting to login');
+    navigate('/login');
+  }
 
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
+  const sidebarState = localStorage.getItem('sidebar_collapsed');
+  if (sidebarState) {
+    setSidebarCollapsed(JSON.parse(sidebarState));
+  }
 
-    // Load payments from localStorage
-    const storedPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
-    setPayments(storedPayments);
-    setFilteredPayments(storedPayments);
-    setLoading(false);
-  }, [navigate]);
+  // تحميل المدفوعات
+  const storedPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
+  setPayments(storedPayments);
+  setFilteredPayments(storedPayments);
+  setLoading(false);
+  
+}, [navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';

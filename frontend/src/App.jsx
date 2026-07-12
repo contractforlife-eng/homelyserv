@@ -323,7 +323,7 @@ function App() {
         } 
       />
       <Route 
-        path="/admin-payments" 
+        path="/admin/payments" 
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminPayments />
