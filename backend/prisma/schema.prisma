@@ -1,219 +1,161 @@
-// backend/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  fullName      String?
-  phone         String?
-  age           Int?
-  address       String?
-  city          String?
-  country       String?
-  role          Role      @default(EMPLOYER)
-  status        Status    @default(ACTIVE)
-  profileImage  String?
-  rating        Float     @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLogin     DateTime?
-
-  // Relations
-  workerProfile WorkerProfile?
-  employerProfile EmployerProfile?
-  hires         Hire[]    @relation("HireWorker")
-  employerHires Hire[]    @relation("HireEmployer")
-  messages      Message[]
-  complaints    Complaint[]
-  payments      Payment[]
-  savedWorkers  SavedWorker[]
-
-  @@map("users")
-}
-
-model WorkerProfile {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category        String?
-  hourlyRate      Float?
-  experience      Int?
-  bio             String?
-  skills          String[]
-  languages       String[]
-  documents       Json?
-  availability    Json?
-  jobsCompleted   Int       @default(0)
-  trustworthiness Float     @default(0)
-  speed           Float     @default(0)
-  accuracy        Float     @default(0)
-  memberSince     DateTime  @default(now())
-
-  @@map("worker_profiles")
+model Document {
+  id              String        @id
+  workerId        String
+  type            String
+  url             String
+  status          String        @default("pending")
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
+  WorkerProfile   WorkerProfile @relation(fields: [workerId], references: [id])
 }
 
 model EmployerProfile {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName     String?
-  companySize     String?
-  industry        String?
-  bio             String?
-  socialLinks     Json?
-  jobsPosted      Int       @default(0)
-  hiresCompleted  Int       @default(0)
+  id             String   @id
+  userId         String   @unique
+  companyName    String?
+  companyLogo    String?
+  companyPhotos  String[] @default([])
+  companyWebsite String?
+  companySize    String?
+  industry       String?
+  description    String?
+  address        String?
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  User           User     @relation(fields: [userId], references: [id])
+}
 
-  @@map("employer_profiles")
+model Experience {
+  id            String        @id
+  workerId      String
+  employerName  String
+  role          String
+  startDate     DateTime
+  endDate       DateTime?
+  description   String?
+  createdAt     DateTime      @default(now())
+  WorkerProfile WorkerProfile @relation(fields: [workerId], references: [id])
 }
 
 model Hire {
-  id              String    @id @default(cuid())
-  workerId        String
-  worker          User      @relation("HireWorker", fields: [workerId], references: [id])
-  employerId      String
-  employer        User      @relation("HireEmployer", fields: [employerId], references: [id])
-  jobTitle        String
-  description     String?
-  amount          Float
-  currency        String    @default("EGP")
-  status          HireStatus @default(PENDING)
-  startDate       DateTime?
-  endDate         DateTime?
-  duration        String?
-  location        String?
-  paymentMethod   String?
-  contractType    String?
-  workSchedule    String?
-  documents       Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@map("hires")
-}
-
-model Payment {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  hireId          String?
-  hire            Hire?     @relation(fields: [hireId], references: [id])
-  amount          Float
-  fee             Float     @default(0)
-  netAmount       Float
-  currency        String    @default("EGP")
-  status          PaymentStatus @default(PENDING)
-  type            PaymentType @default(HIRE)
-  method          String?
-  description     String?
-  reference       String?
-  hasReceipt      Boolean   @default(false)
-  failureReason   String?
-  date            DateTime  @default(now())
-
-  @@map("payments")
-}
-
-model Complaint {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  subject         String
-  description     String
-  images          String[]
-  status          ComplaintStatus @default(PENDING)
-  type            ComplaintType @default(GENERAL)
-  adminResponse   String?
-  rejectionReason String?
-  date            DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@map("complaints")
+  id               String        @id
+  workerId         String
+  employerId       String
+  agreedSalary     Float
+  commissionAmount Float
+  vatAmount        Float
+  totalDue         Float
+  paymentMethod    String?
+  paymentReference String?
+  paymentStatus    String        @default("pending")
+  paymentProofUrl  String?
+  startDate        DateTime?
+  status           String        @default("offer_sent")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  User             User          @relation(fields: [employerId], references: [id])
+  WorkerProfile    WorkerProfile @relation(fields: [workerId], references: [id])
+  Message          Message[]
+  Review           Review[]
 }
 
 model Message {
-  id              String    @id @default(cuid())
-  senderId        String
-  sender          User      @relation("SenderMessages", fields: [senderId], references: [id])
-  recipientId     String
-  recipient       User      @relation("RecipientMessages", fields: [recipientId], references: [id])
-  text            String
-  status          MessageStatus @default(SENT)
-  read            Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-
-  @@map("messages")
+  id                            String   @id
+  senderId                      String
+  receiverId                    String
+  hireId                        String?
+  content                       String
+  isRead                        Boolean  @default(false)
+  createdAt                     DateTime @default(now())
+  Hire                          Hire?    @relation(fields: [hireId], references: [id])
+  User_Message_receiverIdToUser User     @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
+  User_Message_senderIdToUser   User     @relation("Message_senderIdToUser", fields: [senderId], references: [id])
 }
 
-model SavedWorker {
-  id              String    @id @default(cuid())
-  employerId      String
-  employer        User      @relation(fields: [employerId], references: [id])
-  workerId        String
-  worker          User      @relation(fields: [workerId], references: [id])
-  createdAt       DateTime  @default(now())
+model Notification {
+  id        String   @id
+  userId    String
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
+}
 
-  @@unique([employerId, workerId])
-  @@map("saved_workers")
+model Review {
+  id            String        @id
+  hireId        String
+  workerId      String
+  employerId    String
+  rating        Int
+  comment       String?
+  createdAt     DateTime      @default(now())
+  User          User          @relation(fields: [employerId], references: [id])
+  Hire          Hire          @relation(fields: [hireId], references: [id])
+  WorkerProfile WorkerProfile @relation(fields: [workerId], references: [id])
+}
+
+model User {
+  id                               String           @id
+  email                            String           @unique
+  password                         String
+  username                         String           @unique
+  role                             Role             @default(WORKER)
+  fullName                         String
+  phone                            String?
+  city                             String?
+  isVerified                       Boolean          @default(false)
+  isSuspended                      Boolean          @default(false)
+  language                         String           @default("en")
+  createdAt                        DateTime         @default(now())
+  updatedAt                        DateTime
+  image                            String?          @default("")
+  EmployerProfile                  EmployerProfile?
+  Hire                             Hire[]
+  Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
+  Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
+  Notification                     Notification[]
+  Review                           Review[]
+  WorkerProfile                    WorkerProfile?
+}
+
+model WorkerProfile {
+  id              String       @id
+  userId          String       @unique
+  category        String
+  experienceYears Int          @default(0)
+  expectedSalary  Float        @default(0)
+  availability    String       @default("available")
+  workType        String       @default("full-time")
+  bioAr           String?
+  bioEn           String?
+  skills          String[]
+  profilePhotoUrl String?
+  docStatus       String       @default("pending")
+  ratingAvg       Float        @default(0)
+  ratingCount     Int          @default(0)
+  isVisible       Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime
+  Document        Document[]
+  Experience      Experience[]
+  Hire            Hire[]
+  Review          Review[]
+  User            User         @relation(fields: [userId], references: [id])
 }
 
 enum Role {
-  EMPLOYER
   WORKER
+  EMPLOYER
   ADMIN
-}
-
-enum Status {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum HireStatus {
-  PENDING
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-  PROCESSING
-}
-
-enum PaymentType {
-  HIRE
-  COMMISSION
-  PAYOUT
-  REFUND
-}
-
-enum ComplaintStatus {
-  PENDING
-  IN_PROGRESS
-  RESOLVED
-  REJECTED
-}
-
-enum ComplaintType {
-  WORKER
-  EMPLOYER
-  GENERAL
-}
-
-enum MessageStatus {
-  SENT
-  DELIVERED
-  READ
 }

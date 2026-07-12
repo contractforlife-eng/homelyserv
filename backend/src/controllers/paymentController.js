@@ -1,33 +1,29 @@
-// In MongoDB shell or Compass
-db.payments.insertMany([
-  {
-    employerId: ObjectId("EMPLOYER_USER_ID"),
-    workerId: ObjectId("WORKER_USER_ID"),
-    jobId: ObjectId("JOB_ID"),
-    hireId: ObjectId("HIRE_ID"),
-    amount: 3500,
-    currency: "EGP",
-    status: "completed",
-    paymentMethod: "Bank Transfer",
-    description: "Payment for Senior Nanny - Full Time",
-    reference: "REF-2026-001",
-    hasReceipt: true,
-    createdAt: new Date("2026-06-25"),
-    updatedAt: new Date("2026-06-25")
-  },
-  {
-    employerId: ObjectId("EMPLOYER_USER_ID"),
-    workerId: ObjectId("WORKER_USER_ID_2"),
-    jobId: ObjectId("JOB_ID_2"),
-    hireId: ObjectId("HIRE_ID_2"),
-    amount: 2800,
-    currency: "EGP",
-    status: "pending",
-    paymentMethod: "Mobile Wallet",
-    description: "Payment for Professional Cleaner - Part Time",
-    reference: "REF-2026-002",
-    hasReceipt: false,
-    createdAt: new Date("2026-06-20"),
-    updatedAt: new Date("2026-06-20")
+import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
+export const getWorkerPayments = async (req, res) => {
+  try {
+    // نفترض أن الـ Middleware قام بوضع بيانات المستخدم في req.user
+    const userId = req.user.id; 
+
+    const payments = await prisma.payment.findMany({
+      where: {
+        userId: userId, // مطابقة لـ userId الموجود في المخطط الخاص بك
+        type: 'HIRE'    // لجلب مدفوعات التوظيف فقط
+      },
+      orderBy: {
+        date: 'desc'    // مطابقة لاسم الحقل 'date' في المخطط الخاص بك
+      },
+      include: {
+        hire: true      // اختيارياً: لجلب تفاصيل عملية التوظيف المرتبطة
+      }
+    });
+
+    res.json({
+      success: true,
+      payments: payments
+    });
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
-]);
+};

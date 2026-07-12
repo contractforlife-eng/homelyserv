@@ -1,24 +1,12 @@
-import express from 'express'; 
+import express from 'express';
+import { authenticate } from '../middleware/auth.js';
+import { getWorkerPayments } from '../controllers/paymentController.js';
+
+// تعريف الـ router مرة واحدة فقط
 const router = express.Router(); 
- 
-router.get('/', (req, res) => { 
-  res.json({ success: true, payments: [] }); 
-}); 
- 
-router.get('/:id', (req, res) => { 
-  res.json({ success: true, payment: null }); 
-}); 
- 
-router.post('/', (req, res) => { 
-  res.json({ success: true, message: 'Payment created' }); 
-}); 
- 
-router.put('/:id', (req, res) => { 
-  res.json({ success: true, message: 'Payment updated' }); 
-}); 
- 
-router.delete('/:id', (req, res) => { 
-  res.json({ success: true, message: 'Payment deleted' }); 
-}); 
- 
-export default router; 
+
+// استخدام الـ router بعد تعريفه مباشرة
+router.get('/my-payments', authenticate, getWorkerPayments);
+
+// تصدير الـ router
+export default router;

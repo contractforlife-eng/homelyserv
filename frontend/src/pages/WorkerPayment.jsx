@@ -1,4 +1,10 @@
 // src/pages/WorkerPayment.jsx
+// استخدم الرابط الكامل لسيرفرك
+const response = await fetch('http://localhost:5000/api/payments/my-payments', {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('homelyserv_token')}`
+  }
+});
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
