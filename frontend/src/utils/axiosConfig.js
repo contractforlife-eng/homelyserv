@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-// Create axios instance with base URL
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const api = axios.create({
+  // استخدام المتغير أو الرابط الاحتياطي
+  baseURL: import.meta.env.VITE_API_URL || 'https://gas-clapped-copper.ngrok-free.dev'
 });
+
+export default api;
 
 // Request interceptor to add token
 axiosInstance.interceptors.request.use(

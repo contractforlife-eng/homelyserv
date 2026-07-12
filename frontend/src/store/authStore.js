@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import axios from 'axios';
 
 // API base URL - change this to your actual API endpoint
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL || 'https://gas-clapped-copper.ngrok-free.dev'
 
 const useAuthStore = create(
   persist(

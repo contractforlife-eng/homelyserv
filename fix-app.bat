@@ -51,7 +51,7 @@ echo ========================================
 echo ✅ Fix complete! Servers are starting...
 echo.
 echo 📱 Frontend: http://localhost:5173
-echo 🔧 Backend:  http://localhost:5000
+echo 🔧 Backend:  import.meta.env.VITE_API_URL
 echo ========================================
 echo.
 pause

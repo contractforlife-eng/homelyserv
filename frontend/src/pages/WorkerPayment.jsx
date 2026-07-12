@@ -1,8 +1,10 @@
 // src/pages/WorkerPayment.jsx
-// استخدم الرابط الكامل لسيرفرك
-const response = await fetch('http://localhost:5000/api/payments/my-payments', {
+// تأكد من استخدام علامات التنصيص المائلة (backticks) حول الرابط
+await fetch(`${import.meta.env.VITE_API_URL}/api/payments/my-payments`, {
+  method: 'GET', // أو 'POST' حسب ما كان لديك سابقاً
   headers: {
-    'Authorization': `Bearer ${localStorage.getItem('homelyserv_token')}`
+    "Authorization": `Bearer ${localStorage.getItem("homelyserv_token")}`,
+    "Content-Type": "application/json"
   }
 });
 import React, { useState, useEffect } from 'react';
