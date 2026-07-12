@@ -1,7 +1,5 @@
-import axios from 'axios';
-
 const api = axios.create({
-  baseURL: 'https://gas-clapped-copper.ngrok-free.dev/api' // Your current ngrok URL
+  baseURL: import.meta.env.VITE_API_URL
 });
 
 api.interceptors.request.use((config) => {
