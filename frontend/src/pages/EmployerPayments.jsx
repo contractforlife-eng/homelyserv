@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx
+// src/pages/EmployerPayments.jsx - النسخة الكاملة المعدلة
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -128,15 +128,17 @@ const EmployerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/employer-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-teal-500" />
+                <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/employer-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-teal-500" />
+              <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -155,7 +157,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -163,7 +165,7 @@ const EmployerSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className="text-teal-600" />
+                <User size={20} className="text-white" />
               )}
             </div>
             {!sidebarCollapsed && user && (
@@ -356,7 +358,8 @@ const EmployerPayments = () => {
       noResults: 'No payments match your search',
       clearFilters: 'Clear filters',
       copySuccess: 'Copied to clipboard!',
-      redirectingToPayment: 'Redirecting to payment options...'
+      redirectingToPayment: 'Redirecting to payment options...',
+      refresh: 'Refresh'
     },
     ar: {
       title: 'المدفوعات',
@@ -427,11 +430,73 @@ const EmployerPayments = () => {
       noResults: 'لا توجد مدفوعات تطابق بحثك',
       clearFilters: 'مسح التصفيات',
       copySuccess: 'تم النسخ إلى الحافظة!',
-      redirectingToPayment: 'جاري التوجيه إلى خيارات الدفع...'
+      redirectingToPayment: 'جاري التوجيه إلى خيارات الدفع...',
+      refresh: 'تحديث'
     }
   };
 
   const t = translations[language];
+
+  // ============================================================
+  // toggleSidebar - تبديل حالة الشريط الجانبي
+  // ============================================================
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  // ============================================================
+  // savePaymentToAllStores - حفظ الدفع في جميع الأماكن
+  // ============================================================
+  const savePaymentToAllStores = (paymentData) => {
+    try {
+      // 1. حفظ في all_payments (المصدر الرئيسي)
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      // التأكد من عدم وجود مفتاح مكرر
+      const exists = allPayments.some(p => p.id === paymentData.id);
+      if (!exists) {
+        allPayments.push(paymentData);
+        localStorage.setItem('all_payments', JSON.stringify(allPayments));
+        console.log('✅ Payment saved to all_payments:', paymentData.id);
+      }
+
+      // 2. حفظ في employer_payments
+      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      const existsEmployer = employerPayments.some(p => p.id === paymentData.id);
+      if (!existsEmployer) {
+        employerPayments.push(paymentData);
+        localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
+        console.log('✅ Payment saved to employer_payments:', paymentData.id);
+      }
+
+      // 3. حفظ في worker_payments (إذا كان هناك عامل)
+      if (paymentData.workerId || paymentData.workerEmail) {
+        const workerId = paymentData.workerId || paymentData.workerEmail;
+        const workerPayments = JSON.parse(localStorage.getItem(`worker_payments_${workerId}`) || '[]');
+        const existsWorker = workerPayments.some(p => p.id === paymentData.id);
+        if (!existsWorker) {
+          workerPayments.push(paymentData);
+          localStorage.setItem(`worker_payments_${workerId}`, JSON.stringify(workerPayments));
+          console.log('✅ Payment saved to worker_payments:', paymentData.id);
+        }
+      }
+
+      // 4. حفظ في admin_payments
+      const adminPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
+      const existsAdmin = adminPayments.some(p => p.id === paymentData.id);
+      if (!existsAdmin) {
+        adminPayments.push(paymentData);
+        localStorage.setItem('admin_payments', JSON.stringify(adminPayments));
+        console.log('✅ Payment saved to admin_payments:', paymentData.id);
+      }
+
+      // 5. تحديث الصفحة الحالية
+      loadPaymentsFromLocalStorage();
+      
+    } catch (error) {
+      console.error('Error saving payment:', error);
+    }
+  };
 
   // ============================================================
   // Load payments from localStorage
@@ -441,38 +506,43 @@ const EmployerPayments = () => {
     
     try {
       let allPayments = [];
+      const seenIds = new Set();
       
-      // 1. Load from employer_payments (main source)
-      const employerPayments = localStorage.getItem('employer_payments');
-      if (employerPayments) {
+      // 1. Load from all_payments (main source)
+      const allPaymentsData = localStorage.getItem('all_payments');
+      if (allPaymentsData) {
         try {
-          const parsed = JSON.parse(employerPayments);
+          const parsed = JSON.parse(allPaymentsData);
           if (Array.isArray(parsed)) {
-            allPayments = [...allPayments, ...parsed];
+            parsed.forEach(p => {
+              if (!seenIds.has(p.id)) {
+                allPayments.push(p);
+                seenIds.add(p.id);
+              }
+            });
+            console.log('📋 Loaded from all_payments:', parsed.length);
+          }
+        } catch (e) {
+          console.error('Error parsing all_payments:', e);
+        }
+      }
+      
+      // 2. Load from employer_payments (backup)
+      const employerPaymentsData = localStorage.getItem('employer_payments');
+      if (employerPaymentsData) {
+        try {
+          const parsed = JSON.parse(employerPaymentsData);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(p => {
+              if (!seenIds.has(p.id)) {
+                allPayments.push(p);
+                seenIds.add(p.id);
+              }
+            });
             console.log('📋 Loaded from employer_payments:', parsed.length);
           }
         } catch (e) {
           console.error('Error parsing employer_payments:', e);
-        }
-      }
-      
-      // 2. Load from homelyserv_payments (backup)
-      const homelyservPayments = localStorage.getItem('homelyserv_payments');
-      if (homelyservPayments) {
-        try {
-          const parsed = JSON.parse(homelyservPayments);
-          if (Array.isArray(parsed)) {
-            const existingIds = new Set(allPayments.map(p => p.id));
-            parsed.forEach(p => {
-              if (!existingIds.has(p.id)) {
-                allPayments.push(p);
-                existingIds.add(p.id);
-              }
-            });
-            console.log('📋 Loaded from homelyserv_payments:', parsed.length);
-          }
-        } catch (e) {
-          console.error('Error parsing homelyserv_payments:', e);
         }
       }
       
@@ -481,37 +551,13 @@ const EmployerPayments = () => {
       if (quickHireData) {
         try {
           const parsed = JSON.parse(quickHireData);
-          const exists = allPayments.some(p => p.id === parsed.id);
-          if (!exists) {
+          if (!seenIds.has(parsed.id)) {
             allPayments.push(parsed);
+            seenIds.add(parsed.id);
             console.log('📋 Loaded quick hire data:', parsed.id);
           }
         } catch (e) {
           console.error('Error parsing quick hire data:', e);
-        }
-      }
-      
-      // 4. Check for pending payment
-      const pendingPayment = localStorage.getItem('homelyserv_pending_payment');
-      if (pendingPayment) {
-        try {
-          const parsed = JSON.parse(pendingPayment);
-          const exists = allPayments.some(p => p.id === parsed.paymentId);
-          if (!exists) {
-            allPayments.push({
-              id: parsed.paymentId,
-              workerName: parsed.workerName,
-              jobTitle: parsed.jobTitle,
-              amount: parsed.amount,
-              description: parsed.description,
-              status: 'pending',
-              date: new Date().toISOString(),
-              hasReceipt: false
-            });
-            console.log('📋 Loaded pending payment:', parsed.paymentId);
-          }
-        } catch (e) {
-          console.error('Error parsing pending payment:', e);
         }
       }
       
@@ -594,8 +640,22 @@ const EmployerPayments = () => {
     if (quickHireData) {
       console.log('📋 Quick hire data received from state:', quickHireData);
       
-      setPayments(prev => [quickHireData, ...prev]);
-      setFilteredPayments(prev => [quickHireData, ...prev]);
+      // التأكد من عدم وجود مفتاح مكرر
+      setPayments(prev => {
+        const exists = prev.some(p => p.id === quickHireData.id);
+        if (!exists) {
+          return [quickHireData, ...prev];
+        }
+        return prev;
+      });
+      
+      setFilteredPayments(prev => {
+        const exists = prev.some(p => p.id === quickHireData.id);
+        if (!exists) {
+          return [quickHireData, ...prev];
+        }
+        return prev;
+      });
       
       setSelectedPayment(quickHireData);
       setShowDetailsModal(true);
@@ -636,7 +696,7 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // handleProcessPayment - Redirect to Payment Options
+  // handleProcessPayment - معالجة الدفع والتوجيه إلى payment-options
   // ============================================================
   const handleProcessPayment = (payment) => {
     const paymentData = payment || selectedPayment;
@@ -648,10 +708,29 @@ const EmployerPayments = () => {
 
     console.log('🔄 Processing payment:', paymentData);
 
+    // إنشاء معرف فريد للدفع
+    const paymentId = 'PAY-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+
+    // حفظ بيانات الدفع المؤقتة
+    const pendingPayment = {
+      paymentId: paymentId,
+      amount: paymentData.amount,
+      workerName: paymentData.workerName,
+      workerId: paymentData.workerId || paymentData.id,
+      workerEmail: paymentData.workerEmail || '',
+      jobTitle: paymentData.jobTitle || 'Service Provider',
+      description: paymentData.description || `Payment for ${paymentData.workerName || 'worker'}`,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName || 'Employer'
+    };
+
+    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+    
+    // حفظ بيانات العامل
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
       workerName: paymentData.workerName,
-      workerEmail: paymentData.workerEmail,
+      workerEmail: paymentData.workerEmail || '',
       workerPhone: paymentData.workerPhone || 'Not provided',
       workerLocation: paymentData.workerLocation || 'Not specified',
       desiredJob: paymentData.jobTitle || 'Service Provider',
@@ -662,18 +741,12 @@ const EmployerPayments = () => {
     };
 
     localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
-    
-    localStorage.setItem('homelyserv_pending_payment', JSON.stringify({
-      paymentId: paymentData.id,
-      amount: paymentData.amount,
-      workerName: paymentData.workerName,
-      jobTitle: paymentData.jobTitle,
-      description: paymentData.description
-    }));
 
+    // إغلاق المودال
     setShowDetailsModal(false);
     setSelectedPayment(null);
-    
+
+    // ✅ التوجيه إلى صفحة خيارات الدفع
     navigate('/payment-options');
   };
 
@@ -681,11 +754,6 @@ const EmployerPayments = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
     localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('employer_sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
   };
 
   const toggleMobileMenu = () => {
@@ -808,7 +876,7 @@ const EmployerPayments = () => {
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
                 <RefreshCw size={16} />
-                Refresh
+                {t.refresh}
               </button>
             </div>
           </div>
@@ -1118,7 +1186,7 @@ const EmployerPayments = () => {
                   className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <CreditCard size={16} />
-                  💳 Pay Now
+                  Pay Now
                 </button>
               )}
             </div>

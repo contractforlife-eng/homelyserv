@@ -1,3 +1,4 @@
+// src/pages/AdminPayments.jsx - النسخة الكاملة مع Shield
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -23,8 +24,11 @@ import {
   FileText,
   User as UserIcon,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  RefreshCw,
+  Shield
 } from 'lucide-react';
+
 
 // Admin Sidebar Component - Dark Theme
 const AdminSidebar = ({ 
@@ -90,15 +94,17 @@ const AdminSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-yellow-500/20">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <span className="text-black font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-yellow-500" />
+                <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/admin" className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-black font-bold text-sm">H</span>
+            <Link to="/admin" className="relative mx-auto">
+              <Shield size={28} className="text-yellow-500" />
+              <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -117,8 +123,16 @@ const AdminSidebar = ({
 
         <div className={`p-4 border-b border-yellow-500/20 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
-              <UserIcon size={20} className="text-black" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user?.fullName || 'Admin'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon size={20} className="text-black" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -228,7 +242,8 @@ const AdminPayments = () => {
       },
       actions: {
         view: 'View Details',
-        download: 'Download Receipt'
+        download: 'Download Receipt',
+        refresh: 'Refresh'
       },
       status: {
         completed: 'Completed',
@@ -268,7 +283,8 @@ const AdminPayments = () => {
       },
       actions: {
         view: 'عرض التفاصيل',
-        download: 'تحميل الإيصال'
+        download: 'تحميل الإيصال',
+        refresh: 'تحديث'
       },
       status: {
         completed: 'مكتملة',
@@ -284,53 +300,96 @@ const AdminPayments = () => {
 
   const t = translations[language];
 
-  useEffect(() => {
-  const savedLang = localStorage.getItem('homelyserv_language');
-  if (savedLang) {
-    setLanguage(savedLang);
-  }
-  
-  // ✅ تحميل المستخدم من localStorage
-  const userData = localStorage.getItem('homelyserv_user');
-  console.log('📌 User data from localStorage:', userData);
-  
-  if (userData) {
+  // ============================================================
+  // loadPayments - تحميل المدفوعات من جميع المصادر
+  // ============================================================
+  const loadPayments = () => {
+    setLoading(true);
+    
     try {
-      const parsedUser = JSON.parse(userData);
-      console.log('📌 Parsed user:', parsedUser);
-      console.log('📌 User role:', parsedUser.role);
+      // 1. تحميل من all_payments (المصدر الرئيسي)
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      console.log('📋 Loaded from all_payments:', allPayments.length);
       
-      // ✅ السماح للادمن فقط
-      if (parsedUser.role !== 'ADMIN') {
-        console.log('❌ User is not admin, redirecting to login');
-        navigate('/login');
-        return;
-      }
+      // 2. تحميل من admin_payments (النسخ الاحتياطي)
+      const adminPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
+      console.log('📋 Loaded from admin_payments:', adminPayments.length);
       
-      setUser(parsedUser);
-      console.log('✅ Admin loaded successfully:', parsedUser.fullName);
+      // 3. دمج المدفوعات
+      let mergedPayments = [...adminPayments];
+      
+      // إضافة المدفوعات من all_payments التي ليست موجودة بالفعل
+      allPayments.forEach(p => {
+        if (!mergedPayments.find(mp => mp.id === p.id)) {
+          mergedPayments.push(p);
+        }
+      });
+      
+      // 4. ترتيب من الأحدث إلى الأقدم
+      mergedPayments.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+      
+      setPayments(mergedPayments);
+      setFilteredPayments(mergedPayments);
+      
+      // 5. حفظ في admin_payments
+      localStorage.setItem('admin_payments', JSON.stringify(mergedPayments));
+      console.log('✅ Admin payments loaded:', mergedPayments.length);
       
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      console.error('Error loading payments:', error);
+      setPayments([]);
+      setFilteredPayments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================
+  // useEffect - تحميل المستخدم والمدفوعات
+  // ============================================================
+  useEffect(() => {
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+    
+    const userData = localStorage.getItem('homelyserv_user');
+    console.log('📌 User data from localStorage:', userData);
+    
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        console.log('📌 Parsed user:', parsedUser);
+        console.log('📌 User role:', parsedUser.role);
+        
+        // السماح للادمن فقط
+        if (parsedUser.role !== 'ADMIN') {
+          console.log('❌ User is not admin, redirecting to login');
+          navigate('/login');
+          return;
+        }
+        
+        setUser(parsedUser);
+        console.log('✅ Admin loaded successfully:', parsedUser.fullName);
+        
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
+    } else {
+      console.log('❌ No user data found, redirecting to login');
       navigate('/login');
     }
-  } else {
-    console.log('❌ No user data found, redirecting to login');
-    navigate('/login');
-  }
 
-  const sidebarState = localStorage.getItem('sidebar_collapsed');
-  if (sidebarState) {
-    setSidebarCollapsed(JSON.parse(sidebarState));
-  }
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
 
-  // تحميل المدفوعات
-  const storedPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
-  setPayments(storedPayments);
-  setFilteredPayments(storedPayments);
-  setLoading(false);
-  
-}, [navigate]);
+    // تحميل المدفوعات
+    loadPayments();
+    
+  }, [navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -350,7 +409,9 @@ const AdminPayments = () => {
       filtered = filtered.filter(p =>
         p.id?.toLowerCase().includes(searchLower) ||
         p.user?.toLowerCase().includes(searchLower) ||
-        p.method?.toLowerCase().includes(searchLower)
+        p.method?.toLowerCase().includes(searchLower) ||
+        p.workerName?.toLowerCase().includes(searchLower) ||
+        p.employer?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -376,6 +437,10 @@ const AdminPayments = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
     navigate('/login');
+  };
+
+  const handleRefresh = () => {
+    loadPayments();
   };
 
   const getStatusColor = (status) => {
@@ -469,6 +534,13 @@ const AdminPayments = () => {
               >
                 <Globe size={16} />
                 {t.languageToggle}
+              </button>
+              <button
+                onClick={handleRefresh}
+                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
+              >
+                <RefreshCw size={16} />
+                {t.actions.refresh}
               </button>
             </div>
           </div>
@@ -597,12 +669,12 @@ const AdminPayments = () => {
                             <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
                               <UserIcon size={12} className="text-yellow-400" />
                             </div>
-                            <span className="text-white text-sm">{payment.user}</span>
+                            <span className="text-white text-sm">{payment.user || payment.workerName || payment.employer}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-white font-medium">EGP {payment.amount?.toLocaleString()}</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{payment.date}</td>
-                        <td className="px-4 py-3 text-gray-300 text-sm">{payment.method}</td>
+                        <td className="px-4 py-3 text-gray-300 text-sm">{payment.method || 'Credit Card'}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status)}`}>
                             {getStatusIcon(payment.status)}

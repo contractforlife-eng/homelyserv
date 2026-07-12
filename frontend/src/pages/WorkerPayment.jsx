@@ -390,59 +390,49 @@ const WorkerPayment = () => {
   // 4. DATA LOADING FUNCTIONS - باستخدام البيانات المحلية فقط
   // ============================================
   const loadPaymentData = () => {
-    if (!user) return;
+  if (!user) return;
+  
+  setLoading(true);
+
+  try {
+    // تحميل المدفوعات من localStorage الخاص بالعامل
+    const userId = user.id || user.email;
+    const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
     
-    setLoading(true);
-
-    try {
-      // تحميل معلومات الدفع
-      const savedPaymentInfo = localStorage.getItem(`worker_payment_info_${user.id}`);
-      if (savedPaymentInfo) {
-        setWorkerPaymentInfo(JSON.parse(savedPaymentInfo));
+    // أيضاً تحميل من المدفوعات العامة
+    const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+    const workerPaymentsFromAll = allPayments.filter(p => 
+      p.workerId === userId || p.workerEmail === userId || p.workerEmail === user.email
+    );
+    
+    // دمج المدفوعات
+    let mergedPayments = [...savedPayments];
+    
+    // إضافة المدفوعات من all_payments التي ليست موجودة بالفعل
+    workerPaymentsFromAll.forEach(p => {
+      if (!mergedPayments.find(mp => mp.id === p.id)) {
+        mergedPayments.push(p);
       }
-
-      // تحميل المهام المكتملة
-      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      
-      const completedTasks = appliedOffers.filter(id => {
-        return employerOffers.some(o => o.id === id && o.status === 'completed');
-      }).length;
-
-      // تحميل المدفوعات
-      const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${user.id}`) || '[]');
-      const totalEarned = savedPayments
-        .filter(p => p.status === 'completed')
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
-
-      const hourlyRate = user.hourlyRate || 35;
-      const monthlySalary = completedTasks > 0 ? hourlyRate * 160 : 0;
-
-      setWorkerStats({
-        totalTasksCompleted: completedTasks,
-        totalEarned: totalEarned,
-        hourlyRate: hourlyRate,
-        monthlySalary: monthlySalary
-      });
-
-      if (savedPayments.length > 0) {
-        setPayments(savedPayments);
-        setFilteredPayments(savedPayments);
-      } else {
-        // إنشاء مدفوعات افتراضية من المهام المكتملة
-        const generatedPayments = generatePaymentsFromCompletedTasks(appliedOffers, employerOffers);
-        if (generatedPayments.length > 0) {
-          setPayments(generatedPayments);
-          setFilteredPayments(generatedPayments);
-          localStorage.setItem(`worker_payments_${user.id}`, JSON.stringify(generatedPayments));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading payment data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+    
+    // ترتيب من الأحدث إلى الأقدم
+    mergedPayments.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+    
+    setPayments(mergedPayments);
+    setFilteredPayments(mergedPayments);
+    
+    // تحديث الإحصائيات
+    updateStatsFromPayments(mergedPayments);
+    
+    // حفظ في localStorage الخاص بالعامل
+    localStorage.setItem(`worker_payments_${userId}`, JSON.stringify(mergedPayments));
+    
+  } catch (error) {
+    console.error('Error loading payment data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const generatePaymentsFromCompletedTasks = (appliedOffers, employerOffers) => {
     const generatedPayments = [];

@@ -1,6 +1,7 @@
 // src/pages/WorkerOffers.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { checkCommissionPaid, getCommissionAmount, COMMISSION_RATE } from '../utils/commissionManager';
 import {
   Home,
   User,
@@ -623,7 +624,31 @@ const WorkerOffers = () => {
     
     alert(`✅ You have successfully applied for ${offer.title}!`);
   };
+// src/pages/WorkerOffers.jsx - داخل المكون WorkerOffers
+// بعد دالة handleContact أو قبلها
 
+// ============================================================
+// handlePayCommission - معالجة دفع العمولة
+// ============================================================
+const handlePayCommission = (offer) => {
+  const commissionAmount = getCommissionAmount(offer.amount || 0);
+  
+  // حفظ بيانات العمولة المؤقتة
+  const commissionData = {
+    offerId: offer.id,
+    workerId: user?.id || user?.email,
+    workerName: user?.fullName || 'Worker',
+    amount: commissionAmount,
+    offerTitle: offer.title,
+    company: offer.company,
+    returnUrl: '/worker/offers'
+  };
+  
+  localStorage.setItem('homelyserv_commission_payment', JSON.stringify(commissionData));
+  
+  // التوجيه إلى صفحة دفع العمولة
+  navigate('/payment-commission');
+};
   // Handle Contact
   const handleContact = (offer) => {
     if (!user) {

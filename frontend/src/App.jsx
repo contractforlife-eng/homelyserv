@@ -41,6 +41,7 @@ import EmployerMessages from './pages/EmployerMessages';
 import EmployerSettings from './pages/EmployerSettings';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
+import PaymentCommission from './pages/PaymentCommission';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -305,6 +306,11 @@ function App() {
     </ProtectedRoute>
   } 
 />
+<Route path="/payment-commission" element={
+  <ProtectedRoute>
+    <PaymentCommission />
+  </ProtectedRoute>
+} />
       {/* ========== ADMIN ROUTES ========== */}
       <Route 
         path="/admin" 
