@@ -216,7 +216,6 @@ function App() {
     </ProtectedRoute>
   } 
 />
-
       {/* ========== EMPLOYER ROUTES ========== */}
       <Route 
         path="/employer-dashboard" 

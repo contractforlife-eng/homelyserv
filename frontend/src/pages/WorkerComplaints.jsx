@@ -75,7 +75,7 @@ const WorkerSidebar = ({
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
   ];
 
   const isActive = (path) => {
