@@ -472,42 +472,66 @@ const EmployerSearch = () => {
     loadWorkersFromStorage();
   }, [navigate]);
 
-  const loadWorkersFromStorage = () => {
-    try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const workers = users.filter(user => user.role === 'WORKER');
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      
-      const mergedWorkers = workers.map(worker => {
-        const profile = profiles[worker.email] || {};
-        return {
-          ...worker,
-          ...profile,
-          fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
-          email: worker.email,
-          phone: profile.phone || worker.phone || '',
-          location: profile.location || worker.location || 'Not specified',
-          bio: profile.bio || worker.bio || '',
-          skills: profile.skills || worker.skills || [],
-          experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
-          hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
-          desiredJob: profile.desiredJob || worker.desiredJob || '',
-          profileImage: profile.profileImage || worker.profileImage || '',
-          rating: profile.rating || worker.rating || 4.5,
-          jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
-          available: profile.available !== undefined ? profile.available : true,
-          role: 'WORKER',
-          languages: profile.languages || worker.languages || ['english']
-        };
-      });
-      
-      setAllWorkers(mergedWorkers);
-      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
-    } catch (error) {
-      console.error('Error loading workers:', error);
-      setAllWorkers([]);
+  // src/pages/EmployerSearch.jsx - إصلاح loadWorkersFromStorage
+
+const loadWorkersFromStorage = () => {
+  try {
+    console.log('📂 Loading workers from localStorage...');
+    
+    // 1. تحميل من homelyserv_users فقط
+    const allUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+    console.log('📌 Total users in localStorage:', allUsers.length);
+    
+    // 2. تصفية العمال فقط
+    const workers = allUsers.filter(user => user.role === 'WORKER');
+    console.log(`📌 Found ${workers.length} workers in homelyserv_users`);
+    
+    // 3. عرض تفاصيل العمال في Console
+    workers.forEach((worker, index) => {
+      console.log(`  ${index + 1}. ${worker.fullName || worker.name} (${worker.email}) - Desired Job: "${worker.desiredJob || 'Not set'}"`);
+    });
+    
+    // 4. تحميل الملفات الشخصية
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    
+    // 5. دمج بيانات العمال مع الملفات الشخصية
+    const mergedWorkers = workers.map(worker => {
+      const profile = profiles[worker.email] || {};
+      return {
+        ...worker,
+        ...profile,
+        fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
+        email: worker.email,
+        phone: profile.phone || worker.phone || '',
+        location: profile.location || worker.location || 'Not specified',
+        bio: profile.bio || worker.bio || '',
+        skills: profile.skills || worker.skills || [],
+        experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
+        hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
+        desiredJob: profile.desiredJob || worker.desiredJob || '',
+        profileImage: profile.profileImage || worker.profileImage || '',
+        rating: profile.rating || worker.rating || 4.5,
+        jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
+        available: profile.available !== undefined ? profile.available : true,
+        role: 'WORKER',
+        languages: profile.languages || worker.languages || ['english']
+      };
+    });
+    
+    // 6. تحديث state
+    setAllWorkers(mergedWorkers);
+    console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
+    
+    // 7. إذا لم يوجد عمال، عرض رسالة واضحة
+    if (mergedWorkers.length === 0) {
+      console.log('⚠️ No workers found in localStorage. Please register as a worker first.');
     }
-  };
+    
+  } catch (error) {
+    console.error('Error loading workers:', error);
+    setAllWorkers([]);
+  }
+};
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
