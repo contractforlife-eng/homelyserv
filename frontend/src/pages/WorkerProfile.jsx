@@ -1,6 +1,7 @@
 // src/pages/worker/WorkerProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
 import {
   User,
   Mail,
@@ -32,8 +33,6 @@ import {
   Shield,
   Sparkles
 } from 'lucide-react';
-import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
-
 // Sidebar Component - Updated with custom logo
 const WorkerSidebar = ({ 
   language, 

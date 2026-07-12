@@ -1,6 +1,7 @@
-// src/pages/EmployerSearch.jsx
+// src/pages/EmployerSearch.jsx - الكود الصحيح مع JOB_OPTIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import {
   Home,
   User,
@@ -53,7 +54,9 @@ import {
   CreditCard
 } from 'lucide-react';
 
-// Employer Sidebar Component
+// ============================================================
+// 1. EMPLOYER SIDEBAR COMPONENT
+// ============================================================
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -106,16 +109,9 @@ const EmployerSidebar = ({
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
   ];
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  const isActive = (path) => location.pathname === path;
 
-  const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
-    }
-    return null;
-  };
+  const getProfileImage = () => user?.profileImage || null;
 
   return (
     <>
@@ -134,15 +130,17 @@ const EmployerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/employer-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-teal-500" />
+                <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/employer-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-teal-500" />
+              <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -161,7 +159,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -169,7 +167,7 @@ const EmployerSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className="text-teal-600" />
+                <User size={20} className="text-white" />
               )}
             </div>
             {!sidebarCollapsed && user && (
@@ -266,7 +264,9 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSearch Component
+// ============================================================
+// 2. MAIN EMPLOYER SEARCH COMPONENT
+// ============================================================
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -295,24 +295,8 @@ const EmployerSearch = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState('grid');
 
-  const jobOptions = [
-    'All Jobs',
-    'Nanny',
-    'Baby Sitter',
-    'Elderly Caregiver',
-    'Driver',
-    'Cook',
-    'House Manager',
-    'Gardener',
-    'Nurse',
-    'Tutor',
-    'Housekeeper',
-    'Personal Assistant',
-    'Cleaner',
-    'Security Guard',
-    'Maintenance Worker',
-    'Teacher'
-  ];
+  // ✅ استخدام JOB_OPTIONS المستورد بدلاً من القائمة الثابتة
+  const jobOptions = ['All Jobs', ...JOB_OPTIONS.map(job => job.label)];
 
   const experienceLevels = [
     { value: 0, label: 'Any Experience' },
@@ -446,11 +430,12 @@ const EmployerSearch = () => {
 
   const t = translations[language];
 
+  // ============================================================
+  // 3. EFFECTS
+  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
+    if (savedLang) setLanguage(savedLang);
     
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
@@ -459,6 +444,11 @@ const EmployerSearch = () => {
         if (parsedUser.role !== 'EMPLOYER') {
           navigate('/login');
           return;
+        }
+        // Load profile image
+        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
         setUser(parsedUser);
       } catch (error) {
@@ -524,6 +514,9 @@ const EmployerSearch = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // ============================================================
+  // 4. HANDLERS
+  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -573,7 +566,7 @@ const EmployerSearch = () => {
   };
 
   // ============================================================
-  // handleQuickHire - Creates pending payment and navigates to payment page
+  // 5. QUICK HIRE - Creates pending payment and navigates to payment page
   // ============================================================
   const handleQuickHire = (worker) => {
     const hireData = {
@@ -613,28 +606,9 @@ const EmployerSearch = () => {
     navigate('/worker-profile-view');
   };
 
+  // ✅ استخدام الدالة المستوردة من constants
   const getJobLabel = (value) => {
-    const jobMap = {
-      'nanny': 'Nanny',
-      'elderly_care': 'Elderly Caregiver',
-      'housekeeper': 'Housekeeper',
-      'cook': 'Cook',
-      'driver': 'Driver',
-      'gardener': 'Gardener',
-      'house_manager': 'House Manager',
-      'tutor': 'Tutor',
-      'pet_care': 'Pet Care',
-      'maintenance': 'Maintenance',
-      'security': 'Security Guard',
-      'personal_assistant': 'Personal Assistant',
-      'event_planner': 'Event Planner',
-      'fitness_trainer': 'Fitness Trainer',
-      'nurse': 'Nurse',
-      'therapist': 'Therapist',
-      'cleaner': 'Cleaner',
-      'other': 'Other'
-    };
-    return jobMap[value] || value || 'Not specified';
+    return getJobLabelFromConstants(value);
   };
 
   const getUniqueLocations = () => {
@@ -647,92 +621,133 @@ const EmployerSearch = () => {
 
   const locationOptionsDynamic = getUniqueLocations();
 
-  const handleSearch = () => {
-    console.log('🔍 Starting search...');
-    setLoading(true);
-    setShowResults(false);
+  // ============================================================
+  // 6. SEARCH FUNCTION
+  // ============================================================
+  // src/pages/EmployerSearch.jsx - إصلاح دالة handleSearch
 
-    setTimeout(() => {
-      let results = [...allWorkers];
+const handleSearch = () => {
+  console.log('🔍 Starting search...');
+  console.log('📌 Selected Job:', selectedJob);
+  console.log('📌 Search Query:', searchQuery);
+  console.log('📌 All Workers:', allWorkers.length);
+  
+  setLoading(true);
+  setShowResults(false);
+
+  setTimeout(() => {
+    let results = [...allWorkers];
+    
+    // 1. البحث بالنص
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      results = results.filter(worker => {
+        const nameMatch = worker.fullName?.toLowerCase().includes(query);
+        const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
+        const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
+                        worker.jobTitle?.toLowerCase().includes(query);
+        const bioMatch = worker.bio?.toLowerCase().includes(query);
+        return nameMatch || skillMatch || jobMatch || bioMatch;
+      });
+      console.log(`📌 After text search: ${results.length} results`);
+    }
+    
+    // 2. البحث حسب نوع الوظيفة
+    if (selectedJob && selectedJob !== 'All Jobs') {
+      console.log(`🔍 Filtering by job: "${selectedJob}"`);
       
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        results = results.filter(worker => {
-          const nameMatch = worker.fullName?.toLowerCase().includes(query);
-          const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
-          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
-                          worker.jobTitle?.toLowerCase().includes(query);
-          const bioMatch = worker.bio?.toLowerCase().includes(query);
-          return nameMatch || skillMatch || jobMatch || bioMatch;
-        });
-      }
+      // البحث عن القيمة في JOB_OPTIONS
+      const selectedJobValue = JOB_OPTIONS.find(
+        job => job.label.toLowerCase() === selectedJob.toLowerCase()
+      )?.value;
       
-      if (selectedJob && selectedJob !== 'All Jobs') {
-        const jobLower = selectedJob.toLowerCase();
-        results = results.filter(worker => {
-          const match = worker.desiredJob?.toLowerCase().includes(jobLower) ||
-                       worker.jobTitle?.toLowerCase().includes(jobLower) ||
-                       worker.position?.toLowerCase().includes(jobLower);
-          return match;
-        });
-      }
+      console.log(`  - Selected job value: "${selectedJobValue}"`);
       
-      if (selectedLocation && selectedLocation !== 'All Locations') {
-        const locLower = selectedLocation.toLowerCase();
-        results = results.filter(worker => 
-          worker.location?.toLowerCase().includes(locLower)
-        );
-      }
-
-      if (advancedFilters.minRating > 0) {
-        results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
-      }
-
-      if (advancedFilters.minExperience > 0) {
-        results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
-      }
-
-      if (advancedFilters.availability === 'available') {
-        results = results.filter(worker => worker.available === true);
-      } else if (advancedFilters.availability === 'unavailable') {
-        results = results.filter(worker => worker.available === false);
-      }
-
-      if (advancedFilters.maxHourlyRate < 100) {
-        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
-      }
-
-      if (advancedFilters.language !== 'all') {
-        results = results.filter(worker => 
-          worker.languages?.includes(advancedFilters.language)
-        );
-      }
-
-      switch (sortBy) {
-        case 'rating':
-          results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-          break;
-        case 'experience':
-          results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
-          break;
-        case 'hourlyLow':
-          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
-          break;
-        case 'hourlyHigh':
-          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
-          break;
-        case 'relevance':
-        default:
-          break;
-      }
+      results = results.filter(worker => {
+        const workerValue = worker.desiredJob?.toLowerCase() || '';
+        const workerLabel = JOB_OPTIONS.find(j => j.value === worker.desiredJob)?.label?.toLowerCase() || '';
+        const searchLower = selectedJob.toLowerCase();
+        
+        // التحقق من جميع الحالات الممكنة
+        const matchValue = workerValue === searchLower;
+        const matchValueWithJobValue = selectedJobValue && workerValue === selectedJobValue;
+        const matchLabel = workerLabel === searchLower;
+        const matchPartial = workerValue.includes(searchLower) || workerLabel.includes(searchLower);
+        
+        const isMatch = matchValue || matchValueWithJobValue || matchLabel || matchPartial;
+        
+        if (isMatch) {
+          console.log(`  ✅ Worker "${worker.fullName}" matches! (value: "${workerValue}", label: "${workerLabel}")`);
+        }
+        
+        return isMatch;
+      });
       
-      console.log('✅ Final results:', results.length);
-      setSearchResults(results);
-      setShowResults(true);
-      setLoading(false);
-    }, 500);
-  };
+      console.log(`📌 After job filter: ${results.length} results`);
+    }
+    
+    // 3. البحث حسب الموقع
+    if (selectedLocation && selectedLocation !== 'All Locations') {
+      const locLower = selectedLocation.toLowerCase();
+      results = results.filter(worker => 
+        worker.location?.toLowerCase().includes(locLower)
+      );
+      console.log(`📌 After location filter: ${results.length} results`);
+    }
 
+    // 4. الفلاتر المتقدمة
+    if (advancedFilters.minRating > 0) {
+      results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
+    }
+
+    if (advancedFilters.minExperience > 0) {
+      results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
+    }
+
+    if (advancedFilters.availability === 'available') {
+      results = results.filter(worker => worker.available === true);
+    } else if (advancedFilters.availability === 'unavailable') {
+      results = results.filter(worker => worker.available === false);
+    }
+
+    if (advancedFilters.maxHourlyRate < 100) {
+      results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
+    }
+
+    if (advancedFilters.language !== 'all') {
+      results = results.filter(worker => 
+        worker.languages?.includes(advancedFilters.language)
+      );
+    }
+
+    // 5. الترتيب
+    switch (sortBy) {
+      case 'rating':
+        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'experience':
+        results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+        break;
+      case 'hourlyLow':
+        results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+        break;
+      case 'hourlyHigh':
+        results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+        break;
+      case 'relevance':
+      default:
+        break;
+    }
+    
+    console.log('✅ Final results:', results.length);
+    setSearchResults(results);
+    setShowResults(true);
+    setLoading(false);
+  }, 500);
+};
+  // ============================================================
+  // 7. RENDER
+  // ============================================================
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -759,6 +774,7 @@ const EmployerSearch = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -773,6 +789,23 @@ const EmployerSearch = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* User profile in header */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-white m-1" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Employer'}
+                </span>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
@@ -797,11 +830,25 @@ const EmployerSearch = () => {
         </header>
 
         <div className="p-4 md:p-6">
+          {/* Welcome Banner */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 md:p-8 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
-                <p className="text-teal-100 mt-1">{t.subtitle}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {user?.profileImage ? (
+                    <img 
+                      src={user.profileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
+                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
+                </div>
               </div>
               <div className="flex items-center gap-2 text-sm text-teal-100">
                 <Users size={18} />
@@ -810,6 +857,7 @@ const EmployerSearch = () => {
             </div>
           </div>
 
+          {/* Search Section */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1 relative">
@@ -975,6 +1023,7 @@ const EmployerSearch = () => {
             )}
           </div>
 
+          {/* Results */}
           {showResults && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex justify-between items-center mb-4">
