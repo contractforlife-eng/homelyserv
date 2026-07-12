@@ -16,7 +16,6 @@ import MyHires from './pages/MyHires';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
-import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
 import Help from './pages/Help';
@@ -210,7 +209,7 @@ function App() {
       />
       {/* PAYMENT ROUTE - ADD THIS */}
       <Route 
-        path="/payment" 
+        path="/worker-payment" 
         element={
           <ProtectedRoute requiredRole="WORKER">
             <WorkerPayment />
@@ -325,7 +324,7 @@ function App() {
         } 
       />
       <Route 
-        path="/admin/payments" 
+        path="/admin-payments" 
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminPayments />
