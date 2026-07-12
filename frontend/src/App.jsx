@@ -209,13 +209,13 @@ function App() {
       />
       {/* PAYMENT ROUTE - ADD THIS */}
       <Route 
-        path="/worker-payment" 
-        element={
-          <ProtectedRoute requiredRole="WORKER">
-            <WorkerPayment />
-          </ProtectedRoute>
-        } 
-      />
+  path="/worker-payment" 
+  element={
+    <ProtectedRoute requiredRole="WORKER">
+      <WorkerPayment />
+    </ProtectedRoute>
+  } 
+/>
 
       {/* ========== EMPLOYER ROUTES ========== */}
       <Route 

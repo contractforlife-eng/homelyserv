@@ -238,14 +238,14 @@ if (registeredUser) {
 
     // SECOND: Check demo accounts
     if (
-  (email.toLowerCase() === 'roro@homelyserv.com' ||
+  (email.toLowerCase() === 'contractforlife@gmail.com' ||
     email.toLowerCase() === 'worker') &&
   password === 'test1234'
 ) {
   loginUser(null, 'WORKER', email);
 }
 else if (
-  (email.toLowerCase() === 'mezo@homelyserv.com' ||
+  (email.toLowerCase() === 'max@cargotrust.us' ||
     email.toLowerCase() === 'employer') &&
   password === 'test1234'
 ) {
