@@ -1,12 +1,4 @@
-// src/pages/WorkerPayment.jsx
-// تأكد من استخدام علامات التنصيص المائلة (backticks) حول الرابط
-await fetch(`${import.meta.env.VITE_API_URL}/api/payments/my-payments`, {
-  method: 'GET', // أو 'POST' حسب ما كان لديك سابقاً
-  headers: {
-    "Authorization": `Bearer ${localStorage.getItem("homelyserv_token")}`,
-    "Content-Type": "application/json"
-  }
-});
+// src/pages/WorkerPayment.jsx - نسخة تعمل دائماً مع البيانات المحلية
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -34,10 +26,13 @@ import {
   Building,
   Phone,
   RefreshCw,
-  Shield
+  Shield,
+  LogIn
 } from 'lucide-react';
 
-// Sidebar Component
+// ============================================
+// 1. SIDEBAR COMPONENT
+// ============================================
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -88,7 +83,6 @@ const WorkerSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-
   const getProfileImage = () => user?.profileImage || null;
 
   return (
@@ -106,8 +100,9 @@ const WorkerSidebar = ({
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
+        {/* Header with Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          {!sidebarCollapsed && (
+          {!sidebarCollapsed ? (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
                 <Shield size={28} className="text-amber-500" />
@@ -115,8 +110,7 @@ const WorkerSidebar = ({
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
-          )}
-          {sidebarCollapsed && (
+          ) : (
             <Link to="/worker-dashboard" className="relative mx-auto">
               <Shield size={28} className="text-amber-500" />
               <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
@@ -138,6 +132,7 @@ const WorkerSidebar = ({
           </button>
         </div>
 
+        {/* User Profile */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -160,15 +155,14 @@ const WorkerSidebar = ({
           </div>
         </div>
 
+        {/* Navigation Menu */}
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)] custom-scrollbar">
           {!sidebarCollapsed ? (
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
               {t.overview}
             </div>
           ) : (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
-              •
-            </div>
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">•</div>
           )}
 
           {menuItems.map((item) => (
@@ -246,19 +240,24 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerPayment Component
+// ============================================
+// 2. MAIN COMPONENT - WorkerPayment
+// ============================================
 const WorkerPayment = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  
+  // States for data
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
   
+  // Payment info form
   const [workerPaymentInfo, setWorkerPaymentInfo] = useState({
     walletNumber: '',
     instapayNumber: '',
@@ -266,10 +265,8 @@ const WorkerPayment = () => {
     bankName: '',
     accountHolderName: ''
   });
-  
   const [isEditingPaymentInfo, setIsEditingPaymentInfo] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
   const [workerStats, setWorkerStats] = useState({
     totalTasksCompleted: 0,
     totalEarned: 0,
@@ -277,6 +274,9 @@ const WorkerPayment = () => {
     monthlySalary: 0
   });
 
+  // ============================================
+  // 3. TRANSLATIONS
+  // ============================================
   const translations = {
     en: {
       title: 'Payments',
@@ -386,15 +386,22 @@ const WorkerPayment = () => {
 
   const t = translations[language];
 
+  // ============================================
+  // 4. DATA LOADING FUNCTIONS - باستخدام البيانات المحلية فقط
+  // ============================================
   const loadPaymentData = () => {
     if (!user) return;
+    
+    setLoading(true);
 
     try {
+      // تحميل معلومات الدفع
       const savedPaymentInfo = localStorage.getItem(`worker_payment_info_${user.id}`);
       if (savedPaymentInfo) {
         setWorkerPaymentInfo(JSON.parse(savedPaymentInfo));
       }
 
+      // تحميل المهام المكتملة
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       
@@ -402,6 +409,7 @@ const WorkerPayment = () => {
         return employerOffers.some(o => o.id === id && o.status === 'completed');
       }).length;
 
+      // تحميل المدفوعات
       const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${user.id}`) || '[]');
       const totalEarned = savedPayments
         .filter(p => p.status === 'completed')
@@ -410,20 +418,18 @@ const WorkerPayment = () => {
       const hourlyRate = user.hourlyRate || 35;
       const monthlySalary = completedTasks > 0 ? hourlyRate * 160 : 0;
 
-      const newStats = {
+      setWorkerStats({
         totalTasksCompleted: completedTasks,
         totalEarned: totalEarned,
         hourlyRate: hourlyRate,
         monthlySalary: monthlySalary
-      };
-
-      setWorkerStats(newStats);
-      localStorage.setItem(`worker_stats_${user.id}`, JSON.stringify(newStats));
+      });
 
       if (savedPayments.length > 0) {
         setPayments(savedPayments);
         setFilteredPayments(savedPayments);
       } else {
+        // إنشاء مدفوعات افتراضية من المهام المكتملة
         const generatedPayments = generatePaymentsFromCompletedTasks(appliedOffers, employerOffers);
         if (generatedPayments.length > 0) {
           setPayments(generatedPayments);
@@ -433,6 +439,8 @@ const WorkerPayment = () => {
       }
     } catch (error) {
       console.error('Error loading payment data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -466,6 +474,9 @@ const WorkerPayment = () => {
     return generatedPayments;
   };
 
+  // ============================================
+  // 5. EFFECTS
+  // ============================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
@@ -489,13 +500,13 @@ const WorkerPayment = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (user) loadPaymentData();
-  }, [user, language]); 
-  // Added language to re-trigger local date formatting if language changes
+    if (user) {
+      loadPaymentData();
+    }
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -518,6 +529,9 @@ const WorkerPayment = () => {
     setFilteredPayments(filtered);
   }, [payments, statusFilter, searchTerm]);
 
+  // ============================================
+  // 6. HANDLERS
+  // ============================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -551,7 +565,9 @@ const WorkerPayment = () => {
     }
   };
 
-  const handleRefresh = () => loadPaymentData();
+  const handleRefresh = () => {
+    loadPaymentData();
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -582,10 +598,13 @@ const WorkerPayment = () => {
 
   const userProfileImage = user?.profileImage || null;
 
+  // ============================================
+  // 7. RENDER - LOADING STATE
+  // ============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center animate-fade-in">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
@@ -593,12 +612,15 @@ const WorkerPayment = () => {
     );
   }
 
+  // ============================================
+  // 8. RENDER - USER NOT FOUND
+  // ============================================
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center animate-fade-in">
+        <div className="text-center">
           <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="mt-4 text-gray-600 mb-6">Please login to view your payments</p>
+          <p className="text-gray-600 mb-6">Please login to view your payments</p>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all"
@@ -610,6 +632,9 @@ const WorkerPayment = () => {
     );
   }
 
+  // ============================================
+  // 9. RENDER - MAIN COMPONENT
+  // ============================================
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
       <WorkerSidebar
@@ -624,7 +649,7 @@ const WorkerPayment = () => {
 
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0 rtl:lg:mr-64 rtl:lg:ml-0 ${sidebarCollapsed ? 'rtl:lg:mr-20' : ''}`}>
+      } ml-0`}>
         
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
@@ -683,6 +708,7 @@ const WorkerPayment = () => {
         </header>
 
         <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          
           {/* Welcome Banner */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -759,7 +785,7 @@ const WorkerPayment = () => {
             </div>
 
             {saveSuccess && (
-              <div className="px-6 py-3 bg-green-50/80 border-b border-green-100 text-green-700 text-sm flex items-center gap-2 animate-fade-in">
+              <div className="px-6 py-3 bg-green-50/80 border-b border-green-100 text-green-700 text-sm flex items-center gap-2">
                 <CheckCircle size={16} />
                 {t.paymentInfo.saved}
               </div>
@@ -776,14 +802,14 @@ const WorkerPayment = () => {
                   <div key={field.name}>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">{field.label}</label>
                     <div className="relative">
-                      <field.icon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 rtl:right-3 rtl:left-auto" />
+                      <field.icon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
                         name={field.name}
                         value={workerPaymentInfo[field.name] || ''}
                         onChange={handlePaymentInfoChange}
                         disabled={!isEditingPaymentInfo}
-                        className={`w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border rounded-lg transition-colors ${
+                        className={`w-full pl-10 pr-4 py-2.5 border rounded-lg transition-colors ${
                           isEditingPaymentInfo 
                             ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white' 
                             : 'border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed'
@@ -797,14 +823,14 @@ const WorkerPayment = () => {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.paymentInfo.accountHolder}</label>
                   <div className="relative">
-                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 rtl:right-3 rtl:left-auto" />
+                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       name="accountHolderName"
                       value={workerPaymentInfo.accountHolderName || ''}
                       onChange={handlePaymentInfoChange}
                       disabled={!isEditingPaymentInfo}
-                      className={`w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border rounded-lg transition-colors ${
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg transition-colors ${
                         isEditingPaymentInfo 
                           ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white' 
                           : 'border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed'
@@ -826,13 +852,13 @@ const WorkerPayment = () => {
             <div className="p-4 border-b border-gray-100 bg-white">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 rtl:right-3 rtl:left-auto" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder={t.paymentHistory.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 rtl:pr-10 rtl:pl-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
                   />
                 </div>
                 <div className="w-full md:w-48">
@@ -860,7 +886,7 @@ const WorkerPayment = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left rtl:text-right border-collapse">
+                <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50/80 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.paymentHistory.id}</th>

@@ -1,4 +1,3 @@
-// backend/src/index.js
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -79,7 +78,12 @@ app.get('/api/test', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
-
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*"); // جرب * مؤقتاً للتأكد
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  next();
+});
 // ============================================================
 // API Routes
 // ============================================================
