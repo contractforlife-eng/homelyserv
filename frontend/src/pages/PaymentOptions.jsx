@@ -257,7 +257,7 @@ const PaymentOptions = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentVerificationPending, setPaymentVerificationPending] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   
   // Card form fields
@@ -338,6 +338,9 @@ const PaymentOptions = () => {
       processing: 'Processing...',
       success: 'Payment Successful!',
       successMessage: 'You have successfully hired this worker. An offer has been created for them.',
+      verificationPending: 'Payment submitted for verification',
+      verificationPendingMessage: 'Your payment is awaiting verification. The worker will be hired only after the payment has been verified.',
+      viewPayments: 'View Payments',
       backToSearch: 'Back to Search',
       back: 'Back',
       languageToggle: 'العربية',
@@ -509,9 +512,8 @@ const PaymentOptions = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  // ============================================================
-  // FIX: handleConfirmPayment - Redirect to dashboard with success
-  // ============================================================
+  // A payment selection is not proof that funds were received. Keep the hire
+  // pending until the payment provider or an administrator verifies it.
   const handleConfirmPayment = () => {
     if (!selectedMethod) {
       alert('Please select a payment method');
@@ -541,87 +543,34 @@ const PaymentOptions = () => {
     setIsProcessing(true);
     
     setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentSuccess(true);
-      
-      const hireRecord = {
-        id: 'hire_' + Date.now(),
+      const verificationRequest = {
+        id: 'VERIFY-' + Date.now(),
         workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
-        workerEmail: workerData?.workerEmail,
         employerId: user?.id || user?.email,
         employerName: user?.fullName,
         amount: total,
         commission: commissionAmount,
         paymentMethod: selectedMethod,
-        date: new Date().toISOString(),
-        status: 'completed'
+        submittedAt: new Date().toISOString(),
+        status: 'pending_verification'
       };
-      
-      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      hires.push(hireRecord);
-      localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
-      
-      const newOffer = {
-        id: 'offer_' + Date.now(),
-        title: workerData?.desiredJob || 'Job Opportunity',
-        company: user?.fullName || 'Employer',
-        companyLogo: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'Employer')}&background=teal&color=fff&size=80`,
-        location: workerData?.workerLocation || 'Not specified',
-        salary: { 
-          min: Math.round(workerData?.hourlyRate * 40 * 4 * 0.85),
-          max: Math.round(workerData?.hourlyRate * 40 * 4)
-        },
-        type: 'Full Time',
-        skills: workerData?.workerSkills || [],
-        benefits: ['Health Insurance', 'Paid Vacation', 'Transportation'],
-        description: `Hired by ${user?.fullName || 'Employer'} for ${workerData?.desiredJob || 'work'}. Payment completed on ${new Date().toLocaleDateString()}.`,
-        requirements: ['Minimum experience required', 'Valid identification'],
-        responsibilities: ['Perform assigned duties', 'Report to employer'],
-        postedBy: user?.fullName || 'Employer',
-        postedAt: new Date().toISOString(),
-        applicants: 1,
-        matchScore: 95,
-        status: 'new',
-        isUrgent: true,
-        isFeatured: true,
-        contractType: 'Permanent',
-        workSchedule: 'As agreed with employer',
-        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        companyInfo: {
-          industry: 'Home Services',
-          size: 'Individual Employer',
-          description: `Employer: ${user?.fullName || 'Employer'}`
-        },
-        isSaved: false,
-        isApplied: false,
-        hireId: hireRecord.id,
-        employerId: user?.id || user?.email
-      };
-      
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      employerOffers.push(newOffer);
-      localStorage.setItem('employer_offers', JSON.stringify(employerOffers));
-      
-      const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
-      centralOffers.push(newOffer);
-      localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
-      
-      // Clear the selected worker data
-      localStorage.removeItem('homelyserv_selected_worker');
-      localStorage.removeItem('homelyserv_pending_payment');
-      localStorage.removeItem('homelyserv_quick_hire_data');
-      
-      // Redirect to dashboard with success message
-      setTimeout(() => {
-        navigate('/employer-dashboard', { 
-          state: { 
-            paymentSuccess: true, 
-            worker: workerData?.workerName || 'worker' 
-          } 
-        });
-      }, 1500);
+
+      const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
+      verificationRequests.push(verificationRequest);
+      localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(verificationRequests));
+
+      const pendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
+      localStorage.setItem('homelyserv_pending_payment', JSON.stringify({
+        ...pendingPayment,
+        verificationId: verificationRequest.id,
+        status: 'pending_verification',
+        paymentMethod: selectedMethod,
+        submittedAt: verificationRequest.submittedAt
+      }));
+
+      setIsProcessing(false);
+      setPaymentVerificationPending(true);
     }, 2500);
   };
 
@@ -936,25 +885,25 @@ const PaymentOptions = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {paymentSuccess ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-green-200">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle size={40} className="text-green-600" />
+          {paymentVerificationPending ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-amber-200">
+              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={40} className="text-amber-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.success}</h2>
-              <p className="text-gray-600 mb-6">{t.successMessage}</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.verificationPending || translations.en.verificationPending}</h2>
+              <p className="text-gray-600 mb-6">{t.verificationPendingMessage || translations.en.verificationPendingMessage}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
-                  onClick={() => navigate('/employer-search')}
+                  onClick={() => navigate('/employer-payments')}
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
                 >
-                  {t.backToSearch}
+                  {t.viewPayments || translations.en.viewPayments}
                 </button>
                 <button
-                  onClick={() => navigate('/my-hires')}
+                  onClick={() => navigate('/employer-search')}
                   className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                 >
-                  View My Hires
+                  {t.backToSearch}
                 </button>
               </div>
             </div>
