@@ -243,7 +243,9 @@ const AdminPayments = () => {
       actions: {
         view: 'View Details',
         download: 'Download Receipt',
-        refresh: 'Refresh'
+        refresh: 'Refresh',
+        approve: 'Approve',
+        reject: 'Reject'
       },
       status: {
         completed: 'Completed',

@@ -572,7 +572,7 @@ const EmployerPayments = () => {
         .reduce((sum, p) => sum + (p.amount || 0), 0);
       
       const pendingCount = allPayments
-        .filter(p => p.status === 'pending')
+        .filter(p => p.status === 'pending' || p.status === 'pending_verification')
         .length;
       
       const completedCount = allPayments
@@ -720,6 +720,7 @@ const EmployerPayments = () => {
       workerEmail: paymentData.workerEmail || '',
       jobTitle: paymentData.jobTitle || 'Service Provider',
       description: paymentData.description || `Payment for ${paymentData.workerName || 'worker'}`,
+      paymentType: paymentData.paymentType || 'recruitment',
       employerId: user?.id || user?.email,
       employerName: user?.fullName || 'Employer'
     };
@@ -784,6 +785,7 @@ const EmployerPayments = () => {
     const colors = {
       completed: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
+      pending_verification: 'bg-amber-100 text-amber-800',
       upcoming: 'bg-blue-100 text-blue-800',
       failed: 'bg-red-100 text-red-800',
       processing: 'bg-purple-100 text-purple-800'
@@ -795,6 +797,7 @@ const EmployerPayments = () => {
     switch (status) {
       case 'completed': return <CheckCircle size={14} />;
       case 'pending': return <Clock size={14} />;
+      case 'pending_verification': return <AlertTriangle size={14} />;
       case 'upcoming': return <Calendar size={14} />;
       case 'failed': return <X size={14} />;
       case 'processing': return <RefreshCw size={14} />;
@@ -889,6 +892,12 @@ const EmployerPayments = () => {
               <p className="text-teal-100 mt-1">{t.subtitle}</p>
             </div>
           </div>
+
+          {location.state?.paymentVerificationPending && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+              Payment submitted successfully. It is pending verification and will not be treated as a completed hire until verified.
+            </div>
+          )}
 
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">

@@ -1,5 +1,7 @@
 // src/utils/commissionManager.js
-export const COMMISSION_RATE = 0.10;
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
+
+export const COMMISSION_RATE = RECRUITMENT_COMMISSION_RATE;
 
 // ============================================================
 // ✅ التحقق الفعلي من الدفع

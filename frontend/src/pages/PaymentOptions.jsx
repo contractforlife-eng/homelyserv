@@ -34,6 +34,11 @@ import {
   Calendar,
   User as UserIcon
 } from 'lucide-react';
+import {
+  CURRENCY,
+  QUICK_HIRE_PREMIUM_FEE,
+  RECRUITMENT_COMMISSION_RATE
+} from '../config/monetization';
 
 // Employer Sidebar Component
 const EmployerSidebar = ({ 
@@ -254,6 +259,7 @@ const PaymentOptions = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workerData, setWorkerData] = useState(null);
+  const [pendingPayment, setPendingPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -453,6 +459,15 @@ const PaymentOptions = () => {
     } else {
       console.log('❌ No worker data found');
     }
+    const savedPendingPayment = localStorage.getItem('homelyserv_pending_payment');
+    if (savedPendingPayment) {
+      try {
+        setPendingPayment(JSON.parse(savedPendingPayment));
+      } catch (error) {
+        console.error('Error parsing pending payment data:', error);
+      }
+    }
+
     setLoading(false);
   }, [navigate]);
 
@@ -542,17 +557,21 @@ const PaymentOptions = () => {
     
     setIsProcessing(true);
     
-    setTimeout(() => {
+    try {
       const verificationRequest = {
         id: 'VERIFY-' + Date.now(),
         workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
+        workerEmail: workerData?.workerEmail,
+        jobTitle: workerData?.desiredJob || 'Service Provider',
         employerId: user?.id || user?.email,
         employerName: user?.fullName,
         amount: total,
         commission: commissionAmount,
         paymentMethod: selectedMethod,
+        paymentType: pendingPayment?.paymentType || 'recruitment',
         submittedAt: new Date().toISOString(),
+        date: new Date().toISOString(),
         status: 'pending_verification'
       };
 
@@ -560,26 +579,49 @@ const PaymentOptions = () => {
       verificationRequests.push(verificationRequest);
       localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(verificationRequests));
 
-      const pendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
+      const storedPendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
       localStorage.setItem('homelyserv_pending_payment', JSON.stringify({
-        ...pendingPayment,
+        ...storedPendingPayment,
         verificationId: verificationRequest.id,
         status: 'pending_verification',
         paymentMethod: selectedMethod,
         submittedAt: verificationRequest.submittedAt
       }));
 
+      const quickHireData = localStorage.getItem('homelyserv_quick_hire_data');
+      if (quickHireData) {
+        try {
+          const quickHirePayment = JSON.parse(quickHireData);
+          localStorage.setItem('homelyserv_quick_hire_data', JSON.stringify({
+            ...quickHirePayment,
+            verificationId: verificationRequest.id,
+            status: 'pending_verification',
+            paymentMethod: selectedMethod,
+            submittedAt: verificationRequest.submittedAt
+          }));
+        } catch (error) {
+          console.error('Error updating Quick Hire payment status:', error);
+        }
+      }
+
+      navigate('/employer-payments', {
+        replace: true,
+        state: { paymentVerificationPending: true, verificationRequest }
+      });
+    } catch (error) {
+      console.error('Unable to submit payment for verification:', error);
       setIsProcessing(false);
-      setPaymentVerificationPending(true);
-    }, 2500);
+      alert('We could not submit this payment for verification. Please try again.');
+    }
   };
 
+  const isQuickHire = pendingPayment?.paymentType === 'quick_hire_premium';
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
   const hoursPerWeek = 40;
   const weeksPerMonth = 4;
-  const subtotal = hourlyRate * hoursPerWeek * weeksPerMonth;
-  const commissionRate = 0.15;
-  const commissionAmount = subtotal * commissionRate;
+  const subtotal = isQuickHire ? QUICK_HIRE_PREMIUM_FEE : hourlyRate * hoursPerWeek * weeksPerMonth;
+  const commissionRate = RECRUITMENT_COMMISSION_RATE;
+  const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
   const total = subtotal + commissionAmount;
 
   const getMethodColor = (color) => {
@@ -939,8 +981,12 @@ const PaymentOptions = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-500">{t.totalAmount}</p>
-                    <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
-                    <p className="text-xs text-gray-400">{t.commission}</p>
+                    <p className="text-2xl font-bold text-teal-600">{CURRENCY} {total.toFixed(2)}</p>
+                    <p className="text-xs text-gray-400">
+                      {isQuickHire
+                        ? 'Quick Hire premium service fee'
+                        : `${Math.round(commissionRate * 100)}% recruitment commission included`}
+                    </p>
                   </div>
                 </div>
               </div>

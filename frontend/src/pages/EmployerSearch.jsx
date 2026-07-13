@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
+import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import {
   Home,
   User,
@@ -600,12 +601,13 @@ const loadWorkersFromStorage = () => {
       workerPhone: worker.phone || '',
       workerId: worker.id || worker.email,
       jobTitle: worker.desiredJob || worker.jobTitle || 'Service Provider',
-      amount: (worker.hourlyRate || 30) * 160,
+      amount: QUICK_HIRE_PREMIUM_FEE,
       currency: 'EGP',
       status: 'pending',
       date: new Date().toISOString(),
-      description: `Monthly payment for ${worker.fullName} - ${worker.desiredJob || 'Service Provider'}`,
-      paymentMethod: 'Credit Card',
+      description: `Quick Hire premium service for ${worker.fullName}`,
+      paymentType: 'quick_hire_premium',
+      paymentMethod: null,
       reference: `REF-${Date.now()}`,
       hasReceipt: false,
       workerImage: worker.profileImage || '',

@@ -6,7 +6,7 @@ export const sendOffer = async (req, res) => {
     const { workerId, agreedSalary, startDate } = req.body;
 
     const salary = parseFloat(agreedSalary);
-    const commission = salary * 0.065;
+    const commission = salary * 0.10;
     const vat = commission * 0.14;
     const total = commission + vat;
 
