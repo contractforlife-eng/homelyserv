@@ -1,4 +1,4 @@
-// src/pages/PaymentCommission.jsx - النسخة الكاملة
+// src/pages/PaymentCommission.jsx - الحل الجذري
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +10,8 @@ import {
   Wallet,
   Building,
   Smartphone,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 
@@ -38,11 +39,16 @@ const PaymentCommission = () => {
   }, [navigate]);
 
   // ============================================================
-  // ✅ معالجة الدفع الفعلية مع التحقق
+  // ✅ معالجة الدفع - لا تظهر رسالة نجاح إلا بعد التسجيل الفعلي
   // ============================================================
   const handlePayment = async () => {
-    if (!selectedMethod || !commissionData) {
+    if (!selectedMethod) {
       setPaymentError('Please select a payment method');
+      return;
+    }
+
+    if (!commissionData) {
+      setPaymentError('Payment data not found');
       return;
     }
 
@@ -50,57 +56,87 @@ const PaymentCommission = () => {
     setPaymentError(null);
 
     try {
+      console.log('🔄 Processing payment for offer:', commissionData.offerId);
+      
+      // ✅ 1. التحقق من عدم وجود دفع مسبق
+      const existingPayment = verifyPayment(commissionData.offerId, commissionData.workerId);
+      if (existingPayment.verified) {
+        setPaymentError('⚠️ Payment already processed for this offer');
+        setProcessing(false);
+        return;
+      }
+
+      // ✅ 2. محاكاة معالجة الدفع
       const paymentResult = await processPaymentWithGateway(commissionData, selectedMethod);
       
-      if (paymentResult.success) {
-        const result = markCommissionPaid(
-          commissionData.offerId,
-          commissionData.workerId,
-          commissionData.amount,
-          paymentResult.transactionId
-        );
-
-        if (result.success) {
-          setPaymentSuccess(true);
-          
-          localStorage.removeItem('homelyserv_commission_payment');
-          savePaymentReceipt(commissionData, selectedMethod, paymentResult.transactionId);
-          
-          setTimeout(() => {
-            navigate('/worker/offers', {
-              state: {
-                commissionSuccess: true,
-                offerId: commissionData.offerId,
-                transactionId: paymentResult.transactionId,
-                message: '✅ Commission paid successfully! Contact information is now unlocked.'
-              }
-            });
-          }, 1500);
-        } else {
-          setPaymentError(result.message || 'Payment recording failed.');
-        }
-      } else {
+      if (!paymentResult.success) {
         setPaymentError(paymentResult.error || 'Payment failed. Please try again.');
+        setProcessing(false);
+        return;
       }
+
+      // ✅ 3. ✅✅✅ التسجيل الفعلي في localStorage (الخطوة الأهم)
+      const result = markCommissionPaid(
+        commissionData.offerId,
+        commissionData.workerId,
+        commissionData.amount,
+        paymentResult.transactionId
+      );
+
+      if (!result.success) {
+        setPaymentError(result.message || 'Failed to record payment');
+        setProcessing(false);
+        return;
+      }
+
+      // ✅ 4. حفظ إيصال الدفع
+      savePaymentReceipt(commissionData, selectedMethod, paymentResult.transactionId);
+      
+      // ✅ 5. تنظيف البيانات المؤقتة
+      localStorage.removeItem('homelyserv_commission_payment');
+      
+      // ✅ 6. ✅✅✅ التحقق من أن الدفع سجل فعلاً قبل التوجيه
+      const verification = verifyPayment(commissionData.offerId, commissionData.workerId);
+      if (verification.verified) {
+        console.log('✅ Payment verified in localStorage:', verification.payment);
+        
+        // ✅ 7. التوجيه مباشرة إلى صفحة العروض مع رسالة نجاح
+        setPaymentSuccess(true);
+        setProcessing(false);
+        
+        setTimeout(() => {
+          navigate('/worker/offers', {
+            state: {
+              commissionSuccess: true,
+              offerId: commissionData.offerId,
+              transactionId: paymentResult.transactionId,
+              message: '✅ Commission paid successfully! Contact information is now unlocked.'
+            }
+          });
+        }, 1500);
+      } else {
+        setPaymentError('Payment verification failed. Please contact support.');
+        setProcessing(false);
+      }
+
     } catch (error) {
       console.error('Payment error:', error);
       setPaymentError('An error occurred during payment. Please try again.');
-    } finally {
       setProcessing(false);
     }
   };
 
   // ============================================================
-  // ✅ محاكاة بوابة الدفع مع تحقق إضافي
+  // ✅ محاكاة بوابة الدفع
   // ============================================================
   const processPaymentWithGateway = (data, method) => {
     return new Promise((resolve) => {
       setTimeout(() => {
+        // التحقق من صحة البيانات
         if (!data.amount || data.amount <= 0) {
           resolve({ 
             success: false, 
-            error: 'Invalid payment amount',
-            code: 'INVALID_AMOUNT'
+            error: 'Invalid payment amount'
           });
           return;
         }
@@ -108,24 +144,12 @@ const PaymentCommission = () => {
         if (!data.offerId || !data.workerId) {
           resolve({ 
             success: false, 
-            error: 'Missing payment information',
-            code: 'MISSING_INFO'
+            error: 'Missing payment information'
           });
           return;
         }
 
-        // التحقق من عدم وجود دفع مسبق
-        const verification = verifyPayment(data.offerId, data.workerId);
-        if (verification.verified) {
-          resolve({ 
-            success: false, 
-            error: 'Payment already processed for this offer',
-            code: 'DUPLICATE'
-          });
-          return;
-        }
-
-        // محاكاة معالجة الدفع (90% نجاح)
+        // ✅ محاكاة نجاح الدفع (90%)
         const isSuccessful = Math.random() > 0.1;
         
         if (isSuccessful) {
@@ -135,15 +159,12 @@ const PaymentCommission = () => {
             success: true, 
             transactionId: transactionId,
             amount: data.amount,
-            method: method,
-            timestamp: new Date().toISOString(),
-            code: 'SUCCESS'
+            method: method
           });
         } else {
           resolve({ 
             success: false, 
-            error: 'Payment declined by payment provider. Please try again.',
-            code: 'DECLINED'
+            error: 'Payment declined. Please try again.'
           });
         }
       }, 2000);
@@ -151,7 +172,7 @@ const PaymentCommission = () => {
   };
 
   // ============================================================
-  // ✅ حفظ إيصال الدفع مع رقم المعاملة
+  // ✅ حفظ إيصال الدفع
   // ============================================================
   const savePaymentReceipt = (data, method, transactionId) => {
     try {
@@ -166,8 +187,7 @@ const PaymentCommission = () => {
         status: 'completed',
         paidAt: new Date().toISOString(),
         company: data.company,
-        offerTitle: data.offerTitle,
-        verified: true
+        offerTitle: data.offerTitle
       };
 
       const receipts = JSON.parse(localStorage.getItem('commission_receipts') || '[]');
@@ -195,25 +215,17 @@ const PaymentCommission = () => {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={40} className="text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful! ✅</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">✅ Payment Successful!</h2>
           <p className="text-gray-600 mb-4">
-            You have successfully paid the commission of <strong>EGP {commissionData.amount?.toLocaleString()}</strong>.
-            Contact information is now unlocked.
+            Commission of <strong>EGP {commissionData.amount?.toLocaleString()}</strong> paid successfully.
           </p>
           <div className="bg-green-50 rounded-lg p-4 mb-6 text-sm text-green-700">
-            You can now contact {commissionData.company} directly.
+            Contact information is now unlocked for {commissionData.company}
           </div>
-          <button
-            onClick={() => navigate('/worker/offers', { 
-              state: { 
-                commissionSuccess: true, 
-                offerId: commissionData.offerId 
-              } 
-            })}
-            className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
-          >
-            Go to Offers
-          </button>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <Loader2 size={16} className="animate-spin" />
+            Redirecting...
+          </div>
         </div>
       </div>
     );
@@ -267,6 +279,7 @@ const PaymentCommission = () => {
               <div
                 key={method.id}
                 onClick={() => {
+                  if (processing) return;
                   setSelectedMethod(method.id);
                   setPaymentError(null);
                 }}
@@ -274,7 +287,7 @@ const PaymentCommission = () => {
                   selectedMethod === method.id
                     ? 'border-yellow-500 bg-yellow-50'
                     : 'border-gray-200 hover:border-yellow-200'
-                }`}
+                } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
@@ -307,7 +320,7 @@ const PaymentCommission = () => {
           >
             {processing ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <Loader2 size={20} className="animate-spin" />
                 Processing Payment...
               </div>
             ) : (
@@ -318,12 +331,6 @@ const PaymentCommission = () => {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
             <Shield size={16} />
             Secured by HomelyServ
-          </div>
-
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-400 text-center">
-            By clicking "Pay", you agree to the platform commission terms.
-            <br />
-            This is a secure payment processed by HomelyServ.
           </div>
         </div>
       </div>

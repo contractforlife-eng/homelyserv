@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - النسخة الكاملة
+// src/pages/WorkerOffers.jsx - النسخة النهائية المعدلة
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { checkCommissionPaid, getCommissionAmount, COMMISSION_RATE, verifyPayment } from '../utils/commissionManager';
@@ -41,7 +41,8 @@ import {
   Shield,
   Sparkles,
   Lock,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 
 // Sidebar Component - Updated with custom logo and profile image
@@ -274,6 +275,7 @@ const WorkerOffers = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [payingOfferId, setPayingOfferId] = useState(null);
 
   const translations = {
     en: {
@@ -347,7 +349,8 @@ const WorkerOffers = () => {
         view: 'View Details',
         close: 'Close',
         loadMore: 'Load More Offers',
-        clearFakeOffers: 'Clear Fake Offers'
+        clearFakeOffers: 'Clear Fake Offers',
+        paying: 'Processing...'
       },
       empty: {
         title: 'No offers available',
@@ -434,7 +437,8 @@ const WorkerOffers = () => {
         view: 'عرض التفاصيل',
         close: 'إغلاق',
         loadMore: 'تحميل المزيد من العروض',
-        clearFakeOffers: 'مسح العروض الوهمية'
+        clearFakeOffers: 'مسح العروض الوهمية',
+        paying: 'جاري المعالجة...'
       },
       empty: {
         title: 'لا توجد عروض',
@@ -480,7 +484,6 @@ const WorkerOffers = () => {
     try {
       let allOffers = [];
       
-      // Get employer offers from localStorage
       const employerOffers = localStorage.getItem('employer_offers');
       if (employerOffers) {
         try {
@@ -494,7 +497,6 @@ const WorkerOffers = () => {
         }
       }
       
-      // If no offers found, create a sample real offer
       if (allOffers.length === 0) {
         const sampleOffer = {
           id: 'offer_' + Date.now(),
@@ -543,7 +545,6 @@ const WorkerOffers = () => {
         localStorage.setItem('employer_offers', JSON.stringify(allOffers));
       }
       
-      // Mark offers as saved or applied based on user data
       const saved = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
       const applied = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       
@@ -565,7 +566,6 @@ const WorkerOffers = () => {
     }
   };
 
-  // Clear fake offers
   const clearFakeOffers = () => {
     localStorage.removeItem('worker_offers');
     localStorage.removeItem('homelyserv_offers');
@@ -608,7 +608,6 @@ const WorkerOffers = () => {
         : o
     ));
     
-    // Save notification for employer
     const notification = {
       id: 'notif_' + Date.now(),
       type: 'job_application',
@@ -633,6 +632,10 @@ const WorkerOffers = () => {
   // handlePayCommission - معالجة دفع العمولة
   // ============================================================
   const handlePayCommission = (offer) => {
+    if (payingOfferId) return; // منع الضغط المتكرر
+    
+    setPayingOfferId(offer.id);
+    
     const commissionAmount = getCommissionAmount(offer.amount || 0);
     
     const commissionData = {
@@ -646,7 +649,11 @@ const WorkerOffers = () => {
     };
     
     localStorage.setItem('homelyserv_commission_payment', JSON.stringify(commissionData));
-    navigate('/payment-commission');
+    
+    setTimeout(() => {
+      setPayingOfferId(null);
+      navigate('/payment-commission');
+    }, 500);
   };
 
   // Handle Contact
@@ -1284,6 +1291,7 @@ const WorkerOffers = () => {
                           const verification = verifyPayment(offer.id, user?.id || user?.email);
                           const paymentVerified = verification.verified;
                           const commissionAmount = getCommissionAmount(offer.amount || 0);
+                          const isPaying = payingOfferId === offer.id;
                           
                           if (paymentVerified) {
                             return (
@@ -1334,10 +1342,24 @@ const WorkerOffers = () => {
                                     </p>
                                     <button
                                       onClick={() => handlePayCommission(offer)}
-                                      className="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition text-sm flex items-center gap-2"
+                                      disabled={isPaying}
+                                      className={`mt-3 px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 ${
+                                        isPaying
+                                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                                      }`}
                                     >
-                                      <Lock size={14} />
-                                      Pay {commissionAmount} EGP to Unlock
+                                      {isPaying ? (
+                                        <>
+                                          <Loader2 size={14} className="animate-spin" />
+                                          {t.actions.paying}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Lock size={14} />
+                                          Pay {commissionAmount} EGP to Unlock
+                                        </>
+                                      )}
                                     </button>
                                   </div>
                                 </div>

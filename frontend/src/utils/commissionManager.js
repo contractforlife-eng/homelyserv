@@ -1,121 +1,83 @@
 // src/utils/commissionManager.js
-export const COMMISSION_RATE = 0.10; // 10%
+export const COMMISSION_RATE = 0.10;
 
 // ============================================================
 // ✅ التحقق الفعلي من الدفع
 // ============================================================
 export const verifyPayment = (offerId, workerId) => {
   try {
-    // 1. التحقق من قائمة المدفوعات المسجلة
+    console.log(`🔍 Verifying payment for offer: ${offerId}, worker: ${workerId}`);
+    
     const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+    console.log('📋 Paid offers in localStorage:', paidOffers);
+    
     const payment = paidOffers.find(p => p.offerId === offerId && p.workerId === workerId);
     
     if (!payment) {
-      return { 
-        verified: false, 
-        message: 'No payment found for this offer',
-        code: 'NOT_FOUND'
-      };
+      console.log('❌ No payment found');
+      return { verified: false, message: 'No payment found' };
     }
     
-    if (payment.status !== 'paid') {
-      return { 
-        verified: false, 
-        message: 'Payment not completed',
-        code: 'NOT_COMPLETED'
-      };
-    }
-    
-    // 2. التحقق من صحة تاريخ الدفع (الصلاحية 30 يوم)
-    const paymentDate = new Date(payment.paidAt);
-    const now = new Date();
-    const daysDiff = (now - paymentDate) / (1000 * 60 * 60 * 24);
-    
-    if (daysDiff > 30) {
-      return { 
-        verified: false, 
-        message: 'Payment has expired (30 days limit)',
-        code: 'EXPIRED'
-      };
-    }
-    
+    console.log('✅ Payment found:', payment);
     return { 
       verified: true, 
       payment: payment,
-      message: 'Payment verified successfully',
-      code: 'VERIFIED'
+      message: 'Payment verified'
     };
     
   } catch (error) {
     console.error('Error verifying payment:', error);
-    return { 
-      verified: false, 
-      message: 'Verification error',
-      code: 'ERROR'
-    };
+    return { verified: false, message: 'Verification error' };
   }
 };
 
 // ============================================================
-// ✅ تسجيل الدفع الفعلي مع التحقق من عدم التكرار
+// ✅ تسجيل الدفع الفعلي
 // ============================================================
 export const markCommissionPaid = (offerId, workerId, amount, transactionId) => {
   try {
-    // التحقق من عدم وجود دفع مسبق
-    const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
-    const exists = paidOffers.some(p => p.offerId === offerId && p.workerId === workerId);
+    console.log(`💳 Recording payment: ${offerId}, ${workerId}`);
     
+    const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+    
+    // التحقق من عدم التكرار
+    const exists = paidOffers.some(p => p.offerId === offerId && p.workerId === workerId);
     if (exists) {
-      console.warn('⚠️ Commission already paid for this offer');
-      return { 
-        success: false, 
-        message: 'Payment already exists for this offer',
-        code: 'DUPLICATE'
-      };
+      console.warn('⚠️ Payment already exists');
+      return { success: false, message: 'Payment already exists' };
     }
     
-    // إنشاء سجل دفع جديد
+    // تسجيل الدفع
     const paymentRecord = {
       offerId,
       workerId,
       amount,
-      transactionId: transactionId || 'TXN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      transactionId: transactionId || 'TXN-' + Date.now(),
       paidAt: new Date().toISOString(),
-      status: 'paid',
-      verified: true
+      status: 'paid'
     };
     
     paidOffers.push(paymentRecord);
     localStorage.setItem('commission_paid_offers', JSON.stringify(paidOffers));
     
-    console.log('✅ Commission marked as paid:', paymentRecord);
+    console.log('✅ Payment recorded:', paymentRecord);
+    console.log('📋 All paid offers:', paidOffers);
     
-    // حفظ إيصال الدفع
+    // حفظ إيصال
     saveReceipt(paymentRecord);
     
-    return { 
-      success: true, 
-      payment: paymentRecord,
-      message: 'Payment recorded successfully',
-      code: 'SUCCESS'
-    };
+    return { success: true, payment: paymentRecord };
     
   } catch (error) {
-    console.error('Error marking commission paid:', error);
-    return { 
-      success: false, 
-      message: 'Error recording payment',
-      code: 'ERROR'
-    };
+    console.error('Error:', error);
+    return { success: false, message: 'Error recording payment' };
   }
 };
 
-// ============================================================
-// ✅ حفظ إيصال الدفع
-// ============================================================
 const saveReceipt = (payment) => {
   try {
-    const receipt = {
+    const receipts = JSON.parse(localStorage.getItem('commission_receipts') || '[]');
+    receipts.push({
       id: 'REC-' + Date.now(),
       offerId: payment.offerId,
       workerId: payment.workerId,
@@ -123,21 +85,14 @@ const saveReceipt = (payment) => {
       transactionId: payment.transactionId,
       paidAt: payment.paidAt,
       status: 'completed'
-    };
-    
-    const receipts = JSON.parse(localStorage.getItem('commission_receipts') || '[]');
-    receipts.push(receipt);
+    });
     localStorage.setItem('commission_receipts', JSON.stringify(receipts));
-    
-    console.log('✅ Receipt saved:', receipt);
+    console.log('✅ Receipt saved');
   } catch (error) {
     console.error('Error saving receipt:', error);
   }
 };
 
-// ============================================================
-// ✅ التحقق من حالة الدفع (للعرض)
-// ============================================================
 export const checkCommissionPaid = (offerId, workerId) => {
   const result = verifyPayment(offerId, workerId);
   return result.verified;
@@ -145,4 +100,53 @@ export const checkCommissionPaid = (offerId, workerId) => {
 
 export const getCommissionAmount = (totalAmount) => {
   return Math.round(totalAmount * COMMISSION_RATE);
+};
+
+export const COMMISSION_RATE = 0.10;;
+
+export const getWorkerEarnings = (totalAmount) => {
+  return totalAmount - getCommissionAmount(totalAmount);
+};export const getCommissionHistory = () => {
+  try {
+    return JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+  } catch (error) {
+    console.error('Error fetching commission history:', error);
+    return [];
+  }
+};export const clearCommissionHistory = () => {
+  try {
+    localStorage.removeItem('commission_paid_offers');
+    localStorage.removeItem('commission_receipts');
+    console.log('🧹 Commission history cleared');
+    return { success: true };
+  } catch (error) {
+    console.error('Error clearing history:', error);
+    return { success: false, message: 'Error clearing history' };
+  }
+};export const getReceipts = () => {
+  try {
+    return JSON.parse(localStorage.getItem('commission_receipts') || '[]');
+  } catch (error) {
+    console.error('Error fetching receipts:', error);
+    return [];
+  }
+};const verifyPayment = (offerId, workerId) => {
+  const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+  const payment = paidOffers.find(p => p.offerId === offerId && p.workerId === workerId);
+  return {
+    verified: !!payment,
+    payment
+  };
+};export const getCommissionStats = () => {
+  const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+  const totalCommission = paidOffers.reduce((sum, p) => sum + (p.amount * COMMISSION_RATE), 0);
+  return {
+    totalOffers: paidOffers.length,
+    totalCommission: Math.round(totalCommission)
+  };
+};export const getWorkerTotalEarnings = (workerId) => {
+  const paidOffers = JSON.parse(localStorage.getItem('commission_paid_offers') || '[]');
+  const workerOffers = paidOffers.filter(p => p.workerId === workerId);
+  const totalEarnings = workerOffers.reduce((sum, p) => sum + (p.amount - (p.amount * COMMISSION_RATE)), 0);
+  return Math.round(totalEarnings);
 };
