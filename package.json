@@ -13,6 +13,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@applitools/testgenai-cypress": "^0.8.23"
+    "@applitools/testgenai-cypress": "^0.8.23",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.2"
   }
 }

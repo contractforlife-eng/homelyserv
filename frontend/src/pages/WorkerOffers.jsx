@@ -1,7 +1,7 @@
-// src/pages/WorkerOffers.jsx - النسخة النهائية المعدلة
+// src/pages/WorkerOffers.jsx - Updated with Accept/Reject
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { checkCommissionPaid, getCommissionAmount, COMMISSION_RATE, verifyPayment } from '../utils/commissionManager';
+import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
 import {
   Home,
   User,
@@ -42,10 +42,14 @@ import {
   Sparkles,
   Lock,
   MessageSquare,
-  Loader2
+  Loader2,
+  UserCheck,
+  UserX,
+  Calendar,
+  Building2
 } from 'lucide-react';
 
-// Sidebar Component - Updated with custom logo and profile image
+// Sidebar Component (same as before, keep as is)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -95,16 +99,9 @@ const WorkerSidebar = ({
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
   ];
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  const isActive = (path) => location.pathname === path;
 
-  const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
-    }
-    return null;
-  };
+  const getProfileImage = () => user?.profileImage || null;
 
   return (
     <>
@@ -257,9 +254,12 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerOffers Component
+// ============================================================
+// MAIN WORKER OFFERS COMPONENT
+// ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -269,436 +269,143 @@ const WorkerOffers = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [expandedOffer, setExpandedOffer] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
-  const [savedOffers, setSavedOffers] = useState([]);
-  const [appliedOffers, setAppliedOffers] = useState([]);
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [payingOfferId, setPayingOfferId] = useState(null);
+  const [processingOffer, setProcessingOffer] = useState(null);
 
   const translations = {
     en: {
       title: 'Job Offers',
-      subtitle: 'Browse available job opportunities',
+      subtitle: 'Review and respond to job offers from employers',
       stats: {
-        available: 'Available',
-        applied: 'Applied',
-        saved: 'Saved',
-        interviews: 'Interviews'
+        pending: 'Pending',
+        accepted: 'Accepted',
+        rejected: 'Rejected',
+        total: 'Total'
       },
       filters: {
         all: 'All Offers',
-        new: 'New',
-        applied: 'Applied',
-        saved: 'Saved',
-        interview: 'Interview',
-        offered: 'Offered',
-        rejected: 'Rejected',
-        expired: 'Expired'
+        pending: 'Pending',
+        accepted: 'Accepted',
+        rejected: 'Rejected'
       },
       sort: {
         newest: 'Newest First',
         oldest: 'Oldest First',
         salary_high: 'Highest Salary',
-        salary_low: 'Lowest Salary',
-        popular: 'Most Popular'
+        salary_low: 'Lowest Salary'
       },
       card: {
         viewDetails: 'View Details',
-        applyNow: 'Apply Now',
-        saveOffer: 'Save',
-        share: 'Share',
+        accept: 'Accept Offer',
+        reject: 'Reject',
         salaryPerMonth: 'EGP/month',
         location: 'Location',
         type: 'Type',
         skills: 'Skills',
         benefits: 'Benefits',
         posted: 'Posted',
-        applicants: 'applicants',
-        matchScore: 'Match Score',
-        urgent: 'Urgent',
-        featured: 'Featured',
-        new: 'New',
-        applied: 'Applied',
-        saved: 'Saved'
-      },
-      details: {
-        title: 'Offer Details',
-        about: 'About the Position',
-        description: 'Job Description',
-        requirements: 'Requirements',
-        responsibilities: 'Responsibilities',
-        benefits: 'Benefits & Perks',
-        salaryRange: 'Salary Range',
-        contractType: 'Contract Type',
-        workSchedule: 'Work Schedule',
-        startDate: 'Expected Start Date',
-        applicationDeadline: 'Application Deadline',
-        company: 'Company',
-        industry: 'Industry',
-        companySize: 'Company Size',
-        companyDescription: 'About the Employer'
+        pending: 'Pending Review',
+        accepted: 'Accepted',
+        rejected: 'Rejected',
+        employer: 'Employer'
       },
       actions: {
-        apply: 'Apply Now',
-        applied: 'Applied',
-        saved: 'Saved',
-        unsave: 'Unsave',
-        share: 'Share',
+        accept: 'Accept Offer',
+        rejecting: 'Rejecting...',
+        accepting: 'Accepting...',
         view: 'View Details',
-        close: 'Close',
-        loadMore: 'Load More Offers',
-        clearFakeOffers: 'Clear Fake Offers',
-        paying: 'Processing...'
+        close: 'Close'
       },
       empty: {
-        title: 'No offers available',
-        description: 'No job offers have been posted by employers yet',
-        reset: 'Refresh'
+        title: 'No offers received',
+        description: 'You haven\'t received any job offers yet',
+        wait: 'Employers will send you offers when they find your profile'
       },
       loading: 'Loading offers...',
       languageToggle: 'العربية',
-      switchToList: 'List View',
-      switchToGrid: 'Grid View',
-      welcome: 'Welcome back',
       notifications: 'Notifications',
-      clearConfirm: 'Are you sure you want to clear all fake offers?',
-      clearSuccess: 'Fake offers cleared successfully!'
+      acceptSuccess: '✅ You have accepted the offer from {employer}!',
+      rejectSuccess: 'You have rejected the offer from {employer}',
+      acceptError: 'Failed to accept offer. Please try again.',
+      rejectError: 'Failed to reject offer. Please try again.'
     },
     ar: {
       title: 'عروض العمل',
-      subtitle: 'تصفح الفرص الوظيفية المتاحة',
+      subtitle: 'مراجعة والرد على عروض العمل من أصحاب العمل',
       stats: {
-        available: 'متاحة',
-        applied: 'مقدم عليها',
-        saved: 'محفوظة',
-        interviews: 'مقابلات'
+        pending: 'قيد الانتظار',
+        accepted: 'مقبولة',
+        rejected: 'مرفوضة',
+        total: 'الإجمالي'
       },
       filters: {
         all: 'جميع العروض',
-        new: 'جديد',
-        applied: 'مقدم عليها',
-        saved: 'محفوظة',
-        interview: 'مقابلة',
-        offered: 'تم العرض',
-        rejected: 'مرفوض',
-        expired: 'منتهي'
+        pending: 'قيد الانتظار',
+        accepted: 'مقبولة',
+        rejected: 'مرفوضة'
       },
       sort: {
         newest: 'الأحدث أولاً',
         oldest: 'الأقدم أولاً',
         salary_high: 'أعلى راتب',
-        salary_low: 'أقل راتب',
-        popular: 'الأكثر شهرة'
+        salary_low: 'أقل راتب'
       },
       card: {
         viewDetails: 'عرض التفاصيل',
-        applyNow: 'تقديم الآن',
-        saveOffer: 'حفظ',
-        share: 'مشاركة',
+        accept: 'قبول العرض',
+        reject: 'رفض',
         salaryPerMonth: 'جنيه/شهر',
         location: 'الموقع',
         type: 'النوع',
         skills: 'المهارات',
         benefits: 'المزايا',
         posted: 'نشر',
-        applicants: 'متقدم',
-        matchScore: 'نسبة التطابق',
-        urgent: 'عاجل',
-        featured: 'مميز',
-        new: 'جديد',
-        applied: 'مقدم عليها',
-        saved: 'محفوظة'
-      },
-      details: {
-        title: 'تفاصيل العرض',
-        about: 'عن الوظيفة',
-        description: 'الوصف الوظيفي',
-        requirements: 'المتطلبات',
-        responsibilities: 'المسؤوليات',
-        benefits: 'المزايا والإضافات',
-        salaryRange: 'نطاق الراتب',
-        contractType: 'نوع العقد',
-        workSchedule: 'جدول العمل',
-        startDate: 'تاريخ البدء المتوقع',
-        applicationDeadline: 'موعد التقديم',
-        company: 'الشركة',
-        industry: 'المجال',
-        companySize: 'حجم الشركة',
-        companyDescription: 'عن صاحب العمل'
+        pending: 'قيد المراجعة',
+        accepted: 'مقبولة',
+        rejected: 'مرفوضة',
+        employer: 'صاحب العمل'
       },
       actions: {
-        apply: 'تقديم الآن',
-        applied: 'تم التقديم',
-        saved: 'محفوظة',
-        unsave: 'إلغاء الحفظ',
-        share: 'مشاركة',
+        accept: 'قبول العرض',
+        rejecting: 'جاري الرفض...',
+        accepting: 'جاري القبول...',
         view: 'عرض التفاصيل',
-        close: 'إغلاق',
-        loadMore: 'تحميل المزيد من العروض',
-        clearFakeOffers: 'مسح العروض الوهمية',
-        paying: 'جاري المعالجة...'
+        close: 'إغلاق'
       },
       empty: {
         title: 'لا توجد عروض',
-        description: 'لم يتم نشر أي عروض عمل من قبل أصحاب العمل حتى الآن',
-        reset: 'تحديث'
+        description: 'لم تتلق أي عروض عمل بعد',
+        wait: 'سيرسل لك أصحاب العمل عروضاً عندما يجدون ملفك الشخصي'
       },
       loading: 'جاري تحميل العروض...',
       languageToggle: 'English',
-      switchToList: 'عرض القائمة',
-      switchToGrid: 'عرض الشبكة',
-      welcome: 'مرحباً بعودتك',
       notifications: 'الإشعارات',
-      clearConfirm: 'هل أنت متأكد من رغبتك في مسح جميع العروض الوهمية؟',
-      clearSuccess: 'تم مسح العروض الوهمية بنجاح!'
+      acceptSuccess: '✅ لقد قبلت العرض من {employer}!',
+      rejectSuccess: 'لقد رفضت العرض من {employer}',
+      acceptError: 'فشل قبول العرض. يرجى المحاولة مرة أخرى.',
+      rejectError: 'فشل رفض العرض. يرجى المحاولة مرة أخرى.'
     }
   };
 
   const t = translations[language];
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
-  // Load offers from localStorage
-  const loadOffers = () => {
-    try {
-      let allOffers = [];
-      
-      const employerOffers = localStorage.getItem('employer_offers');
-      if (employerOffers) {
-        try {
-          const parsed = JSON.parse(employerOffers);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            allOffers = parsed;
-            console.log('✅ Loaded employer offers:', parsed.length);
-          }
-        } catch (e) {
-          console.error('Error parsing employer_offers:', e);
-        }
-      }
-      
-      if (allOffers.length === 0) {
-        const sampleOffer = {
-          id: 'offer_' + Date.now(),
-          title: 'Professional Nanny Needed',
-          company: 'HomelyServ',
-          companyLogo: `https://ui-avatars.com/api/?name=HomelyServ&background=amber&color=fff&size=100`,
-          location: 'Cairo, Egypt',
-          salary: { min: 3000, max: 5000 },
-          type: 'Full-time',
-          status: 'new',
-          postedAt: new Date().toISOString(),
-          description: 'We are looking for an experienced and caring nanny to take care of two children aged 3 and 5 years old.',
-          requirements: [
-            'Minimum 2 years of experience in childcare',
-            'First Aid certification',
-            'Excellent communication skills',
-            'Patient and caring personality'
-          ],
-          responsibilities: [
-            'Prepare meals for children',
-            'Help with homework',
-            'Organize educational activities',
-            'Maintain children\'s daily routine'
-          ],
-          benefits: ['Health Insurance', 'Paid Leave', 'Training & Development'],
-          contractType: 'Permanent',
-          workSchedule: 'Sunday to Thursday, 8:00 AM - 4:00 PM',
-          startDate: 'August 1, 2026',
-          deadline: 'July 20, 2026',
-          companyInfo: {
-            description: 'HomelyServ is a leading platform connecting families with trusted home service professionals.',
-            industry: 'Home Services',
-            size: '50-100 employees'
-          },
-          applicants: 0,
-          isUrgent: true,
-          isFeatured: true,
-          matchScore: 85,
-          employerId: 'employer_default',
-          postedBy: 'HomelyServ',
-          employerEmail: 'employer@homelyserv.com',
-          employerPhone: '+201234567890',
-          amount: 3500
-        };
-        allOffers = [sampleOffer];
-        localStorage.setItem('employer_offers', JSON.stringify(allOffers));
-      }
-      
-      const saved = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
-      const applied = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      
-      allOffers = allOffers.map(offer => ({
-        ...offer,
-        isSaved: saved.includes(offer.id),
-        isApplied: applied.includes(offer.id),
-        status: applied.includes(offer.id) ? 'applied' : 
-                saved.includes(offer.id) ? 'saved' : 
-                offer.status || 'new'
-      }));
-      
-      setOffers(allOffers);
-      setFilteredOffers(allOffers);
-    } catch (error) {
-      console.error('Error loading offers:', error);
-      setOffers([]);
-      setFilteredOffers([]);
-    }
-  };
-
-  const clearFakeOffers = () => {
-    localStorage.removeItem('worker_offers');
-    localStorage.removeItem('homelyserv_offers');
-    const keys = Object.keys(localStorage);
-    keys.forEach(key => {
-      if (key.includes('offer') && !key.includes('employer_offers')) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(data) && data.length > 0 && data[0].title === 'Senior Nanny - Full Time') {
-            localStorage.removeItem(key);
-          }
-        } catch (e) {}
-      }
-    });
-    
-    setShowClearConfirm(false);
-    loadOffers();
-    alert(t.clearSuccess);
-  };
-
-  // Handle Apply Now
-  const handleApplyNow = (offer) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    if (appliedOffers.includes(offer.id)) {
-      alert('You have already applied for this position.');
-      return;
-    }
-    
-    const newApplied = [...appliedOffers, offer.id];
-    setAppliedOffers(newApplied);
-    localStorage.setItem('worker_applied_offers', JSON.stringify(newApplied));
-    
-    setOffers(prev => prev.map(o => 
-      o.id === offer.id 
-        ? { ...o, status: 'applied', isApplied: true }
-        : o
-    ));
-    
-    const notification = {
-      id: 'notif_' + Date.now(),
-      type: 'job_application',
-      message: `${user.fullName || 'Worker'} has applied for ${offer.title}`,
-      workerId: user.id || user.email,
-      workerName: user.fullName || 'Worker',
-      offerId: offer.id,
-      offerTitle: offer.title,
-      employerId: offer.employerId || offer.postedBy || 'employer',
-      date: new Date().toISOString(),
-      read: false
-    };
-    
-    const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-    notifications.push(notification);
-    localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-    
-    alert(`✅ You have successfully applied for ${offer.title}!`);
-  };
-
   // ============================================================
-  // handlePayCommission - معالجة دفع العمولة
+  // EFFECTS
   // ============================================================
-  const handlePayCommission = (offer) => {
-    if (payingOfferId) return; // منع الضغط المتكرر
-    
-    setPayingOfferId(offer.id);
-    
-    const commissionAmount = getCommissionAmount(offer.amount || 0);
-    
-    const commissionData = {
-      offerId: offer.id,
-      workerId: user?.id || user?.email,
-      workerName: user?.fullName || 'Worker',
-      amount: commissionAmount,
-      offerTitle: offer.title,
-      company: offer.company,
-      returnUrl: '/worker/offers'
-    };
-    
-    localStorage.setItem('homelyserv_commission_payment', JSON.stringify(commissionData));
-    
-    setTimeout(() => {
-      setPayingOfferId(null);
-      navigate('/payment-commission');
-    }, 500);
-  };
-
-  // Handle Contact
-  const handleContact = (offer) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    const employerName = offer.company || offer.postedBy || 'Employer';
-    const employerId = offer.employerId || offer.postedBy || 'employer';
-    
-    const chatData = {
-      id: employerId,
-      name: employerName,
-      role: 'employer',
-      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(employerName)}&background=amber&color=fff&size=100&bold=true`
-    };
-    
-    localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
-    
-    const conversationData = {
-      workerId: user.id || user.email,
-      workerName: user.fullName || 'Worker',
-      employerId: employerId,
-      employerName: employerName,
-      offerId: offer.id,
-      offerTitle: offer.title,
-      timestamp: new Date().toISOString()
-    };
-    localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
-    
-    navigate('/worker-messages');
-  };
-
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
+    if (savedLang) setLanguage(savedLang);
     
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== 'WORKER') {
+          navigate('/login');
+          return;
+        }
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
@@ -712,14 +419,6 @@ const WorkerOffers = () => {
       navigate('/login');
     }
 
-    const saved = localStorage.getItem('worker_saved_offers');
-    if (saved) {
-      setSavedOffers(JSON.parse(saved));
-    }
-    const applied = localStorage.getItem('worker_applied_offers');
-    if (applied) {
-      setAppliedOffers(JSON.parse(applied));
-    }
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -734,6 +433,193 @@ const WorkerOffers = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // ============================================================
+  // LOAD OFFERS
+  // ============================================================
+  const loadOffers = () => {
+    try {
+      let allOffers = [];
+      
+      // Load from employer_offers (main source)
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      
+      // Filter offers for this worker
+      if (user?.email) {
+        allOffers = employerOffers.filter(
+          offer => offer.workerEmail === user.email
+        );
+      }
+      
+      // Also check worker-specific offers
+      if (user?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+        workerOffers.forEach(offer => {
+          if (!allOffers.find(o => o.id === offer.id)) {
+            allOffers.push(offer);
+          }
+        });
+      }
+      
+      // Sort by newest first
+      allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setOffers(allOffers);
+      setFilteredOffers(allOffers);
+      
+      console.log(`✅ Loaded ${allOffers.length} offers for worker`);
+      
+    } catch (error) {
+      console.error('Error loading offers:', error);
+      setOffers([]);
+      setFilteredOffers([]);
+    }
+  };
+
+  // ============================================================
+  // ACCEPT OFFER
+  // ============================================================
+  const handleAcceptOffer = (offer) => {
+    if (processingOffer) return;
+    setProcessingOffer(offer.id);
+
+    try {
+      // Update the offer status
+      const updatedOffer = {
+        ...offer,
+        status: 'accepted',
+        updatedAt: new Date().toISOString(),
+        workerResponseAt: new Date().toISOString()
+      };
+
+      // Update in employer_offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const updatedEmployerOffers = employerOffers.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      );
+      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
+
+      // Update in worker_offers
+      if (user?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+        const updatedWorkerOffers = workerOffers.map(o => 
+          o.id === offer.id ? updatedOffer : o
+        );
+        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+      }
+
+      // Send notification to employer
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'offer_accepted',
+        message: `${user?.fullName || 'Worker'} has accepted your job offer for ${offer.jobTitle}`,
+        offerId: offer.id,
+        offerTitle: offer.jobTitle,
+        workerId: user?.email || 'worker',
+        workerName: user?.fullName || 'Worker',
+        employerId: offer.employerId || offer.employerEmail,
+        employerEmail: offer.employerEmail,
+        date: new Date().toISOString(),
+        read: false
+      };
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      notifications.push(notification);
+      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+
+      // Update local state
+      setOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+      setFilteredOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+
+      const successMsg = t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer');
+      alert(successMsg);
+
+    } catch (error) {
+      console.error('Error accepting offer:', error);
+      alert(t.acceptError);
+    } finally {
+      setProcessingOffer(null);
+    }
+  };
+
+  // ============================================================
+  // REJECT OFFER
+  // ============================================================
+  const handleRejectOffer = (offer) => {
+    if (processingOffer) return;
+    
+    if (!confirm(`Are you sure you want to reject the offer from ${offer.employerName || 'Employer'}?`)) {
+      return;
+    }
+
+    setProcessingOffer(offer.id);
+
+    try {
+      // Update the offer status
+      const updatedOffer = {
+        ...offer,
+        status: 'rejected',
+        updatedAt: new Date().toISOString(),
+        workerResponseAt: new Date().toISOString()
+      };
+
+      // Update in employer_offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const updatedEmployerOffers = employerOffers.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      );
+      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
+
+      // Update in worker_offers
+      if (user?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+        const updatedWorkerOffers = workerOffers.map(o => 
+          o.id === offer.id ? updatedOffer : o
+        );
+        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+      }
+
+      // Send notification to employer
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'offer_rejected',
+        message: `${user?.fullName || 'Worker'} has rejected your job offer for ${offer.jobTitle}`,
+        offerId: offer.id,
+        offerTitle: offer.jobTitle,
+        workerId: user?.email || 'worker',
+        workerName: user?.fullName || 'Worker',
+        employerId: offer.employerId || offer.employerEmail,
+        employerEmail: offer.employerEmail,
+        date: new Date().toISOString(),
+        read: false
+      };
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      notifications.push(notification);
+      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+
+      // Update local state
+      setOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+      setFilteredOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+
+      alert(t.rejectSuccess.replace('{employer}', offer.employerName || 'Employer'));
+
+    } catch (error) {
+      console.error('Error rejecting offer:', error);
+      alert(t.rejectError);
+    } finally {
+      setProcessingOffer(null);
+    }
+  };
+
+  // ============================================================
+  // FILTERS AND SORT
+  // ============================================================
   useEffect(() => {
     let filtered = [...offers];
 
@@ -744,22 +630,24 @@ const WorkerOffers = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(offer =>
-        offer.title?.toLowerCase().includes(searchLower) ||
-        offer.company?.toLowerCase().includes(searchLower) ||
-        offer.location?.toLowerCase().includes(searchLower) ||
-        offer.skills?.some(skill => skill.toLowerCase().includes(searchLower))
+        offer.jobTitle?.toLowerCase().includes(searchLower) ||
+        offer.employerName?.toLowerCase().includes(searchLower) ||
+        offer.workerName?.toLowerCase().includes(searchLower)
       );
     }
 
     switch (sortBy) {
       case 'newest':
-        filtered.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
         break;
       case 'salary_high':
-        filtered.sort((a, b) => (b.salary?.max || 0) - (a.salary?.max || 0));
+        filtered.sort((a, b) => (b.amount || 0) - (a.amount || 0));
         break;
       case 'salary_low':
-        filtered.sort((a, b) => (a.salary?.min || 0) - (b.salary?.min || 0));
+        filtered.sort((a, b) => (a.amount || 0) - (b.amount || 0));
         break;
       default:
         break;
@@ -768,55 +656,59 @@ const WorkerOffers = () => {
     setFilteredOffers(filtered);
   }, [offers, statusFilter, searchTerm, sortBy]);
 
+  // ============================================================
+  // HANDLERS
+  // ============================================================
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
   const toggleExpand = (offerId) => {
     setExpandedOffer(expandedOffer === offerId ? null : offerId);
   };
 
-  const toggleSaveOffer = (offerId) => {
-    let newSaved;
-    if (savedOffers.includes(offerId)) {
-      newSaved = savedOffers.filter(id => id !== offerId);
-    } else {
-      newSaved = [...savedOffers, offerId];
-    }
-    setSavedOffers(newSaved);
-    localStorage.setItem('worker_saved_offers', JSON.stringify(newSaved));
-    
-    setOffers(prev => prev.map(offer => 
-      offer.id === offerId 
-        ? { ...offer, isSaved: !offer.isSaved, status: !offer.isSaved ? 'saved' : 'new' }
-        : offer
-    ));
-  };
-
   const getStatusColor = (status) => {
     const colors = {
-      new: 'bg-blue-100 text-blue-800',
-      applied: 'bg-yellow-100 text-yellow-800',
-      saved: 'bg-purple-100 text-purple-800',
-      interview: 'bg-indigo-100 text-indigo-800',
-      offered: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      expired: 'bg-gray-100 text-gray-800'
+      pending: 'bg-yellow-100 text-yellow-800',
+      accepted: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'new': return <Zap size={16} />;
-      case 'applied': return <Clock size={16} />;
-      case 'saved': return <Heart size={16} />;
-      case 'interview': return <Users size={16} />;
-      case 'offered': return <CheckCircle size={16} />;
+      case 'pending': return <Clock size={16} />;
+      case 'accepted': return <CheckCircle size={16} />;
       case 'rejected': return <X size={16} />;
-      case 'expired': return <AlertTriangle size={16} />;
       default: return <AlertTriangle size={16} />;
     }
   };
 
   const getStatusLabel = (status) => {
-    return t.filters[status] || status;
+    const labels = {
+      pending: 'Pending',
+      accepted: 'Accepted',
+      rejected: 'Rejected'
+    };
+    return labels[status] || status;
   };
 
   const formatDate = (dateString) => {
@@ -827,24 +719,23 @@ const WorkerOffers = () => {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatSalary = (salary) => {
-    if (!salary) return '';
-    if (salary.min === salary.max) {
-      return `${salary.min?.toLocaleString() || 0}`;
-    }
-    return `${salary.min?.toLocaleString() || 0} - ${salary.max?.toLocaleString() || 0}`;
+  const formatSalary = (amount) => {
+    return `${amount?.toLocaleString() || 0}`;
   };
 
   const stats = {
-    available: offers.filter(o => o.status === 'new' || o.status === 'saved').length,
-    applied: offers.filter(o => o.status === 'applied').length,
-    saved: savedOffers.length,
-    interviews: offers.filter(o => o.status === 'interview' || o.status === 'offered').length
+    pending: offers.filter(o => o.status === 'pending').length,
+    accepted: offers.filter(o => o.status === 'accepted').length,
+    rejected: offers.filter(o => o.status === 'rejected').length,
+    total: offers.length
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -866,8 +757,6 @@ const WorkerOffers = () => {
       </div>
     );
   }
-
-  const userProfileImage = user?.profileImage || null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -900,9 +789,9 @@ const WorkerOffers = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
-                  {userProfileImage ? (
+                  {user?.profileImage ? (
                     <img 
-                      src={userProfileImage} 
+                      src={user.profileImage} 
                       alt={user.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
@@ -931,53 +820,19 @@ const WorkerOffers = () => {
               >
                 {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
               </button>
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition flex items-center gap-1"
-              >
-                <Trash2 size={16} />
-                {t.actions.clearFakeOffers}
-              </button>
             </div>
           </div>
         </header>
 
-        {showClearConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trash2 size={28} className="text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Clear Fake Offers</h3>
-                <p className="text-gray-600 mb-6">{t.clearConfirm}</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowClearConfirm(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={clearFakeOffers}
-                  className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition-colors"
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="p-4 md:p-6">
+          {/* Welcome Banner */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
-                  {userProfileImage ? (
+                  {user?.profileImage ? (
                     <img 
-                      src={userProfileImage} 
+                      src={user.profileImage} 
                       alt={user.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
@@ -990,45 +845,46 @@ const WorkerOffers = () => {
                   <p className="text-white/80 mt-1">{t.subtitle}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white/90">
-                  {t.welcome}, {user?.fullName || 'Worker'}
-                </span>
+              <div className="flex items-center gap-2 text-sm text-white/90">
+                <Briefcase size={18} />
+                <span>{stats.total} offers received</span>
               </div>
             </div>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.available}</p>
-                <Zap size={20} className="text-blue-500" />
+                <p className="text-sm text-gray-500">{t.stats.total}</p>
+                <Briefcase size={20} className="text-gray-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.available}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.applied}</p>
+                <p className="text-sm text-gray-500">{t.stats.pending}</p>
                 <Clock size={20} className="text-yellow-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.applied}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pending}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.saved}</p>
-                <Heart size={20} className="text-red-500" />
+                <p className="text-sm text-gray-500">{t.stats.accepted}</p>
+                <CheckCircle size={20} className="text-green-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.saved}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.accepted}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.interviews}</p>
-                <Users size={20} className="text-purple-500" />
+                <p className="text-sm text-gray-500">{t.stats.rejected}</p>
+                <X size={20} className="text-red-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.rejected}</p>
             </div>
           </div>
 
+          {/* Search and Filters */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
@@ -1048,13 +904,9 @@ const WorkerOffers = () => {
                   className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
                 >
                   <option value="all">{t.filters.all}</option>
-                  <option value="new">{t.filters.new}</option>
-                  <option value="applied">{t.filters.applied}</option>
-                  <option value="saved">{t.filters.saved}</option>
-                  <option value="interview">{t.filters.interview}</option>
-                  <option value="offered">{t.filters.offered}</option>
+                  <option value="pending">{t.filters.pending}</option>
+                  <option value="accepted">{t.filters.accepted}</option>
                   <option value="rejected">{t.filters.rejected}</option>
-                  <option value="expired">{t.filters.expired}</option>
                 </select>
                 <select
                   value={sortBy}
@@ -1062,14 +914,15 @@ const WorkerOffers = () => {
                   className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
                 >
                   <option value="newest">{t.sort.newest}</option>
+                  <option value="oldest">{t.sort.oldest}</option>
                   <option value="salary_high">{t.sort.salary_high}</option>
                   <option value="salary_low">{t.sort.salary_low}</option>
-                  <option value="popular">{t.sort.popular}</option>
                 </select>
               </div>
             </div>
           </div>
 
+          {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">
               {language === 'en' ? 'Showing ' : 'عرض '}
@@ -1078,28 +931,23 @@ const WorkerOffers = () => {
             </p>
           </div>
 
+          {/* Offers List */}
           {filteredOffers.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
               <p className="text-gray-500">{t.empty.description}</p>
-              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => {
-                    loadOffers();
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setSortBy('newest');
-                  }}
-                  className="bg-gradient-to-r from-amber-500 to-rose-500 hover:shadow-lg text-white px-6 py-2 rounded-lg font-medium transition"
-                >
-                  {t.empty.reset}
-                </button>
-              </div>
+              <p className="text-gray-400 text-sm mt-2">{t.empty.wait}</p>
+              <button
+                onClick={loadOffers}
+                className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+              >
+                Refresh
+              </button>
             </div>
           ) : (
             <div className={viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+              ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
               : 'space-y-4'
             }>
               {filteredOffers.map((offer) => (
@@ -1107,96 +955,71 @@ const WorkerOffers = () => {
                   key={offer.id}
                   className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
                     viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
-                  }`}
+                  } ${offer.status === 'accepted' ? 'border-green-200 bg-green-50/30' : ''}
+                  ${offer.status === 'rejected' ? 'border-red-200 bg-red-50/30' : ''}`}
                 >
                   <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                     <div className="flex items-start gap-4">
-                      <img
-                        src={offer.companyLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.company || 'Company')}&background=amber&color=fff&size=80`}
-                        alt={offer.company}
-                        className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.company || 'Company')}&background=amber&color=fff&size=80`;
-                        }}
-                      />
+                      <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {offer.workerImage ? (
+                          <img 
+                            src={offer.workerImage} 
+                            alt={offer.workerName} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User size={28} className="text-amber-600" />
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-semibold text-gray-800 truncate">{offer.title}</h3>
-                            <p className="text-sm text-gray-500">{offer.company}</p>
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
-                            {offer.isUrgent && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                                {t.card.urgent}
-                              </span>
-                            )}
-                            {offer.isFeatured && (
-                              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                                {t.card.featured}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {offer.matchScore && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${
-                                    offer.matchScore >= 80 ? 'bg-green-500' :
-                                    offer.matchScore >= 60 ? 'bg-yellow-500' :
-                                    'bg-red-500'
-                                  }`}
-                                  style={{ width: `${offer.matchScore}%` }}
-                                />
-                              </div>
-                              <span className="text-xs font-medium text-gray-600">{offer.matchScore}%</span>
+                            <h3 className="font-semibold text-gray-800 truncate">{offer.jobTitle || 'Job Offer'}</h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Building2 size={14} />
+                              <span>{offer.employerName || 'Employer'}</span>
                             </div>
-                            <span className="text-xs text-gray-400">{t.card.matchScore}</span>
                           </div>
-                        )}
-
-                        <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <MapPin size={14} className="text-gray-400" />
-                            <span className="truncate">{offer.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <DollarSign size={14} className="text-gray-400" />
-                            <span>EGP {formatSalary(offer.salary)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Briefcase size={14} className="text-gray-400" />
-                            <span>{offer.type}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Clock size={14} className="text-gray-400" />
-                            <span>{formatDate(offer.postedAt)}</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
                             {getStatusIcon(offer.status)}
                             {getStatusLabel(offer.status)}
                           </span>
-                          {offer.isApplied && (
-                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
-                              <CheckCircle size={12} />
-                              {t.card.applied}
-                            </span>
-                          )}
-                          {offer.isSaved && !offer.isApplied && (
-                            <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
-                              <Heart size={12} className="fill-current" />
-                              {t.card.saved}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-400">{offer.applicants || 0} {t.card.applicants}</span>
                         </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <MapPin size={14} className="text-gray-400" />
+                            <span className="truncate">{offer.workerLocation || 'Not specified'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <DollarSign size={14} className="text-gray-400" />
+                            <span>EGP {formatSalary(offer.amount)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Clock size={14} className="text-gray-400" />
+                            <span>{formatDate(offer.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Star size={14} className="text-yellow-500" />
+                            <span>{offer.workerRating || 4.5} ★</span>
+                          </div>
+                        </div>
+
+                        {/* Skills */}
+                        {offer.workerSkills?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {offer.workerSkills.slice(0, 3).map((skill, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {offer.workerSkills.length > 3 && (
+                              <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
+                                +{offer.workerSkills.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
@@ -1206,19 +1029,46 @@ const WorkerOffers = () => {
                             <Eye size={16} />
                             {t.card.viewDetails}
                           </button>
-                          <button
-                            onClick={() => toggleSaveOffer(offer.id)}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              offer.isSaved
-                                ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                          >
-                            <Heart size={18} className={offer.isSaved ? 'fill-current' : ''} />
-                          </button>
-                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-                            <Share2 size={18} />
-                          </button>
+                          {offer.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleAcceptOffer(offer)}
+                                disabled={processingOffer === offer.id}
+                                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {processingOffer === offer.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <ThumbsUp size={14} />
+                                )}
+                                {t.actions.accept}
+                              </button>
+                              <button
+                                onClick={() => handleRejectOffer(offer)}
+                                disabled={processingOffer === offer.id}
+                                className="px-4 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {processingOffer === offer.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <X size={14} />
+                                )}
+                                {t.card.reject}
+                              </button>
+                            </>
+                          )}
+                          {offer.status === 'accepted' && (
+                            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1">
+                              <CheckCircle size={14} />
+                              Offer Accepted
+                            </span>
+                          )}
+                          {offer.status === 'rejected' && (
+                            <span className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1">
+                              <X size={14} />
+                              Offer Rejected
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1227,198 +1077,100 @@ const WorkerOffers = () => {
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.about}</h4>
-                            <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
-                            
-                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.requirements}</h5>
-                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside mb-3">
-                              {offer.requirements?.map((req, idx) => (
-                                <li key={idx}>{req}</li>
-                              ))}
-                            </ul>
-
-                            <h5 className="font-semibold text-gray-700 mb-1 text-sm">{t.details.responsibilities}</h5>
-                            <ul className="text-sm text-gray-600 space-y-0.5 list-disc list-inside">
-                              {offer.responsibilities?.map((resp, idx) => (
-                                <li key={idx}>{resp}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">{t.details.benefits}</h4>
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                              {offer.benefits?.map((benefit, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
-                                  {benefit}
-                                </span>
-                              ))}
-                            </div>
-
+                            <h4 className="font-semibold text-gray-700 mb-2">Offer Details</h4>
                             <div className="space-y-1.5 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.contractType}</span>
-                                <span className="font-medium">{offer.contractType}</span>
+                                <span className="text-gray-500">Employer</span>
+                                <span className="font-medium">{offer.employerName || 'Not provided'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.workSchedule}</span>
-                                <span className="font-medium">{offer.workSchedule}</span>
+                                <span className="text-gray-500">Worker</span>
+                                <span className="font-medium">{offer.workerName}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.startDate}</span>
-                                <span className="font-medium">{offer.startDate}</span>
+                                <span className="text-gray-500">Job Title</span>
+                                <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">{t.details.applicationDeadline}</span>
-                                <span className="font-medium text-red-600">{offer.deadline}</span>
+                                <span className="text-gray-500">Monthly Amount</span>
+                                <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
                               </div>
-                            </div>
-
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                              <h5 className="font-semibold text-gray-700 text-sm mb-1">{t.details.company}</h5>
-                              <p className="text-sm text-gray-600">{offer.companyInfo?.description}</p>
-                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                                <span>{offer.companyInfo?.industry}</span>
-                                <span>•</span>
-                                <span>{offer.companyInfo?.size}</span>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Hourly Rate</span>
+                                <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
                               </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Location</span>
+                                <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Offer Sent</span>
+                                <span className="font-medium">{formatDate(offer.createdAt)}</span>
+                              </div>
+                              {offer.workerResponseAt && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Response Date</span>
+                                  <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
-
-                        {/* ✅ قسم العمولة - التحقق من الدفع */}
-                        {(() => {
-                          const verification = verifyPayment(offer.id, user?.id || user?.email);
-                          const paymentVerified = verification.verified;
-                          const commissionAmount = getCommissionAmount(offer.amount || 0);
-                          const isPaying = payingOfferId === offer.id;
-                          
-                          if (paymentVerified) {
-                            return (
-                              <div className="bg-green-50 rounded-lg p-4 mt-4 border border-green-200">
-                                <h5 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
-                                  <CheckCircle size={16} />
-                                  ✅ Contact Information (Unlocked)
-                                  <span className="text-xs text-green-500 font-normal ml-2">
-                                    Verified: {new Date(verification.payment?.paidAt).toLocaleDateString()}
-                                  </span>
-                                </h5>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                  <div>
-                                    <span className="text-gray-500">Employer:</span>
-                                    <span className="ml-2 font-medium">{offer.company}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Email:</span>
-                                    <span className="ml-2 font-medium">{offer.employerEmail || 'Not provided'}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Phone:</span>
-                                    <span className="ml-2 font-medium">{offer.employerPhone || 'Not provided'}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Location:</span>
-                                    <span className="ml-2 font-medium">{offer.location}</span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => handleContact(offer)}
-                                  className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm flex items-center gap-2"
-                                >
-                                  <MessageSquare size={16} />
-                                  Contact Employer
-                                </button>
+                          <div>
+                            <h4 className="font-semibold text-gray-700 mb-2">Status Information</h4>
+                            <div className={`p-3 rounded-lg ${
+                              offer.status === 'pending' ? 'bg-yellow-50 border border-yellow-200' :
+                              offer.status === 'accepted' ? 'bg-green-50 border border-green-200' :
+                              'bg-red-50 border border-red-200'
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(offer.status)}
+                                <span className="font-medium">
+                                  {offer.status === 'pending' ? 'Awaiting your response' :
+                                   offer.status === 'accepted' ? 'Offer accepted - Contact employer for next steps' :
+                                   'Offer rejected'}
+                                </span>
                               </div>
-                            );
-                          } else {
-                            return (
-                              <div className="bg-yellow-50 rounded-lg p-4 mt-4 border border-yellow-200">
-                                <div className="flex items-start gap-3">
-                                  <Lock size={20} className="text-yellow-600 mt-0.5" />
-                                  <div>
-                                    <h5 className="font-semibold text-yellow-700">🔒 Contact Information Locked</h5>
-                                    <p className="text-sm text-yellow-600 mt-1">
-                                      Pay the platform commission of <strong>{commissionAmount} EGP</strong> ({COMMISSION_RATE * 100}%) to unlock employer contact details and start communicating.
-                                    </p>
-                                    <button
-                                      onClick={() => handlePayCommission(offer)}
-                                      disabled={isPaying}
-                                      className={`mt-3 px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 ${
-                                        isPaying
-                                          ? 'bg-gray-400 text-white cursor-not-allowed'
-                                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                                      }`}
-                                    >
-                                      {isPaying ? (
-                                        <>
-                                          <Loader2 size={14} className="animate-spin" />
-                                          {t.actions.paying}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Lock size={14} />
-                                          Pay {commissionAmount} EGP to Unlock
-                                        </>
-                                      )}
-                                    </button>
-                                  </div>
+                              {offer.status === 'accepted' && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>✅ You have accepted this offer. The employer will contact you with next steps.</p>
+                                  <p className="mt-1 text-xs text-gray-500">Contact info will be shared after payment confirmation.</p>
                                 </div>
-                              </div>
-                            );
-                          }
-                        })()}
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button 
-                            onClick={() => handleApplyNow(offer)}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                              offer.isApplied || appliedOffers.includes(offer.id)
-                                ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-amber-500 to-rose-500 hover:shadow-lg text-white'
-                            }`}
-                            disabled={offer.isApplied || appliedOffers.includes(offer.id)}
-                          >
-                            {offer.isApplied || appliedOffers.includes(offer.id) ? (
-                              <>
-                                <CheckCircle size={18} />
-                                Applied
-                              </>
-                            ) : (
-                              <>
-                                <BriefcaseIcon size={18} />
-                                {t.actions.apply}
-                              </>
+                              )}
+                              {offer.status === 'pending' && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>⏳ Please review this offer and respond.</p>
+                                  <p className="mt-1 text-xs text-gray-500">Accepting will notify the employer.</p>
+                                </div>
+                              )}
+                              {offer.status === 'rejected' && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>❌ You have declined this offer.</p>
+                                </div>
+                              )}
+                            </div>
+                            {offer.status === 'accepted' && (
+                              <button
+                                onClick={() => {
+                                  // Navigate to messages with employer
+                                  const chatData = {
+                                    id: offer.employerId || offer.employerEmail,
+                                    name: offer.employerName || 'Employer',
+                                    role: 'employer'
+                                  };
+                                  localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
+                                  navigate('/worker-messages');
+                                }}
+                                className="mt-3 w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
+                              >
+                                <MessageSquare size={16} />
+                                Message Employer
+                              </button>
                             )}
-                          </button>
-                          <button 
-                            onClick={() => handleContact(offer)}
-                            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            <MessageCircle size={18} />
-                            {language === 'en' ? 'Contact' : 'اتصال'}
-                          </button>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {viewMode === 'list' && (
-                    <div className="md:w-48 bg-gray-50 p-4 border-t md:border-t-0 md:border-l border-gray-100 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-3">
-                      <div className="text-center md:text-left">
-                        <p className="text-xs text-gray-500">{t.card.salaryPerMonth}</p>
-                        <p className="font-bold text-gray-800 text-lg">
-                          EGP {formatSalary(offer.salary)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => toggleExpand(offer.id)}
-                        className="text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center gap-1"
-                      >
-                        {expandedOffer === offer.id ? (language === 'en' ? 'Hide Details' : 'إخفاء التفاصيل') : (language === 'en' ? 'View Details' : 'عرض التفاصيل')}
-                        {expandedOffer === offer.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

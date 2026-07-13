@@ -1,4 +1,4 @@
-// src/pages/EmployerSearch.jsx - الكود الصحيح مع JOB_OPTIONS
+// src/pages/EmployerSearch.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
@@ -52,7 +52,8 @@ import {
   ThumbsUp,
   LayoutGrid,
   List,
-  CreditCard
+  CreditCard,
+  Lock as LockIcon  // ← Renamed to avoid conflict
 } from 'lucide-react';
 
 // ============================================================
@@ -296,7 +297,6 @@ const EmployerSearch = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState('grid');
 
-  // ✅ استخدام JOB_OPTIONS المستورد بدلاً من القائمة الثابتة
   const jobOptions = ['All Jobs', ...JOB_OPTIONS.map(job => job.label)];
 
   const experienceLevels = [
@@ -339,7 +339,7 @@ const EmployerSearch = () => {
       noResults: 'No workers found matching your criteria',
       tryAgain: 'Try adjusting your search filters',
       viewProfile: 'View Profile',
-      hire: 'Hire Now',
+      hireNow: 'Hire Now',
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Searching...',
@@ -372,9 +372,13 @@ const EmployerSearch = () => {
       viewCompact: 'Compact View',
       saveWorker: 'Save Worker',
       compare: 'Compare',
-      quickHire: 'Quick Hire',
       saved: 'Saved',
-      experienceYears: 'years experience'
+      experienceYears: 'years experience',
+      hireSuccess: '✅ Offer sent to {name} successfully!',
+      hireError: 'Failed to send offer. Please try again.',
+      offerSent: 'Offer Sent',
+      pendingResponse: 'Waiting for worker response...',
+      contactHidden: 'Contact info hidden until payment confirmed'
     },
     ar: {
       title: 'البحث عن عمال',
@@ -390,7 +394,7 @@ const EmployerSearch = () => {
       noResults: 'لا يوجد عمال مطابقين لمعايير البحث',
       tryAgain: 'حاول تعديل فلاتر البحث',
       viewProfile: 'عرض الملف الشخصي',
-      hire: 'توظيف الآن',
+      hireNow: 'توظيف الآن',
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري البحث...',
@@ -423,9 +427,13 @@ const EmployerSearch = () => {
       viewCompact: 'عرض مدمج',
       saveWorker: 'حفظ العامل',
       compare: 'مقارنة',
-      quickHire: 'توظيف سريع',
       saved: 'محفوظ',
-      experienceYears: 'سنوات الخبرة'
+      experienceYears: 'سنوات الخبرة',
+      hireSuccess: '✅ تم إرسال العرض إلى {name} بنجاح!',
+      hireError: 'فشل إرسال العرض. يرجى المحاولة مرة أخرى.',
+      offerSent: 'تم إرسال العرض',
+      pendingResponse: 'في انتظار رد العامل...',
+      contactHidden: 'معلومات الاتصال مخفية حتى تأكيد الدفع'
     }
   };
 
@@ -446,7 +454,6 @@ const EmployerSearch = () => {
           navigate('/login');
           return;
         }
-        // Load profile image
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
@@ -473,66 +480,49 @@ const EmployerSearch = () => {
     loadWorkersFromStorage();
   }, [navigate]);
 
-  // src/pages/EmployerSearch.jsx - إصلاح loadWorkersFromStorage
-
-const loadWorkersFromStorage = () => {
-  try {
-    console.log('📂 Loading workers from localStorage...');
-    
-    // 1. تحميل من homelyserv_users فقط
-    const allUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    console.log('📌 Total users in localStorage:', allUsers.length);
-    
-    // 2. تصفية العمال فقط
-    const workers = allUsers.filter(user => user.role === 'WORKER');
-    console.log(`📌 Found ${workers.length} workers in homelyserv_users`);
-    
-    // 3. عرض تفاصيل العمال في Console
-    workers.forEach((worker, index) => {
-      console.log(`  ${index + 1}. ${worker.fullName || worker.name} (${worker.email}) - Desired Job: "${worker.desiredJob || 'Not set'}"`);
-    });
-    
-    // 4. تحميل الملفات الشخصية
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    
-    // 5. دمج بيانات العمال مع الملفات الشخصية
-    const mergedWorkers = workers.map(worker => {
-      const profile = profiles[worker.email] || {};
-      return {
-        ...worker,
-        ...profile,
-        fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
-        email: worker.email,
-        phone: profile.phone || worker.phone || '',
-        location: profile.location || worker.location || 'Not specified',
-        bio: profile.bio || worker.bio || '',
-        skills: profile.skills || worker.skills || [],
-        experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
-        hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
-        desiredJob: profile.desiredJob || worker.desiredJob || '',
-        profileImage: profile.profileImage || worker.profileImage || '',
-        rating: profile.rating || worker.rating || 4.5,
-        jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
-        available: profile.available !== undefined ? profile.available : true,
-        role: 'WORKER',
-        languages: profile.languages || worker.languages || ['english']
-      };
-    });
-    
-    // 6. تحديث state
-    setAllWorkers(mergedWorkers);
-    console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
-    
-    // 7. إذا لم يوجد عمال، عرض رسالة واضحة
-    if (mergedWorkers.length === 0) {
-      console.log('⚠️ No workers found in localStorage. Please register as a worker first.');
+  const loadWorkersFromStorage = () => {
+    try {
+      console.log('📂 Loading workers from localStorage...');
+      
+      const allUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      console.log('📌 Total users in localStorage:', allUsers.length);
+      
+      const workers = allUsers.filter(user => user.role === 'WORKER');
+      console.log(`📌 Found ${workers.length} workers in homelyserv_users`);
+      
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      
+      const mergedWorkers = workers.map(worker => {
+        const profile = profiles[worker.email] || {};
+        return {
+          ...worker,
+          ...profile,
+          fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
+          email: worker.email,
+          phone: profile.phone || worker.phone || '',
+          location: profile.location || worker.location || 'Not specified',
+          bio: profile.bio || worker.bio || '',
+          skills: profile.skills || worker.skills || [],
+          experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
+          hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
+          desiredJob: profile.desiredJob || worker.desiredJob || '',
+          profileImage: profile.profileImage || worker.profileImage || '',
+          rating: profile.rating || worker.rating || 4.5,
+          jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
+          available: profile.available !== undefined ? profile.available : true,
+          role: 'WORKER',
+          languages: profile.languages || worker.languages || ['english']
+        };
+      });
+      
+      setAllWorkers(mergedWorkers);
+      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
+      
+    } catch (error) {
+      console.error('Error loading workers:', error);
+      setAllWorkers([]);
     }
-    
-  } catch (error) {
-    console.error('Error loading workers:', error);
-    setAllWorkers([]);
-  }
-};
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -591,48 +581,77 @@ const loadWorkersFromStorage = () => {
   };
 
   // ============================================================
-  // 5. QUICK HIRE - Creates pending payment and navigates to payment page
+  // 5. HIRE NOW - Send offer to worker
   // ============================================================
-  const handleQuickHire = (worker) => {
-    const hireData = {
-      id: `PAY-${Date.now()}`,
+  const handleHireNow = (worker) => {
+    if (!user) {
+      alert('Please login first');
+      return;
+    }
+
+    const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    const existingOffer = existingOffers.find(
+      o => o.workerId === (worker.id || worker.email) && o.employerId === user.email && o.status !== 'rejected'
+    );
+
+    if (existingOffer) {
+      alert(`You already have a pending offer with ${worker.fullName}. Please wait for their response.`);
+      return;
+    }
+
+    const offer = {
+      id: 'offer_' + Date.now(),
+      workerId: worker.id || worker.email,
       workerName: worker.fullName,
       workerEmail: worker.email,
       workerPhone: worker.phone || '',
-      workerId: worker.id || worker.email,
-      jobTitle: worker.desiredJob || worker.jobTitle || 'Service Provider',
-      amount: QUICK_HIRE_PREMIUM_FEE,
-      currency: 'EGP',
-      status: 'pending',
-      date: new Date().toISOString(),
-      description: `Quick Hire premium service for ${worker.fullName}`,
-      paymentType: 'quick_hire_premium',
-      paymentMethod: null,
-      reference: `REF-${Date.now()}`,
-      hasReceipt: false,
-      workerImage: worker.profileImage || '',
+      workerLocation: worker.location || 'Not specified',
       workerRating: worker.rating || 4.5,
-      workerExperience: worker.experience || 0,
       workerSkills: worker.skills || [],
-      workerLocation: worker.location || 'Not specified'
+      workerImage: worker.profileImage || '',
+      employerId: user.email,
+      employerName: user.fullName || 'Employer',
+      employerEmail: user.email,
+      jobTitle: worker.desiredJob || 'Service Provider',
+      hourlyRate: worker.hourlyRate || 30,
+      amount: (worker.hourlyRate || 30) * 40 * 4,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+      contactRevealed: false,
+      paymentConfirmed: false,
+      paymentVerified: false
     };
 
-    localStorage.setItem('homelyserv_quick_hire_data', JSON.stringify(hireData));
-    
-    navigate('/employer-payments', { 
-      state: { 
-        quickHireData: hireData,
-        from: 'quick-hire'
-      } 
-    });
+    const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    offers.push(offer);
+    localStorage.setItem('employer_offers', JSON.stringify(offers));
+
+    const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
+    workerOffers.push(offer);
+    localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(workerOffers));
+
+    const notification = {
+      id: 'notif_' + Date.now(),
+      type: 'offer_received',
+      message: `New job offer from ${user.fullName || 'Employer'}`,
+      offerId: offer.id,
+      offerTitle: offer.jobTitle,
+      employerName: user.fullName || 'Employer',
+      workerId: worker.id || worker.email,
+      workerEmail: worker.email,
+      date: new Date().toISOString(),
+      read: false
+    };
+    const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+    notifications.push(notification);
+    localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+
+    const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
+    alert(successMsg);
   };
 
-  const handleViewProfile = (worker) => {
-    localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
-    navigate('/worker-profile-view');
-  };
-
-  // ✅ استخدام الدالة المستوردة من constants
   const getJobLabel = (value) => {
     return getJobLabelFromConstants(value);
   };
@@ -650,127 +669,119 @@ const loadWorkersFromStorage = () => {
   // ============================================================
   // 6. SEARCH FUNCTION
   // ============================================================
-  // src/pages/EmployerSearch.jsx - إصلاح دالة handleSearch
-
-const handleSearch = () => {
-  console.log('🔍 Starting search...');
-  console.log('📌 Selected Job:', selectedJob);
-  console.log('📌 Search Query:', searchQuery);
-  console.log('📌 All Workers:', allWorkers.length);
-  
-  setLoading(true);
-  setShowResults(false);
-
-  setTimeout(() => {
-    let results = [...allWorkers];
+  const handleSearch = () => {
+    console.log('🔍 Starting search...');
+    console.log('📌 Selected Job:', selectedJob);
+    console.log('📌 Search Query:', searchQuery);
+    console.log('📌 All Workers:', allWorkers.length);
     
-    // 1. البحث بالنص
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      results = results.filter(worker => {
-        const nameMatch = worker.fullName?.toLowerCase().includes(query);
-        const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
-        const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
-                        worker.jobTitle?.toLowerCase().includes(query);
-        const bioMatch = worker.bio?.toLowerCase().includes(query);
-        return nameMatch || skillMatch || jobMatch || bioMatch;
-      });
-      console.log(`📌 After text search: ${results.length} results`);
-    }
-    
-    // 2. البحث حسب نوع الوظيفة
-    if (selectedJob && selectedJob !== 'All Jobs') {
-      console.log(`🔍 Filtering by job: "${selectedJob}"`);
+    setLoading(true);
+    setShowResults(false);
+
+    setTimeout(() => {
+      let results = [...allWorkers];
       
-      // البحث عن القيمة في JOB_OPTIONS
-      const selectedJobValue = JOB_OPTIONS.find(
-        job => job.label.toLowerCase() === selectedJob.toLowerCase()
-      )?.value;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        results = results.filter(worker => {
+          const nameMatch = worker.fullName?.toLowerCase().includes(query);
+          const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
+          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
+                          worker.jobTitle?.toLowerCase().includes(query);
+          const bioMatch = worker.bio?.toLowerCase().includes(query);
+          return nameMatch || skillMatch || jobMatch || bioMatch;
+        });
+        console.log(`📌 After text search: ${results.length} results`);
+      }
       
-      console.log(`  - Selected job value: "${selectedJobValue}"`);
+      if (selectedJob && selectedJob !== 'All Jobs') {
+        console.log(`🔍 Filtering by job: "${selectedJob}"`);
+        
+        const selectedJobValue = JOB_OPTIONS.find(
+          job => job.label.toLowerCase() === selectedJob.toLowerCase()
+        )?.value;
+        
+        console.log(`  - Selected job value: "${selectedJobValue}"`);
+        
+        results = results.filter(worker => {
+          const workerValue = worker.desiredJob?.toLowerCase() || '';
+          const workerLabel = JOB_OPTIONS.find(j => j.value === worker.desiredJob)?.label?.toLowerCase() || '';
+          const searchLower = selectedJob.toLowerCase();
+          
+          const matchValue = workerValue === searchLower;
+          const matchValueWithJobValue = selectedJobValue && workerValue === selectedJobValue;
+          const matchLabel = workerLabel === searchLower;
+          const matchPartial = workerValue.includes(searchLower) || workerLabel.includes(searchLower);
+          
+          const isMatch = matchValue || matchValueWithJobValue || matchLabel || matchPartial;
+          
+          if (isMatch) {
+            console.log(`  ✅ Worker "${worker.fullName}" matches! (value: "${workerValue}", label: "${workerLabel}")`);
+          }
+          
+          return isMatch;
+        });
+        
+        console.log(`📌 After job filter: ${results.length} results`);
+      }
       
-      results = results.filter(worker => {
-        const workerValue = worker.desiredJob?.toLowerCase() || '';
-        const workerLabel = JOB_OPTIONS.find(j => j.value === worker.desiredJob)?.label?.toLowerCase() || '';
-        const searchLower = selectedJob.toLowerCase();
-        
-        // التحقق من جميع الحالات الممكنة
-        const matchValue = workerValue === searchLower;
-        const matchValueWithJobValue = selectedJobValue && workerValue === selectedJobValue;
-        const matchLabel = workerLabel === searchLower;
-        const matchPartial = workerValue.includes(searchLower) || workerLabel.includes(searchLower);
-        
-        const isMatch = matchValue || matchValueWithJobValue || matchLabel || matchPartial;
-        
-        if (isMatch) {
-          console.log(`  ✅ Worker "${worker.fullName}" matches! (value: "${workerValue}", label: "${workerLabel}")`);
-        }
-        
-        return isMatch;
-      });
+      if (selectedLocation && selectedLocation !== 'All Locations') {
+        const locLower = selectedLocation.toLowerCase();
+        results = results.filter(worker => 
+          worker.location?.toLowerCase().includes(locLower)
+        );
+        console.log(`📌 After location filter: ${results.length} results`);
+      }
+
+      if (advancedFilters.minRating > 0) {
+        results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
+      }
+
+      if (advancedFilters.minExperience > 0) {
+        results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
+      }
+
+      if (advancedFilters.availability === 'available') {
+        results = results.filter(worker => worker.available === true);
+      } else if (advancedFilters.availability === 'unavailable') {
+        results = results.filter(worker => worker.available === false);
+      }
+
+      if (advancedFilters.maxHourlyRate < 100) {
+        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
+      }
+
+      if (advancedFilters.language !== 'all') {
+        results = results.filter(worker => 
+          worker.languages?.includes(advancedFilters.language)
+        );
+      }
+
+      switch (sortBy) {
+        case 'rating':
+          results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'experience':
+          results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+          break;
+        case 'hourlyLow':
+          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+          break;
+        case 'hourlyHigh':
+          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+          break;
+        case 'relevance':
+        default:
+          break;
+      }
       
-      console.log(`📌 After job filter: ${results.length} results`);
-    }
-    
-    // 3. البحث حسب الموقع
-    if (selectedLocation && selectedLocation !== 'All Locations') {
-      const locLower = selectedLocation.toLowerCase();
-      results = results.filter(worker => 
-        worker.location?.toLowerCase().includes(locLower)
-      );
-      console.log(`📌 After location filter: ${results.length} results`);
-    }
+      console.log('✅ Final results:', results.length);
+      setSearchResults(results);
+      setShowResults(true);
+      setLoading(false);
+    }, 500);
+  };
 
-    // 4. الفلاتر المتقدمة
-    if (advancedFilters.minRating > 0) {
-      results = results.filter(worker => (worker.rating || 0) >= advancedFilters.minRating);
-    }
-
-    if (advancedFilters.minExperience > 0) {
-      results = results.filter(worker => (worker.experience || 0) >= advancedFilters.minExperience);
-    }
-
-    if (advancedFilters.availability === 'available') {
-      results = results.filter(worker => worker.available === true);
-    } else if (advancedFilters.availability === 'unavailable') {
-      results = results.filter(worker => worker.available === false);
-    }
-
-    if (advancedFilters.maxHourlyRate < 100) {
-      results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
-    }
-
-    if (advancedFilters.language !== 'all') {
-      results = results.filter(worker => 
-        worker.languages?.includes(advancedFilters.language)
-      );
-    }
-
-    // 5. الترتيب
-    switch (sortBy) {
-      case 'rating':
-        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'experience':
-        results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
-        break;
-      case 'hourlyLow':
-        results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
-        break;
-      case 'hourlyHigh':
-        results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
-        break;
-      case 'relevance':
-      default:
-        break;
-    }
-    
-    console.log('✅ Final results:', results.length);
-    setSearchResults(results);
-    setShowResults(true);
-    setLoading(false);
-  }, 500);
-};
   // ============================================================
   // 7. RENDER
   // ============================================================
@@ -815,7 +826,6 @@ const handleSearch = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* User profile in header */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200">
                   {user?.profileImage ? (
@@ -1149,18 +1159,26 @@ const handleSearch = () => {
                                 </span>
                               )}
                             </div>
+                            {/* ⚠️ CONTACT INFO HIDDEN - Using LockIcon */}
+                            <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+                              <LockIcon size={12} />
+                              <span>{t.contactHidden}</span>
+                            </div>
                           </div>
                         </div>
                         <div className={`flex gap-2 ${viewMode === 'list' ? 'flex-wrap items-center' : ''}`}>
                           <button
-                            onClick={() => handleQuickHire(worker)}
+                            onClick={() => handleHireNow(worker)}
                             className="flex-1 px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center justify-center gap-1"
                           >
-                            <Zap size={14} />
-                            {t.quickHire}
+                            <UserPlus size={14} />
+                            {t.hireNow}
                           </button>
                           <button
-                            onClick={() => handleViewProfile(worker)}
+                            onClick={() => {
+                              localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
+                              navigate('/worker-profile-view');
+                            }}
                             className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1"
                           >
                             <Eye size={14} />

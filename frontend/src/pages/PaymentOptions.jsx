@@ -32,7 +32,10 @@ import {
   Copy,
   Check,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Phone,
+  Mail,
+  Briefcase
 } from 'lucide-react';
 import {
   CURRENCY,
@@ -118,15 +121,17 @@ const EmployerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/employer-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-teal-500" />
+                <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/employer-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-teal-500" />
+              <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -145,7 +150,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -153,7 +158,7 @@ const EmployerSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className="text-teal-600" />
+                <User size={20} className="text-white" />
               )}
             </div>
             {!sidebarCollapsed && user && (
@@ -372,7 +377,10 @@ const PaymentOptions = () => {
       enterCardNumber: 'Enter card number',
       enterCardholderName: 'Enter cardholder name',
       enterExpiryDate: 'MM/YY',
-      enterCvv: 'XXX'
+      enterCvv: 'XXX',
+      jobTitle: 'Job Title',
+      employer: 'Employer',
+      worker: 'Worker'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -386,6 +394,9 @@ const PaymentOptions = () => {
       processing: 'جاري المعالجة...',
       success: 'تم الدفع بنجاح!',
       successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح. تم إنشاء عرض عمل له.',
+      verificationPending: 'تم إرسال الدفع للتحقق',
+      verificationPendingMessage: 'دفعتك في انتظار التحقق. سيتم توظيف العامل فقط بعد التحقق من الدفع.',
+      viewPayments: 'عرض المدفوعات',
       backToSearch: 'العودة إلى البحث',
       back: 'رجوع',
       languageToggle: 'English',
@@ -411,12 +422,18 @@ const PaymentOptions = () => {
       enterCardNumber: 'أدخل رقم البطاقة',
       enterCardholderName: 'أدخل اسم صاحب البطاقة',
       enterExpiryDate: 'شهر/سنة',
-      enterCvv: 'XXX'
+      enterCvv: 'XXX',
+      jobTitle: 'المسمى الوظيفي',
+      employer: 'صاحب العمل',
+      worker: 'العامل'
     }
   };
 
   const t = translations[language];
 
+  // ============================================================
+  // useEffect - Load data
+  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -459,6 +476,7 @@ const PaymentOptions = () => {
     } else {
       console.log('❌ No worker data found');
     }
+    
     const savedPendingPayment = localStorage.getItem('homelyserv_pending_payment');
     if (savedPendingPayment) {
       try {
@@ -476,6 +494,9 @@ const PaymentOptions = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // ============================================================
+  // HANDLERS
+  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -527,8 +548,9 @@ const PaymentOptions = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  // A payment selection is not proof that funds were received. Keep the hire
-  // pending until the payment provider or an administrator verifies it.
+  // ============================================================
+  // handleConfirmPayment - Submit payment for verification
+  // ============================================================
   const handleConfirmPayment = () => {
     if (!selectedMethod) {
       alert('Please select a payment method');
@@ -558,27 +580,104 @@ const PaymentOptions = () => {
     setIsProcessing(true);
     
     try {
+      // Get the pending payment data
+      const pendingPaymentData = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
+      const offerId = pendingPaymentData.offerId;
+      
+      // Calculate amounts
+      const isQuickHire = pendingPaymentData?.paymentType === 'quick_hire_premium';
+      const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
+      const hoursPerWeek = 40;
+      const weeksPerMonth = 4;
+      const subtotal = isQuickHire ? QUICK_HIRE_PREMIUM_FEE : hourlyRate * hoursPerWeek * weeksPerMonth;
+      const commissionRate = RECRUITMENT_COMMISSION_RATE;
+      const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
+      const total = subtotal + commissionAmount;
+      
+      // Create verification request
       const verificationRequest = {
         id: 'VERIFY-' + Date.now(),
+        offerId: offerId,
         workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
         workerEmail: workerData?.workerEmail,
+        workerPhone: workerData?.workerPhone || '',
+        workerLocation: workerData?.workerLocation || 'Not specified',
+        workerRating: workerData?.rating || 4.5,
+        workerImage: workerData?.profileImage || '',
         jobTitle: workerData?.desiredJob || 'Service Provider',
         employerId: user?.id || user?.email,
-        employerName: user?.fullName,
+        employerName: user?.fullName || 'Employer',
+        employerEmail: user?.email,
         amount: total,
         commission: commissionAmount,
         paymentMethod: selectedMethod,
-        paymentType: pendingPayment?.paymentType || 'recruitment',
+        paymentType: pendingPaymentData?.paymentType || 'recruitment',
         submittedAt: new Date().toISOString(),
         date: new Date().toISOString(),
-        status: 'pending_verification'
+        status: 'pending_verification',
+        contactRevealed: false,
+        paymentVerified: false,
+        description: pendingPaymentData?.description || `Payment for ${workerData?.workerName || 'worker'}`
       };
 
+      // Save to verification requests
       const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
       verificationRequests.push(verificationRequest);
       localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(verificationRequests));
 
+      // Update the offer status
+      if (offerId) {
+        const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+        const updatedOffers = employerOffers.map(o => 
+          o.id === offerId ? { 
+            ...o, 
+            status: 'waiting_payment', 
+            paymentInitiated: true,
+            verificationId: verificationRequest.id,
+            paymentStatus: 'pending_verification'
+          } : o
+        );
+        localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
+      }
+
+      // Save to all_payments
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      const paymentRecord = {
+        id: verificationRequest.id,
+        offerId: offerId,
+        workerId: verificationRequest.workerId,
+        workerName: verificationRequest.workerName,
+        workerEmail: verificationRequest.workerEmail,
+        workerPhone: verificationRequest.workerPhone,
+        workerLocation: verificationRequest.workerLocation,
+        workerRating: verificationRequest.workerRating,
+        workerImage: verificationRequest.workerImage,
+        jobTitle: verificationRequest.jobTitle,
+        employerId: verificationRequest.employerId,
+        employerName: verificationRequest.employerName,
+        employerEmail: verificationRequest.employerEmail,
+        amount: verificationRequest.amount,
+        status: 'pending_verification',
+        paymentMethod: verificationRequest.paymentMethod,
+        paymentType: verificationRequest.paymentType,
+        createdAt: verificationRequest.submittedAt,
+        updatedAt: verificationRequest.submittedAt,
+        description: verificationRequest.description,
+        reference: 'REF-' + Date.now(),
+        hasReceipt: false,
+        contactRevealed: false,
+        paymentVerified: false
+      };
+      allPayments.push(paymentRecord);
+      localStorage.setItem('all_payments', JSON.stringify(allPayments));
+
+      // Save to employer_payments
+      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      employerPayments.push(paymentRecord);
+      localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
+
+      // Update pending payment status
       const storedPendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
       localStorage.setItem('homelyserv_pending_payment', JSON.stringify({
         ...storedPendingPayment,
@@ -588,6 +687,7 @@ const PaymentOptions = () => {
         submittedAt: verificationRequest.submittedAt
       }));
 
+      // Update quick hire data if exists
       const quickHireData = localStorage.getItem('homelyserv_quick_hire_data');
       if (quickHireData) {
         try {
@@ -604,10 +704,16 @@ const PaymentOptions = () => {
         }
       }
 
+      // Navigate to employer payments with pending verification status
       navigate('/employer-payments', {
         replace: true,
-        state: { paymentVerificationPending: true, verificationRequest }
+        state: { 
+          paymentVerificationPending: true, 
+          verificationRequest,
+          message: 'Payment submitted for verification. Please wait for admin confirmation.'
+        }
       });
+      
     } catch (error) {
       console.error('Unable to submit payment for verification:', error);
       setIsProcessing(false);
@@ -615,6 +721,7 @@ const PaymentOptions = () => {
     }
   };
 
+  // Calculate amounts
   const isQuickHire = pendingPayment?.paymentType === 'quick_hire_premium';
   const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
   const hoursPerWeek = 40;
@@ -624,6 +731,9 @@ const PaymentOptions = () => {
   const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
   const total = subtotal + commissionAmount;
 
+  // ============================================================
+  // Helper Functions
+  // ============================================================
   const getMethodColor = (color) => {
     const colors = {
       blue: 'border-blue-200 hover:border-blue-500 hover:bg-blue-50',
@@ -831,6 +941,9 @@ const PaymentOptions = () => {
               </div>
             )}
           </div>
+          <div className="mt-3 text-xs text-gray-500">
+            <p>⚠️ Please use the reference: <strong>REF-{Date.now()}</strong> when making the transfer</p>
+          </div>
         </div>
       );
     }
@@ -838,6 +951,9 @@ const PaymentOptions = () => {
     return null;
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -932,14 +1048,14 @@ const PaymentOptions = () => {
               <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={40} className="text-amber-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.verificationPending || translations.en.verificationPending}</h2>
-              <p className="text-gray-600 mb-6">{t.verificationPendingMessage || translations.en.verificationPendingMessage}</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.verificationPending}</h2>
+              <p className="text-gray-600 mb-6">{t.verificationPendingMessage}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => navigate('/employer-payments')}
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
                 >
-                  {t.viewPayments || translations.en.viewPayments}
+                  {t.viewPayments}
                 </button>
                 <button
                   onClick={() => navigate('/employer-search')}
@@ -958,15 +1074,27 @@ const PaymentOptions = () => {
                 </div>
               </div>
 
+              {/* Worker Info Card */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center">
-                      <User size={28} className="text-teal-600" />
+                    <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+                      {workerData?.profileImage ? (
+                        <img 
+                          src={workerData.profileImage} 
+                          alt={workerData?.workerName} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={28} className="text-teal-600" />
+                      )}
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800">{workerData?.workerName}</h3>
-                      <p className="text-gray-500">{workerData?.desiredJob || 'Worker'}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Briefcase size={14} />
+                        <span>{workerData?.desiredJob || 'Service Provider'}</span>
+                      </div>
                       <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <MapPin size={14} />
@@ -975,6 +1103,10 @@ const PaymentOptions = () => {
                         <span className="flex items-center gap-1">
                           <Star size={14} className="text-yellow-500" />
                           {workerData?.rating || '4.5'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign size={14} className="text-green-500" />
+                          {workerData?.hourlyRate || 30} EGP/hr
                         </span>
                       </div>
                     </div>
@@ -991,6 +1123,7 @@ const PaymentOptions = () => {
                 </div>
               </div>
 
+              {/* Payment Methods */}
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -1044,6 +1177,7 @@ const PaymentOptions = () => {
                 {selectedMethod && renderPaymentDetails()}
               </div>
 
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleConfirmPayment}
@@ -1074,6 +1208,14 @@ const PaymentOptions = () => {
               {!selectedMethod && (
                 <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
               )}
+
+              {/* Info Message */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-600 text-center">
+                  🔒 Your payment will be verified by our admin team before the worker's contact information is revealed.
+                  This ensures a secure transaction for both parties.
+                </p>
+              </div>
             </>
           )}
         </div>
