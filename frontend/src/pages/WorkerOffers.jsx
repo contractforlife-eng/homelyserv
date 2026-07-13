@@ -1,7 +1,7 @@
-// src/pages/WorkerOffers.jsx
+// src/pages/WorkerOffers.jsx - النسخة الكاملة
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { checkCommissionPaid, getCommissionAmount, COMMISSION_RATE } from '../utils/commissionManager';
+import { checkCommissionPaid, getCommissionAmount, COMMISSION_RATE, verifyPayment } from '../utils/commissionManager';
 import {
   Home,
   User,
@@ -39,7 +39,9 @@ import {
   Star,
   Trash2,
   Shield,
-  Sparkles
+  Sparkles,
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 
 // Sidebar Component - Updated with custom logo and profile image
@@ -532,10 +534,12 @@ const WorkerOffers = () => {
           isFeatured: true,
           matchScore: 85,
           employerId: 'employer_default',
-          postedBy: 'HomelyServ'
+          postedBy: 'HomelyServ',
+          employerEmail: 'employer@homelyserv.com',
+          employerPhone: '+201234567890',
+          amount: 3500
         };
         allOffers = [sampleOffer];
-        // Save the sample offer to localStorage for persistence
         localStorage.setItem('employer_offers', JSON.stringify(allOffers));
       }
       
@@ -624,31 +628,27 @@ const WorkerOffers = () => {
     
     alert(`✅ You have successfully applied for ${offer.title}!`);
   };
-// src/pages/WorkerOffers.jsx - داخل المكون WorkerOffers
-// بعد دالة handleContact أو قبلها
 
-// ============================================================
-// handlePayCommission - معالجة دفع العمولة
-// ============================================================
-const handlePayCommission = (offer) => {
-  const commissionAmount = getCommissionAmount(offer.amount || 0);
-  
-  // حفظ بيانات العمولة المؤقتة
-  const commissionData = {
-    offerId: offer.id,
-    workerId: user?.id || user?.email,
-    workerName: user?.fullName || 'Worker',
-    amount: commissionAmount,
-    offerTitle: offer.title,
-    company: offer.company,
-    returnUrl: '/worker/offers'
+  // ============================================================
+  // handlePayCommission - معالجة دفع العمولة
+  // ============================================================
+  const handlePayCommission = (offer) => {
+    const commissionAmount = getCommissionAmount(offer.amount || 0);
+    
+    const commissionData = {
+      offerId: offer.id,
+      workerId: user?.id || user?.email,
+      workerName: user?.fullName || 'Worker',
+      amount: commissionAmount,
+      offerTitle: offer.title,
+      company: offer.company,
+      returnUrl: '/worker/offers'
+    };
+    
+    localStorage.setItem('homelyserv_commission_payment', JSON.stringify(commissionData));
+    navigate('/payment-commission');
   };
-  
-  localStorage.setItem('homelyserv_commission_payment', JSON.stringify(commissionData));
-  
-  // التوجيه إلى صفحة دفع العمولة
-  navigate('/payment-commission');
-};
+
   // Handle Contact
   const handleContact = (offer) => {
     if (!user) {
@@ -692,7 +692,6 @@ const handlePayCommission = (offer) => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        // Load profile image from profiles storage
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
@@ -861,7 +860,6 @@ const handlePayCommission = (offer) => {
     );
   }
 
-  // Get user profile image
   const userProfileImage = user?.profileImage || null;
 
   return (
@@ -893,7 +891,6 @@ const handlePayCommission = (offer) => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* User profile picture in header */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
                   {userProfileImage ? (
@@ -938,7 +935,6 @@ const handlePayCommission = (offer) => {
           </div>
         </header>
 
-        {/* Clear Confirmation Modal */}
         {showClearConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
@@ -968,7 +964,6 @@ const handlePayCommission = (offer) => {
         )}
 
         <div className="p-4 md:p-6">
-          {/* Updated Welcome Banner with user profile image */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
@@ -1283,6 +1278,73 @@ const handlePayCommission = (offer) => {
                             </div>
                           </div>
                         </div>
+
+                        {/* ✅ قسم العمولة - التحقق من الدفع */}
+                        {(() => {
+                          const verification = verifyPayment(offer.id, user?.id || user?.email);
+                          const paymentVerified = verification.verified;
+                          const commissionAmount = getCommissionAmount(offer.amount || 0);
+                          
+                          if (paymentVerified) {
+                            return (
+                              <div className="bg-green-50 rounded-lg p-4 mt-4 border border-green-200">
+                                <h5 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
+                                  <CheckCircle size={16} />
+                                  ✅ Contact Information (Unlocked)
+                                  <span className="text-xs text-green-500 font-normal ml-2">
+                                    Verified: {new Date(verification.payment?.paidAt).toLocaleDateString()}
+                                  </span>
+                                </h5>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div>
+                                    <span className="text-gray-500">Employer:</span>
+                                    <span className="ml-2 font-medium">{offer.company}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Email:</span>
+                                    <span className="ml-2 font-medium">{offer.employerEmail || 'Not provided'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Phone:</span>
+                                    <span className="ml-2 font-medium">{offer.employerPhone || 'Not provided'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Location:</span>
+                                    <span className="ml-2 font-medium">{offer.location}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleContact(offer)}
+                                  className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm flex items-center gap-2"
+                                >
+                                  <MessageSquare size={16} />
+                                  Contact Employer
+                                </button>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="bg-yellow-50 rounded-lg p-4 mt-4 border border-yellow-200">
+                                <div className="flex items-start gap-3">
+                                  <Lock size={20} className="text-yellow-600 mt-0.5" />
+                                  <div>
+                                    <h5 className="font-semibold text-yellow-700">🔒 Contact Information Locked</h5>
+                                    <p className="text-sm text-yellow-600 mt-1">
+                                      Pay the platform commission of <strong>{commissionAmount} EGP</strong> ({COMMISSION_RATE * 100}%) to unlock employer contact details and start communicating.
+                                    </p>
+                                    <button
+                                      onClick={() => handlePayCommission(offer)}
+                                      className="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition text-sm flex items-center gap-2"
+                                    >
+                                      <Lock size={14} />
+                                      Pay {commissionAmount} EGP to Unlock
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        })()}
 
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button 
