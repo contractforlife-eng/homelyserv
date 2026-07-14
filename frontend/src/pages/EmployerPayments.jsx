@@ -1,6 +1,7 @@
-// src/pages/EmployerPayments.jsx - Fixed version with no disappearing payments
+// src/pages/EmployerPayments.jsx - Fixed version with premium badge
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   ArrowLeft,
   User,
@@ -48,11 +49,12 @@ import {
   MessageSquare,
   ExternalLink,
   ThumbsUp,
-  FileText
+  FileText,
+  Crown
 } from 'lucide-react';
 
 // ============================================================
-// EMPLOYER SIDEBAR COMPONENT
+// EMPLOYER SIDEBAR COMPONENT - WITH PREMIUM BADGE
 // ============================================================
 const EmployerSidebar = ({ 
   language, 
@@ -77,7 +79,8 @@ const EmployerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -90,7 +93,8 @@ const EmployerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -103,7 +107,8 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' }
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -116,6 +121,15 @@ const EmployerSidebar = ({
     }
     return null;
   };
+
+  // ✅ FIX: Check premium status directly using the user ID
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -163,7 +177,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -173,10 +187,23 @@ const EmployerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {isPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
@@ -214,6 +241,11 @@ const EmployerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
