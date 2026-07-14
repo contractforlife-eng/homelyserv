@@ -1,5 +1,5 @@
 // src/utils/subscriptionService.js
-// Premium subscription service for HomelyServ
+// Premium subscription service for HomelyServ - FIXED
 
 const SUBSCRIPTION_KEY = 'homelyserv_subscriptions';
 const SUBSCRIPTION_PRICES = {
@@ -83,14 +83,8 @@ export const createSubscription = (userId, userEmail, userRole, userFullName) =>
     subscriptions[userId] = subscription;
     localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
     
-    // ✅ FIX: Update user profile with premium status
-    updateUserPremiumStatus(userEmail, true, userId, userRole, userFullName);
-    
-    // ✅ FIX: Update users list
-    updateUsersListPremiumStatus(userEmail, true);
-    
-    // ✅ FIX: Update current session user
-    updateCurrentSessionUser(userEmail, true);
+    // Update all storage locations with premium status
+    updateAllUserData(userEmail, true, userId, userRole, userFullName);
     
     console.log(`✅ Subscription created for ${userFullName} (${userRole})`);
     return subscription;
@@ -113,9 +107,7 @@ export const cancelSubscription = (userId) => {
       
       // Update user profile
       const user = subscriptions[userId];
-      updateUserPremiumStatus(user.userEmail, false, userId, user.userRole, user.userFullName);
-      updateUsersListPremiumStatus(user.userEmail, false);
-      updateCurrentSessionUser(user.userEmail, false);
+      updateAllUserData(user.userEmail, false, userId, user.userRole, user.userFullName);
       
       console.log(`❌ Subscription cancelled for ${user.userFullName}`);
       return true;
@@ -128,16 +120,26 @@ export const cancelSubscription = (userId) => {
 };
 
 /**
- * Update user's premium status in profile
+ * Update ALL user data storage locations with premium status
  */
-const updateUserPremiumStatus = (userEmail, isPremium, userId, userRole, userFullName) => {
+const updateAllUserData = (userEmail, isPremium, userId, userRole, userFullName) => {
   try {
-    // Update in homelyserv_profiles
+    // 1. Update current session user
+    const currentUser = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
+    if (currentUser.email === userEmail || currentUser.id === userId) {
+      currentUser.isPremium = isPremium;
+      currentUser.subscriptionActive = isPremium;
+      localStorage.setItem('homelyserv_user', JSON.stringify(currentUser));
+      console.log('✅ Updated current session user');
+    }
+
+    // 2. Update profiles
     const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
     if (profiles[userEmail]) {
       profiles[userEmail].isPremium = isPremium;
       profiles[userEmail].subscriptionActive = isPremium;
       localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+      console.log('✅ Updated profiles');
     } else if (userEmail) {
       // Create profile if it doesn't exist
       profiles[userEmail] = {
@@ -147,48 +149,21 @@ const updateUserPremiumStatus = (userEmail, isPremium, userId, userRole, userFul
       };
       if (userFullName) profiles[userEmail].fullName = userFullName;
       localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+      console.log('✅ Created new profile with premium status');
     }
-    
-    // Update current session user
-    updateCurrentSessionUser(userEmail, isPremium);
-    
-  } catch (error) {
-    console.error('Error updating user premium status:', error);
-  }
-};
 
-/**
- * Update current session user with premium status
- */
-const updateCurrentSessionUser = (userEmail, isPremium) => {
-  try {
-    const currentUser = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
-    if (currentUser.email === userEmail) {
-      currentUser.isPremium = isPremium;
-      currentUser.subscriptionActive = isPremium;
-      localStorage.setItem('homelyserv_user', JSON.stringify(currentUser));
-      console.log(`✅ Updated current session user premium status: ${isPremium}`);
-    }
-  } catch (error) {
-    console.error('Error updating current session user:', error);
-  }
-};
-
-/**
- * Update users list with premium status
- */
-const updateUsersListPremiumStatus = (userEmail, isPremium) => {
-  try {
+    // 3. Update users list
     const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
     const userIndex = users.findIndex(u => u.email === userEmail);
     if (userIndex !== -1) {
       users[userIndex].isPremium = isPremium;
       users[userIndex].subscriptionActive = isPremium;
       localStorage.setItem('homelyserv_users', JSON.stringify(users));
-      console.log(`✅ Updated users list premium status for ${userEmail}: ${isPremium}`);
+      console.log('✅ Updated users list');
     }
+
   } catch (error) {
-    console.error('Error updating users list:', error);
+    console.error('Error updating user data:', error);
   }
 };
 
@@ -267,35 +242,8 @@ export const syncPremiumStatus = (userId, userEmail) => {
     
     console.log(`🔄 Syncing premium status for ${userEmail}: ${isPremium}`);
     
-    // Update user object in session
-    const currentUser = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
-    if (currentUser.email === userEmail || currentUser.id === userId) {
-      currentUser.isPremium = isPremium;
-      currentUser.subscriptionActive = isPremium;
-      currentUser.subscription = subscription;
-      localStorage.setItem('homelyserv_user', JSON.stringify(currentUser));
-      console.log('✅ Updated current session user');
-    }
-    
-    // Update profiles
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[userEmail]) {
-      profiles[userEmail].isPremium = isPremium;
-      profiles[userEmail].subscriptionActive = isPremium;
-      localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-      console.log('✅ Updated profiles');
-    }
-    
-    // Update users list
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const userIndex = users.findIndex(u => u.email === userEmail);
-    if (userIndex !== -1) {
-      users[userIndex].isPremium = isPremium;
-      users[userIndex].subscriptionActive = isPremium;
-      users[userIndex].subscription = subscription;
-      localStorage.setItem('homelyserv_users', JSON.stringify(users));
-      console.log('✅ Updated users list');
-    }
+    // Update all storage locations
+    updateAllUserData(userEmail, isPremium, userId, subscription?.userRole, subscription?.userFullName);
     
     console.log(`✅ Synced premium status for ${userEmail}: ${isPremium}`);
     return isPremium;
@@ -517,6 +465,7 @@ export const getSubscriptionHistory = (userId) => {
   }
 };
 
+// Export all functions as default
 export default {
   getSubscriptions,
   getUserSubscription,

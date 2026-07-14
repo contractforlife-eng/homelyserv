@@ -89,6 +89,7 @@ const EmployerSidebar = ({
   };
 
   return (
+    
     <>
       {mobileMenuOpen && (
         <div 

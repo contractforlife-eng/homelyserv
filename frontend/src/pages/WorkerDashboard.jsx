@@ -100,8 +100,14 @@ const WorkerSidebar = ({
   };
 
   // Check if user has premium subscription - using the user object passed from parent
-  const userIsPremium = user?.isPremium || false;
-
+  // ✅ FIX: Check premium status directly using the user ID
+    const userIsPremium = () => {
+      const userId = user?.id || user?.email;
+      if (!userId) return false;
+      return isUserPremium(userId);
+    };
+  
+    const isPremium = userIsPremium();
   return (
     <>
       {mobileMenuOpen && (

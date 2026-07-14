@@ -1,4 +1,4 @@
-// src/pages/EmployerDashboard.jsx - WITH PERSISTENT PREMIUM BADGE
+// src/pages/EmployerDashboard.jsx - WITH PREMIUM BADGE FIX
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -29,11 +29,10 @@ import {
   UserPlus,
   Star,
   CreditCard,
-  Crown,
-  FileText
+  Crown
 } from 'lucide-react';
 
-// Employer Sidebar Component - WITH PERSISTENT PREMIUM BADGE
+// Employer Sidebar Component - WITH PREMIUM BADGE FIX
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -78,7 +77,6 @@ const EmployerSidebar = ({
 
   const t = translations[language];
 
-  // Menu items with Premium included
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -101,8 +99,14 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Use the user.isPremium flag passed from parent
-  const userIsPremium = user?.isPremium || false;
+  // ✅ FIX: Check premium status directly using the user ID - NOT from user object
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -148,7 +152,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -156,9 +160,9 @@ const EmployerSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className="text-teal-600" />
+                <User size={20} className="text-white" />
               )}
-              {userIsPremium && (
+              {isPremium && (
                 <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
                   <Crown size={10} className="text-white" />
                 </div>
@@ -168,7 +172,7 @@ const EmployerSidebar = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
-                  {userIsPremium && (
+                  {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
@@ -291,6 +295,15 @@ const EmployerDashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
+  // ✅ Check premium status directly
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
+
   const translations = {
     en: {
       welcome: 'Welcome back',
@@ -350,12 +363,6 @@ const EmployerDashboard = () => {
 
   const t = translations[language];
 
-  // ✅ FIX: Check if user has premium subscription using the stored flag
-  const userIsPremium = user?.isPremium || false;
-
-  // ============================================================
-  // Payment Success Notification
-  // ============================================================
   useEffect(() => {
     // Check for payment success from navigation state
     if (location.state?.paymentSuccess) {
@@ -364,12 +371,10 @@ const EmployerDashboard = () => {
       setSuccessMessage(message);
       setShowSuccessBanner(true);
       
-      // Auto-hide after 8 seconds
       const timer = setTimeout(() => {
         setShowSuccessBanner(false);
       }, 8000);
       
-      // Clear the state so it doesn't show again on refresh
       navigate('/employer-dashboard', { replace: true, state: {} });
       
       return () => clearTimeout(timer);
@@ -386,21 +391,6 @@ const EmployerDashboard = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        
-        // ✅ FIX: Check if user has premium subscription
-        const userId = parsedUser.id || parsedUser.email;
-        const isPremium = isUserPremium(userId);
-        parsedUser.isPremium = isPremium;
-
-        // ✅ FIX: Also check in users list and update if needed
-        const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-        const userIndex = users.findIndex(u => u.email === parsedUser.email);
-        if (userIndex !== -1) {
-          users[userIndex].isPremium = isPremium;
-          users[userIndex].subscriptionActive = isPremium;
-          localStorage.setItem('homelyserv_users', JSON.stringify(users));
-        }
-        
         setUser(parsedUser);
         console.log('✅ User loaded in employer dashboard:', parsedUser.fullName);
       } catch (error) {
@@ -419,17 +409,6 @@ const EmployerDashboard = () => {
 
     loadRealStats();
   }, [navigate]);
-
-  // ✅ FIX: Re-check premium status when the component updates
-  useEffect(() => {
-    if (user) {
-      const userId = user.id || user.email;
-      const isPremium = isUserPremium(userId);
-      if (user.isPremium !== isPremium) {
-        setUser(prev => ({ ...prev, isPremium }));
-      }
-    }
-  }, [user]);
 
   const loadRealStats = () => {
     try {
@@ -619,7 +598,6 @@ const EmployerDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Payment Success Banner */}
           {showSuccessBanner && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between animate-slideDown">
               <div className="flex items-center gap-3">

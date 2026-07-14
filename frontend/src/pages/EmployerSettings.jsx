@@ -114,16 +114,15 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Check premium status directly using the user ID
+  // // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
-
+  
   const isPremium = userIsPremium();
-
-  return (
+    return (
     <>
       {mobileMenuOpen && (
         <div 

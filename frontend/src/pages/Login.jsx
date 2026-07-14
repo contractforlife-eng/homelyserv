@@ -1,4 +1,4 @@
-// src/pages/Login.jsx - FIXED: Properly restores premium status for all users
+// src/pages/Login.jsx - COMPLETE FIX
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles } from 'lucide-react';
@@ -23,7 +23,6 @@ function Login() {
 
   // Create admin user on component mount
   useEffect(() => {
-    // Create admin user if it doesn't exist
     const createAdminUser = () => {
       const adminUser = {
         id: 'admin_emad',
@@ -43,7 +42,6 @@ function Login() {
         subscriptionActive: false
       };
 
-      // Get existing users
       let existingUsers = [];
       try {
         const storedUsers = localStorage.getItem('homelyserv_users');
@@ -53,7 +51,6 @@ function Login() {
         existingUsers = [];
       }
 
-      // Check if admin already exists
       const adminExists = existingUsers.find(u => u.email.toLowerCase() === 'emad@homelyserv.com');
       if (!adminExists) {
         existingUsers.push(adminUser);
@@ -67,33 +64,42 @@ function Login() {
     createAdminUser();
   }, []);
 
-  // Check if user is already logged in
+  // ✅ FIX: Check if user is already logged in and restore premium status
   useEffect(() => {
     const token = localStorage.getItem('homelyserv_token');
     const userData = localStorage.getItem('homelyserv_user');
     if (token && userData) {
       try {
         const user = JSON.parse(userData);
-        // ✅ FIX: Sync premium status on app load
+        // ✅ CRITICAL FIX: Always check premium status from subscription data
         const userId = user.id || user.email;
         const isPremium = isUserPremium(userId);
         const subscription = getUserSubscription(userId);
         
-        user.isPremium = isPremium;
-        user.subscriptionActive = isPremium;
-        user.subscription = subscription;
-        localStorage.setItem('homelyserv_user', JSON.stringify(user));
+        console.log('🔄 Restoring premium status for:', user.fullName);
+        console.log('🔄 Premium status:', isPremium);
+        console.log('🔄 Subscription:', subscription);
         
-        console.log('🔄 User already logged in:', user.fullName);
-        console.log('🔄 Premium status restored:', isPremium);
-        redirectUser(user);
+        // Update user object with premium status
+        const updatedUser = {
+          ...user,
+          isPremium: isPremium,
+          subscriptionActive: isPremium,
+          subscription: subscription
+        };
+        
+        localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+        
+        // Also sync to other storage locations
+        syncPremiumStatus(userId, user.email);
+        
+        redirectUser(updatedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     }
   }, []);
 
-  // Redirect function
   const redirectUser = (user) => {
     const role = user?.role?.toUpperCase();
 
@@ -108,7 +114,6 @@ function Login() {
     }
   };
 
-  // Check if user is registered in localStorage
   const checkRegisteredUser = (email) => {
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
@@ -117,6 +122,8 @@ function Login() {
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (user) {
         console.log('✅ Found registered user:', user.fullName);
+        console.log('✅ User role:', user.role);
+        console.log('✅ Stored premium status:', user.isPremium);
         return user;
       }
     } catch (error) {
@@ -125,7 +132,6 @@ function Login() {
     return null;
   };
 
-  // Get saved profile data for a user
   const getSavedProfileData = (email) => {
     try {
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
@@ -212,7 +218,7 @@ function Login() {
       console.log('📥 Merged saved profile data');
     }
 
-    // ✅ FIX: ALWAYS check if user has premium subscription
+    // ✅ CRITICAL FIX: ALWAYS check if user has premium subscription
     const userId = user.id || user.email;
     const isPremium = isUserPremium(userId);
     const subscription = getUserSubscription(userId);
@@ -220,19 +226,23 @@ function Login() {
     console.log(`🔍 Premium status for ${user.fullName} (${user.role}):`, isPremium);
     console.log('📋 Subscription data:', subscription);
     
+    // ✅ Update user object with premium status
     user.isPremium = isPremium;
     user.subscriptionActive = isPremium;
     user.subscription = subscription;
 
-    // ✅ FIX: Update ALL storage locations with premium status
+    // ✅ Update ALL storage locations
     try {
-      // Update users list
+      // 1. Update users list
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userIndex = users.findIndex(u => u.email === user.email);
       if (userIndex !== -1) {
-        users[userIndex].isPremium = isPremium;
-        users[userIndex].subscriptionActive = isPremium;
-        users[userIndex].subscription = subscription;
+        users[userIndex] = {
+          ...users[userIndex],
+          isPremium: isPremium,
+          subscriptionActive: isPremium,
+          subscription: subscription
+        };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
         console.log('✅ Updated users list with premium status');
       }
@@ -240,12 +250,15 @@ function Login() {
       console.error('Error updating users list:', error);
     }
 
-    // ✅ FIX: Update profiles data
     try {
+      // 2. Update profiles
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       if (profiles[user.email]) {
-        profiles[user.email].isPremium = isPremium;
-        profiles[user.email].subscriptionActive = isPremium;
+        profiles[user.email] = {
+          ...profiles[user.email],
+          isPremium: isPremium,
+          subscriptionActive: isPremium
+        };
         localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
         console.log('✅ Updated profiles with premium status');
       }
@@ -253,13 +266,16 @@ function Login() {
       console.error('Error updating profiles:', error);
     }
 
-    // ✅ FIX: Also update the subscription data directly
     try {
+      // 3. Ensure subscription data is up to date
       const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
       if (subscriptions[userId]) {
-        subscriptions[userId].userEmail = user.email;
-        subscriptions[userId].userRole = user.role;
-        subscriptions[userId].userFullName = user.fullName;
+        subscriptions[userId] = {
+          ...subscriptions[userId],
+          userEmail: user.email,
+          userRole: user.role,
+          userFullName: user.fullName
+        };
         localStorage.setItem('homelyserv_subscriptions', JSON.stringify(subscriptions));
         console.log('✅ Updated subscription data');
       }
@@ -267,7 +283,7 @@ function Login() {
       console.error('Error updating subscriptions:', error);
     }
 
-    // Store in localStorage
+    // ✅ Store user in session with premium status
     localStorage.setItem('homelyserv_token', token);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
     
@@ -283,7 +299,6 @@ function Login() {
     }, 500);
   };
 
-  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('🔄 Form submitted with email:', email);
@@ -297,7 +312,6 @@ function Login() {
       return;
     }
 
-    // FIRST: Check if user is registered in homelyserv_users
     const registeredUser = checkRegisteredUser(email);
 
     if (registeredUser) {
@@ -312,7 +326,7 @@ function Login() {
       return;
     }
 
-    // SECOND: Check demo accounts
+    // Demo accounts
     if (
       (email.toLowerCase() === 'contractforlife@gmail.com' ||
         email.toLowerCase() === 'worker') &&
@@ -342,14 +356,12 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4 relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
       
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
           
-          {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
@@ -376,15 +388,11 @@ function Login() {
             </div>
           </div>
 
-          {/* Custom Logo */}
           <div className="text-center mb-8 pt-2">
             <div className="relative inline-block">
-              {/* Outer glow ring */}
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-rose-400 rounded-full blur-xl opacity-60 scale-110"></div>
               
-              {/* Main logo container */}
               <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/40 transform transition-transform hover:scale-105 duration-300">
-                {/* Shield icon with home element */}
                 <div className="relative">
                   <Shield size={64} className="text-white/30 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
@@ -393,12 +401,10 @@ function Login() {
                   </div>
                 </div>
                 
-                {/* Decorative dots */}
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-200 rounded-full"></div>
                 <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-amber-200 rounded-full"></div>
               </div>
               
-              {/* Brand name with gradient */}
               <div className="mt-4">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
