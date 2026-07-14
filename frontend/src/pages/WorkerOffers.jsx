@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - Updated with Accept/Reject
+// src/pages/WorkerOffers.jsx - Updated with Accept/Reject and conversation creation
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
@@ -48,8 +48,14 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { 
+  getConversationId, 
+  sendMessage, 
+  getUserConversations,
+  saveUserConversations 
+} from '../utils/chatService';
 
-// Sidebar Component (same as before, keep as is)
+// Sidebar Component (same as before)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -100,7 +106,6 @@ const WorkerSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-
   const getProfileImage = () => user?.profileImage || null;
 
   return (
@@ -476,6 +481,59 @@ const WorkerOffers = () => {
   };
 
   // ============================================================
+  // CREATE CONVERSATION BETWEEN WORKER AND EMPLOYER
+  // ============================================================
+  const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
+    try {
+      // Get or create conversation ID
+      const conversationId = getConversationId(workerId, employerId);
+      
+      // Get existing conversations
+      const conversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]');
+      
+      // Check if conversation already exists
+      const existingConv = conversations.find(c => c.id === conversationId);
+      
+      if (!existingConv) {
+        // Create new conversation
+        const newConversation = {
+          id: conversationId,
+          participants: [
+            { id: workerId, name: workerName, role: 'WORKER' },
+            { id: employerId, name: employerName, role: 'EMPLOYER' }
+          ],
+          lastMessage: `✅ Offer accepted: ${offer.jobTitle || 'Job Offer'}`,
+          lastMessageTime: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        conversations.push(newConversation);
+        localStorage.setItem('homelyserv_conversations', JSON.stringify(conversations));
+        
+        // Send welcome message from worker to employer
+        const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
+        
+        sendMessage(
+          workerId,
+          workerName,
+          'WORKER',
+          employerId,
+          employerName,
+          welcomeMessage
+        );
+        
+        console.log('✅ Conversation created and welcome message sent');
+      }
+      
+      return conversationId;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return null;
+    }
+  };
+
+  // ============================================================
   // ACCEPT OFFER
   // ============================================================
   const handleAcceptOffer = (offer) => {
@@ -507,6 +565,24 @@ const WorkerOffers = () => {
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
+      // ============================================================
+      // CREATE CONVERSATION BETWEEN WORKER AND EMPLOYER
+      // ============================================================
+      const workerId = user?.id || user?.email;
+      const workerName = user?.fullName || 'Worker';
+      const employerId = offer.employerId || offer.employerEmail;
+      const employerName = offer.employerName || 'Employer';
+
+      if (workerId && employerId) {
+        createConversationAndSendWelcome(
+          offer,
+          workerId,
+          workerName,
+          employerId,
+          employerName
+        );
+      }
+
       // Send notification to employer
       const notification = {
         id: 'notif_' + Date.now(),
@@ -514,9 +590,9 @@ const WorkerOffers = () => {
         message: `${user?.fullName || 'Worker'} has accepted your job offer for ${offer.jobTitle}`,
         offerId: offer.id,
         offerTitle: offer.jobTitle,
-        workerId: user?.email || 'worker',
-        workerName: user?.fullName || 'Worker',
-        employerId: offer.employerId || offer.employerEmail,
+        workerId: workerId,
+        workerName: workerName,
+        employerId: employerId,
         employerEmail: offer.employerEmail,
         date: new Date().toISOString(),
         read: false
@@ -588,7 +664,7 @@ const WorkerOffers = () => {
         message: `${user?.fullName || 'Worker'} has rejected your job offer for ${offer.jobTitle}`,
         offerId: offer.id,
         offerTitle: offer.jobTitle,
-        workerId: user?.email || 'worker',
+        workerId: user?.id || user?.email,
         workerName: user?.fullName || 'Worker',
         employerId: offer.employerId || offer.employerEmail,
         employerEmail: offer.employerEmail,
@@ -1069,6 +1145,18 @@ const WorkerOffers = () => {
                               Offer Rejected
                             </span>
                           )}
+                          {offer.status === 'accepted' && (
+                            <button
+                              onClick={() => {
+                                // Navigate to messages with employer
+                                navigate('/worker-messages');
+                              }}
+                              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition flex items-center gap-1"
+                            >
+                              <MessageSquare size={14} />
+                              Chat
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1151,13 +1239,6 @@ const WorkerOffers = () => {
                             {offer.status === 'accepted' && (
                               <button
                                 onClick={() => {
-                                  // Navigate to messages with employer
-                                  const chatData = {
-                                    id: offer.employerId || offer.employerEmail,
-                                    name: offer.employerName || 'Employer',
-                                    role: 'employer'
-                                  };
-                                  localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
                                   navigate('/worker-messages');
                                 }}
                                 className="mt-3 w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"

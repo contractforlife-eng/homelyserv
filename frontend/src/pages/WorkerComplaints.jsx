@@ -1,4 +1,4 @@
-// src/pages/WorkerComplaints.jsx - UPDATED with logo, real data, and profile images
+// src/pages/WorkerComplaints.jsx - Updated with clean data, no fake complaints
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -28,7 +28,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-// Sidebar Component with custom logo and profile image
+// Sidebar Component (same as before - keep as is)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -240,7 +240,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerComplaints Component - REAL DATA ONLY
+// Main WorkerComplaints Component - CLEAN DATA ONLY
 const WorkerComplaints = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -378,6 +378,79 @@ const WorkerComplaints = () => {
 
   const t = translations[language];
 
+  // ============================================================
+  // LOAD COMPLAINTS - CLEAN DATA ONLY
+  // ============================================================
+  const loadComplaints = () => {
+    try {
+      const userEmail = user?.email;
+      if (!userEmail) {
+        setComplaints([]);
+        setFilteredComplaints([]);
+        return;
+      }
+
+      // Load complaints specifically for this user
+      const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
+      
+      // Filter complaints for this user only
+      const userComplaints = savedComplaints.filter(
+        c => c.userEmail === userEmail || c.userId === userEmail
+      );
+      
+      // Sort by date descending (newest first)
+      userComplaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setComplaints(userComplaints);
+      setFilteredComplaints(userComplaints);
+      
+      console.log(`✅ Loaded ${userComplaints.length} complaints for user: ${userEmail}`);
+    } catch (error) {
+      console.error('Error loading complaints:', error);
+      setComplaints([]);
+      setFilteredComplaints([]);
+    }
+  };
+
+  // ============================================================
+  // DELETE OLD/FAKE COMPLAINTS (cleanup function)
+  // ============================================================
+  const cleanupFakeComplaints = () => {
+    try {
+      const userEmail = user?.email;
+      if (!userEmail) return;
+
+      const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
+      
+      // Keep only complaints that belong to this user and have valid data
+      const validComplaints = savedComplaints.filter(c => {
+        // Must have userEmail or userId matching current user
+        const belongsToUser = c.userEmail === userEmail || c.userId === userEmail;
+        
+        // Must have required fields
+        const hasValidData = c.id && c.title && c.description;
+        
+        // Must not be an old fake complaint (check for fake patterns)
+        const isFake = c.isFake === true || 
+                       (c.title && c.title.includes('Test')) ||
+                       (c.title && c.title.includes('Fake')) ||
+                       (c.description && c.description.includes('test'));
+        
+        return belongsToUser && hasValidData && !isFake;
+      });
+      
+      // Save cleaned complaints
+      localStorage.setItem('worker_complaints', JSON.stringify(validComplaints));
+      
+      // Reload complaints
+      loadComplaints();
+      
+      console.log(`🧹 Cleaned up complaints. Removed ${savedComplaints.length - validComplaints.length} fake/old complaints.`);
+    } catch (error) {
+      console.error('Error cleaning up complaints:', error);
+    }
+  };
+
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -388,7 +461,6 @@ const WorkerComplaints = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        // Load profile image from profiles storage
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
@@ -407,28 +479,18 @@ const WorkerComplaints = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load REAL complaints from localStorage - NO FAKE DATA
-    loadComplaints();
     setLoading(false);
   }, [navigate]);
 
-  const loadComplaints = () => {
-    const savedComplaints = localStorage.getItem('worker_complaints');
-    if (savedComplaints) {
-      try {
-        const parsedComplaints = JSON.parse(savedComplaints);
-        setComplaints(parsedComplaints);
-        setFilteredComplaints(parsedComplaints);
-      } catch (error) {
-        console.error('Error parsing complaints:', error);
-        setComplaints([]);
-        setFilteredComplaints([]);
-      }
-    } else {
-      setComplaints([]);
-      setFilteredComplaints([]);
+  // Load complaints when user is set
+  useEffect(() => {
+    if (user) {
+      // Clean up fake complaints first
+      cleanupFakeComplaints();
+      // Then load complaints
+      loadComplaints();
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -486,6 +548,7 @@ const WorkerComplaints = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const complaint = {
       id: 'comp_' + Date.now(),
       ...newComplaint,
@@ -495,23 +558,33 @@ const WorkerComplaints = () => {
       response: null,
       userId: user?.id || user?.email,
       userEmail: user?.email,
-      userName: user?.fullName
+      userName: user?.fullName,
+      isFake: false // Mark as real complaint
     };
-    const updatedComplaints = [complaint, ...complaints];
-    setComplaints(updatedComplaints);
-    setFilteredComplaints(updatedComplaints);
+    
+    // Load existing complaints, add new one, save
+    const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
+    const updatedComplaints = [complaint, ...savedComplaints];
     localStorage.setItem('worker_complaints', JSON.stringify(updatedComplaints));
+    
+    // Reload complaints
+    loadComplaints();
+    
     setNewComplaint({ title: '', description: '', category: 'general' });
     setShowForm(false);
+    
+    alert('✅ Complaint submitted successfully!');
   };
 
   const updateComplaintStatus = (complaintId, newStatus) => {
-    const updatedComplaints = complaints.map(c =>
+    const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
+    const updatedComplaints = savedComplaints.map(c =>
       c.id === complaintId ? { ...c, status: newStatus } : c
     );
-    setComplaints(updatedComplaints);
-    setFilteredComplaints(updatedComplaints);
     localStorage.setItem('worker_complaints', JSON.stringify(updatedComplaints));
+    
+    // Reload complaints
+    loadComplaints();
   };
 
   const getStatusColor = (status) => {
@@ -541,7 +614,6 @@ const WorkerComplaints = () => {
     resolved: complaints.filter(c => c.status === 'resolved').length
   };
 
-  // Get user profile image
   const userProfileImage = user?.profileImage || null;
 
   if (!user) {
@@ -568,7 +640,6 @@ const WorkerComplaints = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -579,11 +650,9 @@ const WorkerComplaints = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -598,7 +667,6 @@ const WorkerComplaints = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* User profile picture in header */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
                   {userProfileImage ? (
@@ -630,9 +698,8 @@ const WorkerComplaints = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header with profile image */}
+          {/* Page Header */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
@@ -800,7 +867,7 @@ const WorkerComplaints = () => {
             </p>
           </div>
 
-          {/* Complaints List - REAL DATA */}
+          {/* Complaints List - CLEAN DATA ONLY */}
           {filteredComplaints.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">📋</div>

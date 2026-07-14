@@ -1,8 +1,9 @@
-// src/pages/EmployerSearch.jsx - COMPLETE FIXED VERSION
+// src/pages/EmployerSearch.jsx - COMPLETE WITH PREMIUM BADGE
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -53,7 +54,8 @@ import {
   LayoutGrid,
   List,
   CreditCard,
-  Lock as LockIcon  // ← Renamed to avoid conflict
+  Lock as LockIcon,
+  Crown
 } from 'lucide-react';
 
 // ============================================================
@@ -82,7 +84,8 @@ const EmployerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+        overview: 'Overview',
+        premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -95,7 +98,8 @@ const EmployerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -109,11 +113,19 @@ const EmployerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => location.pathname === path;
 
   const getProfileImage = () => user?.profileImage || null;
+
+  // Check if user has premium subscription
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
 
   return (
     <>
@@ -174,7 +186,15 @@ const EmployerSidebar = ({
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  {isPremium() && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
@@ -458,6 +478,9 @@ const EmployerSearch = () => {
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
+        // Check if user has premium subscription
+        const userId = parsedUser.id || parsedUser.email;
+        parsedUser.isPremium = isUserPremium(userId);
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -494,6 +517,24 @@ const EmployerSearch = () => {
       
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
+        // Check if worker has premium subscription
+        const workerId = worker.id || worker.email;
+        const isPremium = isUserPremium(workerId);
+        // In the worker card, add premium badge next to the name
+<div className="flex items-center justify-between">
+  <div className="flex items-center gap-2">
+    <h4 className={`font-semibold text-gray-800 ${viewMode === 'compact' ? 'text-sm' : ''}`}>
+      {worker.fullName}
+    </h4>
+    {worker.isPremium && (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+        <Crown size={10} className="text-yellow-500" />
+        Premium
+      </span>
+    )}
+  </div>
+  {/* ... rest of the card ... */}
+</div>
         return {
           ...worker,
           ...profile,
@@ -511,7 +552,8 @@ const EmployerSearch = () => {
           jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
           available: profile.available !== undefined ? profile.available : true,
           role: 'WORKER',
-          languages: profile.languages || worker.languages || ['english']
+          languages: profile.languages || worker.languages || ['english'],
+          isPremium: isPremium
         };
       });
       
@@ -841,6 +883,12 @@ const EmployerSearch = () => {
                 <span className="text-sm font-medium text-gray-700 hidden sm:inline">
                   {user?.fullName || 'Employer'}
                 </span>
+                {user?.isPremium && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                    <Crown size={10} className="text-yellow-500" />
+                    Premium
+                  </span>
+                )}
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
@@ -892,7 +940,7 @@ const EmployerSearch = () => {
               </div>
             </div>
           </div>
-
+          
           {/* Search Section */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
@@ -1093,11 +1141,11 @@ const EmployerSearch = () => {
                       key={worker.id || worker.email} 
                       className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition ${
                         viewMode === 'compact' ? 'p-3' : ''
-                      }`}
+                      } ${worker.isPremium ? 'border-yellow-300 bg-yellow-50/10' : ''}`}
                     >
                       <div className={`flex ${viewMode === 'list' ? 'flex-row' : 'flex-col'} gap-4`}>
                         <div className={`flex items-start gap-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                          <div className={`rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 ${
+                          <div className={`rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 relative ${
                             viewMode === 'compact' ? 'w-12 h-12' : 'w-16 h-16'
                           }`}>
                             {worker.profileImage ? (
@@ -1109,12 +1157,25 @@ const EmployerSearch = () => {
                             ) : (
                               <User size={viewMode === 'compact' ? 20 : 28} className="text-teal-600" />
                             )}
+                            {worker.isPremium && (
+                              <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                                <Crown size={viewMode === 'compact' ? 10 : 14} className="text-white" />
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h4 className={`font-semibold text-gray-800 ${viewMode === 'compact' ? 'text-sm' : ''}`}>
-                                {worker.fullName}
-                              </h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className={`font-semibold text-gray-800 ${viewMode === 'compact' ? 'text-sm' : ''}`}>
+                                  {worker.fullName}
+                                </h4>
+                                {worker.isPremium && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                                    <Crown size={10} className="text-yellow-500" />
+                                    Premium
+                                  </span>
+                                )}
+                              </div>
                               <button
                                 onClick={() => toggleSaveWorker(worker.id || worker.email)}
                                 className="p-1 hover:bg-gray-100 rounded"
@@ -1159,7 +1220,7 @@ const EmployerSearch = () => {
                                 </span>
                               )}
                             </div>
-                            {/* ⚠️ CONTACT INFO HIDDEN - Using LockIcon */}
+                            {/* CONTACT INFO HIDDEN */}
                             <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
                               <LockIcon size={12} />
                               <span>{t.contactHidden}</span>

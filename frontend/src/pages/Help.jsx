@@ -1,6 +1,8 @@
 // src/pages/Help.jsx
+// src/pages/Help.jsx - WITH PREMIUM BADGE FIX
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -38,10 +40,11 @@ import {
   Lock,
   UserCheck,
   Zap,
-  DollarSign
+  DollarSign,
+  Crown
 } from 'lucide-react';
 
-// Sidebar Component - WITH PROFILE IMAGE
+// Sidebar Component - WITH PREMIUM BADGE FIX
 const HelpSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -67,7 +70,8 @@ const HelpSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: isEmployer ? 'لوحة التحكم' : 'لوحة التحكم',
@@ -80,7 +84,8 @@ const HelpSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -96,7 +101,8 @@ const HelpSidebar = ({
       { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
       { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
       { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-      { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
+      { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+      { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
     ];
   } else {
     menuItems = [
@@ -106,6 +112,7 @@ const HelpSidebar = ({
       { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
       { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
       { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+      { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
     ];
   }
 
@@ -122,6 +129,15 @@ const HelpSidebar = ({
     }
     return null;
   };
+
+  // ✅ FIX: Check premium status directly using the user ID
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -140,14 +156,14 @@ const HelpSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
-              <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center`}>
+              <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center mx-auto`}>
+            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-lg flex items-center justify-center mx-auto`}>
               <span className="text-white font-bold text-sm">H</span>
             </Link>
           )}
@@ -165,10 +181,10 @@ const HelpSidebar = ({
           </button>
         </div>
 
-        {/* ===== FIXED: Profile section with image ===== */}
+        {/* Profile section with image AND PREMIUM BADGE */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-red-100'} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-amber-100'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -176,12 +192,25 @@ const HelpSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
+                <User size={20} className={isTeal ? 'text-teal-600' : 'text-amber-600'} />
+              )}
+              {isPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
               )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'User'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'User'}</p>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
               </div>
             )}
@@ -208,11 +237,11 @@ const HelpSidebar = ({
                 isActive(item.path)
                   ? isTeal 
                     ? 'bg-teal-50 text-teal-600'
-                    : 'bg-red-50 text-red-600'
+                    : 'bg-amber-50 text-amber-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-red-600') : ''} />
+              <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-amber-600') : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -220,7 +249,12 @@ const HelpSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className={`ml-auto w-1.5 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-full`}></div>
+                <div className={`ml-auto w-1.5 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-full`}></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -257,7 +291,7 @@ const HelpSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50' : 'text-red-600 hover:bg-red-50'} group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50' : 'text-amber-600 hover:bg-amber-50'} group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -274,6 +308,7 @@ const HelpSidebar = ({
     </>
   );
 };
+
 
 // Main Help Component - ENHANCED
 const Help = () => {

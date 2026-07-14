@@ -1,6 +1,7 @@
-// src/pages/WorkerDashboard.jsx - Updated with logo and real data
+// src/pages/WorkerDashboard.jsx - Updated with persistent premium badge
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -24,10 +25,13 @@ import {
   AlertTriangle,
   CreditCard,
   Shield,
-  Sparkles
+  Sparkles,
+  Crown,
+  FileText,
+  Search
 } from 'lucide-react';
 
-// Sidebar Component - Updated with custom logo
+// Sidebar Component - Updated with persistent premium badge
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -50,7 +54,9 @@ const WorkerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium',
+      myHires: 'My Hires'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -62,19 +68,24 @@ const WorkerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز',
+      myHires: 'توظيفاتي'
     }
   };
 
   const t = translations[language];
 
+  // Menu items with Premium included
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
+    { id: 'my-hires', label: t.myHires, icon: FileText, path: '/my-hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -87,6 +98,9 @@ const WorkerSidebar = ({
     }
     return null;
   };
+
+  // Check if user has premium subscription - using the user object passed from parent
+  const userIsPremium = user?.isPremium || false;
 
   return (
     <>
@@ -134,7 +148,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -144,10 +158,23 @@ const WorkerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {userIsPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
@@ -185,6 +212,11 @@ const WorkerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -242,6 +274,7 @@ const WorkerSidebar = ({
 // Main WorkerDashboard Component
 const WorkerDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -288,7 +321,9 @@ const WorkerDashboard = () => {
       noActivity: 'No recent activity',
       noNotifications: 'No notifications',
       viewAll: 'View All',
-      markAllRead: 'Mark All Read'
+      markAllRead: 'Mark All Read',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       welcome: 'مرحباً بعودتك',
@@ -316,48 +351,78 @@ const WorkerDashboard = () => {
       noActivity: 'لا يوجد نشاط حديث',
       noNotifications: 'لا توجد إشعارات',
       viewAll: 'عرض الكل',
-      markAllRead: 'تعيين الكل كمقروء'
+      markAllRead: 'تعيين الكل كمقروء',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
 
+  // ✅ FIX: Check if user has premium subscription using the stored flag
+  const userIsPremium = user?.isPremium || false;
+
   useEffect(() => {
-  const savedLang = localStorage.getItem('homelyserv_language');
-  if (savedLang) {
-    setLanguage(savedLang);
-  }
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
 
-  const userData = localStorage.getItem('homelyserv_user');
+    const userData = localStorage.getItem('homelyserv_user');
 
-  if (userData) {
-    try {
-      const parsedUser = JSON.parse(userData);
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
 
-      const profiles = JSON.parse(
-        localStorage.getItem('homelyserv_profiles') || '{}'
-      );
+        const profiles = JSON.parse(
+          localStorage.getItem('homelyserv_profiles') || '{}'
+        );
 
-      if (profiles[parsedUser.email]) {
-        parsedUser.profileImage =
-          profiles[parsedUser.email].profileImage || null;
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage =
+            profiles[parsedUser.email].profileImage || null;
+        }
+
+        // ✅ FIX: Check if user has premium subscription
+        const userId = parsedUser.id || parsedUser.email;
+        const isPremium = isUserPremium(userId);
+        parsedUser.isPremium = isPremium;
+
+        // ✅ FIX: Also check in users list and update if needed
+        const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+        const userIndex = users.findIndex(u => u.email === parsedUser.email);
+        if (userIndex !== -1) {
+          users[userIndex].isPremium = isPremium;
+          users[userIndex].subscriptionActive = isPremium;
+          localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        }
+
+        setUser(parsedUser);
+      } catch (error) {
+        console.error(error);
+        navigate('/login');
       }
-
-      setUser(parsedUser);
-    } catch (error) {
-      console.error(error);
+    } else {
       navigate('/login');
     }
-  } else {
-    navigate('/login');
-  }
 
-  const sidebarState = localStorage.getItem('sidebar_collapsed');
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
 
-  if (sidebarState) {
-    setSidebarCollapsed(JSON.parse(sidebarState));
-  }
-}, [navigate]);
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+  }, [navigate]);
+
+  // ✅ FIX: Re-check premium status when the component updates
+  useEffect(() => {
+    if (user) {
+      const userId = user.id || user.email;
+      const isPremium = isUserPremium(userId);
+      if (user.isPremium !== isPremium) {
+        setUser(prev => ({ ...prev, isPremium }));
+      }
+    }
+  }, [user]);
 
   const loadRealStats = () => {
     try {
@@ -428,12 +493,12 @@ const WorkerDashboard = () => {
       });
       
       generateRecentActivity(
-  appliedOffers,
-  savedOffers,
-  employerOffers,
-  payments,
-  user
-);
+        appliedOffers,
+        savedOffers,
+        employerOffers,
+        payments,
+        user
+      );
       
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -441,12 +506,12 @@ const WorkerDashboard = () => {
   };
 
   const generateRecentActivity = (
-  appliedOffers,
-  savedOffers,
-  employerOffers,
-  payments,
-  currentUser
-) => {
+    appliedOffers,
+    savedOffers,
+    employerOffers,
+    payments,
+    currentUser
+  ) => {
     const activities = [];
     
     // Applications activity
@@ -506,12 +571,14 @@ const WorkerDashboard = () => {
       setNotifications([]);
     }
   };
-useEffect(() => {
-  if (user) {
-    loadRealStats();
-    loadNotifications();
-  }
-}, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadRealStats();
+      loadNotifications();
+    }
+  }, [user]);
+
   const markNotificationRead = (id) => {
     const updated = notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
@@ -650,7 +717,7 @@ useEffect(() => {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -660,10 +727,23 @@ useEffect(() => {
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Worker'}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                    {user?.fullName || 'Worker'}
+                  </span>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={toggleLanguage}
@@ -681,7 +761,7 @@ useEffect(() => {
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -691,9 +771,22 @@ useEffect(() => {
                   ) : (
                     <User size={28} className="text-white m-3" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
+                      <Crown size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
+                    {userIsPremium && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                        <Crown size={12} className="text-yellow-300" />
+                        {t.premiumBadge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-white/80 mt-1">{t.overview}</p>
                 </div>
               </div>
@@ -712,6 +805,15 @@ useEffect(() => {
                   <User size={16} />
                   {t.viewProfile}
                 </Link>
+                {!userIsPremium && (
+                  <Link
+                    to="/subscription"
+                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
+                  >
+                    <Crown size={16} />
+                    {t.getPremium}
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
@@ -27,7 +28,7 @@ import WorkerProfile from './pages/WorkerProfile';
 import WorkerComplaints from './pages/WorkerComplaints';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
-import WorkerPayment from './pages/WorkerPayment';  // <-- ADD THIS
+import WorkerPayment from './pages/WorkerPayment';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -42,6 +43,9 @@ import EmployerSettings from './pages/EmployerSettings';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
 import PaymentCommission from './pages/PaymentCommission';
+
+// Subscription Page
+import Subscription from './pages/Subscription';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -65,6 +69,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   try {
     const user = JSON.parse(userData);
     if (requiredRole && user.role !== requiredRole) {
+      // Redirect to appropriate dashboard based on role
+      if (user.role === 'WORKER') {
+        return <Navigate to="/worker-dashboard" replace />;
+      } else if (user.role === 'EMPLOYER') {
+        return <Navigate to="/employer-dashboard" replace />;
+      } else if (user.role === 'ADMIN') {
+        return <Navigate to="/admin" replace />;
+      }
       return <Navigate to="/login" replace />;
     }
     return children;
@@ -208,15 +220,15 @@ function App() {
           </ProtectedRoute>
         } 
       />
-      {/* PAYMENT ROUTE - ADD THIS */}
       <Route 
-  path="/worker-payment" 
-  element={
-    <ProtectedRoute requiredRole="WORKER">
-      <WorkerPayment />
-    </ProtectedRoute>
-  } 
-/>
+        path="/worker-payment" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <WorkerPayment />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* ========== EMPLOYER ROUTES ========== */}
       <Route 
         path="/employer-dashboard" 
@@ -296,21 +308,35 @@ function App() {
           <ProtectedRoute requiredRole="EMPLOYER">
             <PaymentOptions />
           </ProtectedRoute>
-  }  
+        }  
       />
       <Route 
-  path="/worker-profile-view" 
-  element={
-    <ProtectedRoute requiredRole="EMPLOYER">
-      <WorkerProfileView />
-    </ProtectedRoute>
-  } 
-/>
-<Route path="/payment-commission" element={
-  <ProtectedRoute>
-    <PaymentCommission />
-  </ProtectedRoute>
-} />
+        path="/worker-profile-view" 
+        element={
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <WorkerProfileView />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/payment-commission" 
+        element={
+          <ProtectedRoute>
+            <PaymentCommission />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========== SUBSCRIPTION ROUTE ========== */}
+      <Route 
+        path="/subscription" 
+        element={
+          <ProtectedRoute>
+            <Subscription />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* ========== ADMIN ROUTES ========== */}
       <Route 
         path="/admin" 

@@ -1,5 +1,5 @@
-// src/pages/WorkerMessages.jsx - UPDATED with logo, real data, and profile images
-import React, { useState, useEffect } from 'react';
+// src/pages/WorkerMessages.jsx - UPDATED with logo, real data, profile images, and auto-refresh
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Home,
@@ -25,7 +25,8 @@ import {
   Clock,
   CreditCard,
   Shield,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -248,7 +249,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - UPDATED
+// Main WorkerMessages Component - UPDATED with auto-refresh
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -262,6 +263,9 @@ const WorkerMessages = () => {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const messagesEndRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const translations = {
     en: {
@@ -279,7 +283,10 @@ const WorkerMessages = () => {
       loading: 'Loading messages...',
       noMessages: 'No messages yet',
       startConversation: 'Start the conversation!',
-      refresh: 'Refresh'
+      refresh: 'Refresh',
+      newMessage: 'New message from {name}',
+      acceptedOffer: 'You accepted an offer from {name}',
+      typing: 'Typing...'
     },
     ar: {
       title: 'الرسائل',
@@ -296,7 +303,10 @@ const WorkerMessages = () => {
       loading: 'جاري تحميل الرسائل...',
       noMessages: 'لا توجد رسائل بعد',
       startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث'
+      refresh: 'تحديث',
+      newMessage: 'رسالة جديدة من {name}',
+      acceptedOffer: 'لقد قبلت عرضاً من {name}',
+      typing: 'جاري الكتابة...'
     }
   };
 
@@ -369,9 +379,63 @@ const WorkerMessages = () => {
     if (!userId) return;
     
     const userConversations = getUserConversations(userId);
-    console.log('📋 Refresh load - worker conversations:', userConversations);
+    console.log('🔄 Refresh load - worker conversations:', userConversations);
     setConversations(userConversations);
   }, [user, refreshKey]);
+
+  // Auto-refresh conversations every 10 seconds
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    // Set up interval to refresh conversations every 10 seconds
+    intervalRef.current = setInterval(() => {
+      const updatedConversations = getUserConversations(userId);
+      // Update conversations if there are changes
+      setConversations(prevConversations => {
+        if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
+          console.log('🔄 Auto-refresh: Conversations updated');
+          return updatedConversations;
+        }
+        return prevConversations;
+      });
+      
+      // If there's a selected conversation, refresh its messages too
+      if (selectedConversationId) {
+        const updatedMessages = getConversationMessages(selectedConversationId);
+        setMessages(prevMessages => {
+          if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
+            console.log('🔄 Auto-refresh: Messages updated for conversation:', selectedConversationId);
+            // Mark messages as read
+            markMessagesAsRead(selectedConversationId, userId);
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+      }
+    }, 10000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [user, selectedConversationId]);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const loadMessagesForConversation = (conversationId) => {
     console.log('📨 Loading messages for conversation:', conversationId);
@@ -459,8 +523,27 @@ const WorkerMessages = () => {
     }
   };
 
-  const refreshConversations = () => {
-    setRefreshKey(prev => prev + 1);
+  const handleManualRefresh = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    if (user) {
+      const userId = user.id || user.email;
+      const updatedConversations = getUserConversations(userId);
+      setConversations(updatedConversations);
+      
+      // If there's a selected conversation, refresh its messages too
+      if (selectedConversationId) {
+        const updatedMessages = getConversationMessages(selectedConversationId);
+        setMessages(updatedMessages);
+        markMessagesAsRead(selectedConversationId, userId);
+      }
+    }
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
 
   // Get user profile image
@@ -535,10 +618,11 @@ const WorkerMessages = () => {
                 {t.languageToggle}
               </button>
               <button
-                onClick={refreshConversations}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                <Clock size={16} />
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
                 {t.refresh}
               </button>
             </div>
@@ -569,6 +653,9 @@ const WorkerMessages = () => {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-white/90">
                   {user?.fullName || 'Worker'}
+                </span>
+                <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
+                  {conversations.length} chats
                 </span>
               </div>
             </div>
@@ -606,7 +693,6 @@ const WorkerMessages = () => {
                           selectedConversationId === conv.id ? 'bg-amber-50' : ''
                         }`}
                       >
-                        {/* Profile picture only - no name here */}
                         <img
                           src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=amber&color=fff&size=100&bold=true`}
                           alt={conv.otherUserName}
@@ -638,7 +724,7 @@ const WorkerMessages = () => {
                 {selectedConversationId ? (
                   <>
                     {/* Chat Header with profile picture and name */}
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/30">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
@@ -667,51 +753,87 @@ const WorkerMessages = () => {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/20">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 py-8">
                           <p>{t.noMessages}</p>
                           <p className="text-sm">{t.startConversation}</p>
                         </div>
                       ) : (
-                        messages.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex ${msg.senderRole === 'WORKER' ? 'justify-end' : 'justify-start'}`}
-                          >
+                        messages.map((msg, index) => {
+                          const isWorker = msg.senderRole === 'WORKER';
+                          const showAvatar = index === 0 || 
+                            (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
+                          
+                          return (
                             <div
-                              className={`max-w-[70%] p-3 rounded-lg ${
-                                msg.senderRole === 'WORKER'
-                                  ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-br-none'
-                                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                              }`}
+                              key={msg.id || index}
+                              className={`flex ${isWorker ? 'justify-end' : 'justify-start'} items-end gap-2`}
                             >
-                              <p className="text-sm">{msg.text}</p>
-                              <p className={`text-xs mt-1 ${msg.senderRole === 'WORKER' ? 'text-amber-100' : 'text-gray-400'}`}>
-                                {msg.time}
-                                {msg.senderRole === 'WORKER' && (
-                                  <CheckCheck size={14} className="inline ml-1" />
+                              {!isWorker && showAvatar && (
+                                <img
+                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=amber&color=fff&size=100&bold=true`}
+                                  alt={msg.senderName}
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                />
+                              )}
+                              {!isWorker && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
+                              <div
+                                className={`max-w-[70%] p-3 rounded-lg ${
+                                  isWorker
+                                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-br-none'
+                                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
+                                }`}
+                              >
+                                {!isWorker && (
+                                  <p className="text-xs font-medium text-amber-600 mb-1">
+                                    {msg.senderName}
+                                  </p>
                                 )}
-                              </p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+                                <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
+                                  isWorker ? 'text-amber-100' : 'text-gray-400'
+                                }`}>
+                                  {msg.time}
+                                  {isWorker && (
+                                    <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-amber-200'} />
+                                  )}
+                                </p>
+                              </div>
+                              {isWorker && showAvatar && (
+                                <img
+                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Worker')}&background=amber&color=fff&size=100&bold=true`}
+                                  alt={user.fullName || 'Worker'}
+                                  className="w-8 h-8 rounded-full object-cover border-2 border-amber-200 flex-shrink-0"
+                                />
+                              )}
+                              {isWorker && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
+                      <div ref={messagesEndRef} />
                     </div>
 
                     {/* Message Input */}
-                    <div className="p-4 border-t border-gray-200">
+                    <div className="p-4 border-t border-gray-200 bg-white">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         />
                         <button
                           type="submit"
-                          className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                          disabled={!message.trim()}
                         >
                           <Send size={18} />
                           {t.send}

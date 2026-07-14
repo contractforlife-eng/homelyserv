@@ -1,6 +1,7 @@
-// src/pages/EmployerDashboard.jsx - WITH PROFILE IMAGE & PAYMENT SUCCESS NOTIFICATION
+// src/pages/EmployerDashboard.jsx - WITH PERSISTENT PREMIUM BADGE
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -27,10 +28,12 @@ import {
   Search,
   UserPlus,
   Star,
-  CreditCard
+  CreditCard,
+  Crown,
+  FileText
 } from 'lucide-react';
 
-// Employer Sidebar Component - WITH PROFILE IMAGE
+// Employer Sidebar Component - WITH PERSISTENT PREMIUM BADGE
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -54,7 +57,8 @@ const EmployerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -67,12 +71,14 @@ const EmployerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
   const t = translations[language];
 
+  // Menu items with Premium included
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -81,19 +87,22 @@ const EmployerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
     return location.pathname === path;
   };
 
-  // Get profile image from user
   const getProfileImage = () => {
     if (user?.profileImage) {
       return user.profileImage;
     }
     return null;
   };
+
+  // ✅ FIX: Use the user.isPremium flag passed from parent
+  const userIsPremium = user?.isPremium || false;
 
   return (
     <>
@@ -139,7 +148,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -149,10 +158,23 @@ const EmployerSidebar = ({
               ) : (
                 <User size={20} className="text-teal-600" />
               )}
+              {userIsPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
@@ -190,6 +212,11 @@ const EmployerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -244,7 +271,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerDashboard Component - WITH PROFILE IMAGE & PAYMENT SUCCESS
+// Main EmployerDashboard Component
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -288,7 +315,9 @@ const EmployerDashboard = () => {
       noActivity: 'No recent activity',
       paymentSuccess: '🎉 Payment Successful!',
       hiredSuccess: 'Successfully hired {worker}!',
-      viewHireDetails: 'View Hire Details'
+      viewHireDetails: 'View Hire Details',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       welcome: 'مرحباً بعودتك',
@@ -313,14 +342,19 @@ const EmployerDashboard = () => {
       noActivity: 'لا يوجد نشاط حديث',
       paymentSuccess: '🎉 تم الدفع بنجاح!',
       hiredSuccess: 'تم توظيف {worker} بنجاح!',
-      viewHireDetails: 'عرض تفاصيل التوظيف'
+      viewHireDetails: 'عرض تفاصيل التوظيف',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
 
+  // ✅ FIX: Check if user has premium subscription using the stored flag
+  const userIsPremium = user?.isPremium || false;
+
   // ============================================================
-  // FIX: Payment Success Notification
+  // Payment Success Notification
   // ============================================================
   useEffect(() => {
     // Check for payment success from navigation state
@@ -352,6 +386,21 @@ const EmployerDashboard = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
+        
+        // ✅ FIX: Check if user has premium subscription
+        const userId = parsedUser.id || parsedUser.email;
+        const isPremium = isUserPremium(userId);
+        parsedUser.isPremium = isPremium;
+
+        // ✅ FIX: Also check in users list and update if needed
+        const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+        const userIndex = users.findIndex(u => u.email === parsedUser.email);
+        if (userIndex !== -1) {
+          users[userIndex].isPremium = isPremium;
+          users[userIndex].subscriptionActive = isPremium;
+          localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        }
+        
         setUser(parsedUser);
         console.log('✅ User loaded in employer dashboard:', parsedUser.fullName);
       } catch (error) {
@@ -370,6 +419,17 @@ const EmployerDashboard = () => {
 
     loadRealStats();
   }, [navigate]);
+
+  // ✅ FIX: Re-check premium status when the component updates
+  useEffect(() => {
+    if (user) {
+      const userId = user.id || user.email;
+      const isPremium = isUserPremium(userId);
+      if (user.isPremium !== isPremium) {
+        setUser(prev => ({ ...prev, isPremium }));
+      }
+    }
+  }, [user]);
 
   const loadRealStats = () => {
     try {
@@ -515,7 +575,7 @@ const EmployerDashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200">
+                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -525,10 +585,23 @@ const EmployerDashboard = () => {
                   ) : (
                     <User size={16} className="text-teal-600 m-1" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Employer'}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                    {user?.fullName || 'Employer'}
+                  </span>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
@@ -546,9 +619,7 @@ const EmployerDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* ============================================================
-              FIX: Payment Success Banner
-              ============================================================ */}
+          {/* Payment Success Banner */}
           {showSuccessBanner && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between animate-slideDown">
               <div className="flex items-center gap-3">
@@ -580,7 +651,7 @@ const EmployerDashboard = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -590,9 +661,22 @@ const EmployerDashboard = () => {
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
+                      <Crown size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
+                    {userIsPremium && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                        <Crown size={12} className="text-yellow-300" />
+                        {t.premiumBadge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-teal-100 mt-1">{t.overview}</p>
                 </div>
               </div>
@@ -611,6 +695,15 @@ const EmployerDashboard = () => {
                   <User size={16} />
                   {t.viewProfile}
                 </Link>
+                {!userIsPremium && (
+                  <Link
+                    to="/subscription"
+                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
+                  >
+                    <Crown size={16} />
+                    {t.getPremium}
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -753,4 +846,4 @@ const EmployerDashboard = () => {
   );
 };
 
-export default EmployerDashboard; 
+export default EmployerDashboard;

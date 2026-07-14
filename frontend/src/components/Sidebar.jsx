@@ -1,6 +1,7 @@
 // src/components/Sidebar.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -21,7 +22,10 @@ import {
   Shield,
   Bell,
   Menu,
-  X
+  X,
+  Crown,
+  Search,
+  FileCheck
 } from 'lucide-react';
 
 const Sidebar = ({ 
@@ -54,7 +58,8 @@ const Sidebar = ({
       reports: 'Reports',
       hires: 'Hires',
       search: 'Search',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -74,11 +79,21 @@ const Sidebar = ({
       reports: 'التقارير',
       hires: 'التعاقدات',
       search: 'بحث',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      premium: 'مميز'
     }
   };
 
   const t = translations[language || 'en'];
+
+  // Check if user has premium subscription
+  const isPremium = () => {
+    if (!user) return false;
+    const userId = user.id || user.email;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
 
   // Get menu items based on user role
   const getMenuItems = () => {
@@ -93,20 +108,21 @@ const Sidebar = ({
           { id: 'my-hires', label: t.myHires, icon: FileText, path: '/my-hires' },
           { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
           { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-          { id: 'payment', label: t.payment, icon: CreditCard, path: '/payment' },
+          { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+          { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
           { id: 'notifications', label: t.notifications, icon: Bell, path: '/notifications' },
         ];
 
       case 'EMPLOYER':
         return [
           { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-          { id: 'search', label: t.search, icon: Users, path: '/employer-search' },
-          { id: 'pending', label: t.pending, icon: Clock, path: '/employer-pending' },
-          { id: 'past', label: t.past, icon: FileText, path: '/employer-past' },
+          { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
+          { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
           { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
           { id: 'payments', label: t.payment, icon: DollarSign, path: '/employer-payments' },
           { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
           { id: 'profile', label: t.profile, icon: User, path: '/employer-profile' },
+          { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
         ];
 
       case 'ADMIN':
@@ -133,6 +149,23 @@ const Sidebar = ({
   const menuItems = getMenuItems();
   const isActive = (path) => location.pathname === path;
 
+  // Get role-specific styling
+  const getRoleStyles = () => {
+    if (!user) return { bg: 'bg-red-600', hover: 'hover:bg-red-700', active: 'bg-red-50 text-red-600' };
+    switch (user.role) {
+      case 'WORKER':
+        return { bg: 'bg-amber-600', hover: 'hover:bg-amber-700', active: 'bg-amber-50 text-amber-600' };
+      case 'EMPLOYER':
+        return { bg: 'bg-teal-600', hover: 'hover:bg-teal-700', active: 'bg-teal-50 text-teal-600' };
+      case 'ADMIN':
+        return { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', active: 'bg-purple-50 text-purple-600' };
+      default:
+        return { bg: 'bg-red-600', hover: 'hover:bg-red-700', active: 'bg-red-50 text-red-600' };
+    }
+  };
+
+  const styles = getRoleStyles();
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -151,15 +184,15 @@ const Sidebar = ({
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!collapsed && (
-            <Link to={user?.role === 'WORKER' ? '/worker-dashboard' : '/home'} className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+            <Link to={user?.role === 'WORKER' ? '/worker-dashboard' : user?.role === 'EMPLOYER' ? '/employer-dashboard' : '/home'} className="flex items-center gap-2">
+              <div className={`w-8 h-8 ${styles.bg} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {collapsed && (
-            <Link to={user?.role === 'WORKER' ? '/worker-dashboard' : '/home'} className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mx-auto">
+            <Link to={user?.role === 'WORKER' ? '/worker-dashboard' : user?.role === 'EMPLOYER' ? '/employer-dashboard' : '/home'} className={`w-8 h-8 ${styles.bg} rounded-lg flex items-center justify-center mx-auto`}>
               <span className="text-white font-bold text-sm">H</span>
             </Link>
           )}
@@ -177,15 +210,36 @@ const Sidebar = ({
           </button>
         </div>
 
-        {/* User Profile */}
+        {/* User Profile - WITH PREMIUM BADGE */}
         <div className={`p-4 border-b border-gray-200 ${collapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-red-600" />
+            <div className={`w-10 h-10 rounded-full ${styles.bg} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.fullName || user.name || 'User'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
+              {userIsPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!collapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || user.name || 'User'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || user.name || 'User'}</p>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
                 <span className="text-xs text-red-600 font-medium">
                   {user.role?.toLowerCase() || 'user'}
@@ -214,11 +268,11 @@ const Sidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
+                  ? styles.active
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${collapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? (user?.role === 'WORKER' ? 'text-amber-600' : user?.role === 'EMPLOYER' ? 'text-teal-600' : 'text-purple-600') : ''} />
               {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
               {collapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -226,7 +280,7 @@ const Sidebar = ({
                 </div>
               )}
               {isActive(item.path) && !collapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className={`ml-auto w-1.5 h-8 ${styles.bg} rounded-full`}></div>
               )}
             </Link>
           ))}

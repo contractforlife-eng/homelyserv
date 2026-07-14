@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx - Updated with payment workflow
+// src/pages/EmployerPayments.jsx - Fixed version with no disappearing payments
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -47,7 +47,8 @@ import {
   Unlock,
   MessageSquare,
   ExternalLink,
-  ThumbsUp
+  ThumbsUp,
+  FileText
 } from 'lucide-react';
 
 // ============================================================
@@ -268,7 +269,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER PAYMENTS COMPONENT
+// MAIN EMPLOYER PAYMENTS COMPONENT - FIXED
 // ============================================================
 const EmployerPayments = () => {
   const navigate = useNavigate();
@@ -279,7 +280,6 @@ const EmployerPayments = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
-  const [offers, setOffers] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -289,10 +289,12 @@ const EmployerPayments = () => {
     totalPaid: 0,
     pendingCount: 0,
     completedCount: 0,
-    upcomingCount: 0,
     totalWorkers: 0,
-    monthlyAverage: 0
+    monthlyAverage: 0,
+    commissionTotal: 0
   });
+  // ✅ Add a ref to prevent duplicate loads
+  const isLoadingRef = React.useRef(false);
 
   const translations = {
     en: {
@@ -302,9 +304,9 @@ const EmployerPayments = () => {
         totalPaid: 'Total Paid',
         pending: 'Pending',
         completed: 'Completed',
-        accepted: 'Accepted Offers',
         workers: 'Workers Paid',
-        monthlyAverage: 'Monthly Avg'
+        monthlyAverage: 'Monthly Avg',
+        commission: 'Commission Collected'
       },
       status: {
         completed: 'Completed',
@@ -319,6 +321,7 @@ const EmployerPayments = () => {
         worker: 'Worker',
         job: 'Job',
         amount: 'Amount',
+        commission: 'Commission',
         date: 'Date',
         status: 'Status',
         actions: 'Actions'
@@ -329,6 +332,8 @@ const EmployerPayments = () => {
         worker: 'Worker',
         job: 'Job Title',
         amount: 'Amount',
+        commission: 'Commission (15%)',
+        netAmount: 'Net Amount',
         date: 'Date',
         status: 'Status',
         method: 'Payment Method',
@@ -385,9 +390,9 @@ const EmployerPayments = () => {
         totalPaid: 'إجمالي المدفوع',
         pending: 'معلقة',
         completed: 'مكتملة',
-        accepted: 'عروض مقبولة',
         workers: 'عدد العمال',
-        monthlyAverage: 'المتوسط الشهري'
+        monthlyAverage: 'المتوسط الشهري',
+        commission: 'العمولة المحصلة'
       },
       status: {
         completed: 'مكتملة',
@@ -402,6 +407,7 @@ const EmployerPayments = () => {
         worker: 'العامل',
         job: 'الوظيفة',
         amount: 'المبلغ',
+        commission: 'العمولة',
         date: 'التاريخ',
         status: 'الحالة',
         actions: 'الإجراءات'
@@ -412,6 +418,8 @@ const EmployerPayments = () => {
         worker: 'العامل',
         job: 'عنوان الوظيفة',
         amount: 'المبلغ',
+        commission: 'العمولة (15%)',
+        netAmount: 'المبلغ الصافي',
         date: 'التاريخ',
         status: 'الحالة',
         method: 'طريقة الدفع',
@@ -474,45 +482,61 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // Load Data
+  // Load Data - ACCURATE PAYMENT DATA - FIXED
   // ============================================================
   const loadData = () => {
+    // ✅ Prevent duplicate loads
+    if (isLoadingRef.current) {
+      console.log('⏳ Load already in progress, skipping...');
+      return;
+    }
+
+    if (!user?.email) {
+      console.log('❌ No user email, skipping load');
+      setPayments([]);
+      setFilteredPayments([]);
+      setLoading(false);
+      return;
+    }
+
+    isLoadingRef.current = true;
     setLoading(true);
     
     try {
-      // Load employer offers
-      const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const employerEmail = user.email;
+      console.log('📂 Loading payments for employer:', employerEmail);
+
+      // Get all payments from all_payments
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       
-      // Filter offers for this employer
-      let employerOffers = allOffers;
-      if (user?.email) {
-        employerOffers = allOffers.filter(
-          offer => offer.employerEmail === user.email || offer.employerId === user.email
-        );
-      }
-      
-      setOffers(employerOffers);
-      
-      // Create payment entries from accepted offers
-      const acceptedOffers = employerOffers.filter(offer => offer.status === 'accepted');
-      
-      // Also load existing payments
-      const existingPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const employerPayments = existingPayments.filter(
-        p => p.employerId === user?.email || p.employerEmail === user?.email
+      // Filter payments for this employer
+      let employerPayments = allPayments.filter(
+        p => p.employerId === employerEmail || p.employerEmail === employerEmail
       );
+
+      // Get employer offers for additional payment data
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const employerAcceptedOffers = employerOffers.filter(
+        o => (o.status === 'accepted' || o.status === 'completed' || o.status === 'terminated') && 
+             (o.employerEmail === employerEmail || o.employerId === employerEmail)
+      );
+
+      // Create payment entries for accepted offers that don't have payments yet
+      const existingPaymentIds = new Set(employerPayments.map(p => p.offerId).filter(id => id));
+      let newPayments = [];
       
-      // Merge: Create payment entries for accepted offers that don't have payments yet
-      const acceptedOfferIds = new Set(employerPayments.map(p => p.offerId).filter(id => id));
-      
-      acceptedOffers.forEach(offer => {
-        if (!acceptedOfferIds.has(offer.id)) {
+      employerAcceptedOffers.forEach(offer => {
+        if (!existingPaymentIds.has(offer.id)) {
+          const commissionRate = 0.15;
+          const amount = offer.amount || 0;
+          const commission = amount * commissionRate;
+          
           const payment = {
             id: 'PAY-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
             offerId: offer.id,
             workerId: offer.workerId || offer.workerEmail,
-            workerName: offer.workerName,
-            workerEmail: offer.workerEmail,
+            workerName: offer.workerName || 'Worker',
+            workerEmail: offer.workerEmail || '',
             workerPhone: offer.workerPhone || '',
             workerLocation: offer.workerLocation || 'Not specified',
             workerRating: offer.workerRating || 4.5,
@@ -520,57 +544,102 @@ const EmployerPayments = () => {
             employerId: offer.employerId || offer.employerEmail,
             employerEmail: offer.employerEmail,
             jobTitle: offer.jobTitle || 'Service Provider',
-            amount: offer.amount || 0,
-            status: 'pending', // pending, completed
+            amount: amount,
+            commission: commission,
+            netAmount: amount - commission,
+            status: offer.status === 'completed' ? 'completed' : 'pending',
             paymentMethod: null,
-            paymentVerified: false,
-            contactRevealed: false,
-            createdAt: offer.workerResponseAt || offer.updatedAt || new Date().toISOString(),
+            paymentVerified: offer.status === 'completed',
+            contactRevealed: offer.status === 'completed',
+            createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             description: offer.description || `Payment for ${offer.workerName}`,
             reference: 'REF-' + Date.now(),
             hasReceipt: false,
             paymentType: 'recruitment'
           };
-          employerPayments.push(payment);
+          newPayments.push(payment);
         }
       });
+
+      // ✅ Merge new payments with existing ones
+      if (newPayments.length > 0) {
+        console.log(`✅ Created ${newPayments.length} new payment entries`);
+        employerPayments = [...employerPayments, ...newPayments];
+        // Save to localStorage to prevent re-creation
+        localStorage.setItem('all_payments', JSON.stringify([...allPayments, ...newPayments]));
+      }
+
+      // Also get payments from homelyserv_commission_payments
+      const commissionPayments = JSON.parse(localStorage.getItem('homelyserv_commission_payments') || '[]');
+      const employerCommissionPayments = commissionPayments.filter(
+        p => p.employerId === employerEmail || p.employerEmail === employerEmail
+      );
       
-      // Sort by date
+      // Merge commission payments
+      employerCommissionPayments.forEach(cp => {
+        if (!employerPayments.find(p => p.id === cp.id || p.offerId === cp.offerId)) {
+          employerPayments.push({
+            ...cp,
+            amount: cp.amount || cp.commission || 0,
+            commission: cp.commission || cp.amount || 0,
+            netAmount: 0,
+            status: cp.status || 'completed',
+            paymentVerified: true,
+            contactRevealed: true
+          });
+        }
+      });
+
+      // ✅ Remove duplicates by ID
+      const uniquePayments = [];
+      const seenIds = new Set();
+      employerPayments.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          uniquePayments.push(p);
+        }
+      });
+      employerPayments = uniquePayments;
+
+      // Sort by date (newest first)
       employerPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
+
+      console.log(`✅ Loaded ${employerPayments.length} unique payments for employer`);
+
       setPayments(employerPayments);
       setFilteredPayments(employerPayments);
-      
-      // Calculate stats
-      const totalPaid = employerPayments
-        .filter(p => p.status === 'completed' && p.paymentVerified)
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
-      
-      const pendingCount = employerPayments
-        .filter(p => p.status === 'pending')
-        .length;
-      
-      const completedCount = employerPayments
-        .filter(p => p.status === 'completed' && p.paymentVerified)
-        .length;
-      
+
+      // Calculate stats - ACCURATE
+      const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
+      const totalPaid = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalCommission = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
+      const pendingCount = employerPayments.filter(p => p.status === 'pending' && !p.paymentVerified).length;
+      const completedCount = completedPayments.length;
+
+      const uniqueWorkers = new Set();
+      employerPayments.forEach(p => {
+        if (p.workerEmail || p.workerId) {
+          uniqueWorkers.add(p.workerEmail || p.workerId);
+        }
+      });
+
       setStats({
         totalPaid: totalPaid,
         pendingCount: pendingCount,
         completedCount: completedCount,
-        upcomingCount: acceptedOffers.length,
-        totalWorkers: employerPayments.length,
-        monthlyAverage: employerPayments.length > 0 ? Math.round(totalPaid / Math.max(employerPayments.length, 1)) : 0
+        totalWorkers: uniqueWorkers.size,
+        monthlyAverage: completedCount > 0 ? Math.round(totalPaid / Math.max(completedCount, 1)) : 0,
+        commissionTotal: totalCommission
       });
-      
-      console.log('✅ Loaded payments:', employerPayments.length);
-      console.log('✅ Loaded offers:', employerOffers.length);
+
+      console.log(`📊 Stats: Total Paid: ${totalPaid}, Pending: ${pendingCount}, Completed: ${completedCount}`);
       
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading payments:', error);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -605,45 +674,69 @@ const EmployerPayments = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    loadData();
-    
   }, [navigate]);
 
-  // ============================================================
-  // Check for payment verification updates
-  // ============================================================
+  // Load data when user is set - ✅ Only load once
   useEffect(() => {
-    // Check if we came back from payment with verification
-    if (location.state?.paymentVerificationPending) {
-      // Reload data to show updated status
+    if (user) {
       loadData();
     }
+  }, [user]);
+
+  // ============================================================
+  // ✅ FIXED: Auto-refresh - Only refresh if there's a change
+  // ============================================================
+  useEffect(() => {
+    // Check for payment verification updates from location state
+    if (location.state?.paymentVerificationPending) {
+      loadData();
+      // Clear the state to prevent re-triggering
+      navigate(location.pathname, { replace: true, state: {} });
+    }
     
-    // Check for payment verification from admin
-    const verifyPaymentStatus = () => {
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const employerPayments = allPayments.filter(
-        p => p.employerId === user?.email || p.employerEmail === user?.email
-      );
-      
-      // Check if any payments were verified
-      let updated = false;
-      payments.forEach(p => {
-        const updatedPayment = allPayments.find(ap => ap.id === p.id);
-        if (updatedPayment && updatedPayment.status !== p.status) {
-          updated = true;
+    // ✅ FIXED: Auto-refresh every 15 seconds, but only check for new data
+    // without causing a full reload that makes payments disappear
+    const interval = setInterval(() => {
+      // Only refresh if not in a modal and not already loading
+      if (!showDetailsModal && !isLoadingRef.current) {
+        // Check if there are new payments without reloading everything
+        try {
+          const employerEmail = user?.email;
+          if (!employerEmail) return;
+          
+          const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+          const employerPayments = allPayments.filter(
+            p => p.employerId === employerEmail || p.employerEmail === employerEmail
+          );
+          
+          // Check if the count has changed
+          if (employerPayments.length !== payments.length) {
+            console.log('🔄 New payments detected, refreshing...');
+            loadData();
+          } else {
+            // Check if any payment status has changed
+            let hasChanged = false;
+            const currentPaymentMap = new Map(payments.map(p => [p.id, p]));
+            for (const newPayment of employerPayments) {
+              const current = currentPaymentMap.get(newPayment.id);
+              if (current && current.status !== newPayment.status) {
+                hasChanged = true;
+                break;
+              }
+            }
+            if (hasChanged) {
+              console.log('🔄 Payment status changed, refreshing...');
+              loadData();
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for updates:', error);
         }
-      });
-      
-      if (updated) {
-        loadData();
       }
-    };
+    }, 15000); // ✅ Increased to 15 seconds
     
-    const interval = setInterval(verifyPaymentStatus, 5000);
     return () => clearInterval(interval);
-  }, [location.state, user]);
+  }, [location.state, showDetailsModal, payments.length, user]);
 
   // ============================================================
   // Filter payments
@@ -681,9 +774,6 @@ const EmployerPayments = () => {
     setShowDetailsModal(true);
   };
 
-  // ============================================================
-  // handleProcessPayment - Redirect to payment options
-  // ============================================================
   const handleProcessPayment = (payment) => {
     const paymentData = payment || selectedPayment;
     
@@ -694,10 +784,9 @@ const EmployerPayments = () => {
 
     console.log('🔄 Processing payment:', paymentData);
 
-    // Save pending payment data
     const pendingPayment = {
       paymentId: paymentData.id,
-      amount: paymentData.amount,
+      amount: paymentData.amount || 0,
       workerName: paymentData.workerName,
       workerId: paymentData.workerId || paymentData.id,
       workerEmail: paymentData.workerEmail || '',
@@ -712,7 +801,6 @@ const EmployerPayments = () => {
 
     localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
     
-    // Save worker data
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
       workerName: paymentData.workerName,
@@ -728,20 +816,14 @@ const EmployerPayments = () => {
 
     localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
 
-    // Close modal
     setShowDetailsModal(false);
     setSelectedPayment(null);
 
-    // Navigate to payment options
     navigate('/payment-options');
   };
 
-  // ============================================================
-  // handleContact - Open WhatsApp or message
-  // ============================================================
   const handleContact = (payment, method) => {
     const phone = payment.workerPhone;
-    const name = payment.workerName;
     
     if (method === 'whatsapp') {
       if (phone) {
@@ -751,7 +833,6 @@ const EmployerPayments = () => {
         alert('No phone number available');
       }
     } else if (method === 'message') {
-      // Navigate to messages
       const chatData = {
         id: payment.workerId || payment.workerEmail,
         name: payment.workerName,
@@ -833,7 +914,8 @@ const EmployerPayments = () => {
     return t.status[status] || status;
   };
 
-  if (loading) {
+  // ✅ Don't show loading if we already have payments
+  if (loading && payments.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -903,7 +985,7 @@ const EmployerPayments = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - ACCURATE */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
@@ -928,13 +1010,6 @@ const EmployerPayments = () => {
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.accepted}</p>
-                <ThumbsUp size={16} className="text-blue-500" />
-              </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{stats.upcomingCount}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-              <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500">{t.stats.workers}</p>
                 <Users size={16} className="text-teal-500" />
               </div>
@@ -946,6 +1021,13 @@ const EmployerPayments = () => {
                 <BarChart3 size={16} className="text-purple-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.monthlyAverage)}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{t.stats.commission}</p>
+                <FileText size={16} className="text-orange-500" />
+              </div>
+              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.commissionTotal)}</p>
             </div>
           </div>
 
@@ -1016,6 +1098,9 @@ const EmployerPayments = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         {t.table.amount}
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                        {t.table.commission}
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                         {t.table.date}
                       </th>
@@ -1032,10 +1117,10 @@ const EmployerPayments = () => {
                       <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium text-gray-800">{payment.id}</span>
+                            <span className="text-sm font-medium text-gray-800 truncate max-w-[80px]">{payment.id}</span>
                             <button
                               onClick={() => handleCopyId(payment.id)}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
                             >
                               <Copy size={13} />
                             </button>
@@ -1043,7 +1128,7 @@ const EmployerPayments = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold text-xs overflow-hidden">
+                            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold text-xs overflow-hidden flex-shrink-0">
                               {payment.workerImage ? (
                                 <img src={payment.workerImage} alt={payment.workerName} className="w-full h-full object-cover" />
                               ) : (
@@ -1055,16 +1140,19 @@ const EmployerPayments = () => {
                                 {payment.workerName || 'Unknown'}
                               </p>
                               {payment.workerEmail && (
-                                <p className="text-xs text-gray-500">{payment.workerEmail}</p>
+                                <p className="text-xs text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-sm text-gray-700 truncate max-w-[150px]">{payment.jobTitle || '-'}</p>
+                          <p className="text-sm text-gray-700 truncate max-w-[120px]">{payment.jobTitle || '-'}</p>
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-semibold text-gray-800">{formatCurrency(payment.amount)}</p>
+                        </td>
+                        <td className="px-4 py-3 hidden lg:table-cell">
+                          <p className="text-sm text-orange-600">{formatCurrency(payment.commission || 0)}</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <p className="text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
@@ -1162,7 +1250,22 @@ const EmployerPayments = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500">{t.modal.amount}</p>
+                  <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.amount)}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500">{t.modal.commission}</p>
+                  <p className="text-xl font-bold text-orange-600">{formatCurrency(selectedPayment.commission || 0)}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500">{t.modal.netAmount}</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedPayment.netAmount || selectedPayment.amount - (selectedPayment.commission || 0))}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <User size={16} className="text-teal-600" />
@@ -1191,7 +1294,7 @@ const EmployerPayments = () => {
                       {selectedPayment.workerPhone}
                     </p>
                   )}
-                  {selectedPayment.workerLocation && (
+                  {selectedPayment.workerLocation && selectedPayment.workerLocation !== 'Not specified' && (
                     <p className="text-sm text-gray-600 flex items-center gap-2">
                       <MapPin size={14} className="text-gray-400" />
                       {selectedPayment.workerLocation}
@@ -1201,11 +1304,14 @@ const EmployerPayments = () => {
 
                 <div className="bg-gray-50 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <DollarSign size={16} className="text-teal-600" />
-                    {t.modal.amount}
+                    <Briefcase size={16} className="text-teal-600" />
+                    {t.modal.job}
                   </h3>
-                  <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.amount)}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.jobTitle || '-'}</p>
                   <p className="text-sm text-gray-500 mt-1">{t.modal.date}: {formatDate(selectedPayment.createdAt)}</p>
+                  {selectedPayment.paymentMethod && (
+                    <p className="text-sm text-gray-500 mt-1">{t.modal.method}: {selectedPayment.paymentMethod}</p>
+                  )}
                 </div>
               </div>
 
@@ -1272,24 +1378,18 @@ const EmployerPayments = () => {
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">{t.modal.job}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.jobTitle || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">{t.modal.method}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.paymentMethod || 'Not paid yet'}</p>
-                </div>
-                <div className="col-span-2">
+              {selectedPayment.description && (
+                <div className="mt-4">
                   <p className="text-sm text-gray-500">{t.modal.description}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.description || '-'}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.description}</p>
                 </div>
-                <div className="col-span-2">
+              )}
+              {selectedPayment.reference && (
+                <div className="mt-2">
                   <p className="text-sm text-gray-500">{t.modal.reference}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.reference || '-'}</p>
+                  <p className="font-medium text-gray-800">{selectedPayment.reference}</p>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200">

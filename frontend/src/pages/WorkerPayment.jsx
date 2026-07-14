@@ -1,4 +1,4 @@
-// src/pages/WorkerPayment.jsx - نسخة تعمل دائماً مع البيانات المحلية
+// src/pages/WorkerPayment.jsx - Updated with accurate transaction data
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -387,81 +387,109 @@ const WorkerPayment = () => {
   const t = translations[language];
 
   // ============================================
-  // 4. DATA LOADING FUNCTIONS - باستخدام البيانات المحلية فقط
+  // 4. DATA LOADING FUNCTIONS
   // ============================================
   const loadPaymentData = () => {
-  if (!user) return;
-  
-  setLoading(true);
+    if (!user) return;
+    
+    setLoading(true);
 
-  try {
-    // تحميل المدفوعات من localStorage الخاص بالعامل
-    const userId = user.id || user.email;
-    const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
+    try {
+      const userId = user.id || user.email;
+      
+      // Load payments from worker's localStorage
+      const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
+      
+      // Also load from all_payments
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      const workerPaymentsFromAll = allPayments.filter(p => 
+        p.workerId === userId || p.workerEmail === userId || p.workerEmail === user.email
+      );
+      
+      // Merge payments
+      let mergedPayments = [...savedPayments];
+      
+      // Add payments from all_payments that aren't already in the list
+      workerPaymentsFromAll.forEach(p => {
+        if (!mergedPayments.find(mp => mp.id === p.id)) {
+          mergedPayments.push(p);
+        }
+      });
+      
+      // Also generate payments from completed offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
+      
+      // Find completed offers
+      const completedOfferIds = appliedOffers.filter(id => {
+        return employerOffers.some(o => o.id === id && o.status === 'completed');
+      });
+      
+      // Generate payments for completed offers that aren't already recorded
+      completedOfferIds.forEach((offerId, index) => {
+        const offer = employerOffers.find(o => o.id === offerId);
+        if (offer) {
+          const existingPayment = mergedPayments.find(p => p.offerId === offerId);
+          if (!existingPayment) {
+            const paymentAmount = (offer.amount || 3000) * 0.85; // 15% commission
+            mergedPayments.push({
+              id: `PAY-${Date.now()}-${index}`,
+              offerId: offerId,
+              employer: {
+                name: offer.company || 'Unknown Employer',
+                id: offer.employerId || 'EMP-001'
+              },
+              amount: paymentAmount,
+              date: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toLocaleDateString(
+                language === 'ar' ? 'ar-EG' : 'en-US',
+                { year: 'numeric', month: 'short', day: 'numeric' }
+              ),
+              status: 'completed',
+              description: `Payment for ${offer.title || 'service'}`,
+              workerId: userId,
+              workerEmail: user.email,
+              createdAt: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString()
+            });
+          }
+        }
+      });
+      
+      // Sort by date descending (newest first)
+      mergedPayments.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+      
+      setPayments(mergedPayments);
+      setFilteredPayments(mergedPayments);
+      
+      // Update stats
+      updateStatsFromPayments(mergedPayments);
+      
+      // Save back to localStorage
+      localStorage.setItem(`worker_payments_${userId}`, JSON.stringify(mergedPayments));
+      
+      console.log(`✅ Loaded ${mergedPayments.length} payments for worker`);
+      
+    } catch (error) {
+      console.error('Error loading payment data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatsFromPayments = (paymentsList) => {
+    const completedPayments = paymentsList.filter(p => p.status === 'completed');
+    const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalTasksCompleted = completedPayments.length;
     
-    // أيضاً تحميل من المدفوعات العامة
-    const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-    const workerPaymentsFromAll = allPayments.filter(p => 
-      p.workerId === userId || p.workerEmail === userId || p.workerEmail === user.email
-    );
+    // Get hourly rate from user profile
+    const hourlyRate = user?.hourlyRate || 35;
+    const monthlySalary = totalEarned / 6; // Average monthly (assuming 6 months)
     
-    // دمج المدفوعات
-    let mergedPayments = [...savedPayments];
-    
-    // إضافة المدفوعات من all_payments التي ليست موجودة بالفعل
-    workerPaymentsFromAll.forEach(p => {
-      if (!mergedPayments.find(mp => mp.id === p.id)) {
-        mergedPayments.push(p);
-      }
+    setWorkerStats({
+      totalTasksCompleted,
+      totalEarned,
+      hourlyRate: hourlyRate,
+      monthlySalary: monthlySalary || hourlyRate * 160 // 160 hours/month
     });
-    
-    // ترتيب من الأحدث إلى الأقدم
-    mergedPayments.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
-    
-    setPayments(mergedPayments);
-    setFilteredPayments(mergedPayments);
-    
-    // تحديث الإحصائيات
-    updateStatsFromPayments(mergedPayments);
-    
-    // حفظ في localStorage الخاص بالعامل
-    localStorage.setItem(`worker_payments_${userId}`, JSON.stringify(mergedPayments));
-    
-  } catch (error) {
-    console.error('Error loading payment data:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const generatePaymentsFromCompletedTasks = (appliedOffers, employerOffers) => {
-    const generatedPayments = [];
-    const completedOfferIds = appliedOffers.filter(id => {
-      return employerOffers.some(o => o.id === id && o.status === 'completed');
-    });
-
-    completedOfferIds.forEach((offerId, index) => {
-      const offer = employerOffers.find(o => o.id === offerId);
-      if (offer) {
-        generatedPayments.push({
-          id: `PAY-${Date.now()}-${index}`,
-          employer: {
-            name: offer.company || 'Unknown Employer',
-            id: offer.employerId || 'EMP-001',
-            passportNumber: offer.employerPassport || 'N/A'
-          },
-          amount: (offer.salary?.max || 3500) / 2,
-          date: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toLocaleDateString(
-            language === 'ar' ? 'ar-EG' : 'en-US',
-            { year: 'numeric', month: 'short', day: 'numeric' }
-          ),
-          status: 'completed',
-          description: `Payment for ${offer.title || 'service'}`
-        });
-      }
-    });
-
-    return generatedPayments;
   };
 
   // ============================================

@@ -1,6 +1,7 @@
-// src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD
+// src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD AND PREMIUM BADGE
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -28,7 +29,8 @@ import {
   Edit,
   Save,
   Camera,
-  CreditCard
+  CreditCard,
+  Crown
 } from 'lucide-react';
 
 // Employer Sidebar Component
@@ -55,7 +57,8 @@ const EmployerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -68,7 +71,8 @@ const EmployerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -82,6 +86,7 @@ const EmployerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -93,6 +98,13 @@ const EmployerSidebar = ({
       return user.profileImage;
     }
     return null;
+  };
+
+  // Check if user has premium subscription
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
   };
 
   return (
@@ -152,7 +164,15 @@ const EmployerSidebar = ({
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  {isPremium() && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
@@ -244,7 +264,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerProfile Component - WITH PHOTO UPLOAD
+// Main EmployerProfile Component - WITH PHOTO UPLOAD AND PREMIUM BADGE
 const EmployerProfile = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -286,7 +306,9 @@ const EmployerProfile = () => {
       languageToggle: 'العربية',
       saved: '✅ Profile updated successfully!',
       profilePhoto: 'Profile Photo',
-      changePhoto: 'Click to change photo'
+      changePhoto: 'Click to change photo',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -308,11 +330,22 @@ const EmployerProfile = () => {
       languageToggle: 'English',
       saved: '✅ تم تحديث الملف الشخصي بنجاح!',
       profilePhoto: 'الصورة الشخصية',
-      changePhoto: 'انقر لتغيير الصورة'
+      changePhoto: 'انقر لتغيير الصورة',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
+
+  // Check if user has premium subscription
+  const checkPremiumStatus = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = checkPremiumStatus();
 
   const loadUserData = () => {
     try {
@@ -574,16 +607,33 @@ const EmployerProfile = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                      <Crown size={12} className="text-yellow-300" />
+                      {t.premiumBadge}
+                    </span>
+                  )}
+                </div>
                 <p className="text-teal-100 mt-1">{t.subtitle}</p>
               </div>
-              <button
-                onClick={handleEditToggle}
-                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                {isEditing ? <X size={16} /> : <Edit size={16} />}
-                {isEditing ? t.cancel : t.editProfile}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEditToggle}
+                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  {isEditing ? <X size={16} /> : <Edit size={16} />}
+                  {isEditing ? t.cancel : t.editProfile}
+                </button>
+                <Link
+                  to="/subscription"
+                  className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
+                >
+                  <Crown size={16} />
+                  {t.getPremium}
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -599,7 +649,7 @@ const EmployerProfile = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
@@ -609,6 +659,11 @@ const EmployerProfile = () => {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-teal-50">
                       <User size={48} className="text-teal-300" />
+                    </div>
+                  )}
+                  {isPremium && (
+                    <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-1 border-2 border-white">
+                      <Crown size={14} className="text-white" />
                     </div>
                   )}
                 </div>
