@@ -1,6 +1,7 @@
-// src/pages/WorkerSettings.jsx - UPDATED with logo and profile images
+// src/pages/WorkerSettings.jsx - UPDATED with logo, profile images, and premium badge
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -21,10 +22,11 @@ import {
   Save,
   RefreshCw,
   CreditCard,
-  Sparkles
+  Sparkles,
+  Crown
 } from 'lucide-react';
 
-// Sidebar Component with custom logo and profile image
+// Sidebar Component with custom logo, profile image, and premium badge
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -47,7 +49,8 @@ const WorkerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -59,7 +62,8 @@ const WorkerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -72,6 +76,7 @@ const WorkerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -84,6 +89,15 @@ const WorkerSidebar = ({
     }
     return null;
   };
+
+  // ✅ FIX: Check premium status directly using the user ID
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -131,7 +145,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -141,10 +155,23 @@ const WorkerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {isPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
@@ -182,6 +209,11 @@ const WorkerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -236,7 +268,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerSettings Component
+// Main WorkerSettings Component - WITH PREMIUM BADGE
 const WorkerSettings = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -248,6 +280,15 @@ const WorkerSettings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // ✅ Check if user has premium subscription
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
 
   const translations = {
     en: {
@@ -269,7 +310,9 @@ const WorkerSettings = () => {
       saveChanges: 'Save Changes',
       saved: 'Settings saved successfully!',
       languageToggle: 'العربية',
-      notificationsTitle: 'Notifications'
+      notificationsTitle: 'Notifications',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       title: 'الإعدادات',
@@ -290,7 +333,9 @@ const WorkerSettings = () => {
       saveChanges: 'حفظ التغييرات',
       saved: 'تم حفظ الإعدادات بنجاح!',
       languageToggle: 'English',
-      notificationsTitle: 'الإشعارات'
+      notificationsTitle: 'الإشعارات',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
@@ -429,9 +474,9 @@ const WorkerSettings = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* User profile picture in header */}
+              {/* User profile picture in header with premium badge */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -441,10 +486,23 @@ const WorkerSettings = () => {
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Worker'}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                    {user?.fullName || 'Worker'}
+                  </span>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
@@ -457,16 +515,25 @@ const WorkerSettings = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              {!userIsPremium && (
+                <Link
+                  to="/subscription"
+                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
+                >
+                  <Crown size={14} />
+                  <span className="hidden sm:inline">{t.getPremium}</span>
+                </Link>
+              )}
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner with profile image */}
+          {/* Welcome Banner with profile image and premium badge */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -476,9 +543,22 @@ const WorkerSettings = () => {
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
+                      <Crown size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{t.title}</h1>
+                    {userIsPremium && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                        <Crown size={12} className="text-yellow-300" />
+                        {t.premiumBadge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-white/80 mt-1">{t.subtitle}</p>
                 </div>
               </div>
@@ -486,6 +566,15 @@ const WorkerSettings = () => {
                 <span className="text-sm text-white/90">
                   {user?.fullName || 'Worker'}
                 </span>
+                {!userIsPremium && (
+                  <Link
+                    to="/subscription"
+                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
+                  >
+                    <Crown size={12} />
+                    {t.getPremium}
+                  </Link>
+                )}
               </div>
             </div>
           </div>

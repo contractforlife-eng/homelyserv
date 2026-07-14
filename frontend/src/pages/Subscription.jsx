@@ -1,6 +1,7 @@
-// src/pages/Subscription.jsx
+// src/pages/Subscription.jsx - FIXED
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom'; // <-- ADD useLocation HERE
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Shield,
   Star,
@@ -44,11 +45,11 @@ import {
   getSubscriptionPrice,
   createSubscription,
   getUserSubscription,
-  isUserPremium,
+  isUserPremium as checkUserPremium,
   getSubscriptionStatus
 } from '../utils/subscriptionService';
 
-// Sidebar Component
+// Sidebar Component - FIXED: Includes Premium menu item
 const SubscriptionSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -59,7 +60,7 @@ const SubscriptionSidebar = ({
   handleLogout,
   isEmployer 
 }) => {
-  const location = useLocation(); // <-- This now works because useLocation is imported
+  const location = useLocation();
 
   const translations = {
     en: {
@@ -73,7 +74,8 @@ const SubscriptionSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -86,12 +88,14 @@ const SubscriptionSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
   const t = translations[language];
 
+  // ✅ FIX: Premium menu item is now included in all sidebar configurations
   const menuItems = isEmployer ? [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -100,6 +104,7 @@ const SubscriptionSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ] : [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
@@ -107,11 +112,21 @@ const SubscriptionSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => location.pathname === path;
 
   const getProfileImage = () => user?.profileImage || null;
+
+  // ✅ FIX: Check premium status directly
+  const isPremiumUser = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return checkUserPremium(userId);
+  };
+
+  const premiumUser = isPremiumUser();
 
   return (
     <>
@@ -159,7 +174,7 @@ const SubscriptionSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -169,10 +184,23 @@ const SubscriptionSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {premiumUser && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
+                  {premiumUser && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
               </div>
             )}
@@ -210,6 +238,11 @@ const SubscriptionSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className={`ml-auto w-1.5 h-8 ${isEmployer ? 'bg-teal-600' : 'bg-amber-600'} rounded-full`}></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -267,7 +300,7 @@ const SubscriptionSidebar = ({
 // Main Subscription Component
 const Subscription = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // <-- Also add useLocation here if needed
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [isEmployer, setIsEmployer] = useState(false);
@@ -390,9 +423,8 @@ const Subscription = () => {
         setIsEmployer(isEmployerRole);
         setUser(parsedUser);
         
-        // Check if user already has subscription
         const userId = parsedUser.id || parsedUser.email;
-        const isPremium = isUserPremium(userId);
+        const isPremium = checkUserPremium(userId);
         const subscription = getUserSubscription(userId);
         const status = getSubscriptionStatus(userId);
         
@@ -463,7 +495,6 @@ const Subscription = () => {
       const userId = user.id || user.email;
       const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
       
-      // Create subscription
       const subscription = createSubscription(
         userId,
         user.email,
@@ -475,13 +506,11 @@ const Subscription = () => {
         setCurrentSubscription(subscription);
         setPaymentSuccess(true);
         
-        // Update user data
         const userData = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
         userData.isPremium = true;
         userData.subscriptionActive = true;
         localStorage.setItem('homelyserv_user', JSON.stringify(userData));
         
-        // Update users list
         const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
         const userIndex = users.findIndex(u => u.email === user.email);
         if (userIndex !== -1) {
@@ -490,7 +519,6 @@ const Subscription = () => {
           localStorage.setItem('homelyserv_users', JSON.stringify(users));
         }
         
-        // Update profile
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[user.email]) {
           profiles[user.email].isPremium = true;
@@ -498,7 +526,6 @@ const Subscription = () => {
           localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
         }
         
-        // Save payment receipt
         const receipt = {
           id: 'SUB-REC-' + Date.now(),
           userId: userId,

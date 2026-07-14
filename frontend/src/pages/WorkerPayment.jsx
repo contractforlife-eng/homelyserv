@@ -1,6 +1,7 @@
-// src/pages/WorkerPayment.jsx - Updated with accurate transaction data
+// src/pages/WorkerPayment.jsx - Updated with accurate transaction data and premium badge
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
   User,
@@ -27,11 +28,12 @@ import {
   Phone,
   RefreshCw,
   Shield,
-  LogIn
+  LogIn,
+  Crown
 } from 'lucide-react';
 
 // ============================================
-// 1. SIDEBAR COMPONENT
+// 1. SIDEBAR COMPONENT - WITH PREMIUM BADGE
 // ============================================
 const WorkerSidebar = ({ 
   language, 
@@ -55,7 +57,8 @@ const WorkerSidebar = ({
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -67,7 +70,8 @@ const WorkerSidebar = ({
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -80,10 +84,20 @@ const WorkerSidebar = ({
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => location.pathname === path;
   const getProfileImage = () => user?.profileImage || null;
+
+  // ✅ FIX: Check premium status directly using the user ID
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -132,10 +146,10 @@ const WorkerSidebar = ({
           </button>
         </div>
 
-        {/* User Profile */}
+        {/* User Profile - WITH PREMIUM BADGE */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -145,10 +159,23 @@ const WorkerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {isPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
@@ -184,6 +211,11 @@ const WorkerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -274,6 +306,15 @@ const WorkerPayment = () => {
     monthlySalary: 0
   });
 
+  // ✅ Check if user has premium subscription
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
+
   // ============================================
   // 3. TRANSLATIONS
   // ============================================
@@ -328,7 +369,9 @@ const WorkerPayment = () => {
       loading: 'Loading payment data...',
       noPayments: 'No payment history yet',
       noPaymentsDesc: 'Your payment history will appear here once you complete tasks',
-      refresh: 'Refresh'
+      refresh: 'Refresh',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       title: 'المدفوعات',
@@ -380,7 +423,9 @@ const WorkerPayment = () => {
       loading: 'جاري تحميل بيانات الدفع...',
       noPayments: 'لا يوجد سجل مدفوعات بعد',
       noPaymentsDesc: 'سيظهر سجل مدفوعاتك هنا بمجرد إكمال المهام',
-      refresh: 'تحديث'
+      refresh: 'تحديث',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
@@ -685,7 +730,7 @@ const WorkerPayment = () => {
             
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 shadow-sm relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -695,10 +740,23 @@ const WorkerPayment = () => {
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Worker'}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                    {user?.fullName || 'Worker'}
+                  </span>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
               </div>
               
               <button aria-label="Notifications" className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
@@ -721,6 +779,16 @@ const WorkerPayment = () => {
                 <RefreshCw size={16} />
                 <span className="hidden sm:inline">{t.refresh}</span>
               </button>
+
+              {!userIsPremium && (
+                <Link
+                  to="/subscription"
+                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
+                >
+                  <Crown size={14} />
+                  <span className="hidden sm:inline">{t.getPremium}</span>
+                </Link>
+              )}
             </div>
           </div>
         </header>
@@ -731,7 +799,7 @@ const WorkerPayment = () => {
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 shadow-inner">
+                <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 shadow-inner relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -741,12 +809,34 @@ const WorkerPayment = () => {
                   ) : (
                     <User size={28} className="text-white m-3" />
                   )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
+                      <Crown size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
+                    {userIsPremium && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                        <Crown size={12} className="text-yellow-300" />
+                        {t.premiumBadge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-white/80 mt-1 text-sm md:text-base">{t.subtitle}</p>
                 </div>
               </div>
+              {!userIsPremium && (
+                <Link
+                  to="/subscription"
+                  className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
+                >
+                  <Crown size={16} />
+                  {t.getPremium}
+                </Link>
+              )}
             </div>
           </div>
 

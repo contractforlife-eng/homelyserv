@@ -1,6 +1,8 @@
+// src/pages/Login.jsx - FIXED: Properly restores premium status for all users
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles } from 'lucide-react';
+import { isUserPremium, getUserSubscription, syncPremiumStatus } from '../utils/subscriptionService';
 
 function Login() {
   const navigate = useNavigate();
@@ -21,24 +23,24 @@ function Login() {
 
   // Create admin user on component mount
   useEffect(() => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
     // Create admin user if it doesn't exist
     const createAdminUser = () => {
       const adminUser = {
-  id: 'admin_emad',
-  fullName: 'Emad',
-  email: 'emad@homelyserv.com',
-  password: 'killuemad',
-  role: 'ADMIN',
-  phone: '+201009189851',
-  location: 'Cairo, Egypt',
-  bio: 'System Administrator',
-  skills: ['Management', 'Administration'],
-  experience: '5 years',
-  hourlyRate: '0',
-  createdAt: new Date().toISOString(),
-  profileComplete: true
+        id: 'admin_emad',
+        fullName: 'Emad',
+        email: 'emad@homelyserv.com',
+        password: 'killuemad',
+        role: 'ADMIN',
+        phone: '+201009189851',
+        location: 'Cairo, Egypt',
+        bio: 'System Administrator',
+        skills: ['Management', 'Administration'],
+        experience: '5 years',
+        hourlyRate: '0',
+        createdAt: new Date().toISOString(),
+        profileComplete: true,
+        isPremium: false,
+        subscriptionActive: false
       };
 
       // Get existing users
@@ -72,7 +74,18 @@ function Login() {
     if (token && userData) {
       try {
         const user = JSON.parse(userData);
+        // ✅ FIX: Sync premium status on app load
+        const userId = user.id || user.email;
+        const isPremium = isUserPremium(userId);
+        const subscription = getUserSubscription(userId);
+        
+        user.isPremium = isPremium;
+        user.subscriptionActive = isPremium;
+        user.subscription = subscription;
+        localStorage.setItem('homelyserv_user', JSON.stringify(user));
+        
         console.log('🔄 User already logged in:', user.fullName);
+        console.log('🔄 Premium status restored:', isPremium);
         redirectUser(user);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -82,18 +95,18 @@ function Login() {
 
   // Redirect function
   const redirectUser = (user) => {
-  const role = user?.role?.toUpperCase();
+    const role = user?.role?.toUpperCase();
 
-  if (role === 'ADMIN') {
-    navigate('/admin');
-  } else if (role === 'EMPLOYER') {
-    navigate('/employer-dashboard');
-  } else if (role === 'WORKER') {
-    navigate('/worker-dashboard');
-  } else {
-    navigate('/login');
-  }
-};
+    if (role === 'ADMIN') {
+      navigate('/admin');
+    } else if (role === 'EMPLOYER') {
+      navigate('/employer-dashboard');
+    } else if (role === 'WORKER') {
+      navigate('/worker-dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
 
   // Check if user is registered in localStorage
   const checkRegisteredUser = (email) => {
@@ -126,7 +139,7 @@ function Login() {
     return null;
   };
 
-  // Login function - loads the correct user
+  // ✅ FIX: Login function with proper premium status restoration
   const loginUser = (userData, role, email) => {
     console.log('🔄 Logging in user:', email, 'role:', role);
     setError('');
@@ -154,7 +167,9 @@ function Login() {
           bio: 'Experienced professional in home services.',
           skills: ['Child Care', 'First Aid', 'Communication'],
           experience: '3 years',
-          hourlyRate: '35'
+          hourlyRate: '35',
+          isPremium: false,
+          subscriptionActive: false
         };
         token = `worker_token_${Date.now()}`;
       } else if (role === 'EMPLOYER') {
@@ -166,7 +181,9 @@ function Login() {
           companyName: 'Company Name',
           phone: '+201234567891',
           location: 'Cairo, Egypt',
-          bio: 'Looking for professional home service providers.'
+          bio: 'Looking for professional home service providers.',
+          isPremium: false,
+          subscriptionActive: false
         };
         token = `employer_token_${Date.now()}`;
       } else if (role === 'ADMIN') {
@@ -175,7 +192,9 @@ function Login() {
           fullName: 'Admin User',
           email: email || 'admin@homelyserv.com',
           role: 'ADMIN',
-          phone: '+201234567892'
+          phone: '+201234567892',
+          isPremium: false,
+          subscriptionActive: false
         };
         token = `admin_token_${Date.now()}`;
       } else {
@@ -193,6 +212,61 @@ function Login() {
       console.log('📥 Merged saved profile data');
     }
 
+    // ✅ FIX: ALWAYS check if user has premium subscription
+    const userId = user.id || user.email;
+    const isPremium = isUserPremium(userId);
+    const subscription = getUserSubscription(userId);
+    
+    console.log(`🔍 Premium status for ${user.fullName} (${user.role}):`, isPremium);
+    console.log('📋 Subscription data:', subscription);
+    
+    user.isPremium = isPremium;
+    user.subscriptionActive = isPremium;
+    user.subscription = subscription;
+
+    // ✅ FIX: Update ALL storage locations with premium status
+    try {
+      // Update users list
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const userIndex = users.findIndex(u => u.email === user.email);
+      if (userIndex !== -1) {
+        users[userIndex].isPremium = isPremium;
+        users[userIndex].subscriptionActive = isPremium;
+        users[userIndex].subscription = subscription;
+        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        console.log('✅ Updated users list with premium status');
+      }
+    } catch (error) {
+      console.error('Error updating users list:', error);
+    }
+
+    // ✅ FIX: Update profiles data
+    try {
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (profiles[user.email]) {
+        profiles[user.email].isPremium = isPremium;
+        profiles[user.email].subscriptionActive = isPremium;
+        localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+        console.log('✅ Updated profiles with premium status');
+      }
+    } catch (error) {
+      console.error('Error updating profiles:', error);
+    }
+
+    // ✅ FIX: Also update the subscription data directly
+    try {
+      const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
+      if (subscriptions[userId]) {
+        subscriptions[userId].userEmail = user.email;
+        subscriptions[userId].userRole = user.role;
+        subscriptions[userId].userFullName = user.fullName;
+        localStorage.setItem('homelyserv_subscriptions', JSON.stringify(subscriptions));
+        console.log('✅ Updated subscription data');
+      }
+    } catch (error) {
+      console.error('Error updating subscriptions:', error);
+    }
+
     // Store in localStorage
     localStorage.setItem('homelyserv_token', token);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
@@ -200,6 +274,8 @@ function Login() {
     console.log('✅ Login successful:', user.fullName);
     console.log('✅ User role:', user.role);
     console.log('✅ User email:', user.email);
+    console.log('✅ Premium status:', user.isPremium);
+    console.log('✅ Subscription:', user.subscription);
     
     // Redirect after a small delay
     setTimeout(() => {
@@ -222,45 +298,45 @@ function Login() {
     }
 
     // FIRST: Check if user is registered in homelyserv_users
-        const registeredUser = checkRegisteredUser(email);
+    const registeredUser = checkRegisteredUser(email);
 
-if (registeredUser) {
-  if (registeredUser.password !== password) {
-    setError('Invalid email or password');
-    setLoading(false);
-    return;
-  }
+    if (registeredUser) {
+      if (registeredUser.password !== password) {
+        setError('Invalid email or password');
+        setLoading(false);
+        return;
+      }
 
-  console.log('✅ Found registered user, logging in:', registeredUser.fullName);
-  loginUser(registeredUser, registeredUser.role, email);
-  return;
+      console.log('✅ Found registered user, logging in:', registeredUser.fullName);
+      loginUser(registeredUser, registeredUser.role, email);
+      return;
     }
 
     // SECOND: Check demo accounts
     if (
-  (email.toLowerCase() === 'contractforlife@gmail.com' ||
-    email.toLowerCase() === 'worker') &&
-  password === 'test1234'
-) {
-  loginUser(null, 'WORKER', email);
-}
-else if (
-  (email.toLowerCase() === 'max@cargotrust.us' ||
-    email.toLowerCase() === 'employer') &&
-  password === 'test1234'
-) {
-  loginUser(null, 'EMPLOYER', email);
-}
-else if (
-  (email.toLowerCase() === 'admin@homelyserv.com' ||
-    email.toLowerCase() === 'admin') &&
-  password === 'test1234'
-) {
-  loginUser(null, 'ADMIN', email);
-}
-else {
-  setError('Invalid email or password');
-  setLoading(false);
+      (email.toLowerCase() === 'contractforlife@gmail.com' ||
+        email.toLowerCase() === 'worker') &&
+      password === 'test1234'
+    ) {
+      loginUser(null, 'WORKER', email);
+    }
+    else if (
+      (email.toLowerCase() === 'max@cargotrust.us' ||
+        email.toLowerCase() === 'employer') &&
+      password === 'test1234'
+    ) {
+      loginUser(null, 'EMPLOYER', email);
+    }
+    else if (
+      (email.toLowerCase() === 'admin@homelyserv.com' ||
+        email.toLowerCase() === 'admin') &&
+      password === 'test1234'
+    ) {
+      loginUser(null, 'ADMIN', email);
+    }
+    else {
+      setError('Invalid email or password');
+      setLoading(false);
     }
   };
 
