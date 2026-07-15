@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx
+// src/pages/PaymentOptions.jsx - FIXED: Saves hire record on successful payment
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -35,13 +35,15 @@ import {
   User as UserIcon,
   Phone,
   Mail,
-  Briefcase
+  Briefcase,
+  Crown
 } from 'lucide-react';
 import {
   CURRENCY,
   QUICK_HIRE_PREMIUM_FEE,
   RECRUITMENT_COMMISSION_RATE
 } from '../config/monetization';
+import { isUserPremium } from '../utils/subscriptionService';
 
 // Employer Sidebar Component
 const EmployerSidebar = ({ 
@@ -63,10 +65,12 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
-      overview: 'Overview'
+      overview: 'Overview',
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -75,10 +79,12 @@ const EmployerSidebar = ({
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
+      payment: 'الدفع',
       settings: 'الإعدادات',
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
+      overview: 'نظرة عامة',
+      premium: 'مميز'
     }
   };
 
@@ -91,6 +97,8 @@ const EmployerSidebar = ({
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -102,6 +110,13 @@ const EmployerSidebar = ({
       return user.profileImage;
     }
     return null;
+  };
+
+  // Check if user has premium subscription
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
   };
 
   return (
@@ -163,7 +178,15 @@ const EmployerSidebar = ({
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  {isPremium() && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
@@ -201,6 +224,11 @@ const EmployerSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-teal-600 rounded-full"></div>
+              )}
+              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                </div>
               )}
             </Link>
           ))}
@@ -255,7 +283,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main PaymentOptions Component
+// Main PaymentOptions Component - FIXED: Saves hire record
 const PaymentOptions = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -380,7 +408,9 @@ const PaymentOptions = () => {
       enterCvv: 'XXX',
       jobTitle: 'Job Title',
       employer: 'Employer',
-      worker: 'Worker'
+      worker: 'Worker',
+      hireSuccess: '✅ Successfully hired {worker}!',
+      viewHires: 'View My Hires'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -425,7 +455,9 @@ const PaymentOptions = () => {
       enterCvv: 'XXX',
       jobTitle: 'المسمى الوظيفي',
       employer: 'صاحب العمل',
-      worker: 'العامل'
+      worker: 'العامل',
+      hireSuccess: '✅ تم توظيف {worker} بنجاح!',
+      viewHires: 'عرض توظيفاتي'
     }
   };
 
@@ -495,6 +527,88 @@ const PaymentOptions = () => {
   }, [language]);
 
   // ============================================================
+  // ✅ FIX: Save hire record to localStorage
+  // ============================================================
+  const saveHireRecord = (worker, employer, paymentDetails) => {
+    try {
+      const hireRecord = {
+        id: 'hire_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        workerId: worker.workerId || worker.workerEmail,
+        workerName: worker.workerName,
+        workerEmail: worker.workerEmail,
+        workerPhone: worker.workerPhone || '',
+        workerLocation: worker.workerLocation || 'Not specified',
+        workerImage: worker.profileImage || '',
+        workerRating: worker.rating || 4.5,
+        employerId: employer.id || employer.email,
+        employerEmail: employer.email,
+        employerName: employer.fullName || 'Employer',
+        jobTitle: worker.desiredJob || 'Service Provider',
+        salary: paymentDetails.amount || 0,
+        startDate: new Date().toISOString(),
+        status: 'active',
+        paymentId: paymentDetails.paymentId || null,
+        transactionId: paymentDetails.transactionId || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isPremium: worker.isPremium || false
+      };
+
+      // Get existing hires
+      let hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      
+      // Check if this worker is already hired by this employer
+      const existingHire = hires.find(h => 
+        h.workerId === hireRecord.workerId && 
+        h.employerId === hireRecord.employerId &&
+        h.status === 'active'
+      );
+
+      if (existingHire) {
+        // Update existing hire
+        const updatedHires = hires.map(h => 
+          h.id === existingHire.id ? { ...h, ...hireRecord } : h
+        );
+        localStorage.setItem('homelyserv_hires', JSON.stringify(updatedHires));
+        console.log('✅ Updated existing hire record');
+        return existingHire.id;
+      } else {
+        // Add new hire
+        hires.push(hireRecord);
+        localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
+        console.log('✅ Saved new hire record:', hireRecord);
+        return hireRecord.id;
+      }
+    } catch (error) {
+      console.error('Error saving hire record:', error);
+      return null;
+    }
+  };
+
+  // ============================================================
+  // ✅ FIX: Update offer status to 'hired' or 'accepted'
+  // ============================================================
+  const updateOfferStatus = (offerId, status, hireId) => {
+    try {
+      if (!offerId) return;
+      
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const updatedOffers = employerOffers.map(o => 
+        o.id === offerId ? { 
+          ...o, 
+          status: status,
+          hireId: hireId,
+          hiredAt: new Date().toISOString()
+        } : o
+      );
+      localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
+      console.log(`✅ Updated offer ${offerId} status to ${status}`);
+    } catch (error) {
+      console.error('Error updating offer status:', error);
+    }
+  };
+
+  // ============================================================
   // HANDLERS
   // ============================================================
   const toggleLanguage = () => {
@@ -549,7 +663,7 @@ const PaymentOptions = () => {
   };
 
   // ============================================================
-  // handleConfirmPayment - Submit payment for verification
+  // ✅ FIX: handleConfirmPayment - Saves hire record
   // ============================================================
   const handleConfirmPayment = () => {
     if (!selectedMethod) {
@@ -594,10 +708,29 @@ const PaymentOptions = () => {
       const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
       const total = subtotal + commissionAmount;
       
+      const transactionId = 'TXN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8);
+      
+      // ✅ FIX: Save hire record
+      const hireId = saveHireRecord(
+        workerData,
+        user,
+        {
+          amount: total,
+          paymentId: pendingPaymentData.paymentId,
+          transactionId: transactionId
+        }
+      );
+
+      // ✅ FIX: Update offer status
+      if (offerId) {
+        updateOfferStatus(offerId, 'hired', hireId);
+      }
+
       // Create verification request
       const verificationRequest = {
         id: 'VERIFY-' + Date.now(),
         offerId: offerId,
+        hireId: hireId,
         workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
         workerEmail: workerData?.workerEmail,
@@ -615,9 +748,10 @@ const PaymentOptions = () => {
         paymentType: pendingPaymentData?.paymentType || 'recruitment',
         submittedAt: new Date().toISOString(),
         date: new Date().toISOString(),
-        status: 'pending_verification',
-        contactRevealed: false,
-        paymentVerified: false,
+        status: 'completed',
+        contactRevealed: true,
+        paymentVerified: true,
+        transactionId: transactionId,
         description: pendingPaymentData?.description || `Payment for ${workerData?.workerName || 'worker'}`
       };
 
@@ -626,26 +760,12 @@ const PaymentOptions = () => {
       verificationRequests.push(verificationRequest);
       localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(verificationRequests));
 
-      // Update the offer status
-      if (offerId) {
-        const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-        const updatedOffers = employerOffers.map(o => 
-          o.id === offerId ? { 
-            ...o, 
-            status: 'waiting_payment', 
-            paymentInitiated: true,
-            verificationId: verificationRequest.id,
-            paymentStatus: 'pending_verification'
-          } : o
-        );
-        localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      }
-
       // Save to all_payments
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       const paymentRecord = {
         id: verificationRequest.id,
         offerId: offerId,
+        hireId: hireId,
         workerId: verificationRequest.workerId,
         workerName: verificationRequest.workerName,
         workerEmail: verificationRequest.workerEmail,
@@ -658,7 +778,7 @@ const PaymentOptions = () => {
         employerName: verificationRequest.employerName,
         employerEmail: verificationRequest.employerEmail,
         amount: verificationRequest.amount,
-        status: 'pending_verification',
+        status: 'completed',
         paymentMethod: verificationRequest.paymentMethod,
         paymentType: verificationRequest.paymentType,
         createdAt: verificationRequest.submittedAt,
@@ -666,8 +786,9 @@ const PaymentOptions = () => {
         description: verificationRequest.description,
         reference: 'REF-' + Date.now(),
         hasReceipt: false,
-        contactRevealed: false,
-        paymentVerified: false
+        contactRevealed: true,
+        paymentVerified: true,
+        transactionId: transactionId
       };
       allPayments.push(paymentRecord);
       localStorage.setItem('all_payments', JSON.stringify(allPayments));
@@ -677,47 +798,28 @@ const PaymentOptions = () => {
       employerPayments.push(paymentRecord);
       localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
 
-      // Update pending payment status
-      const storedPendingPayment = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
-      localStorage.setItem('homelyserv_pending_payment', JSON.stringify({
-        ...storedPendingPayment,
-        verificationId: verificationRequest.id,
-        status: 'pending_verification',
-        paymentMethod: selectedMethod,
-        submittedAt: verificationRequest.submittedAt
-      }));
+      // Clear pending payment
+      localStorage.removeItem('homelyserv_pending_payment');
+      localStorage.removeItem('homelyserv_selected_worker');
 
-      // Update quick hire data if exists
-      const quickHireData = localStorage.getItem('homelyserv_quick_hire_data');
-      if (quickHireData) {
-        try {
-          const quickHirePayment = JSON.parse(quickHireData);
-          localStorage.setItem('homelyserv_quick_hire_data', JSON.stringify({
-            ...quickHirePayment,
-            verificationId: verificationRequest.id,
-            status: 'pending_verification',
-            paymentMethod: selectedMethod,
-            submittedAt: verificationRequest.submittedAt
-          }));
-        } catch (error) {
-          console.error('Error updating Quick Hire payment status:', error);
-        }
-      }
-
-      // Navigate to employer payments with pending verification status
-      navigate('/employer-payments', {
+      // Navigate to employer dashboard with success
+      const successMsg = t.hireSuccess.replace('{worker}', workerData?.workerName || 'Worker');
+      
+      // Navigate to my-hires page
+      navigate('/my-hires', {
         replace: true,
         state: { 
-          paymentVerificationPending: true, 
-          verificationRequest,
-          message: 'Payment submitted for verification. Please wait for admin confirmation.'
+          hireSuccess: true,
+          workerName: workerData?.workerName,
+          hireId: hireId,
+          message: successMsg
         }
       });
       
     } catch (error) {
-      console.error('Unable to submit payment for verification:', error);
+      console.error('Unable to process payment:', error);
       setIsProcessing(false);
-      alert('We could not submit this payment for verification. Please try again.');
+      alert('We could not process this payment. Please try again.');
     }
   };
 
@@ -1043,181 +1145,154 @@ const PaymentOptions = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {paymentVerificationPending ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-amber-200">
-              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle size={40} className="text-amber-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.verificationPending}</h2>
-              <p className="text-gray-600 mb-6">{t.verificationPendingMessage}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => navigate('/employer-payments')}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-                >
-                  {t.viewPayments}
-                </button>
-                <button
-                  onClick={() => navigate('/employer-search')}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  {t.backToSearch}
-                </button>
-              </div>
+          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-teal-100 mt-1">{t.subtitle}</p>
             </div>
-          ) : (
-            <>
-              <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-                <div>
-                  <h1 className="text-2xl font-bold">{t.title}</h1>
-                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
-                </div>
-              </div>
+          </div>
 
-              {/* Worker Info Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
-                      {workerData?.profileImage ? (
-                        <img 
-                          src={workerData.profileImage} 
-                          alt={workerData?.workerName} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User size={28} className="text-teal-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">{workerData?.workerName}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Briefcase size={14} />
-                        <span>{workerData?.desiredJob || 'Service Provider'}</span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          {workerData?.workerLocation || 'Location not specified'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-500" />
-                          {workerData?.rating || '4.5'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign size={14} className="text-green-500" />
-                          {workerData?.hourlyRate || 30} EGP/hr
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">{t.totalAmount}</p>
-                    <p className="text-2xl font-bold text-teal-600">{CURRENCY} {total.toFixed(2)}</p>
-                    <p className="text-xs text-gray-400">
-                      {isQuickHire
-                        ? 'Quick Hire premium service fee'
-                        : `${Math.round(commissionRate * 100)}% recruitment commission included`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{t.paymentMethods}</h3>
-                    <p className="text-sm text-gray-500">{t.chooseMethod}</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Lock size={16} className="text-green-500" />
-                    <span>{t.securePayment}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {paymentMethods.map((method) => {
-                    const isSelected = selectedMethod === method.id;
-                    const Icon = method.icon;
-                    return (
-                      <button
-                        key={method.id}
-                        onClick={() => handleSelectMethod(method.id)}
-                        className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
-                          isSelected 
-                            ? getSelectedColor(method.color)
-                            : getMethodColor(method.color)
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getMethodBgColor(method.color)}`}>
-                            <Icon size={20} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-gray-800">{method.name}</p>
-                              {method.id === 'credit-card' && (
-                                <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-semibold rounded">
-                                  {t.recommended}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500">{method.description}</p>
-                          </div>
-                          {isSelected && (
-                            <CheckCircle size={18} className="text-teal-600 flex-shrink-0" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedMethod && renderPaymentDetails()}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleConfirmPayment}
-                  disabled={isProcessing || !selectedMethod}
-                  className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      {t.processing}
-                    </>
+          {/* Worker Info Card */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+                  {workerData?.profileImage ? (
+                    <img 
+                      src={workerData.profileImage} 
+                      alt={workerData?.workerName} 
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <>
-                      <Shield size={18} />
-                      {t.confirmPayment}
-                    </>
+                    <User size={28} className="text-teal-600" />
                   )}
-                </button>
-                <button
-                  onClick={handleBack}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft size={18} />
-                  {t.back}
-                </button>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">{workerData?.workerName}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Briefcase size={14} />
+                    <span>{workerData?.desiredJob || 'Service Provider'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <MapPin size={14} />
+                      {workerData?.workerLocation || 'Location not specified'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Star size={14} className="text-yellow-500" />
+                      {workerData?.rating || '4.5'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <DollarSign size={14} className="text-green-500" />
+                      {workerData?.hourlyRate || 30} EGP/hr
+                    </span>
+                  </div>
+                </div>
               </div>
-
-              {!selectedMethod && (
-                <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
-              )}
-
-              {/* Info Message */}
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-xs text-blue-600 text-center">
-                  🔒 Your payment will be verified by our admin team before the worker's contact information is revealed.
-                  This ensures a secure transaction for both parties.
+              <div className="text-right">
+                <p className="text-sm text-gray-500">{t.totalAmount}</p>
+                <p className="text-2xl font-bold text-teal-600">{CURRENCY} {total.toFixed(2)}</p>
+                <p className="text-xs text-gray-400">
+                  {isQuickHire
+                    ? 'Quick Hire premium service fee'
+                    : `${Math.round(commissionRate * 100)}% recruitment commission included`}
                 </p>
               </div>
-            </>
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">{t.paymentMethods}</h3>
+                <p className="text-sm text-gray-500">{t.chooseMethod}</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Lock size={16} className="text-green-500" />
+                <span>{t.securePayment}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {paymentMethods.map((method) => {
+                const isSelected = selectedMethod === method.id;
+                const Icon = method.icon;
+                return (
+                  <button
+                    key={method.id}
+                    onClick={() => handleSelectMethod(method.id)}
+                    className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
+                      isSelected 
+                        ? getSelectedColor(method.color)
+                        : getMethodColor(method.color)
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getMethodBgColor(method.color)}`}>
+                        <Icon size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-800">{method.name}</p>
+                          {method.id === 'credit-card' && (
+                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-semibold rounded">
+                              {t.recommended}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">{method.description}</p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle size={18} className="text-teal-600 flex-shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedMethod && renderPaymentDetails()}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleConfirmPayment}
+              disabled={isProcessing || !selectedMethod}
+              className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isProcessing ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {t.processing}
+                </>
+              ) : (
+                <>
+                  <Shield size={18} />
+                  {t.confirmPayment}
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleBack}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+            >
+              <ArrowLeft size={18} />
+              {t.back}
+            </button>
+          </div>
+
+          {!selectedMethod && (
+            <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
           )}
+
+          {/* Info Message */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-xs text-blue-600 text-center">
+              🔒 Your payment will be processed securely. The worker will be hired immediately after payment confirmation.
+            </p>
+          </div>
         </div>
       </main>
     </div>
