@@ -1,4 +1,4 @@
-// src/pages/WorkerDashboard.jsx - Updated with persistent premium badge
+// src/pages/WorkerDashboard.jsx - Updated with premium badge fix
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -26,12 +26,10 @@ import {
   CreditCard,
   Shield,
   Sparkles,
-  Crown,
-  FileText,
-  Search
+  Crown
 } from 'lucide-react';
 
-// Sidebar Component - Updated with persistent premium badge
+// Sidebar Component - Updated with premium badge fix
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -55,8 +53,7 @@ const WorkerSidebar = ({
       help: 'Help & Support',
       logout: 'Logout',
       overview: 'Overview',
-      premium: 'Premium',
-      myHires: 'My Hires'
+      premium: 'Premium'
     },
     ar: {
       dashboard: 'لوحة التحكم',
@@ -69,19 +66,16 @@ const WorkerSidebar = ({
       help: 'المساعدة والدعم',
       logout: 'تسجيل الخروج',
       overview: 'نظرة عامة',
-      premium: 'مميز',
-      myHires: 'توظيفاتي'
+      premium: 'مميز'
     }
   };
 
   const t = translations[language];
 
-  // Menu items with Premium included
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'my-hires', label: t.myHires, icon: FileText, path: '/my-hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
     { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
@@ -99,15 +93,15 @@ const WorkerSidebar = ({
     return null;
   };
 
-  // Check if user has premium subscription - using the user object passed from parent
-  // ✅ FIX: Check premium status directly using the user ID
-    const userIsPremium = () => {
-      const userId = user?.id || user?.email;
-      if (!userId) return false;
-      return isUserPremium(userId);
-    };
-  
-    const isPremium = userIsPremium();
+  // ✅ FIX: Check premium status directly using the user ID - NOT from user object
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const isPremium = userIsPremium();
+
   return (
     <>
       {mobileMenuOpen && (
@@ -164,7 +158,7 @@ const WorkerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
-              {userIsPremium && (
+              {isPremium && (
                 <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
                   <Crown size={10} className="text-white" />
                 </div>
@@ -174,7 +168,7 @@ const WorkerSidebar = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
-                  {userIsPremium && (
+                  {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
@@ -300,6 +294,15 @@ const WorkerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // ✅ Check premium status directly
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
+
   const translations = {
     en: {
       welcome: 'Welcome back',
@@ -365,9 +368,6 @@ const WorkerDashboard = () => {
 
   const t = translations[language];
 
-  // ✅ FIX: Check if user has premium subscription using the stored flag
-  const userIsPremium = user?.isPremium || false;
-
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -389,20 +389,6 @@ const WorkerDashboard = () => {
             profiles[parsedUser.email].profileImage || null;
         }
 
-        // ✅ FIX: Check if user has premium subscription
-        const userId = parsedUser.id || parsedUser.email;
-        const isPremium = isUserPremium(userId);
-        parsedUser.isPremium = isPremium;
-
-        // ✅ FIX: Also check in users list and update if needed
-        const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-        const userIndex = users.findIndex(u => u.email === parsedUser.email);
-        if (userIndex !== -1) {
-          users[userIndex].isPremium = isPremium;
-          users[userIndex].subscriptionActive = isPremium;
-          localStorage.setItem('homelyserv_users', JSON.stringify(users));
-        }
-
         setUser(parsedUser);
       } catch (error) {
         console.error(error);
@@ -418,17 +404,6 @@ const WorkerDashboard = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
   }, [navigate]);
-
-  // ✅ FIX: Re-check premium status when the component updates
-  useEffect(() => {
-    if (user) {
-      const userId = user.id || user.email;
-      const isPremium = isUserPremium(userId);
-      if (user.isPremium !== isPremium) {
-        setUser(prev => ({ ...prev, isPremium }));
-      }
-    }
-  }, [user]);
 
   const loadRealStats = () => {
     try {
@@ -619,9 +594,14 @@ const WorkerDashboard = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // ✅ FIX: Proper logout - Do NOT clear subscription data
   const handleLogout = () => {
+    // Only remove session data, NOT subscription data
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
+    // DO NOT remove: homelyserv_subscriptions
+    // DO NOT remove: homelyserv_users
+    // DO NOT remove: homelyserv_profiles
     navigate('/login');
   };
 
@@ -758,6 +738,15 @@ const WorkerDashboard = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              {!userIsPremium && (
+                <Link
+                  to="/subscription"
+                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
+                >
+                  <Crown size={14} />
+                  <span className="hidden sm:inline">{t.getPremium}</span>
+                </Link>
+              )}
             </div>
           </div>
         </header>
