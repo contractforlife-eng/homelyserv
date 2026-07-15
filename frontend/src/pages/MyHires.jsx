@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Updated to display actual hired workers with premium badge fix
+// src/pages/MyHires.jsx - Complete fixed version with proper hire loading
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -63,7 +63,7 @@ import {
 } from 'lucide-react';
 
 // ============================================================
-// 1. EMPLOYER SIDEBAR COMPONENT - WITH PREMIUM BADGE FIX
+// 1. EMPLOYER SIDEBAR COMPONENT
 // ============================================================
 const EmployerSidebar = ({ 
   language, 
@@ -124,7 +124,7 @@ const EmployerSidebar = ({
 
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly using the user ID
+  // Check if user has premium subscription
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -303,7 +303,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// 2. MAIN MY HIRES COMPONENT
+// 2. MAIN MY HIRES COMPONENT - FIXED
 // ============================================================
 const MyHires = () => {
   const navigate = useNavigate();
@@ -338,7 +338,8 @@ const MyHires = () => {
         terminated: 'Terminated',
         pending: 'Pending',
         completed: 'Completed',
-        accepted: 'Accepted'
+        accepted: 'Accepted',
+        hired: 'Hired'
       },
       table: {
         worker: 'Worker',
@@ -387,7 +388,7 @@ const MyHires = () => {
         active: 'Active',
         terminated: 'Terminated',
         pending: 'Pending',
-        accepted: 'Accepted'
+        hired: 'Hired'
       },
       empty: {
         title: 'No hires yet',
@@ -416,7 +417,8 @@ const MyHires = () => {
         terminated: 'منتهي',
         pending: 'قيد الانتظار',
         completed: 'مكتمل',
-        accepted: 'مقبول'
+        accepted: 'مقبول',
+        hired: 'موظف'
       },
       table: {
         worker: 'العامل',
@@ -465,7 +467,7 @@ const MyHires = () => {
         active: 'نشط',
         terminated: 'منتهي',
         pending: 'قيد الانتظار',
-        accepted: 'مقبول'
+        hired: 'موظف'
       },
       empty: {
         title: 'لا توجد توظيفات',
@@ -521,7 +523,7 @@ const MyHires = () => {
   }, [navigate]);
 
   // ============================================================
-  // 4. LOAD HIRES - Get ALL hired workers from localStorage
+  // 4. LOAD HIRES - FIXED: Gets ALL hires from homelyserv_hires
   // ============================================================
   const loadHires = () => {
     setLoading(true);
@@ -537,108 +539,69 @@ const MyHires = () => {
 
       console.log('📂 Loading hires for employer:', employerEmail);
 
-      // Get all employer offers
-      const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      // ✅ PRIMARY SOURCE: Get hires from homelyserv_hires
+      const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
-      // Filter offers for this employer
-      const employerOffers = allOffers.filter(
-        offer => offer.employerEmail === employerEmail || offer.employerId === employerEmail
-      );
-
-      // ✅ FIX: Get ALL accepted/completed offers (these are the hires)
-      const hiredOffers = employerOffers.filter(offer => 
-        offer.status === 'accepted' || 
-        offer.status === 'completed' || 
-        offer.status === 'active' ||
-        offer.status === 'hired'
-      );
-      
-      console.log(`📌 Found ${hiredOffers.length} hired offers`);
-
-      // Also get from homelyserv_hires
-      const hiresFromStorage = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      const employerHires = hiresFromStorage.filter(
+      // Filter hires for this employer
+      let employerHires = allHires.filter(
         hire => hire.employerEmail === employerEmail || hire.employerId === employerEmail
       );
-      
+
       console.log(`📌 Found ${employerHires.length} hires from homelyserv_hires`);
 
-      // Merge data - prefer data from hiresFromStorage for status
-      const mergedHires = [];
-      const processedOfferIds = new Set();
+      // ✅ SECONDARY SOURCE: Get from employer_offers with status 'hired' or 'accepted'
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const hiredOffers = employerOffers.filter(
+        offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
+                 (offer.employerEmail === employerEmail || offer.employerId === employerEmail)
+      );
+
+      console.log(`📌 Found ${hiredOffers.length} hired offers from employer_offers`);
+
+      // ✅ Merge: Add any hired offers not already in hires
+      const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
       
-      // First, process all hired offers
       hiredOffers.forEach(offer => {
-        processedOfferIds.add(offer.id);
-        const existingHire = employerHires.find(h => h.offerId === offer.id || h.hireId === offer.id);
-        
-        // Check if worker has premium subscription
         const workerId = offer.workerId || offer.workerEmail;
-        const isPremiumWorker = workerId ? isUserPremium(workerId) : false;
-        
-        const hireData = {
-          ...offer,
-          hireId: offer.id,
-          workerName: offer.workerName || 'Worker',
-          workerEmail: offer.workerEmail || '',
-          workerPhone: offer.workerPhone || '',
-          workerLocation: offer.workerLocation || 'Not specified',
-          workerImage: offer.workerImage || '',
-          workerRating: offer.workerRating || 4.5,
-          jobTitle: offer.jobTitle || 'Service Provider',
-          salary: offer.amount || 0,
-          startDate: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
-          status: existingHire?.status || offer.status || 'active',
-          employerEmail: employerEmail,
-          employerId: employerEmail,
-          isPremium: isPremiumWorker,
-          terminationReason: existingHire?.terminationReason || offer.terminationReason || null,
-          terminationDate: existingHire?.terminationDate || offer.terminationDate || null
-        };
-        
-        // If existing hire has more recent data, use it
-        if (existingHire) {
-          mergedHires.push({
-            ...hireData,
-            ...existingHire,
-            workerName: existingHire.workerName || hireData.workerName,
-            workerEmail: existingHire.workerEmail || hireData.workerEmail,
-            workerPhone: existingHire.workerPhone || hireData.workerPhone,
-            workerImage: existingHire.workerImage || hireData.workerImage,
-            salary: existingHire.salary || hireData.salary,
-            startDate: existingHire.startDate || hireData.startDate,
-            isPremium: existingHire.isPremium || isPremiumWorker
-          });
-        } else {
-          mergedHires.push(hireData);
+        if (!existingWorkerIds.has(workerId)) {
+          // Create hire record from offer
+          const hireFromOffer = {
+            id: offer.hireId || offer.id || 'hire_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            workerId: workerId,
+            workerName: offer.workerName || 'Worker',
+            workerEmail: offer.workerEmail || '',
+            workerPhone: offer.workerPhone || '',
+            workerLocation: offer.workerLocation || 'Not specified',
+            workerImage: offer.workerImage || '',
+            workerRating: offer.workerRating || 4.5,
+            workerSkills: offer.workerSkills || [],
+            employerId: offer.employerId || offer.employerEmail,
+            employerEmail: offer.employerEmail,
+            employerName: offer.employerName || 'Employer',
+            jobTitle: offer.jobTitle || 'Service Provider',
+            salary: offer.amount || 0,
+            startDate: offer.hiredAt || offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
+            status: offer.status === 'hired' ? 'active' : offer.status,
+            offerId: offer.id,
+            createdAt: offer.hiredAt || offer.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isPremium: offer.isPremium || false
+          };
+          employerHires.push(hireFromOffer);
+          console.log(`✅ Added hire from offer: ${hireFromOffer.workerName}`);
         }
       });
 
-      // Add hires from homelyserv_hires that don't have corresponding offers
-      employerHires.forEach(hire => {
-        if (!processedOfferIds.has(hire.offerId) && !processedOfferIds.has(hire.hireId)) {
-          const workerId = hire.workerId || hire.workerEmail;
-          const isPremiumWorker = workerId ? isUserPremium(workerId) : false;
-          
-          mergedHires.push({
-            ...hire,
-            hireId: hire.id || hire.hireId,
-            status: hire.status || 'active',
-            isPremium: isPremiumWorker
-          });
-        }
-      });
-
-      // Sort by date (newest first)
-      mergedHires.sort((a, b) => {
+      // ✅ Sort by date (newest first)
+      employerHires.sort((a, b) => {
         const dateA = new Date(a.startDate || a.createdAt || 0);
         const dateB = new Date(b.startDate || b.createdAt || 0);
         return dateB - dateA;
       });
 
-      console.log(`✅ Loaded ${mergedHires.length} total hires`);
-      setHires(mergedHires);
-      setFilteredHires(mergedHires);
+      console.log(`✅ Total hires loaded: ${employerHires.length}`);
+      setHires(employerHires);
+      setFilteredHires(employerHires);
       
     } catch (error) {
       console.error('Error loading hires:', error);
@@ -741,59 +704,29 @@ const MyHires = () => {
       // Update in homelyserv_hires
       const hiresFromStorage = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       const hireIndex = hiresFromStorage.findIndex(h => 
-        h.id === terminatingHire.hireId || h.offerId === terminatingHire.hireId
+        h.id === terminatingHire.hireId || h.id === terminatingHire.id ||
+        h.offerId === terminatingHire.offerId
       );
       
       if (hireIndex !== -1) {
-        hiresFromStorage[hireIndex] = {
-          ...hiresFromStorage[hireIndex],
-          status: 'terminated',
-          terminationDate: new Date().toISOString(),
-          terminationReason: terminateReason || 'No reason provided'
-        };
+        hiresFromStorage[hireIndex] = updatedHire;
       } else {
-        hiresFromStorage.push({
-          id: terminatingHire.hireId || terminatingHire.offerId,
-          offerId: terminatingHire.offerId || terminatingHire.hireId,
-          workerName: terminatingHire.workerName,
-          workerEmail: terminatingHire.workerEmail,
-          workerPhone: terminatingHire.workerPhone,
-          workerImage: terminatingHire.workerImage,
-          jobTitle: terminatingHire.jobTitle,
-          salary: terminatingHire.salary,
-          startDate: terminatingHire.startDate || new Date().toISOString(),
-          status: 'terminated',
-          terminationDate: new Date().toISOString(),
-          terminationReason: terminateReason || 'No reason provided',
-          employerEmail: user?.email,
-          employerId: user?.email
-        });
+        hiresFromStorage.push(updatedHire);
       }
       localStorage.setItem('homelyserv_hires', JSON.stringify(hiresFromStorage));
 
       // Update in employer_offers
       const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedOffers = allOffers.map(o => 
-        o.id === terminatingHire.hireId || o.id === terminatingHire.offerId
+        o.id === terminatingHire.offerId || o.id === terminatingHire.hireId
           ? { ...o, status: 'terminated', terminationReason: terminateReason || 'No reason provided' }
           : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
 
-      // Update in worker_offers
-      if (terminatingHire.workerEmail) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${terminatingHire.workerEmail}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => 
-          o.id === terminatingHire.hireId || o.id === terminatingHire.offerId
-            ? { ...o, status: 'terminated', terminationReason: terminateReason || 'No reason provided' }
-            : o
-        );
-        localStorage.setItem(`worker_offers_${terminatingHire.workerEmail}`, JSON.stringify(updatedWorkerOffers));
-      }
-
       // Update local state
       setHires(prev => prev.map(h => 
-        h.hireId === terminatingHire.hireId || h.offerId === terminatingHire.hireId
+        h.id === terminatingHire.id || h.offerId === terminatingHire.offerId
           ? updatedHire
           : h
       ));
@@ -847,6 +780,7 @@ const MyHires = () => {
   const getStatusColor = (status) => {
     const colors = {
       active: 'bg-green-100 text-green-800 border border-green-200',
+      hired: 'bg-blue-100 text-blue-800 border border-blue-200',
       accepted: 'bg-blue-100 text-blue-800 border border-blue-200',
       terminated: 'bg-red-100 text-red-800 border border-red-200',
       pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
@@ -858,6 +792,7 @@ const MyHires = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'active': return <CheckCircle size={14} />;
+      case 'hired': return <CheckCircle size={14} />;
       case 'accepted': return <CheckCircle size={14} />;
       case 'terminated': return <XIcon size={14} />;
       case 'pending': return <Clock size={14} />;
@@ -882,7 +817,7 @@ const MyHires = () => {
 
   const stats = {
     total: hires.length,
-    active: hires.filter(h => h.status === 'active' || h.status === 'accepted').length,
+    active: hires.filter(h => h.status === 'active' || h.status === 'hired' || h.status === 'accepted').length,
     terminated: hires.filter(h => h.status === 'terminated').length,
     pending: hires.filter(h => h.status === 'pending').length
   };
@@ -928,7 +863,7 @@ const MyHires = () => {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -937,6 +872,11 @@ const MyHires = () => {
                     />
                   ) : (
                     <User size={16} className="text-white m-1" />
+                  )}
+                  {isPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
                   )}
                 </div>
                 <span className="text-sm font-medium text-gray-700 hidden sm:inline">
@@ -1054,7 +994,7 @@ const MyHires = () => {
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="active">{t.filters.active}</option>
-                  <option value="accepted">{t.filters.accepted || 'Accepted'}</option>
+                  <option value="hired">{t.filters.hired || 'Hired'}</option>
                   <option value="terminated">{t.filters.terminated}</option>
                   <option value="pending">{t.filters.pending}</option>
                 </select>
@@ -1086,9 +1026,9 @@ const MyHires = () => {
             <div className="space-y-4">
               {filteredHires.map((hire) => (
                 <div
-                  key={hire.hireId || hire.offerId || hire.id}
+                  key={hire.id || hire.hireId || hire.offerId}
                   className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition ${
-                    hire.status === 'active' || hire.status === 'accepted' ? 'border-green-200' :
+                    hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted' ? 'border-green-200' :
                     hire.status === 'terminated' ? 'border-red-200' :
                     'border-yellow-200'
                   }`}
@@ -1116,7 +1056,7 @@ const MyHires = () => {
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-gray-800">{hire.workerName || 'Unknown Worker'}</h3>
                             {hire.isPremium && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                                 <Crown size={10} className="text-yellow-500" />
                                 Premium
                               </span>
@@ -1157,7 +1097,7 @@ const MyHires = () => {
                           >
                             <Eye size={16} />
                           </button>
-                          {(hire.status === 'active' || hire.status === 'accepted') && (
+                          {(hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted') && (
                             <>
                               <button
                                 onClick={() => handleSendMessage(hire)}
@@ -1228,7 +1168,7 @@ const MyHires = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-bold text-gray-800">{selectedHire.workerName}</h3>
                     {selectedHire.isPremium && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                         <Crown size={10} className="text-yellow-500" />
                         Premium
                       </span>
@@ -1308,7 +1248,7 @@ const MyHires = () => {
               >
                 {t.modal.close}
               </button>
-              {(selectedHire.status === 'active' || selectedHire.status === 'accepted') && (
+              {(selectedHire.status === 'active' || selectedHire.status === 'hired' || selectedHire.status === 'accepted') && (
                 <>
                   <button
                     onClick={() => handleSendMessage(selectedHire)}
