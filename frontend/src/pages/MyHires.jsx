@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - Complete fixed version with proper hire loading
+// src/pages/MyHires.jsx - FIXED: Added missing isPremium variable
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -124,7 +124,7 @@ const EmployerSidebar = ({
 
   const getProfileImage = () => user?.profileImage || null;
 
-  // Check if user has premium subscription
+  // ✅ FIX: Check premium status directly
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -322,6 +322,16 @@ const MyHires = () => {
   const [showTerminateModal, setShowTerminateModal] = useState(false);
   const [terminateReason, setTerminateReason] = useState('');
   const [terminatingHire, setTerminatingHire] = useState(null);
+
+  // ✅ FIX: Check premium status for the current user
+  const userIsPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  // ✅ FIX: isPremium is now defined in the component scope
+  const isPremium = userIsPremium();
 
   const translations = {
     en: {
@@ -523,7 +533,7 @@ const MyHires = () => {
   }, [navigate]);
 
   // ============================================================
-  // 4. LOAD HIRES - FIXED: Gets ALL hires from homelyserv_hires
+  // 4. LOAD HIRES
   // ============================================================
   const loadHires = () => {
     setLoading(true);
@@ -539,17 +549,16 @@ const MyHires = () => {
 
       console.log('📂 Loading hires for employer:', employerEmail);
 
-      // ✅ PRIMARY SOURCE: Get hires from homelyserv_hires
+      // PRIMARY SOURCE: Get hires from homelyserv_hires
       const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
-      // Filter hires for this employer
       let employerHires = allHires.filter(
         hire => hire.employerEmail === employerEmail || hire.employerId === employerEmail
       );
 
       console.log(`📌 Found ${employerHires.length} hires from homelyserv_hires`);
 
-      // ✅ SECONDARY SOURCE: Get from employer_offers with status 'hired' or 'accepted'
+      // SECONDARY SOURCE: Get from employer_offers with status 'hired' or 'accepted'
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const hiredOffers = employerOffers.filter(
         offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
@@ -558,13 +567,12 @@ const MyHires = () => {
 
       console.log(`📌 Found ${hiredOffers.length} hired offers from employer_offers`);
 
-      // ✅ Merge: Add any hired offers not already in hires
+      // Merge: Add any hired offers not already in hires
       const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
       
       hiredOffers.forEach(offer => {
         const workerId = offer.workerId || offer.workerEmail;
         if (!existingWorkerIds.has(workerId)) {
-          // Create hire record from offer
           const hireFromOffer = {
             id: offer.hireId || offer.id || 'hire_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             workerId: workerId,
@@ -592,7 +600,7 @@ const MyHires = () => {
         }
       });
 
-      // ✅ Sort by date (newest first)
+      // Sort by date (newest first)
       employerHires.sort((a, b) => {
         const dateA = new Date(a.startDate || a.createdAt || 0);
         const dateB = new Date(b.startDate || b.createdAt || 0);
@@ -693,7 +701,6 @@ const MyHires = () => {
     if (!terminatingHire) return;
 
     try {
-      // Update the hire status
       const updatedHire = {
         ...terminatingHire,
         status: 'terminated',
@@ -701,7 +708,6 @@ const MyHires = () => {
         terminationReason: terminateReason || 'No reason provided'
       };
 
-      // Update in homelyserv_hires
       const hiresFromStorage = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       const hireIndex = hiresFromStorage.findIndex(h => 
         h.id === terminatingHire.hireId || h.id === terminatingHire.id ||
@@ -715,7 +721,6 @@ const MyHires = () => {
       }
       localStorage.setItem('homelyserv_hires', JSON.stringify(hiresFromStorage));
 
-      // Update in employer_offers
       const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedOffers = allOffers.map(o => 
         o.id === terminatingHire.offerId || o.id === terminatingHire.hireId
@@ -724,7 +729,6 @@ const MyHires = () => {
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
 
-      // Update local state
       setHires(prev => prev.map(h => 
         h.id === terminatingHire.id || h.offerId === terminatingHire.offerId
           ? updatedHire
@@ -832,6 +836,9 @@ const MyHires = () => {
       </div>
     );
   }
+
+  // ✅ isPremium is now defined and can be used in the render
+  // The rest of the render function stays the same...
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
