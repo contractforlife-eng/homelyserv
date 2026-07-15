@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/EmployerMessages.jsx - COMPLETE FIXED
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
@@ -26,7 +27,8 @@ import {
   Clock,
   FileText,
   CreditCard,
-  Crown
+  Crown,
+  RefreshCw
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -35,10 +37,10 @@ import {
   markMessagesAsRead,
   getConversationId,
   saveUserConversations,
-  saveConversationMessages
+  ensureConversationExists
 } from '../utils/chatService';
 
-// Employer Sidebar Component - WITH PREMIUM BADGE FIX
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -105,14 +107,15 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
-    const isPremium = userIsPremium();
-    return (
+
+  const isPremium = userIsPremium();
+
+  return (
     <>
       {mobileMenuOpen && (
         <div 
@@ -279,7 +282,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component (rest of the component remains the same)
+// Main EmployerMessages Component
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -293,6 +296,17 @@ const EmployerMessages = () => {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const messagesEndRef = useRef(null);
+  const intervalRef = useRef(null);
+
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
 
   const translations = {
     en: {
@@ -310,7 +324,9 @@ const EmployerMessages = () => {
       loading: 'Loading messages...',
       noMessages: 'No messages yet',
       startConversation: 'Start the conversation!',
-      refresh: 'Refresh'
+      refresh: 'Refresh',
+      premiumBadge: 'Premium Verified',
+      getPremium: 'Get Premium'
     },
     ar: {
       title: 'الرسائل',
@@ -327,13 +343,15 @@ const EmployerMessages = () => {
       loading: 'جاري تحميل الرسائل...',
       noMessages: 'لا توجد رسائل بعد',
       startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث'
+      refresh: 'تحديث',
+      premiumBadge: 'مميز معتمد',
+      getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
 
-  // Initialize user and load conversations immediately
+  // Load user and conversations
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -385,7 +403,7 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Separate effect for refreshKey that depends on user
+  // Refresh conversations when refreshKey changes
   useEffect(() => {
     if (!user) return;
     
@@ -393,30 +411,58 @@ const EmployerMessages = () => {
     if (!userId) return;
     
     const userConversations = getUserConversations(userId);
-    console.log('📋 Refresh load - employer conversations:', userConversations);
+    console.log('🔄 Refresh load - employer conversations:', userConversations);
     setConversations(userConversations);
   }, [user, refreshKey]);
 
-  // Auto-open chat from MyHires
+  // Auto-refresh conversations every 10 seconds
   useEffect(() => {
-    if (!loading && user) {
-      const shouldOpenChat = localStorage.getItem('homelyserv_open_chat_on_load');
-      if (shouldOpenChat === 'true') {
-        const chatRecipient = localStorage.getItem('homelyserv_chat_recipient');
-        if (chatRecipient) {
-          try {
-            const recipient = JSON.parse(chatRecipient);
-            console.log('📨 Auto-opening chat with:', recipient);
-            addChatRecipient(recipient);
-          } catch (error) {
-            console.error('Error parsing chat recipient:', error);
-          }
-        }
-        localStorage.removeItem('homelyserv_open_chat_on_load');
-        localStorage.removeItem('homelyserv_chat_recipient');
-      }
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
-  }, [loading, user]);
+    
+    intervalRef.current = setInterval(() => {
+      const updatedConversations = getUserConversations(userId);
+      setConversations(prevConversations => {
+        if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
+          console.log('🔄 Auto-refresh: Conversations updated');
+          return updatedConversations;
+        }
+        return prevConversations;
+      });
+      
+      if (selectedConversationId) {
+        const updatedMessages = getConversationMessages(selectedConversationId);
+        setMessages(prevMessages => {
+          if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
+            console.log('🔄 Auto-refresh: Messages updated for conversation:', selectedConversationId);
+            markMessagesAsRead(selectedConversationId, userId);
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+      }
+    }, 10000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [user, selectedConversationId]);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const loadChatData = () => {
     const userId = user?.id || user?.email;
@@ -441,88 +487,6 @@ const EmployerMessages = () => {
     const userId = user?.id || user?.email;
     if (userId) {
       markMessagesAsRead(conversationId, userId);
-    }
-  };
-
-  // Ensure conversation exists for both users
-  const ensureConversation = (recipient) => {
-    const userId = user?.id || user?.email;
-    if (!userId || !recipient) return null;
-
-    const conversationId = getConversationId(userId, recipient.id);
-    const messages = getConversationMessages(conversationId);
-    
-    if (messages.length === 0) {
-      const systemMessage = {
-        id: Date.now(),
-        senderId: 'system',
-        senderName: 'System',
-        senderRole: 'SYSTEM',
-        recipientId: userId,
-        recipientName: user?.fullName || 'Employer',
-        text: 'Start your conversation here',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date().toISOString(),
-        read: true
-      };
-      saveConversationMessages(conversationId, [systemMessage]);
-    }
-    
-    const employerConversations = getUserConversations(userId);
-    const exists = employerConversations.some(c => c.id === conversationId);
-    
-    if (!exists) {
-      const newConversation = {
-        id: conversationId,
-        otherUserId: recipient.id,
-        otherUserName: recipient.name || 'Worker',
-        lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread: 0,
-        role: 'WORKER',
-        avatar: recipient.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipient.name || 'Worker')}&background=teal&color=fff&size=100&bold=true`
-      };
-      employerConversations.unshift(newConversation);
-      saveUserConversations(userId, employerConversations);
-    }
-    
-    const workerConversations = getUserConversations(recipient.id);
-    const workerExists = workerConversations.some(c => c.id === conversationId);
-    
-    if (!workerExists) {
-      const workerNewConversation = {
-        id: conversationId,
-        otherUserId: userId,
-        otherUserName: user?.fullName || 'Employer',
-        lastMessage: messages.length > 0 ? messages[messages.length - 1].text : 'Start your conversation here',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread: 0,
-        role: 'EMPLOYER',
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`
-      };
-      workerConversations.unshift(workerNewConversation);
-      saveUserConversations(recipient.id, workerConversations);
-    }
-    
-    return conversationId;
-  };
-
-  const addChatRecipient = (recipient) => {
-    const userId = user?.id || user?.email;
-    if (!userId) {
-      console.log('No user ID');
-      return;
-    }
-
-    console.log('📨 Adding chat recipient:', recipient);
-
-    const conversationId = ensureConversation(recipient);
-    
-    if (conversationId) {
-      loadChatData();
-      setSelectedConversationId(conversationId);
-      loadMessagesForConversation(conversationId);
-      console.log('✅ Conversation ensured and selected:', conversationId);
     }
   };
 
@@ -578,6 +542,7 @@ const EmployerMessages = () => {
     }
 
     console.log('📤 Sending message from employer to:', selectedConv.otherUserId);
+    console.log('📤 Recipient name:', selectedConv.otherUserName);
 
     const result = sendMessage(
       user.id || user.email,
@@ -591,16 +556,36 @@ const EmployerMessages = () => {
     if (result) {
       console.log('✅ Message sent successfully');
       loadMessagesForConversation(selectedConversationId);
-      loadChatData();
+      setRefreshKey(prev => prev + 1);
       setMessage('');
     } else {
       console.log('❌ Failed to send message');
     }
   };
 
-  const refreshConversations = () => {
-    setRefreshKey(prev => prev + 1);
+  const handleManualRefresh = () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    if (user) {
+      const userId = user.id || user.email;
+      const updatedConversations = getUserConversations(userId);
+      setConversations(updatedConversations);
+      
+      if (selectedConversationId) {
+        const updatedMessages = getConversationMessages(selectedConversationId);
+        setMessages(updatedMessages);
+        markMessagesAsRead(selectedConversationId, userId);
+      }
+    }
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
+
+  const userProfileImage = user?.profileImage || null;
 
   if (!user || loading) {
     return (
@@ -642,6 +627,35 @@ const EmployerMessages = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200 relative">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={16} className="text-teal-600 m-1" />
+                  )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                      <Crown size={8} className="text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                    {user?.fullName || 'Employer'}
+                  </span>
+                  {userIsPremium && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                      <Crown size={10} className="text-yellow-500" />
+                      Premium
+                    </span>
+                  )}
+                </div>
+              </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
@@ -654,10 +668,11 @@ const EmployerMessages = () => {
                 {t.languageToggle}
               </button>
               <button
-                onClick={refreshConversations}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                <Clock size={16} />
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
                 {t.refresh}
               </button>
             </div>
@@ -666,9 +681,54 @@ const EmployerMessages = () => {
 
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={24} className="text-white m-3" />
+                  )}
+                  {userIsPremium && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
+                      <Crown size={10} className="text-white" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{t.title}</h1>
+                    {userIsPremium && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
+                        <Crown size={12} className="text-yellow-300" />
+                        {t.premiumBadge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/90">
+                  {user?.fullName || 'Employer'}
+                </span>
+                <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
+                  {conversations.length} chats
+                </span>
+                {!userIsPremium && (
+                  <Link
+                    to="/subscription"
+                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
+                  >
+                    <Crown size={12} />
+                    {t.getPremium}
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
 
@@ -706,7 +766,7 @@ const EmployerMessages = () => {
                         <img
                           src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
                           alt={conv.otherUserName}
-                          className="w-12 h-12 rounded-full object-cover"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-teal-100"
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
@@ -732,13 +792,13 @@ const EmployerMessages = () => {
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/30">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-teal-100"
                         />
                         <div>
                           <p className="font-semibold text-gray-800">
@@ -760,50 +820,86 @@ const EmployerMessages = () => {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/20">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 py-8">
                           <p>{t.noMessages}</p>
                           <p className="text-sm">{t.startConversation}</p>
                         </div>
                       ) : (
-                        messages.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex ${msg.senderRole === 'EMPLOYER' ? 'justify-end' : 'justify-start'}`}
-                          >
+                        messages.map((msg, index) => {
+                          const isEmployer = msg.senderRole === 'EMPLOYER';
+                          const showAvatar = index === 0 || 
+                            (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
+                          
+                          return (
                             <div
-                              className={`max-w-[70%] p-3 rounded-lg ${
-                                msg.senderRole === 'EMPLOYER'
-                                  ? 'bg-teal-600 text-white rounded-br-none'
-                                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                              }`}
+                              key={msg.id || index}
+                              className={`flex ${isEmployer ? 'justify-end' : 'justify-start'} items-end gap-2`}
                             >
-                              <p className="text-sm">{msg.text}</p>
-                              <p className={`text-xs mt-1 ${msg.senderRole === 'EMPLOYER' ? 'text-teal-200' : 'text-gray-400'}`}>
-                                {msg.time}
-                                {msg.senderRole === 'EMPLOYER' && (
-                                  <CheckCheck size={14} className="inline ml-1" />
+                              {!isEmployer && showAvatar && (
+                                <img
+                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=teal&color=fff&size=100&bold=true`}
+                                  alt={msg.senderName}
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                />
+                              )}
+                              {!isEmployer && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
+                              <div
+                                className={`max-w-[70%] p-3 rounded-lg ${
+                                  isEmployer
+                                    ? 'bg-teal-600 text-white rounded-br-none'
+                                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
+                                }`}
+                              >
+                                {!isEmployer && (
+                                  <p className="text-xs font-medium text-teal-600 mb-1">
+                                    {msg.senderName}
+                                  </p>
                                 )}
-                              </p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+                                <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
+                                  isEmployer ? 'text-teal-200' : 'text-gray-400'
+                                }`}>
+                                  {msg.time}
+                                  {isEmployer && (
+                                    <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-teal-200'} />
+                                  )}
+                                </p>
+                              </div>
+                              {isEmployer && showAvatar && (
+                                <img
+                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`}
+                                  alt={user.fullName || 'Employer'}
+                                  className="w-8 h-8 rounded-full object-cover border-2 border-teal-200 flex-shrink-0"
+                                />
+                              )}
+                              {isEmployer && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
+                      <div ref={messagesEndRef} />
                     </div>
 
-                    <div className="p-4 border-t border-gray-200">
+                    <div className="p-4 border-t border-gray-200 bg-white">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         />
                         <button
                           type="submit"
-                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2"
+                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50"
+                          disabled={!message.trim()}
                         >
                           <Send size={18} />
                           {t.send}

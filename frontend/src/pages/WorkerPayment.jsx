@@ -1,4 +1,4 @@
-// src/pages/WorkerPayment.jsx - Updated with accurate transaction data and premium badge
+// src/pages/WorkerPayment.jsx - RED AND WHITE THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 // ============================================
-// 1. SIDEBAR COMPONENT - WITH PREMIUM BADGE
+// 1. SIDEBAR COMPONENT - RED THEME
 // ============================================
 const WorkerSidebar = ({ 
   language, 
@@ -90,7 +90,6 @@ const WorkerSidebar = ({
   const isActive = (path) => location.pathname === path;
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -119,15 +118,15 @@ const WorkerSidebar = ({
           {!sidebarCollapsed ? (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <Shield size={28} className="text-amber-500" />
-                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+                <Shield size={28} className="text-red-500" />
+                <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           ) : (
             <Link to="/worker-dashboard" className="relative mx-auto">
-              <Shield size={28} className="text-amber-500" />
-              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+              <Shield size={28} className="text-red-500" />
+              <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -149,7 +148,7 @@ const WorkerSidebar = ({
         {/* User Profile - WITH PREMIUM BADGE */}
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -198,11 +197,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-amber-50 text-amber-600'
+                  ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
@@ -210,7 +209,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -254,7 +253,7 @@ const WorkerSidebar = ({
 
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -273,7 +272,7 @@ const WorkerSidebar = ({
 };
 
 // ============================================
-// 2. MAIN COMPONENT - WorkerPayment
+// 2. MAIN COMPONENT - WorkerPayment - RED THEME
 // ============================================
 const WorkerPayment = () => {
   const navigate = useNavigate();
@@ -442,41 +441,34 @@ const WorkerPayment = () => {
     try {
       const userId = user.id || user.email;
       
-      // Load payments from worker's localStorage
       const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
       
-      // Also load from all_payments
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       const workerPaymentsFromAll = allPayments.filter(p => 
         p.workerId === userId || p.workerEmail === userId || p.workerEmail === user.email
       );
       
-      // Merge payments
       let mergedPayments = [...savedPayments];
       
-      // Add payments from all_payments that aren't already in the list
       workerPaymentsFromAll.forEach(p => {
         if (!mergedPayments.find(mp => mp.id === p.id)) {
           mergedPayments.push(p);
         }
       });
       
-      // Also generate payments from completed offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       
-      // Find completed offers
       const completedOfferIds = appliedOffers.filter(id => {
         return employerOffers.some(o => o.id === id && o.status === 'completed');
       });
       
-      // Generate payments for completed offers that aren't already recorded
       completedOfferIds.forEach((offerId, index) => {
         const offer = employerOffers.find(o => o.id === offerId);
         if (offer) {
           const existingPayment = mergedPayments.find(p => p.offerId === offerId);
           if (!existingPayment) {
-            const paymentAmount = (offer.amount || 3000) * 0.85; // 15% commission
+            const paymentAmount = (offer.amount || 3000) * 0.85;
             mergedPayments.push({
               id: `PAY-${Date.now()}-${index}`,
               offerId: offerId,
@@ -499,16 +491,13 @@ const WorkerPayment = () => {
         }
       });
       
-      // Sort by date descending (newest first)
       mergedPayments.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
       
       setPayments(mergedPayments);
       setFilteredPayments(mergedPayments);
       
-      // Update stats
       updateStatsFromPayments(mergedPayments);
       
-      // Save back to localStorage
       localStorage.setItem(`worker_payments_${userId}`, JSON.stringify(mergedPayments));
       
       console.log(`✅ Loaded ${mergedPayments.length} payments for worker`);
@@ -525,15 +514,14 @@ const WorkerPayment = () => {
     const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const totalTasksCompleted = completedPayments.length;
     
-    // Get hourly rate from user profile
     const hourlyRate = user?.hourlyRate || 35;
-    const monthlySalary = totalEarned / 6; // Average monthly (assuming 6 months)
+    const monthlySalary = totalEarned / 6;
     
     setWorkerStats({
       totalTasksCompleted,
       totalEarned,
       hourlyRate: hourlyRate,
-      monthlySalary: monthlySalary || hourlyRate * 160 // 160 hours/month
+      monthlySalary: monthlySalary || hourlyRate * 160
     });
   };
 
@@ -668,7 +656,7 @@ const WorkerPayment = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
@@ -686,7 +674,7 @@ const WorkerPayment = () => {
           <p className="text-gray-600 mb-6">Please login to view your payments</p>
           <button
             onClick={() => navigate('/login')}
-            className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all"
+            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
           >
             Go to Login
           </button>
@@ -730,7 +718,7 @@ const WorkerPayment = () => {
             
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 shadow-sm relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 shadow-sm relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -761,7 +749,7 @@ const WorkerPayment = () => {
               
               <button aria-label="Notifications" className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
               </button>
               
               <button
@@ -795,8 +783,8 @@ const WorkerPayment = () => {
 
         <div className="p-4 md:p-6 max-w-7xl mx-auto">
           
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg">
+          {/* Welcome Banner - RED THEME */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 shadow-inner relative">
@@ -845,7 +833,7 @@ const WorkerPayment = () => {
             {[
               { label: t.stats.totalEarned, value: formatCurrency(stats.totalEarned), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
               { label: t.stats.tasksCompleted, value: stats.tasksCompleted, icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: t.stats.hourlyRate, value: `EGP ${stats.hourlyRate}/hr`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: t.stats.hourlyRate, value: `EGP ${stats.hourlyRate}/hr`, icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
               { label: t.stats.monthlySalary, value: formatCurrency(stats.monthlySalary), icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-50' }
             ].map((stat, idx) => (
               <div key={idx} className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
@@ -864,13 +852,13 @@ const WorkerPayment = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
             <div className="p-5 md:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <CreditCard size={20} className="text-amber-500" />
+                <CreditCard size={20} className="text-red-500" />
                 {t.paymentInfo.title}
               </h3>
               {!isEditingPaymentInfo ? (
                 <button
                   onClick={() => setIsEditingPaymentInfo(true)}
-                  className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-amber-600 transition-colors shadow-sm w-full sm:w-auto"
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-red-600 transition-colors shadow-sm w-full sm:w-auto"
                 >
                   {t.paymentInfo.edit}
                 </button>
@@ -884,7 +872,7 @@ const WorkerPayment = () => {
                   </button>
                   <button
                     onClick={handleSavePaymentInfo}
-                    className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-shadow"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:shadow-md transition-shadow"
                   >
                     {t.paymentInfo.save}
                   </button>
@@ -919,7 +907,7 @@ const WorkerPayment = () => {
                         disabled={!isEditingPaymentInfo}
                         className={`w-full pl-10 pr-4 py-2.5 border rounded-lg transition-colors ${
                           isEditingPaymentInfo 
-                            ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white' 
+                            ? 'border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white' 
                             : 'border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed'
                         }`}
                         placeholder={field.placeholder}
@@ -940,7 +928,7 @@ const WorkerPayment = () => {
                       disabled={!isEditingPaymentInfo}
                       className={`w-full pl-10 pr-4 py-2.5 border rounded-lg transition-colors ${
                         isEditingPaymentInfo 
-                          ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white' 
+                          ? 'border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white' 
                           : 'border-gray-100 bg-gray-50 text-gray-500 cursor-not-allowed'
                       }`}
                       placeholder="Full Name as in Bank"
@@ -966,14 +954,14 @@ const WorkerPayment = () => {
                     placeholder={t.paymentHistory.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-shadow"
                   />
                 </div>
                 <div className="w-full md:w-48">
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-700 cursor-pointer"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700 cursor-pointer"
                   >
                     <option value="all">{t.filters.all}</option>
                     <option value="completed">{t.filters.completed}</option>

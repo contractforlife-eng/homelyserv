@@ -1,4 +1,4 @@
-// src/pages/WorkerSettings.jsx - UPDATED with logo, profile images, and premium badge
+// src/pages/WorkerSettings.jsx - RED AND WHITE THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -23,10 +23,11 @@ import {
   RefreshCw,
   CreditCard,
   Sparkles,
-  Crown
+  Crown,
+  CheckCircle
 } from 'lucide-react';
 
-// Sidebar Component with custom logo, profile image, and premium badge
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -90,7 +91,6 @@ const WorkerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -117,16 +117,16 @@ const WorkerSidebar = ({
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <Shield size={28} className="text-amber-500" />
-                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+                <Shield size={28} className="text-red-500" />
+                <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/worker-dashboard" className="relative mx-auto">
-              <Shield size={28} className="text-amber-500" />
-              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+              <Shield size={28} className="text-red-500" />
+              <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -145,7 +145,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -196,11 +196,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-amber-50 text-amber-600'
+                  ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -208,7 +208,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -250,7 +250,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -268,7 +268,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerSettings Component - WITH PREMIUM BADGE
+// Main WorkerSettings Component - RED THEME
 const WorkerSettings = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -281,7 +281,6 @@ const WorkerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // ✅ Check if user has premium subscription
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -351,7 +350,6 @@ const WorkerSettings = () => {
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        // Load profile image from profiles storage
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
@@ -370,7 +368,6 @@ const WorkerSettings = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load saved settings
     const savedSettings = localStorage.getItem('worker_settings');
     if (savedSettings) {
       try {
@@ -431,14 +428,13 @@ const WorkerSettings = () => {
     }, 1000);
   };
 
-  // Get user profile image
   const userProfileImage = user?.profileImage || null;
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -474,9 +470,8 @@ const WorkerSettings = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* User profile picture in header with premium badge */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -506,7 +501,7 @@ const WorkerSettings = () => {
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -529,8 +524,8 @@ const WorkerSettings = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner with profile image and premium badge */}
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner - RED THEME */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
@@ -601,7 +596,7 @@ const WorkerSettings = () => {
                       setLanguage(e.target.value);
                       localStorage.setItem('homelyserv_language', e.target.value);
                     }}
-                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -640,7 +635,7 @@ const WorkerSettings = () => {
                   <button
                     onClick={() => setNotifications(!notifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      notifications ? 'bg-amber-500' : 'bg-gray-300'
+                      notifications ? 'bg-red-500' : 'bg-gray-300'
                     }`}
                   >
                     <div
@@ -659,7 +654,7 @@ const WorkerSettings = () => {
                   <button
                     onClick={() => setEmailNotifications(!emailNotifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      emailNotifications ? 'bg-amber-500' : 'bg-gray-300'
+                      emailNotifications ? 'bg-red-500' : 'bg-gray-300'
                     }`}
                   >
                     <div
@@ -696,7 +691,7 @@ const WorkerSettings = () => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
               >
                 {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
                 {saving ? 'Saving...' : t.saveChanges}

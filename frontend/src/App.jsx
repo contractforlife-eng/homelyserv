@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx - FULLY UPDATED WITH PROPER MESSAGE ROUTING
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
@@ -14,7 +14,7 @@ import ForgotPassword from './pages/ForgotPassword';
 // Common Protected Pages
 import Search from './pages/Search';
 import MyHires from './pages/MyHires';
-import Messages from './pages/Messages';
+// import Messages from './pages/Messages'; // REMOVED - Using role-specific messages instead
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
@@ -56,6 +56,41 @@ import AdminReports from './pages/AdminReports';
 import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
+
+// Messages Redirect Component
+const MessagesRedirect = () => {
+  const userData = localStorage.getItem('homelyserv_user');
+  
+  React.useEffect(() => {
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user.role === 'WORKER') {
+          window.location.href = '/worker-messages';
+        } else if (user.role === 'EMPLOYER') {
+          window.location.href = '/employer-messages';
+        } else if (user.role === 'ADMIN') {
+          window.location.href = '/admin/messages';
+        } else {
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        window.location.href = '/login';
+      }
+    } else {
+      window.location.href = '/login';
+    }
+  }, [userData]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Redirecting to your messages...</p>
+      </div>
+    </div>
+  );
+};
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -114,14 +149,17 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      
+      {/* ===== FIX: Redirect /messages to role-specific messages ===== */}
       <Route 
         path="/messages" 
         element={
           <ProtectedRoute>
-            <Messages />
+            <MessagesRedirect />
           </ProtectedRoute>
         } 
       />
+      
       <Route 
         path="/profile" 
         element={

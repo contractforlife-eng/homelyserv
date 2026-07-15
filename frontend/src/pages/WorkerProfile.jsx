@@ -1,4 +1,4 @@
-// src/pages/worker/WorkerProfile.jsx
+// src/pages/worker/WorkerProfile.jsx - RED AND WHITE THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
@@ -36,7 +36,7 @@ import {
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - Updated with Subscription link
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -100,7 +100,6 @@ const WorkerSidebar = ({
     return null;
   };
 
-  // Check if user has premium subscription
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -125,16 +124,16 @@ const WorkerSidebar = ({
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <Shield size={28} className="text-amber-500" />
-                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+                <Shield size={28} className="text-red-500" />
+                <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/worker-dashboard" className="relative mx-auto">
-              <Shield size={28} className="text-amber-500" />
-              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+              <Shield size={28} className="text-red-500" />
+              <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -153,7 +152,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -162,6 +161,11 @@ const WorkerSidebar = ({
                 />
               ) : (
                 <User size={20} className="text-white" />
+              )}
+              {isPremium() && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
               )}
             </div>
             {!sidebarCollapsed && user && (
@@ -199,11 +203,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-amber-50 text-amber-600'
+                  ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -211,7 +215,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
               )}
             </Link>
           ))}
@@ -248,7 +252,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -266,7 +270,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerProfile Component
+// Main WorkerProfile Component - RED THEME
 const WorkerProfile = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -296,7 +300,6 @@ const WorkerProfile = () => {
     profileComplete: 0
   });
 
-  // Use imported JOB_OPTIONS
   const jobOptions = JOB_OPTIONS;
 
   const translations = {
@@ -366,7 +369,6 @@ const WorkerProfile = () => {
 
   const t = translations[language];
 
-  // Check if user has premium subscription
   const checkPremiumStatus = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -399,30 +401,22 @@ const WorkerProfile = () => {
     return null;
   };
 
-  // Load real stats from localStorage
   const loadRealStats = (userEmail, userId) => {
     try {
-      // Get all employer offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      
-      // Get applied offers for this worker
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      
-      // Count completed jobs
       const completedJobs = appliedOffers.filter(id => {
         return employerOffers.some(o => o.id === id && o.status === 'completed');
       }).length;
       
-      // Get rating from completed jobs (if any ratings stored)
       const ratings = JSON.parse(localStorage.getItem('worker_ratings') || '[]');
       const workerRatings = ratings.filter(r => r.workerId === userId || r.workerEmail === userEmail);
       const avgRating = workerRatings.length > 0 
         ? workerRatings.reduce((sum, r) => sum + r.rating, 0) / workerRatings.length 
         : 0;
       
-      // Calculate profile completion
       let completedFields = 0;
-      const totalFields = 7; // fullName, phone, location, bio, skills, experience, hourlyRate
+      const totalFields = 7;
       if (formData.fullName) completedFields++;
       if (formData.phone) completedFields++;
       if (formData.location) completedFields++;
@@ -433,7 +427,6 @@ const WorkerProfile = () => {
       
       const completionPercent = Math.round((completedFields / totalFields) * 100);
       
-      // Get member since date
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userRecord = users.find(u => u.email === userEmail);
       const memberSince = userRecord?.createdAt || new Date().toISOString();
@@ -450,7 +443,6 @@ const WorkerProfile = () => {
       
     } catch (error) {
       console.error('Error loading real stats:', error);
-      // Set default values if error
       setRealStats({
         memberSince: 'June 2025',
         rating: 4.8,
@@ -503,8 +495,6 @@ const WorkerProfile = () => {
       
       setUser(userData);
       setFormData(profileData);
-      
-      // Load real stats after form data is set
       loadRealStats(userData.email, userData.id);
     } else {
       navigate('/login');
@@ -669,8 +659,6 @@ const WorkerProfile = () => {
     setIsEditing(false);
     setSaveSuccess(true);
     alert(t.saved);
-    
-    // Update stats after save
     loadRealStats(user.email, user.id);
     
     setTimeout(() => {
@@ -678,7 +666,6 @@ const WorkerProfile = () => {
     }, 3000);
   };
 
-  // Get label for selected job
   const getJobLabel = (value) => {
     const job = jobOptions.find(j => j.value === value);
     return job ? job.label : value || 'Not specified';
@@ -688,7 +675,7 @@ const WorkerProfile = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -726,7 +713,7 @@ const WorkerProfile = () => {
             <div className="flex items-center gap-3">
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -740,8 +727,8 @@ const WorkerProfile = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner - RED THEME */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -786,7 +773,7 @@ const WorkerProfile = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-amber-200 bg-gray-100 relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-200 bg-gray-100 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
@@ -794,8 +781,8 @@ const WorkerProfile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-amber-50">
-                      <User size={48} className="text-amber-300" />
+                    <div className="w-full h-full flex items-center justify-center bg-red-50">
+                      <User size={48} className="text-red-300" />
                     </div>
                   )}
                   {isPremium && (
@@ -805,7 +792,7 @@ const WorkerProfile = () => {
                   )}
                 </div>
                 {isEditing && (
-                  <label className="absolute bottom-0 right-0 p-2 bg-gradient-to-r from-amber-500 to-rose-500 rounded-full cursor-pointer hover:shadow-lg transition shadow-lg">
+                  <label className="absolute bottom-0 right-0 p-2 bg-gradient-to-r from-red-600 to-red-700 rounded-full cursor-pointer hover:shadow-lg transition shadow-lg">
                     <Camera size={18} className="text-white" />
                     <input
                       type="file"
@@ -859,7 +846,7 @@ const WorkerProfile = () => {
               <div className="mt-1">
                 <div className="w-full h-2 bg-gray-200 rounded-full">
                   <div 
-                    className="h-2 bg-gradient-to-r from-amber-500 to-rose-500 rounded-full transition-all duration-500" 
+                    className="h-2 bg-gradient-to-r from-red-600 to-red-700 rounded-full transition-all duration-500" 
                     style={{ width: `${realStats.profileComplete}%` }}
                   ></div>
                 </div>
@@ -883,7 +870,7 @@ const WorkerProfile = () => {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   />
@@ -914,7 +901,7 @@ const WorkerProfile = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   />
@@ -931,7 +918,7 @@ const WorkerProfile = () => {
                     value={formData.location}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   />
@@ -948,7 +935,7 @@ const WorkerProfile = () => {
                     value={formData.experience}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   />
@@ -965,7 +952,7 @@ const WorkerProfile = () => {
                     value={formData.hourlyRate}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   />
@@ -984,7 +971,7 @@ const WorkerProfile = () => {
                     value={formData.desiredJob}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                     }`}
                   >
@@ -1015,7 +1002,7 @@ const WorkerProfile = () => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   rows="3"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                     isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
                   }`}
                 />
@@ -1027,14 +1014,14 @@ const WorkerProfile = () => {
                   {formData.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-sm flex items-center gap-1"
+                      className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm flex items-center gap-1"
                     >
                       {skill}
                       {isEditing && (
                         <button
                           type="button"
                           onClick={() => handleRemoveSkill(skill)}
-                          className="hover:text-amber-900"
+                          className="hover:text-red-900"
                         >
                           <X size={14} />
                         </button>
@@ -1049,12 +1036,12 @@ const WorkerProfile = () => {
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
                       placeholder={t.addSkill}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
                     <button
                       type="button"
                       onClick={handleAddSkill}
-                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition"
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition"
                     >
                       {t.addSkill}
                     </button>
@@ -1067,7 +1054,7 @@ const WorkerProfile = () => {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
                 >
                   <Save size={18} />
                   {t.saveChanges}

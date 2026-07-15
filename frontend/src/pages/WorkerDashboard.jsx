@@ -1,4 +1,4 @@
-// src/pages/WorkerDashboard.jsx - Updated with premium badge fix
+// src/pages/WorkerDashboard.jsx - RED AND WHITE THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -29,7 +29,7 @@ import {
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - Updated with premium badge fix
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -93,7 +93,6 @@ const WorkerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Check premium status directly using the user ID - NOT from user object
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -120,16 +119,16 @@ const WorkerSidebar = ({
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <Shield size={28} className="text-amber-500" />
-                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+                <Shield size={28} className="text-red-500" />
+                <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/worker-dashboard" className="relative mx-auto">
-              <Shield size={28} className="text-amber-500" />
-              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+              <Shield size={28} className="text-red-500" />
+              <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -148,7 +147,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -199,11 +198,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-amber-50 text-amber-600'
+                  ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -211,7 +210,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -253,7 +252,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -271,7 +270,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerDashboard Component
+// Main WorkerDashboard Component - RED THEME
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -294,7 +293,6 @@ const WorkerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // ✅ Check premium status directly
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -407,35 +405,27 @@ const WorkerDashboard = () => {
 
   const loadRealStats = () => {
     try {
-      // Get all users to find the current worker
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const currentUser = users.find(u => u.email === user?.email);
       
-      // Get applied offers
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       const totalApplications = appliedOffers.length;
       
-      // Get saved offers
       const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
       const savedJobs = savedOffers.length;
       
-      // Get all employer offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       
-      // Count active offers (offers that are still open and relevant)
       const activeOffers = employerOffers.filter(o => o.status === 'active' || o.status === 'open').length;
       
-      // Count interviews (applications that have been moved to interview stage)
       const interviews = appliedOffers.filter(id => {
         return employerOffers.some(o => o.id === id && o.status === 'interview');
       }).length;
       
-      // Get completed jobs count
       const completedJobs = appliedOffers.filter(id => {
         return employerOffers.some(o => o.id === id && o.status === 'completed');
       }).length;
       
-      // Get messages count
       let messagesCount = 0;
       const userId = user?.id || user?.email;
       if (userId) {
@@ -450,10 +440,8 @@ const WorkerDashboard = () => {
         });
       }
       
-      // Get profile views
       const profileViews = parseInt(localStorage.getItem('worker_profile_views') || '0');
       
-      // Get payments data
       const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
       const workerPayments = payments.filter(p => p.workerId === user?.id || p.workerEmail === user?.email);
       const pendingPayments = workerPayments.filter(p => p.status === 'pending').length;
@@ -495,7 +483,6 @@ const WorkerDashboard = () => {
   ) => {
     const activities = [];
     
-    // Applications activity
     appliedOffers.forEach(offerId => {
       const offer = employerOffers.find(o => o.id === offerId);
       if (offer) {
@@ -508,7 +495,6 @@ const WorkerDashboard = () => {
       }
     });
     
-    // Saved jobs activity
     savedOffers.forEach(offerId => {
       const offer = employerOffers.find(o => o.id === offerId);
       if (offer) {
@@ -521,7 +507,6 @@ const WorkerDashboard = () => {
       }
     });
     
-    // Payment activity
     payments.forEach(payment => {
       if (payment.workerId === user?.id || payment.workerEmail === user?.email) {
         activities.push({
@@ -533,7 +518,6 @@ const WorkerDashboard = () => {
       }
     });
     
-    // Sort by time (most recent first)
     activities.sort((a, b) => {
       const dateA = new Date(a.time);
       const dateB = new Date(b.time);
@@ -594,14 +578,9 @@ const WorkerDashboard = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  // ✅ FIX: Proper logout - Do NOT clear subscription data
   const handleLogout = () => {
-    // Only remove session data, NOT subscription data
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
-    // DO NOT remove: homelyserv_subscriptions
-    // DO NOT remove: homelyserv_users
-    // DO NOT remove: homelyserv_profiles
     navigate('/login');
   };
 
@@ -609,7 +588,7 @@ const WorkerDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -654,13 +633,12 @@ const WorkerDashboard = () => {
                 >
                   <Bell size={20} className="text-gray-600" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                       {unreadCount}
                     </span>
                   )}
                 </button>
                 
-                {/* Notifications dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
                     <div className="p-3 border-b border-gray-200 flex justify-between items-center">
@@ -668,7 +646,7 @@ const WorkerDashboard = () => {
                       {notifications.length > 0 && (
                         <button 
                           onClick={markAllRead}
-                          className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                          className="text-xs text-red-600 hover:text-red-700 font-medium"
                         >
                           {t.markAllRead}
                         </button>
@@ -683,7 +661,7 @@ const WorkerDashboard = () => {
                         notifications.slice(0, 5).map((notification) => (
                           <div 
                             key={notification.id} 
-                            className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.read ? 'bg-amber-50' : ''}`}
+                            className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.read ? 'bg-red-50' : ''}`}
                             onClick={() => markNotificationRead(notification.id)}
                           >
                             <p className="text-sm text-gray-800">{notification.message}</p>
@@ -693,7 +671,7 @@ const WorkerDashboard = () => {
                       )}
                       {notifications.length > 5 && (
                         <div className="p-2 text-center">
-                          <Link to="/notifications" className="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                          <Link to="/notifications" className="text-sm text-red-600 hover:text-red-700 font-medium">
                             {t.viewAll}
                           </Link>
                         </div>
@@ -703,7 +681,7 @@ const WorkerDashboard = () => {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -752,8 +730,8 @@ const WorkerDashboard = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner - RED THEME */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
@@ -867,13 +845,13 @@ const WorkerDashboard = () => {
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.totalEarnings}</p>
-                <span className="text-amber-500 font-bold">$</span>
+                <span className="text-red-500 font-bold">$</span>
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">${stats.totalEarnings}</p>
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - RED THEME */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -900,10 +878,10 @@ const WorkerDashboard = () => {
               </Link>
               <Link
                 to="/worker-messages"
-                className="flex items-center gap-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200 group"
+                className="flex items-center gap-3 p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 group"
               >
-                <MessageCircle size={20} className="text-orange-600 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-orange-700">{t.viewMessages}</span>
+                <MessageCircle size={20} className="text-red-600 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-red-700">{t.viewMessages}</span>
               </Link>
             </div>
           </div>

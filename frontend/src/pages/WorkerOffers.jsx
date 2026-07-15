@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - Updated with Accept/Reject, conversation creation, and premium badge
+// src/pages/WorkerOffers.jsx - RED AND WHITE THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
@@ -57,7 +57,7 @@ import {
   saveUserConversations 
 } from '../utils/chatService';
 
-// Sidebar Component - WITH PREMIUM BADGE
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -113,7 +113,6 @@ const WorkerSidebar = ({
   const isActive = (path) => location.pathname === path;
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -140,16 +139,16 @@ const WorkerSidebar = ({
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <Shield size={28} className="text-amber-500" />
-                <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+                <Shield size={28} className="text-red-500" />
+                <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/worker-dashboard" className="relative mx-auto">
-              <Shield size={28} className="text-amber-500" />
-              <Home size={14} className="text-amber-300 absolute -bottom-1 -right-1" />
+              <Shield size={28} className="text-red-500" />
+              <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -168,7 +167,7 @@ const WorkerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -219,11 +218,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-amber-50 text-amber-600'
+                  ? 'bg-red-50 text-red-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-amber-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -231,7 +230,7 @@ const WorkerSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-amber-600 rounded-full"></div>
+                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -273,7 +272,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-amber-600 hover:bg-amber-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -292,7 +291,7 @@ const WorkerSidebar = ({
 };
 
 // ============================================================
-// MAIN WORKER OFFERS COMPONENT
+// MAIN WORKER OFFERS COMPONENT - RED THEME
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
@@ -311,7 +310,6 @@ const WorkerOffers = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [processingOffer, setProcessingOffer] = useState(null);
 
-  // ✅ Check if user has premium subscription
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -441,9 +439,6 @@ const WorkerOffers = () => {
 
   const t = translations[language];
 
-  // ============================================================
-  // EFFECTS
-  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
@@ -483,24 +478,18 @@ const WorkerOffers = () => {
     document.documentElement.lang = language;
   }, [language]);
 
-  // ============================================================
-  // LOAD OFFERS
-  // ============================================================
   const loadOffers = () => {
     try {
       let allOffers = [];
       
-      // Load from employer_offers (main source)
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       
-      // Filter offers for this worker
       if (user?.email) {
         allOffers = employerOffers.filter(
           offer => offer.workerEmail === user.email
         );
       }
       
-      // Also check worker-specific offers
       if (user?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
         workerOffers.forEach(offer => {
@@ -510,7 +499,6 @@ const WorkerOffers = () => {
         });
       }
       
-      // Sort by newest first
       allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       setOffers(allOffers);
@@ -525,22 +513,13 @@ const WorkerOffers = () => {
     }
   };
 
-  // ============================================================
-  // CREATE CONVERSATION BETWEEN WORKER AND EMPLOYER
-  // ============================================================
   const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
     try {
-      // Get or create conversation ID
       const conversationId = getConversationId(workerId, employerId);
-      
-      // Get existing conversations
       const conversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]');
-      
-      // Check if conversation already exists
       const existingConv = conversations.find(c => c.id === conversationId);
       
       if (!existingConv) {
-        // Create new conversation
         const newConversation = {
           id: conversationId,
           participants: [
@@ -556,7 +535,6 @@ const WorkerOffers = () => {
         conversations.push(newConversation);
         localStorage.setItem('homelyserv_conversations', JSON.stringify(conversations));
         
-        // Send welcome message from worker to employer
         const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
         
         sendMessage(
@@ -578,15 +556,11 @@ const WorkerOffers = () => {
     }
   };
 
-  // ============================================================
-  // ACCEPT OFFER
-  // ============================================================
   const handleAcceptOffer = (offer) => {
     if (processingOffer) return;
     setProcessingOffer(offer.id);
 
     try {
-      // Update the offer status
       const updatedOffer = {
         ...offer,
         status: 'accepted',
@@ -594,14 +568,12 @@ const WorkerOffers = () => {
         workerResponseAt: new Date().toISOString()
       };
 
-      // Update in employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedEmployerOffers = employerOffers.map(o => 
         o.id === offer.id ? updatedOffer : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
 
-      // Update in worker_offers
       if (user?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
@@ -610,9 +582,6 @@ const WorkerOffers = () => {
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
-      // ============================================================
-      // CREATE CONVERSATION BETWEEN WORKER AND EMPLOYER
-      // ============================================================
       const workerId = user?.id || user?.email;
       const workerName = user?.fullName || 'Worker';
       const employerId = offer.employerId || offer.employerEmail;
@@ -628,7 +597,6 @@ const WorkerOffers = () => {
         );
       }
 
-      // Send notification to employer
       const notification = {
         id: 'notif_' + Date.now(),
         type: 'offer_accepted',
@@ -646,7 +614,6 @@ const WorkerOffers = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
-      // Update local state
       setOffers(prev => prev.map(o => 
         o.id === offer.id ? updatedOffer : o
       ));
@@ -665,9 +632,6 @@ const WorkerOffers = () => {
     }
   };
 
-  // ============================================================
-  // REJECT OFFER
-  // ============================================================
   const handleRejectOffer = (offer) => {
     if (processingOffer) return;
     
@@ -678,7 +642,6 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      // Update the offer status
       const updatedOffer = {
         ...offer,
         status: 'rejected',
@@ -686,14 +649,12 @@ const WorkerOffers = () => {
         workerResponseAt: new Date().toISOString()
       };
 
-      // Update in employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedEmployerOffers = employerOffers.map(o => 
         o.id === offer.id ? updatedOffer : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
 
-      // Update in worker_offers
       if (user?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
@@ -702,7 +663,6 @@ const WorkerOffers = () => {
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
-      // Send notification to employer
       const notification = {
         id: 'notif_' + Date.now(),
         type: 'offer_rejected',
@@ -720,7 +680,6 @@ const WorkerOffers = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
-      // Update local state
       setOffers(prev => prev.map(o => 
         o.id === offer.id ? updatedOffer : o
       ));
@@ -738,9 +697,6 @@ const WorkerOffers = () => {
     }
   };
 
-  // ============================================================
-  // FILTERS AND SORT
-  // ============================================================
   useEffect(() => {
     let filtered = [...offers];
 
@@ -777,9 +733,6 @@ const WorkerOffers = () => {
     setFilteredOffers(filtered);
   }, [offers, statusFilter, searchTerm, sortBy]);
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -854,14 +807,11 @@ const WorkerOffers = () => {
     total: offers.length
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
         </div>
       </div>
@@ -872,7 +822,7 @@ const WorkerOffers = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Redirecting...</p>
         </div>
       </div>
@@ -909,7 +859,7 @@ const WorkerOffers = () => {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 overflow-hidden border-2 border-amber-200 relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
                   {user?.profileImage ? (
                     <img 
                       src={user.profileImage} 
@@ -939,7 +889,7 @@ const WorkerOffers = () => {
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -959,8 +909,8 @@ const WorkerOffers = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner - RED THEME */}
+          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
@@ -1050,14 +1000,14 @@ const WorkerOffers = () => {
                   placeholder={language === 'en' ? 'Search offers...' : 'ابحث عن عروض...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="pending">{t.filters.pending}</option>
@@ -1067,7 +1017,7 @@ const WorkerOffers = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                 >
                   <option value="newest">{t.sort.newest}</option>
                   <option value="oldest">{t.sort.oldest}</option>
@@ -1096,7 +1046,7 @@ const WorkerOffers = () => {
               <p className="text-gray-400 text-sm mt-2">{t.empty.wait}</p>
               <button
                 onClick={loadOffers}
-                className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition"
+                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
                 Refresh
               </button>
@@ -1116,7 +1066,7 @@ const WorkerOffers = () => {
                 >
                   <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                     <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {offer.workerImage ? (
                           <img 
                             src={offer.workerImage} 
@@ -1124,7 +1074,7 @@ const WorkerOffers = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <User size={28} className="text-amber-600" />
+                          <User size={28} className="text-red-600" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1161,11 +1111,10 @@ const WorkerOffers = () => {
                           </div>
                         </div>
 
-                        {/* Skills */}
                         {offer.workerSkills?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {offer.workerSkills.slice(0, 3).map((skill, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">
+                              <span key={idx} className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full">
                                 {skill}
                               </span>
                             ))}
@@ -1180,7 +1129,7 @@ const WorkerOffers = () => {
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => toggleExpand(offer.id)}
-                            className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+                            className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
                           >
                             <Eye size={16} />
                             {t.card.viewDetails}
@@ -1228,10 +1177,9 @@ const WorkerOffers = () => {
                           {offer.status === 'accepted' && (
                             <button
                               onClick={() => {
-                                // Navigate to messages with employer
                                 navigate('/worker-messages');
                               }}
-                              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition flex items-center gap-1"
+                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition flex items-center gap-1"
                             >
                               <MessageSquare size={14} />
                               Chat
@@ -1321,7 +1269,7 @@ const WorkerOffers = () => {
                                 onClick={() => {
                                   navigate('/worker-messages');
                                 }}
-                                className="mt-3 w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
+                                className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
                               >
                                 <MessageSquare size={16} />
                                 Message Employer
