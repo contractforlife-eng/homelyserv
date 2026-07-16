@@ -1,4 +1,4 @@
-// src/pages/AdminComplaints.jsx - COMPLETE ADMIN COMPLAINTS PAGE
+// src/pages/AdminComplaints.jsx - FIXED: Admin responses now appear for complainants
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -560,7 +560,7 @@ const AdminComplaints = () => {
   };
 
   // ============================================================
-  // ADD ADMIN RESPONSE TO COMPLAINT
+  // ADD ADMIN RESPONSE TO COMPLAINT - FIXED: Syncs back to complainant
   // ============================================================
   const addResponse = (complaintId, responseText) => {
     if (!responseText.trim()) return;
@@ -568,44 +568,95 @@ const AdminComplaints = () => {
     setProcessing(true);
     
     try {
-      // Get all complaints
+      // Get all complaints from all sources
       const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
       const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
       const adminComplaints = JSON.parse(localStorage.getItem('admin_complaints') || '[]');
       
-      // Update in employer complaints
-      const updatedEmployer = employerComplaints.map(c => 
-        c.id === complaintId ? { 
-          ...c, 
-          adminResponse: responseText,
-          adminResponseAt: new Date().toISOString(),
-          status: 'inProgress'
-        } : c
-      );
+      // Find the complaint to get its source
+      let complaintSource = null;
+      let foundComplaint = null;
       
-      // Update in worker complaints
-      const updatedWorker = workerComplaints.map(c => 
-        c.id === complaintId ? { 
-          ...c, 
-          adminResponse: responseText,
-          adminResponseAt: new Date().toISOString(),
-          status: 'inProgress'
-        } : c
-      );
+      // Check in employer complaints
+      const empComplaint = employerComplaints.find(c => c.id === complaintId);
+      if (empComplaint) {
+        complaintSource = 'employer';
+        foundComplaint = empComplaint;
+      }
       
-      // Update in admin complaints
-      const updatedAdmin = adminComplaints.map(c => 
-        c.id === complaintId ? { 
-          ...c, 
-          adminResponse: responseText,
-          adminResponseAt: new Date().toISOString(),
-          status: 'inProgress'
-        } : c
-      );
+      // Check in worker complaints
+      if (!foundComplaint) {
+        const workComplaint = workerComplaints.find(c => c.id === complaintId);
+        if (workComplaint) {
+          complaintSource = 'worker';
+          foundComplaint = workComplaint;
+        }
+      }
       
-      localStorage.setItem('employer_complaints', JSON.stringify(updatedEmployer));
-      localStorage.setItem('worker_complaints', JSON.stringify(updatedWorker));
-      localStorage.setItem('admin_complaints', JSON.stringify(updatedAdmin));
+      // Check in admin complaints
+      if (!foundComplaint) {
+        const adminComp = adminComplaints.find(c => c.id === complaintId);
+        if (adminComp) {
+          complaintSource = 'admin';
+          foundComplaint = adminComp;
+        }
+      }
+      
+      if (!foundComplaint) {
+        alert('Complaint not found');
+        setProcessing(false);
+        return;
+      }
+      
+      // Update the complaint with admin response
+      const updatedComplaint = {
+        ...foundComplaint,
+        adminResponse: responseText,
+        adminResponseAt: new Date().toISOString(),
+        status: 'inProgress',
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update in the appropriate storage
+      if (complaintSource === 'employer') {
+        const updatedEmployer = employerComplaints.map(c => 
+          c.id === complaintId ? updatedComplaint : c
+        );
+        localStorage.setItem('employer_complaints', JSON.stringify(updatedEmployer));
+      } else if (complaintSource === 'worker') {
+        const updatedWorker = workerComplaints.map(c => 
+          c.id === complaintId ? updatedComplaint : c
+        );
+        localStorage.setItem('worker_complaints', JSON.stringify(updatedWorker));
+      } else {
+        const updatedAdmin = adminComplaints.map(c => 
+          c.id === complaintId ? updatedComplaint : c
+        );
+        localStorage.setItem('admin_complaints', JSON.stringify(updatedAdmin));
+      }
+      
+      // Also update admin_complaints for admin view
+      const adminComplaintsUpdated = adminComplaints.map(c => 
+        c.id === complaintId ? updatedComplaint : c
+      );
+      localStorage.setItem('admin_complaints', JSON.stringify(adminComplaintsUpdated));
+      
+      // Create notification for the complainant
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'complaint_response',
+        message: `Admin has responded to your complaint: "${foundComplaint.title}"`,
+        complaintId: complaintId,
+        complaintTitle: foundComplaint.title,
+        response: responseText,
+        date: new Date().toISOString(),
+        read: false
+      };
+      
+      // Send notification to the appropriate user
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      notifications.push(notification);
+      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
       
       // Reload complaints
       loadComplaints();
@@ -619,6 +670,8 @@ const AdminComplaints = () => {
           status: 'inProgress'
         });
       }
+      
+      alert('✅ Response sent successfully! The user will see it in their complaints page.');
       
     } catch (error) {
       console.error('Error adding response:', error);
@@ -1032,6 +1085,12 @@ const AdminComplaints = () => {
                           {complaint.source === 'worker' && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">Worker</span>
                           )}
+                          {complaint.adminResponse && (
+                            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs flex items-center gap-1">
+                              <CheckCircle size={12} />
+                              Responded
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -1135,9 +1194,12 @@ const AdminComplaints = () => {
 
               {/* Admin Response Section */}
               <div className="mt-4 bg-[#0a0a0a] rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">{t.modal.response}</h3>
+                <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+                  <Shield size={16} className="text-yellow-500" />
+                  {t.modal.response}
+                </h3>
                 {selectedComplaint.adminResponse ? (
-                  <div>
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <p className="text-white whitespace-pre-wrap">{selectedComplaint.adminResponse}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDate(selectedComplaint.adminResponseAt)}

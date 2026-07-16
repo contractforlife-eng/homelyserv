@@ -1,4 +1,4 @@
-// src/pages/EmployerComplaints.jsx - COMPLETE WITH EMPLOYER-SPECIFIC FILTERING
+// src/pages/EmployerComplaints.jsx - UPDATED TO SHOW ADMIN RESPONSES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -26,7 +26,11 @@ import {
   FileText,
   Filter,
   CreditCard,
-  Crown
+  Crown,
+  Shield,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 // Employer Sidebar Component - WITH PREMIUM BADGE FIX
@@ -283,6 +287,7 @@ const EmployerComplaints = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
+  const [expandedComplaint, setExpandedComplaint] = useState(null);
   const [newComplaint, setNewComplaint] = useState({
     title: '',
     description: '',
@@ -340,13 +345,17 @@ const EmployerComplaints = () => {
       actions: {
         view: 'View Details',
         resolve: 'Mark as Resolved',
-        reject: 'Reject'
+        reject: 'Reject',
+        expand: 'Show Response',
+        collapse: 'Hide Response'
       },
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Loading complaints...',
       noComplaints: 'No complaints yet',
-      noComplaintsDesc: 'Submit a complaint and we\'ll help you resolve it'
+      noComplaintsDesc: 'Submit a complaint and we\'ll help you resolve it',
+      adminResponse: 'Admin Response',
+      responded: 'Responded'
     },
     ar: {
       title: 'الشكاوى',
@@ -397,20 +406,24 @@ const EmployerComplaints = () => {
       actions: {
         view: 'عرض التفاصيل',
         resolve: 'تحديد كمحلولة',
-        reject: 'رفض'
+        reject: 'رفض',
+        expand: 'عرض الرد',
+        collapse: 'إخفاء الرد'
       },
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري تحميل الشكاوى...',
       noComplaints: 'لا توجد شكاوى حتى الآن',
-      noComplaintsDesc: 'قدم شكوى وسنساعدك في حلها'
+      noComplaintsDesc: 'قدم شكوى وسنساعدك في حلها',
+      adminResponse: 'رد الإدارة',
+      responded: 'تم الرد'
     }
   };
 
   const t = translations[language];
 
   // ============================================================
-  // FIXED: Load complaints only for the current employer
+  // Load complaints only for the current employer
   // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -454,7 +467,6 @@ const EmployerComplaints = () => {
     );
     
     console.log(`📋 Loaded ${employerComplaints.length} complaints for employer: ${user.email}`);
-    console.log(`📋 Total complaints in storage: ${allComplaints.length}`);
     
     setComplaints(employerComplaints);
     setFilteredComplaints(employerComplaints);
@@ -515,7 +527,7 @@ const EmployerComplaints = () => {
   };
 
   // ============================================================
-  // FIXED: Submit complaint with employer email
+  // Submit complaint with employer email
   // ============================================================
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -530,7 +542,10 @@ const EmployerComplaints = () => {
       ...newComplaint,
       status: 'pending',
       date: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
       response: null,
+      adminResponse: null,
+      adminResponseAt: null,
       employerId: user.id || user.email,
       employerEmail: user.email,
       employerName: user.fullName || 'Employer'
@@ -558,7 +573,7 @@ const EmployerComplaints = () => {
   };
 
   // ============================================================
-  // FIXED: Update complaint status
+  // Update complaint status
   // ============================================================
   const updateComplaintStatus = (complaintId, newStatus) => {
     // Get all complaints from storage
@@ -566,7 +581,7 @@ const EmployerComplaints = () => {
     
     // Update the specific complaint
     const updatedAllComplaints = allComplaints.map(c =>
-      c.id === complaintId ? { ...c, status: newStatus } : c
+      c.id === complaintId ? { ...c, status: newStatus, updatedAt: new Date().toISOString() } : c
     );
     
     localStorage.setItem('employer_complaints', JSON.stringify(updatedAllComplaints));
@@ -578,6 +593,10 @@ const EmployerComplaints = () => {
     
     setComplaints(employerComplaints);
     setFilteredComplaints(employerComplaints);
+  };
+
+  const toggleExpand = (complaintId) => {
+    setExpandedComplaint(expandedComplaint === complaintId ? null : complaintId);
   };
 
   const getStatusColor = (status) => {
@@ -598,6 +617,18 @@ const EmployerComplaints = () => {
       case 'rejected': return <X size={16} />;
       default: return <AlertCircle size={16} />;
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const stats = {
@@ -852,69 +883,111 @@ const EmployerComplaints = () => {
                         <div className="flex items-center gap-3">
                           <AlertTriangle size={20} className="text-teal-600" />
                           <h3 className="font-semibold text-gray-800">{complaint.title}</h3>
+                          {complaint.adminResponse && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                              <Shield size={12} />
+                              {t.responded}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{complaint.description}</p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{complaint.description}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
                           <span className="text-gray-500">
                             {t.categories[complaint.category] || complaint.category}
                           </span>
                           <span className="text-gray-300">|</span>
                           <span className="text-gray-500">{complaint.date}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
+                            {getStatusIcon(complaint.status)}
+                            {t.status[complaint.status] || complaint.status}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
-                          {getStatusIcon(complaint.status)}
-                          {t.status[complaint.status] || complaint.status}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Show expand button if there's an admin response */}
+                        {complaint.adminResponse && (
+                          <button
+                            onClick={() => toggleExpand(complaint.id)}
+                            className="px-3 py-1.5 bg-teal-50 text-teal-600 rounded-lg text-sm font-medium hover:bg-teal-100 transition flex items-center gap-1"
+                          >
+                            {expandedComplaint === complaint.id ? (
+                              <>
+                                <ChevronUp size={14} />
+                                {t.actions.collapse}
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={14} />
+                                {t.actions.expand}
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {complaint.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'inProgress')}
+                              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1"
+                            >
+                              <AlertCircle size={14} />
+                              {t.actions.view}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} />
+                              {t.actions.resolve}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                            >
+                              <X size={14} />
+                              {t.actions.reject}
+                            </button>
+                          </>
+                        )}
+                        {complaint.status === 'inProgress' && (
+                          <>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} />
+                              {t.actions.resolve}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                            >
+                              <X size={14} />
+                              {t.actions.reject}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {complaint.status === 'pending' && (
-                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'inProgress')}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1"
-                        >
-                          <AlertCircle size={14} />
-                          {t.actions.view}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <CheckCircle size={14} />
-                          {t.actions.resolve}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                          className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
-                        >
-                          <X size={14} />
-                          {t.actions.reject}
-                        </button>
+                    {/* Admin Response Section - Expanded */}
+                    {expandedComplaint === complaint.id && complaint.adminResponse && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield size={16} className="text-green-600" />
+                            <h4 className="font-semibold text-green-700">{t.adminResponse}</h4>
+                          </div>
+                          <p className="text-gray-700 whitespace-pre-wrap">{complaint.adminResponse}</p>
+                          {complaint.adminResponseAt && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              {formatDate(complaint.adminResponseAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 
-                    {complaint.status === 'inProgress' && (
-                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <CheckCircle size={14} />
-                          {t.actions.resolve}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                          className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
-                        >
-                          <X size={14} />
-                          {t.actions.reject}
-                        </button>
-                      </div>
-                    )}
-
+                    {/* Status messages */}
                     {complaint.status === 'resolved' && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <span className="text-sm text-green-600 flex items-center gap-1">

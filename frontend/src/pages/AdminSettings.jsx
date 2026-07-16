@@ -1,4 +1,4 @@
-// src/pages/AdminSettings.jsx - UPDATED WITH FULL SIDEBAR MENU
+// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -28,7 +28,35 @@ import {
   AlertTriangle,
   Briefcase,
   BarChart3,
-  FileCheck
+  FileCheck,
+  UserCog,
+  Key,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Smartphone,
+  MailCheck,
+  AlertOctagon,
+  Archive,
+  Trash2,
+  Download,
+  Upload,
+  RotateCcw,
+  Clock,
+  DollarSign,
+  Percent,
+  Users as UsersIcon,
+  Building,
+  Star,
+  Award,
+  Zap,
+  Activity,
+  PieChart,
+  LineChart,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  HelpCircle
 } from 'lucide-react';
 
 // Admin Sidebar Component - Dark Theme with FULL MENU
@@ -222,59 +250,235 @@ const AdminSettings = () => {
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [backupInProgress, setBackupInProgress] = useState(false);
+
+  // Settings state
+  const [settings, setSettings] = useState({
+    // General
+    siteName: 'HomelyServ',
+    siteDescription: 'Find trusted home service workers',
+    contactEmail: 'support@homelyserv.com',
+    contactPhone: '+20 123 456 789',
+    address: 'Cairo, Egypt',
+    
+    // Appearance
+    darkMode: false,
+    primaryColor: '#fbbf24',
+    secondaryColor: '#1a1a1a',
+    language: 'en',
+    
+    // Notifications
+    systemNotifications: true,
+    emailNotifications: true,
+    pushNotifications: false,
+    complaintNotifications: true,
+    paymentNotifications: true,
+    
+    // Security
+    twoFactorAuth: false,
+    sessionTimeout: 60,
+    maxLoginAttempts: 5,
+    requireEmailVerification: true,
+    requirePhoneVerification: false,
+    
+    // Payment
+    currency: 'EGP',
+    commissionRate: 6.5,
+    minWithdrawal: 100,
+    maxWithdrawal: 50000,
+    paymentMethods: ['credit_card', 'bank_transfer', 'cash'],
+    
+    // User Management
+    allowRegistration: true,
+    requireApproval: false,
+    maxUsersPerIp: 10,
+    autoSuspendAfter: 30,
+    
+    // System
+    debugMode: false,
+    maintenanceMode: false,
+    cacheEnabled: true,
+    backupSchedule: 'daily'
+  });
 
   const translations = {
     en: {
       title: 'Settings',
       subtitle: 'Manage your admin preferences',
-      preferences: 'Preferences',
-      language: 'Language',
-      languageDesc: 'Choose your preferred language',
-      darkMode: 'Dark Mode',
-      darkModeDesc: 'Switch between light and dark theme',
-      notifications: 'System Notifications',
-      notificationsDesc: 'Enable or disable system notifications',
-      emailNotifications: 'Email Notifications',
-      emailNotificationsDesc: 'Receive updates via email',
-      security: 'Security',
-      changePassword: 'Change Password',
-      twoFactor: 'Two-Factor Authentication',
-      privacy: 'Privacy',
-      system: 'System',
-      clearCache: 'Clear Cache',
-      backupData: 'Backup Data',
-      saveChanges: 'Save Changes',
-      saved: 'Settings saved successfully!',
+      tabs: {
+        general: 'General',
+        appearance: 'Appearance',
+        notifications: 'Notifications',
+        security: 'Security',
+        payment: 'Payment',
+        users: 'Users',
+        system: 'System'
+      },
+      general: {
+        title: 'General Settings',
+        siteName: 'Site Name',
+        siteDescription: 'Site Description',
+        contactEmail: 'Contact Email',
+        contactPhone: 'Contact Phone',
+        address: 'Address'
+      },
+      appearance: {
+        title: 'Appearance Settings',
+        darkMode: 'Dark Mode',
+        primaryColor: 'Primary Color',
+        secondaryColor: 'Secondary Color',
+        language: 'Language'
+      },
+      notifications: {
+        title: 'Notification Settings',
+        systemNotifications: 'System Notifications',
+        emailNotifications: 'Email Notifications',
+        pushNotifications: 'Push Notifications',
+        complaintNotifications: 'Complaint Notifications',
+        paymentNotifications: 'Payment Notifications'
+      },
+      security: {
+        title: 'Security Settings',
+        twoFactorAuth: 'Two-Factor Authentication',
+        sessionTimeout: 'Session Timeout (minutes)',
+        maxLoginAttempts: 'Max Login Attempts',
+        requireEmailVerification: 'Require Email Verification',
+        requirePhoneVerification: 'Require Phone Verification',
+        changePassword: 'Change Password'
+      },
+      payment: {
+        title: 'Payment Settings',
+        currency: 'Currency',
+        commissionRate: 'Commission Rate (%)',
+        minWithdrawal: 'Minimum Withdrawal',
+        maxWithdrawal: 'Maximum Withdrawal',
+        paymentMethods: 'Payment Methods'
+      },
+      users: {
+        title: 'User Management',
+        allowRegistration: 'Allow New Registrations',
+        requireApproval: 'Require Admin Approval',
+        maxUsersPerIp: 'Max Users per IP',
+        autoSuspendAfter: 'Auto-Suspend After (days)'
+      },
+      system: {
+        title: 'System Settings',
+        debugMode: 'Debug Mode',
+        maintenanceMode: 'Maintenance Mode',
+        cacheEnabled: 'Enable Cache',
+        backupSchedule: 'Backup Schedule',
+        clearCache: 'Clear Cache',
+        backupData: 'Backup Data',
+        restoreData: 'Restore Data'
+      },
+      actions: {
+        save: 'Save Changes',
+        saving: 'Saving...',
+        saved: 'Settings saved successfully!',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        changePassword: 'Change Password',
+        currentPassword: 'Current Password',
+        newPassword: 'New Password',
+        confirmPassword: 'Confirm Password',
+        passwordMismatch: 'Passwords do not match',
+        passwordLength: 'Password must be at least 8 characters'
+      },
       languageToggle: 'العربية',
-      notificationsTitle: 'Notifications'
+      notifications: 'Notifications'
     },
     ar: {
       title: 'الإعدادات',
       subtitle: 'إدارة تفضيلات المشرف',
-      preferences: 'التفضيلات',
-      language: 'اللغة',
-      languageDesc: 'اختر لغتك المفضلة',
-      darkMode: 'الوضع الداكن',
-      darkModeDesc: 'التبديل بين الوضع الفاتح والداكن',
-      notifications: 'إشعارات النظام',
-      notificationsDesc: 'تفعيل أو تعطيل إشعارات النظام',
-      emailNotifications: 'الإشعارات البريدية',
-      emailNotificationsDesc: 'تلقي التحديثات عبر البريد الإلكتروني',
-      security: 'الأمان',
-      changePassword: 'تغيير كلمة المرور',
-      twoFactor: 'المصادقة الثنائية',
-      privacy: 'الخصوصية',
-      system: 'النظام',
-      clearCache: 'مسح الذاكرة المؤقتة',
-      backupData: 'نسخ احتياطي للبيانات',
-      saveChanges: 'حفظ التغييرات',
-      saved: 'تم حفظ الإعدادات بنجاح!',
+      tabs: {
+        general: 'عام',
+        appearance: 'المظهر',
+        notifications: 'الإشعارات',
+        security: 'الأمان',
+        payment: 'الدفع',
+        users: 'المستخدمين',
+        system: 'النظام'
+      },
+      general: {
+        title: 'الإعدادات العامة',
+        siteName: 'اسم الموقع',
+        siteDescription: 'وصف الموقع',
+        contactEmail: 'البريد الإلكتروني للتواصل',
+        contactPhone: 'هاتف التواصل',
+        address: 'العنوان'
+      },
+      appearance: {
+        title: 'إعدادات المظهر',
+        darkMode: 'الوضع الداكن',
+        primaryColor: 'اللون الأساسي',
+        secondaryColor: 'اللون الثانوي',
+        language: 'اللغة'
+      },
+      notifications: {
+        title: 'إعدادات الإشعارات',
+        systemNotifications: 'إشعارات النظام',
+        emailNotifications: 'الإشعارات البريدية',
+        pushNotifications: 'إشعارات الدفع',
+        complaintNotifications: 'إشعارات الشكاوى',
+        paymentNotifications: 'إشعارات الدفع'
+      },
+      security: {
+        title: 'إعدادات الأمان',
+        twoFactorAuth: 'المصادقة الثنائية',
+        sessionTimeout: 'انتهاء الجلسة (دقائق)',
+        maxLoginAttempts: 'الحد الأقصى لمحاولات تسجيل الدخول',
+        requireEmailVerification: 'طلب التحقق من البريد الإلكتروني',
+        requirePhoneVerification: 'طلب التحقق من الهاتف',
+        changePassword: 'تغيير كلمة المرور'
+      },
+      payment: {
+        title: 'إعدادات الدفع',
+        currency: 'العملة',
+        commissionRate: 'نسبة العمولة (%)',
+        minWithdrawal: 'الحد الأدنى للسحب',
+        maxWithdrawal: 'الحد الأقصى للسحب',
+        paymentMethods: 'طرق الدفع'
+      },
+      users: {
+        title: 'إدارة المستخدمين',
+        allowRegistration: 'السماح بالتسجيل الجديد',
+        requireApproval: 'طلب موافقة المشرف',
+        maxUsersPerIp: 'الحد الأقصى للمستخدمين لكل IP',
+        autoSuspendAfter: 'التعليق التلقائي بعد (أيام)'
+      },
+      system: {
+        title: 'إعدادات النظام',
+        debugMode: 'وضع التصحيح',
+        maintenanceMode: 'وضع الصيانة',
+        cacheEnabled: 'تفعيل التخزين المؤقت',
+        backupSchedule: 'جدول النسخ الاحتياطي',
+        clearCache: 'مسح التخزين المؤقت',
+        backupData: 'نسخ احتياطي للبيانات',
+        restoreData: 'استعادة البيانات'
+      },
+      actions: {
+        save: 'حفظ التغييرات',
+        saving: 'جاري الحفظ...',
+        saved: 'تم حفظ الإعدادات بنجاح!',
+        cancel: 'إلغاء',
+        confirm: 'تأكيد',
+        changePassword: 'تغيير كلمة المرور',
+        currentPassword: 'كلمة المرور الحالية',
+        newPassword: 'كلمة المرور الجديدة',
+        confirmPassword: 'تأكيد كلمة المرور',
+        passwordMismatch: 'كلمات المرور غير متطابقة',
+        passwordLength: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل'
+      },
       languageToggle: 'English',
-      notificationsTitle: 'الإشعارات'
+      notifications: 'الإشعارات'
     }
   };
 
@@ -284,6 +488,7 @@ const AdminSettings = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
+      setSettings(prev => ({ ...prev, language: savedLang }));
     }
     
     const userData = localStorage.getItem('homelyserv_user');
@@ -307,6 +512,17 @@ const AdminSettings = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+
+    // Load saved settings
+    const savedSettings = localStorage.getItem('admin_settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => ({ ...prev, ...parsed }));
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
   }, [navigate]);
 
   useEffect(() => {
@@ -317,6 +533,7 @@ const AdminSettings = () => {
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
+    setSettings(prev => ({ ...prev, language: newLang }));
     localStorage.setItem('homelyserv_language', newLang);
   };
 
@@ -338,9 +555,77 @@ const AdminSettings = () => {
   const handleSave = () => {
     setSaving(true);
     setTimeout(() => {
+      localStorage.setItem('admin_settings', JSON.stringify(settings));
       setSaving(false);
-      alert(t.saved);
+      alert(t.actions.saved);
     }, 1000);
+  };
+
+  const handlePasswordChange = () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert(t.actions.passwordMismatch);
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      alert(t.actions.passwordLength);
+      return;
+    }
+    // In a real app, this would call an API
+    alert('Password changed successfully!');
+    setShowPasswordModal(false);
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleBackup = () => {
+    setBackupInProgress(true);
+    setTimeout(() => {
+      // Simulate backup - in real app, this would create a backup file
+      const data = {
+        users: JSON.parse(localStorage.getItem('homelyserv_users') || '[]'),
+        payments: JSON.parse(localStorage.getItem('all_payments') || '[]'),
+        offers: JSON.parse(localStorage.getItem('employer_offers') || '[]'),
+        complaints: {
+          employer: JSON.parse(localStorage.getItem('employer_complaints') || '[]'),
+          worker: JSON.parse(localStorage.getItem('worker_complaints') || '[]')
+        },
+        settings: settings,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Create a downloadable file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `homelyserv_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      setBackupInProgress(false);
+      alert('Backup completed successfully!');
+    }, 1500);
+  };
+
+  const handleClearCache = () => {
+    if (confirm('Are you sure you want to clear all cache? This action cannot be undone.')) {
+      localStorage.removeItem('homelyserv_cached_data');
+      alert('Cache cleared successfully!');
+    }
+  };
+
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    const labels = {
+      credit_card: 'Credit Card',
+      bank_transfer: 'Bank Transfer',
+      cash: 'Cash',
+      paypal: 'PayPal',
+      stripe: 'Stripe'
+    };
+    return labels[method] || method;
   };
 
   if (!user) {
@@ -356,7 +641,6 @@ const AdminSettings = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex">
-      {/* Sidebar */}
       <AdminSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -367,11 +651,9 @@ const AdminSettings = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        {/* Top Header Bar */}
         <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -401,9 +683,7 @@ const AdminSettings = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-4 md:p-6">
-          {/* Page Header - Dark Theme */}
           <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-black">{t.title}</h1>
@@ -411,158 +691,620 @@ const AdminSettings = () => {
             </div>
           </div>
 
-          {/* Settings */}
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-1 mb-6 border-b border-yellow-500/20 pb-2">
+            {['general', 'appearance', 'notifications', 'security', 'payment', 'users', 'system'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium transition rounded-lg ${
+                  activeTab === tab
+                    ? 'bg-yellow-500 text-black'
+                    : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-500/10'
+                }`}
+              >
+                {t.tabs[tab]}
+              </button>
+            ))}
+          </div>
+
+          {/* Settings Content */}
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-            {/* Preferences */}
-            <div className="p-6 border-b border-yellow-500/20">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.preferences}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+            {activeTab === 'general' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.general.title}</h3>
+                <div className="space-y-4">
                   <div>
-                    <p className="font-medium text-gray-300">{t.language}</p>
-                    <p className="text-sm text-gray-500">{t.languageDesc}</p>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.siteName}</label>
+                    <input
+                      type="text"
+                      value={settings.siteName}
+                      onChange={(e) => handleSettingChange('siteName', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
                   </div>
-                  <select
-                    value={language}
-                    onChange={(e) => {
-                      setLanguage(e.target.value);
-                      localStorage.setItem('homelyserv_language', e.target.value);
-                    }}
-                    className="px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                  >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-300">{t.darkMode}</p>
-                    <p className="text-sm text-gray-500">{t.darkModeDesc}</p>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.siteDescription}</label>
+                    <textarea
+                      value={settings.siteDescription}
+                      onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
+                      rows="2"
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.contactEmail}</label>
+                    <input
+                      type="email"
+                      value={settings.contactEmail}
+                      onChange={(e) => handleSettingChange('contactEmail', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.contactPhone}</label>
+                    <input
+                      type="text"
+                      value={settings.contactPhone}
+                      onChange={(e) => handleSettingChange('contactPhone', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.address}</label>
+                    <input
+                      type="text"
+                      value={settings.address}
+                      onChange={(e) => handleSettingChange('address', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'appearance' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.appearance.title}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.appearance.darkMode}</p>
+                      <p className="text-sm text-gray-500">Switch between light and dark theme</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.darkMode ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                          settings.darkMode ? 'right-1' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.primaryColor}</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                        className="w-12 h-12 rounded-lg border border-gray-700 cursor-pointer bg-[#0a0a0a]"
+                      />
+                      <input
+                        type="text"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                        className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.secondaryColor}</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={settings.secondaryColor}
+                        onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
+                        className="w-12 h-12 rounded-lg border border-gray-700 cursor-pointer bg-[#0a0a0a]"
+                      />
+                      <input
+                        type="text"
+                        value={settings.secondaryColor}
+                        onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
+                        className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.language}</label>
+                    <select
+                      value={settings.language}
+                      onChange={(e) => {
+                        handleSettingChange('language', e.target.value);
+                        setLanguage(e.target.value);
+                        localStorage.setItem('homelyserv_language', e.target.value);
+                      }}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    >
+                      <option value="en">English</option>
+                      <option value="ar">العربية</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'notifications' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.notifications.title}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.notifications.systemNotifications}</p>
+                      <p className="text-sm text-gray-500">Enable or disable system notifications</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('systemNotifications', !settings.systemNotifications)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.systemNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.systemNotifications ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.notifications.emailNotifications}</p>
+                      <p className="text-sm text-gray-500">Receive updates via email</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.emailNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.emailNotifications ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.notifications.pushNotifications}</p>
+                      <p className="text-sm text-gray-500">Enable push notifications</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.pushNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.pushNotifications ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
+                      <p className="text-sm text-gray-500">Get notified about new complaints</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('complaintNotifications', !settings.complaintNotifications)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.complaintNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.complaintNotifications ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
+                      <p className="text-sm text-gray-500">Get notified about payment activity</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('paymentNotifications', !settings.paymentNotifications)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.paymentNotifications ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.paymentNotifications ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.security.title}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.security.twoFactorAuth}</p>
+                      <p className="text-sm text-gray-500">Require two-factor authentication</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.twoFactorAuth ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.twoFactorAuth ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.security.sessionTimeout}</label>
+                    <input
+                      type="number"
+                      value={settings.sessionTimeout}
+                      onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.security.maxLoginAttempts}</label>
+                    <input
+                      type="number"
+                      value={settings.maxLoginAttempts}
+                      onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.security.requireEmailVerification}</p>
+                      <p className="text-sm text-gray-500">Require email verification for new users</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('requireEmailVerification', !settings.requireEmailVerification)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.requireEmailVerification ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.requireEmailVerification ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.security.requirePhoneVerification}</p>
+                      <p className="text-sm text-gray-500">Require phone verification for new users</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('requirePhoneVerification', !settings.requirePhoneVerification)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.requirePhoneVerification ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.requirePhoneVerification ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
                   </div>
                   <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      darkMode ? 'bg-yellow-500' : 'bg-gray-600'
-                    }`}
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full px-4 py-3 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 transition font-medium flex items-center justify-center gap-2"
                   >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        darkMode ? 'right-1' : 'left-1'
-                      }`}
-                    />
+                    <Key size={18} />
+                    {t.actions.changePassword}
                   </button>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Notifications */}
-            <div className="p-6 border-b border-yellow-500/20">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.notificationsTitle}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+            {activeTab === 'payment' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.payment.title}</h3>
+                <div className="space-y-4">
                   <div>
-                    <p className="font-medium text-gray-300">{t.notifications}</p>
-                    <p className="text-sm text-gray-500">{t.notificationsDesc}</p>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.currency}</label>
+                    <select
+                      value={settings.currency}
+                      onChange={(e) => handleSettingChange('currency', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    >
+                      <option value="EGP">EGP - Egyptian Pound</option>
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                      <option value="GBP">GBP - British Pound</option>
+                    </select>
                   </div>
-                  <button
-                    onClick={() => setNotifications(!notifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      notifications ? 'bg-yellow-500' : 'bg-gray-600'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        notifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-300">{t.emailNotifications}</p>
-                    <p className="text-sm text-gray-500">{t.emailNotificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => setEmailNotifications(!emailNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      emailNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        emailNotifications ? 'right-1' : 'left-1'
-                      }`}
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.commissionRate}</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={settings.commissionRate}
+                      onChange={(e) => handleSettingChange('commissionRate', parseFloat(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
                     />
-                  </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.minWithdrawal}</label>
+                    <input
+                      type="number"
+                      value={settings.minWithdrawal}
+                      onChange={(e) => handleSettingChange('minWithdrawal', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.maxWithdrawal}</label>
+                    <input
+                      type="number"
+                      value={settings.maxWithdrawal}
+                      onChange={(e) => handleSettingChange('maxWithdrawal', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.paymentMethods}</label>
+                    <div className="space-y-2">
+                      {['credit_card', 'bank_transfer', 'cash', 'paypal', 'stripe'].map((method) => (
+                        <label key={method} className="flex items-center gap-3 p-2 bg-[#0a0a0a] rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500/30 transition">
+                          <input
+                            type="checkbox"
+                            checked={settings.paymentMethods.includes(method)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleSettingChange('paymentMethods', [...settings.paymentMethods, method]);
+                              } else {
+                                handleSettingChange('paymentMethods', settings.paymentMethods.filter(m => m !== method));
+                              }
+                            }}
+                            className="w-4 h-4 accent-yellow-500"
+                          />
+                          <span className="text-gray-300">{getPaymentMethodLabel(method)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Security */}
-            <div className="p-6 border-b border-yellow-500/20">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.security}</h3>
-              <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <Lock size={20} className="text-yellow-400" />
-                    <span className="font-medium text-gray-300">{t.changePassword}</span>
+            {activeTab === 'users' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.users.title}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.users.allowRegistration}</p>
+                      <p className="text-sm text-gray-500">Allow new user registrations</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('allowRegistration', !settings.allowRegistration)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.allowRegistration ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.allowRegistration ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
                   </div>
-                  <ChevronRight size={18} className="text-gray-500" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <Shield size={20} className="text-yellow-400" />
-                    <span className="font-medium text-gray-300">{t.twoFactor}</span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.users.requireApproval}</p>
+                      <p className="text-sm text-gray-500">Require admin approval for new users</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('requireApproval', !settings.requireApproval)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.requireApproval ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.requireApproval ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
                   </div>
-                  <ChevronRight size={18} className="text-gray-500" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <Lock size={20} className="text-yellow-400" />
-                    <span className="font-medium text-gray-300">{t.privacy}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.users.maxUsersPerIp}</label>
+                    <input
+                      type="number"
+                      value={settings.maxUsersPerIp}
+                      onChange={(e) => handleSettingChange('maxUsersPerIp', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
                   </div>
-                  <ChevronRight size={18} className="text-gray-500" />
-                </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.users.autoSuspendAfter}</label>
+                    <input
+                      type="number"
+                      value={settings.autoSuspendAfter}
+                      onChange={(e) => handleSettingChange('autoSuspendAfter', parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* System */}
-            <div className="p-6 border-b border-yellow-500/20">
-              <h3 className="text-lg font-semibold text-white mb-4">{t.system}</h3>
-              <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <Database size={20} className="text-yellow-400" />
-                    <span className="font-medium text-gray-300">{t.clearCache}</span>
+            {activeTab === 'system' && (
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.system.title}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.system.debugMode}</p>
+                      <p className="text-sm text-gray-500">Enable debug mode for developers</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('debugMode', !settings.debugMode)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.debugMode ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.debugMode ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
                   </div>
-                  <ChevronRight size={18} className="text-gray-500" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition border border-gray-700">
-                  <div className="flex items-center gap-3">
-                    <Server size={20} className="text-yellow-400" />
-                    <span className="font-medium text-gray-300">{t.backupData}</span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.system.maintenanceMode}</p>
+                      <p className="text-sm text-gray-500">Put the site in maintenance mode</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('maintenanceMode', !settings.maintenanceMode)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.maintenanceMode ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.maintenanceMode ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
                   </div>
-                  <ChevronRight size={18} className="text-gray-500" />
-                </button>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-300">{t.system.cacheEnabled}</p>
+                      <p className="text-sm text-gray-500">Enable caching for better performance</p>
+                    </div>
+                    <button
+                      onClick={() => handleSettingChange('cacheEnabled', !settings.cacheEnabled)}
+                      className={`relative w-12 h-6 rounded-full transition ${
+                        settings.cacheEnabled ? 'bg-yellow-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.cacheEnabled ? 'right-1' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.system.backupSchedule}</label>
+                    <select
+                      value={settings.backupSchedule}
+                      onChange={(e) => handleSettingChange('backupSchedule', e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="manual">Manual Only</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                      onClick={handleClearCache}
+                      className="px-4 py-3 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 transition font-medium flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={18} />
+                      {t.system.clearCache}
+                    </button>
+                    <button
+                      onClick={handleBackup}
+                      disabled={backupInProgress}
+                      className="px-4 py-3 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {backupInProgress ? (
+                        <>
+                          <RefreshCw size={18} className="animate-spin" />
+                          Backing up...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={18} />
+                          {t.system.backupData}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Save Button */}
-            <div className="p-6 bg-[#0a0a0a]">
+            <div className="p-6 bg-[#0a0a0a] border-t border-yellow-500/20">
               <button
                 onClick={handleSave}
                 disabled={saving}
                 className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
               >
                 {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-                {saving ? 'Saving...' : t.saveChanges}
+                {saving ? t.actions.saving : t.actions.save}
               </button>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-yellow-500/20">
+            <div className="flex items-center justify-between p-6 border-b border-yellow-500/20">
+              <h2 className="text-xl font-semibold text-white">{t.actions.changePassword}</h2>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.currentPassword}</label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.newPassword}</label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.confirmPassword}</label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-yellow-500/20">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition"
+              >
+                {t.actions.cancel}
+              </button>
+              <button
+                onClick={handlePasswordChange}
+                className="flex-1 px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition font-medium"
+              >
+                {t.actions.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
