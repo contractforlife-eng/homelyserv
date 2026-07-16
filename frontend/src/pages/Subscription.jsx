@@ -1,4 +1,4 @@
-// src/pages/Subscription.jsx - FIXED
+// src/pages/Subscription.jsx - UPDATED WITH PAYMOB & PAYPAL + PREMIUM DESIGN
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -39,7 +39,12 @@ import {
   Calendar,
   Clock,
   Users,
-  BarChart3
+  BarChart3,
+  Shield as ShieldIcon,
+  Zap as ZapIcon,
+  Gift,
+  Rocket,
+  Infinity
 } from 'lucide-react';
 import {
   getSubscriptionPrice,
@@ -48,8 +53,10 @@ import {
   isUserPremium as checkUserPremium,
   getSubscriptionStatus
 } from '../utils/subscriptionService';
+import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
+import { PAYMENT_METHODS, PAYMENT_CONFIG } from '../config/paymentConfig';
 
-// Sidebar Component - FIXED: Includes Premium menu item
+// Sidebar Component (kept the same for brevity)
 const SubscriptionSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -95,7 +102,6 @@ const SubscriptionSidebar = ({
 
   const t = translations[language];
 
-  // ✅ FIX: Premium menu item is now included in all sidebar configurations
   const menuItems = isEmployer ? [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -116,10 +122,8 @@ const SubscriptionSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly
   const isPremiumUser = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -131,17 +135,12 @@ const SubscriptionSidebar = ({
   return (
     <>
       {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={toggleMobileMenu}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileMenu} />
       )}
 
-      <aside 
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
+      <aside className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+        sidebarCollapsed ? 'w-20' : 'w-64'
+      } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
@@ -158,16 +157,10 @@ const SubscriptionSidebar = ({
               <Home size={14} className={isEmployer ? 'text-teal-300' : 'text-amber-300'} />
             </Link>
           )}
-          <button
-            onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
-          >
+          <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block">
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <button
-            onClick={toggleMobileMenu}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-          >
+          <button onClick={toggleMobileMenu} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden">
             <X size={18} />
           </button>
         </div>
@@ -176,11 +169,7 @@ const SubscriptionSidebar = ({
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
-                <img 
-                  src={getProfileImage()} 
-                  alt={user?.fullName || (isEmployer ? 'Employer' : 'Worker')} 
-                  className="w-full h-full object-cover"
-                />
+                <img src={getProfileImage()} alt={user?.fullName || (isEmployer ? 'Employer' : 'Worker')} className="w-full h-full object-cover" />
               ) : (
                 <User size={20} className="text-white" />
               )}
@@ -297,7 +286,9 @@ const SubscriptionSidebar = ({
   );
 };
 
-// Main Subscription Component
+// ============================================================
+// MAIN SUBSCRIPTION COMPONENT - REDESIGNED
+// ============================================================
 const Subscription = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -313,6 +304,7 @@ const Subscription = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [paymobIframe, setPaymobIframe] = useState(null);
   
   const price = isEmployer ? 200 : 100;
 
@@ -344,9 +336,10 @@ const Subscription = () => {
         alreadySubscribed: 'You already have an active subscription!'
       },
       methods: {
-        creditCard: 'Credit Card',
-        wallet: 'Mobile Wallet',
-        bankTransfer: 'Bank Transfer'
+        paymob: 'Paymob',
+        paymobDesc: 'Pay with credit card, debit card, or mobile wallet',
+        paypal: 'PayPal',
+        paypalDesc: 'Pay securely with your PayPal account'
       },
       status: {
         active: 'Active',
@@ -357,7 +350,9 @@ const Subscription = () => {
       },
       back: 'Back to Dashboard',
       languageToggle: 'العربية',
-      notifications: 'Notifications'
+      notifications: 'Notifications',
+      payNow: 'Subscribe Now',
+      securePayment: '🔒 Secure payment processed by HomelyServ'
     },
     ar: {
       title: 'الاشتراك المميز',
@@ -386,9 +381,10 @@ const Subscription = () => {
         alreadySubscribed: 'لديك اشتراك نشط بالفعل!'
       },
       methods: {
-        creditCard: 'بطاقة ائتمان',
-        wallet: 'محفظة إلكترونية',
-        bankTransfer: 'تحويل بنكي'
+        paymob: 'Paymob',
+        paymobDesc: 'ادفع ببطاقة الائتمان أو الخصم أو المحفظة الإلكترونية',
+        paypal: 'PayPal',
+        paypalDesc: 'ادفع بأمان باستخدام حساب PayPal الخاص بك'
       },
       status: {
         active: 'نشط',
@@ -399,16 +395,34 @@ const Subscription = () => {
       },
       back: 'العودة إلى لوحة التحكم',
       languageToggle: 'English',
-      notifications: 'الإشعارات'
+      notifications: 'الإشعارات',
+      payNow: 'اشترك الآن',
+      securePayment: '🔒 دفعات آمنة بواسطة HomelyServ'
     }
   };
 
   const t = translations[language];
 
+  // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
-    { id: 'credit_card', name: t.methods.creditCard, icon: CreditCard },
-    { id: 'wallet', name: t.methods.wallet, icon: Smartphone },
-    { id: 'bank_transfer', name: t.methods.bankTransfer, icon: Building }
+    {
+      id: PAYMENT_METHODS.PAYMOB,
+      name: t.methods.paymob,
+      icon: CreditCard,
+      description: t.methods.paymobDesc,
+      color: 'from-blue-500 to-blue-600',
+      badge: 'Recommended',
+      badgeColor: 'bg-green-100 text-green-700'
+    },
+    {
+      id: PAYMENT_METHODS.PAYPAL,
+      name: t.methods.paypal,
+      icon: Wallet,
+      description: t.methods.paypalDesc,
+      color: 'from-blue-700 to-blue-800',
+      badge: null,
+      badgeColor: null
+    }
   ];
 
   useEffect(() => {
@@ -456,41 +470,20 @@ const Subscription = () => {
     document.documentElement.lang = language;
   }, [language]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
-  const handleSubscribe = async () => {
-    if (!selectedMethod) {
-      setPaymentError('Please select a payment method');
-      return;
+  // Handle Paymob iframe message
+  const handlePaymobMessage = (event) => {
+    if (event.data?.type === 'PAYMENT_COMPLETE') {
+      setPaymentSuccess(true);
+      setProcessing(false);
+      setPaymobIframe(null);
+      window.removeEventListener('message', handlePaymobMessage);
+      
+      // Process successful subscription
+      processSuccessfulSubscription(event.data);
     }
+  };
 
-    if (!user) {
-      setPaymentError('User not found');
-      return;
-    }
-
-    setProcessing(true);
-    setPaymentError(null);
-
+  const processSuccessfulSubscription = (paymentData) => {
     try {
       const userId = user.id || user.email;
       const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
@@ -534,7 +527,7 @@ const Subscription = () => {
           amount: price,
           currency: 'EGP',
           paymentMethod: selectedMethod,
-          transactionId: subscription.transactionId,
+          transactionId: paymentData.transactionId || subscription.transactionId,
           date: new Date().toISOString(),
           status: 'completed',
           subscriptionId: subscription.id || subscription.transactionId
@@ -551,26 +544,138 @@ const Subscription = () => {
           daysLeft: 30,
           expiresAt: subscription.expiresAt
         });
+      }
+    } catch (error) {
+      console.error('Error processing subscription:', error);
+      setPaymentError('Failed to process subscription. Please try again.');
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!selectedMethod) {
+      setPaymentError('Please select a payment method');
+      return;
+    }
+
+    if (!user) {
+      setPaymentError('User not found');
+      return;
+    }
+
+    setProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const orderId = 'SUB-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+      const customerData = {
+        firstName: user?.fullName?.split(' ')[0] || 'Customer',
+        lastName: user?.fullName?.split(' ').slice(1).join(' ') || 'User',
+        email: user?.email || 'customer@homelyserv.com',
+        phone: user?.phone || '+201234567890',
+        country: 'EG',
+        city: 'Cairo',
+        items: [
+          {
+            name: isEmployer ? 'Employer Premium Subscription' : 'Worker Premium Subscription',
+            amount: price,
+            quantity: 1
+          }
+        ]
+      };
+
+      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
+        // Paymob Payment
+        const result = await createPaymobPayment(price, orderId, customerData);
         
-        setTimeout(() => {
-          setProcessing(false);
-        }, 1000);
+        if (result.success) {
+          setPaymobIframe(result.iframeUrl);
+          window.addEventListener('message', handlePaymobMessage);
+        } else {
+          throw new Error(result.error || 'Paymob payment failed');
+        }
         
-      } else {
-        setPaymentError('Failed to create subscription. Please try again.');
-        setProcessing(false);
+      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+        // PayPal Payment
+        const result = await createPayPalOrder(price, orderId, customerData);
+        
+        if (result.success) {
+          // Open PayPal in new window
+          window.open(result.approvalUrl, '_blank');
+          
+          // Start polling for payment completion
+          startPollingPayPalOrder(result.orderId);
+        } else {
+          throw new Error(result.error || 'PayPal payment failed');
+        }
       }
       
     } catch (error) {
-      console.error('Subscription error:', error);
-      setPaymentError('An error occurred. Please try again.');
+      console.error('Payment error:', error);
+      setPaymentError(error.message);
       setProcessing(false);
     }
+  };
+
+  const startPollingPayPalOrder = (orderId) => {
+    let attempts = 0;
+    const maxAttempts = 30;
+    
+    const interval = setInterval(async () => {
+      attempts++;
+      
+      try {
+        const result = await capturePayPalOrder(orderId);
+        
+        if (result.success) {
+          clearInterval(interval);
+          processSuccessfulSubscription(result.transaction);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPaymentError('Payment verification timed out. Please check your PayPal account.');
+          setProcessing(false);
+        }
+      } catch (error) {
+        console.error('PayPal polling error:', error);
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPaymentError('Payment verification failed. Please try again.');
+          setProcessing(false);
+        }
+      }
+    }, 3000);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
   };
 
   const handleGoBack = () => {
     navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');
   };
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('message', handlePaymobMessage);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -584,7 +689,7 @@ const Subscription = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex">
       <SubscriptionSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -599,7 +704,7 @@ const Subscription = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
@@ -632,30 +737,36 @@ const Subscription = () => {
           {/* Back Button */}
           <button
             onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
           >
             <ArrowLeft size={18} />
             {t.back}
           </button>
 
           {paymentSuccess ? (
-            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto text-center">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle size={48} className="text-green-600" />
+            // Success State
+            <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-2xl mx-auto text-center border border-green-100">
+              <div className="w-28 h-28 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <CheckCircle size={56} className="text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{t.payment.success}</h2>
-              <p className="text-gray-600 mb-6">{t.payment.successMessage}</p>
+              <h2 className="text-4xl font-bold text-gray-800 mb-3">{t.payment.success}</h2>
+              <p className="text-gray-600 text-lg mb-8">{t.payment.successMessage}</p>
               
-              <div className="bg-green-50 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-3 justify-center">
-                  <Crown size={24} className="text-yellow-500" />
-                  <span className="font-semibold text-green-800">
-                    {isEmployer ? 'Employer' : 'Worker'} Premium Subscription
-                  </span>
-                  <span className="px-2 py-0.5 bg-green-200 text-green-800 text-xs rounded-full">Active</span>
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 mb-8 border border-yellow-200">
+                <div className="flex items-center gap-4 justify-center">
+                  <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
+                    <Crown size={28} className="text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-gray-800 text-lg">
+                      {isEmployer ? 'Employer' : 'Worker'} Premium
+                    </p>
+                    <p className="text-sm text-gray-600">Active Subscription</p>
+                  </div>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">Active</span>
                 </div>
                 {currentSubscription?.expiresAt && (
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-gray-500 mt-3">
                     {t.status.expiresAt.replace('{date}', new Date(currentSubscription.expiresAt).toLocaleDateString())}
                   </p>
                 )}
@@ -664,142 +775,191 @@ const Subscription = () => {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleGoBack}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
                 >
                   Go to Dashboard
                 </button>
               </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-                <div className="flex items-center gap-3">
-                  <Crown size={32} className="text-yellow-400" />
-                  <div>
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
-                    <p className="text-teal-100 mt-1">{t.subtitle}</p>
-                  </div>
+            // Subscription Form
+            <div className="max-w-5xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 rounded-full text-yellow-700 text-sm font-semibold mb-4">
+                  <Sparkles size={16} />
+                  Premium Features
                 </div>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                  Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">Premium</span> Features
+                </h1>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Get verified and access exclusive benefits to boost your profile
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Pricing Card */}
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                  <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Crown size={32} className="text-yellow-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-800">{t.pricing.title}</h3>
-                    <p className="text-gray-500">{t.pricing.description}</p>
-                    <div className="mt-3">
-                      <span className="text-3xl font-bold text-teal-600">EGP {price}</span>
-                      <span className="text-gray-500">/month</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {t.pricing.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-3 text-gray-600">
-                        <CheckCircle size={18} className="text-teal-500 flex-shrink-0" />
-                        <span>{feature}</span>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                {/* Pricing Card - Takes 2/5 of the space */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100 sticky top-24">
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <Crown size={36} className="text-white" />
                       </div>
-                    ))}
-                  </div>
-
-                  {subscriptionStatus?.active && (
-                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <CheckCircle size={16} />
-                        <span className="font-medium">{t.status.active}</span>
-                        <span className="text-sm text-green-600">
-                          ({t.status.daysLeft.replace('{days}', subscriptionStatus.daysLeft || 30)})
-                        </span>
+                      <h3 className="text-2xl font-bold text-gray-800">{t.pricing.title}</h3>
+                      <p className="text-gray-500">{t.pricing.description}</p>
+                      <div className="mt-4">
+                        <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">EGP {price}</span>
+                        <span className="text-gray-500 text-lg">/month</span>
                       </div>
-                      {subscriptionStatus.expiresAt && (
-                        <p className="text-xs text-green-600 mt-1">
-                          {t.status.expiresAt.replace('{date}', new Date(subscriptionStatus.expiresAt).toLocaleDateString())}
-                        </p>
-                      )}
                     </div>
-                  )}
+
+                    <div className="space-y-4">
+                      {t.pricing.features.map((feature, index) => (
+                        <div key={index} className="flex items-center gap-3 text-gray-700">
+                          <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <CheckCircle size={14} className="text-white" />
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {subscriptionStatus?.active && (
+                      <div className="mt-6 p-4 bg-green-50 rounded-2xl border border-green-200">
+                        <div className="flex items-center gap-2 text-green-700">
+                          <CheckCircle size={18} />
+                          <span className="font-semibold">{t.status.active}</span>
+                          <span className="text-sm text-green-600">
+                            ({t.status.daysLeft.replace('{days}', subscriptionStatus.daysLeft || 30)})
+                          </span>
+                        </div>
+                        {subscriptionStatus.expiresAt && (
+                          <p className="text-xs text-green-600 mt-1">
+                            {t.status.expiresAt.replace('{date}', new Date(subscriptionStatus.expiresAt).toLocaleDateString())}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Payment Form */}
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.payment.title}</h3>
-                  
-                  {paymentError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      {paymentError}
-                    </div>
-                  )}
-
-                  <div className="space-y-3 mb-6">
-                    <p className="text-sm font-medium text-gray-700">{t.payment.chooseMethod}</p>
-                    {paymentMethods.map((method) => (
-                      <div
-                        key={method.id}
-                        onClick={() => {
-                          setSelectedMethod(method.id);
-                          setPaymentError(null);
-                        }}
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                          selectedMethod === method.id
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-teal-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                            selectedMethod === method.id
-                              ? 'bg-teal-500 text-white'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            <method.icon size={24} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-800">{method.name}</p>
-                          </div>
-                          {selectedMethod === method.id && (
-                            <CheckCircle size={24} className="text-teal-500" />
-                          )}
-                        </div>
+                {/* Payment Form - Takes 3/5 of the space */}
+                <div className="lg:col-span-3">
+                  <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-6">{t.payment.title}</h3>
+                    
+                    {paymentError && (
+                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 flex items-start gap-3">
+                        <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
+                        <span>{paymentError}</span>
                       </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleSubscribe}
-                    disabled={processing}
-                    className={`w-full py-3 rounded-xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
-                      processing
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg'
-                    }`}
-                  >
-                    {processing ? (
-                      <>
-                        <Loader2 size={20} className="animate-spin" />
-                        {t.payment.processing}
-                      </>
-                    ) : (
-                      <>
-                        <Crown size={20} />
-                        {t.payment.subscribe}
-                      </>
                     )}
-                  </button>
 
-                  <p className="text-xs text-gray-400 text-center mt-4">
-                    🔒 Secure payment processed by HomelyServ
-                  </p>
+                    <div className="space-y-4 mb-8">
+                      <p className="font-medium text-gray-700">{t.payment.chooseMethod}</p>
+                      {paymentMethods.map((method) => {
+                        const isSelected = selectedMethod === method.id;
+                        const Icon = method.icon;
+                        return (
+                          <div
+                            key={method.id}
+                            onClick={() => {
+                              if (processing) return;
+                              setSelectedMethod(method.id);
+                              setPaymentError(null);
+                            }}
+                            className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-purple-500 bg-purple-50 shadow-md'
+                                : 'border-gray-200 hover:border-purple-200 hover:bg-purple-50/30'
+                            } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                                <Icon size={28} className="text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold text-gray-800 text-lg">{method.name}</p>
+                                  {method.badge && (
+                                    <span className={`px-2.5 py-1 ${method.badgeColor} text-xs font-semibold rounded-full`}>
+                                      {method.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-500">{method.description}</p>
+                              </div>
+                              {isSelected && (
+                                <CheckCircle size={28} className="text-purple-600 flex-shrink-0" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={handleSubscribe}
+                      disabled={processing || !selectedMethod}
+                      className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+                        processing || !selectedMethod
+                          ? 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
+                      }`}
+                    >
+                      {processing ? (
+                        <>
+                          <Loader2 size={22} className="animate-spin" />
+                          {t.payment.processing}
+                        </>
+                      ) : (
+                        <>
+                          <Crown size={22} />
+                          {t.payNow}
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-sm text-gray-400 text-center mt-4">
+                      🔒 {t.securePayment}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
       </main>
+
+      {/* Paymob Iframe Modal */}
+      {paymobIframe && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">Pay with Paymob</h3>
+              <button
+                onClick={() => {
+                  setPaymobIframe(null);
+                  setProcessing(false);
+                  window.removeEventListener('message', handlePaymobMessage);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 h-[500px]">
+              <iframe
+                src={paymobIframe}
+                className="w-full h-full border-0"
+                allow="payment"
+                title="Paymob Payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
