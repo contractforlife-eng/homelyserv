@@ -1,3 +1,4 @@
+// backend/prisma/schema.prisma - FULL FIXED VERSION
 generator client {
   provider = "prisma-client-js"
 }
@@ -69,16 +70,37 @@ model Hire {
 }
 
 model Message {
-  id                            String   @id
-  senderId                      String
-  receiverId                    String
-  hireId                        String?
-  content                       String
-  isRead                        Boolean  @default(false)
-  createdAt                     DateTime @default(now())
-  Hire                          Hire?    @relation(fields: [hireId], references: [id])
-  User_Message_receiverIdToUser User     @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
-  User_Message_senderIdToUser   User     @relation("Message_senderIdToUser", fields: [senderId], references: [id])
+  id             String   @id
+  senderId       String
+  receiverId     String
+  hireId         String?
+  content        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  
+  // ============================================================
+  // NEW FIELDS FOR CHAT SYSTEM - ADDED
+  // ============================================================
+  conversationId String?  @map("conversationId") // e.g., "conv_123_456"
+  senderName     String?  @map("senderName")     // Full name of sender
+  senderRole     String?  @map("senderRole")     // WORKER, EMPLOYER, ADMIN
+  recipientName  String?  @map("recipientName")  // Full name of recipient
+  recipientRole  String?  @map("recipientRole")  // WORKER, EMPLOYER, ADMIN, USER
+  delivered      Boolean  @default(true)
+  updatedAt      DateTime @updatedAt @map("updatedAt")
+  
+  // Relations
+  Hire                           Hire?    @relation(fields: [hireId], references: [id])
+  User_Message_receiverIdToUser  User     @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
+  User_Message_senderIdToUser    User     @relation("Message_senderIdToUser", fields: [senderId], references: [id])
+
+  // ============================================================
+  // NEW INDEXES FOR CHAT SYSTEM - ADDED
+  // ============================================================
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([conversationId, createdAt(sort: Asc)])
 }
 
 model Notification {

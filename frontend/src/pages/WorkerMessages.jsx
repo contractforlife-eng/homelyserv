@@ -1,4 +1,4 @@
-// src/pages/WorkerMessages.jsx - RED AND WHITE THEME
+// src/pages/WorkerMessages.jsx - COMPLETE FIXED VERSION WITH CROSS-TAB SYNC
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -36,7 +36,6 @@ import {
   sendMessage,
   markMessagesAsRead,
   getConversationId,
-  saveUserConversations,
   ensureConversationExists
 } from '../utils/chatService';
 
@@ -281,7 +280,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerMessages Component - RED THEME
+// Main WorkerMessages Component - RED THEME WITH CROSS-TAB SYNC
 const WorkerMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -365,53 +364,66 @@ const WorkerMessages = () => {
     
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
+      let parsedUser;
       try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'WORKER') {
-          navigate('/login');
-          return;
-        }
-        
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        
-        setUser(parsedUser);
-        
-        const userId = parsedUser.id || parsedUser.email;
-        if (userId) {
-          const userConversations = getUserConversations(userId);
-          console.log('📋 Initial load - worker conversations:', userConversations);
-          setConversations(userConversations);
-          
-          const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
-          if (savedConversationId) {
-            const exists = userConversations.some(c => c.id === savedConversationId);
-            if (exists) {
-              setSelectedConversationId(savedConversationId);
-              const conversationMessages = getConversationMessages(savedConversationId);
-              setMessages(conversationMessages);
-              markMessagesAsRead(savedConversationId, userId);
-            } else {
-              localStorage.removeItem('homelyserv_selected_conversation_worker');
-            }
-          }
-        }
+        parsedUser = JSON.parse(userData);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
+        return;
       }
+
+      if (parsedUser.role !== 'WORKER') {
+        navigate('/login');
+        return;
+      }
+
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (profiles[parsedUser.email]) {
+        parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
+      }
+
+      setUser(parsedUser);
+
+      const userId = parsedUser.id || parsedUser.email;
+
+      const loadInitialData = async () => {
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+
+        const userConversations = await getUserConversations(userId);
+        console.log('📋 Initial load - worker conversations:', userConversations);
+        setConversations(userConversations);
+
+        const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
+        if (savedConversationId) {
+          const exists = userConversations.some(c => c.id === savedConversationId);
+          if (exists) {
+            setSelectedConversationId(savedConversationId);
+            const conversationMessages = await getConversationMessages(savedConversationId);
+            setMessages(conversationMessages);
+            await markMessagesAsRead(savedConversationId, userId);
+          } else {
+            localStorage.removeItem('homelyserv_selected_conversation_worker');
+          }
+        }
+
+        setLoading(false);
+      };
+
+      loadInitialData();
     } else {
       navigate('/login');
+      setLoading(false);
+      return;
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    setLoading(false);
   }, [navigate]);
 
   // Refresh conversations when refreshKey changes
@@ -421,45 +433,51 @@ const WorkerMessages = () => {
     const userId = user.id || user.email;
     if (!userId) return;
     
-    const userConversations = getUserConversations(userId);
-    console.log('🔄 Refresh load - worker conversations:', userConversations);
-    setConversations(userConversations);
+    (async () => {
+      const userConversations = await getUserConversations(userId);
+      console.log('🔄 Refresh load - worker conversations:', userConversations);
+      setConversations(userConversations);
+    })();
   }, [user, refreshKey]);
 
-  // Auto-refresh conversations every 10 seconds
+  // ============================================================
+  // AUTO-REFRESH FROM SERVER - polls the API so messages from the
+  // other person show up without a manual refresh
+  // ============================================================
   useEffect(() => {
     if (!user) return;
-    
     const userId = user.id || user.email;
     if (!userId) return;
-    
+
+    // Clear existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-    
-    intervalRef.current = setInterval(() => {
-      const updatedConversations = getUserConversations(userId);
+
+    intervalRef.current = setInterval(async () => {
+      const updatedConversations = await getUserConversations(userId);
       setConversations(prevConversations => {
         if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
-          console.log('🔄 Auto-refresh: Conversations updated');
+          console.log('🔄 Auto-refresh: Worker conversations updated');
           return updatedConversations;
         }
         return prevConversations;
       });
-      
+
       if (selectedConversationId) {
-        const updatedMessages = getConversationMessages(selectedConversationId);
+        const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(prevMessages => {
           if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
-            console.log('🔄 Auto-refresh: Messages updated for conversation:', selectedConversationId);
+            console.log('🔄 Auto-refresh: Worker messages updated for conversation:', selectedConversationId);
             markMessagesAsRead(selectedConversationId, userId);
             return updatedMessages;
           }
           return prevMessages;
         });
       }
-    }, 10000);
-    
+    }, 5000);
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -475,9 +493,9 @@ const WorkerMessages = () => {
     }
   }, [messages]);
 
-  const loadMessagesForConversation = (conversationId) => {
+  const loadMessagesForConversation = async (conversationId) => {
     console.log('📨 Loading messages for conversation:', conversationId);
-    const conversationMessages = getConversationMessages(conversationId);
+    const conversationMessages = await getConversationMessages(conversationId);
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
@@ -485,7 +503,7 @@ const WorkerMessages = () => {
     
     const userId = user?.id || user?.email;
     if (userId) {
-      markMessagesAsRead(conversationId, userId);
+      await markMessagesAsRead(conversationId, userId);
     }
   };
 
@@ -526,7 +544,7 @@ const WorkerMessages = () => {
     conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !selectedConversationId || !user) {
       console.log('❌ Cannot send message: missing data');
@@ -542,7 +560,7 @@ const WorkerMessages = () => {
     console.log('📤 Sending message from worker to:', selectedConv.otherUserId);
     console.log('📤 Recipient name:', selectedConv.otherUserName);
 
-    const result = sendMessage(
+    const result = await sendMessage(
       user.id || user.email,
       user.fullName || 'Worker',
       'WORKER',
@@ -553,7 +571,7 @@ const WorkerMessages = () => {
 
     if (result) {
       console.log('✅ Message sent successfully');
-      loadMessagesForConversation(selectedConversationId);
+      await loadMessagesForConversation(selectedConversationId);
       setRefreshKey(prev => prev + 1);
       setMessage('');
     } else {
@@ -561,20 +579,20 @@ const WorkerMessages = () => {
     }
   };
 
-  const handleManualRefresh = () => {
+  const handleManualRefresh = async () => {
     if (isRefreshing) return;
     
     setIsRefreshing(true);
     
     if (user) {
       const userId = user.id || user.email;
-      const updatedConversations = getUserConversations(userId);
+      const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
       if (selectedConversationId) {
-        const updatedMessages = getConversationMessages(selectedConversationId);
+        const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(updatedMessages);
-        markMessagesAsRead(selectedConversationId, userId);
+        await markMessagesAsRead(selectedConversationId, userId);
       }
     }
     

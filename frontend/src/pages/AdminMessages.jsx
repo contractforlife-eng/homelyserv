@@ -1,5 +1,5 @@
-// src/pages/AdminMessages.jsx - UPDATED WITH FULL SIDEBAR MENU
-import React, { useState, useEffect } from 'react';
+// src/pages/AdminMessages.jsx - FIXED TO USE CHAT SERVICE
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
@@ -30,10 +30,20 @@ import {
   Briefcase,
   BarChart3,
   AlertTriangle,
-  Shield
+  Shield,
+  RefreshCw
 } from 'lucide-react';
+import {
+  getUserConversations,
+  getConversationMessages,
+  sendMessage,
+  markMessagesAsRead,
+  getConversationId,
+  getAllConversations,
+  debugChatData
+} from '../utils/chatService';
 
-// Admin Sidebar Component - Dark Theme with FULL MENU
+// Admin Sidebar Component - Dark Theme
 const AdminSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -187,9 +197,9 @@ const AdminSidebar = ({
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
               )}
-              {item.id === 'complaints' && !isActive(item.path) && (
+              {item.id === 'messages' && (
                 <div className="ml-auto">
-                  <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-medium animate-pulse">!</span>
+                  <span className="px-2 py-0.5 bg-yellow-500 text-black text-[10px] rounded-full font-medium">Live</span>
                 </div>
               )}
             </Link>
@@ -217,122 +227,68 @@ const AdminSidebar = ({
   );
 };
 
-// Main AdminMessages Component
+// Main AdminMessages Component - FIXED
 const AdminMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [filteredMessages, setFilteredMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  const [replyText, setReplyText] = useState('');
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const messagesEndRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const translations = {
     en: {
-      title: 'Messages',
-      subtitle: 'Manage all messages and complaints',
-      stats: {
-        total: 'Total Messages',
-        pending: 'Pending',
-        resolved: 'Resolved',
-        rejected: 'Rejected'
-      },
-      filters: {
-        all: 'All Messages',
-        pending: 'Pending',
-        resolved: 'Resolved',
-        rejected: 'Rejected'
-      },
-      table: {
-        sender: 'Sender',
-        subject: 'Subject',
-        category: 'Category',
-        status: 'Status',
-        date: 'Date',
-        actions: 'Actions',
-        noResults: 'No messages found',
-        searchPlaceholder: 'Search messages...'
-      },
-      actions: {
-        view: 'View Details',
-        reply: 'Reply',
-        resolve: 'Mark as Resolved',
-        reject: 'Reject',
-        archive: 'Archive'
-      },
-      replyModal: {
-        title: 'Reply to Message',
-        placeholder: 'Type your reply...',
-        send: 'Send Reply',
-        cancel: 'Cancel'
-      },
-      status: {
-        pending: 'Pending',
-        resolved: 'Resolved',
-        rejected: 'Rejected'
-      },
+      title: 'Support Messages',
+      subtitle: 'View and respond to messages from all users',
+      searchPlaceholder: 'Search conversations...',
+      typeMessage: 'Type your reply...',
+      send: 'Send',
+      noConversations: 'No conversations yet',
+      noConversationsDesc: 'Messages from users will appear here',
+      online: 'Online',
+      offline: 'Offline',
       languageToggle: 'العربية',
       notifications: 'Notifications',
       loading: 'Loading messages...',
-      noMessages: 'No messages yet'
+      noMessages: 'No messages yet',
+      startConversation: 'Start the conversation!',
+      refresh: 'Refresh',
+      premiumBadge: 'Admin',
+      getPremium: 'Get Premium'
     },
     ar: {
-      title: 'الرسائل',
-      subtitle: 'إدارة جميع الرسائل والشكاوى',
-      stats: {
-        total: 'إجمالي الرسائل',
-        pending: 'قيد الانتظار',
-        resolved: 'تم الحل',
-        rejected: 'مرفوض'
-      },
-      filters: {
-        all: 'جميع الرسائل',
-        pending: 'قيد الانتظار',
-        resolved: 'تم الحل',
-        rejected: 'مرفوض'
-      },
-      table: {
-        sender: 'المرسل',
-        subject: 'الموضوع',
-        category: 'الفئة',
-        status: 'الحالة',
-        date: 'التاريخ',
-        actions: 'الإجراءات',
-        noResults: 'لا توجد رسائل',
-        searchPlaceholder: 'ابحث عن رسائل...'
-      },
-      actions: {
-        view: 'عرض التفاصيل',
-        reply: 'رد',
-        resolve: 'تحديد كمحلولة',
-        reject: 'رفض',
-        archive: 'أرشفة'
-      },
-      replyModal: {
-        title: 'رد على الرسالة',
-        placeholder: 'اكتب ردك...',
-        send: 'إرسال الرد',
-        cancel: 'إلغاء'
-      },
-      status: {
-        pending: 'قيد الانتظار',
-        resolved: 'تم الحل',
-        rejected: 'مرفوض'
-      },
+      title: 'رسائل الدعم',
+      subtitle: 'عرض والرد على الرسائل من جميع المستخدمين',
+      searchPlaceholder: 'ابحث في المحادثات...',
+      typeMessage: 'اكتب ردك...',
+      send: 'إرسال',
+      noConversations: 'لا توجد محادثات بعد',
+      noConversationsDesc: 'ستظهر رسائل المستخدمين هنا',
+      online: 'متصل',
+      offline: 'غير متصل',
       languageToggle: 'English',
       notifications: 'الإشعارات',
       loading: 'جاري تحميل الرسائل...',
-      noMessages: 'لا توجد رسائل حتى الآن'
+      noMessages: 'لا توجد رسائل بعد',
+      startConversation: 'ابدأ المحادثة!',
+      refresh: 'تحديث',
+      premiumBadge: 'مدير',
+      getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
 
+  // Load user and conversations
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -341,58 +297,147 @@ const AdminMessages = () => {
     
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
+      let parsedUser;
       try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'ADMIN') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
+        parsedUser = JSON.parse(userData);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
+        return;
       }
+
+      if (parsedUser.role !== 'ADMIN') {
+        navigate('/login');
+        return;
+      }
+
+      setUser(parsedUser);
+
+      const userId = parsedUser.id || parsedUser.email;
+
+      const loadInitialData = async () => {
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+
+        const userConversations = await getUserConversations(userId);
+        console.log('📋 Initial load - admin conversations:', userConversations);
+        setConversations(userConversations);
+
+        const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_admin');
+        if (savedConversationId) {
+          const exists = userConversations.some(c => c.id === savedConversationId);
+          if (exists) {
+            setSelectedConversationId(savedConversationId);
+            const conversationMessages = await getConversationMessages(savedConversationId);
+            setMessages(conversationMessages);
+            await markMessagesAsRead(savedConversationId, userId);
+          } else {
+            localStorage.removeItem('homelyserv_selected_conversation_admin');
+          }
+        }
+
+        setLoading(false);
+      };
+
+      loadInitialData();
     } else {
       navigate('/login');
+      setLoading(false);
+      return;
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    // Load messages from localStorage
-    const storedMessages = JSON.parse(localStorage.getItem('admin_messages') || '[]');
-    setMessages(storedMessages);
-    setFilteredMessages(storedMessages);
-    setLoading(false);
   }, [navigate]);
+
+  // Refresh conversations when refreshKey changes
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    (async () => {
+      const userConversations = await getUserConversations(userId);
+      console.log('🔄 Refresh load - admin conversations:', userConversations);
+      setConversations(userConversations);
+    })();
+  }, [user, refreshKey]);
+
+  // ============================================================
+  // AUTO-REFRESH FROM SERVER - polls the API so messages from the
+  // other person show up without a manual refresh
+  // ============================================================
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id || user.email;
+    if (!userId) return;
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(async () => {
+      const updatedConversations = await getUserConversations(userId);
+      setConversations(prevConversations => {
+        if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
+          console.log('🔄 Auto-refresh: Admin conversations updated');
+          return updatedConversations;
+        }
+        return prevConversations;
+      });
+      
+      if (selectedConversationId) {
+        const updatedMessages = await getConversationMessages(selectedConversationId);
+        setMessages(prevMessages => {
+          if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
+            console.log('🔄 Auto-refresh: Admin messages updated for conversation:', selectedConversationId);
+            markMessagesAsRead(selectedConversationId, userId);
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+      }
+    }, 5000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [user, selectedConversationId]);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const loadMessagesForConversation = async (conversationId) => {
+    console.log('📨 Loading messages for conversation:', conversationId);
+    const conversationMessages = await getConversationMessages(conversationId);
+    console.log('📋 Messages found:', conversationMessages);
+    setMessages(conversationMessages);
+    
+    localStorage.setItem('homelyserv_selected_conversation_admin', conversationId);
+    
+    const userId = user?.id || user?.email;
+    if (userId) {
+      await markMessagesAsRead(conversationId, userId);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
-
-  // Filter messages
-  useEffect(() => {
-    let filtered = messages;
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(m => m.status === statusFilter);
-    }
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(m =>
-        m.sender?.toLowerCase().includes(searchLower) ||
-        m.subject?.toLowerCase().includes(searchLower) ||
-        m.category?.toLowerCase().includes(searchLower) ||
-        m.message?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    setFilteredMessages(filtered);
-  }, [messages, statusFilter, searchTerm]);
 
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -412,83 +457,80 @@ const AdminMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
+    localStorage.removeItem('homelyserv_selected_conversation_admin');
     navigate('/login');
   };
 
-  const updateMessageStatus = (messageId, newStatus) => {
-    const updatedMessages = messages.map(m => {
-      if (m.id === messageId) {
-        return { ...m, status: newStatus };
-      }
-      return m;
-    });
-    setMessages(updatedMessages);
-    localStorage.setItem('admin_messages', JSON.stringify(updatedMessages));
+  const handleSelectConversation = (conversationId) => {
+    console.log('📨 Selecting conversation:', conversationId);
+    setSelectedConversationId(conversationId);
+    loadMessagesForConversation(conversationId);
   };
 
-  const handleReply = (messageId) => {
-    if (replyText.trim()) {
-      const updatedMessages = messages.map(m => {
-        if (m.id === messageId) {
-          return {
-            ...m,
-            replies: [...(m.replies || []), {
-              text: replyText,
-              sentBy: 'admin',
-              date: new Date().toISOString()
-            }],
-            status: 'resolved'
-          };
-        }
-        return m;
-      });
-      setMessages(updatedMessages);
-      localStorage.setItem('admin_messages', JSON.stringify(updatedMessages));
-      setReplyText('');
-      setSelectedMessage(null);
+  const filteredConversations = conversations.filter(conv =>
+    conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || !selectedConversationId || !user) {
+      console.log('❌ Cannot send message: missing data');
+      return;
+    }
+
+    const selectedConv = conversations.find(c => c.id === selectedConversationId);
+    if (!selectedConv) {
+      console.log('❌ Conversation not found');
+      return;
+    }
+
+    console.log('📤 Sending message from admin to:', selectedConv.otherUserId);
+    console.log('📤 Recipient name:', selectedConv.otherUserName);
+
+    const result = await sendMessage(
+      user.id || user.email,
+      user.fullName || 'Admin',
+      'ADMIN',
+      selectedConv.otherUserId,
+      selectedConv.otherUserName,
+      message
+    );
+
+    if (result) {
+      console.log('✅ Message sent successfully');
+      await loadMessagesForConversation(selectedConversationId);
+      setRefreshKey(prev => prev + 1);
+      setMessage('');
+    } else {
+      console.log('❌ Failed to send message');
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-500/20 text-yellow-400',
-      resolved: 'bg-green-500/20 text-green-400',
-      rejected: 'bg-red-500/20 text-red-400'
-    };
-    return colors[status] || 'bg-gray-500/20 text-gray-400';
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    if (user) {
+      const userId = user.id || user.email;
+      const updatedConversations = await getUserConversations(userId);
+      setConversations(updatedConversations);
+      
+      if (selectedConversationId) {
+        const updatedMessages = await getConversationMessages(selectedConversationId);
+        setMessages(updatedMessages);
+        await markMessagesAsRead(selectedConversationId, userId);
+      }
+    }
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      general: 'text-blue-400',
-      employer: 'text-purple-400',
-      payment: 'text-orange-400',
-      platform: 'text-pink-400',
-      other: 'text-gray-400',
-      worker: 'text-green-400'
-    };
-    return colors[category] || 'text-gray-400';
-  };
+  const userProfileImage = user?.profileImage || null;
 
-  const stats = {
-    total: messages.length,
-    pending: messages.filter(m => m.status === 'pending').length,
-    resolved: messages.filter(m => m.status === 'resolved').length,
-    rejected: messages.filter(m => m.status === 'rejected').length
-  };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
@@ -539,188 +581,242 @@ const AdminMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2 disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                {t.refresh}
+              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
+          {/* Welcome Banner - YELLOW THEME */}
           <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-              <p className="text-black/70 mt-1">{t.subtitle}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <MessageCircle size={20} className="text-blue-400" />
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-black/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                  {userProfileImage ? (
+                    <img 
+                      src={userProfileImage} 
+                      alt={user.fullName || 'Admin'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserIcon size={24} className="text-black m-3" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+                  <p className="text-black/70 mt-1">{t.subtitle}</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-yellow-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.resolved}</p>
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <CheckCircle size={20} className="text-green-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.resolved}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.rejected}</p>
-                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <AlertCircle size={20} className="text-red-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.rejected}</p>
-            </div>
-          </div>
-
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder={t.table.searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="pending">{t.filters.pending}</option>
-                  <option value="resolved">{t.filters.resolved}</option>
-                  <option value="rejected">{t.filters.rejected}</option>
-                </select>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-black/80">
+                  {user?.fullName || 'Admin'}
+                </span>
+                <span className="px-2 py-1 bg-green-500/30 text-black text-xs rounded-full">
+                  {conversations.length} chats
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-400">
-              Showing <span className="font-semibold text-white">{filteredMessages.length}</span> messages
-            </p>
-          </div>
-
-          {filteredMessages.length === 0 ? (
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-semibold text-white mb-2">{t.noMessages}</h3>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition"
-                >
-                  <div className="p-4">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                            <UserIcon size={16} className="text-yellow-400" />
+          {/* Messages Container */}
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
+              {/* Conversations List */}
+              <div className="border-r border-yellow-500/20">
+                <div className="p-4 border-b border-yellow-500/20">
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-3 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder={t.searchPlaceholder}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-y-auto h-[calc(600px-73px)]">
+                  {filteredConversations.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="text-4xl mb-3">💬</div>
+                      <p className="text-gray-400">{t.noConversations}</p>
+                      <p className="text-sm text-gray-500">{t.noConversationsDesc}</p>
+                    </div>
+                  ) : (
+                    filteredConversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => handleSelectConversation(conv.id)}
+                        className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 ${
+                          selectedConversationId === conv.id ? 'bg-yellow-500/10 border-l-4 border-l-yellow-500' : ''
+                        }`}
+                      >
+                        <img
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=yellow&color=000&size=100&bold=true`}
+                          alt={conv.otherUserName}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30"
+                        />
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex justify-between items-start">
+                            <p className="font-semibold text-white truncate">{conv.otherUserName}</p>
+                            <span className="text-xs text-gray-500 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-white">{message.sender}</h3>
-                            <p className="text-sm text-gray-400">{message.subject}</p>
+                          <p className="text-sm text-gray-400 truncate">{conv.lastMessage}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-yellow-500">{conv.role || 'User'}</span>
+                            {conv.unread > 0 && (
+                              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
+                                {conv.unread}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-300 mt-1 line-clamp-2">{message.message}</p>
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                          <span className={`text-xs font-medium ${getCategoryColor(message.category)}`}>
-                            {message.category}
-                          </span>
-                          <span className="text-gray-500">|</span>
-                          <span className="text-gray-500">{message.date}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(message.status)}`}>
-                            {message.status}
-                          </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div className="col-span-2 flex flex-col h-[600px]">
+                {selectedConversationId ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-white/5">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'User')}&background=yellow&color=000&size=100&bold=true`}
+                          alt="Chat"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-yellow-500/30"
+                        />
+                        <div>
+                          <p className="font-semibold text-white">
+                            {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                          </p>
+                          <p className="text-xs text-yellow-500">{conversations.find(c => c.id === selectedConversationId)?.role || 'User'}</p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => setSelectedMessage(message.id)}
-                          className="px-3 py-1.5 bg-yellow-500 text-black rounded-lg text-xs font-medium hover:bg-yellow-400 transition"
-                        >
-                          {t.actions.reply}
+                      <div className="flex gap-2">
+                        <button className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-yellow-500">
+                          <MoreVertical size={18} />
                         </button>
-                        {message.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => updateMessageStatus(message.id, 'resolved')}
-                              className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium hover:bg-green-500/30 transition"
-                            >
-                              {t.actions.resolve}
-                            </button>
-                            <button
-                              onClick={() => updateMessageStatus(message.id, 'rejected')}
-                              className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition"
-                            >
-                              {t.actions.reject}
-                            </button>
-                          </>
-                        )}
                       </div>
                     </div>
 
-                    {selectedMessage === message.id && (
-                      <div className="mt-4 pt-4 border-t border-yellow-500/20">
-                        <div className="flex flex-col gap-3">
-                          <textarea
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder={t.replyModal.placeholder}
-                            rows="3"
-                            className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleReply(message.id)}
-                              className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition flex items-center gap-2"
-                            >
-                              <Send size={16} />
-                              {t.replyModal.send}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedMessage(null);
-                                setReplyText('');
-                              }}
-                              className="px-4 py-2 border border-gray-700 text-gray-400 rounded-lg font-medium hover:bg-white/5 transition"
-                            >
-                              {t.replyModal.cancel}
-                            </button>
-                          </div>
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0a0a0a]">
+                      {messages.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <p>{t.noMessages}</p>
+                          <p className="text-sm">{t.startConversation}</p>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        messages.map((msg, index) => {
+                          const isAdmin = msg.senderRole === 'ADMIN';
+                          const showAvatar = index === 0 || 
+                            (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
+                          
+                          return (
+                            <div
+                              key={msg.id || index}
+                              className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                            >
+                              {!isAdmin && showAvatar && (
+                                <img
+                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=yellow&color=000&size=100&bold=true`}
+                                  alt={msg.senderName}
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-700 flex-shrink-0"
+                                />
+                              )}
+                              {!isAdmin && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
+                              <div
+                                className={`max-w-[70%] p-3 rounded-lg ${
+                                  isAdmin
+                                    ? 'bg-yellow-500 text-black rounded-br-none'
+                                    : 'bg-[#1a1a1a] text-white rounded-bl-none border border-gray-700'
+                                }`}
+                              >
+                                {!isAdmin && (
+                                  <p className="text-xs font-medium text-yellow-500 mb-1">
+                                    {msg.senderName}
+                                  </p>
+                                )}
+                                {isAdmin && (
+                                  <p className="text-xs font-medium text-black/70 mb-1">
+                                    Admin
+                                  </p>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+                                <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
+                                  isAdmin ? 'text-black/60' : 'text-gray-500'
+                                }`}>
+                                  {msg.time}
+                                  {isAdmin && (
+                                    <CheckCircle size={14} className={msg.read ? 'text-green-600' : 'text-black/40'} />
+                                  )}
+                                </p>
+                              </div>
+                              {isAdmin && showAvatar && (
+                                <img
+                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Admin')}&background=yellow&color=000&size=100&bold=true`}
+                                  alt={user.fullName || 'Admin'}
+                                  className="w-8 h-8 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
+                                />
+                              )}
+                              {isAdmin && !showAvatar && (
+                                <div className="w-8 flex-shrink-0"></div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input */}
+                    <div className="p-4 border-t border-yellow-500/20 bg-[#1a1a1a]">
+                      <form onSubmit={handleSendMessage} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          placeholder={t.typeMessage}
+                          className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50"
+                          disabled={!message.trim()}
+                        >
+                          <Send size={18} />
+                          {t.send}
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-center p-8">
+                    <div>
+                      <div className="text-6xl mb-4">💬</div>
+                      <h3 className="text-xl font-semibold text-white mb-2">Select a conversation</h3>
+                      <p className="text-gray-400">Choose a conversation from the list to start messaging</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
