@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH CROSS-TAB SYNC
+// src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH AUTO-OPEN CHAT
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -298,7 +298,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER MESSAGES COMPONENT - FIXED WITH CROSS-TAB SYNC
+// MAIN EMPLOYER MESSAGES COMPONENT - WITH AUTO-OPEN CHAT
 // ============================================================
 const EmployerMessages = () => {
   const navigate = useNavigate();
@@ -317,6 +317,7 @@ const EmployerMessages = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
+  const autoOpenDoneRef = useRef(false);
 
   const isPremium = () => {
     const userId = user?.id || user?.email;
@@ -461,15 +462,13 @@ const EmployerMessages = () => {
   }, [user, refreshKey]);
 
   // ============================================================
-  // AUTO-REFRESH FROM SERVER - polls the API so messages from the
-  // other person show up without a manual refresh
+  // AUTO-REFRESH FROM SERVER
   // ============================================================
   useEffect(() => {
     if (!user) return;
     const userId = user.id || user.email;
     if (!userId) return;
 
-    // Clear existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -505,6 +504,83 @@ const EmployerMessages = () => {
       }
     };
   }, [user, selectedConversationId]);
+
+  // ============================================================
+  // AUTO-OPEN CHAT FROM MY HIRES PAGE
+  // ============================================================
+  useEffect(() => {
+    if (!user || conversations.length === 0 || autoOpenDoneRef.current) return;
+
+    // Check if we have a worker to chat with
+    const workerId = localStorage.getItem('homelyserv_chat_worker_id');
+    const workerName = localStorage.getItem('homelyserv_chat_worker_name');
+    const workerImage = localStorage.getItem('homelyserv_chat_worker_image') || '';
+    
+    if (workerId) {
+      console.log('💬 Auto-opening chat with worker:', { workerId, workerName });
+      
+      // Mark as done so we don't re-trigger
+      autoOpenDoneRef.current = true;
+      
+      // Clear the stored values so they don't trigger again
+      localStorage.removeItem('homelyserv_chat_worker_id');
+      localStorage.removeItem('homelyserv_chat_worker_name');
+      localStorage.removeItem('homelyserv_chat_worker_image');
+      localStorage.removeItem('homelyserv_chat_hire_id');
+      localStorage.removeItem('homelyserv_chat_hire_job');
+      
+      // Find the conversation with this worker
+      const conversation = conversations.find(
+        conv => conv.otherUserId === workerId
+      );
+      
+      if (conversation) {
+        // If conversation exists, open it
+        console.log('✅ Found existing conversation:', conversation.id);
+        setSelectedConversationId(conversation.id);
+        loadMessagesForConversation(conversation.id);
+      } else {
+        // If no conversation exists, create one
+        console.log('🔄 No conversation found, creating one...');
+        const createAndOpenConversation = async () => {
+          const userId = user.id || user.email;
+          const senderName = user.fullName || 'Employer';
+          const senderRole = 'EMPLOYER';
+          const recipientId = workerId;
+          const recipientName = workerName || 'Worker';
+          
+          // Send a welcome message to start the conversation
+          const result = await sendMessage(
+            userId,
+            senderName,
+            senderRole,
+            recipientId,
+            recipientName,
+            `Hello! I'd like to discuss the job opportunity with you.`
+          );
+          
+          if (result) {
+            console.log('✅ Welcome message sent, refreshing conversations...');
+            // Refresh conversations and open the new chat
+            const updatedConversations = await getUserConversations(userId);
+            setConversations(updatedConversations);
+            
+            const newConversation = updatedConversations.find(
+              conv => conv.otherUserId === workerId
+            );
+            
+            if (newConversation) {
+              console.log('✅ New conversation created:', newConversation.id);
+              setSelectedConversationId(newConversation.id);
+              loadMessagesForConversation(newConversation.id);
+            }
+          }
+        };
+        
+        createAndOpenConversation();
+      }
+    }
+  }, [user, conversations]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -556,6 +632,7 @@ const EmployerMessages = () => {
 
   const handleSelectConversation = (conversationId) => {
     console.log('📨 Selecting conversation:', conversationId);
+    autoOpenDoneRef.current = true; // Prevent auto-open from overriding manual selection
     setSelectedConversationId(conversationId);
     loadMessagesForConversation(conversationId);
   };

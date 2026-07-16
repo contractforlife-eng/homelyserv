@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - FIXED: Added missing isPremium variable
+// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH CHAT SUPPORT
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -124,7 +124,6 @@ const EmployerSidebar = ({
 
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -323,14 +322,12 @@ const MyHires = () => {
   const [terminateReason, setTerminateReason] = useState('');
   const [terminatingHire, setTerminatingHire] = useState(null);
 
-  // ✅ FIX: Check premium status for the current user
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
 
-  // ✅ FIX: isPremium is now defined in the component scope
   const isPremium = userIsPremium();
 
   const translations = {
@@ -549,7 +546,6 @@ const MyHires = () => {
 
       console.log('📂 Loading hires for employer:', employerEmail);
 
-      // PRIMARY SOURCE: Get hires from homelyserv_hires
       const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
       let employerHires = allHires.filter(
@@ -558,7 +554,6 @@ const MyHires = () => {
 
       console.log(`📌 Found ${employerHires.length} hires from homelyserv_hires`);
 
-      // SECONDARY SOURCE: Get from employer_offers with status 'hired' or 'accepted'
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const hiredOffers = employerOffers.filter(
         offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
@@ -567,7 +562,6 @@ const MyHires = () => {
 
       console.log(`📌 Found ${hiredOffers.length} hired offers from employer_offers`);
 
-      // Merge: Add any hired offers not already in hires
       const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
       
       hiredOffers.forEach(offer => {
@@ -600,7 +594,6 @@ const MyHires = () => {
         }
       });
 
-      // Sort by date (newest first)
       employerHires.sort((a, b) => {
         const dateA = new Date(a.startDate || a.createdAt || 0);
         const dateB = new Date(b.startDate || b.createdAt || 0);
@@ -746,18 +739,35 @@ const MyHires = () => {
     }
   };
 
+  // ============================================================
+  // FIXED: handleSendMessage - Opens chat with the worker
+  // ============================================================
   const handleSendMessage = (hire) => {
-    if (hire) {
-      const chatData = {
-        id: hire.workerId || hire.workerEmail,
-        name: hire.workerName,
-        role: 'worker',
-        image: hire.workerImage || ''
-      };
-      localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
-      localStorage.setItem('homelyserv_open_chat_on_load', 'true');
-      navigate('/employer-messages');
+    if (!hire) return;
+    
+    // Get the worker ID (use workerId or workerEmail as fallback)
+    const workerId = hire.workerId || hire.workerEmail;
+    const workerName = hire.workerName || 'Worker';
+    
+    console.log('💬 Opening chat with worker:', { workerId, workerName });
+    
+    if (!workerId) {
+      console.error('No worker ID found for hire:', hire);
+      alert('Unable to open chat: Worker ID not found');
+      return;
     }
+    
+    // Store the worker info in localStorage so the messages page can use it
+    localStorage.setItem('homelyserv_chat_worker_id', workerId);
+    localStorage.setItem('homelyserv_chat_worker_name', workerName);
+    localStorage.setItem('homelyserv_chat_worker_image', hire.workerImage || '');
+    
+    // Also store the hire info for context
+    localStorage.setItem('homelyserv_chat_hire_id', hire.id || hire.offerId || '');
+    localStorage.setItem('homelyserv_chat_hire_job', hire.jobTitle || '');
+    
+    // Navigate to messages page
+    navigate('/employer-messages');
   };
 
   const handlePayNow = (hire) => {
@@ -837,9 +847,6 @@ const MyHires = () => {
     );
   }
 
-  // ✅ isPremium is now defined and can be used in the render
-  // The rest of the render function stays the same...
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -852,16 +859,11 @@ const MyHires = () => {
         handleLogout={handleLogout}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
+      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
+              <button onClick={toggleMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden">
                 <Menu size={20} />
               </button>
               <div>
@@ -872,11 +874,7 @@ const MyHires = () => {
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
                   {user?.profileImage ? (
-                    <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.profileImage} alt={user.fullName || 'Employer'} className="w-full h-full object-cover" />
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
@@ -886,9 +884,7 @@ const MyHires = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Employer'}
-                </span>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">{user?.fullName || 'Employer'}</span>
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
@@ -919,11 +915,7 @@ const MyHires = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
                   {user?.profileImage ? (
-                    <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.profileImage} alt={user.fullName || 'Employer'} className="w-full h-full object-cover" />
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
@@ -1036,8 +1028,7 @@ const MyHires = () => {
                   key={hire.id || hire.hireId || hire.offerId}
                   className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition ${
                     hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted' ? 'border-green-200' :
-                    hire.status === 'terminated' ? 'border-red-200' :
-                    'border-yellow-200'
+                    hire.status === 'terminated' ? 'border-red-200' : 'border-yellow-200'
                   }`}
                 >
                   <div className="p-4">
@@ -1045,11 +1036,7 @@ const MyHires = () => {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                           {hire.workerImage ? (
-                            <img 
-                              src={hire.workerImage} 
-                              alt={hire.workerName} 
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={hire.workerImage} alt={hire.workerName} className="w-full h-full object-cover" />
                           ) : (
                             <User size={24} className="text-teal-600" />
                           )}
@@ -1146,10 +1133,7 @@ const MyHires = () => {
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">{t.modal.title}</h2>
-              <button
-                onClick={handleCloseModal}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
+              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -1157,11 +1141,7 @@ const MyHires = () => {
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden relative">
                   {selectedHire.workerImage ? (
-                    <img 
-                      src={selectedHire.workerImage} 
-                      alt={selectedHire.workerName} 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={selectedHire.workerImage} alt={selectedHire.workerName} className="w-full h-full object-cover" />
                   ) : (
                     <User size={32} className="text-teal-600" />
                   )}
@@ -1284,10 +1264,7 @@ const MyHires = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-red-600">{t.terminate.title}</h3>
-              <button
-                onClick={() => setShowTerminateModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 transition"
-              >
+              <button onClick={() => setShowTerminateModal(false)} className="p-1 rounded-lg hover:bg-gray-100 transition">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
@@ -1299,9 +1276,7 @@ const MyHires = () => {
               </p>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t.terminate.reason}
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.terminate.reason}</label>
               <textarea
                 value={terminateReason}
                 onChange={(e) => setTerminateReason(e.target.value)}
