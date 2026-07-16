@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - RED AND WHITE THEME
+// src/pages/WorkerOffers.jsx - CLEAN MODERN REDESIGN WITH FIXED DATA LOADING
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
@@ -51,7 +51,18 @@ import {
   Crown,
   StopCircle,
   AlertCircle,
-  Check
+  Check,
+  ThumbsDown,
+  History,
+  FileCheck,
+  RefreshCw,
+  Inbox,
+  XCircle,
+  CheckCheck,
+  Archive,
+  Send,
+  MoreVertical,
+  ExternalLink
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -60,7 +71,7 @@ import {
   saveUserConversations 
 } from '../utils/chatService';
 
-// Sidebar Component - RED THEME (same as before, keep this)
+// Sidebar Component - RED THEME (same as before, kept for brevity)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -294,7 +305,7 @@ const WorkerSidebar = ({
 };
 
 // ============================================================
-// MAIN WORKER OFFERS COMPONENT - RED THEME
+// MAIN WORKER OFFERS COMPONENT - CLEAN MODERN DESIGN
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
@@ -302,16 +313,14 @@ const WorkerOffers = () => {
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
-  const [filteredOffers, setFilteredOffers] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
   const [expandedOffer, setExpandedOffer] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [processingOffer, setProcessingOffer] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const isPremium = () => {
     const userId = user?.id || user?.email;
@@ -323,216 +332,215 @@ const WorkerOffers = () => {
 
   const translations = {
     en: {
-      title: 'Job Offers',
-      subtitle: 'Review and respond to job offers from employers',
+      title: 'My Offers',
+      subtitle: 'Review and respond to job offers',
+      tabs: {
+        pending: 'Pending',
+        accepted: 'Accepted',
+        rejected: 'Rejected',
+        completed: 'Completed'
+      },
       stats: {
         pending: 'Pending',
         accepted: 'Accepted',
         rejected: 'Rejected',
-        inProgress: 'In Progress',
         completed: 'Completed',
         total: 'Total'
       },
-      filters: {
-        all: 'All Offers',
-        pending: 'Pending',
-        accepted: 'Accepted',
-        rejected: 'Rejected',
-        inProgress: 'In Progress',
-        completed: 'Completed'
-      },
-      sort: {
-        newest: 'Newest First',
-        oldest: 'Oldest First',
-        salary_high: 'Highest Salary',
-        salary_low: 'Lowest Salary'
-      },
       card: {
         viewDetails: 'View Details',
-        accept: 'Accept Offer',
-        reject: 'Reject',
-        completeWork: 'Complete Work',
-        salaryPerMonth: 'EGP/month',
+        accept: 'Accept',
+        reject: 'Decline',
+        salaryPerMonth: '/month',
         location: 'Location',
-        type: 'Type',
-        skills: 'Skills',
-        benefits: 'Benefits',
         posted: 'Posted',
-        pending: 'Pending Review',
-        accepted: 'Accepted',
-        rejected: 'Rejected',
-        inProgress: 'In Progress',
-        completed: 'Completed',
         employer: 'Employer',
-        paymentCompleted: 'Payment Completed',
-        workStarted: 'Work Started',
-        workCompleted: 'Work Completed'
+        noOffers: 'No offers in this section',
+        chat: 'Chat',
+        completeWork: 'Complete Work',
+        waitingPayment: 'Waiting for payment...',
+        workCompleted: 'Work Completed',
+        offerRejected: 'Offer Declined',
+        inProgress: 'In Progress'
       },
       actions: {
         accept: 'Accept Offer',
         rejecting: 'Rejecting...',
         accepting: 'Accepting...',
         view: 'View Details',
-        close: 'Close',
-        completeWork: 'Complete Work',
-        completing: 'Completing...',
-        confirmComplete: 'Are you sure you want to mark this job as completed? This action cannot be undone.'
+        close: 'Close'
       },
       empty: {
-        title: 'No offers received',
-        description: 'You haven\'t received any job offers yet',
-        wait: 'Employers will send you offers when they find your profile'
+        title: 'No offers yet',
+        description: 'You haven\'t received any job offers',
+        wait: 'Employers will reach out when they find your profile'
       },
       loading: 'Loading offers...',
       languageToggle: 'العربية',
       notifications: 'Notifications',
-      acceptSuccess: '✅ You have accepted the offer from {employer}!',
-      rejectSuccess: 'You have rejected the offer from {employer}',
+      acceptSuccess: '✅ Offer accepted from {employer}!',
+      rejectSuccess: 'You declined the offer from {employer}',
       acceptError: 'Failed to accept offer. Please try again.',
-      rejectError: 'Failed to reject offer. Please try again.',
-      completeSuccess: '✅ You have marked this job as completed.',
-      completeError: 'Failed to complete work. Please try again.',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium'
+      rejectError: 'Failed to decline offer. Please try again.',
+      premiumBadge: 'Premium',
+      getPremium: 'Upgrade'
     },
     ar: {
-      title: 'عروض العمل',
-      subtitle: 'مراجعة والرد على عروض العمل من أصحاب العمل',
-      stats: {
-        pending: 'قيد الانتظار',
+      title: 'عروضي',
+      subtitle: 'مراجعة والرد على عروض العمل',
+      tabs: {
+        pending: 'معلقة',
         accepted: 'مقبولة',
         rejected: 'مرفوضة',
-        inProgress: 'قيد التنفيذ',
+        completed: 'مكتملة'
+      },
+      stats: {
+        pending: 'معلقة',
+        accepted: 'مقبولة',
+        rejected: 'مرفوضة',
         completed: 'مكتملة',
         total: 'الإجمالي'
       },
-      filters: {
-        all: 'جميع العروض',
-        pending: 'قيد الانتظار',
-        accepted: 'مقبولة',
-        rejected: 'مرفوضة',
-        inProgress: 'قيد التنفيذ',
-        completed: 'مكتملة'
-      },
-      sort: {
-        newest: 'الأحدث أولاً',
-        oldest: 'الأقدم أولاً',
-        salary_high: 'أعلى راتب',
-        salary_low: 'أقل راتب'
-      },
       card: {
         viewDetails: 'عرض التفاصيل',
-        accept: 'قبول العرض',
+        accept: 'قبول',
         reject: 'رفض',
-        completeWork: 'إكمال العمل',
-        salaryPerMonth: 'جنيه/شهر',
+        salaryPerMonth: '/شهر',
         location: 'الموقع',
-        type: 'النوع',
-        skills: 'المهارات',
-        benefits: 'المزايا',
         posted: 'نشر',
-        pending: 'قيد المراجعة',
-        accepted: 'مقبولة',
-        rejected: 'مرفوضة',
-        inProgress: 'قيد التنفيذ',
-        completed: 'مكتملة',
         employer: 'صاحب العمل',
-        paymentCompleted: 'تم الدفع',
-        workStarted: 'بدأ العمل',
-        workCompleted: 'اكتمل العمل'
+        noOffers: 'لا توجد عروض في هذا القسم',
+        chat: 'محادثة',
+        completeWork: 'إكمال العمل',
+        waitingPayment: 'في انتظار الدفع...',
+        workCompleted: 'تم إكمال العمل',
+        offerRejected: 'تم رفض العرض',
+        inProgress: 'قيد التنفيذ'
       },
       actions: {
         accept: 'قبول العرض',
         rejecting: 'جاري الرفض...',
         accepting: 'جاري القبول...',
         view: 'عرض التفاصيل',
-        close: 'إغلاق',
-        completeWork: 'إكمال العمل',
-        completing: 'جاري الإكمال...',
-        confirmComplete: 'هل أنت متأكد من إكمال هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.'
+        close: 'إغلاق'
       },
       empty: {
         title: 'لا توجد عروض',
         description: 'لم تتلق أي عروض عمل بعد',
-        wait: 'سيرسل لك أصحاب العمل عروضاً عندما يجدون ملفك الشخصي'
+        wait: 'سيتواصل معك أصحاب العمل عند العثور على ملفك الشخصي'
       },
       loading: 'جاري تحميل العروض...',
       languageToggle: 'English',
       notifications: 'الإشعارات',
-      acceptSuccess: '✅ لقد قبلت العرض من {employer}!',
+      acceptSuccess: '✅ تم قبول العرض من {employer}!',
       rejectSuccess: 'لقد رفضت العرض من {employer}',
       acceptError: 'فشل قبول العرض. يرجى المحاولة مرة أخرى.',
       rejectError: 'فشل رفض العرض. يرجى المحاولة مرة أخرى.',
-      completeSuccess: '✅ لقد أكملت هذه المهمة.',
-      completeError: 'فشل إكمال العمل. يرجى المحاولة مرة أخرى.',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز'
+      premiumBadge: 'مميز',
+      getPremium: 'ترقية'
     }
   };
 
   const t = translations[language];
 
   // ============================================================
-  // Load Offers with user parameter
+  // Load Offers - FIXED with better data handling
   // ============================================================
   const loadOffers = (userParam) => {
     try {
       const currentUser = userParam || user;
       if (!currentUser?.email) {
         setOffers([]);
-        setFilteredOffers([]);
         return;
       }
       
       let allOffers = [];
+      const userEmail = currentUser.email;
       
-      // Get offers from employer_offers
+      // Load from employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      console.log('📋 All employer_offers:', employerOffers);
+      console.log(`📋 Total employer_offers: ${employerOffers.length}`);
       
-      allOffers = employerOffers.filter(
-        offer => offer.workerEmail === currentUser.email
+      // Filter offers for this worker
+      const workerOffersFromEmployer = employerOffers.filter(
+        offer => offer.workerEmail === userEmail
       );
+      console.log(`📋 Found ${workerOffersFromEmployer.length} offers for ${userEmail} from employer_offers`);
       
-      console.log(`📋 Filtered for ${currentUser.email}:`, allOffers);
+      // Load from worker-specific storage
+      const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${userEmail}`) || '[]');
+      console.log(`📋 Found ${workerSpecificOffers.length} offers from worker-specific storage`);
       
-      // Also get from worker-specific storage
-      const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUser.email}`) || '[]');
-      console.log(`📋 Worker-specific offers for ${currentUser.email}:`, workerOffers);
+      // Combine and deduplicate
+      const allOfferIds = new Set();
       
-      workerOffers.forEach(offer => {
-        if (!allOffers.find(o => o.id === offer.id)) {
-          allOffers.push(offer);
+      // Add employer offers first
+      workerOffersFromEmployer.forEach(offer => {
+        if (!allOfferIds.has(offer.id)) {
+          allOfferIds.add(offer.id);
+          allOffers.push({ ...offer });
         }
       });
+      
+      // Add worker-specific offers (these might have updated status)
+      workerSpecificOffers.forEach(offer => {
+        const existingIndex = allOffers.findIndex(o => o.id === offer.id);
+        if (existingIndex !== -1) {
+          // Update existing offer with newer data
+          allOffers[existingIndex] = { ...allOffers[existingIndex], ...offer };
+        } else {
+          allOffers.push({ ...offer });
+        }
+      });
+      
+      // Log all offers with their status
+      console.log('📋 All offers after merge:', allOffers.map(o => ({
+        id: o.id,
+        title: o.jobTitle,
+        status: o.status,
+        paymentCompleted: o.paymentCompleted
+      })));
       
       // Check for payment completion and update status
       allOffers = allOffers.map(offer => {
         // If offer is accepted and payment is completed, mark as in_progress
         if (offer.status === 'accepted' && offer.paymentCompleted === true) {
+          console.log(`🔄 Offer ${offer.id} - Payment completed, changing status to in_progress`);
           return { ...offer, status: 'in_progress' };
         }
         return offer;
       });
       
       // Sort by newest first
-      allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
       
-      console.log('✅ Final offers:', allOffers);
-      console.log('✅ Status breakdown:', allOffers.map(o => ({ id: o.id, status: o.status, title: o.jobTitle })));
+      // Log final status breakdown
+      const statusCount = {};
+      allOffers.forEach(o => {
+        statusCount[o.status] = (statusCount[o.status] || 0) + 1;
+      });
+      console.log('📊 Final status breakdown:', statusCount);
       
       setOffers(allOffers);
-      setFilteredOffers(allOffers);
+      
+      // If there are accepted offers, switch to accepted tab to show them
+      const hasAccepted = allOffers.some(o => o.status === 'accepted' || o.status === 'in_progress');
+      if (hasAccepted && activeTab === 'pending') {
+        // Don't auto-switch, let user see the count on the tab
+        console.log('✅ There are accepted/in-progress offers available');
+      }
+      
+      return allOffers;
       
     } catch (error) {
       console.error('Error loading offers:', error);
       setOffers([]);
-      setFilteredOffers([]);
+      return [];
     }
   };
 
   // ============================================================
-  // useEffect with proper dependency handling
+  // useEffect
   // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -568,109 +576,29 @@ const WorkerOffers = () => {
     setLoading(false);
   }, [navigate]);
 
-  // ============================================================
-  // Reload offers when user changes
-  // ============================================================
   useEffect(() => {
     if (user) {
       loadOffers(user);
     }
-  }, [user]);
+  }, [user, refreshKey]);
 
-  // ============================================================
-  // Check for payment completion periodically
-  // ============================================================
   useEffect(() => {
     if (!user) return;
-    
     const interval = setInterval(() => {
       loadOffers(user);
-    }, 10000);
-    
+    }, 15000);
     return () => clearInterval(interval);
   }, [user]);
 
   // ============================================================
-  // Complete Work Handler
-  // ============================================================
-  const handleCompleteWork = (offer) => {
-    if (processingOffer) return;
-    
-    if (!confirm(t.actions.confirmComplete)) {
-      return;
-    }
-
-    setProcessingOffer(offer.id);
-
-    try {
-      const updatedOffer = {
-        ...offer,
-        status: 'completed',
-        workCompletedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Update in employer_offers
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedEmployerOffers = employerOffers.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-
-      // Update in worker-specific storage
-      if (user?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => 
-          o.id === offer.id ? updatedOffer : o
-        );
-        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
-      }
-
-      // Create notification for employer
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'work_completed',
-        message: `${user?.fullName || 'Worker'} has completed the job: ${offer.jobTitle}`,
-        offerId: offer.id,
-        offerTitle: offer.jobTitle,
-        workerId: user?.id || user?.email,
-        workerName: user?.fullName || 'Worker',
-        employerId: offer.employerId || offer.employerEmail,
-        employerEmail: offer.employerEmail,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-
-      // Update state
-      setOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-      setFilteredOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-
-      alert(t.completeSuccess);
-
-    } catch (error) {
-      console.error('Error completing work:', error);
-      alert(t.completeError);
-    } finally {
-      setProcessingOffer(null);
-    }
-  };
-
-  // ============================================================
-  // Accept Offer Handler - FIXED with better localStorage handling
+  // Accept Offer Handler - FIXED to ensure status is updated everywhere
   // ============================================================
   const handleAcceptOffer = (offer) => {
     if (processingOffer) return;
     setProcessingOffer(offer.id);
 
     try {
-      console.log('📝 Accepting offer:', offer);
+      console.log(`📝 Accepting offer: ${offer.id} - ${offer.jobTitle}`);
       
       const updatedOffer = {
         ...offer,
@@ -681,48 +609,24 @@ const WorkerOffers = () => {
 
       // Update in employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      console.log('📋 Current employer_offers:', employerOffers);
-      
-      const updatedEmployerOffers = employerOffers.map(o => {
-        if (o.id === offer.id) {
-          console.log('✅ Found matching offer, updating:', o);
-          return updatedOffer;
-        }
-        return o;
-      });
-      
-      // Check if offer was found and updated
-      const found = updatedEmployerOffers.some(o => o.id === offer.id);
-      if (!found) {
-        console.warn('⚠️ Offer not found in employer_offers, adding it');
-        updatedEmployerOffers.push(updatedOffer);
-      }
-      
+      const updatedEmployerOffers = employerOffers.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-      console.log('💾 Saved employer_offers:', updatedEmployerOffers);
+      console.log('✅ Updated employer_offers');
 
       // Update in worker-specific storage
       if (user?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
-        console.log('📋 Current worker_offers:', workerOffers);
-        
-        const updatedWorkerOffers = workerOffers.map(o => {
-          if (o.id === offer.id) {
-            console.log('✅ Found matching offer in worker_offers, updating:', o);
-            return updatedOffer;
-          }
-          return o;
-        });
-        
-        // Check if offer was found
-        const foundInWorker = updatedWorkerOffers.some(o => o.id === offer.id);
-        if (!foundInWorker) {
-          console.warn('⚠️ Offer not found in worker_offers, adding it');
+        const updatedWorkerOffers = workerOffers.map(o => 
+          o.id === offer.id ? updatedOffer : o
+        );
+        // Also add if not exists
+        if (!updatedWorkerOffers.some(o => o.id === offer.id)) {
           updatedWorkerOffers.push(updatedOffer);
         }
-        
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
-        console.log('💾 Saved worker_offers:', updatedWorkerOffers);
+        console.log('✅ Updated worker-specific storage');
       }
 
       // Create conversation
@@ -732,16 +636,10 @@ const WorkerOffers = () => {
       const employerName = offer.employerName || 'Employer';
 
       if (workerId && employerId) {
-        createConversationAndSendWelcome(
-          offer,
-          workerId,
-          workerName,
-          employerId,
-          employerName
-        );
+        createConversationAndSendWelcome(offer, workerId, workerName, employerId, employerName);
       }
 
-      // Create notification for employer
+      // Create notification
       const notification = {
         id: 'notif_' + Date.now(),
         type: 'offer_accepted',
@@ -759,19 +657,13 @@ const WorkerOffers = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
-      // Update state
-      setOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-      setFilteredOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-
-      const successMsg = t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer');
-      alert(successMsg);
+      // Update local state immediately
+      setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       
-      // Force reload to ensure UI updates
-      loadOffers(user);
+      alert(t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer'));
+      
+      // Force refresh to ensure UI updates
+      setRefreshKey(prev => prev + 1);
 
     } catch (error) {
       console.error('Error accepting offer:', error);
@@ -787,7 +679,7 @@ const WorkerOffers = () => {
   const handleRejectOffer = (offer) => {
     if (processingOffer) return;
     
-    if (!confirm(`Are you sure you want to reject the offer from ${offer.employerName || 'Employer'}?`)) {
+    if (!confirm(`Are you sure you want to decline the offer from ${offer.employerName || 'Employer'}?`)) {
       return;
     }
 
@@ -815,38 +707,59 @@ const WorkerOffers = () => {
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'offer_rejected',
-        message: `${user?.fullName || 'Worker'} has rejected your job offer for ${offer.jobTitle}`,
-        offerId: offer.id,
-        offerTitle: offer.jobTitle,
-        workerId: user?.id || user?.email,
-        workerName: user?.fullName || 'Worker',
-        employerId: offer.employerId || offer.employerEmail,
-        employerEmail: offer.employerEmail,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-
-      setOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-      setFilteredOffers(prev => prev.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      ));
-
+      setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       alert(t.rejectSuccess.replace('{employer}', offer.employerName || 'Employer'));
-      
-      // Force reload to ensure UI updates
-      loadOffers(user);
+      setRefreshKey(prev => prev + 1);
 
     } catch (error) {
       console.error('Error rejecting offer:', error);
       alert(t.rejectError);
+    } finally {
+      setProcessingOffer(null);
+    }
+  };
+
+  // ============================================================
+  // Complete Work Handler
+  // ============================================================
+  const handleCompleteWork = (offer) => {
+    if (processingOffer) return;
+    
+    if (!confirm('Mark this job as completed? This cannot be undone.')) {
+      return;
+    }
+
+    setProcessingOffer(offer.id);
+
+    try {
+      const updatedOffer = {
+        ...offer,
+        status: 'completed',
+        workCompletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const updatedEmployerOffers = employerOffers.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      );
+      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
+
+      if (user?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+        const updatedWorkerOffers = workerOffers.map(o => 
+          o.id === offer.id ? updatedOffer : o
+        );
+        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+      }
+
+      setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
+      alert('✅ Work completed successfully!');
+      setRefreshKey(prev => prev + 1);
+
+    } catch (error) {
+      console.error('Error completing work:', error);
+      alert('Failed to complete work. Please try again.');
     } finally {
       setProcessingOffer(null);
     }
@@ -879,15 +792,7 @@ const WorkerOffers = () => {
         
         const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
         
-        sendMessage(
-          workerId,
-          workerName,
-          'WORKER',
-          employerId,
-          employerName,
-          welcomeMessage
-        );
-        
+        sendMessage(workerId, workerName, 'WORKER', employerId, employerName, welcomeMessage);
         console.log('✅ Conversation created and welcome message sent');
       }
       
@@ -897,45 +802,6 @@ const WorkerOffers = () => {
       return null;
     }
   };
-
-  // ============================================================
-  // Filtering and Sorting
-  // ============================================================
-  useEffect(() => {
-    let filtered = [...offers];
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(offer => offer.status === statusFilter);
-    }
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(offer =>
-        offer.jobTitle?.toLowerCase().includes(searchLower) ||
-        offer.employerName?.toLowerCase().includes(searchLower) ||
-        offer.workerName?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    switch (sortBy) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        break;
-      case 'salary_high':
-        filtered.sort((a, b) => (b.amount || 0) - (a.amount || 0));
-        break;
-      case 'salary_low':
-        filtered.sort((a, b) => (a.amount || 0) - (b.amount || 0));
-        break;
-      default:
-        break;
-    }
-
-    setFilteredOffers(filtered);
-  }, [offers, statusFilter, searchTerm, sortBy]);
 
   // ============================================================
   // UI Helpers
@@ -967,23 +833,23 @@ const WorkerOffers = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      accepted: 'bg-blue-100 text-blue-800',
-      rejected: 'bg-red-100 text-red-800',
-      in_progress: 'bg-green-100 text-green-800',
-      completed: 'bg-purple-100 text-purple-800'
+      pending: 'bg-amber-50 border-amber-200 text-amber-700',
+      accepted: 'bg-blue-50 border-blue-200 text-blue-700',
+      rejected: 'bg-red-50 border-red-200 text-red-700',
+      in_progress: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      completed: 'bg-purple-50 border-purple-200 text-purple-700'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-50 border-gray-200 text-gray-700';
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock size={16} />;
-      case 'accepted': return <CheckCircle size={16} />;
-      case 'rejected': return <X size={16} />;
-      case 'in_progress': return <Zap size={16} />;
-      case 'completed': return <Check size={16} />;
-      default: return <AlertTriangle size={16} />;
+      case 'pending': return <Clock size={14} className="text-amber-500" />;
+      case 'accepted': return <CheckCircle size={14} className="text-blue-500" />;
+      case 'rejected': return <XCircle size={14} className="text-red-500" />;
+      case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
+      case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
+      default: return <AlertCircle size={14} className="text-gray-500" />;
     }
   };
 
@@ -991,7 +857,7 @@ const WorkerOffers = () => {
     const labels = {
       pending: 'Pending',
       accepted: 'Accepted',
-      rejected: 'Rejected',
+      rejected: 'Declined',
       in_progress: 'In Progress',
       completed: 'Completed'
     };
@@ -1005,21 +871,319 @@ const WorkerOffers = () => {
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const formatSalary = (amount) => {
     return `${amount?.toLocaleString() || 0}`;
   };
 
+  // ============================================================
+  // Filtered Offers by Tab - FIXED to include all relevant statuses
+  // ============================================================
+  const getFilteredOffers = () => {
+    let filtered = [];
+    switch (activeTab) {
+      case 'pending':
+        filtered = offers.filter(o => o.status === 'pending');
+        break;
+      case 'accepted':
+        // Include both 'accepted' and 'in_progress' in Accepted tab
+        filtered = offers.filter(o => o.status === 'accepted' || o.status === 'in_progress');
+        break;
+      case 'rejected':
+        filtered = offers.filter(o => o.status === 'rejected');
+        break;
+      case 'completed':
+        filtered = offers.filter(o => o.status === 'completed');
+        break;
+      default:
+        filtered = offers;
+    }
+    
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(o =>
+        o.jobTitle?.toLowerCase().includes(searchLower) ||
+        o.employerName?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return filtered;
+  };
+
+  const filteredOffers = getFilteredOffers();
+
   const stats = {
     pending: offers.filter(o => o.status === 'pending').length,
-    accepted: offers.filter(o => o.status === 'accepted').length,
+    accepted: offers.filter(o => o.status === 'accepted' || o.status === 'in_progress').length,
     rejected: offers.filter(o => o.status === 'rejected').length,
-    inProgress: offers.filter(o => o.status === 'in_progress').length,
     completed: offers.filter(o => o.status === 'completed').length,
     total: offers.length
+  };
+
+  const tabs = [
+    { id: 'pending', label: t.tabs.pending, icon: Clock, count: stats.pending },
+    { id: 'accepted', label: t.tabs.accepted, icon: CheckCircle, count: stats.accepted },
+    { id: 'rejected', label: t.tabs.rejected, icon: XCircle, count: stats.rejected },
+    { id: 'completed', label: t.tabs.completed, icon: CheckCheck, count: stats.completed }
+  ];
+
+  // ============================================================
+  // Render Offer Card
+  // ============================================================
+  const renderOfferCard = (offer) => {
+    const statusColor = getStatusColor(offer.status);
+    const statusIcon = getStatusIcon(offer.status);
+    const statusLabel = getStatusLabel(offer.status);
+    const isExpanded = expandedOffer === offer.id;
+
+    return (
+      <div
+        key={offer.id}
+        className={`bg-white rounded-xl border ${statusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
+      >
+        <div className="p-5">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center flex-shrink-0">
+              {offer.workerImage ? (
+                <img 
+                  src={offer.workerImage} 
+                  alt={offer.workerName} 
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <User size={24} className="text-red-600" />
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold text-gray-900 truncate">{offer.jobTitle || 'Job Offer'}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Building2 size={14} />
+                    <span>{offer.employerName || 'Employer'}</span>
+                  </div>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusColor} whitespace-nowrap`}>
+                  {statusIcon}
+                  {statusLabel}
+                </span>
+              </div>
+
+              {/* Details Row */}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={14} className="text-gray-400" />
+                  <span>{offer.workerLocation || 'Not specified'}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <DollarSign size={14} className="text-gray-400" />
+                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 text-xs">/mo</span></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock size={14} className="text-gray-400" />
+                  <span>{formatDate(offer.createdAt || offer.updatedAt)}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                  <span>{offer.workerRating || 4.5}</span>
+                </div>
+              </div>
+
+              {/* Skills */}
+              {offer.workerSkills?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {offer.workerSkills.slice(0, 3).map((skill, idx) => (
+                    <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                      {skill}
+                    </span>
+                  ))}
+                  {offer.workerSkills.length > 3 && (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-400 text-xs rounded-full">
+                      +{offer.workerSkills.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Payment Status */}
+              {offer.paymentCompleted === true && offer.status !== 'completed' && (
+                <div className="mt-2.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                    <CheckCircle size={12} />
+                    Payment Confirmed
+                  </span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => toggleExpand(offer.id)}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
+                >
+                  <Eye size={15} />
+                  {isExpanded ? 'Hide Details' : t.card.viewDetails}
+                </button>
+                
+                {offer.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleAcceptOffer(offer)}
+                      disabled={processingOffer === offer.id}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processingOffer === offer.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <ThumbsUp size={14} />
+                      )}
+                      {t.card.accept}
+                    </button>
+                    <button
+                      onClick={() => handleRejectOffer(offer)}
+                      disabled={processingOffer === offer.id}
+                      className="px-4 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processingOffer === offer.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <X size={14} />
+                      )}
+                      {t.card.reject}
+                    </button>
+                  </>
+                )}
+
+                {offer.status === 'accepted' && (
+                  <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
+                    <Clock size={14} />
+                    {t.card.waitingPayment}
+                  </span>
+                )}
+
+                {offer.status === 'in_progress' && (
+                  <>
+                    <button
+                      onClick={() => handleCompleteWork(offer)}
+                      disabled={processingOffer === offer.id}
+                      className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {processingOffer === offer.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <CheckCheck size={14} />
+                      )}
+                      {t.card.completeWork}
+                    </button>
+                    <button
+                      onClick={() => navigate('/worker-messages')}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
+                    >
+                      <MessageSquare size={14} />
+                      {t.card.chat}
+                    </button>
+                  </>
+                )}
+
+                {offer.status === 'completed' && (
+                  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1.5">
+                    <CheckCheck size={14} />
+                    {t.card.workCompleted}
+                  </span>
+                )}
+
+                {offer.status === 'rejected' && (
+                  <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1.5">
+                    <XCircle size={14} />
+                    {t.card.offerRejected}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Expanded Details */}
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2 text-sm">Offer Details</h4>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Employer</span>
+                      <span className="font-medium">{offer.employerName || 'Not provided'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Position</span>
+                      <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Monthly Salary</span>
+                      <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Hourly Rate</span>
+                      <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Location</span>
+                      <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Posted</span>
+                      <span className="font-medium">{formatDate(offer.createdAt)}</span>
+                    </div>
+                    {offer.workerResponseAt && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Responded</span>
+                        <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
+                      </div>
+                    )}
+                    {offer.workCompletedAt && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Completed</span>
+                        <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2 text-sm">Status</h4>
+                  <div className={`p-3 rounded-lg border ${statusColor}`}>
+                    <div className="flex items-center gap-2">
+                      {statusIcon}
+                      <span className="font-medium">{statusLabel}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1.5">
+                      {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
+                      {offer.status === 'accepted' && 'You accepted this offer. Waiting for employer payment.'}
+                      {offer.status === 'in_progress' && 'Payment confirmed. Work is in progress.'}
+                      {offer.status === 'completed' && 'Work has been completed successfully.'}
+                      {offer.status === 'rejected' && 'You declined this offer.'}
+                    </p>
+                  </div>
+                  {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
+                    <button
+                      onClick={() => navigate('/worker-messages')}
+                      className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare size={16} />
+                      Message Employer
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // ============================================================
@@ -1065,6 +1229,7 @@ const WorkerOffers = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -1096,17 +1261,9 @@ const WorkerOffers = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Worker'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  {user?.fullName || 'Worker'}
+                </span>
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
@@ -1119,59 +1276,28 @@ const WorkerOffers = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
-              <button
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:flex"
-              >
-                {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
-              </button>
             </div>
           </div>
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner - RED THEME */}
-          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {user?.profileImage ? (
-                    <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={24} className="text-white m-3" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
-                      <Crown size={10} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
-                    {userIsPremium && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
-                        <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-white/80 mt-1">{t.subtitle}</p>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold">{t.title}</h1>
+                <p className="text-red-100 mt-1">{t.subtitle}</p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-white/90">
-                <Briefcase size={18} />
-                <span>{stats.total} offers received</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-red-200">
+                  {stats.total} total offers
+                </span>
                 {!userIsPremium && (
                   <Link
                     to="/subscription"
-                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
+                    className="bg-yellow-400/20 hover:bg-yellow-400/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-yellow-400/30"
                   >
-                    <Crown size={12} />
+                    <Crown size={16} className="text-yellow-300" />
                     {t.getPremium}
                   </Link>
                 )}
@@ -1180,415 +1306,118 @@ const WorkerOffers = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.total}</p>
-                <Briefcase size={20} className="text-gray-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.pending}</p>
-                <Clock size={20} className="text-yellow-500" />
+                <Clock size={18} className="text-amber-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pending}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.inProgress}</p>
-                <Zap size={20} className="text-green-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.inProgress}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.accepted}</p>
-                <CheckCircle size={20} className="text-blue-500" />
+                <CheckCircle size={18} className="text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.accepted}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.completed}</p>
-                <Check size={20} className="text-purple-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completed}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.rejected}</p>
-                <X size={20} className="text-red-500" />
+                <XCircle size={18} className="text-red-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.rejected}</p>
             </div>
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.completed}</p>
+                <CheckCheck size={18} className="text-purple-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completed}</p>
+            </div>
           </div>
 
-          {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
-            <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search & Tabs */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={language === 'en' ? 'Search offers...' : 'ابحث عن عروض...'}
+                  placeholder="Search offers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                 />
               </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+              <button
+                onClick={() => {
+                  loadOffers(user);
+                  setRefreshKey(prev => prev + 1);
+                }}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition flex items-center gap-2 text-sm"
+              >
+                <RefreshCw size={16} />
+                Refresh
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mt-4 border-t border-gray-100 pt-4 overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-red-50 text-red-600 border border-red-200'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
                 >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="pending">{t.filters.pending}</option>
-                  <option value="in_progress">{t.filters.inProgress}</option>
-                  <option value="accepted">{t.filters.accepted}</option>
-                  <option value="completed">{t.filters.completed}</option>
-                  <option value="rejected">{t.filters.rejected}</option>
-                </select>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                >
-                  <option value="newest">{t.sort.newest}</option>
-                  <option value="oldest">{t.sort.oldest}</option>
-                  <option value="salary_high">{t.sort.salary_high}</option>
-                  <option value="salary_low">{t.sort.salary_low}</option>
-                </select>
-              </div>
+                  <tab.icon size={16} />
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === tab.id
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">
-              {language === 'en' ? 'Showing ' : 'عرض '}
-              <span className="font-semibold text-gray-700">{filteredOffers.length}</span>
-              {language === 'en' ? ' offers' : ' عرض'}
+              Showing <span className="font-semibold text-gray-700">{filteredOffers.length}</span> offers
             </p>
           </div>
 
           {/* Offers List */}
-          {filteredOffers.length === 0 ? (
+          {offers.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-              <div className="text-6xl mb-4">📋</div>
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Inbox size={32} className="text-gray-400" />
+              </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
               <p className="text-gray-500">{t.empty.description}</p>
-              <p className="text-gray-400 text-sm mt-2">{t.empty.wait}</p>
-              <button
-                onClick={() => loadOffers(user)}
-                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Refresh
-              </button>
+              <p className="text-gray-400 text-sm mt-1">{t.empty.wait}</p>
+            </div>
+          ) : filteredOffers.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Search size={24} className="text-gray-400" />
+              </div>
+              <h4 className="text-lg font-medium text-gray-700">No results found</h4>
+              <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filter</p>
             </div>
           ) : (
-            <div className={viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
-              : 'space-y-4'
-            }>
-              {filteredOffers.map((offer) => (
-                <div
-                  key={offer.id}
-                  className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
-                    viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
-                  } ${offer.status === 'in_progress' ? 'border-green-200 bg-green-50/30' : ''}
-                  ${offer.status === 'accepted' ? 'border-blue-200 bg-blue-50/30' : ''}
-                  ${offer.status === 'rejected' ? 'border-red-200 bg-red-50/30' : ''}
-                  ${offer.status === 'completed' ? 'border-purple-200 bg-purple-50/30' : ''}`}
-                >
-                  <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {offer.workerImage ? (
-                          <img 
-                            src={offer.workerImage} 
-                            alt={offer.workerName} 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User size={28} className="text-red-600" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-800 truncate">{offer.jobTitle || 'Job Offer'}</h3>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <Building2 size={14} />
-                              <span>{offer.employerName || 'Employer'}</span>
-                            </div>
-                          </div>
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(offer.status)}`}>
-                            {getStatusIcon(offer.status)}
-                            {getStatusLabel(offer.status)}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <MapPin size={14} className="text-gray-400" />
-                            <span className="truncate">{offer.workerLocation || 'Not specified'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <DollarSign size={14} className="text-gray-400" />
-                            <span>EGP {formatSalary(offer.amount)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Clock size={14} className="text-gray-400" />
-                            <span>{formatDate(offer.createdAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Star size={14} className="text-yellow-500" />
-                            <span>{offer.workerRating || 4.5} ★</span>
-                          </div>
-                        </div>
-
-                        {/* Payment Status Badge */}
-                        {offer.paymentCompleted === true && offer.status !== 'completed' && (
-                          <div className="mt-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                              <CheckCircle size={12} />
-                              {t.card.paymentCompleted}
-                            </span>
-                          </div>
-                        )}
-
-                        {offer.workerSkills?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {offer.workerSkills.slice(0, 3).map((skill, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full">
-                                {skill}
-                              </span>
-                            ))}
-                            {offer.workerSkills.length > 3 && (
-                              <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
-                                +{offer.workerSkills.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => toggleExpand(offer.id)}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                          >
-                            <Eye size={16} />
-                            {t.card.viewDetails}
-                          </button>
-                          
-                          {/* Pending - Show Accept/Reject buttons */}
-                          {offer.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleAcceptOffer(offer)}
-                                disabled={processingOffer === offer.id}
-                                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
-                              >
-                                {processingOffer === offer.id ? (
-                                  <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                  <ThumbsUp size={14} />
-                                )}
-                                {t.actions.accept}
-                              </button>
-                              <button
-                                onClick={() => handleRejectOffer(offer)}
-                                disabled={processingOffer === offer.id}
-                                className="px-4 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
-                              >
-                                {processingOffer === offer.id ? (
-                                  <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                  <X size={14} />
-                                )}
-                                {t.card.reject}
-                              </button>
-                            </>
-                          )}
-
-                          {/* In Progress - Show Complete Work button */}
-                          {offer.status === 'in_progress' && (
-                            <>
-                              <button
-                                onClick={() => handleCompleteWork(offer)}
-                                disabled={processingOffer === offer.id}
-                                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
-                              >
-                                {processingOffer === offer.id ? (
-                                  <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                  <Check size={14} />
-                                )}
-                                {t.actions.completeWork}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  navigate('/worker-messages');
-                                }}
-                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1"
-                              >
-                                <MessageSquare size={14} />
-                                Chat
-                              </button>
-                            </>
-                          )}
-
-                          {/* Accepted (waiting for payment) - Show waiting message */}
-                          {offer.status === 'accepted' && (
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1">
-                              <Clock size={14} />
-                              Waiting for payment...
-                            </span>
-                          )}
-
-                          {/* Completed - Show completed message */}
-                          {offer.status === 'completed' && (
-                            <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1">
-                              <Check size={14} />
-                              Work Completed
-                            </span>
-                          )}
-
-                          {/* Rejected - Show rejected message */}
-                          {offer.status === 'rejected' && (
-                            <span className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1">
-                              <X size={14} />
-                              Offer Rejected
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {expandedOffer === offer.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">Offer Details</h4>
-                            <div className="space-y-1.5 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Employer</span>
-                                <span className="font-medium">{offer.employerName || 'Not provided'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Worker</span>
-                                <span className="font-medium">{offer.workerName}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Job Title</span>
-                                <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Monthly Amount</span>
-                                <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Hourly Rate</span>
-                                <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Location</span>
-                                <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-500">Offer Sent</span>
-                                <span className="font-medium">{formatDate(offer.createdAt)}</span>
-                              </div>
-                              {offer.workerResponseAt && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Response Date</span>
-                                  <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
-                                </div>
-                              )}
-                              {offer.workCompletedAt && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Work Completed</span>
-                                  <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
-                                </div>
-                              )}
-                              {offer.paymentCompleted === true && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Payment Status</span>
-                                  <span className="font-medium text-green-600">✅ Completed</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-700 mb-2">Status Information</h4>
-                            <div className={`p-3 rounded-lg ${
-                              offer.status === 'pending' ? 'bg-yellow-50 border border-yellow-200' :
-                              offer.status === 'accepted' ? 'bg-blue-50 border border-blue-200' :
-                              offer.status === 'in_progress' ? 'bg-green-50 border border-green-200' :
-                              offer.status === 'completed' ? 'bg-purple-50 border border-purple-200' :
-                              'bg-red-50 border border-red-200'
-                            }`}>
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(offer.status)}
-                                <span className="font-medium">
-                                  {offer.status === 'pending' ? 'Awaiting your response' :
-                                   offer.status === 'accepted' ? 'Offer accepted - Waiting for payment confirmation' :
-                                   offer.status === 'in_progress' ? '🟢 Work in progress - Payment completed' :
-                                   offer.status === 'completed' ? '✅ Work has been completed' :
-                                   'Offer rejected'}
-                                </span>
-                              </div>
-                              {offer.status === 'in_progress' && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>✅ Payment has been completed. You are now working on this job.</p>
-                                  <p className="mt-1 text-xs text-gray-500">Click "Complete Work" when finished.</p>
-                                </div>
-                              )}
-                              {offer.status === 'accepted' && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>⏳ You have accepted this offer. Waiting for employer to complete payment.</p>
-                                  <p className="mt-1 text-xs text-gray-500">You will be notified when payment is confirmed.</p>
-                                </div>
-                              )}
-                              {offer.status === 'pending' && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>⏳ Please review this offer and respond.</p>
-                                  <p className="mt-1 text-xs text-gray-500">Accepting will notify the employer.</p>
-                                </div>
-                              )}
-                              {offer.status === 'completed' && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>✅ You have completed this job.</p>
-                                  <p className="mt-1 text-xs text-gray-500">The employer has been notified.</p>
-                                </div>
-                              )}
-                              {offer.status === 'rejected' && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>❌ You have declined this offer.</p>
-                                </div>
-                              )}
-                            </div>
-                            {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
-                              <button
-                                onClick={() => {
-                                  navigate('/worker-messages');
-                                }}
-                                className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
-                              >
-                                <MessageSquare size={16} />
-                                Message Employer
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {filteredOffers.map(offer => renderOfferCard(offer))}
             </div>
           )}
         </div>
