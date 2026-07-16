@@ -1,18 +1,190 @@
-node_modules/ 
-.env 
-.env.local 
-package-lock.json 
-yarn.lock 
-prisma/*.db 
-prisma/*.db-journal 
-prisma/migrations/ 
-dist/ 
-build/ 
-.DS_Store 
-Thumbs.db 
-.vscode/ 
-.idea/ 
-frontend/dist/ 
-frontend/.vite/ 
+# .gitignore
+# ============================================================
+# ENVIRONMENT FILES - NEVER COMMIT THESE!
+# ============================================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+.env.staging
+.env.*.production
+.env.*.development
+.env.*.test
+*.env
+*.env.local
+*.env.*.local
+
+# ============================================================
+# DEPENDENCIES
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================================
+# DATABASE
+# ============================================================
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# ============================================================
+# BUILD FILES
+# ============================================================
+dist/
+build/
+.vite/
+.vite-ssg/
+.vite-ssr/
+*.tsbuildinfo
+frontend/dist/
+frontend/.vite/
+frontend/build/
+backend/dist/
+backend/build/
+
+# ============================================================
+# OS FILES
+# ============================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+desktop.ini
+ehthumbs.db
+
+# ============================================================
+# IDE FILES
+# ============================================================
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# ============================================================
+# LOGS
+# ============================================================
+*.log
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ============================================================
+# TEMPORARY FILES
+# ============================================================
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
 .vercel
-.env*
+.vercel/
+
+# ============================================================
+# COVERAGE
+# ============================================================
+coverage/
+.nyc_output/
+*.lcov
+*.cov
+
+# ============================================================
+# MISC
+# ============================================================
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+secrets/
+secrets.*
+.env.secrets
+*.secret
+*.secrets
+credentials/
+credentials.json
+service-account.json
+
+# ============================================================
+# TESTING
+# ============================================================
+__tests__/coverage/
+*.test.js.snap
+*.spec.js.snap
+playwright-report/
+test-results/
+
+# ============================================================
+# DEPLOYMENT
+# ============================================================
+*.pid
+*.seed
+*.pid.lock
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# ============================================================
+# PACKAGE MANAGER CACHE
+# ============================================================
+.pnpm-store/
+.eslintcache
+.prettiercache
+.stylelintcache
+
+# ============================================================
+# NEXT.JS / VITE SPECIFIC
+# ============================================================
+.next/
+.out/
+.nuxt/
+.cache/
+.vercel/
+.netlify/
+.parcel-cache/
+
+# ============================================================
+# REACT SPECIFIC
+# ============================================================
+*.css.map
+*.js.map
+*.jsx.map
+*.ts.map
+*.tsx.map
+sourcemaps/
+
+# ============================================================
+# DEVELOPER TOOLS
+# ============================================================
+.direnv/
+.envrc
+.aws/
+.terraform/
+.kube/
+.helm/

@@ -1,6 +1,9 @@
-// src/pages/PaymentOptions.jsx - FIXED: Saves hire record on successful payment
+// src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { isUserPremium } from '../utils/subscriptionService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
+import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import {
   ArrowLeft,
   CreditCard,
@@ -36,14 +39,11 @@ import {
   Phone,
   Mail,
   Briefcase,
-  Crown
+  Crown,
+  Loader2,
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
-import {
-  CURRENCY,
-  QUICK_HIRE_PREMIUM_FEE,
-  RECRUITMENT_COMMISSION_RATE
-} from '../config/monetization';
-import { isUserPremium } from '../utils/subscriptionService';
 
 // Employer Sidebar Component
 const EmployerSidebar = ({ 
@@ -112,12 +112,13 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // Check if user has premium subscription
-  const isPremium = () => {
+  const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
+
+  const isPremium = userIsPremium();
 
   return (
     <>
@@ -165,7 +166,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -175,12 +176,17 @@ const EmployerSidebar = ({
               ) : (
                 <User size={20} className="text-white" />
               )}
+              {isPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={10} className="text-white" />
+                </div>
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
-                  {isPremium() && (
+                  {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
@@ -283,7 +289,9 @@ const EmployerSidebar = ({
   );
 };
 
-// Main PaymentOptions Component - FIXED: Saves hire record
+// ============================================================
+// MAIN PAYMENT OPTIONS COMPONENT - PAYMOB & PAYPAL ONLY
+// ============================================================
 const PaymentOptions = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -296,71 +304,31 @@ const PaymentOptions = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentVerificationPending, setPaymentVerificationPending] = useState(false);
-  const [copiedField, setCopiedField] = useState(null);
-  
-  // Card form fields
-  const [cardForm, setCardForm] = useState({
-    cardNumber: '',
-    cardholderName: '',
-    expiryDate: '',
-    cvv: ''
-  });
+  const [paymentError, setPaymentError] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymobIframe, setPaymobIframe] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  // Payment methods
+  // Payment Methods - ONLY PAYMOB & PAYPAL (previous methods disabled)
   const paymentMethods = [
     {
-      id: 'wallet',
-      name: 'Mobile Wallet',
-      icon: Smartphone,
-      description: 'Pay using your mobile wallet',
-      color: 'green',
-      hasForm: false,
-      details: {
-        walletNumber: '01009189851'
-      }
+      id: PAYMENT_METHODS.PAYMOB,
+      name: 'Paymob',
+      icon: CreditCard,
+      description: 'Pay with credit card, debit card, or online banking',
+      color: 'teal',
+      badge: 'Recommended',
+      badgeColor: 'bg-green-100 text-green-700'
     },
     {
-      id: 'instapay',
-      name: 'InstaPay',
+      id: PAYMENT_METHODS.PAYPAL,
+      name: 'PayPal',
       icon: Wallet,
-      description: 'Instant payment with InstaPay',
-      color: 'pink',
-      hasForm: false,
-      details: {
-        instapayNumber: '01009189851'
-      }
-    },
-    {
-      id: 'bank-transfer',
-      name: 'Bank Transfer',
-      icon: Building2,
-      description: 'Direct bank transfer',
-      color: 'orange',
-      hasForm: false,
-      details: {
-        accountNumber: '1002425938683',
-        iban: 'EG580037000908181002425938683',
-        swiftCode: 'QNBAEGCXXXX'
-      }
-    },
-    {
-      id: 'credit-card',
-      name: 'Credit Card',
-      icon: CreditCard,
-      description: 'Pay securely with your credit card',
+      description: 'Pay securely with your PayPal account',
       color: 'blue',
-      hasForm: true,
-      formType: 'card'
-    },
-    {
-      id: 'debit-card',
-      name: 'Debit Card',
-      icon: CreditCard,
-      description: 'Pay directly from your bank account',
-      color: 'purple',
-      hasForm: true,
-      formType: 'card'
+      badge: null,
+      badgeColor: null
     }
   ];
 
@@ -377,10 +345,6 @@ const PaymentOptions = () => {
       processing: 'Processing...',
       success: 'Payment Successful!',
       successMessage: 'You have successfully hired this worker. An offer has been created for them.',
-      verificationPending: 'Payment submitted for verification',
-      verificationPendingMessage: 'Your payment is awaiting verification. The worker will be hired only after the payment has been verified.',
-      viewPayments: 'View Payments',
-      backToSearch: 'Back to Search',
       back: 'Back',
       languageToggle: 'العربية',
       notifications: 'Notifications',
@@ -389,28 +353,22 @@ const PaymentOptions = () => {
       goBack: 'Go back and select a worker',
       securePayment: 'Secure Payment',
       chooseMethod: 'Choose your payment method below',
-      recommended: 'Recommended',
-      paymentDetails: 'Payment Details',
-      walletNumber: 'Wallet Number',
-      instapayNumber: 'InstaPay Number',
-      accountNumber: 'Account Number',
-      iban: 'IBAN',
-      swiftCode: 'Swift Code',
-      copy: 'Copy',
-      copied: 'Copied!',
-      cardNumber: 'Card Number',
-      cardholderName: 'Cardholder Name',
-      expiryDate: 'Expiry Date (MM/YY)',
-      cvv: 'CVV',
-      enterCardNumber: 'Enter card number',
-      enterCardholderName: 'Enter cardholder name',
-      enterExpiryDate: 'MM/YY',
-      enterCvv: 'XXX',
       jobTitle: 'Job Title',
       employer: 'Employer',
       worker: 'Worker',
       hireSuccess: '✅ Successfully hired {worker}!',
-      viewHires: 'View My Hires'
+      viewHires: 'View My Hires',
+      paymobTitle: 'Pay with Paymob',
+      paypalTitle: 'Pay with PayPal',
+      redirecting: 'Redirecting to payment page...',
+      paymentFailed: 'Payment failed. Please try again.',
+      paymentCancelled: 'Payment cancelled.',
+      paymentVerifying: 'Verifying payment...',
+      payNow: 'Pay Now',
+      reference: 'Reference',
+      orderId: 'Order ID',
+      amount: 'Amount',
+      currency: 'EGP'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -424,10 +382,6 @@ const PaymentOptions = () => {
       processing: 'جاري المعالجة...',
       success: 'تم الدفع بنجاح!',
       successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح. تم إنشاء عرض عمل له.',
-      verificationPending: 'تم إرسال الدفع للتحقق',
-      verificationPendingMessage: 'دفعتك في انتظار التحقق. سيتم توظيف العامل فقط بعد التحقق من الدفع.',
-      viewPayments: 'عرض المدفوعات',
-      backToSearch: 'العودة إلى البحث',
       back: 'رجوع',
       languageToggle: 'English',
       notifications: 'الإشعارات',
@@ -436,35 +390,29 @@ const PaymentOptions = () => {
       goBack: 'ارجع واختر عاملاً',
       securePayment: 'دفع آمن',
       chooseMethod: 'اختر طريقة الدفع أدناه',
-      recommended: 'موصى به',
-      paymentDetails: 'تفاصيل الدفع',
-      walletNumber: 'رقم المحفظة',
-      instapayNumber: 'رقم InstaPay',
-      accountNumber: 'رقم الحساب',
-      iban: 'IBAN',
-      swiftCode: 'رمز سويفت',
-      copy: 'نسخ',
-      copied: 'تم النسخ!',
-      cardNumber: 'رقم البطاقة',
-      cardholderName: 'اسم صاحب البطاقة',
-      expiryDate: 'تاريخ الانتهاء (شهر/سنة)',
-      cvv: 'رمز CVV',
-      enterCardNumber: 'أدخل رقم البطاقة',
-      enterCardholderName: 'أدخل اسم صاحب البطاقة',
-      enterExpiryDate: 'شهر/سنة',
-      enterCvv: 'XXX',
       jobTitle: 'المسمى الوظيفي',
       employer: 'صاحب العمل',
       worker: 'العامل',
       hireSuccess: '✅ تم توظيف {worker} بنجاح!',
-      viewHires: 'عرض توظيفاتي'
+      viewHires: 'عرض توظيفاتي',
+      paymobTitle: 'الدفع عبر Paymob',
+      paypalTitle: 'الدفع عبر PayPal',
+      redirecting: 'جاري التوجيه إلى صفحة الدفع...',
+      paymentFailed: 'فشل الدفع. يرجى المحاولة مرة أخرى.',
+      paymentCancelled: 'تم إلغاء الدفع.',
+      paymentVerifying: 'جاري التحقق من الدفع...',
+      payNow: 'ادفع الآن',
+      reference: 'المرجع',
+      orderId: 'رقم الطلب',
+      amount: 'المبلغ',
+      currency: 'EGP'
     }
   };
 
   const t = translations[language];
 
   // ============================================================
-  // useEffect - Load data
+  // LOAD DATA
   // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -494,7 +442,7 @@ const PaymentOptions = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Check for worker data from localStorage
+    // Get worker data
     const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
     if (selectedWorker) {
       try {
@@ -505,10 +453,9 @@ const PaymentOptions = () => {
         console.error('Error parsing worker data:', error);
         setWorkerData(null);
       }
-    } else {
-      console.log('❌ No worker data found');
     }
     
+    // Get pending payment
     const savedPendingPayment = localStorage.getItem('homelyserv_pending_payment');
     if (savedPendingPayment) {
       try {
@@ -527,8 +474,211 @@ const PaymentOptions = () => {
   }, [language]);
 
   // ============================================================
-  // ✅ FIX: Save hire record to localStorage
+  // PAYMENT HANDLERS
   // ============================================================
+
+  // Handle Paymob iframe message
+  const handlePaymobMessage = (event) => {
+    if (event.data?.type === 'PAYMENT_COMPLETE') {
+      console.log('✅ Paymob payment complete:', event.data);
+      setPaymentSuccess(true);
+      setIsProcessing(false);
+      setPaymobIframe(null);
+      window.removeEventListener('message', handlePaymobMessage);
+      
+      // Process successful payment
+      processSuccessfulPayment(event.data);
+    }
+  };
+
+  // Process successful payment
+  const processSuccessfulPayment = (paymentData) => {
+    try {
+      const total = calculateTotal();
+      
+      // Save hire record
+      const hireId = saveHireRecord(workerData, user, {
+        amount: total,
+        paymentId: paymentData.paymentId || paymentData.transactionId,
+        transactionId: paymentData.transactionId || 'TXN-' + Date.now()
+      });
+
+      // Update offer status
+      if (pendingPayment?.offerId) {
+        updateOfferStatus(pendingPayment.offerId, 'hired', hireId);
+      }
+
+      // Create payment record
+      const paymentRecord = {
+        id: 'PAY-' + Date.now(),
+        offerId: pendingPayment?.offerId,
+        hireId: hireId,
+        workerId: workerData?.workerId || workerData?.workerEmail,
+        workerName: workerData?.workerName,
+        workerEmail: workerData?.workerEmail,
+        jobTitle: workerData?.desiredJob || 'Service Provider',
+        employerId: user?.id || user?.email,
+        employerName: user?.fullName || 'Employer',
+        amount: total,
+        status: 'completed',
+        paymentMethod: selectedMethod,
+        paymentType: pendingPayment?.paymentType || 'recruitment',
+        transactionId: paymentData.transactionId || 'TXN-' + Date.now(),
+        paymentId: paymentData.paymentId,
+        createdAt: new Date().toISOString(),
+        contactRevealed: true,
+        paymentVerified: true
+      };
+
+      // Save to all_payments
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      allPayments.push(paymentRecord);
+      localStorage.setItem('all_payments', JSON.stringify(allPayments));
+
+      // Save to employer_payments
+      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      employerPayments.push(paymentRecord);
+      localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
+
+      // Clear pending data
+      localStorage.removeItem('homelyserv_pending_payment');
+      localStorage.removeItem('homelyserv_selected_worker');
+
+      // Show success and redirect
+      setTimeout(() => {
+        navigate('/my-hires', {
+          replace: true,
+          state: {
+            hireSuccess: true,
+            workerName: workerData?.workerName,
+            hireId: hireId,
+            message: `✅ Successfully hired ${workerData?.workerName}!`
+          }
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      setPaymentError('Failed to process payment. Please contact support.');
+    }
+  };
+
+  // ============================================================
+  // PAYMENT METHODS
+  // ============================================================
+
+  const handlePayment = async () => {
+    if (!selectedMethod) {
+      setPaymentError('Please select a payment method');
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const total = calculateTotal();
+      const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+      const customerData = {
+        firstName: user?.fullName?.split(' ')[0] || 'Customer',
+        lastName: user?.fullName?.split(' ').slice(1).join(' ') || 'User',
+        email: user?.email || 'customer@homelyserv.com',
+        phone: user?.phone || '+201234567890',
+        country: 'EG',
+        city: 'Cairo',
+        street: '1 Main Street'
+      };
+
+      if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
+        // Paymob Payment
+        const result = await createPaymobPayment(total, orderId, customerData);
+        
+        if (result.success) {
+          setPaymobIframe(result.iframeUrl);
+          window.addEventListener('message', handlePaymobMessage);
+        } else {
+          throw new Error(result.error || 'Paymob payment failed');
+        }
+        
+      } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+        // PayPal Payment
+        const result = await createPayPalOrder(total, orderId, customerData);
+        
+        if (result.success) {
+          // Open PayPal in new window
+          const paypalWindow = window.open(result.approvalUrl, '_blank');
+          
+          if (!paypalWindow) {
+            throw new Error('Popup blocked. Please allow popups for this site.');
+          }
+          
+          // Start polling for payment completion
+          startPollingPayPalOrder(result.orderId);
+          
+          // Show redirecting message
+          setPaymentError(null);
+        } else {
+          throw new Error(result.error || 'PayPal payment failed');
+        }
+      }
+      
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentError(error.message);
+      setIsProcessing(false);
+    }
+  };
+
+  // Polling for PayPal payment completion
+  const startPollingPayPalOrder = (orderId) => {
+    let attempts = 0;
+    const maxAttempts = 30;
+    
+    const interval = setInterval(async () => {
+      attempts++;
+      console.log(`🔄 Checking PayPal order ${orderId} (attempt ${attempts}/${maxAttempts})`);
+      
+      try {
+        const result = await capturePayPalOrder(orderId);
+        
+        if (result.success) {
+          clearInterval(interval);
+          setPaymentSuccess(true);
+          setIsProcessing(false);
+          processSuccessfulPayment(result.transaction);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPaymentError('Payment verification timed out. Please check your PayPal account.');
+          setIsProcessing(false);
+        }
+      } catch (error) {
+        console.error('PayPal polling error:', error);
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPaymentError('Payment verification failed. Please try again.');
+          setIsProcessing(false);
+        }
+      }
+    }, 3000);
+    
+    setPollingInterval(interval);
+  };
+
+  // ============================================================
+  // HELPER FUNCTIONS
+  // ============================================================
+
+  const calculateTotal = () => {
+    const isQuickHire = pendingPayment?.paymentType === 'quick_hire_premium';
+    const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
+    const hoursPerWeek = 40;
+    const weeksPerMonth = 4;
+    const subtotal = isQuickHire ? 299 : hourlyRate * hoursPerWeek * weeksPerMonth;
+    const commissionRate = 0.15;
+    const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
+    return subtotal + commissionAmount;
+  };
+
   const saveHireRecord = (worker, employer, paymentDetails) => {
     try {
       const hireRecord = {
@@ -554,10 +704,8 @@ const PaymentOptions = () => {
         isPremium: worker.isPremium || false
       };
 
-      // Get existing hires
       let hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
-      // Check if this worker is already hired by this employer
       const existingHire = hires.find(h => 
         h.workerId === hireRecord.workerId && 
         h.employerId === hireRecord.employerId &&
@@ -565,18 +713,14 @@ const PaymentOptions = () => {
       );
 
       if (existingHire) {
-        // Update existing hire
         const updatedHires = hires.map(h => 
           h.id === existingHire.id ? { ...h, ...hireRecord } : h
         );
         localStorage.setItem('homelyserv_hires', JSON.stringify(updatedHires));
-        console.log('✅ Updated existing hire record');
         return existingHire.id;
       } else {
-        // Add new hire
         hires.push(hireRecord);
         localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
-        console.log('✅ Saved new hire record:', hireRecord);
         return hireRecord.id;
       }
     } catch (error) {
@@ -585,9 +729,6 @@ const PaymentOptions = () => {
     }
   };
 
-  // ============================================================
-  // ✅ FIX: Update offer status to 'hired' or 'accepted'
-  // ============================================================
   const updateOfferStatus = (offerId, status, hireId) => {
     try {
       if (!offerId) return;
@@ -602,15 +743,15 @@ const PaymentOptions = () => {
         } : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      console.log(`✅ Updated offer ${offerId} status to ${status}`);
     } catch (error) {
       console.error('Error updating offer status:', error);
     }
   };
 
   // ============================================================
-  // HANDLERS
+  // UI HELPERS
   // ============================================================
+
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -636,426 +777,43 @@ const PaymentOptions = () => {
     navigate('/employer-payments');
   };
 
-  const handleSelectMethod = (methodId) => {
-    setSelectedMethod(methodId);
-    if (methodId !== 'credit-card' && methodId !== 'debit-card') {
-      setCardForm({
-        cardNumber: '',
-        cardholderName: '',
-        expiryDate: '',
-        cvv: ''
-      });
-    }
-  };
-
-  const handleCardInputChange = (e) => {
-    const { name, value } = e.target;
-    setCardForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleCopy = (text, field) => {
+  const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  // ============================================================
-  // ✅ FIX: handleConfirmPayment - Saves hire record
-  // ============================================================
-  const handleConfirmPayment = () => {
-    if (!selectedMethod) {
-      alert('Please select a payment method');
-      return;
-    }
-
-    const method = paymentMethods.find(m => m.id === selectedMethod);
-    if (method?.hasForm && method.formType === 'card') {
-      if (!cardForm.cardNumber || cardForm.cardNumber.length < 16) {
-        alert('Please enter a valid card number');
-        return;
-      }
-      if (!cardForm.cardholderName) {
-        alert('Please enter cardholder name');
-        return;
-      }
-      if (!cardForm.expiryDate || cardForm.expiryDate.length < 5) {
-        alert('Please enter expiry date (MM/YY)');
-        return;
-      }
-      if (!cardForm.cvv || cardForm.cvv.length < 3) {
-        alert('Please enter CVV');
-        return;
-      }
-    }
-    
-    setIsProcessing(true);
-    
-    try {
-      // Get the pending payment data
-      const pendingPaymentData = JSON.parse(localStorage.getItem('homelyserv_pending_payment') || '{}');
-      const offerId = pendingPaymentData.offerId;
-      
-      // Calculate amounts
-      const isQuickHire = pendingPaymentData?.paymentType === 'quick_hire_premium';
-      const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-      const hoursPerWeek = 40;
-      const weeksPerMonth = 4;
-      const subtotal = isQuickHire ? QUICK_HIRE_PREMIUM_FEE : hourlyRate * hoursPerWeek * weeksPerMonth;
-      const commissionRate = RECRUITMENT_COMMISSION_RATE;
-      const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
-      const total = subtotal + commissionAmount;
-      
-      const transactionId = 'TXN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8);
-      
-      // ✅ FIX: Save hire record
-      const hireId = saveHireRecord(
-        workerData,
-        user,
-        {
-          amount: total,
-          paymentId: pendingPaymentData.paymentId,
-          transactionId: transactionId
-        }
-      );
-
-      // ✅ FIX: Update offer status
-      if (offerId) {
-        updateOfferStatus(offerId, 'hired', hireId);
-      }
-
-      // Create verification request
-      const verificationRequest = {
-        id: 'VERIFY-' + Date.now(),
-        offerId: offerId,
-        hireId: hireId,
-        workerId: workerData?.workerId || workerData?.workerEmail,
-        workerName: workerData?.workerName,
-        workerEmail: workerData?.workerEmail,
-        workerPhone: workerData?.workerPhone || '',
-        workerLocation: workerData?.workerLocation || 'Not specified',
-        workerRating: workerData?.rating || 4.5,
-        workerImage: workerData?.profileImage || '',
-        jobTitle: workerData?.desiredJob || 'Service Provider',
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName || 'Employer',
-        employerEmail: user?.email,
-        amount: total,
-        commission: commissionAmount,
-        paymentMethod: selectedMethod,
-        paymentType: pendingPaymentData?.paymentType || 'recruitment',
-        submittedAt: new Date().toISOString(),
-        date: new Date().toISOString(),
-        status: 'completed',
-        contactRevealed: true,
-        paymentVerified: true,
-        transactionId: transactionId,
-        description: pendingPaymentData?.description || `Payment for ${workerData?.workerName || 'worker'}`
-      };
-
-      // Save to verification requests
-      const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
-      verificationRequests.push(verificationRequest);
-      localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(verificationRequests));
-
-      // Save to all_payments
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const paymentRecord = {
-        id: verificationRequest.id,
-        offerId: offerId,
-        hireId: hireId,
-        workerId: verificationRequest.workerId,
-        workerName: verificationRequest.workerName,
-        workerEmail: verificationRequest.workerEmail,
-        workerPhone: verificationRequest.workerPhone,
-        workerLocation: verificationRequest.workerLocation,
-        workerRating: verificationRequest.workerRating,
-        workerImage: verificationRequest.workerImage,
-        jobTitle: verificationRequest.jobTitle,
-        employerId: verificationRequest.employerId,
-        employerName: verificationRequest.employerName,
-        employerEmail: verificationRequest.employerEmail,
-        amount: verificationRequest.amount,
-        status: 'completed',
-        paymentMethod: verificationRequest.paymentMethod,
-        paymentType: verificationRequest.paymentType,
-        createdAt: verificationRequest.submittedAt,
-        updatedAt: verificationRequest.submittedAt,
-        description: verificationRequest.description,
-        reference: 'REF-' + Date.now(),
-        hasReceipt: false,
-        contactRevealed: true,
-        paymentVerified: true,
-        transactionId: transactionId
-      };
-      allPayments.push(paymentRecord);
-      localStorage.setItem('all_payments', JSON.stringify(allPayments));
-
-      // Save to employer_payments
-      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      employerPayments.push(paymentRecord);
-      localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
-
-      // Clear pending payment
-      localStorage.removeItem('homelyserv_pending_payment');
-      localStorage.removeItem('homelyserv_selected_worker');
-
-      // Navigate to employer dashboard with success
-      const successMsg = t.hireSuccess.replace('{worker}', workerData?.workerName || 'Worker');
-      
-      // Navigate to my-hires page
-      navigate('/my-hires', {
-        replace: true,
-        state: { 
-          hireSuccess: true,
-          workerName: workerData?.workerName,
-          hireId: hireId,
-          message: successMsg
-        }
-      });
-      
-    } catch (error) {
-      console.error('Unable to process payment:', error);
-      setIsProcessing(false);
-      alert('We could not process this payment. Please try again.');
-    }
-  };
-
-  // Calculate amounts
-  const isQuickHire = pendingPayment?.paymentType === 'quick_hire_premium';
-  const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-  const hoursPerWeek = 40;
-  const weeksPerMonth = 4;
-  const subtotal = isQuickHire ? QUICK_HIRE_PREMIUM_FEE : hourlyRate * hoursPerWeek * weeksPerMonth;
-  const commissionRate = RECRUITMENT_COMMISSION_RATE;
-  const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
-  const total = subtotal + commissionAmount;
-
-  // ============================================================
-  // Helper Functions
-  // ============================================================
-  const getMethodColor = (color) => {
-    const colors = {
-      blue: 'border-blue-200 hover:border-blue-500 hover:bg-blue-50',
-      purple: 'border-purple-200 hover:border-purple-500 hover:bg-purple-50',
-      green: 'border-green-200 hover:border-green-500 hover:bg-green-50',
-      orange: 'border-orange-200 hover:border-orange-500 hover:bg-orange-50',
-      pink: 'border-pink-200 hover:border-pink-500 hover:bg-pink-50',
-      teal: 'border-teal-200 hover:border-teal-500 hover:bg-teal-50'
-    };
-    return colors[color] || colors.blue;
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   const getMethodBgColor = (color) => {
     const colors = {
-      blue: 'bg-blue-100 text-blue-600',
-      purple: 'bg-purple-100 text-purple-600',
-      green: 'bg-green-100 text-green-600',
-      orange: 'bg-orange-100 text-orange-600',
-      pink: 'bg-pink-100 text-pink-600',
-      teal: 'bg-teal-100 text-teal-600'
+      teal: 'bg-teal-100 text-teal-600',
+      blue: 'bg-blue-100 text-blue-600'
     };
-    return colors[color] || colors.blue;
+    return colors[color] || colors.teal;
   };
 
-  const getSelectedColor = (color) => {
-    const colors = {
-      blue: 'border-blue-500 bg-blue-50 ring-2 ring-blue-500',
-      purple: 'border-purple-500 bg-purple-50 ring-2 ring-purple-500',
-      green: 'border-green-500 bg-green-50 ring-2 ring-green-500',
-      orange: 'border-orange-500 bg-orange-50 ring-2 ring-orange-500',
-      pink: 'border-pink-500 bg-pink-50 ring-2 ring-pink-500',
-      teal: 'border-teal-500 bg-teal-50 ring-2 ring-teal-500'
+  const getMethodBorderColor = (color, selected) => {
+    if (selected) {
+      return 'border-teal-500 bg-teal-50 ring-2 ring-teal-500';
+    }
+    return 'border-gray-200 hover:border-teal-300 hover:bg-teal-50';
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('message', handlePaymobMessage);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
-    return colors[color] || colors.blue;
-  };
+  }, [pollingInterval]);
 
-  const renderPaymentDetails = () => {
-    const method = paymentMethods.find(m => m.id === selectedMethod);
-    if (!method) return null;
-
-    if (method.hasForm && method.formType === 'card') {
-      return (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">{method.name} Details</h4>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.cardNumber}</label>
-              <div className="relative">
-                <CreditCard size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  name="cardNumber"
-                  value={cardForm.cardNumber}
-                  onChange={handleCardInputChange}
-                  placeholder={t.enterCardNumber}
-                  maxLength="19"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.cardholderName}</label>
-              <div className="relative">
-                <UserIcon size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  name="cardholderName"
-                  value={cardForm.cardholderName}
-                  onChange={handleCardInputChange}
-                  placeholder={t.enterCardholderName}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.expiryDate}</label>
-                <div className="relative">
-                  <Calendar size={18} className="absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    name="expiryDate"
-                    value={cardForm.expiryDate}
-                    onChange={handleCardInputChange}
-                    placeholder={t.enterExpiryDate}
-                    maxLength="5"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.cvv}</label>
-                <div className="relative">
-                  <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="password"
-                    name="cvv"
-                    value={cardForm.cvv}
-                    onChange={handleCardInputChange}
-                    placeholder={t.enterCvv}
-                    maxLength="4"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (method.details) {
-      return (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.paymentDetails}</h4>
-          <div className="space-y-2">
-            {method.details.walletNumber && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t.walletNumber}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-medium">{method.details.walletNumber}</span>
-                  <button
-                    onClick={() => handleCopy(method.details.walletNumber, 'wallet')}
-                    className="p-1 hover:bg-gray-200 rounded transition"
-                  >
-                    {copiedField === 'wallet' ? (
-                      <Check size={14} className="text-green-500" />
-                    ) : (
-                      <Copy size={14} className="text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {method.details.instapayNumber && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t.instapayNumber}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-medium">{method.details.instapayNumber}</span>
-                  <button
-                    onClick={() => handleCopy(method.details.instapayNumber, 'instapay')}
-                    className="p-1 hover:bg-gray-200 rounded transition"
-                  >
-                    {copiedField === 'instapay' ? (
-                      <Check size={14} className="text-green-500" />
-                    ) : (
-                      <Copy size={14} className="text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {method.details.accountNumber && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t.accountNumber}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-medium">{method.details.accountNumber}</span>
-                  <button
-                    onClick={() => handleCopy(method.details.accountNumber, 'account')}
-                    className="p-1 hover:bg-gray-200 rounded transition"
-                  >
-                    {copiedField === 'account' ? (
-                      <Check size={14} className="text-green-500" />
-                    ) : (
-                      <Copy size={14} className="text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {method.details.iban && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t.iban}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-medium">{method.details.iban}</span>
-                  <button
-                    onClick={() => handleCopy(method.details.iban, 'iban')}
-                    className="p-1 hover:bg-gray-200 rounded transition"
-                  >
-                    {copiedField === 'iban' ? (
-                      <Check size={14} className="text-green-500" />
-                    ) : (
-                      <Copy size={14} className="text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {method.details.swiftCode && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t.swiftCode}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-medium">{method.details.swiftCode}</span>
-                  <button
-                    onClick={() => handleCopy(method.details.swiftCode, 'swift')}
-                    className="p-1 hover:bg-gray-200 rounded transition"
-                  >
-                    {copiedField === 'swift' ? (
-                      <Check size={14} className="text-green-500" />
-                    ) : (
-                      <Copy size={14} className="text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="mt-3 text-xs text-gray-500">
-            <p>⚠️ Please use the reference: <strong>REF-{Date.now()}</strong> when making the transfer</p>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
+  const total = calculateTotal();
 
   // ============================================================
   // RENDER
   // ============================================================
+
   if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1091,7 +849,7 @@ const PaymentOptions = () => {
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
               >
-                {t.backToSearch}
+                {t.goBack}
               </button>
             </div>
           </div>
@@ -1145,12 +903,29 @@ const PaymentOptions = () => {
         </header>
 
         <div className="p-4 md:p-6">
+          {/* Page Header */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
               <p className="text-teal-100 mt-1">{t.subtitle}</p>
             </div>
           </div>
+
+          {/* Payment Error */}
+          {paymentError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle size={16} />
+              {paymentError}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {paymentSuccess && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+              <CheckCircle size={16} />
+              {t.success} Redirecting...
+            </div>
+          )}
 
           {/* Worker Info Card */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
@@ -1191,17 +966,17 @@ const PaymentOptions = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">{t.totalAmount}</p>
-                <p className="text-2xl font-bold text-teal-600">{CURRENCY} {total.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
                 <p className="text-xs text-gray-400">
-                  {isQuickHire
+                  {pendingPayment?.paymentType === 'quick_hire_premium'
                     ? 'Quick Hire premium service fee'
-                    : `${Math.round(commissionRate * 100)}% recruitment commission included`}
+                    : '15% recruitment commission included'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Payment Methods */}
+          {/* Payment Methods - ONLY PAYMOB & PAYPAL */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1214,30 +989,35 @@ const PaymentOptions = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {paymentMethods.map((method) => {
                 const isSelected = selectedMethod === method.id;
                 const Icon = method.icon;
                 return (
                   <button
                     key={method.id}
-                    onClick={() => handleSelectMethod(method.id)}
+                    onClick={() => {
+                      if (isProcessing) return;
+                      setSelectedMethod(method.id);
+                      setPaymentError(null);
+                    }}
                     className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
                       isSelected 
-                        ? getSelectedColor(method.color)
-                        : getMethodColor(method.color)
-                    }`}
+                        ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500 ring-opacity-30'
+                        : 'border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                    } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isProcessing}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getMethodBgColor(method.color)}`}>
-                        <Icon size={20} />
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0`}>
+                        <Icon size={24} className="text-white" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-gray-800">{method.name}</p>
-                          {method.id === 'credit-card' && (
-                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-semibold rounded">
-                              {t.recommended}
+                          {method.badge && (
+                            <span className={`px-1.5 py-0.5 ${method.badgeColor} text-[10px] font-semibold rounded`}>
+                              {method.badge}
                             </span>
                           )}
                         </div>
@@ -1251,26 +1031,24 @@ const PaymentOptions = () => {
                 );
               })}
             </div>
-
-            {selectedMethod && renderPaymentDetails()}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={handleConfirmPayment}
-              disabled={isProcessing || !selectedMethod}
-              className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={handlePayment}
+              disabled={isProcessing || !selectedMethod || paymentSuccess}
+              className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isProcessing ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <Loader2 size={18} className="animate-spin" />
                   {t.processing}
                 </>
               ) : (
                 <>
                   <Shield size={18} />
-                  {t.confirmPayment}
+                  {t.payNow}
                 </>
               )}
             </button>
@@ -1283,16 +1061,73 @@ const PaymentOptions = () => {
             </button>
           </div>
 
-          {!selectedMethod && (
+          {!selectedMethod && !paymentSuccess && (
             <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
           )}
 
           {/* Info Message */}
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-xs text-blue-600 text-center">
-              🔒 Your payment will be processed securely. The worker will be hired immediately after payment confirmation.
+            <p className="text-xs text-blue-600 text-center flex items-center justify-center gap-2">
+              <Lock size={14} />
+              Your payment will be processed securely through Paymob or PayPal. 
+              The worker will be hired immediately after payment confirmation.
             </p>
           </div>
+
+          {/* Paymob Iframe Modal */}
+          {paymobIframe && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800">{t.paymobTitle}</h3>
+                  <button
+                    onClick={() => {
+                      setPaymobIframe(null);
+                      setIsProcessing(false);
+                      window.removeEventListener('message', handlePaymobMessage);
+                    }}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="p-4 h-[500px]">
+                  <iframe
+                    src={paymobIframe}
+                    className="w-full h-full border-0"
+                    allow="payment"
+                    title="Paymob Payment"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PayPal Processing Message */}
+          {selectedMethod === PAYMENT_METHODS.PAYPAL && isProcessing && !paymentSuccess && !paymobIframe && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Wallet size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">{t.paypalTitle}</h3>
+                <p className="text-gray-500 mt-2">{t.redirecting}</p>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <Loader2 size={20} className="animate-spin text-teal-600" />
+                  <span className="text-sm text-gray-500">{t.paymentVerifying}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsProcessing(false);
+                    setPaymentError(t.paymentCancelled);
+                  }}
+                  className="mt-4 text-sm text-red-500 hover:text-red-600 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
