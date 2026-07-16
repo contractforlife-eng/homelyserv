@@ -1,4 +1,4 @@
-// src/pages/PaymentCommission.jsx - UPDATED WITH PAYMOB & PAYPAL
+// src/pages/PaymentCommission.jsx - FIXED: Only commission is charged
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,7 +12,8 @@ import {
   Smartphone,
   AlertCircle,
   Loader2,
-  Crown
+  Crown,
+  Info
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
@@ -75,12 +76,11 @@ const PaymentCommission = () => {
       const result = markCommissionPaid(
         commissionData.offerId,
         commissionData.workerId,
-        commissionData.amount,
+        commissionData.commissionAmount, // ← Only the commission amount
         paymentData.transactionId || 'TXN-' + Date.now()
       );
 
       if (result.success) {
-        // Save receipt
         savePaymentReceipt(commissionData, selectedMethod, paymentData.transactionId);
         localStorage.removeItem('homelyserv_commission_payment');
         
@@ -131,14 +131,14 @@ const PaymentCommission = () => {
         items: [
           {
             name: `Commission for ${commissionData.offerTitle || 'Offer'}`,
-            amount: commissionData.amount,
+            amount: commissionData.commissionAmount, // ← Only commission
             quantity: 1
           }
         ]
       };
 
       if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        const result = await createPaymobPayment(commissionData.amount, orderId, customerData);
+        const result = await createPaymobPayment(commissionData.commissionAmount, orderId, customerData);
         
         if (result.success) {
           setPaymobIframe(result.iframeUrl);
@@ -148,7 +148,7 @@ const PaymentCommission = () => {
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
-        const result = await createPayPalOrder(commissionData.amount, orderId, customerData);
+        const result = await createPayPalOrder(commissionData.commissionAmount, orderId, customerData);
         
         if (result.success) {
           window.open(result.approvalUrl, '_blank');
@@ -202,7 +202,8 @@ const PaymentCommission = () => {
         offerId: data.offerId,
         workerId: data.workerId,
         workerName: data.workerName,
-        amount: data.amount,
+        amount: data.commissionAmount, // ← Only commission
+        fullSalary: data.fullSalary, // ← Stored as info only
         method: method,
         status: 'completed',
         paidAt: new Date().toISOString(),
@@ -244,7 +245,7 @@ const PaymentCommission = () => {
           </div>
           <h2 className="text-3xl font-bold text-gray-800 mb-3">✅ Payment Successful!</h2>
           <p className="text-gray-600 mb-4">
-            Commission of <strong>EGP {commissionData.amount?.toLocaleString()}</strong> paid successfully.
+            Commission of <strong>EGP {commissionData.commissionAmount?.toLocaleString()}</strong> paid successfully.
           </p>
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 mb-6 border border-green-200">
             <div className="flex items-center gap-2 justify-center text-green-700">
@@ -287,12 +288,27 @@ const PaymentCommission = () => {
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-5 mb-8 border border-amber-200">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-gray-500">Commission Amount</p>
-                <p className="text-3xl font-bold text-amber-600">EGP {commissionData.amount?.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Platform Commission</p>
+                <p className="text-3xl font-bold text-amber-600">EGP {commissionData.commissionAmount?.toLocaleString()}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Offer</p>
-                <p className="font-medium text-gray-800">{commissionData.offerTitle}</p>
+                <p className="text-sm text-gray-500">Worker's Salary (For Info)</p>
+                <p className="font-medium text-gray-800">EGP {commissionData.fullSalary?.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">Paid directly to worker by employer</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Box */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+            <div className="flex items-start gap-3">
+              <Info size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-blue-700 font-medium">How it works:</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  You are paying the <strong>platform commission</strong> (10% of the worker's monthly salary). 
+                  The worker's full salary is an agreement between you and the employer and is paid directly.
+                </p>
               </div>
             </div>
           </div>
@@ -362,7 +378,7 @@ const PaymentCommission = () => {
                 Processing Payment...
               </>
             ) : (
-              `Pay EGP ${commissionData.amount?.toLocaleString()} to Unlock`
+              `Pay EGP ${commissionData.commissionAmount?.toLocaleString()} to Unlock`
             )}
           </button>
 

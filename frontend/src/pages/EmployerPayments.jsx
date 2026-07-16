@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx - Fixed version with premium badge
+// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -50,11 +50,14 @@ import {
   ExternalLink,
   ThumbsUp,
   FileText,
-  Crown
+  Crown,
+  Info
 } from 'lucide-react';
+import { isUserPremium as checkUserPremium } from '../utils/subscriptionService';
+import { PAYMENT_CONFIG } from '../config/paymentConfig';
 
 // ============================================================
-// EMPLOYER SIDEBAR COMPONENT - WITH PREMIUM BADGE
+// EMPLOYER SIDEBAR COMPONENT
 // ============================================================
 const EmployerSidebar = ({ 
   language, 
@@ -75,7 +78,7 @@ const EmployerSidebar = ({
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
-      payment: 'Payment', 
+      payment: 'Payment',
       settings: 'Settings',
       help: 'Help & Support',
       logout: 'Logout',
@@ -122,15 +125,15 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
-    return isUserPremium(userId);
+    return checkUserPremium(userId);
   };
-  
+
   const isPremium = userIsPremium();
-    return (
+
+  return (
     <>
       {mobileMenuOpen && (
         <div 
@@ -300,7 +303,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER PAYMENTS COMPONENT - FIXED
+// MAIN EMPLOYER PAYMENTS COMPONENT
 // ============================================================
 const EmployerPayments = () => {
   const navigate = useNavigate();
@@ -317,27 +320,26 @@ const EmployerPayments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [stats, setStats] = useState({
-    totalPaid: 0,
+    totalCommissionPaid: 0,
     pendingCount: 0,
     completedCount: 0,
     totalWorkers: 0,
     monthlyAverage: 0,
-    commissionTotal: 0
+    totalSalary: 0
   });
-  // ✅ Add a ref to prevent duplicate loads
   const isLoadingRef = React.useRef(false);
 
   const translations = {
     en: {
       title: 'Payments',
-      subtitle: 'Manage all your payments to workers',
+      subtitle: 'Manage your platform commission payments',
       stats: {
-        totalPaid: 'Total Paid',
+        totalPaid: 'Total Commission Paid',
         pending: 'Pending',
         completed: 'Completed',
-        workers: 'Workers Paid',
+        workers: 'Workers Hired',
         monthlyAverage: 'Monthly Avg',
-        commission: 'Commission Collected'
+        totalSalary: 'Total Worker Salaries'
       },
       status: {
         completed: 'Completed',
@@ -351,8 +353,8 @@ const EmployerPayments = () => {
         id: 'Payment ID',
         worker: 'Worker',
         job: 'Job',
-        amount: 'Amount',
         commission: 'Commission',
+        fullSalary: 'Monthly Salary',
         date: 'Date',
         status: 'Status',
         actions: 'Actions'
@@ -362,9 +364,9 @@ const EmployerPayments = () => {
         paymentId: 'Payment ID',
         worker: 'Worker',
         job: 'Job Title',
-        amount: 'Amount',
-        commission: 'Commission (15%)',
-        netAmount: 'Net Amount',
+        commission: 'Platform Commission',
+        fullSalary: 'Worker\'s Monthly Salary',
+        note: 'Note: The worker\'s full salary is paid directly to the worker by the employer. The platform only charges a commission fee.',
         date: 'Date',
         status: 'Status',
         method: 'Payment Method',
@@ -384,12 +386,12 @@ const EmployerPayments = () => {
       actions: {
         view: 'View Details',
         download: 'Download Receipt',
-        payNow: 'Pay Now',
+        payNow: 'Pay Commission',
         contact: 'Contact Worker'
       },
       empty: {
         title: 'No payments found',
-        description: 'You haven\'t made any payments yet',
+        description: 'You haven\'t made any commission payments yet',
         start: 'Hire a worker to get started'
       },
       filters: {
@@ -410,20 +412,21 @@ const EmployerPayments = () => {
       redirectingToPayment: 'Redirecting to payment options...',
       refresh: 'Refresh',
       acceptedOffer: 'Worker accepted your offer!',
-      payNowToUnlock: 'Pay now to unlock contact information',
+      payNowToUnlock: 'Pay commission to unlock contact information',
       contactRevealed: 'Contact information revealed',
-      waitingForPayment: 'Waiting for payment confirmation'
+      waitingForPayment: 'Waiting for payment confirmation',
+      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.'
     },
     ar: {
       title: 'المدفوعات',
-      subtitle: 'إدارة جميع مدفوعاتك للعمال',
+      subtitle: 'إدارة مدفوعات عمولة المنصة',
       stats: {
-        totalPaid: 'إجمالي المدفوع',
+        totalPaid: 'إجمالي العمولة المدفوعة',
         pending: 'معلقة',
         completed: 'مكتملة',
         workers: 'عدد العمال',
         monthlyAverage: 'المتوسط الشهري',
-        commission: 'العمولة المحصلة'
+        totalSalary: 'إجمالي رواتب العمال'
       },
       status: {
         completed: 'مكتملة',
@@ -437,8 +440,8 @@ const EmployerPayments = () => {
         id: 'رقم الدفع',
         worker: 'العامل',
         job: 'الوظيفة',
-        amount: 'المبلغ',
         commission: 'العمولة',
+        fullSalary: 'الراتب الشهري',
         date: 'التاريخ',
         status: 'الحالة',
         actions: 'الإجراءات'
@@ -448,9 +451,9 @@ const EmployerPayments = () => {
         paymentId: 'رقم الدفع',
         worker: 'العامل',
         job: 'عنوان الوظيفة',
-        amount: 'المبلغ',
-        commission: 'العمولة (15%)',
-        netAmount: 'المبلغ الصافي',
+        commission: 'عمولة المنصة',
+        fullSalary: 'راتب العامل الشهري',
+        note: 'ملاحظة: يدفع صاحب العمل الراتب الكامل للعامل مباشرة. المنصة تفرض عمولة فقط.',
         date: 'التاريخ',
         status: 'الحالة',
         method: 'طريقة الدفع',
@@ -470,12 +473,12 @@ const EmployerPayments = () => {
       actions: {
         view: 'عرض التفاصيل',
         download: 'تحميل الإيصال',
-        payNow: 'ادفع الآن',
+        payNow: 'ادفع العمولة',
         contact: 'اتصال بالعامل'
       },
       empty: {
         title: 'لا توجد مدفوعات',
-        description: 'لم تقم بأي مدفوعات بعد',
+        description: 'لم تقم بأي مدفوعات عمولة بعد',
         start: 'قم بتوظيف عامل للبدء'
       },
       filters: {
@@ -496,9 +499,10 @@ const EmployerPayments = () => {
       redirectingToPayment: 'جاري التوجيه إلى خيارات الدفع...',
       refresh: 'تحديث',
       acceptedOffer: 'قبل العامل عرضك!',
-      payNowToUnlock: 'ادفع الآن لفتح معلومات الاتصال',
+      payNowToUnlock: 'ادفع العمولة لفتح معلومات الاتصال',
       contactRevealed: 'تم فتح معلومات الاتصال',
-      waitingForPayment: 'في انتظار تأكيد الدفع'
+      waitingForPayment: 'في انتظار تأكيد الدفع',
+      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.'
     }
   };
 
@@ -513,10 +517,9 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // Load Data - ACCURATE PAYMENT DATA - FIXED
+  // Load Data - Only commission payments
   // ============================================================
   const loadData = () => {
-    // ✅ Prevent duplicate loads
     if (isLoadingRef.current) {
       console.log('⏳ Load already in progress, skipping...');
       return;
@@ -535,14 +538,15 @@ const EmployerPayments = () => {
     
     try {
       const employerEmail = user.email;
-      console.log('📂 Loading payments for employer:', employerEmail);
+      console.log('📂 Loading commission payments for employer:', employerEmail);
 
       // Get all payments from all_payments
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       
-      // Filter payments for this employer
+      // Filter commission payments for this employer
       let employerPayments = allPayments.filter(
-        p => p.employerId === employerEmail || p.employerEmail === employerEmail
+        p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
+             (p.type === 'commission' || p.paymentType === 'commission')
       );
 
       // Get employer offers for additional payment data
@@ -552,15 +556,16 @@ const EmployerPayments = () => {
              (o.employerEmail === employerEmail || o.employerId === employerEmail)
       );
 
-      // Create payment entries for accepted offers that don't have payments yet
+      // Create commission entries for accepted offers that don't have payments yet
       const existingPaymentIds = new Set(employerPayments.map(p => p.offerId).filter(id => id));
       let newPayments = [];
       
+      const commissionRate = PAYMENT_CONFIG.fees.platformCommissionRate || 0.10;
+      
       employerAcceptedOffers.forEach(offer => {
         if (!existingPaymentIds.has(offer.id)) {
-          const commissionRate = 0.15;
-          const amount = offer.amount || 0;
-          const commission = amount * commissionRate;
+          const fullSalary = offer.amount || 0;
+          const commission = fullSalary * commissionRate;
           
           const payment = {
             id: 'PAY-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
@@ -575,54 +580,35 @@ const EmployerPayments = () => {
             employerId: offer.employerId || offer.employerEmail,
             employerEmail: offer.employerEmail,
             jobTitle: offer.jobTitle || 'Service Provider',
-            amount: amount,
+            // Commission is what the employer pays to the platform
             commission: commission,
-            netAmount: amount - commission,
+            // Full salary is for information only
+            fullSalary: fullSalary,
             status: offer.status === 'completed' ? 'completed' : 'pending',
             paymentMethod: null,
             paymentVerified: offer.status === 'completed',
             contactRevealed: offer.status === 'completed',
             createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            description: offer.description || `Payment for ${offer.workerName}`,
+            description: offer.description || `Commission for hiring ${offer.workerName}`,
             reference: 'REF-' + Date.now(),
             hasReceipt: false,
-            paymentType: 'recruitment'
+            paymentType: 'commission',
+            type: 'commission'
           };
           newPayments.push(payment);
         }
       });
 
-      // ✅ Merge new payments with existing ones
+      // Merge new payments with existing ones
       if (newPayments.length > 0) {
-        console.log(`✅ Created ${newPayments.length} new payment entries`);
+        console.log(`✅ Created ${newPayments.length} new commission entries`);
         employerPayments = [...employerPayments, ...newPayments];
-        // Save to localStorage to prevent re-creation
+        // Save to localStorage
         localStorage.setItem('all_payments', JSON.stringify([...allPayments, ...newPayments]));
       }
 
-      // Also get payments from homelyserv_commission_payments
-      const commissionPayments = JSON.parse(localStorage.getItem('homelyserv_commission_payments') || '[]');
-      const employerCommissionPayments = commissionPayments.filter(
-        p => p.employerId === employerEmail || p.employerEmail === employerEmail
-      );
-      
-      // Merge commission payments
-      employerCommissionPayments.forEach(cp => {
-        if (!employerPayments.find(p => p.id === cp.id || p.offerId === cp.offerId)) {
-          employerPayments.push({
-            ...cp,
-            amount: cp.amount || cp.commission || 0,
-            commission: cp.commission || cp.amount || 0,
-            netAmount: 0,
-            status: cp.status || 'completed',
-            paymentVerified: true,
-            contactRevealed: true
-          });
-        }
-      });
-
-      // ✅ Remove duplicates by ID
+      // Remove duplicates by ID
       const uniquePayments = [];
       const seenIds = new Set();
       employerPayments.forEach(p => {
@@ -636,15 +622,15 @@ const EmployerPayments = () => {
       // Sort by date (newest first)
       employerPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      console.log(`✅ Loaded ${employerPayments.length} unique payments for employer`);
+      console.log(`✅ Loaded ${employerPayments.length} unique commission payments`);
 
       setPayments(employerPayments);
       setFilteredPayments(employerPayments);
 
-      // Calculate stats - ACCURATE
+      // Calculate stats
       const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
-      const totalPaid = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const totalCommission = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
+      const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
+      const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
       const pendingCount = employerPayments.filter(p => p.status === 'pending' && !p.paymentVerified).length;
       const completedCount = completedPayments.length;
 
@@ -656,15 +642,15 @@ const EmployerPayments = () => {
       });
 
       setStats({
-        totalPaid: totalPaid,
+        totalCommissionPaid: totalCommissionPaid,
         pendingCount: pendingCount,
         completedCount: completedCount,
         totalWorkers: uniqueWorkers.size,
-        monthlyAverage: completedCount > 0 ? Math.round(totalPaid / Math.max(completedCount, 1)) : 0,
-        commissionTotal: totalCommission
+        monthlyAverage: completedCount > 0 ? Math.round(totalCommissionPaid / Math.max(completedCount, 1)) : 0,
+        totalSalary: totalFullSalary
       });
 
-      console.log(`📊 Stats: Total Paid: ${totalPaid}, Pending: ${pendingCount}, Completed: ${completedCount}`);
+      console.log(`📊 Stats: Total Commission: ${totalCommissionPaid}, Pending: ${pendingCount}, Completed: ${completedCount}`);
       
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -707,71 +693,27 @@ const EmployerPayments = () => {
     }
   }, [navigate]);
 
-  // Load data when user is set - ✅ Only load once
+  // Load data when user is set
   useEffect(() => {
     if (user) {
       loadData();
     }
   }, [user]);
 
-  // ============================================================
-  // ✅ FIXED: Auto-refresh - Only refresh if there's a change
-  // ============================================================
+  // Auto-refresh
   useEffect(() => {
-    // Check for payment verification updates from location state
-    if (location.state?.paymentVerificationPending) {
-      loadData();
-      // Clear the state to prevent re-triggering
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    if (!user) return;
     
-    // ✅ FIXED: Auto-refresh every 15 seconds, but only check for new data
-    // without causing a full reload that makes payments disappear
     const interval = setInterval(() => {
-      // Only refresh if not in a modal and not already loading
       if (!showDetailsModal && !isLoadingRef.current) {
-        // Check if there are new payments without reloading everything
-        try {
-          const employerEmail = user?.email;
-          if (!employerEmail) return;
-          
-          const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-          const employerPayments = allPayments.filter(
-            p => p.employerId === employerEmail || p.employerEmail === employerEmail
-          );
-          
-          // Check if the count has changed
-          if (employerPayments.length !== payments.length) {
-            console.log('🔄 New payments detected, refreshing...');
-            loadData();
-          } else {
-            // Check if any payment status has changed
-            let hasChanged = false;
-            const currentPaymentMap = new Map(payments.map(p => [p.id, p]));
-            for (const newPayment of employerPayments) {
-              const current = currentPaymentMap.get(newPayment.id);
-              if (current && current.status !== newPayment.status) {
-                hasChanged = true;
-                break;
-              }
-            }
-            if (hasChanged) {
-              console.log('🔄 Payment status changed, refreshing...');
-              loadData();
-            }
-          }
-        } catch (error) {
-          console.error('Error checking for updates:', error);
-        }
+        loadData();
       }
-    }, 15000); // ✅ Increased to 15 seconds
+    }, 15000);
     
     return () => clearInterval(interval);
-  }, [location.state, showDetailsModal, payments.length, user]);
+  }, [user, showDetailsModal]);
 
-  // ============================================================
   // Filter payments
-  // ============================================================
   useEffect(() => {
     let filtered = [...payments];
     
@@ -813,17 +755,18 @@ const EmployerPayments = () => {
       return;
     }
 
-    console.log('🔄 Processing payment:', paymentData);
+    console.log('🔄 Processing commission payment:', paymentData);
 
     const pendingPayment = {
       paymentId: paymentData.id,
-      amount: paymentData.amount || 0,
+      amount: paymentData.commission || 0,
+      fullSalary: paymentData.fullSalary || 0,
       workerName: paymentData.workerName,
       workerId: paymentData.workerId || paymentData.id,
       workerEmail: paymentData.workerEmail || '',
       jobTitle: paymentData.jobTitle || 'Service Provider',
-      description: paymentData.description || `Payment for ${paymentData.workerName || 'worker'}`,
-      paymentType: 'recruitment',
+      description: paymentData.description || `Commission for ${paymentData.workerName || 'worker'}`,
+      paymentType: 'commission',
       offerId: paymentData.offerId,
       employerId: user?.id || user?.email,
       employerName: user?.fullName || 'Employer',
@@ -839,7 +782,7 @@ const EmployerPayments = () => {
       workerPhone: paymentData.workerPhone || 'Not provided',
       workerLocation: paymentData.workerLocation || 'Not specified',
       desiredJob: paymentData.jobTitle || 'Service Provider',
-      hourlyRate: Math.round((paymentData.amount || 0) / 160),
+      fullSalary: paymentData.fullSalary || 0,
       workerSkills: paymentData.workerSkills || [],
       rating: paymentData.workerRating || 4.5,
       profileImage: paymentData.workerImage || ''
@@ -945,7 +888,6 @@ const EmployerPayments = () => {
     return t.status[status] || status;
   };
 
-  // ✅ Don't show loading if we already have payments
   if (loading && payments.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1013,17 +955,21 @@ const EmployerPayments = () => {
             <div>
               <h1 className="text-2xl font-bold">{t.title}</h1>
               <p className="text-teal-100 mt-1">{t.subtitle}</p>
+              <p className="text-teal-200 text-sm mt-1 flex items-center gap-1">
+                <Info size={14} />
+                {t.commissionInfo}
+              </p>
             </div>
           </div>
 
-          {/* Stats Cards - ACCURATE */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500">{t.stats.totalPaid}</p>
                 <DollarSign size={16} className="text-green-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalPaid)}</p>
+              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalCommissionPaid)}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
@@ -1055,10 +1001,10 @@ const EmployerPayments = () => {
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.commission}</p>
-                <FileText size={16} className="text-orange-500" />
+                <p className="text-xs text-gray-500">{t.stats.totalSalary}</p>
+                <Briefcase size={16} className="text-orange-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.commissionTotal)}</p>
+              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalSalary)}</p>
             </div>
           </div>
 
@@ -1127,10 +1073,10 @@ const EmployerPayments = () => {
                         {t.table.job}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.amount}
+                        {t.table.commission}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                        {t.table.commission}
+                        {t.table.fullSalary}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                         {t.table.date}
@@ -1180,10 +1126,12 @@ const EmployerPayments = () => {
                           <p className="text-sm text-gray-700 truncate max-w-[120px]">{payment.jobTitle || '-'}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-gray-800">{formatCurrency(payment.amount)}</p>
+                          <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission)}</p>
+                          <p className="text-xs text-gray-400">Platform commission</p>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <p className="text-sm text-orange-600">{formatCurrency(payment.commission || 0)}</p>
+                          <p className="text-sm text-gray-700">{formatCurrency(payment.fullSalary)}</p>
+                          <p className="text-xs text-gray-400">Worker's salary</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <p className="text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
@@ -1283,16 +1231,26 @@ const EmployerPayments = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.amount}</p>
-                  <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.amount)}</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-500">{t.modal.commission}</p>
-                  <p className="text-xl font-bold text-orange-600">{formatCurrency(selectedPayment.commission || 0)}</p>
+                  <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
+                  <p className="text-xs text-gray-400">Platform commission (10%)</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.netAmount}</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedPayment.netAmount || selectedPayment.amount - (selectedPayment.commission || 0))}</p>
+                  <p className="text-sm text-gray-500">{t.modal.fullSalary}</p>
+                  <p className="text-xl font-bold text-orange-600">{formatCurrency(selectedPayment.fullSalary)}</p>
+                  <p className="text-xs text-gray-400">Paid directly to worker</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500">{t.modal.date}</p>
+                  <p className="text-xl font-bold text-gray-800">{formatDate(selectedPayment.createdAt)}</p>
+                </div>
+              </div>
+
+              {/* Info Note */}
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-700">{t.modal.note}</p>
                 </div>
               </div>
 
@@ -1339,7 +1297,6 @@ const EmployerPayments = () => {
                     {t.modal.job}
                   </h3>
                   <p className="font-medium text-gray-800">{selectedPayment.jobTitle || '-'}</p>
-                  <p className="text-sm text-gray-500 mt-1">{t.modal.date}: {formatDate(selectedPayment.createdAt)}</p>
                   {selectedPayment.paymentMethod && (
                     <p className="text-sm text-gray-500 mt-1">{t.modal.method}: {selectedPayment.paymentMethod}</p>
                   )}
