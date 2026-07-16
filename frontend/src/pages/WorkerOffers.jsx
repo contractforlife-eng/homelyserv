@@ -439,6 +439,52 @@ const WorkerOffers = () => {
 
   const t = translations[language];
 
+  // ============================================================
+  // FIXED: Load offers with user parameter
+  // ============================================================
+  const loadOffers = (userParam) => {
+    try {
+      const currentUser = userParam || user;
+      if (!currentUser?.email) {
+        setOffers([]);
+        setFilteredOffers([]);
+        return;
+      }
+      
+      let allOffers = [];
+      
+      // Get offers from employer_offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      allOffers = employerOffers.filter(
+        offer => offer.workerEmail === currentUser.email
+      );
+      
+      // Also get from worker-specific storage
+      const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUser.email}`) || '[]');
+      workerOffers.forEach(offer => {
+        if (!allOffers.find(o => o.id === offer.id)) {
+          allOffers.push(offer);
+        }
+      });
+      
+      // Sort by newest first
+      allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setOffers(allOffers);
+      setFilteredOffers(allOffers);
+      
+      console.log(`✅ Loaded ${allOffers.length} offers for worker: ${currentUser.email}`);
+      
+    } catch (error) {
+      console.error('Error loading offers:', error);
+      setOffers([]);
+      setFilteredOffers([]);
+    }
+  };
+
+  // ============================================================
+  // FIXED: useEffect with proper dependency handling
+  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
@@ -456,6 +502,8 @@ const WorkerOffers = () => {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
         setUser(parsedUser);
+        // Load offers immediately with the user data
+        loadOffers(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -469,50 +517,21 @@ const WorkerOffers = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    loadOffers();
     setLoading(false);
   }, [navigate]);
 
+  // ============================================================
+  // FIXED: Reload offers when user changes
+  // ============================================================
   useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const loadOffers = () => {
-    try {
-      let allOffers = [];
-      
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      
-      if (user?.email) {
-        allOffers = employerOffers.filter(
-          offer => offer.workerEmail === user.email
-        );
-      }
-      
-      if (user?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
-        workerOffers.forEach(offer => {
-          if (!allOffers.find(o => o.id === offer.id)) {
-            allOffers.push(offer);
-          }
-        });
-      }
-      
-      allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
-      setOffers(allOffers);
-      setFilteredOffers(allOffers);
-      
-      console.log(`✅ Loaded ${allOffers.length} offers for worker`);
-      
-    } catch (error) {
-      console.error('Error loading offers:', error);
-      setOffers([]);
-      setFilteredOffers([]);
+    if (user) {
+      loadOffers(user);
     }
-  };
+  }, [user]);
 
+  // ============================================================
+  // Conversation Creation
+  // ============================================================
   const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
     try {
       const conversationId = getConversationId(workerId, employerId);
@@ -556,6 +575,9 @@ const WorkerOffers = () => {
     }
   };
 
+  // ============================================================
+  // Accept Offer Handler
+  // ============================================================
   const handleAcceptOffer = (offer) => {
     if (processingOffer) return;
     setProcessingOffer(offer.id);
@@ -632,6 +654,9 @@ const WorkerOffers = () => {
     }
   };
 
+  // ============================================================
+  // Reject Offer Handler
+  // ============================================================
   const handleRejectOffer = (offer) => {
     if (processingOffer) return;
     
@@ -697,6 +722,9 @@ const WorkerOffers = () => {
     }
   };
 
+  // ============================================================
+  // Filtering and Sorting
+  // ============================================================
   useEffect(() => {
     let filtered = [...offers];
 
@@ -733,6 +761,9 @@ const WorkerOffers = () => {
     setFilteredOffers(filtered);
   }, [offers, statusFilter, searchTerm, sortBy]);
 
+  // ============================================================
+  // UI Helpers
+  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -807,6 +838,9 @@ const WorkerOffers = () => {
     total: offers.length
   };
 
+  // ============================================================
+  // Loading State
+  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -829,6 +863,9 @@ const WorkerOffers = () => {
     );
   }
 
+  // ============================================================
+  // Main Render
+  // ============================================================
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <WorkerSidebar
@@ -1045,7 +1082,7 @@ const WorkerOffers = () => {
               <p className="text-gray-500">{t.empty.description}</p>
               <p className="text-gray-400 text-sm mt-2">{t.empty.wait}</p>
               <button
-                onClick={loadOffers}
+                onClick={() => loadOffers(user)}
                 className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
                 Refresh

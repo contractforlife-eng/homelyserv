@@ -1,5 +1,4 @@
-// src/utils/chatService.js - COMPLETE FIXED WITH DEBUGGING
-
+// src/utils/chatService.js - EMPLOYER gray, WORKER red theme
 // Get a unique conversation ID
 export const getConversationId = (user1Id, user2Id) => {
   const ids = [String(user1Id), String(user2Id)].sort();
@@ -13,7 +12,7 @@ export const getUserConversations = (userId) => {
     const data = localStorage.getItem(key);
     if (data) {
       const conversations = JSON.parse(data);
-      console.log(`📋 [${userId}] Loaded conversations:`, conversations.length);
+      console.log(`📋 [${userId}] Loaded ${conversations.length} conversations`);
       return conversations;
     }
     return [];
@@ -66,7 +65,21 @@ export const saveConversationMessages = (conversationId, messages) => {
   }
 };
 
-// Send a message
+// Get avatar background color based on role
+const getAvatarBg = (role) => {
+  if (role === 'EMPLOYER') return 'gray';
+  if (role === 'WORKER') return 'red';
+  return 'gray';
+};
+
+// Get avatar text color based on role
+const getAvatarColor = (role) => {
+  if (role === 'EMPLOYER') return 'fff';
+  if (role === 'WORKER') return 'fff';
+  return 'fff';
+};
+
+// Send a message - CREATES CONVERSATIONS FOR BOTH PARTIES
 export const sendMessage = (senderId, senderName, senderRole, recipientId, recipientName, text) => {
   console.log('📤 Sending message:', { senderId, senderName, senderRole, recipientId, recipientName, text });
   
@@ -95,11 +108,14 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     read: false
   };
   
-  // Add message
+  // Add message to conversation
   messages.push(newMessage);
   saveConversationMessages(conversationId, messages);
   
-  // Get sender's current conversations
+  // Determine recipient role (opposite of sender)
+  const recipientRole = senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER';
+  
+  // Update sender's conversation
   const senderConversations = getUserConversations(senderId);
   const senderIndex = senderConversations.findIndex(c => c.id === conversationId);
   
@@ -110,8 +126,8 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     lastMessage: text.trim(),
     time: newMessage.time,
     unread: 0,
-    role: senderRole === 'EMPLOYER' ? 'WORKER' : 'EMPLOYER',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=${senderRole === 'EMPLOYER' ? 'amber' : 'teal'}&color=fff&size=100&bold=true`
+    role: recipientRole,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=${getAvatarBg(recipientRole)}&color=${getAvatarColor(recipientRole)}&size=100&bold=true`
   };
   
   if (senderIndex >= 0) {
@@ -121,7 +137,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
   }
   saveUserConversations(senderId, senderConversations);
   
-  // Get recipient's current conversations
+  // Update recipient's conversation (with unread count)
   const recipientConversations = getUserConversations(recipientId);
   const recipientIndex = recipientConversations.findIndex(c => c.id === conversationId);
   
@@ -133,7 +149,7 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
     time: newMessage.time,
     unread: (recipientIndex >= 0 ? (recipientConversations[recipientIndex].unread || 0) : 0) + 1,
     role: senderRole,
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=${senderRole === 'WORKER' ? 'amber' : 'teal'}&color=fff&size=100&bold=true`
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=${getAvatarBg(senderRole)}&color=${getAvatarColor(senderRole)}&size=100&bold=true`
   };
   
   if (recipientIndex >= 0) {
@@ -143,7 +159,10 @@ export const sendMessage = (senderId, senderName, senderRole, recipientId, recip
   }
   saveUserConversations(recipientId, recipientConversations);
   
-  console.log('✅ Message sent successfully');
+  console.log('✅ Message sent successfully - both parties updated');
+  console.log(`📊 Sender (${senderId}) has ${senderConversations.length} conversations`);
+  console.log(`📊 Recipient (${recipientId}) has ${recipientConversations.length} conversations`);
+  
   return newMessage;
 };
 
@@ -190,6 +209,20 @@ export const getOrCreateConversation = (user1Id, user2Id) => {
   return getConversationId(user1Id, user2Id);
 };
 
+// Get a conversation by ID
+export const getConversation = (conversationId) => {
+  // Find conversation in any user's list
+  const keys = Object.keys(localStorage);
+  for (const key of keys) {
+    if (key.startsWith('homelyserv_chat_conversations_')) {
+      const conversations = JSON.parse(localStorage.getItem(key) || '[]');
+      const found = conversations.find(c => c.id === conversationId);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // Debug function to see all chat data
 export const debugChatData = () => {
   console.log('🔍 === CHAT DATA DEBUG ===');
@@ -222,6 +255,9 @@ export const debugChatData = () => {
     try {
       const messages = JSON.parse(data);
       console.log(`💬 Conversation ${convId}: ${messages.length} messages`);
+      messages.forEach((msg, idx) => {
+        console.log(`  ${idx+1}. ${msg.senderName} (${msg.senderRole}) -> ${msg.recipientName} (${msg.recipientRole || 'unknown'}): "${msg.text}" (${msg.read ? 'read' : 'unread'})`);
+      });
     } catch (e) {
       console.log(`❌ Error parsing ${key}`);
     }
@@ -230,11 +266,12 @@ export const debugChatData = () => {
   console.log('🔍 === END DEBUG ===');
 };
 
-// Ensure conversation exists for both users (for testing)
+// Ensure conversation exists for both users
 export const ensureConversationExists = (user1Id, user1Name, user1Role, user2Id, user2Name, user2Role) => {
   const conversationId = getConversationId(user1Id, user2Id);
   const messages = getConversationMessages(conversationId);
   
+  // If no messages, create a placeholder
   if (messages.length === 0) {
     const placeholderMessage = {
       id: Date.now(),
@@ -263,7 +300,7 @@ export const ensureConversationExists = (user1Id, user1Name, user1Role, user2Id,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       unread: 0,
       role: user2Role,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user2Name)}&background=${user2Role === 'WORKER' ? 'amber' : 'teal'}&color=fff&size=100&bold=true`
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user2Name)}&background=${getAvatarBg(user2Role)}&color=${getAvatarColor(user2Role)}&size=100&bold=true`
     });
     saveUserConversations(user1Id, user1Convs);
   }
@@ -280,10 +317,24 @@ export const ensureConversationExists = (user1Id, user1Name, user1Role, user2Id,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       unread: 0,
       role: user1Role,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user1Name)}&background=${user1Role === 'WORKER' ? 'amber' : 'teal'}&color=fff&size=100&bold=true`
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user1Name)}&background=${getAvatarBg(user1Role)}&color=${getAvatarColor(user1Role)}&size=100&bold=true`
     });
     saveUserConversations(user2Id, user2Convs);
   }
   
   return conversationId;
+};
+
+// Send a welcome message from employer to worker
+export const sendWelcomeMessage = (employerId, employerName, employerRole, workerId, workerName, workerRole, jobTitle) => {
+  const welcomeMessage = `Hello! I'm ${employerName}, the employer for the job "${jobTitle || 'Service'}". I'd like to discuss the next steps.`;
+  
+  return sendMessage(
+    employerId,
+    employerName,
+    employerRole || 'EMPLOYER',
+    workerId,
+    workerName,
+    welcomeMessage
+  );
 };
