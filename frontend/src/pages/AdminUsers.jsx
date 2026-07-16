@@ -1,3 +1,4 @@
+// src/pages/AdminUsers.jsx - UPDATED WITH FULL SIDEBAR MENU
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -29,10 +30,13 @@ import {
   Search,
   Filter,
   Shield,
-  User as UserIcon
+  User as UserIcon,
+  AlertTriangle,
+  BarChart3,
+  FileCheck
 } from 'lucide-react';
 
-// Admin Sidebar Component - Dark Theme (Same as Dashboard)
+// Admin Sidebar Component - Dark Theme with FULL MENU
 const AdminSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -48,8 +52,11 @@ const AdminSidebar = ({
     en: {
       dashboard: 'Dashboard',
       users: 'Users',
+      hires: 'Hires',
       messages: 'Messages',
       payments: 'Payments',
+      complaints: 'Complaints',
+      reports: 'Reports',
       settings: 'Settings',
       logout: 'Logout',
       overview: 'Overview'
@@ -57,8 +64,11 @@ const AdminSidebar = ({
     ar: {
       dashboard: 'لوحة التحكم',
       users: 'المستخدمين',
+      hires: 'التوظيفات',
       messages: 'الرسائل',
       payments: 'المدفوعات',
+      complaints: 'الشكاوى',
+      reports: 'التقارير',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       overview: 'نظرة عامة'
@@ -70,8 +80,11 @@ const AdminSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
+    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+    { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 
@@ -96,15 +109,17 @@ const AdminSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-yellow-500/20">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <span className="text-black font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-yellow-500" />
+                <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/admin" className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-black font-bold text-sm">H</span>
+            <Link to="/admin" className="relative mx-auto">
+              <Shield size={28} className="text-yellow-500" />
+              <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -123,8 +138,16 @@ const AdminSidebar = ({
 
         <div className={`p-4 border-b border-yellow-500/20 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
-              <UserIcon size={20} className="text-black" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user?.fullName || 'Admin'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon size={20} className="text-black" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -166,6 +189,11 @@ const AdminSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
+              )}
+              {item.id === 'complaints' && !isActive(item.path) && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-medium animate-pulse">!</span>
+                </div>
               )}
             </Link>
           ))}
@@ -213,7 +241,10 @@ const AdminUsers = () => {
         total: 'Total Users',
         workers: 'Workers',
         employers: 'Employers',
-        admins: 'Admins'
+        admins: 'Admins',
+        active: 'Active',
+        suspended: 'Suspended',
+        paused: 'Paused'
       },
       table: {
         name: 'Name',
@@ -254,7 +285,10 @@ const AdminUsers = () => {
         total: 'إجمالي المستخدمين',
         workers: 'عمال',
         employers: 'أصحاب عمل',
-        admins: 'مشرفين'
+        admins: 'مشرفين',
+        active: 'نشط',
+        suspended: 'معلق',
+        paused: 'موقف مؤقتاً'
       },
       table: {
         name: 'الاسم',
@@ -343,8 +377,8 @@ const AdminUsers = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(u =>
-        u.fullName.toLowerCase().includes(searchLower) ||
-        u.email.toLowerCase().includes(searchLower) ||
+        u.fullName?.toLowerCase().includes(searchLower) ||
+        u.email?.toLowerCase().includes(searchLower) ||
         u.phone?.toLowerCase().includes(searchLower) ||
         u.location?.toLowerCase().includes(searchLower)
       );
@@ -418,7 +452,10 @@ const AdminUsers = () => {
     total: users.length,
     workers: users.filter(u => u.role === 'WORKER').length,
     employers: users.filter(u => u.role === 'EMPLOYER').length,
-    admins: users.filter(u => u.role === 'ADMIN').length
+    admins: users.filter(u => u.role === 'ADMIN').length,
+    active: users.filter(u => u.status === 'active' || !u.status).length,
+    suspended: users.filter(u => u.status === 'suspended').length,
+    paused: users.filter(u => u.status === 'paused').length
   };
 
   if (!user) {
@@ -501,7 +538,7 @@ const AdminUsers = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400">{t.stats.total}</p>
@@ -537,6 +574,33 @@ const AdminUsers = () => {
                 </div>
               </div>
               <p className="text-2xl font-bold text-white mt-1">{stats.admins}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.active}</p>
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <Play size={20} className="text-green-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.active}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.suspended}</p>
+                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                  <Pause size={20} className="text-red-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.suspended}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.paused}</p>
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.paused}</p>
             </div>
           </div>
 

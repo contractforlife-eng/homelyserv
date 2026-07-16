@@ -1,4 +1,4 @@
-// src/pages/EmployerComplaints.jsx - COMPLETE WITH PREMIUM BADGE FIX
+// src/pages/EmployerComplaints.jsx - COMPLETE WITH EMPLOYER-SPECIFIC FILTERING
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -96,7 +96,6 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -410,6 +409,9 @@ const EmployerComplaints = () => {
 
   const t = translations[language];
 
+  // ============================================================
+  // FIXED: Load complaints only for the current employer
+  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
@@ -434,23 +436,29 @@ const EmployerComplaints = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load complaints from localStorage
-    const savedComplaints = localStorage.getItem('employer_complaints');
-    if (savedComplaints) {
-      try {
-        setComplaints(JSON.parse(savedComplaints));
-        setFilteredComplaints(JSON.parse(savedComplaints));
-        setLoading(false);
-      } catch (error) {
-        console.error('Error parsing complaints:', error);
-        setLoading(false);
-      }
-    } else {
-      setComplaints([]);
-      setFilteredComplaints([]);
-      setLoading(false);
-    }
+    setLoading(false);
   }, [navigate]);
+
+  // ============================================================
+  // Load complaints when user is set - FILTER BY EMPLOYER
+  // ============================================================
+  useEffect(() => {
+    if (!user?.email) return;
+
+    // Load complaints from localStorage
+    const allComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
+    
+    // FILTER: Only complaints from this employer
+    const employerComplaints = allComplaints.filter(
+      complaint => complaint.employerEmail === user.email
+    );
+    
+    console.log(`📋 Loaded ${employerComplaints.length} complaints for employer: ${user.email}`);
+    console.log(`📋 Total complaints in storage: ${allComplaints.length}`);
+    
+    setComplaints(employerComplaints);
+    setFilteredComplaints(employerComplaints);
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -470,7 +478,7 @@ const EmployerComplaints = () => {
       filtered = filtered.filter(c =>
         c.title.toLowerCase().includes(searchLower) ||
         c.description.toLowerCase().includes(searchLower) ||
-        t.categories[c.category]?.toLowerCase().includes(searchLower)
+        (t.categories[c.category] || '').toLowerCase().includes(searchLower)
       );
     }
 
@@ -506,30 +514,70 @@ const EmployerComplaints = () => {
     }));
   };
 
+  // ============================================================
+  // FIXED: Submit complaint with employer email
+  // ============================================================
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (!user?.email) {
+      alert('Please login to submit a complaint');
+      return;
+    }
+    
     const complaint = {
       id: Date.now(),
       ...newComplaint,
       status: 'pending',
       date: new Date().toISOString().split('T')[0],
-      response: null
+      response: null,
+      employerId: user.id || user.email,
+      employerEmail: user.email,
+      employerName: user.fullName || 'Employer'
     };
-    const updatedComplaints = [complaint, ...complaints];
-    setComplaints(updatedComplaints);
-    setFilteredComplaints(updatedComplaints);
-    localStorage.setItem('employer_complaints', JSON.stringify(updatedComplaints));
+    
+    // Get all complaints from storage
+    const allComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
+    
+    // Add new complaint
+    const updatedAllComplaints = [complaint, ...allComplaints];
+    localStorage.setItem('employer_complaints', JSON.stringify(updatedAllComplaints));
+    
+    // Update state with filtered complaints for this employer
+    const employerComplaints = updatedAllComplaints.filter(
+      c => c.employerEmail === user.email
+    );
+    
+    setComplaints(employerComplaints);
+    setFilteredComplaints(employerComplaints);
+    
     setNewComplaint({ title: '', description: '', category: 'general' });
     setShowForm(false);
+    
+    console.log(`✅ Complaint submitted by ${user.email}`);
   };
 
+  // ============================================================
+  // FIXED: Update complaint status
+  // ============================================================
   const updateComplaintStatus = (complaintId, newStatus) => {
-    const updatedComplaints = complaints.map(c =>
+    // Get all complaints from storage
+    const allComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
+    
+    // Update the specific complaint
+    const updatedAllComplaints = allComplaints.map(c =>
       c.id === complaintId ? { ...c, status: newStatus } : c
     );
-    setComplaints(updatedComplaints);
-    setFilteredComplaints(updatedComplaints);
-    localStorage.setItem('employer_complaints', JSON.stringify(updatedComplaints));
+    
+    localStorage.setItem('employer_complaints', JSON.stringify(updatedAllComplaints));
+    
+    // Filter for this employer
+    const employerComplaints = updatedAllComplaints.filter(
+      c => c.employerEmail === user.email
+    );
+    
+    setComplaints(employerComplaints);
+    setFilteredComplaints(employerComplaints);
   };
 
   const getStatusColor = (status) => {
@@ -631,6 +679,9 @@ const EmployerComplaints = () => {
               <div>
                 <h1 className="text-2xl font-bold">{t.title}</h1>
                 <p className="text-teal-100 mt-1">{t.subtitle}</p>
+                <p className="text-teal-200 text-sm mt-1">
+                  {complaints.length} complaints submitted
+                </p>
               </div>
               <button
                 onClick={() => setShowForm(!showForm)}

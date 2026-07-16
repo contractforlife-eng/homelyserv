@@ -1,4 +1,4 @@
-// src/pages/AdminPayments.jsx - Updated with verification
+// src/pages/AdminPayments.jsx - UPDATED WITH FULL SIDEBAR MENU
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -33,10 +33,12 @@ import {
   Lock,
   Unlock,
   UserCheck,
-  Briefcase
+  Briefcase,
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react';
 
-// Admin Sidebar Component
+// Admin Sidebar Component - Dark Theme with FULL MENU
 const AdminSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -52,8 +54,11 @@ const AdminSidebar = ({
     en: {
       dashboard: 'Dashboard',
       users: 'Users',
+      hires: 'Hires',
       messages: 'Messages',
       payments: 'Payments',
+      complaints: 'Complaints',
+      reports: 'Reports',
       settings: 'Settings',
       logout: 'Logout',
       overview: 'Overview'
@@ -61,8 +66,11 @@ const AdminSidebar = ({
     ar: {
       dashboard: 'لوحة التحكم',
       users: 'المستخدمين',
+      hires: 'التوظيفات',
       messages: 'الرسائل',
       payments: 'المدفوعات',
+      complaints: 'الشكاوى',
+      reports: 'التقارير',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       overview: 'نظرة عامة'
@@ -74,8 +82,11 @@ const AdminSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
+    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+    { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 
@@ -178,6 +189,11 @@ const AdminSidebar = ({
               )}
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
+              )}
+              {item.id === 'complaints' && !isActive(item.path) && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-medium animate-pulse">!</span>
+                </div>
               )}
             </Link>
           ))}

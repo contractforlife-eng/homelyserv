@@ -1,3 +1,4 @@
+// src/pages/AdminDashboard.jsx - UPDATED WITH COMPLAINTS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -38,10 +39,13 @@ import {
   Shield,
   Award,
   TrendingUp,
-  User as UserIcon
+  User as UserIcon,
+  AlertTriangle,
+  BarChart3,
+  FileCheck
 } from 'lucide-react';
 
-// Admin Sidebar Component - Dark Theme
+// Admin Sidebar Component - Dark Theme with COMPLAINTS
 const AdminSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -57,8 +61,11 @@ const AdminSidebar = ({
     en: {
       dashboard: 'Dashboard',
       users: 'Users',
+      hires: 'Hires',
       messages: 'Messages',
       payments: 'Payments',
+      complaints: 'Complaints',
+      reports: 'Reports',
       settings: 'Settings',
       logout: 'Logout',
       overview: 'Overview'
@@ -66,8 +73,11 @@ const AdminSidebar = ({
     ar: {
       dashboard: 'لوحة التحكم',
       users: 'المستخدمين',
+      hires: 'التوظيفات',
       messages: 'الرسائل',
       payments: 'المدفوعات',
+      complaints: 'الشكاوى',
+      reports: 'التقارير',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       overview: 'نظرة عامة'
@@ -79,8 +89,11 @@ const AdminSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
+    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+    { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 
@@ -105,15 +118,17 @@ const AdminSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-yellow-500/20">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <span className="text-black font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-yellow-500" />
+                <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/admin" className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-black font-bold text-sm">H</span>
+            <Link to="/admin" className="relative mx-auto">
+              <Shield size={28} className="text-yellow-500" />
+              <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -132,8 +147,16 @@ const AdminSidebar = ({
 
         <div className={`p-4 border-b border-yellow-500/20 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
-              <UserIcon size={20} className="text-black" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user?.fullName || 'Admin'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon size={20} className="text-black" />
+              )}
             </div>
             {!sidebarCollapsed && user && (
               <div className="flex-1 min-w-0">
@@ -176,6 +199,11 @@ const AdminSidebar = ({
               {isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto w-1.5 h-8 bg-yellow-500 rounded-full"></div>
               )}
+              {item.id === 'complaints' && !isActive(item.path) && (
+                <div className="ml-auto">
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-medium animate-pulse">!</span>
+                </div>
+              )}
             </Link>
           ))}
         </nav>
@@ -212,7 +240,9 @@ const AdminDashboard = () => {
     totalUsers: 0,
     totalPayments: 0,
     totalMessages: 0,
-    pendingActions: 0
+    pendingActions: 0,
+    totalComplaints: 0,
+    pendingComplaints: 0
   });
 
   const translations = {
@@ -223,13 +253,16 @@ const AdminDashboard = () => {
         users: 'Total Users',
         payments: 'Total Payments',
         messages: 'Messages',
-        pending: 'Pending Actions'
+        pending: 'Pending Actions',
+        complaints: 'Total Complaints',
+        pendingComplaints: 'Pending Complaints'
       },
       recentActivity: 'Recent Activity',
       quickActions: 'Quick Actions',
       manageUsers: 'Manage Users',
       viewMessages: 'View Messages',
       viewPayments: 'View Payments',
+      viewComplaints: 'View Complaints',
       settings: 'Settings',
       languageToggle: 'العربية',
       notifications: 'Notifications',
@@ -242,13 +275,16 @@ const AdminDashboard = () => {
         users: 'إجمالي المستخدمين',
         payments: 'إجمالي المدفوعات',
         messages: 'الرسائل',
-        pending: 'إجراءات معلقة'
+        pending: 'إجراءات معلقة',
+        complaints: 'إجمالي الشكاوى',
+        pendingComplaints: 'شكاوى معلقة'
       },
       recentActivity: 'النشاط الأخير',
       quickActions: 'إجراءات سريعة',
       manageUsers: 'إدارة المستخدمين',
       viewMessages: 'عرض الرسائل',
       viewPayments: 'عرض المدفوعات',
+      viewComplaints: 'عرض الشكاوى',
       settings: 'الإعدادات',
       languageToggle: 'English',
       notifications: 'الإشعارات',
@@ -291,11 +327,19 @@ const AdminDashboard = () => {
     const payments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
     const messages = JSON.parse(localStorage.getItem('admin_messages') || '[]');
     
+    // Load complaints from all sources
+    const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
+    const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
+    const adminComplaints = JSON.parse(localStorage.getItem('admin_complaints') || '[]');
+    const allComplaints = [...employerComplaints, ...workerComplaints, ...adminComplaints];
+    
     setStats({
       totalUsers: users.length,
       totalPayments: payments.length,
       totalMessages: messages.length,
-      pendingActions: messages.filter(m => m.status === 'pending').length
+      pendingActions: messages.filter(m => m.status === 'pending').length,
+      totalComplaints: allComplaints.length,
+      pendingComplaints: allComplaints.filter(c => c.status === 'pending').length
     });
   }, [navigate]);
 
@@ -394,7 +438,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Stats Cards - Dark Theme with Yellow */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400">{t.stats.users}</p>
@@ -424,6 +468,24 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.complaints}</p>
+                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                  <AlertTriangle size={20} className="text-red-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.totalComplaints}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{t.stats.pendingComplaints}</p>
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mt-1">{stats.pendingComplaints}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-orange-400" />
@@ -436,7 +498,7 @@ const AdminDashboard = () => {
           {/* Quick Actions */}
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20 mb-6">
             <h3 className="text-lg font-semibold text-white mb-4">{t.quickActions}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Link
                 to="/admin/users"
                 className="flex items-center gap-3 p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20"
@@ -457,6 +519,13 @@ const AdminDashboard = () => {
               >
                 <CreditCard size={20} className="text-green-400" />
                 <span className="font-medium text-green-300">{t.viewPayments}</span>
+              </Link>
+              <Link
+                to="/admin/complaints"
+                className="flex items-center gap-3 p-3 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
+              >
+                <AlertTriangle size={20} className="text-red-400" />
+                <span className="font-medium text-red-300">{t.viewComplaints}</span>
               </Link>
               <Link
                 to="/admin/settings"
