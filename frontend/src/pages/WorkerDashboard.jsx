@@ -287,7 +287,12 @@ const WorkerDashboard = () => {
     messages: 0,
     completedJobs: 0,
     pendingPayments: 0,
-    totalEarnings: 0
+    totalEarnings: 0,
+    pendingOffers: 0,
+    acceptedOffers: 0,
+    inProgressOffers: 0,
+    rejectedOffers: 0,
+    completedOffers: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -315,7 +320,12 @@ const WorkerDashboard = () => {
         messages: 'Messages',
         completedJobs: 'Completed Jobs',
         pendingPayments: 'Pending Payments',
-        totalEarnings: 'Total Earnings'
+        totalEarnings: 'Total Earnings',
+        pendingOffers: 'Pending Offers',
+        acceptedOffers: 'Accepted',
+        inProgress: 'In Progress',
+        rejected: 'Rejected',
+        completed: 'Completed'
       },
       recentActivity: 'Recent Activity',
       quickActions: 'Quick Actions',
@@ -345,7 +355,12 @@ const WorkerDashboard = () => {
         messages: 'الرسائل',
         completedJobs: 'الوظائف المكتملة',
         pendingPayments: 'المدفوعات المعلقة',
-        totalEarnings: 'إجمالي الأرباح'
+        totalEarnings: 'إجمالي الأرباح',
+        pendingOffers: 'عروض معلقة',
+        acceptedOffers: 'مقبولة',
+        inProgress: 'قيد التنفيذ',
+        rejected: 'مرفوضة',
+        completed: 'مكتملة'
       },
       recentActivity: 'النشاط الأخير',
       quickActions: 'إجراءات سريعة',
@@ -403,70 +418,128 @@ const WorkerDashboard = () => {
     }
   }, [navigate]);
 
+  // ============================================================
+  // FIXED: Load stats only for the current worker
+  // ============================================================
   const loadRealStats = () => {
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const currentUser = users.find(u => u.email === user?.email);
+      if (!user?.email) return;
+
+      const currentUserEmail = user.email;
+      const currentUserId = user.id || user.email;
       
-      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      const totalApplications = appliedOffers.length;
-      
-      const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
-      const savedJobs = savedOffers.length;
-      
+      // Get all employer offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       
-      const activeOffers = employerOffers.filter(o => o.status === 'active' || o.status === 'open').length;
+      // FILTER: Only offers meant for this worker
+      const workerOffers = employerOffers.filter(
+        offer => offer.workerEmail === currentUserEmail
+      );
       
-      const interviews = appliedOffers.filter(id => {
-        return employerOffers.some(o => o.id === id && o.status === 'interview');
-      }).length;
+      console.log(`📊 Worker ${currentUserEmail} has ${workerOffers.length} offers`);
       
-      const completedJobs = appliedOffers.filter(id => {
-        return employerOffers.some(o => o.id === id && o.status === 'completed');
-      }).length;
+      // Count offers by status
+      const pendingOffers = workerOffers.filter(o => o.status === 'pending').length;
+      const acceptedOffers = workerOffers.filter(o => o.status === 'accepted').length;
+      const inProgressOffers = workerOffers.filter(o => o.status === 'in_progress').length;
+      const rejectedOffers = workerOffers.filter(o => o.status === 'rejected').length;
+      const completedOffers = workerOffers.filter(o => o.status === 'completed').length;
       
+      // Also check worker-specific storage
+      const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUserEmail}`) || '[]');
+      
+      // Combine and deduplicate
+      const allWorkerOffers = [...workerOffers];
+      workerSpecificOffers.forEach(offer => {
+        if (!allWorkerOffers.find(o => o.id === offer.id)) {
+          allWorkerOffers.push(offer);
+        }
+      });
+      
+      // Recalculate with combined data
+      const totalPending = allWorkerOffers.filter(o => o.status === 'pending').length;
+      const totalAccepted = allWorkerOffers.filter(o => o.status === 'accepted').length;
+      const totalInProgress = allWorkerOffers.filter(o => o.status === 'in_progress').length;
+      const totalRejected = allWorkerOffers.filter(o => o.status === 'rejected').length;
+      const totalCompleted = allWorkerOffers.filter(o => o.status === 'completed').length;
+      
+      // Get applied offers from worker_applied_offers
+      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
+      // FILTER: Only applications by this worker
+      const workerAppliedOffers = appliedOffers.filter(
+        offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
+      );
+      
+      // Get saved offers
+      const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
+      // FILTER: Only saved offers by this worker
+      const workerSavedOffers = savedOffers.filter(
+        offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
+      );
+      
+      // Calculate profile views (stored per worker)
+      const profileViews = parseInt(localStorage.getItem(`profile_views_${currentUserEmail}`) || '0');
+      
+      // Calculate messages for this worker
       let messagesCount = 0;
-      const userId = user?.id || user?.email;
-      if (userId) {
+      if (currentUserId) {
         const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
         Object.keys(allMessages).forEach(convId => {
           const msgs = allMessages[convId] || [];
           msgs.forEach(msg => {
-            if (msg.recipientId === userId || msg.senderId === userId) {
+            if (msg.recipientId === currentUserId || msg.senderId === currentUserId) {
               messagesCount++;
             }
           });
         });
       }
       
-      const profileViews = parseInt(localStorage.getItem('worker_profile_views') || '0');
-      
+      // Calculate payments for this worker
       const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
-      const workerPayments = payments.filter(p => p.workerId === user?.id || p.workerEmail === user?.email);
+      const workerPayments = payments.filter(
+        p => p.workerId === currentUserId || p.workerEmail === currentUserEmail
+      );
       const pendingPayments = workerPayments.filter(p => p.status === 'pending').length;
       const totalEarnings = workerPayments
         .filter(p => p.status === 'completed' || p.status === 'paid')
         .reduce((sum, p) => sum + (p.amount || 0), 0);
       
+      // Set stats with filtered data
       setStats({
-        totalApplications: totalApplications,
-        activeOffers: activeOffers,
-        interviews: interviews,
-        savedJobs: savedJobs,
+        totalApplications: workerAppliedOffers.length,
+        activeOffers: allWorkerOffers.filter(o => o.status === 'active' || o.status === 'open').length,
+        interviews: allWorkerOffers.filter(o => o.status === 'interview').length,
+        savedJobs: workerSavedOffers.length,
         profileViews: profileViews,
         messages: messagesCount,
-        completedJobs: completedJobs,
+        completedJobs: totalCompleted,
         pendingPayments: pendingPayments,
-        totalEarnings: totalEarnings
+        totalEarnings: totalEarnings,
+        pendingOffers: totalPending,
+        acceptedOffers: totalAccepted,
+        inProgressOffers: totalInProgress,
+        rejectedOffers: totalRejected,
+        completedOffers: totalCompleted
       });
       
+      console.log(`📊 Stats loaded for ${currentUserEmail}:`, {
+        totalOffers: allWorkerOffers.length,
+        pending: totalPending,
+        accepted: totalAccepted,
+        inProgress: totalInProgress,
+        rejected: totalRejected,
+        completed: totalCompleted,
+        applications: workerAppliedOffers.length,
+        earnings: totalEarnings
+      });
+      
+      // Generate recent activity with filtered data
       generateRecentActivity(
-        appliedOffers,
-        savedOffers,
-        employerOffers,
-        payments,
-        user
+        allWorkerOffers,
+        workerAppliedOffers,
+        workerSavedOffers,
+        workerPayments,
+        currentUserEmail
       );
       
     } catch (error) {
@@ -474,50 +547,67 @@ const WorkerDashboard = () => {
     }
   };
 
+  // ============================================================
+  // FIXED: Generate activity only for this worker
+  // ============================================================
   const generateRecentActivity = (
+    workerOffers,
     appliedOffers,
     savedOffers,
-    employerOffers,
     payments,
-    currentUser
+    userEmail
   ) => {
     const activities = [];
     
-    appliedOffers.forEach(offerId => {
-      const offer = employerOffers.find(o => o.id === offerId);
-      if (offer) {
-        activities.push({
-          icon: 'application',
-          message: `Applied for ${offer.title || 'position'} at ${offer.company || 'company'}`,
-          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
-          status: 'Applied'
-        });
+    // Add offer activities
+    workerOffers.forEach(offer => {
+      let statusText = '';
+      let icon = 'offer';
+      
+      switch (offer.status) {
+        case 'pending':
+          statusText = 'Pending Review';
+          icon = 'clock';
+          break;
+        case 'accepted':
+          statusText = 'Accepted';
+          icon = 'check';
+          break;
+        case 'in_progress':
+          statusText = 'In Progress';
+          icon = 'zap';
+          break;
+        case 'completed':
+          statusText = 'Completed';
+          icon = 'check';
+          break;
+        case 'rejected':
+          statusText = 'Rejected';
+          icon = 'x';
+          break;
+        default:
+          statusText = offer.status || 'Unknown';
       }
+      
+      activities.push({
+        icon: icon,
+        message: `${offer.jobTitle || 'Job offer'} from ${offer.employerName || 'employer'} - ${statusText}`,
+        time: offer.updatedAt ? new Date(offer.updatedAt).toLocaleDateString() : 'Recently',
+        status: statusText
+      });
     });
     
-    savedOffers.forEach(offerId => {
-      const offer = employerOffers.find(o => o.id === offerId);
-      if (offer) {
-        activities.push({
-          icon: 'saved',
-          message: `Saved job: ${offer.title || 'position'} at ${offer.company || 'company'}`,
-          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
-          status: 'Saved'
-        });
-      }
-    });
-    
+    // Add payment activities
     payments.forEach(payment => {
-      if (payment.workerId === user?.id || payment.workerEmail === user?.email) {
-        activities.push({
-          icon: 'payment',
-          message: `Payment of $${payment.amount} ${payment.status === 'completed' ? 'received' : 'pending'}`,
-          time: payment.date ? new Date(payment.date).toLocaleDateString() : 'Recently',
-          status: payment.status === 'completed' ? 'Completed' : 'Pending'
-        });
-      }
+      activities.push({
+        icon: 'payment',
+        message: `Payment of EGP ${payment.amount} ${payment.status === 'completed' ? 'received' : 'pending'}`,
+        time: payment.date ? new Date(payment.date).toLocaleDateString() : 'Recently',
+        status: payment.status === 'completed' ? 'Completed' : 'Pending'
+      });
     });
     
+    // Sort by time (most recent first)
     activities.sort((a, b) => {
       const dateA = new Date(a.time);
       const dateB = new Date(b.time);
@@ -529,7 +619,11 @@ const WorkerDashboard = () => {
 
   const loadNotifications = () => {
     try {
-      const storedNotifications = JSON.parse(localStorage.getItem('worker_notifications') || '[]');
+      if (!user?.email) return;
+      
+      const storedNotifications = JSON.parse(
+        localStorage.getItem(`worker_notifications_${user.email}`) || '[]'
+      );
       setNotifications(storedNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -544,18 +638,29 @@ const WorkerDashboard = () => {
     }
   }, [user]);
 
+  // Refresh stats periodically
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      loadRealStats();
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   const markNotificationRead = (id) => {
     const updated = notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
     );
     setNotifications(updated);
-    localStorage.setItem('worker_notifications', JSON.stringify(updated));
+    localStorage.setItem(`worker_notifications_${user.email}`, JSON.stringify(updated));
   };
 
   const markAllRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));
     setNotifications(updated);
-    localStorage.setItem('worker_notifications', JSON.stringify(updated));
+    localStorage.setItem(`worker_notifications_${user.email}`, JSON.stringify(updated));
   };
 
   useEffect(() => {
@@ -792,48 +897,59 @@ const WorkerDashboard = () => {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.applications}</p>
-                <Briefcase size={20} className="text-blue-500" />
+                <p className="text-sm text-gray-500">{t.stats.pendingOffers}</p>
+                <Clock size={20} className="text-yellow-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalApplications}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pendingOffers}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.activeOffers}</p>
-                <Zap size={20} className="text-yellow-500" />
+                <p className="text-sm text-gray-500">{t.stats.acceptedOffers}</p>
+                <CheckCircle size={20} className="text-blue-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.activeOffers}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.acceptedOffers}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.interviews}</p>
-                <Users size={20} className="text-purple-500" />
+                <p className="text-sm text-gray-500">{t.stats.inProgress}</p>
+                <Zap size={20} className="text-green-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.interviews}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.inProgressOffers}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.savedJobs}</p>
-                <Heart size={20} className="text-red-500" />
+                <p className="text-sm text-gray-500">{t.stats.completed}</p>
+                <CheckCircle size={20} className="text-purple-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.savedJobs}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completedOffers}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.profileViews}</p>
-                <TrendingUp size={20} className="text-green-500" />
+                <p className="text-sm text-gray-500">{t.stats.rejected}</p>
+                <X size={20} className="text-red-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.profileViews}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.rejectedOffers}</p>
+            </div>
+          </div>
+
+          {/* Stats Row 2 - Financial */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.totalEarnings}</p>
+                <span className="text-red-500 font-bold">$</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">EGP {stats.totalEarnings}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.messages}</p>
-                <MessageCircle size={20} className="text-indigo-500" />
+                <p className="text-sm text-gray-500">{t.stats.pendingPayments}</p>
+                <CreditCard size={20} className="text-yellow-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.messages}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pendingPayments}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -844,10 +960,10 @@ const WorkerDashboard = () => {
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.totalEarnings}</p>
-                <span className="text-red-500 font-bold">$</span>
+                <p className="text-sm text-gray-500">{t.stats.messages}</p>
+                <MessageCircle size={20} className="text-indigo-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">${stats.totalEarnings}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.messages}</p>
             </div>
           </div>
 
@@ -900,15 +1016,19 @@ const WorkerDashboard = () => {
                 {recentActivity.map((activity, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      activity.icon === 'application' ? 'bg-blue-100' :
-                      activity.icon === 'saved' ? 'bg-purple-100' :
-                      activity.icon === 'payment' ? 'bg-green-100' :
+                      activity.icon === 'offer' || activity.icon === 'zap' ? 'bg-blue-100' :
+                      activity.icon === 'check' ? 'bg-green-100' :
+                      activity.icon === 'clock' ? 'bg-yellow-100' :
+                      activity.icon === 'x' ? 'bg-red-100' :
+                      activity.icon === 'payment' ? 'bg-purple-100' :
                       'bg-gray-100'
                     }`}>
-                      {activity.icon === 'application' && <Briefcase size={16} className="text-blue-600" />}
-                      {activity.icon === 'saved' && <Heart size={16} className="text-purple-600" />}
-                      {activity.icon === 'payment' && <CreditCard size={16} className="text-green-600" />}
-                      {!activity.icon && <Briefcase size={16} className="text-blue-600" />}
+                      {activity.icon === 'offer' && <Briefcase size={16} className="text-blue-600" />}
+                      {activity.icon === 'zap' && <Zap size={16} className="text-green-600" />}
+                      {activity.icon === 'check' && <CheckCircle size={16} className="text-green-600" />}
+                      {activity.icon === 'clock' && <Clock size={16} className="text-yellow-600" />}
+                      {activity.icon === 'x' && <X size={16} className="text-red-600" />}
+                      {activity.icon === 'payment' && <CreditCard size={16} className="text-purple-600" />}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-800">{activity.message}</p>
@@ -916,9 +1036,10 @@ const WorkerDashboard = () => {
                     </div>
                     {activity.status && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        activity.status === 'Applied' || activity.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                        activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                        activity.status === 'Saved' ? 'bg-purple-100 text-purple-700' :
+                        activity.status === 'Completed' || activity.status === 'Accepted' ? 'bg-green-100 text-green-700' :
+                        activity.status === 'Pending' || activity.status === 'Pending Review' ? 'bg-yellow-100 text-yellow-700' :
+                        activity.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                        activity.status === 'Rejected' ? 'bg-red-100 text-red-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {activity.status}

@@ -48,7 +48,10 @@ import {
   UserX,
   Calendar,
   Building2,
-  Crown
+  Crown,
+  StopCircle,
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -57,7 +60,7 @@ import {
   saveUserConversations 
 } from '../utils/chatService';
 
-// Sidebar Component - RED THEME
+// Sidebar Component - RED THEME (same as before, keep this)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -326,13 +329,17 @@ const WorkerOffers = () => {
         pending: 'Pending',
         accepted: 'Accepted',
         rejected: 'Rejected',
+        inProgress: 'In Progress',
+        completed: 'Completed',
         total: 'Total'
       },
       filters: {
         all: 'All Offers',
         pending: 'Pending',
         accepted: 'Accepted',
-        rejected: 'Rejected'
+        rejected: 'Rejected',
+        inProgress: 'In Progress',
+        completed: 'Completed'
       },
       sort: {
         newest: 'Newest First',
@@ -344,6 +351,7 @@ const WorkerOffers = () => {
         viewDetails: 'View Details',
         accept: 'Accept Offer',
         reject: 'Reject',
+        completeWork: 'Complete Work',
         salaryPerMonth: 'EGP/month',
         location: 'Location',
         type: 'Type',
@@ -353,14 +361,22 @@ const WorkerOffers = () => {
         pending: 'Pending Review',
         accepted: 'Accepted',
         rejected: 'Rejected',
-        employer: 'Employer'
+        inProgress: 'In Progress',
+        completed: 'Completed',
+        employer: 'Employer',
+        paymentCompleted: 'Payment Completed',
+        workStarted: 'Work Started',
+        workCompleted: 'Work Completed'
       },
       actions: {
         accept: 'Accept Offer',
         rejecting: 'Rejecting...',
         accepting: 'Accepting...',
         view: 'View Details',
-        close: 'Close'
+        close: 'Close',
+        completeWork: 'Complete Work',
+        completing: 'Completing...',
+        confirmComplete: 'Are you sure you want to mark this job as completed? This action cannot be undone.'
       },
       empty: {
         title: 'No offers received',
@@ -374,6 +390,8 @@ const WorkerOffers = () => {
       rejectSuccess: 'You have rejected the offer from {employer}',
       acceptError: 'Failed to accept offer. Please try again.',
       rejectError: 'Failed to reject offer. Please try again.',
+      completeSuccess: '✅ You have marked this job as completed.',
+      completeError: 'Failed to complete work. Please try again.',
       premiumBadge: 'Premium Verified',
       getPremium: 'Get Premium'
     },
@@ -384,13 +402,17 @@ const WorkerOffers = () => {
         pending: 'قيد الانتظار',
         accepted: 'مقبولة',
         rejected: 'مرفوضة',
+        inProgress: 'قيد التنفيذ',
+        completed: 'مكتملة',
         total: 'الإجمالي'
       },
       filters: {
         all: 'جميع العروض',
         pending: 'قيد الانتظار',
         accepted: 'مقبولة',
-        rejected: 'مرفوضة'
+        rejected: 'مرفوضة',
+        inProgress: 'قيد التنفيذ',
+        completed: 'مكتملة'
       },
       sort: {
         newest: 'الأحدث أولاً',
@@ -402,6 +424,7 @@ const WorkerOffers = () => {
         viewDetails: 'عرض التفاصيل',
         accept: 'قبول العرض',
         reject: 'رفض',
+        completeWork: 'إكمال العمل',
         salaryPerMonth: 'جنيه/شهر',
         location: 'الموقع',
         type: 'النوع',
@@ -411,14 +434,22 @@ const WorkerOffers = () => {
         pending: 'قيد المراجعة',
         accepted: 'مقبولة',
         rejected: 'مرفوضة',
-        employer: 'صاحب العمل'
+        inProgress: 'قيد التنفيذ',
+        completed: 'مكتملة',
+        employer: 'صاحب العمل',
+        paymentCompleted: 'تم الدفع',
+        workStarted: 'بدأ العمل',
+        workCompleted: 'اكتمل العمل'
       },
       actions: {
         accept: 'قبول العرض',
         rejecting: 'جاري الرفض...',
         accepting: 'جاري القبول...',
         view: 'عرض التفاصيل',
-        close: 'إغلاق'
+        close: 'إغلاق',
+        completeWork: 'إكمال العمل',
+        completing: 'جاري الإكمال...',
+        confirmComplete: 'هل أنت متأكد من إكمال هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.'
       },
       empty: {
         title: 'لا توجد عروض',
@@ -432,6 +463,8 @@ const WorkerOffers = () => {
       rejectSuccess: 'لقد رفضت العرض من {employer}',
       acceptError: 'فشل قبول العرض. يرجى المحاولة مرة أخرى.',
       rejectError: 'فشل رفض العرض. يرجى المحاولة مرة أخرى.',
+      completeSuccess: '✅ لقد أكملت هذه المهمة.',
+      completeError: 'فشل إكمال العمل. يرجى المحاولة مرة أخرى.',
       premiumBadge: 'مميز معتمد',
       getPremium: 'اشتراك مميز'
     }
@@ -440,7 +473,7 @@ const WorkerOffers = () => {
   const t = translations[language];
 
   // ============================================================
-  // FIXED: Load offers with user parameter
+  // Load Offers with user parameter
   // ============================================================
   const loadOffers = (userParam) => {
     try {
@@ -455,25 +488,41 @@ const WorkerOffers = () => {
       
       // Get offers from employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      console.log('📋 All employer_offers:', employerOffers);
+      
       allOffers = employerOffers.filter(
         offer => offer.workerEmail === currentUser.email
       );
       
+      console.log(`📋 Filtered for ${currentUser.email}:`, allOffers);
+      
       // Also get from worker-specific storage
       const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUser.email}`) || '[]');
+      console.log(`📋 Worker-specific offers for ${currentUser.email}:`, workerOffers);
+      
       workerOffers.forEach(offer => {
         if (!allOffers.find(o => o.id === offer.id)) {
           allOffers.push(offer);
         }
       });
       
+      // Check for payment completion and update status
+      allOffers = allOffers.map(offer => {
+        // If offer is accepted and payment is completed, mark as in_progress
+        if (offer.status === 'accepted' && offer.paymentCompleted === true) {
+          return { ...offer, status: 'in_progress' };
+        }
+        return offer;
+      });
+      
       // Sort by newest first
       allOffers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
+      console.log('✅ Final offers:', allOffers);
+      console.log('✅ Status breakdown:', allOffers.map(o => ({ id: o.id, status: o.status, title: o.jobTitle })));
+      
       setOffers(allOffers);
       setFilteredOffers(allOffers);
-      
-      console.log(`✅ Loaded ${allOffers.length} offers for worker: ${currentUser.email}`);
       
     } catch (error) {
       console.error('Error loading offers:', error);
@@ -483,7 +532,7 @@ const WorkerOffers = () => {
   };
 
   // ============================================================
-  // FIXED: useEffect with proper dependency handling
+  // useEffect with proper dependency handling
   // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -502,7 +551,6 @@ const WorkerOffers = () => {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
         setUser(parsedUser);
-        // Load offers immediately with the user data
         loadOffers(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -521,7 +569,7 @@ const WorkerOffers = () => {
   }, [navigate]);
 
   // ============================================================
-  // FIXED: Reload offers when user changes
+  // Reload offers when user changes
   // ============================================================
   useEffect(() => {
     if (user) {
@@ -530,72 +578,46 @@ const WorkerOffers = () => {
   }, [user]);
 
   // ============================================================
-  // Conversation Creation
+  // Check for payment completion periodically
   // ============================================================
-  const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
-    try {
-      const conversationId = getConversationId(workerId, employerId);
-      const conversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]');
-      const existingConv = conversations.find(c => c.id === conversationId);
-      
-      if (!existingConv) {
-        const newConversation = {
-          id: conversationId,
-          participants: [
-            { id: workerId, name: workerName, role: 'WORKER' },
-            { id: employerId, name: employerName, role: 'EMPLOYER' }
-          ],
-          lastMessage: `✅ Offer accepted: ${offer.jobTitle || 'Job Offer'}`,
-          lastMessageTime: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        conversations.push(newConversation);
-        localStorage.setItem('homelyserv_conversations', JSON.stringify(conversations));
-        
-        const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
-        
-        sendMessage(
-          workerId,
-          workerName,
-          'WORKER',
-          employerId,
-          employerName,
-          welcomeMessage
-        );
-        
-        console.log('✅ Conversation created and welcome message sent');
-      }
-      
-      return conversationId;
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      return null;
-    }
-  };
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      loadOffers(user);
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   // ============================================================
-  // Accept Offer Handler
+  // Complete Work Handler
   // ============================================================
-  const handleAcceptOffer = (offer) => {
+  const handleCompleteWork = (offer) => {
     if (processingOffer) return;
+    
+    if (!confirm(t.actions.confirmComplete)) {
+      return;
+    }
+
     setProcessingOffer(offer.id);
 
     try {
       const updatedOffer = {
         ...offer,
-        status: 'accepted',
-        updatedAt: new Date().toISOString(),
-        workerResponseAt: new Date().toISOString()
+        status: 'completed',
+        workCompletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
+      // Update in employer_offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedEmployerOffers = employerOffers.map(o => 
         o.id === offer.id ? updatedOffer : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
 
+      // Update in worker-specific storage
       if (user?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
@@ -604,6 +626,106 @@ const WorkerOffers = () => {
         localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
+      // Create notification for employer
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'work_completed',
+        message: `${user?.fullName || 'Worker'} has completed the job: ${offer.jobTitle}`,
+        offerId: offer.id,
+        offerTitle: offer.jobTitle,
+        workerId: user?.id || user?.email,
+        workerName: user?.fullName || 'Worker',
+        employerId: offer.employerId || offer.employerEmail,
+        employerEmail: offer.employerEmail,
+        date: new Date().toISOString(),
+        read: false
+      };
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      notifications.push(notification);
+      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+
+      // Update state
+      setOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+      setFilteredOffers(prev => prev.map(o => 
+        o.id === offer.id ? updatedOffer : o
+      ));
+
+      alert(t.completeSuccess);
+
+    } catch (error) {
+      console.error('Error completing work:', error);
+      alert(t.completeError);
+    } finally {
+      setProcessingOffer(null);
+    }
+  };
+
+  // ============================================================
+  // Accept Offer Handler - FIXED with better localStorage handling
+  // ============================================================
+  const handleAcceptOffer = (offer) => {
+    if (processingOffer) return;
+    setProcessingOffer(offer.id);
+
+    try {
+      console.log('📝 Accepting offer:', offer);
+      
+      const updatedOffer = {
+        ...offer,
+        status: 'accepted',
+        updatedAt: new Date().toISOString(),
+        workerResponseAt: new Date().toISOString()
+      };
+
+      // Update in employer_offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      console.log('📋 Current employer_offers:', employerOffers);
+      
+      const updatedEmployerOffers = employerOffers.map(o => {
+        if (o.id === offer.id) {
+          console.log('✅ Found matching offer, updating:', o);
+          return updatedOffer;
+        }
+        return o;
+      });
+      
+      // Check if offer was found and updated
+      const found = updatedEmployerOffers.some(o => o.id === offer.id);
+      if (!found) {
+        console.warn('⚠️ Offer not found in employer_offers, adding it');
+        updatedEmployerOffers.push(updatedOffer);
+      }
+      
+      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
+      console.log('💾 Saved employer_offers:', updatedEmployerOffers);
+
+      // Update in worker-specific storage
+      if (user?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+        console.log('📋 Current worker_offers:', workerOffers);
+        
+        const updatedWorkerOffers = workerOffers.map(o => {
+          if (o.id === offer.id) {
+            console.log('✅ Found matching offer in worker_offers, updating:', o);
+            return updatedOffer;
+          }
+          return o;
+        });
+        
+        // Check if offer was found
+        const foundInWorker = updatedWorkerOffers.some(o => o.id === offer.id);
+        if (!foundInWorker) {
+          console.warn('⚠️ Offer not found in worker_offers, adding it');
+          updatedWorkerOffers.push(updatedOffer);
+        }
+        
+        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+        console.log('💾 Saved worker_offers:', updatedWorkerOffers);
+      }
+
+      // Create conversation
       const workerId = user?.id || user?.email;
       const workerName = user?.fullName || 'Worker';
       const employerId = offer.employerId || offer.employerEmail;
@@ -619,6 +741,7 @@ const WorkerOffers = () => {
         );
       }
 
+      // Create notification for employer
       const notification = {
         id: 'notif_' + Date.now(),
         type: 'offer_accepted',
@@ -636,6 +759,7 @@ const WorkerOffers = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
+      // Update state
       setOffers(prev => prev.map(o => 
         o.id === offer.id ? updatedOffer : o
       ));
@@ -645,6 +769,9 @@ const WorkerOffers = () => {
 
       const successMsg = t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer');
       alert(successMsg);
+      
+      // Force reload to ensure UI updates
+      loadOffers(user);
 
     } catch (error) {
       console.error('Error accepting offer:', error);
@@ -713,12 +840,61 @@ const WorkerOffers = () => {
       ));
 
       alert(t.rejectSuccess.replace('{employer}', offer.employerName || 'Employer'));
+      
+      // Force reload to ensure UI updates
+      loadOffers(user);
 
     } catch (error) {
       console.error('Error rejecting offer:', error);
       alert(t.rejectError);
     } finally {
       setProcessingOffer(null);
+    }
+  };
+
+  // ============================================================
+  // Conversation Creation
+  // ============================================================
+  const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
+    try {
+      const conversationId = getConversationId(workerId, employerId);
+      const conversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]');
+      const existingConv = conversations.find(c => c.id === conversationId);
+      
+      if (!existingConv) {
+        const newConversation = {
+          id: conversationId,
+          participants: [
+            { id: workerId, name: workerName, role: 'WORKER' },
+            { id: employerId, name: employerName, role: 'EMPLOYER' }
+          ],
+          lastMessage: `✅ Offer accepted: ${offer.jobTitle || 'Job Offer'}`,
+          lastMessageTime: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        conversations.push(newConversation);
+        localStorage.setItem('homelyserv_conversations', JSON.stringify(conversations));
+        
+        const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
+        
+        sendMessage(
+          workerId,
+          workerName,
+          'WORKER',
+          employerId,
+          employerName,
+          welcomeMessage
+        );
+        
+        console.log('✅ Conversation created and welcome message sent');
+      }
+      
+      return conversationId;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return null;
     }
   };
 
@@ -792,8 +968,10 @@ const WorkerOffers = () => {
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
-      accepted: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800'
+      accepted: 'bg-blue-100 text-blue-800',
+      rejected: 'bg-red-100 text-red-800',
+      in_progress: 'bg-green-100 text-green-800',
+      completed: 'bg-purple-100 text-purple-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -803,6 +981,8 @@ const WorkerOffers = () => {
       case 'pending': return <Clock size={16} />;
       case 'accepted': return <CheckCircle size={16} />;
       case 'rejected': return <X size={16} />;
+      case 'in_progress': return <Zap size={16} />;
+      case 'completed': return <Check size={16} />;
       default: return <AlertTriangle size={16} />;
     }
   };
@@ -811,7 +991,9 @@ const WorkerOffers = () => {
     const labels = {
       pending: 'Pending',
       accepted: 'Accepted',
-      rejected: 'Rejected'
+      rejected: 'Rejected',
+      in_progress: 'In Progress',
+      completed: 'Completed'
     };
     return labels[status] || status;
   };
@@ -835,6 +1017,8 @@ const WorkerOffers = () => {
     pending: offers.filter(o => o.status === 'pending').length,
     accepted: offers.filter(o => o.status === 'accepted').length,
     rejected: offers.filter(o => o.status === 'rejected').length,
+    inProgress: offers.filter(o => o.status === 'in_progress').length,
+    completed: offers.filter(o => o.status === 'completed').length,
     total: offers.length
   };
 
@@ -996,7 +1180,7 @@ const WorkerOffers = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.total}</p>
@@ -1013,10 +1197,24 @@ const WorkerOffers = () => {
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.inProgress}</p>
+                <Zap size={20} className="text-green-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.inProgress}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.accepted}</p>
-                <CheckCircle size={20} className="text-green-500" />
+                <CheckCircle size={20} className="text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.accepted}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.completed}</p>
+                <Check size={20} className="text-purple-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completed}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -1048,7 +1246,9 @@ const WorkerOffers = () => {
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="pending">{t.filters.pending}</option>
+                  <option value="in_progress">{t.filters.inProgress}</option>
                   <option value="accepted">{t.filters.accepted}</option>
+                  <option value="completed">{t.filters.completed}</option>
                   <option value="rejected">{t.filters.rejected}</option>
                 </select>
                 <select
@@ -1098,8 +1298,10 @@ const WorkerOffers = () => {
                   key={offer.id}
                   className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 ${
                     viewMode === 'list' ? 'flex flex-col md:flex-row' : ''
-                  } ${offer.status === 'accepted' ? 'border-green-200 bg-green-50/30' : ''}
-                  ${offer.status === 'rejected' ? 'border-red-200 bg-red-50/30' : ''}`}
+                  } ${offer.status === 'in_progress' ? 'border-green-200 bg-green-50/30' : ''}
+                  ${offer.status === 'accepted' ? 'border-blue-200 bg-blue-50/30' : ''}
+                  ${offer.status === 'rejected' ? 'border-red-200 bg-red-50/30' : ''}
+                  ${offer.status === 'completed' ? 'border-purple-200 bg-purple-50/30' : ''}`}
                 >
                   <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                     <div className="flex items-start gap-4">
@@ -1148,6 +1350,16 @@ const WorkerOffers = () => {
                           </div>
                         </div>
 
+                        {/* Payment Status Badge */}
+                        {offer.paymentCompleted === true && offer.status !== 'completed' && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                              <CheckCircle size={12} />
+                              {t.card.paymentCompleted}
+                            </span>
+                          </div>
+                        )}
+
                         {offer.workerSkills?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {offer.workerSkills.slice(0, 3).map((skill, idx) => (
@@ -1171,6 +1383,8 @@ const WorkerOffers = () => {
                             <Eye size={16} />
                             {t.card.viewDetails}
                           </button>
+                          
+                          {/* Pending - Show Accept/Reject buttons */}
                           {offer.status === 'pending' && (
                             <>
                               <button
@@ -1199,28 +1413,56 @@ const WorkerOffers = () => {
                               </button>
                             </>
                           )}
+
+                          {/* In Progress - Show Complete Work button */}
+                          {offer.status === 'in_progress' && (
+                            <>
+                              <button
+                                onClick={() => handleCompleteWork(offer)}
+                                disabled={processingOffer === offer.id}
+                                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {processingOffer === offer.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Check size={14} />
+                                )}
+                                {t.actions.completeWork}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  navigate('/worker-messages');
+                                }}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1"
+                              >
+                                <MessageSquare size={14} />
+                                Chat
+                              </button>
+                            </>
+                          )}
+
+                          {/* Accepted (waiting for payment) - Show waiting message */}
                           {offer.status === 'accepted' && (
-                            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1">
-                              <CheckCircle size={14} />
-                              Offer Accepted
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1">
+                              <Clock size={14} />
+                              Waiting for payment...
                             </span>
                           )}
+
+                          {/* Completed - Show completed message */}
+                          {offer.status === 'completed' && (
+                            <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1">
+                              <Check size={14} />
+                              Work Completed
+                            </span>
+                          )}
+
+                          {/* Rejected - Show rejected message */}
                           {offer.status === 'rejected' && (
                             <span className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1">
                               <X size={14} />
                               Offer Rejected
                             </span>
-                          )}
-                          {offer.status === 'accepted' && (
-                            <button
-                              onClick={() => {
-                                navigate('/worker-messages');
-                              }}
-                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition flex items-center gap-1"
-                            >
-                              <MessageSquare size={14} />
-                              Chat
-                            </button>
                           )}
                         </div>
                       </div>
@@ -1266,27 +1508,49 @@ const WorkerOffers = () => {
                                   <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
                                 </div>
                               )}
+                              {offer.workCompletedAt && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Work Completed</span>
+                                  <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
+                                </div>
+                              )}
+                              {offer.paymentCompleted === true && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Payment Status</span>
+                                  <span className="font-medium text-green-600">✅ Completed</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-700 mb-2">Status Information</h4>
                             <div className={`p-3 rounded-lg ${
                               offer.status === 'pending' ? 'bg-yellow-50 border border-yellow-200' :
-                              offer.status === 'accepted' ? 'bg-green-50 border border-green-200' :
+                              offer.status === 'accepted' ? 'bg-blue-50 border border-blue-200' :
+                              offer.status === 'in_progress' ? 'bg-green-50 border border-green-200' :
+                              offer.status === 'completed' ? 'bg-purple-50 border border-purple-200' :
                               'bg-red-50 border border-red-200'
                             }`}>
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(offer.status)}
                                 <span className="font-medium">
                                   {offer.status === 'pending' ? 'Awaiting your response' :
-                                   offer.status === 'accepted' ? 'Offer accepted - Contact employer for next steps' :
+                                   offer.status === 'accepted' ? 'Offer accepted - Waiting for payment confirmation' :
+                                   offer.status === 'in_progress' ? '🟢 Work in progress - Payment completed' :
+                                   offer.status === 'completed' ? '✅ Work has been completed' :
                                    'Offer rejected'}
                                 </span>
                               </div>
+                              {offer.status === 'in_progress' && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>✅ Payment has been completed. You are now working on this job.</p>
+                                  <p className="mt-1 text-xs text-gray-500">Click "Complete Work" when finished.</p>
+                                </div>
+                              )}
                               {offer.status === 'accepted' && (
                                 <div className="mt-2 text-sm text-gray-600">
-                                  <p>✅ You have accepted this offer. The employer will contact you with next steps.</p>
-                                  <p className="mt-1 text-xs text-gray-500">Contact info will be shared after payment confirmation.</p>
+                                  <p>⏳ You have accepted this offer. Waiting for employer to complete payment.</p>
+                                  <p className="mt-1 text-xs text-gray-500">You will be notified when payment is confirmed.</p>
                                 </div>
                               )}
                               {offer.status === 'pending' && (
@@ -1295,13 +1559,19 @@ const WorkerOffers = () => {
                                   <p className="mt-1 text-xs text-gray-500">Accepting will notify the employer.</p>
                                 </div>
                               )}
+                              {offer.status === 'completed' && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>✅ You have completed this job.</p>
+                                  <p className="mt-1 text-xs text-gray-500">The employer has been notified.</p>
+                                </div>
+                              )}
                               {offer.status === 'rejected' && (
                                 <div className="mt-2 text-sm text-gray-600">
                                   <p>❌ You have declined this offer.</p>
                                 </div>
                               )}
                             </div>
-                            {offer.status === 'accepted' && (
+                            {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
                               <button
                                 onClick={() => {
                                   navigate('/worker-messages');
