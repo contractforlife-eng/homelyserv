@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - COMPLETE FIXED
+// src/pages/EmployerMessages.jsx - COMPLETE WITH MESSAGE DISPLAY
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -17,27 +17,38 @@ import {
   ChevronRight,
   Globe,
   X,
-  AlertTriangle,
+  CreditCard,
   Search,
   Send,
-  Phone,
-  Video,
-  MoreVertical,
-  CheckCheck,
   Clock,
-  FileText,
-  CreditCard,
+  CheckCircle,
+  AlertCircle,
+  Filter,
+  Reply,
+  Archive,
+  Trash2,
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
   Crown,
-  RefreshCw
+  Shield,
+  MoreVertical,
+  Paperclip,
+  Smile,
+  PhoneCall,
+  Video,
+  Info,
+  CheckCheck,
+  Loader2
 } from 'lucide-react';
-import {
-  getUserConversations,
-  getConversationMessages,
-  sendMessage,
+import { 
+  getConversations, 
+  getMessages, 
+  sendMessage as sendChatMessage,
   markMessagesAsRead,
-  getConversationId,
-  saveUserConversations,
-  ensureConversationExists
+  getUnreadCount,
+  createConversation
 } from '../utils/chatService';
 
 // Employer Sidebar Component
@@ -132,15 +143,17 @@ const EmployerSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!sidebarCollapsed && (
             <Link to="/employer-dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+              <div className="relative">
+                <Shield size={28} className="text-teal-500" />
+                <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
               </div>
               <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/employer-dashboard" className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <Link to="/employer-dashboard" className="relative mx-auto">
+              <Shield size={28} className="text-teal-500" />
+              <Home size={14} className="text-teal-300 absolute -bottom-1 -right-1" />
             </Link>
           )}
           <button
@@ -159,7 +172,7 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -167,7 +180,7 @@ const EmployerSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className="text-teal-600" />
+                <User size={20} className="text-white" />
               )}
               {isPremium && (
                 <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
@@ -282,82 +295,237 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerMessages Component
+// ============================================================
+// MAIN EMPLOYER MESSAGES COMPONENT
+// ============================================================
 const EmployerMessages = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedConversationId, setSelectedConversationId] = useState(null);
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredConversations, setFilteredConversations] = useState([]);
   const messagesEndRef = useRef(null);
-  const intervalRef = useRef(null);
-
-  const isPremium = () => {
-    const userId = user?.id || user?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
-
-  const userIsPremium = isPremium();
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const translations = {
     en: {
       title: 'Messages',
-      subtitle: 'Communicate with workers and professionals',
+      subtitle: 'Chat with workers you\'ve hired',
       searchPlaceholder: 'Search conversations...',
-      typeMessage: 'Type a message...',
-      send: 'Send',
       noConversations: 'No conversations yet',
-      noConversationsDesc: 'Start hiring workers to connect with them',
+      noConversationsDesc: 'Start a conversation with a worker you\'ve hired',
+      startChat: 'Start Chat',
+      typeMessage: 'Type your message...',
+      send: 'Send',
       online: 'Online',
       offline: 'Offline',
+      lastSeen: 'Last seen {time}',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      loadMore: 'Load more',
+      noMessages: 'No messages yet',
+      startConversation: 'Start a conversation',
       languageToggle: 'العربية',
       notifications: 'Notifications',
-      loading: 'Loading messages...',
-      noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!',
-      refresh: 'Refresh',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium'
+      loading: 'Loading messages...'
     },
     ar: {
       title: 'الرسائل',
-      subtitle: 'تواصل مع العمال والمتخصصين',
+      subtitle: 'تواصل مع العمال الذين قمت بتوظيفهم',
       searchPlaceholder: 'ابحث في المحادثات...',
-      typeMessage: 'اكتب رسالة...',
+      noConversations: 'لا توجد محادثات',
+      noConversationsDesc: 'ابدأ محادثة مع عامل قمت بتوظيفه',
+      startChat: 'ابدأ المحادثة',
+      typeMessage: 'اكتب رسالتك...',
       send: 'إرسال',
-      noConversations: 'لا توجد محادثات بعد',
-      noConversationsDesc: 'ابدأ في توظيف العمال للتواصل معهم',
       online: 'متصل',
       offline: 'غير متصل',
+      lastSeen: 'آخر ظهور {time}',
+      today: 'اليوم',
+      yesterday: 'أمس',
+      loadMore: 'تحميل المزيد',
+      noMessages: 'لا توجد رسائل',
+      startConversation: 'ابدأ محادثة',
       languageToggle: 'English',
       notifications: 'الإشعارات',
-      loading: 'جاري تحميل الرسائل...',
-      noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز'
+      loading: 'جاري تحميل الرسائل...'
     }
   };
 
   const t = translations[language];
 
-  // Load user and conversations
+  // ============================================================
+  // Load Conversations
+  // ============================================================
+  const loadConversations = () => {
+    try {
+      const userId = user?.id || user?.email;
+      if (!userId) {
+        setConversations([]);
+        setFilteredConversations([]);
+        return;
+      }
+
+      // Get all conversations
+      const allConversations = getConversations(userId);
+      
+      // Filter conversations for this employer
+      const employerConversations = allConversations.filter(
+        conv => conv.participants.some(p => p.id === userId || p.id === user?.email)
+      );
+
+      // Sort by last message time
+      employerConversations.sort((a, b) => {
+        const timeA = new Date(a.lastMessageTime || a.updatedAt || 0);
+        const timeB = new Date(b.lastMessageTime || b.updatedAt || 0);
+        return timeB - timeA;
+      });
+
+      // Get unread counts
+      const counts = {};
+      employerConversations.forEach(conv => {
+        counts[conv.id] = getUnreadCount(conv.id, userId);
+      });
+      setUnreadCounts(counts);
+
+      setConversations(employerConversations);
+      setFilteredConversations(employerConversations);
+      
+      console.log(`✅ Loaded ${employerConversations.length} conversations`);
+      
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversations([]);
+      setFilteredConversations([]);
+    }
+  };
+
+  // ============================================================
+  // Load Messages for Selected Conversation
+  // ============================================================
+  const loadMessages = (conversationId) => {
+    try {
+      const messagesList = getMessages(conversationId);
+      setMessages(messagesList);
+      
+      // Mark messages as read
+      const userId = user?.id || user?.email;
+      if (userId) {
+        markMessagesAsRead(conversationId, userId);
+        // Update unread count
+        setUnreadCounts(prev => ({
+          ...prev,
+          [conversationId]: 0
+        }));
+      }
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setMessages([]);
+    }
+  };
+
+  // ============================================================
+  // Send Message
+  // ============================================================
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation || sending) return;
+
+    const userId = user?.id || user?.email;
+    const userName = user?.fullName || 'Employer';
+    const userRole = 'EMPLOYER';
+
+    setSending(true);
+
+    try {
+      // Find the worker participant
+      const worker = selectedConversation.participants.find(
+        p => p.id !== userId && p.role === 'WORKER'
+      );
+
+      if (!worker) {
+        alert('Worker not found in conversation');
+        setSending(false);
+        return;
+      }
+
+      const sentMessage = sendChatMessage(
+        userId,
+        userName,
+        userRole,
+        worker.id,
+        worker.name,
+        newMessage.trim()
+      );
+
+      if (sentMessage) {
+        setNewMessage('');
+        // Reload messages
+        loadMessages(selectedConversation.id);
+        // Reload conversations to update last message
+        loadConversations();
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // ============================================================
+  // Select Conversation
+  // ============================================================
+  const handleSelectConversation = (conversation) => {
+    setSelectedConversation(conversation);
+    loadMessages(conversation.id);
+  };
+
+  // ============================================================
+  // Start New Conversation
+  // ============================================================
+  const handleStartConversation = (workerId, workerName) => {
+    const userId = user?.id || user?.email;
+    const userName = user?.fullName || 'Employer';
+    
+    const conversation = createConversation(
+      userId,
+      userName,
+      'EMPLOYER',
+      workerId,
+      workerName,
+      'WORKER'
+    );
+
+    if (conversation) {
+      setSelectedConversation(conversation);
+      loadMessages(conversation.id);
+      loadConversations();
+    }
+  };
+
+  // ============================================================
+  // useEffect
+  // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
+    if (savedLang) setLanguage(savedLang);
+
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
@@ -367,26 +535,6 @@ const EmployerMessages = () => {
           return;
         }
         setUser(parsedUser);
-        
-        const userId = parsedUser.id || parsedUser.email;
-        if (userId) {
-          const userConversations = getUserConversations(userId);
-          console.log('📋 Initial load - employer conversations:', userConversations);
-          setConversations(userConversations);
-          
-          const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
-          if (savedConversationId) {
-            const exists = userConversations.some(c => c.id === savedConversationId);
-            if (exists) {
-              setSelectedConversationId(savedConversationId);
-              const conversationMessages = getConversationMessages(savedConversationId);
-              setMessages(conversationMessages);
-              markMessagesAsRead(savedConversationId, userId);
-            } else {
-              localStorage.removeItem('homelyserv_selected_conversation_employer');
-            }
-          }
-        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -403,98 +551,52 @@ const EmployerMessages = () => {
     setLoading(false);
   }, [navigate]);
 
-  // Refresh conversations when refreshKey changes
+  // Load conversations when user is set
   useEffect(() => {
-    if (!user) return;
-    
-    const userId = user.id || user.email;
-    if (!userId) return;
-    
-    const userConversations = getUserConversations(userId);
-    console.log('🔄 Refresh load - employer conversations:', userConversations);
-    setConversations(userConversations);
-  }, [user, refreshKey]);
-
-  // Auto-refresh conversations every 10 seconds
-  useEffect(() => {
-    if (!user) return;
-    
-    const userId = user.id || user.email;
-    if (!userId) return;
-    
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    if (user) {
+      loadConversations();
     }
+  }, [user]);
+
+  // Auto-refresh messages every 10 seconds
+  useEffect(() => {
+    if (!selectedConversation) return;
     
-    intervalRef.current = setInterval(() => {
-      const updatedConversations = getUserConversations(userId);
-      setConversations(prevConversations => {
-        if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
-          console.log('🔄 Auto-refresh: Conversations updated');
-          return updatedConversations;
-        }
-        return prevConversations;
-      });
-      
-      if (selectedConversationId) {
-        const updatedMessages = getConversationMessages(selectedConversationId);
-        setMessages(prevMessages => {
-          if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
-            console.log('🔄 Auto-refresh: Messages updated for conversation:', selectedConversationId);
-            markMessagesAsRead(selectedConversationId, userId);
-            return updatedMessages;
-          }
-          return prevMessages;
-        });
-      }
+    const interval = setInterval(() => {
+      loadMessages(selectedConversation.id);
+      loadConversations();
     }, 10000);
     
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [user, selectedConversationId]);
+    return () => clearInterval(interval);
+  }, [selectedConversation]);
 
-  // Scroll to bottom of messages
+  // Filter conversations by search term
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const loadChatData = () => {
-    const userId = user?.id || user?.email;
-    if (!userId) {
-      console.log('No user ID found');
+    if (!searchTerm.trim()) {
+      setFilteredConversations(conversations);
       return;
     }
 
-    const userConversations = getUserConversations(userId);
-    console.log('📋 Loaded conversations for employer:', userConversations);
-    setConversations(userConversations);
-  };
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = conversations.filter(conv => {
+      const participantName = conv.participants
+        .find(p => p.role === 'WORKER')
+        ?.name?.toLowerCase() || '';
+      const lastMessage = conv.lastMessage?.toLowerCase() || '';
+      return participantName.includes(searchLower) || lastMessage.includes(searchLower);
+    });
 
-  const loadMessagesForConversation = (conversationId) => {
-    console.log('📨 Loading messages for conversation:', conversationId);
-    const conversationMessages = getConversationMessages(conversationId);
-    console.log('📋 Messages found:', conversationMessages);
-    setMessages(conversationMessages);
-    
-    localStorage.setItem('homelyserv_selected_conversation_employer', conversationId);
-    
-    const userId = user?.id || user?.email;
-    if (userId) {
-      markMessagesAsRead(conversationId, userId);
-    }
-  };
+    setFilteredConversations(filtered);
+  }, [conversations, searchTerm]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 
+  // ============================================================
+  // UI Helpers
+  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -513,81 +615,45 @@ const EmployerMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_selected_conversation_employer');
-    localStorage.removeItem('homelyserv_open_chat_on_load');
     navigate('/login');
   };
 
-  const handleSelectConversation = (conversationId) => {
-    console.log('📨 Selecting conversation:', conversationId);
-    setSelectedConversationId(conversationId);
-    loadMessagesForConversation(conversationId);
+  const formatTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!message.trim() || !selectedConversationId || !user) {
-      console.log('❌ Cannot send message: missing data');
-      return;
-    }
+    if (date >= today) return t.today;
+    if (date >= yesterday) return t.yesterday;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
-    const selectedConv = conversations.find(c => c.id === selectedConversationId);
-    if (!selectedConv) {
-      console.log('❌ Conversation not found');
-      return;
-    }
+  const getWorkerFromConversation = (conversation) => {
+    const userId = user?.id || user?.email;
+    return conversation?.participants?.find(p => p.id !== userId && p.role === 'WORKER');
+  };
 
-    console.log('📤 Sending message from employer to:', selectedConv.otherUserId);
-    console.log('📤 Recipient name:', selectedConv.otherUserName);
-
-    const result = sendMessage(
-      user.id || user.email,
-      user.fullName || 'Employer',
-      'EMPLOYER',
-      selectedConv.otherUserId,
-      selectedConv.otherUserName,
-      message
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
     );
+  }
 
-    if (result) {
-      console.log('✅ Message sent successfully');
-      loadMessagesForConversation(selectedConversationId);
-      setRefreshKey(prev => prev + 1);
-      setMessage('');
-    } else {
-      console.log('❌ Failed to send message');
-    }
-  };
-
-  const handleManualRefresh = () => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    
-    if (user) {
-      const userId = user.id || user.email;
-      const updatedConversations = getUserConversations(userId);
-      setConversations(updatedConversations);
-      
-      if (selectedConversationId) {
-        const updatedMessages = getConversationMessages(selectedConversationId);
-        setMessages(updatedMessages);
-        markMessagesAsRead(selectedConversationId, userId);
-      }
-    }
-    
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 500);
-  };
-
-  const userProfileImage = user?.profileImage || null;
-
-  if (!user || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -597,6 +663,9 @@ const EmployerMessages = () => {
       </div>
     );
   }
+
+  const userId = user?.id || user?.email;
+  const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -612,7 +681,7 @@ const EmployerMessages = () => {
 
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
+      } ml-0 flex flex-col h-screen`}>
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -627,38 +696,16 @@ const EmployerMessages = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={user.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-teal-600 m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Employer'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
+              {totalUnread > 0 && (
+                <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                  {totalUnread} unread
+                </span>
+              )}
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+                {totalUnread > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+                )}
               </button>
               <button
                 onClick={toggleLanguage}
@@ -667,257 +714,203 @@ const EmployerMessages = () => {
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
-              <button
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                {t.refresh}
-              </button>
             </div>
           </div>
         </header>
 
-        <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={user.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={24} className="text-white m-3" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
-                      <Crown size={10} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
-                    {userIsPremium && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
-                        <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white/90">
-                  {user?.fullName || 'Employer'}
-                </span>
-                <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
-                  {conversations.length} chats
-                </span>
-                {!userIsPremium && (
-                  <Link
-                    to="/subscription"
-                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
-                  >
-                    <Crown size={12} />
-                    {t.getPremium}
-                  </Link>
-                )}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Conversations List */}
+          <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
+            <div className="p-3 border-b border-gray-200">
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                />
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
-              <div className="border-r border-gray-200">
-                <div className="p-4 border-b border-gray-200">
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder={t.searchPlaceholder}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
+            <div className="flex-1 overflow-y-auto">
+              {filteredConversations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                  <MessageCircle size={48} className="text-gray-300 mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-700">{t.noConversations}</h3>
+                  <p className="text-sm text-gray-500">{t.noConversationsDesc}</p>
                 </div>
-                <div className="overflow-y-auto h-[calc(600px-73px)]">
-                  {filteredConversations.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-500">{t.noConversations}</p>
-                      <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
-                    </div>
-                  ) : (
-                    filteredConversations.map((conv) => (
-                      <button
-                        key={conv.id}
-                        onClick={() => handleSelectConversation(conv.id)}
-                        className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedConversationId === conv.id ? 'bg-teal-50' : ''
-                        }`}
-                      >
-                        <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
-                          alt={conv.otherUserName}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-teal-100"
-                        />
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 truncate">{conv.otherUserName}</p>
-                            <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
+              ) : (
+                filteredConversations.map((conv) => {
+                  const worker = getWorkerFromConversation(conv);
+                  const unread = unreadCounts[conv.id] || 0;
+                  const isSelected = selectedConversation?.id === conv.id;
+
+                  return (
+                    <div
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv)}
+                      className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
+                        isSelected ? 'bg-teal-50 border-l-4 border-l-teal-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                          {worker?.image ? (
+                            <img 
+                              src={worker.image} 
+                              alt={worker?.name || 'Worker'} 
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            worker?.name?.charAt(0) || 'W'
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-gray-800 truncate">
+                              {worker?.name || 'Worker'}
+                            </p>
+                            <span className="text-xs text-gray-400 flex-shrink-0">
+                              {formatTime(conv.lastMessageTime)}
+                            </span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-green-500">{t.online}</span>
-                            {conv.unread > 0 && (
-                              <span className="px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full">
-                                {conv.unread}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-gray-500 truncate">
+                              {conv.lastMessage || 'No messages yet'}
+                            </p>
+                            {unread > 0 && (
+                              <span className="px-2 py-0.5 bg-teal-600 text-white text-xs rounded-full flex-shrink-0">
+                                {unread}
                               </span>
                             )}
                           </div>
                         </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="col-span-2 flex flex-col h-[600px]">
-                {selectedConversationId ? (
-                  <>
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/30">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
-                          alt="Chat"
-                          className="w-10 h-10 rounded-full object-cover border-2 border-teal-100"
-                        />
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
-                          </p>
-                          <p className="text-xs text-green-500">{t.online}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <Phone size={18} className="text-gray-600" />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <Video size={18} className="text-gray-600" />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <MoreVertical size={18} className="text-gray-600" />
-                        </button>
                       </div>
                     </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/20">
-                      {messages.length === 0 ? (
-                        <div className="text-center text-gray-400 py-8">
-                          <p>{t.noMessages}</p>
-                          <p className="text-sm">{t.startConversation}</p>
-                        </div>
-                      ) : (
-                        messages.map((msg, index) => {
-                          const isEmployer = msg.senderRole === 'EMPLOYER';
-                          const showAvatar = index === 0 || 
-                            (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
-                          
-                          return (
-                            <div
-                              key={msg.id || index}
-                              className={`flex ${isEmployer ? 'justify-end' : 'justify-start'} items-end gap-2`}
-                            >
-                              {!isEmployer && showAvatar && (
-                                <img
-                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=teal&color=fff&size=100&bold=true`}
-                                  alt={msg.senderName}
-                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                                />
-                              )}
-                              {!isEmployer && !showAvatar && (
-                                <div className="w-8 flex-shrink-0"></div>
-                              )}
-                              <div
-                                className={`max-w-[70%] p-3 rounded-lg ${
-                                  isEmployer
-                                    ? 'bg-teal-600 text-white rounded-br-none'
-                                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
-                                }`}
-                              >
-                                {!isEmployer && (
-                                  <p className="text-xs font-medium text-teal-600 mb-1">
-                                    {msg.senderName}
-                                  </p>
-                                )}
-                                <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
-                                <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                                  isEmployer ? 'text-teal-200' : 'text-gray-400'
-                                }`}>
-                                  {msg.time}
-                                  {isEmployer && (
-                                    <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-teal-200'} />
-                                  )}
-                                </p>
-                              </div>
-                              {isEmployer && showAvatar && (
-                                <img
-                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`}
-                                  alt={user.fullName || 'Employer'}
-                                  className="w-8 h-8 rounded-full object-cover border-2 border-teal-200 flex-shrink-0"
-                                />
-                              )}
-                              {isEmployer && !showAvatar && (
-                                <div className="w-8 flex-shrink-0"></div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                      <div ref={messagesEndRef} />
+          {/* Messages Area */}
+          <div className="flex-1 flex flex-col bg-gray-50">
+            {selectedConversation ? (
+              <>
+                {/* Header */}
+                <div className="bg-white border-b border-gray-200 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold">
+                      {getWorkerFromConversation(selectedConversation)?.name?.charAt(0) || 'W'}
                     </div>
-
-                    <div className="p-4 border-t border-gray-200 bg-white">
-                      <form onSubmit={handleSendMessage} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                        />
-                        <button
-                          type="submit"
-                          className="px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50"
-                          disabled={!message.trim()}
-                        >
-                          <Send size={18} />
-                          {t.send}
-                        </button>
-                      </form>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-center p-8">
                     <div>
-                      <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Select a conversation</h3>
-                      <p className="text-gray-500">Choose a conversation from the list to start messaging</p>
+                      <p className="font-medium text-gray-800">
+                        {getWorkerFromConversation(selectedConversation)?.name || 'Worker'}
+                      </p>
+                      <p className="text-xs text-green-500 flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                        Online
+                      </p>
                     </div>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                      <PhoneCall size={18} className="text-gray-500" />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                      <Video size={18} className="text-gray-500" />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                      <Info size={18} className="text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <MessageCircle size={40} className="text-gray-300 mb-3" />
+                      <p className="text-gray-500">{t.noMessages}</p>
+                      <p className="text-sm text-gray-400">{t.startConversation}</p>
+                    </div>
+                  ) : (
+                    messages.map((msg, index) => {
+                      const isOwn = msg.senderId === userId;
+                      const showDate = index === 0 || 
+                        formatDate(messages[index - 1].timestamp) !== formatDate(msg.timestamp);
+
+                      return (
+                        <div key={msg.id}>
+                          {showDate && (
+                            <div className="text-center my-3">
+                              <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">
+                                {formatDate(msg.timestamp)}
+                              </span>
+                            </div>
+                          )}
+                          <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}`}>
+                              <div className={`rounded-2xl px-4 py-2.5 ${
+                                isOwn 
+                                  ? 'bg-teal-600 text-white rounded-br-none' 
+                                  : 'bg-white border border-gray-200 rounded-bl-none'
+                              }`}>
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+                              </div>
+                              <div className={`text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                                {formatTime(msg.timestamp)}
+                                {isOwn && msg.read && (
+                                  <CheckCheck size={14} className="inline ml-1 text-teal-500" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input */}
+                <div className="bg-white border-t border-gray-200 p-3">
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                      <Paperclip size={20} className="text-gray-500" />
+                    </button>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder={t.typeMessage}
+                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      disabled={sending}
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || sending}
+                      className="p-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition disabled:opacity-50 flex items-center justify-center"
+                    >
+                      {sending ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <Send size={20} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <MessageCircle size={64} className="text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700">{t.noConversations}</h3>
+                <p className="text-gray-500 mt-2">{t.noConversationsDesc}</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
