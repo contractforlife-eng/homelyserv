@@ -1,4 +1,4 @@
-// src/pages/WorkerSettings.jsx - RED AND WHITE THEME
+// src/pages/WorkerSettings.jsx - COMPREHENSIVE SETTINGS WITH RED THEME
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -24,7 +24,43 @@ import {
   CreditCard,
   Sparkles,
   Crown,
-  CheckCircle
+  CheckCircle,
+  UserCog,
+  Key,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Smartphone,
+  MailCheck,
+  AlertOctagon,
+  Archive,
+  Trash2,
+  Download,
+  Upload,
+  RotateCcw,
+  Clock,
+  DollarSign,
+  Percent,
+  Users as UsersIcon,
+  Building,
+  Star,
+  Award,
+  Zap,
+  Activity,
+  PieChart,
+  LineChart,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  Moon,
+  Sun,
+  Bell as BellIcon,
+  Database,
+  Server,
+  Mail,
+  FileText,
+  Search,
+  FileCheck
 } from 'lucide-react';
 
 // Sidebar Component - RED THEME
@@ -268,26 +304,53 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerSettings Component - RED THEME
+// Main WorkerSettings Component - COMPREHENSIVE WITH RED THEME
 const WorkerSettings = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    darkMode: false,
+    notifications: true,
+    emailNotifications: true,
+    pushNotifications: true,
+    smsNotifications: false,
+    twoFactorAuth: false,
+    autoSave: true,
+    language: 'en',
+    timezone: 'UTC+2',
+    currency: 'EGP',
+    dateFormat: 'DD/MM/YYYY',
+    profileVisibility: 'public',
+    showOnlineStatus: true,
+    allowMessages: true,
+    availableForHire: true,
+    showRecommended: true,
+    saveSearchHistory: true
+  });
 
-  const isPremium = () => {
-    const userId = user?.id || user?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
+  // Password change state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const userIsPremium = isPremium();
+  // Delete account state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const translations = {
     en: {
@@ -302,14 +365,63 @@ const WorkerSettings = () => {
       notificationsDesc: 'Enable or disable notifications',
       emailNotifications: 'Email Notifications',
       emailNotificationsDesc: 'Receive updates via email',
+      pushNotifications: 'Push Notifications',
+      pushNotificationsDesc: 'Receive real-time push notifications',
+      smsNotifications: 'SMS Notifications',
+      smsNotificationsDesc: 'Receive updates via SMS',
       account: 'Account',
       security: 'Security',
       changePassword: 'Change Password',
+      changePasswordDesc: 'Update your account password',
+      twoFactorAuth: 'Two-Factor Authentication',
+      twoFactorAuthDesc: 'Add an extra layer of security',
       privacy: 'Privacy',
+      profileVisibility: 'Profile Visibility',
+      profileVisibilityDesc: 'Control who can see your profile',
+      showOnlineStatus: 'Show Online Status',
+      showOnlineStatusDesc: 'Display your online status to others',
+      allowMessages: 'Allow Messages',
+      allowMessagesDesc: 'Allow employers to send you messages',
+      availableForHire: 'Available for Hire',
+      availableForHireDesc: 'Show employers you are available for work',
+      general: 'General',
+      timezone: 'Timezone',
+      timezoneDesc: 'Select your preferred timezone',
+      currency: 'Currency',
+      currencyDesc: 'Choose your preferred currency',
+      dateFormat: 'Date Format',
+      dateFormatDesc: 'Select how dates are displayed',
+      data: 'Data',
+      saveSearchHistory: 'Save Search History',
+      saveSearchHistoryDesc: 'Store your search history for quick access',
+      showRecommended: 'Show Recommended',
+      showRecommendedDesc: 'Display recommended jobs and offers',
+      autoSave: 'Auto Save',
+      autoSaveDesc: 'Automatically save your preferences',
+      deleteAccount: 'Delete Account',
+      deleteAccountDesc: 'Permanently delete your account and all data',
+      exportData: 'Export Data',
+      exportDataDesc: 'Download all your account data',
+      currentPassword: 'Current Password',
+      newPassword: 'New Password',
+      confirmPassword: 'Confirm Password',
+      cancel: 'Cancel',
+      confirm: 'Confirm',
       saveChanges: 'Save Changes',
       saved: 'Settings saved successfully!',
+      passwordChanged: 'Password changed successfully!',
+      passwordMismatch: 'New passwords do not match',
+      passwordTooShort: 'Password must be at least 6 characters',
+      wrongPassword: 'Current password is incorrect',
+      deleteConfirm: 'Are you sure you want to delete your account?',
+      deleteWarning: 'This action cannot be undone. All your data will be permanently deleted.',
+      deleteConfirmText: 'Type DELETE to confirm',
+      deleteButton: 'Delete Account',
       languageToggle: 'العربية',
       notificationsTitle: 'Notifications',
+      public: 'Public',
+      private: 'Private',
+      contacts: 'Contacts Only',
       premiumBadge: 'Premium Verified',
       getPremium: 'Get Premium'
     },
@@ -325,20 +437,77 @@ const WorkerSettings = () => {
       notificationsDesc: 'تفعيل أو تعطيل الإشعارات',
       emailNotifications: 'الإشعارات البريدية',
       emailNotificationsDesc: 'تلقي التحديثات عبر البريد الإلكتروني',
+      pushNotifications: 'إشعارات فورية',
+      pushNotificationsDesc: 'تلقي إشعارات فورية في الوقت الحقيقي',
+      smsNotifications: 'إشعارات SMS',
+      smsNotificationsDesc: 'تلقي التحديثات عبر الرسائل القصيرة',
       account: 'الحساب',
       security: 'الأمان',
       changePassword: 'تغيير كلمة المرور',
+      changePasswordDesc: 'تحديث كلمة مرور حسابك',
+      twoFactorAuth: 'المصادقة الثنائية',
+      twoFactorAuthDesc: 'إضافة طبقة إضافية من الأمان',
       privacy: 'الخصوصية',
+      profileVisibility: 'رؤية الملف الشخصي',
+      profileVisibilityDesc: 'التحكم في من يمكنه رؤية ملفك الشخصي',
+      showOnlineStatus: 'إظهار الحالة',
+      showOnlineStatusDesc: 'عرض حالتك للآخرين',
+      allowMessages: 'السماح بالرسائل',
+      allowMessagesDesc: 'السماح لأصحاب العمل بإرسال رسائل لك',
+      availableForHire: 'متاح للتوظيف',
+      availableForHireDesc: 'إظهار لأصحاب العمل أنك متاح للعمل',
+      general: 'عام',
+      timezone: 'المنطقة الزمنية',
+      timezoneDesc: 'اختر منطقتك الزمنية المفضلة',
+      currency: 'العملة',
+      currencyDesc: 'اختر عملتك المفضلة',
+      dateFormat: 'تنسيق التاريخ',
+      dateFormatDesc: 'اختر كيفية عرض التواريخ',
+      data: 'البيانات',
+      saveSearchHistory: 'حفظ سجل البحث',
+      saveSearchHistoryDesc: 'تخزين سجل البحث للوصول السريع',
+      showRecommended: 'إظهار الموصى بهم',
+      showRecommendedDesc: 'عرض الوظائف والعروض الموصى بها',
+      autoSave: 'حفظ تلقائي',
+      autoSaveDesc: 'حفظ تفضيلاتك تلقائياً',
+      deleteAccount: 'حذف الحساب',
+      deleteAccountDesc: 'حذف حسابك وجميع بياناتك بشكل دائم',
+      exportData: 'تصدير البيانات',
+      exportDataDesc: 'تحميل جميع بيانات حسابك',
+      currentPassword: 'كلمة المرور الحالية',
+      newPassword: 'كلمة المرور الجديدة',
+      confirmPassword: 'تأكيد كلمة المرور',
+      cancel: 'إلغاء',
+      confirm: 'تأكيد',
       saveChanges: 'حفظ التغييرات',
       saved: 'تم حفظ الإعدادات بنجاح!',
+      passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
+      passwordMismatch: 'كلمات المرور الجديدة غير متطابقة',
+      passwordTooShort: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
+      wrongPassword: 'كلمة المرور الحالية غير صحيحة',
+      deleteConfirm: 'هل أنت متأكد من رغبتك في حذف حسابك؟',
+      deleteWarning: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك بشكل دائم.',
+      deleteConfirmText: 'اكتب DELETE للتأكيد',
+      deleteButton: 'حذف الحساب',
       languageToggle: 'English',
       notificationsTitle: 'الإشعارات',
+      public: 'عام',
+      private: 'خاص',
+      contacts: 'جهات الاتصال فقط',
       premiumBadge: 'مميز معتمد',
       getPremium: 'اشتراك مميز'
     }
   };
 
   const t = translations[language];
+
+  const isPremium = () => {
+    const userId = user?.id || user?.email;
+    if (!userId) return false;
+    return isUserPremium(userId);
+  };
+
+  const userIsPremium = isPremium();
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -355,6 +524,17 @@ const WorkerSettings = () => {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
         setUser(parsedUser);
+        
+        // Load saved settings
+        const savedSettings = localStorage.getItem('worker_settings');
+        if (savedSettings) {
+          try {
+            const parsedSettings = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsedSettings }));
+          } catch (e) {
+            console.error('Error parsing settings:', e);
+          }
+        }
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -367,18 +547,6 @@ const WorkerSettings = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    const savedSettings = localStorage.getItem('worker_settings');
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings);
-        setDarkMode(settings.darkMode || false);
-        setNotifications(settings.notifications !== undefined ? settings.notifications : true);
-        setEmailNotifications(settings.emailNotifications !== undefined ? settings.emailNotifications : true);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    }
   }, [navigate]);
 
   useEffect(() => {
@@ -390,6 +558,7 @@ const WorkerSettings = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
     localStorage.setItem('homelyserv_language', newLang);
+    setSettings(prev => ({ ...prev, language: newLang }));
   };
 
   const toggleSidebar = () => {
@@ -407,25 +576,137 @@ const WorkerSettings = () => {
     navigate('/login');
   };
 
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   const handleSave = () => {
     setSaving(true);
     setSaveSuccess(false);
     
     setTimeout(() => {
-      const settings = {
-        darkMode,
-        notifications,
-        emailNotifications,
-        language,
-        updatedAt: new Date().toISOString()
-      };
+      // Save settings to localStorage
       localStorage.setItem('worker_settings', JSON.stringify(settings));
-      
       setSaving(false);
       setSaveSuccess(true);
       
+      // Apply dark mode
+      if (settings.darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
       setTimeout(() => setSaveSuccess(false), 3000);
     }, 1000);
+  };
+
+  // ===== Password Change Functionality =====
+  const handlePasswordChange = () => {
+    setPasswordError('');
+    
+    if (!passwordData.currentPassword) {
+      setPasswordError('Please enter your current password');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError(t.passwordTooShort);
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError(t.passwordMismatch);
+      return;
+    }
+    
+    // Check current password (for demo, using stored password)
+    const storedUser = localStorage.getItem('homelyserv_user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.password && userData.password !== passwordData.currentPassword) {
+          setPasswordError(t.wrongPassword);
+          return;
+        }
+      } catch (e) {
+        console.error('Error checking password:', e);
+      }
+    }
+    
+    // Update password
+    const updatedUser = { ...user, password: passwordData.newPassword };
+    localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+    
+    // Update in users list
+    try {
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const userIndex = users.findIndex(u => u.email === user.email);
+      if (userIndex !== -1) {
+        users[userIndex].password = passwordData.newPassword;
+        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+      }
+    } catch (e) {
+      console.error('Error updating user password:', e);
+    }
+    
+    setPasswordSuccess(true);
+    setTimeout(() => {
+      setPasswordSuccess(false);
+      setShowPasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    }, 2000);
+  };
+
+  // ===== Delete Account Functionality =====
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText !== 'DELETE') {
+      alert('Please type DELETE to confirm');
+      return;
+    }
+    
+    try {
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const updatedUsers = users.filter(u => u.email !== user.email);
+      localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
+      
+      localStorage.removeItem('homelyserv_user');
+      localStorage.removeItem('homelyserv_token');
+      localStorage.removeItem('worker_settings');
+      
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      delete profiles[user.email];
+      localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
+      
+      alert('Account deleted successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Error deleting account. Please try again.');
+    }
+  };
+
+  // ===== Export Data Functionality =====
+  const handleExportData = () => {
+    const data = {
+      user: user,
+      settings: settings,
+      offers: JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]'),
+      conversations: JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]'),
+      messages: JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}'),
+      complaints: JSON.parse(localStorage.getItem('worker_complaints') || '[]'),
+      payments: JSON.parse(localStorage.getItem('worker_payments') || '[]'),
+      savedJobs: JSON.parse(localStorage.getItem('worker_saved_offers') || '[]'),
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `worker_data_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const userProfileImage = user?.profileImage || null;
@@ -442,7 +723,7 @@ const WorkerSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50'} flex`}>
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -456,17 +737,17 @@ const WorkerSettings = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b sticky top-0 z-30`}>
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className={`p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600'}`}
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} hidden sm:block`}>{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -488,7 +769,7 @@ const WorkerSettings = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  <span className={`text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} hidden sm:inline`}>
                     {user?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
@@ -499,13 +780,17 @@ const WorkerSettings = () => {
                   )}
                 </div>
               </div>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              <button className={`p-2 rounded-lg hover:bg-gray-100 transition-colors relative ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600'}`}>
+                <Bell size={20} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                  settings.darkMode 
+                    ? 'border-gray-700 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -524,56 +809,15 @@ const WorkerSettings = () => {
         </header>
 
         <div className="p-4 md:p-6">
-          {/* Welcome Banner - RED THEME */}
+          {/* Page Header - RED THEME */}
           <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={24} className="text-white m-3" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
-                      <Crown size={10} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
-                    {userIsPremium && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
-                        <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-white/80 mt-1">{t.subtitle}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white/90">
-                  {user?.fullName || 'Worker'}
-                </span>
-                {!userIsPremium && (
-                  <Link
-                    to="/subscription"
-                    className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
-                  >
-                    <Crown size={12} />
-                    {t.getPremium}
-                  </Link>
-                )}
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-red-100 mt-1">{t.subtitle}</p>
             </div>
           </div>
 
+          {/* Save Success Message */}
           {saveSuccess && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
@@ -581,42 +825,67 @@ const WorkerSettings = () => {
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.preferences}</h3>
+          {/* Settings Container */}
+          <div className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl shadow-sm border overflow-hidden`}>
+            {/* Preferences */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.preferences}</h3>
               <div className="space-y-4">
+                {/* Language */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-700">{t.language}</p>
-                    <p className="text-sm text-gray-500">{t.languageDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.language}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.languageDesc}</p>
                   </div>
                   <select
-                    value={language}
-                    onChange={(e) => {
-                      setLanguage(e.target.value);
-                      localStorage.setItem('homelyserv_language', e.target.value);
-                    }}
-                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    value={settings.language}
+                    onChange={(e) => handleSettingChange('language', e.target.value)}
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      settings.darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-200 text-gray-700'
+                    }`}
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                   </select>
                 </div>
 
+                {/* Dark Mode */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-700">{t.darkMode}</p>
-                    <p className="text-sm text-gray-500">{t.darkModeDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.darkMode}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.darkModeDesc}</p>
                   </div>
                   <button
-                    onClick={() => setDarkMode(!darkMode)}
+                    onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      darkMode ? 'bg-gray-800' : 'bg-gray-300'
+                      settings.darkMode ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        darkMode ? 'right-1' : 'left-1'
+                        settings.darkMode ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Auto Save */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.autoSave}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.autoSaveDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.autoSave ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.autoSave ? 'right-1' : 'left-1'
                       }`}
                     />
                   </button>
@@ -624,23 +893,119 @@ const WorkerSettings = () => {
               </div>
             </div>
 
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.notificationsTitle}</h3>
+            {/* General */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.general}</h3>
+              <div className="space-y-4">
+                {/* Timezone */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.timezone}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.timezoneDesc}</p>
+                  </div>
+                  <select
+                    value={settings.timezone}
+                    onChange={(e) => handleSettingChange('timezone', e.target.value)}
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      settings.darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <option value="UTC-12">UTC-12</option>
+                    <option value="UTC-11">UTC-11</option>
+                    <option value="UTC-10">UTC-10</option>
+                    <option value="UTC-9">UTC-9</option>
+                    <option value="UTC-8">UTC-8</option>
+                    <option value="UTC-7">UTC-7</option>
+                    <option value="UTC-6">UTC-6</option>
+                    <option value="UTC-5">UTC-5</option>
+                    <option value="UTC-4">UTC-4</option>
+                    <option value="UTC-3">UTC-3</option>
+                    <option value="UTC-2">UTC-2</option>
+                    <option value="UTC-1">UTC-1</option>
+                    <option value="UTC+0">UTC+0</option>
+                    <option value="UTC+1">UTC+1</option>
+                    <option value="UTC+2">UTC+2</option>
+                    <option value="UTC+3">UTC+3</option>
+                    <option value="UTC+4">UTC+4</option>
+                    <option value="UTC+5">UTC+5</option>
+                    <option value="UTC+6">UTC+6</option>
+                    <option value="UTC+7">UTC+7</option>
+                    <option value="UTC+8">UTC+8</option>
+                    <option value="UTC+9">UTC+9</option>
+                    <option value="UTC+10">UTC+10</option>
+                    <option value="UTC+11">UTC+11</option>
+                    <option value="UTC+12">UTC+12</option>
+                  </select>
+                </div>
+
+                {/* Currency */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.currency}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.currencyDesc}</p>
+                  </div>
+                  <select
+                    value={settings.currency}
+                    onChange={(e) => handleSettingChange('currency', e.target.value)}
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      settings.darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <option value="EGP">EGP - Egyptian Pound</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="SAR">SAR - Saudi Riyal</option>
+                    <option value="AED">AED - UAE Dirham</option>
+                  </select>
+                </div>
+
+                {/* Date Format */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.dateFormat}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.dateFormatDesc}</p>
+                  </div>
+                  <select
+                    value={settings.dateFormat}
+                    onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      settings.darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    <option value="DD Month YYYY">DD Month YYYY</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.notificationsTitle}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-700">{t.notifications}</p>
-                    <p className="text-sm text-gray-500">{t.notificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.notifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.notificationsDesc}</p>
                   </div>
                   <button
-                    onClick={() => setNotifications(!notifications)}
+                    onClick={() => handleSettingChange('notifications', !settings.notifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      notifications ? 'bg-red-500' : 'bg-gray-300'
+                      settings.notifications ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        notifications ? 'right-1' : 'left-1'
+                        settings.notifications ? 'right-1' : 'left-1'
                       }`}
                     />
                   </button>
@@ -648,18 +1013,56 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-700">{t.emailNotifications}</p>
-                    <p className="text-sm text-gray-500">{t.emailNotificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.emailNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.emailNotificationsDesc}</p>
                   </div>
                   <button
-                    onClick={() => setEmailNotifications(!emailNotifications)}
+                    onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      emailNotifications ? 'bg-red-500' : 'bg-gray-300'
+                      settings.emailNotifications ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        emailNotifications ? 'right-1' : 'left-1'
+                        settings.emailNotifications ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.pushNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.pushNotificationsDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.pushNotifications ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.pushNotifications ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.smsNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.smsNotificationsDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.smsNotifications ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.smsNotifications ? 'right-1' : 'left-1'
                       }`}
                     />
                   </button>
@@ -667,31 +1070,218 @@ const WorkerSettings = () => {
               </div>
             </div>
 
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.security}</h3>
+            {/* Privacy */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.privacy}</h3>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.profileVisibility}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.profileVisibilityDesc}</p>
+                  </div>
+                  <select
+                    value={settings.profileVisibility}
+                    onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      settings.darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white' 
+                        : 'bg-white border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <option value="public">{t.public}</option>
+                    <option value="private">{t.private}</option>
+                    <option value="contacts">{t.contacts}</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.showOnlineStatus}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.showOnlineStatusDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.showOnlineStatus ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.showOnlineStatus ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.allowMessages}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.allowMessagesDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.allowMessages ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.allowMessages ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.availableForHire}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.availableForHireDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('availableForHire', !settings.availableForHire)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.availableForHire ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.availableForHire ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.security}</h3>
+              <div className="space-y-4">
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                    settings.darkMode 
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <Lock size={20} className="text-gray-600" />
-                    <span className="font-medium text-gray-700">{t.changePassword}</span>
+                    <Lock size={20} className="text-red-600" />
+                    <div className="text-left">
+                      <p className="font-medium">{t.changePassword}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.changePasswordDesc}</p>
+                    </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.twoFactorAuth}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.twoFactorAuthDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.twoFactorAuth ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Data */}
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.data}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.saveSearchHistory}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.saveSearchHistoryDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.saveSearchHistory ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.saveSearchHistory ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.showRecommended}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.showRecommendedDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
+                    className={`relative w-12 h-6 rounded-full transition ${
+                      settings.showRecommended ? 'bg-red-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                        settings.showRecommended ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleExportData}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                    settings.darkMode 
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <Shield size={20} className="text-gray-600" />
-                    <span className="font-medium text-gray-700">{t.privacy}</span>
+                    <Download size={20} className="text-red-600" />
+                    <div className="text-left">
+                      <p className="font-medium">{t.exportData}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.exportDataDesc}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-400" />
+                </button>
+
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                    settings.darkMode 
+                      ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400' 
+                      : 'bg-red-50 hover:bg-red-100 text-red-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Trash2 size={20} className="text-red-500" />
+                    <div className="text-left">
+                      <p className="font-medium">{t.deleteAccount}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.deleteAccountDesc}</p>
+                    </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
+            {/* Save Button */}
+            <div className={`p-6 border-t ${settings.darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                className={`px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50`}
               >
                 {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
                 {saving ? 'Saving...' : t.saveChanges}
@@ -700,6 +1290,195 @@ const WorkerSettings = () => {
           </div>
         </div>
       </main>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-xl font-bold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.changePassword}</h3>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className={`p-1 rounded-lg hover:bg-gray-100 transition ${settings.darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500'}`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {passwordSuccess ? (
+              <div className="text-center py-6">
+                <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
+                <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.passwordChanged}</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <div>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                      {t.currentPassword}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                          settings.darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white' 
+                            : 'bg-white border-gray-200 text-gray-700'
+                        }`}
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                      {t.newPassword}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                          settings.darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white' 
+                            : 'bg-white border-gray-200 text-gray-700'
+                        }`}
+                        placeholder="Enter new password (min 6 characters)"
+                      />
+                      <button
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                      {t.confirmPassword}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                          settings.darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white' 
+                            : 'bg-white border-gray-200 text-gray-700'
+                        }`}
+                        placeholder="Confirm new password"
+                      />
+                      <button
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {passwordError && (
+                  <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+                    <AlertCircle size={16} />
+                    {passwordError}
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowPasswordModal(false)}
+                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
+                      settings.darkMode 
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button
+                    onClick={handlePasswordChange}
+                    className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition"
+                  >
+                    {t.confirm}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-xl font-bold text-red-600`}>{t.deleteAccount}</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className={`p-1 rounded-lg hover:bg-gray-100 transition ${settings.darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500'}`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="text-center py-4">
+              <Trash2 size={48} className="text-red-500 mx-auto mb-3" />
+              <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.deleteConfirm}</p>
+              <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>{t.deleteWarning}</p>
+            </div>
+
+            <div className="mt-4">
+              <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                {t.deleteConfirmText}
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                  settings.darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-200 text-gray-700'
+                }`}
+                placeholder="Type DELETE"
+              />
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
+                  settings.darkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE'}
+                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {t.deleteButton}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
