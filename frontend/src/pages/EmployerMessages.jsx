@@ -1,4 +1,4 @@
-// src/pages/EmployerMessages.jsx - COMPLETE WITH MESSAGE DISPLAY
+// src/pages/EmployerMessages.jsx - COMPLETE WITH HEADER AND MESSAGE DISPLAY
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -40,7 +40,8 @@ import {
   Video,
   Info,
   CheckCheck,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   getConversations, 
@@ -48,7 +49,8 @@ import {
   sendMessage as sendChatMessage,
   markMessagesAsRead,
   getUnreadCount,
-  createConversation
+  createConversation,
+  getTotalUnreadCount
 } from '../utils/chatService';
 
 // Employer Sidebar Component
@@ -315,6 +317,7 @@ const EmployerMessages = () => {
   const [filteredConversations, setFilteredConversations] = useState([]);
   const messagesEndRef = useRef(null);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [totalUnread, setTotalUnread] = useState(0);
 
   const translations = {
     en: {
@@ -375,16 +378,11 @@ const EmployerMessages = () => {
         return;
       }
 
-      // Get all conversations
-      const allConversations = getConversations(userId);
+      // Get all conversations for this user
+      const userConversations = getConversations(userId);
       
-      // Filter conversations for this employer
-      const employerConversations = allConversations.filter(
-        conv => conv.participants.some(p => p.id === userId || p.id === user?.email)
-      );
-
       // Sort by last message time
-      employerConversations.sort((a, b) => {
+      userConversations.sort((a, b) => {
         const timeA = new Date(a.lastMessageTime || a.updatedAt || 0);
         const timeB = new Date(b.lastMessageTime || b.updatedAt || 0);
         return timeB - timeA;
@@ -392,15 +390,19 @@ const EmployerMessages = () => {
 
       // Get unread counts
       const counts = {};
-      employerConversations.forEach(conv => {
-        counts[conv.id] = getUnreadCount(conv.id, userId);
+      userConversations.forEach(conv => {
+        counts[conv.id] = conv.unread || 0;
       });
       setUnreadCounts(counts);
 
-      setConversations(employerConversations);
-      setFilteredConversations(employerConversations);
+      // Calculate total unread
+      const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      setTotalUnread(total);
+
+      setConversations(userConversations);
+      setFilteredConversations(userConversations);
       
-      console.log(`✅ Loaded ${employerConversations.length} conversations`);
+      console.log(`✅ Loaded ${userConversations.length} conversations for user ${userId}`);
       
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -426,6 +428,8 @@ const EmployerMessages = () => {
           ...prev,
           [conversationId]: 0
         }));
+        // Update total unread
+        setTotalUnread(prev => Math.max(0, prev - (unreadCounts[conversationId] || 0)));
       }
       
       // Scroll to bottom
@@ -453,11 +457,11 @@ const EmployerMessages = () => {
 
     try {
       // Find the worker participant
-      const worker = selectedConversation.participants.find(
+      const worker = selectedConversation.participants?.find(
         p => p.id !== userId && p.role === 'WORKER'
-      );
+      ) || { id: selectedConversation.otherUserId, name: selectedConversation.otherUserName };
 
-      if (!worker) {
+      if (!worker.id) {
         alert('Worker not found in conversation');
         setSending(false);
         return;
@@ -468,7 +472,7 @@ const EmployerMessages = () => {
         userName,
         userRole,
         worker.id,
-        worker.name,
+        worker.name || 'Worker',
         newMessage.trim()
       );
 
@@ -494,29 +498,6 @@ const EmployerMessages = () => {
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
     loadMessages(conversation.id);
-  };
-
-  // ============================================================
-  // Start New Conversation
-  // ============================================================
-  const handleStartConversation = (workerId, workerName) => {
-    const userId = user?.id || user?.email;
-    const userName = user?.fullName || 'Employer';
-    
-    const conversation = createConversation(
-      userId,
-      userName,
-      'EMPLOYER',
-      workerId,
-      workerName,
-      'WORKER'
-    );
-
-    if (conversation) {
-      setSelectedConversation(conversation);
-      loadMessages(conversation.id);
-      loadConversations();
-    }
   };
 
   // ============================================================
@@ -579,9 +560,7 @@ const EmployerMessages = () => {
 
     const searchLower = searchTerm.toLowerCase();
     const filtered = conversations.filter(conv => {
-      const participantName = conv.participants
-        .find(p => p.role === 'WORKER')
-        ?.name?.toLowerCase() || '';
+      const participantName = conv.otherUserName?.toLowerCase() || '';
       const lastMessage = conv.lastMessage?.toLowerCase() || '';
       return participantName.includes(searchLower) || lastMessage.includes(searchLower);
     });
@@ -639,7 +618,10 @@ const EmployerMessages = () => {
 
   const getWorkerFromConversation = (conversation) => {
     const userId = user?.id || user?.email;
-    return conversation?.participants?.find(p => p.id !== userId && p.role === 'WORKER');
+    if (conversation.participants) {
+      return conversation.participants.find(p => p.id !== userId && p.role === 'WORKER');
+    }
+    return { id: conversation.otherUserId, name: conversation.otherUserName };
   };
 
   if (!user) {
@@ -664,9 +646,6 @@ const EmployerMessages = () => {
     );
   }
 
-  const userId = user?.id || user?.email;
-  const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -682,6 +661,7 @@ const EmployerMessages = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0 flex flex-col h-screen`}>
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -718,9 +698,17 @@ const EmployerMessages = () => {
           </div>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        {/* Page Header Banner */}
+        <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 m-4 text-white">
+          <div>
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-teal-100 mt-1">{t.subtitle}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden px-4 pb-4">
           {/* Conversations List */}
-          <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
+          <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white rounded-l-xl shadow-sm flex flex-col">
             <div className="p-3 border-b border-gray-200">
               <div className="relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -743,8 +731,8 @@ const EmployerMessages = () => {
                 </div>
               ) : (
                 filteredConversations.map((conv) => {
-                  const worker = getWorkerFromConversation(conv);
-                  const unread = unreadCounts[conv.id] || 0;
+                  const workerName = conv.otherUserName || 'Worker';
+                  const unread = conv.unread || 0;
                   const isSelected = selectedConversation?.id === conv.id;
 
                   return (
@@ -757,23 +745,23 @@ const EmployerMessages = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {worker?.image ? (
+                          {conv.avatar ? (
                             <img 
-                              src={worker.image} 
-                              alt={worker?.name || 'Worker'} 
+                              src={conv.avatar} 
+                              alt={workerName} 
                               className="w-full h-full object-cover rounded-full"
                             />
                           ) : (
-                            worker?.name?.charAt(0) || 'W'
+                            workerName.charAt(0) || 'W'
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="font-medium text-gray-800 truncate">
-                              {worker?.name || 'Worker'}
+                              {workerName}
                             </p>
                             <span className="text-xs text-gray-400 flex-shrink-0">
-                              {formatTime(conv.lastMessageTime)}
+                              {conv.time || formatTime(conv.lastMessageTime)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
@@ -796,18 +784,20 @@ const EmployerMessages = () => {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 flex flex-col bg-gray-50">
+          <div className="flex-1 flex flex-col bg-white rounded-r-xl shadow-sm">
             {selectedConversation ? (
               <>
-                {/* Header */}
-                <div className="bg-white border-b border-gray-200 p-3 flex items-center justify-between">
+                {/* Chat Header */}
+                <div className="bg-white border-b border-gray-200 p-3 flex items-center justify-between rounded-tr-xl">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold">
-                      {getWorkerFromConversation(selectedConversation)?.name?.charAt(0) || 'W'}
+                      {getWorkerFromConversation(selectedConversation)?.name?.charAt(0) || 
+                       selectedConversation.otherUserName?.charAt(0) || 'W'}
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">
-                        {getWorkerFromConversation(selectedConversation)?.name || 'Worker'}
+                        {getWorkerFromConversation(selectedConversation)?.name || 
+                         selectedConversation.otherUserName || 'Worker'}
                       </p>
                       <p className="text-xs text-green-500 flex items-center gap-1">
                         <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
@@ -838,9 +828,10 @@ const EmployerMessages = () => {
                     </div>
                   ) : (
                     messages.map((msg, index) => {
+                      const userId = user?.id || user?.email;
                       const isOwn = msg.senderId === userId;
                       const showDate = index === 0 || 
-                        formatDate(messages[index - 1].timestamp) !== formatDate(msg.timestamp);
+                        formatDate(messages[index - 1]?.timestamp) !== formatDate(msg.timestamp);
 
                       return (
                         <div key={msg.id}>
@@ -876,7 +867,7 @@ const EmployerMessages = () => {
                 </div>
 
                 {/* Input */}
-                <div className="bg-white border-t border-gray-200 p-3">
+                <div className="bg-white border-t border-gray-200 p-3 rounded-br-xl">
                   <div className="flex items-center gap-2">
                     <button className="p-2 hover:bg-gray-100 rounded-lg transition">
                       <Paperclip size={20} className="text-gray-500" />
