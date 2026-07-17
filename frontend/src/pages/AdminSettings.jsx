@@ -1,4 +1,4 @@
-// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS (FIXED DUPLICATES)
+// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS (FULLY FIXED)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -243,7 +243,26 @@ const AdminSidebar = ({
   );
 };
 
-// Main AdminSettings Component
+// Toggle Switch Component - FIXED
+const ToggleSwitch = ({ value, onChange, disabled = false }) => {
+  return (
+    <button
+      onClick={() => !disabled && onChange(!value)}
+      disabled={disabled}
+      className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+        value ? 'bg-yellow-500' : 'bg-gray-600'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-yellow-500/20'}`}
+    >
+      <div
+        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${
+          value ? 'right-1' : 'left-1'
+        }`}
+      />
+    </button>
+  );
+};
+
+// Main AdminSettings Component - FIXED
 const AdminSettings = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -251,6 +270,7 @@ const AdminSettings = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -259,6 +279,7 @@ const AdminSettings = () => {
     confirmPassword: ''
   });
   const [backupInProgress, setBackupInProgress] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState(null);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -390,7 +411,8 @@ const AdminSettings = () => {
         newPassword: 'New Password',
         confirmPassword: 'Confirm Password',
         passwordMismatch: 'Passwords do not match',
-        passwordLength: 'Password must be at least 8 characters'
+        passwordLength: 'Password must be at least 8 characters',
+        passwordChanged: 'Password changed successfully!'
       },
       languageToggle: 'العربية'
     },
@@ -474,7 +496,8 @@ const AdminSettings = () => {
         newPassword: 'كلمة المرور الجديدة',
         confirmPassword: 'تأكيد كلمة المرور',
         passwordMismatch: 'كلمات المرور غير متطابقة',
-        passwordLength: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل'
+        passwordLength: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
+        passwordChanged: 'تم تغيير كلمة المرور بنجاح!'
       },
       languageToggle: 'English'
     }
@@ -528,6 +551,16 @@ const AdminSettings = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // Auto-hide notification messages
+  useEffect(() => {
+    if (notificationMessage) {
+      const timer = setTimeout(() => {
+        setNotificationMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationMessage]);
+
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -552,24 +585,27 @@ const AdminSettings = () => {
 
   const handleSave = () => {
     setSaving(true);
+    setSaveMessage(null);
     setTimeout(() => {
       localStorage.setItem('admin_settings', JSON.stringify(settings));
       setSaving(false);
-      alert(t.actions.saved);
+      setSaveMessage(t.actions.saved);
+      // Auto-hide save message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
     }, 1000);
   };
 
   const handlePasswordChange = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert(t.actions.passwordMismatch);
+      setNotificationMessage({ type: 'error', text: t.actions.passwordMismatch });
       return;
     }
     if (passwordData.newPassword.length < 8) {
-      alert(t.actions.passwordLength);
+      setNotificationMessage({ type: 'error', text: t.actions.passwordLength });
       return;
     }
     // In a real app, this would call an API
-    alert('Password changed successfully!');
+    setNotificationMessage({ type: 'success', text: t.actions.passwordChanged });
     setShowPasswordModal(false);
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
@@ -600,19 +636,24 @@ const AdminSettings = () => {
       URL.revokeObjectURL(url);
       
       setBackupInProgress(false);
-      alert('Backup completed successfully!');
+      setNotificationMessage({ type: 'success', text: 'Backup completed successfully!' });
     }, 1500);
   };
 
   const handleClearCache = () => {
-    if (confirm('Are you sure you want to clear all cache? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to clear all cache? This action cannot be undone.')) {
       localStorage.removeItem('homelyserv_cached_data');
-      alert('Cache cleared successfully!');
+      setNotificationMessage({ type: 'success', text: 'Cache cleared successfully!' });
     }
   };
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Fixed toggle handler
+  const handleToggleChange = (key) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const getPaymentMethodLabel = (method) => {
@@ -689,6 +730,23 @@ const AdminSettings = () => {
             </div>
           </div>
 
+          {/* Notification Messages - FIXED */}
+          {notificationMessage && (
+            <div className={`mb-4 px-4 py-3 rounded-lg ${
+              notificationMessage.type === 'error' 
+                ? 'bg-red-500/20 border border-red-500 text-red-400' 
+                : 'bg-green-500/20 border border-green-500 text-green-400'
+            }`}>
+              {notificationMessage.text}
+            </div>
+          )}
+
+          {saveMessage && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-green-500/20 border border-green-500 text-green-400">
+              {saveMessage}
+            </div>
+          )}
+
           {/* Tabs */}
           <div className="flex flex-wrap gap-1 mb-6 border-b border-yellow-500/20 pb-2">
             {['general', 'appearance', 'notifications', 'security', 'payment', 'users', 'system'].map((tab) => (
@@ -706,7 +764,7 @@ const AdminSettings = () => {
             ))}
           </div>
 
-          {/* Settings Content */}
+          {/* Settings Content - All tabs fixed with proper toggle components */}
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
             {activeTab === 'general' && (
               <div className="p-6">
@@ -770,18 +828,10 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.appearance.darkMode}</p>
                       <p className="text-sm text-gray-500">Switch between light and dark theme</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.darkMode ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                          settings.darkMode ? 'right-1' : 'left-1'
-                        }`}
-                      />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.darkMode} 
+                      onChange={() => handleToggleChange('darkMode')} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.primaryColor}</label>
@@ -845,80 +895,50 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.notifications.systemNotifications}</p>
                       <p className="text-sm text-gray-500">Enable or disable system notifications</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('systemNotifications', !settings.systemNotifications)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.systemNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.systemNotifications ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.systemNotifications} 
+                      onChange={() => handleToggleChange('systemNotifications')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.emailNotifications}</p>
                       <p className="text-sm text-gray-500">Receive updates via email</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.emailNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.emailNotifications ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.emailNotifications} 
+                      onChange={() => handleToggleChange('emailNotifications')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.pushNotifications}</p>
                       <p className="text-sm text-gray-500">Enable push notifications</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.pushNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.pushNotifications ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.pushNotifications} 
+                      onChange={() => handleToggleChange('pushNotifications')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
                       <p className="text-sm text-gray-500">Get notified about new complaints</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('complaintNotifications', !settings.complaintNotifications)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.complaintNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.complaintNotifications ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.complaintNotifications} 
+                      onChange={() => handleToggleChange('complaintNotifications')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
                       <p className="text-sm text-gray-500">Get notified about payment activity</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('paymentNotifications', !settings.paymentNotifications)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.paymentNotifications ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.paymentNotifications ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.paymentNotifications} 
+                      onChange={() => handleToggleChange('paymentNotifications')} 
+                    />
                   </div>
                 </div>
               </div>
@@ -933,16 +953,10 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.security.twoFactorAuth}</p>
                       <p className="text-sm text-gray-500">Require two-factor authentication</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.twoFactorAuth ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.twoFactorAuth ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.twoFactorAuth} 
+                      onChange={() => handleToggleChange('twoFactorAuth')} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">{t.security.sessionTimeout}</label>
@@ -967,32 +981,20 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.security.requireEmailVerification}</p>
                       <p className="text-sm text-gray-500">Require email verification for new users</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('requireEmailVerification', !settings.requireEmailVerification)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.requireEmailVerification ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.requireEmailVerification ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.requireEmailVerification} 
+                      onChange={() => handleToggleChange('requireEmailVerification')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.security.requirePhoneVerification}</p>
                       <p className="text-sm text-gray-500">Require phone verification for new users</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('requirePhoneVerification', !settings.requirePhoneVerification)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.requirePhoneVerification ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.requirePhoneVerification ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.requirePhoneVerification} 
+                      onChange={() => handleToggleChange('requirePhoneVerification')} 
+                    />
                   </div>
                   <button
                     onClick={() => setShowPasswordModal(true)}
@@ -1085,32 +1087,20 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.users.allowRegistration}</p>
                       <p className="text-sm text-gray-500">Allow new user registrations</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('allowRegistration', !settings.allowRegistration)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.allowRegistration ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.allowRegistration ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.allowRegistration} 
+                      onChange={() => handleToggleChange('allowRegistration')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.users.requireApproval}</p>
                       <p className="text-sm text-gray-500">Require admin approval for new users</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('requireApproval', !settings.requireApproval)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.requireApproval ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.requireApproval ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.requireApproval} 
+                      onChange={() => handleToggleChange('requireApproval')} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">{t.users.maxUsersPerIp}</label>
@@ -1143,48 +1133,30 @@ const AdminSettings = () => {
                       <p className="font-medium text-gray-300">{t.system.debugMode}</p>
                       <p className="text-sm text-gray-500">Enable debug mode for developers</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('debugMode', !settings.debugMode)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.debugMode ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.debugMode ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.debugMode} 
+                      onChange={() => handleToggleChange('debugMode')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.system.maintenanceMode}</p>
                       <p className="text-sm text-gray-500">Put the site in maintenance mode</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('maintenanceMode', !settings.maintenanceMode)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.maintenanceMode ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.maintenanceMode ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.maintenanceMode} 
+                      onChange={() => handleToggleChange('maintenanceMode')} 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.system.cacheEnabled}</p>
                       <p className="text-sm text-gray-500">Enable caching for better performance</p>
                     </div>
-                    <button
-                      onClick={() => handleSettingChange('cacheEnabled', !settings.cacheEnabled)}
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        settings.cacheEnabled ? 'bg-yellow-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.cacheEnabled ? 'right-1' : 'left-1'
-                      }`} />
-                    </button>
+                    <ToggleSwitch 
+                      value={settings.cacheEnabled} 
+                      onChange={() => handleToggleChange('cacheEnabled')} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">{t.system.backupSchedule}</label>
@@ -1244,7 +1216,7 @@ const AdminSettings = () => {
         </div>
       </main>
 
-      {/* Password Change Modal */}
+      {/* Password Change Modal - FIXED */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-yellow-500/20">

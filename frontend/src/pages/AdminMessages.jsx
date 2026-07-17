@@ -1,4 +1,4 @@
-// src/pages/AdminMessages.jsx - FIXED TO USE CHAT SERVICE
+// src/pages/AdminMessages.jsx - FIXED WITH CO-ADMIN LABEL IN SENT MESSAGES
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -31,7 +31,10 @@ import {
   BarChart3,
   AlertTriangle,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  UserPlus,
+  MoreVertical
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -227,7 +230,7 @@ const AdminSidebar = ({
   );
 };
 
-// Main AdminMessages Component - FIXED
+// Main AdminMessages Component - WITH CO-ADMIN LABEL FIXED
 const AdminMessages = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -242,6 +245,9 @@ const AdminMessages = () => {
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [newChatUserId, setNewChatUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -263,7 +269,14 @@ const AdminMessages = () => {
       startConversation: 'Start the conversation!',
       refresh: 'Refresh',
       premiumBadge: 'Admin',
-      getPremium: 'Get Premium'
+      getPremium: 'Get Premium',
+      allUsers: 'All Users',
+      conversations: 'Conversations',
+      startNewChat: 'Start New Chat',
+      noUsersFound: 'No users found',
+      selectUser: 'Select a user to start chatting',
+      userList: 'User List',
+      coAdmin: 'Co-Admin'
     },
     ar: {
       title: 'رسائل الدعم',
@@ -282,7 +295,14 @@ const AdminMessages = () => {
       startConversation: 'ابدأ المحادثة!',
       refresh: 'تحديث',
       premiumBadge: 'مدير',
-      getPremium: 'اشتراك مميز'
+      getPremium: 'اشتراك مميز',
+      allUsers: 'جميع المستخدمين',
+      conversations: 'المحادثات',
+      startNewChat: 'بدء محادثة جديدة',
+      noUsersFound: 'لم يتم العثور على مستخدمين',
+      selectUser: 'اختر مستخدمًا لبدء المحادثة',
+      userList: 'قائمة المستخدمين',
+      coAdmin: 'مدير مساعد'
     }
   };
 
@@ -321,6 +341,11 @@ const AdminMessages = () => {
           return;
         }
 
+        // Load all registered users
+        const allRegisteredUsers = loadAllUsers();
+        setAllUsers(allRegisteredUsers);
+        console.log('📋 All registered users loaded:', allRegisteredUsers.length);
+
         const userConversations = await getUserConversations(userId);
         console.log('📋 Initial load - admin conversations:', userConversations);
         setConversations(userConversations);
@@ -353,6 +378,63 @@ const AdminMessages = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
   }, [navigate]);
+
+  // Function to load all registered users from localStorage
+  const loadAllUsers = () => {
+    const users = [];
+    
+    // Load employer users
+    const employerUsers = JSON.parse(localStorage.getItem('employer_users') || '[]');
+    employerUsers.forEach(u => {
+      if (u.email) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: 'EMPLOYER',
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    // Load worker users
+    const workerUsers = JSON.parse(localStorage.getItem('worker_users') || '[]');
+    workerUsers.forEach(u => {
+      if (u.email) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: 'WORKER',
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    // Also check for users in homelyserv_users
+    const homelyUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+    homelyUsers.forEach(u => {
+      if (u.email && !users.some(existing => existing.email === u.email)) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: u.role || 'USER',
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    // Remove duplicates by email
+    const uniqueUsers = users.filter((user, index, self) => 
+      index === self.findIndex(u => u.email === user.email)
+    );
+
+    return uniqueUsers;
+  };
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
@@ -464,13 +546,83 @@ const AdminMessages = () => {
   const handleSelectConversation = (conversationId) => {
     console.log('📨 Selecting conversation:', conversationId);
     setSelectedConversationId(conversationId);
+    setShowAllUsers(false);
     loadMessagesForConversation(conversationId);
+  };
+
+  // Start a new chat with a selected user
+  const handleStartNewChat = (selectedUser) => {
+    console.log('🆕 Starting new chat with user:', selectedUser);
+    
+    // Check if conversation already exists
+    const existingConv = conversations.find(
+      c => c.otherUserId === selectedUser.id || c.otherUserId === selectedUser.email
+    );
+    
+    if (existingConv) {
+      handleSelectConversation(existingConv.id);
+      return;
+    }
+
+    // Create a new conversation
+    const newConv = {
+      id: `conv_${Date.now()}`,
+      otherUserId: selectedUser.id || selectedUser.email,
+      otherUserName: selectedUser.name,
+      role: selectedUser.role,
+      avatar: selectedUser.avatar,
+      lastMessage: 'No messages yet',
+      time: 'Just now',
+      unread: 0
+    };
+
+    setConversations(prev => [newConv, ...prev]);
+    setSelectedConversationId(newConv.id);
+    setMessages([]);
+    setShowAllUsers(false);
+    
+    localStorage.setItem('homelyserv_selected_conversation_admin', newConv.id);
+    
+    // Store the conversation in the chat service
+    const allConversations = JSON.parse(localStorage.getItem('chat_conversations') || '{}');
+    const userId = user?.id || user?.email;
+    
+    if (!allConversations[userId]) {
+      allConversations[userId] = [];
+    }
+    
+    // Check if this conversation already exists in storage
+    const existingInStorage = allConversations[userId].some(
+      c => c.otherUserId === selectedUser.id || c.otherUserId === selectedUser.email
+    );
+    
+    if (!existingInStorage) {
+      allConversations[userId].push({
+        id: newConv.id,
+        otherUserId: selectedUser.id || selectedUser.email,
+        otherUserName: selectedUser.name,
+        role: selectedUser.role,
+        avatar: selectedUser.avatar,
+        lastMessage: 'No messages yet',
+        time: new Date().toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        unread: 0
+      });
+      localStorage.setItem('chat_conversations', JSON.stringify(allConversations));
+    }
   };
 
   const filteredConversations = conversations.filter(conv =>
     conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredUsers = allUsers.filter(user =>
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // ============================================================
+  // FIXED: Send message with Co-Admin label
+  // ============================================================
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !selectedConversationId || !user) {
@@ -484,12 +636,16 @@ const AdminMessages = () => {
       return;
     }
 
+    // Get the admin name with Co-Admin label
+    const adminNameWithLabel = `${user.fullName || 'Admin'} (${t.coAdmin})`;
+
     console.log('📤 Sending message from admin to:', selectedConv.otherUserId);
+    console.log('📤 Sender name with label:', adminNameWithLabel);
     console.log('📤 Recipient name:', selectedConv.otherUserName);
 
     const result = await sendMessage(
       user.id || user.email,
-      user.fullName || 'Admin',
+      adminNameWithLabel, // Send the name with Co-Admin label
       'ADMIN',
       selectedConv.otherUserId,
       selectedConv.otherUserName,
@@ -516,6 +672,10 @@ const AdminMessages = () => {
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
+      // Refresh all users list
+      const updatedUsers = loadAllUsers();
+      setAllUsers(updatedUsers);
+      
       if (selectedConversationId) {
         const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(updatedMessages);
@@ -529,6 +689,14 @@ const AdminMessages = () => {
   };
 
   const userProfileImage = user?.profileImage || null;
+
+  // Function to get the display name with role label (for UI display only)
+  const getDisplayName = (name, role, isAdmin = false) => {
+    if (isAdmin) {
+      return name; // Name already includes the label from the message data
+    }
+    return name;
+  };
 
   if (!user || loading) {
     return (
@@ -621,6 +789,9 @@ const AdminMessages = () => {
                 <span className="px-2 py-1 bg-green-500/30 text-black text-xs rounded-full">
                   {conversations.length} chats
                 </span>
+                <span className="px-2 py-1 bg-blue-500/30 text-black text-xs rounded-full">
+                  {allUsers.length} users
+                </span>
               </div>
             </div>
           </div>
@@ -631,55 +802,128 @@ const AdminMessages = () => {
               {/* Conversations List */}
               <div className="border-r border-yellow-500/20">
                 <div className="p-4 border-b border-yellow-500/20">
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-3 text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder={t.searchPlaceholder}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search size={18} className="absolute left-3 top-3 text-gray-500" />
+                      <input
+                        type="text"
+                        placeholder={t.searchPlaceholder}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowAllUsers(!showAllUsers);
+                        setSearchTerm('');
+                      }}
+                      className={`px-3 py-2.5 rounded-lg transition flex items-center gap-1 ${
+                        showAllUsers 
+                          ? 'bg-yellow-500 text-black' 
+                          : 'bg-[#0a0a0a] border border-gray-700 text-gray-400 hover:text-yellow-500'
+                      }`}
+                      title={t.startNewChat}
+                    >
+                      <UserPlus size={18} />
+                    </button>
                   </div>
                 </div>
                 <div className="overflow-y-auto h-[calc(600px-73px)]">
-                  {filteredConversations.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-400">{t.noConversations}</p>
-                      <p className="text-sm text-gray-500">{t.noConversationsDesc}</p>
+                  {/* Toggle between conversations and all users */}
+                  {showAllUsers ? (
+                    // ALL USERS LIST
+                    <div>
+                      <div className="px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/10">
+                        <p className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">
+                          {t.userList} ({filteredUsers.length})
+                        </p>
+                      </div>
+                      {filteredUsers.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <div className="text-4xl mb-3">👤</div>
+                          <p className="text-gray-400">{t.noUsersFound}</p>
+                        </div>
+                      ) : (
+                        filteredUsers.map((userItem) => (
+                          <button
+                            key={userItem.id || userItem.email}
+                            onClick={() => handleStartNewChat(userItem)}
+                            className="w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 text-left"
+                          >
+                            <img
+                              src={userItem.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=yellow&color=000&size=100&bold=true`}
+                              alt={userItem.name}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start">
+                                <p className="font-semibold text-white truncate">{userItem.name}</p>
+                                <span className="text-xs text-yellow-500 flex-shrink-0 ml-2">{userItem.role}</span>
+                              </div>
+                              <p className="text-sm text-gray-400 truncate">{userItem.email}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-green-400">● Online</span>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
                     </div>
                   ) : (
-                    filteredConversations.map((conv) => (
-                      <button
-                        key={conv.id}
-                        onClick={() => handleSelectConversation(conv.id)}
-                        className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 ${
-                          selectedConversationId === conv.id ? 'bg-yellow-500/10 border-l-4 border-l-yellow-500' : ''
-                        }`}
-                      >
-                        <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=yellow&color=000&size=100&bold=true`}
-                          alt={conv.otherUserName}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30"
-                        />
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="flex justify-between items-start">
-                            <p className="font-semibold text-white truncate">{conv.otherUserName}</p>
-                            <span className="text-xs text-gray-500 flex-shrink-0">{conv.time}</span>
-                          </div>
-                          <p className="text-sm text-gray-400 truncate">{conv.lastMessage}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-yellow-500">{conv.role || 'User'}</span>
-                            {conv.unread > 0 && (
-                              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
-                                {conv.unread}
-                              </span>
-                            )}
-                          </div>
+                    // CONVERSATIONS LIST
+                    <div>
+                      <div className="px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/10">
+                        <p className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">
+                          {t.conversations} ({filteredConversations.length})
+                        </p>
+                      </div>
+                      {filteredConversations.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <div className="text-4xl mb-3">💬</div>
+                          <p className="text-gray-400">{t.noConversations}</p>
+                          <p className="text-sm text-gray-500">{t.noConversationsDesc}</p>
+                          <button
+                            onClick={() => setShowAllUsers(true)}
+                            className="mt-4 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium"
+                          >
+                            <UserPlus size={16} className="inline mr-2" />
+                            {t.startNewChat}
+                          </button>
                         </div>
-                      </button>
-                    ))
+                      ) : (
+                        filteredConversations.map((conv) => (
+                          <button
+                            key={conv.id}
+                            onClick={() => handleSelectConversation(conv.id)}
+                            className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 ${
+                              selectedConversationId === conv.id ? 'bg-yellow-500/10 border-l-4 border-l-yellow-500' : ''
+                            }`}
+                          >
+                            <img
+                              src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=yellow&color=000&size=100&bold=true`}
+                              alt={conv.otherUserName}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30"
+                            />
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="flex justify-between items-start">
+                                <p className="font-semibold text-white truncate">{conv.otherUserName}</p>
+                                <span className="text-xs text-gray-500 flex-shrink-0">{conv.time}</span>
+                              </div>
+                              <p className="text-sm text-gray-400 truncate">{conv.lastMessage}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-yellow-500">{conv.role || 'User'}</span>
+                                {conv.unread > 0 && (
+                                  <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
+                                    {conv.unread}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -705,6 +949,13 @@ const AdminMessages = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        <button 
+                          onClick={() => setShowAllUsers(true)}
+                          className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-yellow-500"
+                          title={t.startNewChat}
+                        >
+                          <UserPlus size={18} />
+                        </button>
                         <button className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-yellow-500">
                           <MoreVertical size={18} />
                         </button>
@@ -723,6 +974,13 @@ const AdminMessages = () => {
                           const isAdmin = msg.senderRole === 'ADMIN';
                           const showAvatar = index === 0 || 
                             (index > 0 && messages[index - 1]?.senderRole !== msg.senderRole);
+                          
+                          // Check if the sender name already has (Co-Admin) label
+                          // If not, add it for display purposes (for backward compatibility)
+                          let displayName = msg.senderName || 'User';
+                          if (isAdmin && !displayName.includes('(Co-Admin)')) {
+                            displayName = `${displayName} (${t.coAdmin})`;
+                          }
                           
                           return (
                             <div
@@ -749,12 +1007,12 @@ const AdminMessages = () => {
                               >
                                 {!isAdmin && (
                                   <p className="text-xs font-medium text-yellow-500 mb-1">
-                                    {msg.senderName}
+                                    {displayName}
                                   </p>
                                 )}
                                 {isAdmin && (
                                   <p className="text-xs font-medium text-black/70 mb-1">
-                                    Admin
+                                    {displayName}
                                   </p>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
@@ -809,8 +1067,23 @@ const AdminMessages = () => {
                   <div className="flex-1 flex items-center justify-center text-center p-8">
                     <div>
                       <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Select a conversation</h3>
-                      <p className="text-gray-400">Choose a conversation from the list to start messaging</p>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {showAllUsers ? t.selectUser : 'Select a conversation'}
+                      </h3>
+                      <p className="text-gray-400">
+                        {showAllUsers 
+                          ? 'Choose a user from the list to start chatting' 
+                          : 'Choose a conversation from the list to start messaging'}
+                      </p>
+                      {!showAllUsers && (
+                        <button
+                          onClick={() => setShowAllUsers(true)}
+                          className="mt-4 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium"
+                        >
+                          <UserPlus size={16} className="inline mr-2" />
+                          {t.startNewChat}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
