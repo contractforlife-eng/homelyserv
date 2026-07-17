@@ -1,7 +1,32 @@
+// backend/src/index.js
+// ============================================================
+// LOAD .env - SIMPLEST WAY
+// ============================================================
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory where index.js is located
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from the backend root directory (one level up from src)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// ============================================================
+// Debug - Check if .env loaded
+// ============================================================
+console.log('📂 .env loaded from:', path.join(__dirname, '..', '.env'));
+console.log('🔑 PAYMOB_API_KEY:', process.env.PAYMOB_API_KEY ? '✅ Found' : '❌ Missing');
+console.log('🔑 PAYMOB_INTEGRATION_ID:', process.env.PAYMOB_INTEGRATION_ID ? '✅ Found' : '❌ Missing');
+console.log('🔑 PAYMOB_IFRAME_ID:', process.env.PAYMOB_IFRAME_ID ? '✅ Found' : '❌ Missing');
+
+// ============================================================
+// NOW LOAD OTHER IMPORTS
+// ============================================================
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth.js';
@@ -10,8 +35,7 @@ import hireRoutes from './routes/hires.js';
 import employerRoutes from './routes/employer.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
-import chatRoutes from './routes/chat.js';
-dotenv.config();
+
 
 const app = express();
 const server = http.createServer(app);
@@ -78,12 +102,15 @@ app.get('/api/test', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
+
+// CORS middleware
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // جرب * مؤقتاً للتأكد
+  res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   next();
 });
+
 // ============================================================
 // API Routes
 // ============================================================
@@ -93,7 +120,6 @@ app.use('/api/hires', hireRoutes);
 app.use('/api/employers', employerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/chat', chatRoutes);
 
 // ============================================================
 // Socket.IO Configuration

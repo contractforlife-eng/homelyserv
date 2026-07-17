@@ -1,4 +1,4 @@
-// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH CHAT SUPPORT
+// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH AUTO-CONVERSATION CREATION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -61,6 +61,7 @@ import {
   RefreshCw,
   Crown
 } from 'lucide-react';
+import { sendMessage } from '../utils/chatService';
 
 // ============================================================
 // 1. EMPLOYER SIDEBAR COMPONENT
@@ -302,7 +303,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// 2. MAIN MY HIRES COMPONENT - FIXED
+// 2. MAIN MY HIRES COMPONENT
 // ============================================================
 const MyHires = () => {
   const navigate = useNavigate();
@@ -321,6 +322,7 @@ const MyHires = () => {
   const [showTerminateModal, setShowTerminateModal] = useState(false);
   const [terminateReason, setTerminateReason] = useState('');
   const [terminatingHire, setTerminatingHire] = useState(null);
+  const [creatingConversation, setCreatingConversation] = useState(false);
 
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
@@ -408,7 +410,8 @@ const MyHires = () => {
       noResults: 'No hires match your search',
       clearFilters: 'Clear filters',
       refresh: 'Refresh',
-      salaryPerMonth: 'EGP/month'
+      salaryPerMonth: 'EGP/month',
+      creatingConversation: 'Creating conversation...'
     },
     ar: {
       title: 'توظيفاتي',
@@ -487,7 +490,8 @@ const MyHires = () => {
       noResults: 'لا توجد توظيفات تطابق بحثك',
       clearFilters: 'مسح التصفيات',
       refresh: 'تحديث',
-      salaryPerMonth: 'جنيه/شهر'
+      salaryPerMonth: 'جنيه/شهر',
+      creatingConversation: 'جاري إنشاء المحادثة...'
     }
   };
 
@@ -537,6 +541,8 @@ const MyHires = () => {
     
     try {
       const employerEmail = user?.email;
+      const employerId = user?.id || employerEmail;
+      
       if (!employerEmail) {
         setHires([]);
         setFilteredHires([]);
@@ -544,12 +550,14 @@ const MyHires = () => {
         return;
       }
 
-      console.log('📂 Loading hires for employer:', employerEmail);
+      console.log('📂 Loading hires for employer:', { employerEmail, employerId });
 
       const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
       
       let employerHires = allHires.filter(
-        hire => hire.employerEmail === employerEmail || hire.employerId === employerEmail
+        hire => hire.employerEmail === employerEmail || 
+                hire.employerId === employerId ||
+                hire.employerId === employerEmail
       );
 
       console.log(`📌 Found ${employerHires.length} hires from homelyserv_hires`);
@@ -557,7 +565,9 @@ const MyHires = () => {
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const hiredOffers = employerOffers.filter(
         offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
-                 (offer.employerEmail === employerEmail || offer.employerId === employerEmail)
+                 (offer.employerEmail === employerEmail || 
+                  offer.employerId === employerId ||
+                  offer.employerId === employerEmail)
       );
 
       console.log(`📌 Found ${hiredOffers.length} hired offers from employer_offers`);
@@ -577,8 +587,8 @@ const MyHires = () => {
             workerImage: offer.workerImage || '',
             workerRating: offer.workerRating || 4.5,
             workerSkills: offer.workerSkills || [],
-            employerId: offer.employerId || offer.employerEmail,
-            employerEmail: offer.employerEmail,
+            employerId: employerId,
+            employerEmail: employerEmail,
             employerName: offer.employerName || 'Employer',
             jobTitle: offer.jobTitle || 'Service Provider',
             salary: offer.amount || 0,
@@ -646,7 +656,54 @@ const MyHires = () => {
   }, [hires, statusFilter, searchTerm]);
 
   // ============================================================
-  // 6. HANDLERS
+  // 6. CREATE CONVERSATION WHEN HIRING
+  // ============================================================
+  const createConversationForHire = async (hire) => {
+    if (!hire) return;
+    
+    const workerId = hire.workerId || hire.workerEmail;
+    const workerName = hire.workerName || 'Worker';
+    const jobTitle = hire.jobTitle || 'the job';
+    
+    if (!workerId) {
+      console.error('No worker ID found for hire:', hire);
+      return false;
+    }
+    
+    const employerId = user?.id || user?.email;
+    const employerName = user?.fullName || 'Employer';
+    
+    console.log('💬 Creating conversation for hire:', { workerId, workerName, jobTitle });
+    
+    try {
+      setCreatingConversation(true);
+      
+      const result = await sendMessage(
+        employerId,
+        employerName,
+        'EMPLOYER',
+        workerId,
+        workerName,
+        `Hello ${workerName}! I've hired you for ${jobTitle}. Let's discuss the next steps.`
+      );
+      
+      if (result) {
+        console.log('✅ Conversation created successfully');
+        return true;
+      } else {
+        console.log('❌ Failed to create conversation');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return false;
+    } finally {
+      setCreatingConversation(false);
+    }
+  };
+
+  // ============================================================
+  // 7. HANDLERS
   // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -742,10 +799,9 @@ const MyHires = () => {
   // ============================================================
   // FIXED: handleSendMessage - Opens chat with the worker
   // ============================================================
-  const handleSendMessage = (hire) => {
+  const handleSendMessage = async (hire) => {
     if (!hire) return;
     
-    // Get the worker ID (use workerId or workerEmail as fallback)
     const workerId = hire.workerId || hire.workerEmail;
     const workerName = hire.workerName || 'Worker';
     
@@ -757,12 +813,40 @@ const MyHires = () => {
       return;
     }
     
-    // Store the worker info in localStorage so the messages page can use it
+    // First, check if conversation exists by trying to send a message
+    // If the conversation doesn't exist, this will create it
+    const employerId = user?.id || user?.email;
+    const employerName = user?.fullName || 'Employer';
+    const jobTitle = hire.jobTitle || 'the job';
+    
+    // Try to send a message to create/ensure conversation
+    try {
+      setCreatingConversation(true);
+      
+      // Send a message - this will create the conversation if it doesn't exist
+      const result = await sendMessage(
+        employerId,
+        employerName,
+        'EMPLOYER',
+        workerId,
+        workerName,
+        `Hello ${workerName}! Let's discuss your work.`
+      );
+      
+      if (result) {
+        console.log('✅ Conversation ensured');
+      }
+    } catch (error) {
+      console.error('Error ensuring conversation:', error);
+      // Continue anyway - the user will be redirected
+    } finally {
+      setCreatingConversation(false);
+    }
+    
+    // Store the worker info in localStorage
     localStorage.setItem('homelyserv_chat_worker_id', workerId);
     localStorage.setItem('homelyserv_chat_worker_name', workerName);
     localStorage.setItem('homelyserv_chat_worker_image', hire.workerImage || '');
-    
-    // Also store the hire info for context
     localStorage.setItem('homelyserv_chat_hire_id', hire.id || hire.offerId || '');
     localStorage.setItem('homelyserv_chat_hire_job', hire.jobTitle || '');
     
@@ -1095,10 +1179,15 @@ const MyHires = () => {
                             <>
                               <button
                                 onClick={() => handleSendMessage(hire)}
-                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                disabled={creatingConversation}
+                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50"
                                 title={t.actions.message}
                               >
-                                <MessageCircle size={16} />
+                                {creatingConversation ? (
+                                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <MessageCircle size={16} />
+                                )}
                               </button>
                               <button
                                 onClick={() => handlePayNow(hire)}
@@ -1239,9 +1328,14 @@ const MyHires = () => {
                 <>
                   <button
                     onClick={() => handleSendMessage(selectedHire)}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                    disabled={creatingConversation}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
                   >
-                    <MessageCircle size={16} />
+                    {creatingConversation ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <MessageCircle size={16} />
+                    )}
                     {t.modal.message}
                   </button>
                   <button

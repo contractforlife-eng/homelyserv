@@ -412,6 +412,33 @@ const PaymentOptions = () => {
   const t = translations[language];
 
   // ============================================================
+  // CALCULATE TOTAL - UPDATED VERSION
+  // ============================================================
+  const calculateTotal = () => {
+    // Premium Quick Hire
+    if (pendingPayment?.paymentType === "quick_hire_premium") {
+        return 299;
+    }
+
+    // Use amount already calculated by EmployerSearch
+    if (pendingPayment?.amount && Number(pendingPayment.amount) > 0) {
+        return Number(pendingPayment.amount);
+    }
+
+    // Try every possible salary field
+    const hourlyRate =
+        Number(workerData?.hourlyRate) ||
+        Number(workerData?.expectedHourlyRate) ||
+        Number(workerData?.salary) ||
+        Number(workerData?.expectedSalary) ||
+        Number(workerData?.rate) ||
+        Number(workerData?.price) ||
+        30;
+
+    return hourlyRate * 40 * 4 * 1.15;
+  };
+
+  // ============================================================
   // LOAD DATA
   // ============================================================
   useEffect(() => {
@@ -448,7 +475,7 @@ const PaymentOptions = () => {
       try {
         const parsedWorker = JSON.parse(selectedWorker);
         setWorkerData(parsedWorker);
-        console.log('✅ Worker data loaded:', parsedWorker);
+        console.log('✅ Worker Data:', parsedWorker);
       } catch (error) {
         console.error('Error parsing worker data:', error);
         setWorkerData(null);
@@ -459,11 +486,18 @@ const PaymentOptions = () => {
     const savedPendingPayment = localStorage.getItem('homelyserv_pending_payment');
     if (savedPendingPayment) {
       try {
-        setPendingPayment(JSON.parse(savedPendingPayment));
+        const parsedPayment = JSON.parse(savedPendingPayment);
+        setPendingPayment(parsedPayment);
+        console.log('✅ Pending Payment:', parsedPayment);
       } catch (error) {
         console.error('Error parsing pending payment data:', error);
       }
     }
+
+    // Debug log for calculated total
+    setTimeout(() => {
+      console.log('✅ Calculated Total:', calculateTotal());
+    }, 100);
 
     setLoading(false);
   }, [navigate]);
@@ -578,6 +612,14 @@ const PaymentOptions = () => {
 
     try {
       const total = calculateTotal();
+      
+      // ADDED: Protection against invalid amount
+      if (total <= 0 || Number.isNaN(total)) {
+        throw new Error(
+          "Invalid payment amount. Worker salary or offer amount is missing."
+        );
+      }
+
       const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
       const customerData = {
         firstName: user?.fullName?.split(' ')[0] || 'Customer',
@@ -667,17 +709,6 @@ const PaymentOptions = () => {
   // ============================================================
   // HELPER FUNCTIONS
   // ============================================================
-
-  const calculateTotal = () => {
-    const isQuickHire = pendingPayment?.paymentType === 'quick_hire_premium';
-    const hourlyRate = parseFloat(workerData?.hourlyRate) || 0;
-    const hoursPerWeek = 40;
-    const weeksPerMonth = 4;
-    const subtotal = isQuickHire ? 299 : hourlyRate * hoursPerWeek * weeksPerMonth;
-    const commissionRate = 0.15;
-    const commissionAmount = isQuickHire ? 0 : subtotal * commissionRate;
-    return subtotal + commissionAmount;
-  };
 
   const saveHireRecord = (worker, employer, paymentDetails) => {
     try {

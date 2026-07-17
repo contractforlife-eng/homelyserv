@@ -1,4 +1,4 @@
-// backend/prisma/schema.prisma - FULL FIXED VERSION
+// backend/prisma/schema.prisma - FULL FIXED VERSION WITH PAYMENT MODEL
 generator client {
   provider = "prisma-client-js"
 }
@@ -67,6 +67,7 @@ model Hire {
   WorkerProfile    WorkerProfile @relation(fields: [workerId], references: [id])
   Message          Message[]
   Review           Review[]
+  Payment          Payment[]
 }
 
 model Message {
@@ -79,13 +80,13 @@ model Message {
   createdAt      DateTime @default(now())
   
   // ============================================================
-  // NEW FIELDS FOR CHAT SYSTEM - ADDED
+  // CHAT SYSTEM FIELDS
   // ============================================================
-  conversationId String?  @map("conversationId") // e.g., "conv_123_456"
-  senderName     String?  @map("senderName")     // Full name of sender
-  senderRole     String?  @map("senderRole")     // WORKER, EMPLOYER, ADMIN
-  recipientName  String?  @map("recipientName")  // Full name of recipient
-  recipientRole  String?  @map("recipientRole")  // WORKER, EMPLOYER, ADMIN, USER
+  conversationId String?  @map("conversationId")
+  senderName     String?  @map("senderName")
+  senderRole     String?  @map("senderRole")
+  recipientName  String?  @map("recipientName")
+  recipientRole  String?  @map("recipientRole")
   delivered      Boolean  @default(true)
   updatedAt      DateTime @updatedAt @map("updatedAt")
   
@@ -94,9 +95,6 @@ model Message {
   User_Message_receiverIdToUser  User     @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
   User_Message_senderIdToUser    User     @relation("Message_senderIdToUser", fields: [senderId], references: [id])
 
-  // ============================================================
-  // NEW INDEXES FOR CHAT SYSTEM - ADDED
-  // ============================================================
   @@index([conversationId])
   @@index([senderId])
   @@index([receiverId])
@@ -112,6 +110,37 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   User      User     @relation(fields: [userId], references: [id])
+}
+
+// ============================================================
+// PAYMENT MODEL - ADDED
+// ============================================================
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String   @map("userId")
+  workerId      String   @map("workerId")
+  workerName    String   @map("workerName")
+  employerId    String   @map("employerId")
+  employerName  String   @map("employerName")
+  amount        Float
+  jobTitle      String   @map("jobTitle")
+  paymentMethod String   @map("paymentMethod")
+  paymentId     String?  @map("paymentId")
+  status        String   @default("pending")
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  User          User     @relation(fields: [userId], references: [id])
+  Hire?         Hire?    @relation(fields: [hireId], references: [id])
+  hireId        String?  @map("hireId")
+
+  @@index([userId])
+  @@index([workerId])
+  @@index([employerId])
+  @@index([status])
+  @@map("payments")
 }
 
 model Review {
@@ -149,6 +178,7 @@ model User {
   Notification                     Notification[]
   Review                           Review[]
   WorkerProfile                    WorkerProfile?
+  Payment                          Payment[]
 }
 
 model WorkerProfile {

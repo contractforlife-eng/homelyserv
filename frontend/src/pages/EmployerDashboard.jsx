@@ -1,4 +1,4 @@
-// src/pages/EmployerDashboard.jsx - WITH PREMIUM BADGE FIX
+// src/pages/EmployerDashboard.jsx - WITH REAL DATA
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -31,8 +31,12 @@ import {
   CreditCard,
   Crown
 } from 'lucide-react';
+import {
+  getUserConversations,
+  getTotalUnreadCount
+} from '../utils/chatService';
 
-// Employer Sidebar Component - WITH PREMIUM BADGE FIX
+// Employer Sidebar Component
 const EmployerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -99,7 +103,6 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // ✅ FIX: Check premium status directly using the user ID - NOT from user object
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -275,7 +278,9 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerDashboard Component
+// ============================================================
+// MAIN EMPLOYER DASHBOARD - WITH REAL DATA
+// ============================================================
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -285,24 +290,25 @@ const EmployerDashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeHires: 0,
     pendingApplications: 0,
     totalWorkers: 0,
-    messages: 0,
+    unreadMessages: 0,
     completedHires: 0,
-    savedWorkers: 0
+    savedWorkers: 0,
+    totalHires: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
-  // ✅ Check premium status directly
-  const isPremium = () => {
+  const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
 
-  const userIsPremium = isPremium();
+  const isPremium = userIsPremium();
 
   const translations = {
     en: {
@@ -313,9 +319,10 @@ const EmployerDashboard = () => {
         activeHires: 'Active Hires',
         pending: 'Pending Applications',
         totalWorkers: 'Total Workers',
-        messages: 'Messages',
+        messages: 'Unread Messages',
         completed: 'Completed Hires',
-        saved: 'Saved Workers'
+        saved: 'Saved Workers',
+        total: 'Total Hires'
       },
       recentActivity: 'Recent Activity',
       quickActions: 'Quick Actions',
@@ -340,9 +347,10 @@ const EmployerDashboard = () => {
         activeHires: 'التوظيفات النشطة',
         pending: 'الطلبات المعلقة',
         totalWorkers: 'إجمالي العمال',
-        messages: 'الرسائل',
+        messages: 'الرسائل غير المقروءة',
         completed: 'التوظيفات المكتملة',
-        saved: 'العمال المحفوظين'
+        saved: 'العمال المحفوظين',
+        total: 'إجمالي التوظيفات'
       },
       recentActivity: 'النشاط الأخير',
       quickActions: 'إجراءات سريعة',
@@ -362,6 +370,143 @@ const EmployerDashboard = () => {
   };
 
   const t = translations[language];
+
+  // ============================================================
+  // LOAD REAL DATA
+  // ============================================================
+  const loadDashboardData = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    
+    try {
+      const employerId = user.id || user.email;
+      const employerEmail = user.email;
+      
+      console.log('📊 Loading dashboard data for employer:', employerId);
+
+      // 1. Get hires from localStorage
+      const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      const employerHires = allHires.filter(
+        hire => hire.employerId === employerId || hire.employerEmail === employerEmail
+      );
+      
+      // Also check employer_offers for hired status
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const hiredOffers = employerOffers.filter(
+        offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
+                 (offer.employerId === employerId || offer.employerEmail === employerEmail)
+      );
+      
+      // Merge hires from both sources
+      const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
+      hiredOffers.forEach(offer => {
+        const workerId = offer.workerId || offer.workerEmail;
+        if (!existingWorkerIds.has(workerId)) {
+          employerHires.push({
+            id: offer.hireId || offer.id,
+            workerId: workerId,
+            workerName: offer.workerName || 'Worker',
+            status: offer.status === 'hired' ? 'active' : offer.status,
+            startDate: offer.hiredAt || offer.createdAt,
+            salary: offer.amount || 0,
+            jobTitle: offer.jobTitle || 'Service Provider'
+          });
+        }
+      });
+
+      // 2. Calculate hire stats
+      const activeHires = employerHires.filter(h => h.status === 'active' || h.status === 'accepted' || h.status === 'hired').length;
+      const completedHires = employerHires.filter(h => h.status === 'completed').length;
+      const totalHires = employerHires.length;
+
+      // 3. Get pending applications from offers
+      const pendingApplications = employerOffers.filter(
+        o => (o.status === 'pending' || o.status === 'new' || o.status === 'applied') &&
+             (o.employerId === employerId || o.employerEmail === employerEmail)
+      ).length;
+
+      // 4. Get unread messages from chat service
+      let unreadMessages = 0;
+      try {
+        const conversations = await getUserConversations(employerId);
+        unreadMessages = conversations.reduce((total, conv) => total + (conv.unread || 0), 0);
+      } catch (error) {
+        console.error('Error getting unread messages:', error);
+        // Fallback to localStorage
+        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+        Object.keys(allMessages).forEach(convId => {
+          const msgs = allMessages[convId] || [];
+          msgs.forEach(msg => {
+            if (msg.recipientId === employerId && !msg.read) {
+              unreadMessages++;
+            }
+          });
+        });
+      }
+
+      // 5. Get total workers (from users)
+      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const totalWorkers = users.filter(u => u.role === 'WORKER').length;
+
+      // 6. Get saved workers
+      const savedWorkers = JSON.parse(localStorage.getItem('employer_saved_workers') || '[]');
+      const savedWorkerIds = savedWorkers.filter(w => w.employerId === employerId || w.employerEmail === employerEmail);
+
+      // 7. Generate recent activity
+      const activities = [];
+      
+      // Add recent hires
+      employerHires.slice(0, 3).forEach(hire => {
+        if (hire.workerName) {
+          activities.push({
+            icon: 'hire',
+            message: `Hired ${hire.workerName}`,
+            time: hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'Recently',
+            status: hire.status === 'active' ? 'Active' : hire.status === 'completed' ? 'Completed' : 'Pending'
+          });
+        }
+      });
+
+      // Add recent offers
+      employerOffers.slice(0, 3).forEach(offer => {
+        if (offer.status === 'pending' || offer.status === 'new') {
+          activities.push({
+            icon: 'offer',
+            message: `Posted job: ${offer.jobTitle || 'Job Offer'}`,
+            time: offer.createdAt ? new Date(offer.createdAt).toLocaleDateString() : 'Recently',
+            status: 'Pending'
+          });
+        }
+      });
+
+      // Sort activities by time (most recent first)
+      activities.sort((a, b) => {
+        const dateA = new Date(a.time);
+        const dateB = new Date(b.time);
+        return dateB - dateA;
+      });
+
+      setStats({
+        activeHires,
+        pendingApplications,
+        totalWorkers,
+        unreadMessages,
+        completedHires,
+        savedWorkers: savedWorkerIds.length,
+        totalHires
+      });
+
+      setRecentActivity(activities.slice(0, 10));
+      
+      console.log('✅ Dashboard data loaded:', { activeHires, totalHires, unreadMessages, pendingApplications });
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Check for payment success from navigation state
@@ -406,86 +551,25 @@ const EmployerDashboard = () => {
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    loadRealStats();
   }, [navigate]);
 
-  const loadRealStats = () => {
-    try {
-      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      const activeHires = hires.filter(h => h.status === 'active' || h.status === 'completed').length;
-      const completedHires = hires.filter(h => h.status === 'completed').length;
-      
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const totalWorkers = users.filter(u => u.role === 'WORKER').length;
-      
-      const employerId = user?.id || user?.email;
-      let messagesCount = 0;
-      if (employerId) {
-        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
-        Object.keys(allMessages).forEach(convId => {
-          const msgs = allMessages[convId] || [];
-          msgs.forEach(msg => {
-            if (msg.recipientId === employerId || msg.senderId === employerId) {
-              messagesCount++;
-            }
-          });
-        });
-      }
-      
-      const savedWorkers = JSON.parse(localStorage.getItem('employer_saved_workers') || '[]');
-      
-      const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const pendingApplications = offers.filter(o => o.status === 'new' || o.status === 'applied').length;
-      
-      setStats({
-        activeHires: activeHires,
-        pendingApplications: pendingApplications,
-        totalWorkers: totalWorkers,
-        messages: messagesCount,
-        completedHires: completedHires,
-        savedWorkers: savedWorkers.length
-      });
-      
-      generateRecentActivity(hires, offers);
-      
-    } catch (error) {
-      console.error('Error loading employer stats:', error);
+  // Load data when user is set
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
     }
-  };
+  }, [user]);
 
-  const generateRecentActivity = (hires, offers) => {
-    const activities = [];
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    if (!user) return;
     
-    hires.slice(0, 5).forEach(hire => {
-      const workerName = hire.workerName || 'Worker';
-      activities.push({
-        icon: 'hire',
-        message: `Hired ${workerName}`,
-        time: hire.date ? new Date(hire.date).toLocaleDateString() : 'Recently',
-        status: hire.status === 'active' ? 'Active' : 'Completed'
-      });
-    });
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 30000);
     
-    offers.slice(0, 5).forEach(offer => {
-      if (offer.status === 'new') {
-        activities.push({
-          icon: 'offer',
-          message: `Posted job: ${offer.title}`,
-          time: offer.postedAt ? new Date(offer.postedAt).toLocaleDateString() : 'Recently',
-          status: 'Active'
-        });
-      }
-    });
-    
-    activities.sort((a, b) => {
-      const dateA = new Date(a.time);
-      const dateB = new Date(b.time);
-      return dateB - dateA;
-    });
-    
-    setRecentActivity(activities.slice(0, 10));
-  };
+    return () => clearInterval(interval);
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -513,12 +597,12 @@ const EmployerDashboard = () => {
     navigate('/login');
   };
 
-  if (!user) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -564,7 +648,7 @@ const EmployerDashboard = () => {
                   ) : (
                     <User size={16} className="text-teal-600 m-1" />
                   )}
-                  {userIsPremium && (
+                  {isPremium && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
                       <Crown size={8} className="text-white" />
                     </div>
@@ -574,7 +658,7 @@ const EmployerDashboard = () => {
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
                     {user?.fullName || 'Employer'}
                   </span>
-                  {userIsPremium && (
+                  {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
@@ -584,7 +668,9 @@ const EmployerDashboard = () => {
               </div>
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
+                {stats.unreadMessages > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
               </button>
               <button
                 onClick={toggleLanguage}
@@ -639,7 +725,7 @@ const EmployerDashboard = () => {
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
-                  {userIsPremium && (
+                  {isPremium && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
                       <Crown size={10} className="text-white" />
                     </div>
@@ -648,7 +734,7 @@ const EmployerDashboard = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
-                    {userIsPremium && (
+                    {isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
                         {t.premiumBadge}
@@ -673,7 +759,7 @@ const EmployerDashboard = () => {
                   <User size={16} />
                   {t.viewProfile}
                 </Link>
-                {!userIsPremium && (
+                {!isPremium && (
                   <Link
                     to="/subscription"
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
@@ -686,6 +772,7 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
+          {/* Stats Cards - REAL DATA */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -697,36 +784,18 @@ const EmployerDashboard = () => {
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.activeHires}</p>
               <p className="text-xs text-gray-400 mt-1">Active contracts</p>
             </div>
+
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-yellow-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pendingApplications}</p>
-              <p className="text-xs text-gray-400 mt-1">Pending applications</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.totalWorkers}</p>
+                <p className="text-sm text-gray-500">{t.stats.total}</p>
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalWorkers}</p>
-              <p className="text-xs text-gray-400 mt-1">Available workers</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalHires}</p>
+              <p className="text-xs text-gray-400 mt-1">Total hires</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.messages}</p>
-                <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-                  <MessageCircle size={20} className="text-indigo-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.messages}</p>
-              <p className="text-xs text-gray-400 mt-1">Unread messages</p>
-            </div>
+
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.completed}</p>
@@ -737,6 +806,29 @@ const EmployerDashboard = () => {
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completedHires}</p>
               <p className="text-xs text-gray-400 mt-1">Completed hires</p>
             </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.pending}</p>
+                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-yellow-600" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pendingApplications}</p>
+              <p className="text-xs text-gray-400 mt-1">Pending applications</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.messages}</p>
+                <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+                  <MessageCircle size={20} className="text-indigo-600" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.unreadMessages}</p>
+              <p className="text-xs text-gray-400 mt-1">Unread messages</p>
+            </div>
+
             <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.saved}</p>
@@ -749,6 +841,7 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
+          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -783,6 +876,7 @@ const EmployerDashboard = () => {
             </div>
           </div>
 
+          {/* Recent Activity - REAL DATA */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
             {recentActivity.length === 0 ? (
@@ -808,6 +902,7 @@ const EmployerDashboard = () => {
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         activity.status === 'Active' ? 'bg-green-100 text-green-700' :
                         activity.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
+                        activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {activity.status}
