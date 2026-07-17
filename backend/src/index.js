@@ -35,7 +35,7 @@ import hireRoutes from './routes/hires.js';
 import employerRoutes from './routes/employer.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
-
+import chatRoutes from './routes/chat.js'
 
 const app = express();
 const server = http.createServer(app);
@@ -120,7 +120,7 @@ app.use('/api/hires', hireRoutes);
 app.use('/api/employers', employerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
-
+app.use('/api/chat', chatRoutes);
 // ============================================================
 // Socket.IO Configuration
 // ============================================================
