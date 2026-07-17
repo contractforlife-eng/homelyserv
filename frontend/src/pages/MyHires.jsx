@@ -855,25 +855,48 @@ const MyHires = () => {
   };
 
   const handlePayNow = (hire) => {
-    if (hire) {
-      const pendingPayment = {
-        paymentId: hire.hireId || hire.offerId,
-        amount: hire.salary || 0,
-        workerName: hire.workerName,
-        workerId: hire.workerId || hire.workerEmail,
-        workerEmail: hire.workerEmail || '',
-        jobTitle: hire.jobTitle || 'Service Provider',
-        description: `Payment for ${hire.workerName || 'worker'}`,
-        paymentType: 'recruitment',
-        offerId: hire.offerId || hire.hireId,
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName || 'Employer',
-        returnTo: '/my-hires'
-      };
-      localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-      navigate('/payment-options');
-    }
-  };
+  if (hire) {
+    const fullSalary = hire.salary || 0;
+    const applicationFee = Math.round(fullSalary * 0.15 * 100) / 100; // 15% fee
+
+    const pendingPayment = {
+      paymentId: hire.hireId || hire.offerId,
+      amount: applicationFee,       // ← charge 15% only
+      fullSalary: fullSalary,       // ← keep for display/receipt
+      feePercentage: 15,
+      workerName: hire.workerName,
+      workerId: hire.workerId || hire.workerEmail,
+      workerEmail: hire.workerEmail || '',
+      jobTitle: hire.jobTitle || 'Service Provider',
+      description: `15% application fee for ${hire.workerName || 'worker'}`,
+      paymentType: 'recruitment',
+      offerId: hire.offerId || hire.hireId,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName || 'Employer',
+      returnTo: '/my-hires'
+    };
+
+    // FIX: Construct the missing worker payload so PaymentOptions can read it dynamically
+    const workerData = {
+      workerId: hire.workerId || hire.workerEmail,
+      workerName: hire.workerName,
+      workerEmail: hire.workerEmail || '',
+      workerPhone: hire.workerPhone || '',
+      workerLocation: hire.workerLocation || 'Not specified',
+      desiredJob: hire.jobTitle || 'Service Provider',
+      rating: hire.workerRating || 4.5,
+      profileImage: hire.workerImage || '',
+      // Add standard fallback rate for computation consistency
+      hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30 
+    };
+
+    // Save both values to cache simultaneously
+    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+    localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData)); 
+    
+    navigate('/payment-options');
+  }
+};
 
   const getStatusColor = (status) => {
     const colors = {

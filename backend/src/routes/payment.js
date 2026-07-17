@@ -74,7 +74,15 @@ router.post('/create-payment-intent', async (req, res) => {
         error: 'Invalid amount'
       });
     }
-
+    if (paymentType === 'recruitment') {
+  // require salary to be sent alongside amount, and verify the math server-side
+  if (!salary || Math.abs(amount - Math.round(salary * 0.15 * 100) / 100) > 0.01) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid payment amount for application fee'
+    });
+  }
+}
     // ============================================================
     // REAL PAYMOB PAYMENT - NO MOCK FALLBACK
     // ============================================================
