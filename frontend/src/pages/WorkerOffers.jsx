@@ -68,7 +68,6 @@ import {
   getConversationId, 
   sendMessage, 
   getUserConversations,
-  saveUserConversations 
 } from '../utils/chatService';
 
 // Sidebar Component - RED THEME (same as before, kept for brevity)
