@@ -1,4 +1,4 @@
-// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS
+// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS (FIXED DUPLICATES)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -392,8 +392,7 @@ const AdminSettings = () => {
         passwordMismatch: 'Passwords do not match',
         passwordLength: 'Password must be at least 8 characters'
       },
-      languageToggle: 'العربية',
-      notifications: 'Notifications'
+      languageToggle: 'العربية'
     },
     ar: {
       title: 'الإعدادات',
@@ -477,8 +476,7 @@ const AdminSettings = () => {
         passwordMismatch: 'كلمات المرور غير متطابقة',
         passwordLength: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل'
       },
-      languageToggle: 'English',
-      notifications: 'الإشعارات'
+      languageToggle: 'English'
     }
   };
 
