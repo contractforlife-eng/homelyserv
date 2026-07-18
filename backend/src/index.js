@@ -5,6 +5,22 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import express from 'express';
+import cors from 'cors';
+import http from 'http';
+import mongoose from 'mongoose';
+import { Server } from 'socket.io';
+
+// Route Imports Grouped Safely
+import authRoutes from './routes/auth.js';
+import workerRoutes from './routes/workers.js';
+import hireRoutes from './routes/hires.js';
+import employerRoutes from './routes/employer.js';
+import adminRoutes from './routes/admin.js';
+import paymentRoutes from './routes/payment.js';
+import chatRoutes from './routes/chat.js';
+import notificationRoutes from './routes/notifications.js';
+
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -21,38 +37,24 @@ console.log('\n--- 🔌 GATEWAY CONNECTIONS ---');
 
 // Paymob Diagnostics
 if (process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID) {
-  console.log(`💳 Paymob Gateway:  ✅ ACTIVE (Integration ID: ${process.env.PAYMOB_INTEGRATION_ID})`);
+  console.log(`💳 Paymob Gateway:   ✅ ACTIVE (Integration ID: ${process.env.PAYMOB_INTEGRATION_ID})`);
 } else {
-  console.log('💳 Paymob Gateway:  ❌ MISSING OR INCOMPLETE KEYS');
+  console.log('💳 Paymob Gateway:   ❌ MISSING OR INCOMPLETE KEYS');
 }
 
 // PayPal Diagnostics
 if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET) {
-  console.log(`💰 PayPal Gateway:  ✅ ACTIVE (Mode: ${process.env.PAYPAL_MODE || 'sandbox'})`);
+  console.log(`💰 PayPal Gateway:   ✅ ACTIVE (Mode: ${process.env.PAYPAL_MODE || 'sandbox'})`);
 } else {
-  console.log('💰 PayPal Gateway:  ❌ MISSING OR INCOMPLETE KEYS');
+  console.log('💰 PayPal Gateway:   ❌ MISSING OR INCOMPLETE KEYS');
 }
 
 console.log('-------------------------------\n');
 
-// ============================================================
-// NOW LOAD OTHER IMPORTS
-// ============================================================
-import express from 'express';
-import cors from 'cors';
-import http from 'http';
-import mongoose from 'mongoose';
-import { Server } from 'socket.io';
-import authRoutes from './routes/auth.js';
-import workerRoutes from './routes/workers.js';
-import hireRoutes from './routes/hires.js';
-import employerRoutes from './routes/employer.js';
-import adminRoutes from './routes/admin.js';
-import paymentRoutes from './routes/payment.js';
-import chatRoutes from './routes/chat.js';
-
+// Rest of your file stays completely identical from here down...
 const app = express();
 const server = http.createServer(app);
+// ...
 
 // ============================================================
 // CORS Configuration
@@ -215,7 +217,7 @@ app.use('/api/employers', employerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
-
+app.use('/api/notifications', notificationRoutes);
 // ============================================================
 // Socket.IO Configuration
 // ============================================================

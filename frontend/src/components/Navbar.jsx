@@ -13,14 +13,22 @@ import {
   Search,
   MessageCircle,
   ChevronDown,
-  Globe
+  Globe,
+  Clock
 } from 'lucide-react';
 
 const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false); // Added Notification State
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Mock initial notifications data (Swap with an API call later)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New Message', message: 'An employer sent you a message', read: false },
+    { id: 2, title: 'Payment Confirmed', message: 'Your escrow release was processed', read: false }
+  ]);
 
   const translations = {
     en: {
@@ -33,7 +41,8 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
       logout: 'Logout',
       dashboard: 'Dashboard',
       myHires: 'My Hires',
-      search: 'Search'
+      search: 'Search',
+      noNotifications: 'No new notifications'
     },
     ar: {
       home: 'الرئيسية',
@@ -45,7 +54,8 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
       logout: 'تسجيل الخروج',
       dashboard: 'لوحة التحكم',
       myHires: 'تعاقداتي',
-      search: 'بحث'
+      search: 'بحث',
+      noNotifications: 'لا توجد إشعارات جديدة'
     }
   };
 
@@ -188,11 +198,43 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               {t.messages}
             </Link>
 
-            {/* Notifications */}
-            <button className="text-gray-400 hover:text-gray-600 relative">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-600 rounded-full"></span>
-            </button>
+            {/* Notifications Dropdown Element */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                  setIsProfileOpen(false); // Close profile dropdown when opening notifications
+                }}
+                className="text-gray-400 hover:text-gray-600 relative flex items-center p-1"
+              >
+                <Bell size={20} />
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-600 rounded-full"></span>
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <div className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50`}>
+                  <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800">
+                    {t.notifications}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        {t.noNotifications}
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer">
+                          <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Language Toggle */}
             <button
@@ -206,7 +248,10 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
             {/* Profile Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                onClick={() => {
+                  setIsProfileOpen(!isProfileOpen);
+                  setIsNotificationsOpen(false); // Close notifications when opening profile
+                }}
                 className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold">
@@ -216,7 +261,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               </button>
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                <div className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50`}>
                   <Link 
                     to={getProfilePath()} 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
