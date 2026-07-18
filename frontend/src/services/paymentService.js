@@ -1,7 +1,8 @@
 // src/services/paymentService.js
 // Complete Payment Service with Backend Integration
 
-const API_BASE = 'http://localhost:5000/api/payments';
+// Use the shared, env-driven API base so this never points at a dev machine in production.
+const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments`;
 
 // ============================================================
 // PAYMENT INTENT - Calls Backend

@@ -69,17 +69,60 @@ app.use(express.json());
 // ============================================================
 // MongoDB Connection
 // ============================================================
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv';
+// IMPORTANT: There is intentionally NO localhost fallback here.
+// A silent fallback to `mongodb://localhost:27017/homelyserv` is what caused
+// users to "disappear day by day": whenever MONGODB_URI was unset the server
+// quietly wrote data to an ephemeral local database that got wiped on every
+// machine restart / tunnel rotation. We now REQUIRE a managed connection
+// string (MongoDB Atlas) and fail loudly instead of losing data.
+const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose.connect(MONGODB_URI)
+if (!MONGODB_URI) {
+  console.error('❌ FATAL: MONGODB_URI is not set.');
+  console.error('   Set it to your MongoDB Atlas connection string, e.g.:');
+  console.error('   MONGODB_URI="mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/homelyserv?retryWrites=true&w=majority"');
+  process.exit(1);
+}
+
+// Guard against accidentally pointing production at an ephemeral local DB.
+if (/localhost|127\.0\.0\.1/.test(MONGODB_URI) && process.env.NODE_ENV === 'production') {
+  console.error('❌ FATAL: MONGODB_URI points at localhost while NODE_ENV=production.');
+  console.error('   Local MongoDB is ephemeral and will lose your users. Use a managed');
+  console.error('   MongoDB Atlas cluster instead.');
+  process.exit(1);
+}
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 10000,
+  // Keep the pool healthy on serverless / long-running hosts.
+  maxPoolSize: 10,
+  retryWrites: true,
+})
   .then(() => {
+    const host = mongoose.connection.host;
     console.log('✅ MongoDB connected successfully');
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
+    console.log(`🌐 Host: ${host}`);
+    if (/localhost|127\.0\.0\.1/.test(host || '')) {
+      console.warn('⚠️  WARNING: Connected to a LOCAL MongoDB. Data here is NOT durable and');
+      console.warn('   will be lost on restart. Point MONGODB_URI at MongoDB Atlas.');
+    }
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   });
+
+// Surface connection drops instead of failing silently.
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected. Mongoose will attempt to reconnect.');
+});
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected.');
+});
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB runtime error:', err.message);
+});
 
 // ============================================================
 // Routes
