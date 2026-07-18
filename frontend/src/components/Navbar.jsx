@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // Added useEffect
+import axios from 'axios'; // Ensure you have axios installed
 import { 
   Home, 
   Briefcase, 
@@ -25,10 +25,51 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
   const location = useLocation();
 
   // Mock initial notifications data (Swap with an API call later)
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New Message', message: 'An employer sent you a message', read: false },
-    { id: 2, title: 'Payment Confirmed', message: 'Your escrow release was processed', read: false }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+// Fetch notifications from the backend
+const fetchNotifications = async () => {
+  try {
+    const token = localStorage.getItem('homelyserv_token');
+    if (!token) return;
+
+    const response = await axios.get('http://localhost:5000/api/notifications', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      setNotifications(response.data.notifications);
+    }
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
+};
+
+// Trigger fetch when notifications open
+// Replace your useEffect with this:
+useEffect(() => {
+  console.log("Notification dropdown state changed:", isNotificationsOpen);
+  
+  if (isNotificationsOpen) {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('homelyserv_token');
+        console.log("Token retrieved:", token ? "Yes" : "No");
+
+        const response = await axios.get('http://localhost:5000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log("API Response:", response.data);
+        setNotifications(response.data.notifications);
+      } catch (error) {
+        console.error("DEBUG - Notification Fetch Error:", error.response || error.message);
+      }
+    };
+
+    fetchNotifications();
+  }
+}, [isNotificationsOpen]);
 
   const translations = {
     en: {

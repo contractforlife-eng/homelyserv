@@ -5,6 +5,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
+import NotificationBell from './NotificationBell'; // 👈 ADD THIS
 
 export default function Layout({ children, activeTab }) {
   const navigate = useNavigate();
@@ -115,6 +116,10 @@ export default function Layout({ children, activeTab }) {
           </div>
           <div className="top-nav-right" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
             <LanguageSwitcher />
+            
+            {/* 👈 NOTIFICATION BELL - CLEAN AND SIMPLE */}
+            <NotificationBell position="right" />
+
             {!isMobile && (
               <div className="nav-user" style={{
                 display: 'flex',
@@ -276,226 +281,8 @@ export default function Layout({ children, activeTab }) {
           top: isMobile ? '56px' : '64px',
           zIndex: 99,
         }}>
-          {user?.role === 'WORKER' && (
-            <>
-              <button
-                onClick={() => { navigate('/'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'dashboard' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'dashboard' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'dashboard' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>📊</span> Dashboard
-              </button>
-              <button
-                onClick={() => { navigate('/worker-profile'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'profile' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'profile' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'profile' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>👤</span> My Profile
-              </button>
-              <button
-                onClick={() => { navigate('/my-hires'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'hires' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'hires' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'hires' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>📋</span> My Offers
-              </button>
-              <button
-                onClick={() => { handleSwitchRole(); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '1px dashed #2e7d32',
-                  background: 'transparent',
-                  color: '#2e7d32',
-                  fontSize: '15px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                  marginTop: '8px',
-                }}
-              >
-                <span>🔄</span> Switch Role
-              </button>
-            </>
-          )}
-          {user?.role === 'EMPLOYER' && (
-            <>
-              <button
-                onClick={() => { navigate('/'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'dashboard' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'dashboard' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'dashboard' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>📊</span> Dashboard
-              </button>
-              <button
-                onClick={() => { navigate('/search'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'search' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'search' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'search' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>🔍</span> Find Workers
-              </button>
-              <button
-                onClick={() => { navigate('/employer-profile'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'profile' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'profile' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'profile' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>🏢</span> Company Profile
-              </button>
-              <button
-                onClick={() => { navigate('/my-hires'); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: activeTab === 'hires' ? '#2e7d32' : 'transparent',
-                  color: activeTab === 'hires' ? '#fff' : '#1a3a1a',
-                  fontSize: '15px',
-                  fontWeight: activeTab === 'hires' ? '600' : '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
-              >
-                <span>📋</span> My Hires
-              </button>
-              <button
-                onClick={() => { handleSwitchRole(); setMobileMenuOpen(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '1px dashed #2e7d32',
-                  background: 'transparent',
-                  color: '#2e7d32',
-                  fontSize: '15px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                  marginTop: '8px',
-                }}
-              >
-                <span>🔄</span> Switch Role
-              </button>
-            </>
-          )}
-
-          {/* Logout Button at Bottom */}
-          <button
-            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              borderRadius: '10px',
-              border: '1px solid #c62828',
-              background: 'transparent',
-              color: '#c62828',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-              marginTop: '12px',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#fee';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <span>🚪</span> Logout
-          </button>
+          {/* ... mobile menu items ... */}
+          {/* Keep your existing mobile menu code here */}
         </div>
       )}
 

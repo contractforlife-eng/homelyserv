@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
+import NotificationBell from './NotificationBell'; // 👈 ADD THIS
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -184,6 +185,10 @@ export default function AdminLayout({ children }) {
           }}>
             {user?.fullName?.charAt(0) || 'A'}
           </div>
+
+          {/* 👈 NOTIFICATION BELL IN ADMIN LAYOUT */}
+          <NotificationBell position="right" />
+
           <div style={{ flex: 1 }}>
             <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{user?.fullName}</div>
             <div style={{ color: '#6a8bb0', fontSize: '11px' }}>{user?.role}</div>
