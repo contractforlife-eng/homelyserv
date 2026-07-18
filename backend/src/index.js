@@ -1,11 +1,12 @@
 // backend/src/index.js
 // ============================================================
-// LOAD .env - SIMPLEST WAY
+// LOAD CONFIGURATION & ENVIRONMENT
 // ============================================================
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import './config.js';
+import './config.js'; // Running your base configuration routines
+
 // Get the directory where index.js is located
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,12 +15,25 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // ============================================================
-// Debug - Check if .env loaded
+// UNIFIED INTEGRATION GATEWAY CONNECTIONS DIAGNOSTIC
 // ============================================================
-console.log('📂 .env loaded from:', path.join(__dirname, '..', '.env'));
-console.log('🔑 PAYMOB_API_KEY:', process.env.PAYMOB_API_KEY ? '✅ Found' : '❌ Missing');
-console.log('🔑 PAYMOB_INTEGRATION_ID:', process.env.PAYMOB_INTEGRATION_ID ? '✅ Found' : '❌ Missing');
-console.log('🔑 PAYMOB_IFRAME_ID:', process.env.PAYMOB_IFRAME_ID ? '✅ Found' : '❌ Missing');
+console.log('\n--- 🔌 GATEWAY CONNECTIONS ---');
+
+// Paymob Diagnostics
+if (process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID) {
+  console.log(`💳 Paymob Gateway:  ✅ ACTIVE (Integration ID: ${process.env.PAYMOB_INTEGRATION_ID})`);
+} else {
+  console.log('💳 Paymob Gateway:  ❌ MISSING OR INCOMPLETE KEYS');
+}
+
+// PayPal Diagnostics
+if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET) {
+  console.log(`💰 PayPal Gateway:  ✅ ACTIVE (Mode: ${process.env.PAYPAL_MODE || 'sandbox'})`);
+} else {
+  console.log('💰 PayPal Gateway:  ❌ MISSING OR INCOMPLETE KEYS');
+}
+
+console.log('-------------------------------\n');
 
 // ============================================================
 // NOW LOAD OTHER IMPORTS
@@ -35,7 +49,7 @@ import hireRoutes from './routes/hires.js';
 import employerRoutes from './routes/employer.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
-import chatRoutes from './routes/chat.js'
+import chatRoutes from './routes/chat.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -69,7 +83,8 @@ app.use(express.json());
 // ============================================================
 // MongoDB Connection
 // ============================================================
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv';
+// Using process.env.DATABASE_URL to align with your Prisma Atlas setup
+const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv';
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
@@ -100,11 +115,10 @@ app.get('/api/test', (req, res) => {
 });
 
 // ============================================================
-// DEBUG: SHOW ALL USERS (ADD THIS SECTION)
+// DEBUG: SHOW ALL USERS
 // ============================================================
 app.get('/api/debug/all-users', async (req, res) => {
   try {
-    // Import User model dynamically
     const User = (await import('./models/User.js')).default;
     const users = await User.find({});
     
@@ -132,7 +146,7 @@ app.get('/api/debug/all-users', async (req, res) => {
 });
 
 // ============================================================
-// DEBUG: CHECK USER COUNT (ADD THIS TOO)
+// DEBUG: CHECK USER COUNT
 // ============================================================
 app.get('/api/debug/user-count', async (req, res) => {
   try {
@@ -154,13 +168,13 @@ app.get('/api/debug/user-count', async (req, res) => {
 });
 
 // ============================================================
-// DEBUG: FIX USER LISTING (ADD THIS TOO)
+// DEBUG: FIX USER LISTING
 // ============================================================
 app.get('/api/users/all', async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const users = await User.find({})
-      .select('-password') // Don't send passwords
+      .select('-password')
       .sort({ createdAt: -1 });
     
     console.log(`📊 API: Found ${users.length} users (no filters)`);
@@ -183,7 +197,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
 
-// CORS middleware
+// CORS headers fallback middleware
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
@@ -192,7 +206,7 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// API Routes
+// API Routes Mount point
 // ============================================================
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
@@ -201,6 +215,7 @@ app.use('/api/employers', employerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
+
 // ============================================================
 // Socket.IO Configuration
 // ============================================================
@@ -261,7 +276,7 @@ app.use((err, req, res, next) => {
 // ============================================================
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 HomelyServ server running on port ${PORT}`);
+  console.log(`🚀 HomelyServ server running on port ${PORT}`);
   console.log(`📍 Local: http://localhost:${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔗 Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}\n`);

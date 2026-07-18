@@ -4,12 +4,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
 }
 
 model Document {
-  id              String        @id
-  workerId        String
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  workerId        String        @db.ObjectId
   type            String
   url             String
   status          String        @default("pending")
@@ -19,8 +19,8 @@ model Document {
 }
 
 model EmployerProfile {
-  id             String   @id
-  userId         String   @unique
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @unique @db.ObjectId
   companyName    String?
   companyLogo    String?
   companyPhotos  String[] @default([])
@@ -31,13 +31,13 @@ model EmployerProfile {
   address        String?
   isVerified     Boolean  @default(false)
   createdAt      DateTime @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   User           User     @relation(fields: [userId], references: [id])
 }
 
 model Experience {
-  id            String        @id
-  workerId      String
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  workerId      String        @db.ObjectId
   employerName  String
   role          String
   startDate     DateTime
@@ -48,9 +48,9 @@ model Experience {
 }
 
 model Hire {
-  id               String        @id
-  workerId         String
-  employerId       String
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  workerId         String        @db.ObjectId
+  employerId       String        @db.ObjectId
   agreedSalary     Float
   commissionAmount Float
   vatAmount        Float
@@ -62,7 +62,7 @@ model Hire {
   startDate        DateTime?
   status           String        @default("offer_sent")
   createdAt        DateTime      @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime      @updatedAt
   User             User          @relation(fields: [employerId], references: [id])
   WorkerProfile    WorkerProfile @relation(fields: [workerId], references: [id])
   Message          Message[]
@@ -71,17 +71,15 @@ model Hire {
 }
 
 model Message {
-  id             String   @id
-  senderId       String
-  receiverId     String
-  hireId         String?
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId       String   @db.ObjectId
+  receiverId     String   @db.ObjectId
+  hireId         String?  @db.ObjectId
   content        String
   isRead         Boolean  @default(false)
   createdAt      DateTime @default(now())
   
-  // ============================================================
   // CHAT SYSTEM FIELDS
-  // ============================================================
   conversationId String?  @map("conversationId")
   senderName     String?  @map("senderName")
   senderRole     String?  @map("senderRole")
@@ -102,8 +100,8 @@ model Message {
 }
 
 model Notification {
-  id        String   @id
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   type      String
   title     String
   body      String
@@ -112,12 +110,9 @@ model Notification {
   User      User     @relation(fields: [userId], references: [id])
 }
 
-// ============================================================
-// PAYMENT MODEL - ADDED
-// ============================================================
 model Payment {
-  id            String   @id @default(cuid())
-  userId        String   @map("userId")
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId @map("userId")
   workerId      String   @map("workerId")
   workerName    String   @map("workerName")
   employerId    String   @map("employerId")
@@ -131,10 +126,9 @@ model Payment {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  // Relations
   User          User     @relation(fields: [userId], references: [id])
-  Hire?         Hire?    @relation(fields: [hireId], references: [id])
-  hireId        String?  @map("hireId")
+  Hire          Hire?    @relation(fields: [hireId], references: [id])
+  hireId        String?  @db.ObjectId @map("hireId")
 
   @@index([userId])
   @@index([workerId])
@@ -144,10 +138,10 @@ model Payment {
 }
 
 model Review {
-  id            String        @id
-  hireId        String
-  workerId      String
-  employerId    String
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  hireId        String        @db.ObjectId
+  workerId      String        @db.ObjectId
+  employerId    String        @db.ObjectId
   rating        Int
   comment       String?
   createdAt     DateTime      @default(now())
@@ -157,7 +151,7 @@ model Review {
 }
 
 model User {
-  id                               String           @id
+  id                               String           @id @default(auto()) @map("_id") @db.ObjectId
   email                            String           @unique
   password                         String
   username                         String           @unique
@@ -165,11 +159,12 @@ model User {
   fullName                         String
   phone                            String?
   city                             String?
+  activationCode                   String?          
   isVerified                       Boolean          @default(false)
   isSuspended                      Boolean          @default(false)
   language                         String           @default("en")
   createdAt                        DateTime         @default(now())
-  updatedAt                        DateTime
+  updatedAt                        DateTime         @updatedAt
   image                            String?          @default("")
   EmployerProfile                  EmployerProfile?
   Hire                             Hire[]
@@ -182,8 +177,8 @@ model User {
 }
 
 model WorkerProfile {
-  id              String       @id
-  userId          String       @unique
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String       @unique @db.ObjectId
   category        String
   experienceYears Int          @default(0)
   expectedSalary  Float        @default(0)
@@ -198,7 +193,7 @@ model WorkerProfile {
   ratingCount     Int          @default(0)
   isVisible       Boolean      @default(true)
   createdAt       DateTime     @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime     @updatedAt
   Document        Document[]
   Experience      Experience[]
   Hire            Hire[]
