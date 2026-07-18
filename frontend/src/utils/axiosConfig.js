@@ -8,7 +8,7 @@ const api = axios.create({
 export default api;
 
 // Request interceptor to add token
-axiosInstance.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth-storage') 
       ? JSON.parse(localStorage.getItem('auth-storage'))?.state?.token 
@@ -25,7 +25,7 @@ axiosInstance.interceptors.request.use(
 );
 
 // Response interceptor to handle errors
-axiosInstance.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle 401 Unauthorized - token expired
@@ -49,5 +49,3 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default axiosInstance;

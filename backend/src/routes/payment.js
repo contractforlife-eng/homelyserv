@@ -63,7 +63,9 @@ router.post('/create-payment-intent', async (req, res) => {
       employerId,
       employerName,
       hireId,
-      paymentMethod = 'paymob'
+      paymentMethod = 'paymob',
+      paymentType,
+      salary
     } = req.body;
 
     console.log('📊 Creating payment intent:', { amount, userId, workerName, paymentMethod });

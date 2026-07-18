@@ -1,18 +1,18 @@
 // backend/routes/chatRoutes.js
 //
 // Mount this in your main server file, e.g.:
-//   const chatRoutes = require('./routes/chatRoutes');
+//   import chatRoutes from './routes/chatRoutes.js';
 //   app.use('/api/chat', chatRoutes);
 //
 // If your app already has auth middleware (checking the JWT from
 // `homelyserv_token`), add it here so these routes require a logged-in
 // user, e.g.:
-//   const authenticate = require('../middleware/authenticate');
+//   import { authenticate } from '../middleware/auth.js';
 //   router.use(authenticate);
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Message = require('../models/Message');
+import Message from '../models/Message.js';
 
 // Same deterministic-ID scheme the old localStorage version used, kept
 // server-side so it's the single source of truth.
@@ -241,4 +241,4 @@ router.delete('/conversations/:conversationId', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
