@@ -1,4 +1,4 @@
-// src/pages/WorkerPayment.jsx - RED AND WHITE THEME
+// src/pages/WorkerPayment.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 // ============================================
-// 1. SIDEBAR COMPONENT - RED THEME
+// 1. SIDEBAR COMPONENT - RED THEME (unchanged)
 // ============================================
 const WorkerSidebar = ({ 
   language, 
@@ -272,7 +272,7 @@ const WorkerSidebar = ({
 };
 
 // ============================================
-// 2. MAIN COMPONENT - WorkerPayment - RED THEME
+// 2. MAIN COMPONENT - WorkerPayment - WITH WORKING NOTIFICATIONS
 // ============================================
 const WorkerPayment = () => {
   const navigate = useNavigate();
@@ -280,6 +280,11 @@ const WorkerPayment = () => {
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // ✅ ADDED: Notification state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
   
   // States for data
   const [payments, setPayments] = useState([]);
@@ -313,6 +318,51 @@ const WorkerPayment = () => {
   };
 
   const userIsPremium = isPremium();
+
+  // ✅ ADDED: Fetch notifications function
+  const fetchNotifications = async () => {
+    setNotificationLoading(true);
+    try {
+      const token = localStorage.getItem('homelyserv_token');
+      if (!token) {
+        setNotifications([]);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/notifications', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setNotifications(data.notifications || []);
+      } else if (Array.isArray(data)) {
+        setNotifications(data);
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching notifications:', error);
+      setNotifications([]);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  // ✅ ADDED: Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      fetchNotifications();
+    }
+  }, [isNotificationsOpen]);
 
   // ============================================
   // 3. TRANSLATIONS
@@ -370,7 +420,8 @@ const WorkerPayment = () => {
       noPaymentsDesc: 'Your payment history will appear here once you complete tasks',
       refresh: 'Refresh',
       premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium'
+      getPremium: 'Get Premium',
+      noNotifications: 'No new notifications'
     },
     ar: {
       title: 'المدفوعات',
@@ -424,7 +475,8 @@ const WorkerPayment = () => {
       noPaymentsDesc: 'سيظهر سجل مدفوعاتك هنا بمجرد إكمال المهام',
       refresh: 'تحديث',
       premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز'
+      getPremium: 'اشتراك مميز',
+      noNotifications: 'لا توجد إشعارات جديدة'
     }
   };
 
@@ -747,10 +799,51 @@ const WorkerPayment = () => {
                 </div>
               </div>
               
-              <button aria-label="Notifications" className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-              </button>
+              {/* ✅ FIXED: Working Notification Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                >
+                  <Bell size={20} className="text-gray-600" />
+                  {notifications && notifications.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
+                </button>
+
+                {/* ✅ ADDED: Notification Dropdown */}
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                      <span>{t.notifications}</span>
+                      {notificationLoading && (
+                        <span className="text-xs text-gray-400">Loading...</span>
+                      )}
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notificationLoading ? (
+                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                          Loading notifications...
+                        </div>
+                      ) : notifications && notifications.length > 0 ? (
+                        notifications.map((n, index) => (
+                          <div 
+                            key={n.id || index} 
+                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                          >
+                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                          {t.noNotifications}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <button
                 onClick={toggleLanguage}

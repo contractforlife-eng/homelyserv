@@ -1,4 +1,4 @@
-// src/pages/worker/WorkerProfile.jsx - RED AND WHITE THEME
+// src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
@@ -36,7 +36,7 @@ import {
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - RED THEME
+// Sidebar Component - RED THEME (unchanged)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -270,7 +270,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerProfile Component - RED THEME
+// Main WorkerProfile Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerProfile = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -278,6 +278,12 @@ const WorkerProfile = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // ✅ ADDED: Notification state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -301,6 +307,51 @@ const WorkerProfile = () => {
   });
 
   const jobOptions = JOB_OPTIONS;
+
+  // ✅ ADDED: Fetch notifications function
+  const fetchNotifications = async () => {
+    setNotificationLoading(true);
+    try {
+      const token = localStorage.getItem('homelyserv_token');
+      if (!token) {
+        setNotifications([]);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/notifications', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setNotifications(data.notifications || []);
+      } else if (Array.isArray(data)) {
+        setNotifications(data);
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching notifications:', error);
+      setNotifications([]);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  // ✅ ADDED: Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      fetchNotifications();
+    }
+  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -332,7 +383,8 @@ const WorkerProfile = () => {
       profilePhoto: 'Profile Photo',
       changePhoto: 'Click to change photo',
       premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium'
+      getPremium: 'Get Premium',
+      noNotifications: 'No new notifications'
     },
     ar: {
       title: 'ملفي الشخصي',
@@ -363,7 +415,8 @@ const WorkerProfile = () => {
       profilePhoto: 'الصورة الشخصية',
       changePhoto: 'انقر لتغيير الصورة',
       premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز'
+      getPremium: 'اشتراك مميز',
+      noNotifications: 'لا توجد إشعارات جديدة'
     }
   };
 
@@ -711,10 +764,54 @@ const WorkerProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              {/* ✅ FIXED: Working Notification Button */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotificationsOpen(!isNotificationsOpen);
+                  }}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                >
+                  <Bell size={20} className="text-gray-600" />
+                  {notifications && notifications.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
+                </button>
+
+                {/* ✅ ADDED: Notification Dropdown */}
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                      <span>{t.notifications}</span>
+                      {notificationLoading && (
+                        <span className="text-xs text-gray-400">Loading...</span>
+                      )}
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notificationLoading ? (
+                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                          Loading notifications...
+                        </div>
+                      ) : notifications && notifications.length > 0 ? (
+                        notifications.map((n, index) => (
+                          <div 
+                            key={n.id || index} 
+                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                          >
+                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                          {t.noNotifications}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"

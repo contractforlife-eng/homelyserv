@@ -267,4 +267,4 @@ export default function AdminLayout({ children }) {
       </main>
     </div>
   );
-}
+}export default AdminLayout;
