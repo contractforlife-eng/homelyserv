@@ -5,26 +5,34 @@ import User from '../models/User.js';
 const router = express.Router();
 
 // ============================================================
-// Get All Users (Admin Only)
+// Get All Users (Admin Only) - FIXED: Shows ALL users
 // ============================================================
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    // Get ALL users - NO filters, NO conditions
+    const users = await User.find({})
+      .select('-password') // Don't send passwords
+      .sort({ createdAt: -1 }); // Newest first
+
+    console.log(`✅ Admin route: Found ${users.length} users`);
+    
     res.json({
       success: true,
-      users
+      count: users.length,
+      users: users
     });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get users'
+      message: 'Failed to get users',
+      error: error.message
     });
   }
 });
 
 // ============================================================
-// Get User by ID (Admin Only)
+// Get User by ID (Admin Only) - FIXED: Better error handling
 // ============================================================
 router.get('/users/:id', async (req, res) => {
   try {
@@ -43,13 +51,14 @@ router.get('/users/:id', async (req, res) => {
     console.error('Get user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get user'
+      message: 'Failed to get user',
+      error: error.message
     });
   }
 });
 
 // ============================================================
-// Suspend User (Admin Only)
+// Suspend User (Admin Only) - FIXED: Better handling
 // ============================================================
 router.post('/users/:id/suspend', async (req, res) => {
   try {
@@ -58,7 +67,8 @@ router.post('/users/:id/suspend', async (req, res) => {
       req.params.id,
       { 
         status: 'SUSPENDED',
-        suspensionReason: reason 
+        suspensionReason: reason || 'No reason provided',
+        suspendedAt: new Date()
       },
       { new: true }
     ).select('-password');
@@ -70,6 +80,8 @@ router.post('/users/:id/suspend', async (req, res) => {
       });
     }
     
+    console.log(`🚫 User suspended: ${user.email}`);
+    
     res.json({
       success: true,
       user,
@@ -79,19 +91,24 @@ router.post('/users/:id/suspend', async (req, res) => {
     console.error('Suspend user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to suspend user'
+      message: 'Failed to suspend user',
+      error: error.message
     });
   }
 });
 
 // ============================================================
-// Activate User (Admin Only)
+// Activate User (Admin Only) - FIXED: Better handling
 // ============================================================
 router.post('/users/:id/activate', async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { status: 'ACTIVE' },
+      { 
+        status: 'ACTIVE',
+        suspensionReason: null,
+        suspendedAt: null
+      },
       { new: true }
     ).select('-password');
     
@@ -102,6 +119,8 @@ router.post('/users/:id/activate', async (req, res) => {
       });
     }
     
+    console.log(`✅ User activated: ${user.email}`);
+    
     res.json({
       success: true,
       user,
@@ -111,23 +130,40 @@ router.post('/users/:id/activate', async (req, res) => {
     console.error('Activate user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to activate user'
+      message: 'Failed to activate user',
+      error: error.message
     });
   }
 });
 
 // ============================================================
-// Delete User (Admin Only)
+// Delete User (Admin Only) - FIXED: Added safety check
 // ============================================================
 router.delete('/users/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+
+    // Safety: Prevent deleting the last admin
+    if (user.role === 'ADMIN') {
+      const adminCount = await User.countDocuments({ role: 'ADMIN' });
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete the last admin user'
+        });
+      }
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    
+    console.log(`🗑️ User deleted: ${user.email}`);
+    
     res.json({
       success: true,
       message: 'User deleted successfully'
@@ -136,13 +172,14 @@ router.delete('/users/:id', async (req, res) => {
     console.error('Delete user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete user'
+      message: 'Failed to delete user',
+      error: error.message
     });
   }
 });
 
 // ============================================================
-// Get Dashboard Stats (Admin Only)
+// Get Dashboard Stats (Admin Only) - FIXED: Better stats
 // ============================================================
 router.get('/dashboard', async (req, res) => {
   try {
@@ -151,6 +188,14 @@ router.get('/dashboard', async (req, res) => {
     const totalWorkers = await User.countDocuments({ role: 'WORKER' });
     const activeUsers = await User.countDocuments({ status: 'ACTIVE' });
     const suspendedUsers = await User.countDocuments({ status: 'SUSPENDED' });
+    const pendingUsers = await User.countDocuments({ status: 'PENDING' });
+    
+    // Get recent users (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const newUsers = await User.countDocuments({
+      createdAt: { $gte: sevenDaysAgo }
+    });
     
     res.json({
       success: true,
@@ -160,6 +205,8 @@ router.get('/dashboard', async (req, res) => {
         totalWorkers,
         activeUsers,
         suspendedUsers,
+        pendingUsers,
+        newUsersLast7Days: newUsers,
         totalPayments: 0,
         totalComplaints: 0,
         totalHires: 0
@@ -169,7 +216,8 @@ router.get('/dashboard', async (req, res) => {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get dashboard stats'
+      message: 'Failed to get dashboard stats',
+      error: error.message
     });
   }
 });
@@ -188,7 +236,8 @@ router.get('/payments', async (req, res) => {
     console.error('Get payments error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get payments'
+      message: 'Failed to get payments',
+      error: error.message
     });
   }
 });
@@ -207,7 +256,8 @@ router.get('/complaints', async (req, res) => {
     console.error('Get complaints error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get complaints'
+      message: 'Failed to get complaints',
+      error: error.message
     });
   }
 });
@@ -226,7 +276,61 @@ router.get('/hires', async (req, res) => {
     console.error('Get hires error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get hires'
+      message: 'Failed to get hires',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// ADD THIS: Search Users (Admin Only)
+// ============================================================
+router.get('/users/search/:query', async (req, res) => {
+  try {
+    const { query } = req.params;
+    const users = await User.find({
+      $or: [
+        { fullName: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } }
+      ]
+    }).select('-password').limit(20);
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search users',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// ADD THIS: Get Users by Role (Admin Only)
+// ============================================================
+router.get('/users/role/:role', async (req, res) => {
+  try {
+    const { role } = req.params;
+    const users = await User.find({ role: role.toUpperCase() })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    console.error('Get users by role error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get users',
+      error: error.message
     });
   }
 });

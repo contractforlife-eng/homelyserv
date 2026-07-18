@@ -99,6 +99,86 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
 });
 
+// ============================================================
+// DEBUG: SHOW ALL USERS (ADD THIS SECTION)
+// ============================================================
+app.get('/api/debug/all-users', async (req, res) => {
+  try {
+    // Import User model dynamically
+    const User = (await import('./models/User.js')).default;
+    const users = await User.find({});
+    
+    console.log(`🔍 Found ${users.length} users in database`);
+    users.forEach(u => console.log(`- ${u.email}`));
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users: users.map(u => ({
+        id: u._id,
+        email: u.email,
+        fullName: u.fullName,
+        role: u.role,
+        createdAt: u.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================================
+// DEBUG: CHECK USER COUNT (ADD THIS TOO)
+// ============================================================
+app.get('/api/debug/user-count', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const count = await User.countDocuments();
+    const allUsers = await User.find({}).select('email fullName role createdAt');
+    
+    res.json({
+      success: true,
+      totalUsers: count,
+      users: allUsers
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================================
+// DEBUG: FIX USER LISTING (ADD THIS TOO)
+// ============================================================
+app.get('/api/users/all', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const users = await User.find({})
+      .select('-password') // Don't send passwords
+      .sort({ createdAt: -1 });
+    
+    console.log(`📊 API: Found ${users.length} users (no filters)`);
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users: users
+    });
+  } catch (error) {
+    console.error('Error in /api/users/all:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });

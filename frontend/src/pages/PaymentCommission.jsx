@@ -306,7 +306,7 @@ const PaymentCommission = () => {
               <div>
                 <p className="text-sm text-blue-700 font-medium">How it works:</p>
                 <p className="text-xs text-blue-600 mt-1">
-                  You are paying the <strong>platform commission</strong> (10% of the worker's monthly salary). 
+                  You are paying the <strong>platform commission</strong> (15% of the worker's monthly salary). 
                   The worker's full salary is an agreement between you and the employer and is paid directly.
                 </p>
               </div>

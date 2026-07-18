@@ -415,29 +415,38 @@ const PaymentOptions = () => {
   // CALCULATE TOTAL - UPDATED VERSION
   // ============================================================
   const calculateTotal = () => {
-    // Premium Quick Hire
-    if (pendingPayment?.paymentType === "quick_hire_premium") {
-        return 299;
+  // Premium Quick Hire check
+  if (pendingPayment && pendingPayment.paymentType === "quick_hire_premium") {
+    return 299;
+  }
+
+  // 1. Check pendingPayment explicitly first
+  if (pendingPayment) {
+    if (Number(pendingPayment.amount) > 0) {
+      return Number(pendingPayment.amount);
     }
-
-    // Use amount already calculated by EmployerSearch
-    if (pendingPayment?.amount && Number(pendingPayment.amount) > 0) {
-        return Number(pendingPayment.amount);
+    if (Number(pendingPayment.commission) > 0) {
+      return Number(pendingPayment.commission);
     }
+    if (Number(pendingPayment.fullSalary) > 0) {
+      const percentage = Number(pendingPayment.feePercentage) || 15;
+      return (Number(pendingPayment.fullSalary) * percentage) / 100;
+    }
+  }
 
-    // Try every possible salary field
-    const hourlyRate =
-        Number(workerData?.hourlyRate) ||
-        Number(workerData?.expectedHourlyRate) ||
-        Number(workerData?.salary) ||
-        Number(workerData?.expectedSalary) ||
-        Number(workerData?.rate) ||
-        Number(workerData?.price) ||
-        30;
+  // 2. SAFETY FALLBACK: If pendingPayment is missing/empty but workerData exists, calculate from salary
+  if (workerData) {
+    // Check if fullSalary exists on worker data object
+    const targetSalary = Number(workerData.fullSalary || workerData.salary);
+    if (targetSalary > 0) {
+      console.log("💰 Falling back to calculation from workerData salary:", targetSalary);
+      return Math.round(targetSalary * 0.15 * 100) / 100; // Hardcoded 15% backup
+    }
+  }
 
-    return hourlyRate * 40 * 4 * 1.15;
-  };
-
+  console.warn("⚠ No valid payment amount found.");
+  return 0;
+};
   // ============================================================
   // LOAD DATA
   // ============================================================

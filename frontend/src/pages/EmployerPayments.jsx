@@ -541,6 +541,8 @@ const EmployerPayments = () => {
       console.log('📂 Loading commission payments for employer:', employerEmail);
 
       // Get all payments from all_payments
+      // Get all payments from all_payments
+      // Get all payments from all_payments
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       
       // Filter commission payments for this employer
@@ -556,19 +558,30 @@ const EmployerPayments = () => {
              (o.employerEmail === employerEmail || o.employerId === employerEmail)
       );
 
-      // Create commission entries for accepted offers that don't have payments yet
-      const existingPaymentIds = new Set(employerPayments.map(p => p.offerId).filter(id => id));
-      let newPayments = [];
+      // FIX A: Track existing offerIds globally from all_payments AND employerPayments to stop race conditions
+      const existingPaymentOfferIds = new Set([
+        ...allPayments.map(p => p.offerId),
+        ...employerPayments.map(p => p.offerId)
+      ].filter(Boolean));
       
-      const commissionRate = PAYMENT_CONFIG.fees.platformCommissionRate || 0.10;
+      let newPayments = [];
+      const commissionRate = 0.15; // Force 15% to align across MyHires and PaymentOptions
       
       employerAcceptedOffers.forEach(offer => {
-        if (!existingPaymentIds.has(offer.id)) {
-          const fullSalary = offer.amount || 0;
-          const commission = fullSalary * commissionRate;
+        if (!existingPaymentOfferIds.has(offer.id)) {
+          const fullSalary = Number(offer.amount || 0);
+
+          // Force check alternative attributes or evaluate explicit 15% rate math
+          const commission =
+              Number(offer.commission) ||
+              Number(offer.paymentAmount) ||
+              Number(offer.platformFee) ||
+              Math.round(fullSalary * commissionRate * 100) / 100;
           
           const payment = {
-            id: 'PAY-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+            // FIX B: Use a deterministic ID built off offer.id. 
+            // This prevents random timestamp keys from overwriting your active object cache.
+            id: offer.paymentId || `PAY-${offer.id}`, 
             offerId: offer.id,
             workerId: offer.workerId || offer.workerEmail,
             workerName: offer.workerName || 'Worker',
@@ -580,9 +593,7 @@ const EmployerPayments = () => {
             employerId: offer.employerId || offer.employerEmail,
             employerEmail: offer.employerEmail,
             jobTitle: offer.jobTitle || 'Service Provider',
-            // Commission is what the employer pays to the platform
-            commission: commission,
-            // Full salary is for information only
+            commission: commission, 
             fullSalary: fullSalary,
             status: offer.status === 'completed' ? 'completed' : 'pending',
             paymentMethod: null,
@@ -591,24 +602,28 @@ const EmployerPayments = () => {
             createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             description: offer.description || `Commission for hiring ${offer.workerName}`,
-            reference: 'REF-' + Date.now(),
+            reference: 'REF-' + offer.id,
             hasReceipt: false,
             paymentType: 'commission',
             type: 'commission'
           };
           newPayments.push(payment);
+          existingPaymentOfferIds.add(offer.id); // Guard against multi-creation duplication in the same execution cycle
         }
       });
 
-      // Merge new payments with existing ones
+      // Merge new payments cleanly with the database
       if (newPayments.length > 0) {
-        console.log(`✅ Created ${newPayments.length} new commission entries`);
-        employerPayments = [...employerPayments, ...newPayments];
-        // Save to localStorage
-        localStorage.setItem('all_payments', JSON.stringify([...allPayments, ...newPayments]));
+        const totalUpdatedPayments = [...allPayments, ...newPayments];
+        localStorage.setItem('all_payments', JSON.stringify(totalUpdatedPayments));
+        
+        employerPayments = totalUpdatedPayments.filter(
+          p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
+               (p.type === 'commission' || p.paymentType === 'commission')
+        );
       }
 
-      // Remove duplicates by ID
+      // Remove local display array duplicates defensively
       const uniquePayments = [];
       const seenIds = new Set();
       employerPayments.forEach(p => {
@@ -748,32 +763,33 @@ const EmployerPayments = () => {
   };
 
   const handleProcessPayment = (payment) => {
-    const paymentData = payment || selectedPayment;
-    
-    if (!paymentData) {
-      alert('Payment not found');
-      return;
-    }
+  const paymentData = payment || selectedPayment;
+  
+  if (!paymentData) {
+    alert('Payment not found');
+    return;
+  }
 
-    console.log('🔄 Processing commission payment:', paymentData);
+  const pendingPayment = {
+    paymentId: paymentData.id,
+    // FIX: Read explicitly from paymentData.commission which is set to 840
+    amount: Number(paymentData.commission || 0), 
+    fullSalary: Number(paymentData.fullSalary || 0),
+    workerName: paymentData.workerName,
+    workerId: paymentData.workerId || paymentData.id,
+    workerEmail: paymentData.workerEmail || '',
+    jobTitle: paymentData.jobTitle || 'Service Provider',
+    description: paymentData.description || `Commission for ${paymentData.workerName}`,
+    paymentType: 'commission',
+    offerId: paymentData.offerId,
+    employerId: user?.id || user?.email,
+    employerName: user?.fullName || 'Employer',
+    returnTo: '/employer-payments'
+  };
 
-    const pendingPayment = {
-      paymentId: paymentData.id,
-      amount: paymentData.commission || 0,
-      fullSalary: paymentData.fullSalary || 0,
-      workerName: paymentData.workerName,
-      workerId: paymentData.workerId || paymentData.id,
-      workerEmail: paymentData.workerEmail || '',
-      jobTitle: paymentData.jobTitle || 'Service Provider',
-      description: paymentData.description || `Commission for ${paymentData.workerName || 'worker'}`,
-      paymentType: 'commission',
-      offerId: paymentData.offerId,
-      employerId: user?.id || user?.email,
-      employerName: user?.fullName || 'Employer',
-      returnTo: '/employer-payments'
-    };
-
-    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+  localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+  
+  // (Keep the rest of your workerData setup code below it identical)
     
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
@@ -1233,7 +1249,7 @@ const EmployerPayments = () => {
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-500">{t.modal.commission}</p>
                   <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                  <p className="text-xs text-gray-400">Platform commission (10%)</p>
+                  <p className="text-xs text-gray-400">Platform commission (15%)</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-500">{t.modal.fullSalary}</p>
