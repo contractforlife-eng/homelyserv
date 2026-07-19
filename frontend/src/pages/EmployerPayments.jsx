@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged WITH WORKING NOTIFICATION BELL AND PAYMENT STATUS UPDATE
+// src/pages/EmployerPayments.jsx - COMPLETE FIXED FILE
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -55,7 +55,6 @@ import {
   Info
 } from 'lucide-react';
 import { isUserPremium as checkUserPremium } from '../utils/subscriptionService';
-import { PAYMENT_CONFIG } from '../config/paymentConfig';
 
 // ============================================================
 // EMPLOYER SIDEBAR COMPONENT
@@ -115,16 +114,8 @@ const EmployerSidebar = ({
     { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
   ];
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
-    }
-    return null;
-  };
+  const isActive = (path) => location.pathname === path;
+  const getProfileImage = () => user?.profileImage || null;
 
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
@@ -304,7 +295,36 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER PAYMENTS COMPONENT - WITH NOTIFICATION BELL
+// DEBUG FUNCTION
+// ============================================================
+const debugPayments = (userEmail) => {
+  console.log('🔍 DEBUGGING PAYMENTS');
+  console.log('========================================');
+  console.log('Current user email:', userEmail);
+  
+  const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+  console.log('📋 all_payments count:', allPayments.length);
+  console.log('📋 all_payments:', allPayments);
+  
+  const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+  console.log('📋 employer_payments count:', employerPayments.length);
+  console.log('📋 employer_payments:', employerPayments);
+  
+  const userPayments = allPayments.filter(p => 
+    p.employerEmail === userEmail || p.employerId === userEmail
+  );
+  console.log(`📋 Payments for ${userEmail}:`, userPayments);
+  
+  const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+  const userOffers = employerOffers.filter(o => 
+    o.employerEmail === userEmail || o.employerId === userEmail
+  );
+  console.log(`📋 Offers for ${userEmail}:`, userOffers);
+  console.log('========================================');
+};
+
+// ============================================================
+// MAIN EMPLOYER PAYMENTS COMPONENT
 // ============================================================
 const EmployerPayments = () => {
   const navigate = useNavigate();
@@ -320,6 +340,7 @@ const EmployerPayments = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState({
     totalCommissionPaid: 0,
     pendingCount: 0,
@@ -330,6 +351,9 @@ const EmployerPayments = () => {
   });
   const isLoadingRef = React.useRef(false);
 
+  // ============================================================
+  // TRANSLATIONS - DEFINED INSIDE COMPONENT
+  // ============================================================
   const translations = {
     en: {
       title: 'Payments',
@@ -418,7 +442,7 @@ const EmployerPayments = () => {
       contactRevealed: 'Contact information revealed',
       waitingForPayment: 'Waiting for payment confirmation',
       commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.',
-      paymentSuccess: 'Payment completed successfully! Worker can now start working.',
+      paymentSuccess: '✅ Payment completed successfully! Worker can now start working.',
       markPaid: 'Mark as Paid',
       markPaidConfirm: 'Mark this payment as completed? This will unlock contact info and notify the worker.'
     },
@@ -509,7 +533,7 @@ const EmployerPayments = () => {
       contactRevealed: 'تم فتح معلومات الاتصال',
       waitingForPayment: 'في انتظار تأكيد الدفع',
       commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.',
-      paymentSuccess: 'تم الدفع بنجاح! يمكن للعامل البدء في العمل.',
+      paymentSuccess: '✅ تم الدفع بنجاح! يمكن للعامل البدء في العمل.',
       markPaid: 'تحديد كمكتمل',
       markPaidConfirm: 'تحديد هذه الدفعة كمكتملة؟ سيتم فتح معلومات الاتصال وإشعار العامل.'
     }
@@ -518,31 +542,76 @@ const EmployerPayments = () => {
   const t = translations[language] || translations.en;
 
   // ============================================================
-  // toggleSidebar
+  // TOGGLE FUNCTIONS
   // ============================================================
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
     localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
   // ============================================================
-  // PAYMENT SUCCESS HANDLER - Updates offer status after payment
+  // FORCE RELOAD
+  // ============================================================
+  const forceReload = () => {
+    console.log('🔄 Force reloading payments...');
+    setRefreshKey(prev => prev + 1);
+    setTimeout(() => {
+      loadData();
+    }, 100);
+  };
+
+  // ============================================================
+  // PAYMENT SUCCESS HANDLER
   // ============================================================
   const handlePaymentSuccess = (paymentId, offerId) => {
     try {
-      console.log(`✅ Payment completed for offer: ${offerId}`);
+      console.log('✅ Payment completed for offer:', offerId);
+      console.log('✅ Payment ID:', paymentId);
+      console.log('✅ Current user:', user?.email);
       
-      // Get all employer offers
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      if (!offerId) {
+        console.error('❌ No offerId provided');
+        return false;
+      }
+
+      if (!user?.email) {
+        console.error('❌ No user email found');
+        return false;
+      }
+
+      let employerOffers = [];
+      try {
+        employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      } catch (e) {
+        console.error('Error reading employer_offers:', e);
+        employerOffers = [];
+      }
       
-      // Find the offer
       const offer = employerOffers.find(o => o.id === offerId);
       if (!offer) {
         console.error('❌ Offer not found:', offerId);
         return false;
       }
       
-      // Update the offer status
+      console.log('📋 Found offer:', offer.jobTitle, 'for', offer.workerEmail);
+      
+      // 1. UPDATE EMPLOYER_OFFERS
       const updatedOffers = employerOffers.map(o => {
         if (o.id === offerId) {
           return {
@@ -551,19 +620,27 @@ const EmployerPayments = () => {
             paymentDate: new Date().toISOString(),
             paymentId: paymentId,
             paymentStatus: 'completed',
-            // If the worker accepted, set to in_progress
-            status: o.workerResponse === 'accepted' || o.status === 'accepted' ? 'in_progress' : 'accepted',
+            status: 'in_progress',
+            employerEmail: user.email,
+            employerId: user.id || user.email,
             updatedAt: new Date().toISOString()
           };
         }
         return o;
       });
       localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      console.log('✅ Updated employer_offers with payment completion');
+      console.log('✅ Updated employer_offers');
       
-      // Update worker's offer status
+      // 2. UPDATE WORKER_OFFERS
       if (offer.workerEmail) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
+        let workerOffers = [];
+        try {
+          workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
+        } catch (e) {
+          console.error('Error reading worker_offers:', e);
+          workerOffers = [];
+        }
+        
         const updatedWorkerOffers = workerOffers.map(o => {
           if (o.id === offerId) {
             return {
@@ -572,14 +649,14 @@ const EmployerPayments = () => {
               paymentDate: new Date().toISOString(),
               paymentId: paymentId,
               paymentStatus: 'completed',
-              status: 'in_progress',
+              status: 'paid',
+              employerEmail: user.email,
               updatedAt: new Date().toISOString()
             };
           }
           return o;
         });
         
-        // If not exists, add it
         if (!updatedWorkerOffers.some(o => o.id === offerId)) {
           updatedWorkerOffers.push({
             ...offer,
@@ -587,7 +664,8 @@ const EmployerPayments = () => {
             paymentDate: new Date().toISOString(),
             paymentId: paymentId,
             paymentStatus: 'completed',
-            status: 'in_progress',
+            status: 'paid',
+            employerEmail: user.email,
             updatedAt: new Date().toISOString()
           });
         }
@@ -596,101 +674,121 @@ const EmployerPayments = () => {
         console.log(`✅ Updated worker_offers for ${offer.workerEmail}`);
       }
       
-      // Create notification for worker
-      createPaymentNotification(offer);
+      // 3. CREATE PAYMENT RECORD
+      const commissionRate = 0.15;
+      const fullSalary = Number(offer.amount || 0);
+      const commission = Math.round(fullSalary * commissionRate * 100) / 100;
       
-      // Update payment record
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const updatedPayments = allPayments.map(p => {
-        if (p.offerId === offerId && (p.type === 'commission' || p.paymentType === 'commission')) {
-          return {
-            ...p,
-            status: 'completed',
-            paymentVerified: true,
-            contactRevealed: true,
-            paymentId: paymentId,
-            completedAt: new Date().toISOString()
-          };
-        }
-        return p;
-      });
-      localStorage.setItem('all_payments', JSON.stringify(updatedPayments));
-      console.log('✅ Updated payment record');
+      const paymentRecord = {
+        id: paymentId || 'PAY-' + Date.now(),
+        offerId: offerId,
+        workerId: offer.workerId || offer.workerEmail,
+        workerName: offer.workerName || 'Worker',
+        workerEmail: offer.workerEmail || '',
+        workerPhone: offer.workerPhone || '',
+        workerLocation: offer.workerLocation || 'Not specified',
+        workerRating: offer.workerRating || 4.5,
+        workerImage: offer.workerImage || '',
+        employerId: user.id || user.email,
+        employerEmail: user.email,
+        jobTitle: offer.jobTitle || 'Service Provider',
+        commission: commission,
+        fullSalary: fullSalary,
+        status: 'completed',
+        paymentVerified: true,
+        contactRevealed: true,
+        paymentMethod: 'commission',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        description: offer.description || `Commission for hiring ${offer.workerName}`,
+        reference: 'REF-' + offer.id,
+        paymentType: 'commission',
+        type: 'commission'
+      };
       
-      // Also update in employer_payments
-      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      const updatedEmployerPayments = employerPayments.map(p => {
-        if (p.offerId === offerId) {
-          return {
-            ...p,
-            status: 'completed',
-            paymentVerified: true,
-            contactRevealed: true,
-            paymentId: paymentId,
-            completedAt: new Date().toISOString()
-          };
+      console.log('📋 Creating payment record with employer email:', user.email);
+      
+      let allPayments = [];
+      try {
+        allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      } catch (e) {
+        console.error('Error reading all_payments:', e);
+        allPayments = [];
+      }
+      
+      const filteredPayments = allPayments.filter(p => p.offerId !== offerId);
+      filteredPayments.push(paymentRecord);
+      localStorage.setItem('all_payments', JSON.stringify(filteredPayments));
+      console.log('✅ Updated all_payments');
+      
+      let employerPayments = [];
+      try {
+        employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      } catch (e) {
+        console.error('Error reading employer_payments:', e);
+        employerPayments = [];
+      }
+      
+      const empFiltered = employerPayments.filter(p => p.offerId !== offerId);
+      empFiltered.push(paymentRecord);
+      localStorage.setItem('employer_payments', JSON.stringify(empFiltered));
+      console.log('✅ Updated employer_payments');
+      
+      // 4. CREATE NOTIFICATION
+      try {
+        const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+        const notification = {
+          id: 'notif_' + Date.now(),
+          type: 'payment_received',
+          title: 'Payment Received 💰',
+          message: `Payment for "${offer.jobTitle || 'job offer'}" has been completed. You can now start working!`,
+          offerId: offer.id,
+          offerTitle: offer.jobTitle || 'Job Offer',
+          workerEmail: offer.workerEmail,
+          workerName: offer.workerName || 'Worker',
+          employerName: user.fullName || 'Employer',
+          date: new Date().toISOString(),
+          read: false,
+          link: '/worker/offers'
+        };
+        
+        const exists = notifications.some(n => 
+          n.offerId === offer.id && n.type === 'payment_received'
+        );
+        
+        if (!exists) {
+          notifications.push(notification);
+          localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+          console.log('✅ Payment notification created for worker');
         }
-        return p;
-      });
-      localStorage.setItem('employer_payments', JSON.stringify(updatedEmployerPayments));
+      } catch (e) {
+        console.error('Error creating notification:', e);
+      }
       
       console.log('✅ Payment success fully processed');
       
-      // Show success message
       alert(t.paymentSuccess);
       
-      // Refresh the data
-      loadData();
+      setLoading(true);
+      setTimeout(() => {
+        loadData();
+        setRefreshKey(prev => prev + 1);
+        setSelectedPayment(null);
+        setShowDetailsModal(false);
+      }, 500);
       
       return true;
       
     } catch (error) {
-      console.error('Error processing payment success:', error);
+      console.error('❌ Error processing payment success:', error);
       alert('Error processing payment. Please try again.');
       return false;
     }
   };
 
   // ============================================================
-  // CREATE PAYMENT NOTIFICATION
-  // ============================================================
-  const createPaymentNotification = (offer) => {
-    try {
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'payment_received',
-        title: 'Payment Received 💰',
-        message: `Payment for "${offer.jobTitle || 'job offer'}" has been completed. You can now start working!`,
-        offerId: offer.id,
-        offerTitle: offer.jobTitle || 'Job Offer',
-        workerEmail: offer.workerEmail,
-        workerName: offer.workerName || 'Worker',
-        employerName: offer.employerName || 'Employer',
-        date: new Date().toISOString(),
-        read: false,
-        link: '/worker/offers'
-      };
-      
-      // Check if notification already exists to avoid duplicates
-      const exists = notifications.some(n => 
-        n.offerId === offer.id && n.type === 'payment_received'
-      );
-      
-      if (!exists) {
-        notifications.push(notification);
-        localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-        console.log('✅ Payment notification created for worker');
-      } else {
-        console.log('ℹ️ Payment notification already exists for this offer');
-      }
-    } catch (error) {
-      console.error('Error creating notification:', error);
-    }
-  };
-
-  // ============================================================
-  // MARK PAYMENT AS COMPLETED (Manual override for testing)
+  // MARK PAYMENT AS COMPLETED
   // ============================================================
   const markPaymentAsCompleted = (payment) => {
     if (!confirm(t.markPaidConfirm)) {
@@ -698,11 +796,12 @@ const EmployerPayments = () => {
     }
     
     const paymentId = 'manual_' + Date.now();
+    console.log('🔄 Marking payment as completed:', paymentId, 'for offer:', payment.offerId);
     handlePaymentSuccess(paymentId, payment.offerId);
   };
 
   // ============================================================
-  // Load Data - Only commission payments
+  // LOAD DATA
   // ============================================================
   const loadData = () => {
     if (isLoadingRef.current) {
@@ -725,12 +824,42 @@ const EmployerPayments = () => {
       const employerEmail = user.email;
       console.log('📂 Loading commission payments for employer:', employerEmail);
 
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      let allPayments = [];
+      try {
+        allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+        console.log('📋 all_payments count:', allPayments.length);
+      } catch (e) {
+        console.error('Error reading all_payments:', e);
+        allPayments = [];
+      }
       
       let employerPayments = allPayments.filter(
         p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
              (p.type === 'commission' || p.paymentType === 'commission')
       );
+      
+      console.log(`📋 Found ${employerPayments.length} commission payments in all_payments`);
+
+      let empPayments = [];
+      try {
+        empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      } catch (e) {
+        console.error('Error reading employer_payments:', e);
+        empPayments = [];
+      }
+      
+      const empFiltered = empPayments.filter(
+        p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
+             (p.type === 'commission' || p.paymentType === 'commission')
+      );
+      
+      const mergedMap = {};
+      [...employerPayments, ...empFiltered].forEach(p => {
+        if (p.id && !mergedMap[p.id]) {
+          mergedMap[p.id] = p;
+        }
+      });
+      employerPayments = Object.values(mergedMap);
 
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const employerAcceptedOffers = employerOffers.filter(
@@ -738,29 +867,20 @@ const EmployerPayments = () => {
              (o.employerEmail === employerEmail || o.employerId === employerEmail)
       );
 
-      const existingPaymentOfferIds = new Set([
-        ...allPayments.map(p => p.offerId),
-        ...employerPayments.map(p => p.offerId)
-      ].filter(Boolean));
+      const existingPaymentOfferIds = new Set(employerPayments.map(p => p.offerId).filter(Boolean));
       
-      let newPayments = [];
       const commissionRate = 0.15;
+      let newPayments = [];
       
       employerAcceptedOffers.forEach(offer => {
         if (!existingPaymentOfferIds.has(offer.id)) {
           const fullSalary = Number(offer.amount || 0);
-
-          const commission =
-              Number(offer.commission) ||
-              Number(offer.paymentAmount) ||
-              Number(offer.platformFee) ||
-              Math.round(fullSalary * commissionRate * 100) / 100;
+          const commission = Math.round(fullSalary * commissionRate * 100) / 100;
           
-          // Check if payment was already completed
           const isCompleted = offer.paymentCompleted === true || offer.status === 'in_progress' || offer.status === 'completed';
           
           const payment = {
-            id: offer.paymentId || `PAY-${offer.id}`, 
+            id: offer.paymentId || `PAY-${offer.id}`,
             offerId: offer.id,
             workerId: offer.workerId || offer.workerEmail,
             workerName: offer.workerName || 'Worker',
@@ -769,10 +889,10 @@ const EmployerPayments = () => {
             workerLocation: offer.workerLocation || 'Not specified',
             workerRating: offer.workerRating || 4.5,
             workerImage: offer.workerImage || '',
-            employerId: offer.employerId || offer.employerEmail,
-            employerEmail: offer.employerEmail,
+            employerId: employerEmail,
+            employerEmail: employerEmail,
             jobTitle: offer.jobTitle || 'Service Provider',
-            commission: commission, 
+            commission: commission,
             fullSalary: fullSalary,
             status: isCompleted ? 'completed' : 'pending',
             paymentMethod: null,
@@ -792,26 +912,13 @@ const EmployerPayments = () => {
       });
 
       if (newPayments.length > 0) {
-        const totalUpdatedPayments = [...allPayments, ...newPayments];
-        localStorage.setItem('all_payments', JSON.stringify(totalUpdatedPayments));
-        
-        employerPayments = totalUpdatedPayments.filter(
-          p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
-               (p.type === 'commission' || p.paymentType === 'commission')
-        );
+        const updatedAllPayments = [...allPayments, ...newPayments];
+        localStorage.setItem('all_payments', JSON.stringify(updatedAllPayments));
+        employerPayments = [...employerPayments, ...newPayments];
+        console.log(`✅ Added ${newPayments.length} new payments`);
       }
 
-      const uniquePayments = [];
-      const seenIds = new Set();
-      employerPayments.forEach(p => {
-        if (!seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          uniquePayments.push(p);
-        }
-      });
-      employerPayments = uniquePayments;
-
-      employerPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      employerPayments.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
 
       console.log(`✅ Loaded ${employerPayments.length} unique commission payments`);
 
@@ -867,6 +974,7 @@ const EmployerPayments = () => {
           return;
         }
         setUser(parsedUser);
+        console.log('✅ User loaded:', parsedUser.email);
       } catch (error) {
         console.error('Error parsing user data:', error);
         navigate('/login');
@@ -883,25 +991,18 @@ const EmployerPayments = () => {
     }
   }, [navigate]);
 
-  // Load data when user is set
   useEffect(() => {
     if (user) {
+      console.log('🔄 Loading data for user:', user.email);
       loadData();
     }
   }, [user]);
 
-  // Auto-refresh
   useEffect(() => {
-    if (!user) return;
-    
-    const interval = setInterval(() => {
-      if (!showDetailsModal && !isLoadingRef.current) {
-        loadData();
-      }
-    }, 15000);
-    
-    return () => clearInterval(interval);
-  }, [user, showDetailsModal]);
+    if (user) {
+      loadData();
+    }
+  }, [refreshKey]);
 
   // Filter payments
   useEffect(() => {
@@ -959,8 +1060,8 @@ const EmployerPayments = () => {
       employerId: user?.id || user?.email,
       employerName: user?.fullName || 'Employer',
       returnTo: '/employer-payments',
-      // Pass the payment success callback
       onPaymentSuccess: (paymentId) => {
+        console.log('🔄 Payment callback triggered for offer:', paymentData.offerId);
         handlePaymentSuccess(paymentId, paymentData.offerId);
       }
     };
@@ -1011,22 +1112,6 @@ const EmployerPayments = () => {
     }
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
   const handleCopyId = (id) => {
     navigator.clipboard.writeText(id);
     alert(t.copySuccess);
@@ -1038,7 +1123,15 @@ const EmployerPayments = () => {
   };
 
   const handleRefresh = () => {
+    console.log('🔄 Manual refresh triggered');
     loadData();
+  };
+
+  const handleDebug = () => {
+    if (user?.email) {
+      debugPayments(user.email);
+      alert('Debug data printed to console. Check the browser console (F12).');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -1083,6 +1176,9 @@ const EmployerPayments = () => {
     return t.status[status] || status;
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (loading && payments.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1123,7 +1219,6 @@ const EmployerPayments = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* WORKING NOTIFICATION BELL */}
               <NotificationBell userId={user?.id || user?.email} />
               
               <button
@@ -1139,6 +1234,13 @@ const EmployerPayments = () => {
               >
                 <RefreshCw size={16} />
                 {t.refresh}
+              </button>
+              <button
+                onClick={handleDebug}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 text-xs text-gray-500"
+                title="Debug - Check console"
+              >
+                🐛 Debug
               </button>
             </div>
           </div>
@@ -1366,7 +1468,6 @@ const EmployerPayments = () => {
                                   <CreditCard size={12} />
                                   {t.actions.payNow}
                                 </button>
-                                {/* Manual "Mark as Paid" button for testing */}
                                 <button
                                   onClick={() => markPaymentAsCompleted(payment)}
                                   className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
@@ -1450,7 +1551,6 @@ const EmployerPayments = () => {
                 </div>
               </div>
 
-              {/* Info Note */}
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-2">
                   <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
@@ -1507,7 +1607,6 @@ const EmployerPayments = () => {
                 </div>
               </div>
 
-              {/* Contact Information Section */}
               <div className="mt-6 p-4 rounded-xl border">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   {selectedPayment.contactRevealed ? (

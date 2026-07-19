@@ -1,4 +1,4 @@
-// src/pages/WorkerOffers.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
+// src/pages/WorkerOffers.jsx - FIXED: Shows "Paid" status when payment is completed
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS } from '../constants/jobOptions';
@@ -62,7 +62,8 @@ import {
   Archive,
   Send,
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  Wallet
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -70,7 +71,7 @@ import {
   getUserConversations,
 } from '../utils/chatService';
 
-// Sidebar Component - RED THEME
+// Sidebar Component - RED THEME (same as before, kept for brevity)
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -304,7 +305,7 @@ const WorkerSidebar = ({
 };
 
 // ============================================================
-// MAIN WORKER OFFERS COMPONENT - WITH WORKING NOTIFICATIONS
+// MAIN WORKER OFFERS COMPONENT - FIXED PAYMENT STATUS
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
@@ -376,7 +377,6 @@ const WorkerOffers = () => {
         return;
       }
 
-      // Check localStorage for notifications first
       const userEmail = user?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
@@ -389,7 +389,6 @@ const WorkerOffers = () => {
         }
       }
 
-      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -418,7 +417,6 @@ const WorkerOffers = () => {
     }
   };
 
-  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -432,12 +430,14 @@ const WorkerOffers = () => {
       tabs: {
         pending: 'Pending',
         accepted: 'Accepted',
+        paid: 'Paid',
         rejected: 'Rejected',
         completed: 'Completed'
       },
       stats: {
         pending: 'Pending',
         accepted: 'Accepted',
+        paid: 'Paid',
         rejected: 'Rejected',
         completed: 'Completed',
         total: 'Total'
@@ -453,10 +453,12 @@ const WorkerOffers = () => {
         noOffers: 'No offers in this section',
         chat: 'Chat',
         completeWork: 'Complete Work',
-        waitingPayment: 'Waiting for payment...',
+        waitingPayment: '⏳ Waiting for payment...',
+        paymentReceived: '✅ Payment Received',
         workCompleted: 'Work Completed',
         offerRejected: 'Offer Declined',
-        inProgress: 'In Progress'
+        inProgress: 'In Progress',
+        paid: 'Paid'
       },
       actions: {
         accept: 'Accept Offer',
@@ -487,12 +489,14 @@ const WorkerOffers = () => {
       tabs: {
         pending: 'معلقة',
         accepted: 'مقبولة',
+        paid: 'مدفوعة',
         rejected: 'مرفوضة',
         completed: 'مكتملة'
       },
       stats: {
         pending: 'معلقة',
         accepted: 'مقبولة',
+        paid: 'مدفوعة',
         rejected: 'مرفوضة',
         completed: 'مكتملة',
         total: 'الإجمالي'
@@ -508,10 +512,12 @@ const WorkerOffers = () => {
         noOffers: 'لا توجد عروض في هذا القسم',
         chat: 'محادثة',
         completeWork: 'إكمال العمل',
-        waitingPayment: 'في انتظار الدفع...',
+        waitingPayment: '⏳ في انتظار الدفع...',
+        paymentReceived: '✅ تم استلام الدفع',
         workCompleted: 'تم إكمال العمل',
         offerRejected: 'تم رفض العرض',
-        inProgress: 'قيد التنفيذ'
+        inProgress: 'قيد التنفيذ',
+        paid: 'مدفوعة'
       },
       actions: {
         accept: 'قبول العرض',
@@ -541,7 +547,7 @@ const WorkerOffers = () => {
   const t = translations[language] || translations.en;
 
   // ============================================================
-  // Load Offers
+  // Load Offers - FIXED: Adds "paid" status
   // ============================================================
   const loadOffers = (userParam) => {
     try {
@@ -590,20 +596,22 @@ const WorkerOffers = () => {
         }
       });
       
-      // Log all offers with their status
-      console.log('📋 All offers after merge:', allOffers.map(o => ({
-        id: o.id,
-        title: o.jobTitle,
-        status: o.status,
-        paymentCompleted: o.paymentCompleted
-      })));
-      
-      // Check for payment completion and update status
+      // FIXED: Check for payment completion and update status
       allOffers = allOffers.map(offer => {
-        // If offer is accepted and payment is completed, mark as in_progress
+        // If payment is completed and offer is accepted, mark as 'paid'
+        if (offer.paymentCompleted === true && offer.status === 'accepted') {
+          console.log(`💰 Offer ${offer.id} - Payment completed, changing status to paid`);
+          return { ...offer, status: 'paid' };
+        }
+        // If offer is accepted and payment is completed, mark as in_progress (for backward compatibility)
         if (offer.status === 'accepted' && offer.paymentCompleted === true) {
-          console.log(`🔄 Offer ${offer.id} - Payment completed, changing status to in_progress`);
-          return { ...offer, status: 'in_progress' };
+          console.log(`💰 Offer ${offer.id} - Payment completed (backward compatibility), changing status to paid`);
+          return { ...offer, status: 'paid' };
+        }
+        // If status is already in_progress but payment is completed, change to paid
+        if (offer.status === 'in_progress' && offer.paymentCompleted === true) {
+          console.log(`💰 Offer ${offer.id} - In progress with payment completed, changing to paid`);
+          return { ...offer, status: 'paid' };
         }
         return offer;
       });
@@ -619,12 +627,6 @@ const WorkerOffers = () => {
       console.log('📊 Final status breakdown:', statusCount);
       
       setOffers(allOffers);
-      
-      // If there are accepted offers, switch to accepted tab to show them
-      const hasAccepted = allOffers.some(o => o.status === 'accepted' || o.status === 'in_progress');
-      if (hasAccepted && activeTab === 'pending') {
-        console.log('✅ There are accepted/in-progress offers available');
-      }
       
       return allOffers;
       
@@ -717,7 +719,6 @@ const WorkerOffers = () => {
         const updatedWorkerOffers = workerOffers.map(o => 
           o.id === offer.id ? updatedOffer : o
         );
-        // Also add if not exists
         if (!updatedWorkerOffers.some(o => o.id === offer.id)) {
           updatedWorkerOffers.push(updatedOffer);
         }
@@ -758,7 +759,6 @@ const WorkerOffers = () => {
       
       alert(t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer'));
       
-      // Force refresh to ensure UI updates
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
@@ -906,6 +906,7 @@ const WorkerOffers = () => {
     const colors = {
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
       accepted: 'bg-blue-50 border-blue-200 text-blue-700',
+      paid: 'bg-green-50 border-green-200 text-green-700',
       rejected: 'bg-red-50 border-red-200 text-red-700',
       in_progress: 'bg-emerald-50 border-emerald-200 text-emerald-700',
       completed: 'bg-purple-50 border-purple-200 text-purple-700'
@@ -917,6 +918,7 @@ const WorkerOffers = () => {
     switch (status) {
       case 'pending': return <Clock size={14} className="text-amber-500" />;
       case 'accepted': return <CheckCircle size={14} className="text-blue-500" />;
+      case 'paid': return <Wallet size={14} className="text-green-500" />;
       case 'rejected': return <XCircle size={14} className="text-red-500" />;
       case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
       case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
@@ -928,6 +930,7 @@ const WorkerOffers = () => {
     const labels = {
       pending: 'Pending',
       accepted: 'Accepted',
+      paid: 'Paid',
       rejected: 'Declined',
       in_progress: 'In Progress',
       completed: 'Completed'
@@ -960,7 +963,10 @@ const WorkerOffers = () => {
         filtered = offers.filter(o => o.status === 'pending');
         break;
       case 'accepted':
-        filtered = offers.filter(o => o.status === 'accepted' || o.status === 'in_progress');
+        filtered = offers.filter(o => o.status === 'accepted');
+        break;
+      case 'paid':
+        filtered = offers.filter(o => o.status === 'paid' || o.status === 'in_progress');
         break;
       case 'rejected':
         filtered = offers.filter(o => o.status === 'rejected');
@@ -987,7 +993,8 @@ const WorkerOffers = () => {
 
   const stats = {
     pending: offers.filter(o => o.status === 'pending').length,
-    accepted: offers.filter(o => o.status === 'accepted' || o.status === 'in_progress').length,
+    accepted: offers.filter(o => o.status === 'accepted').length,
+    paid: offers.filter(o => o.status === 'paid' || o.status === 'in_progress').length,
     rejected: offers.filter(o => o.status === 'rejected').length,
     completed: offers.filter(o => o.status === 'completed').length,
     total: offers.length
@@ -996,6 +1003,7 @@ const WorkerOffers = () => {
   const tabs = [
     { id: 'pending', label: t.tabs.pending, icon: Clock, count: stats.pending },
     { id: 'accepted', label: t.tabs.accepted, icon: CheckCircle, count: stats.accepted },
+    { id: 'paid', label: t.tabs.paid, icon: Wallet, count: stats.paid },
     { id: 'rejected', label: t.tabs.rejected, icon: XCircle, count: stats.rejected },
     { id: 'completed', label: t.tabs.completed, icon: CheckCheck, count: stats.completed }
   ];
@@ -1065,27 +1073,11 @@ const WorkerOffers = () => {
                 </div>
               </div>
 
-              {/* Skills */}
-              {offer.workerSkills?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {offer.workerSkills.slice(0, 3).map((skill, idx) => (
-                    <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      {skill}
-                    </span>
-                  ))}
-                  {offer.workerSkills.length > 3 && (
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-400 text-xs rounded-full">
-                      +{offer.workerSkills.length - 3}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Payment Status */}
-              {offer.paymentCompleted === true && offer.status !== 'completed' && (
+              {/* Payment Status Badge */}
+              {offer.paymentCompleted === true && offer.status !== 'completed' && offer.status !== 'paid' && (
                 <div className="mt-2.5">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                    <CheckCircle size={12} />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                    <Wallet size={12} />
                     Payment Confirmed
                   </span>
                 </div>
@@ -1135,6 +1127,22 @@ const WorkerOffers = () => {
                     <Clock size={14} />
                     {t.card.waitingPayment}
                   </span>
+                )}
+
+                {offer.status === 'paid' && (
+                  <>
+                    <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
+                      <Wallet size={14} />
+                      {t.card.paymentReceived}
+                    </span>
+                    <button
+                      onClick={() => navigate('/worker-messages')}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
+                    >
+                      <MessageSquare size={14} />
+                      {t.card.chat}
+                    </button>
+                  </>
                 )}
 
                 {offer.status === 'in_progress' && (
@@ -1221,6 +1229,12 @@ const WorkerOffers = () => {
                         <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
                       </div>
                     )}
+                    {offer.paymentCompleted && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Payment Status</span>
+                        <span className="font-medium text-green-600">✅ Paid</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -1233,12 +1247,13 @@ const WorkerOffers = () => {
                     <p className="text-sm text-gray-600 mt-1.5">
                       {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
                       {offer.status === 'accepted' && 'You accepted this offer. Waiting for employer payment.'}
-                      {offer.status === 'in_progress' && 'Payment confirmed. Work is in progress.'}
+                      {offer.status === 'paid' && '✅ Payment received! You can now start working.'}
+                      {offer.status === 'in_progress' && 'Work is in progress.'}
                       {offer.status === 'completed' && 'Work has been completed successfully.'}
                       {offer.status === 'rejected' && 'You declined this offer.'}
                     </p>
                   </div>
-                  {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
+                  {(offer.status === 'paid' || offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
                     <button
                       onClick={() => navigate('/worker-messages')}
                       className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
@@ -1419,7 +1434,7 @@ const WorkerOffers = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{t.stats.pending}</p>
@@ -1433,6 +1448,13 @@ const WorkerOffers = () => {
                 <CheckCircle size={18} className="text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 mt-1">{stats.accepted}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{t.stats.paid}</p>
+                <Wallet size={18} className="text-green-500" />
+              </div>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.paid}</p>
             </div>
             <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between">
