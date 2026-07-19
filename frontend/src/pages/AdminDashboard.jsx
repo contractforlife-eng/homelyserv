@@ -90,7 +90,7 @@ const AdminSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
@@ -674,6 +674,7 @@ const AdminDashboard = () => {
       languageToggle: 'العربية',
       notifications: 'Notifications',
       noActivity: 'No recent activity',
+    
     },
     ar: {
       title: 'لوحة تحكم المشرف',
@@ -699,7 +700,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');

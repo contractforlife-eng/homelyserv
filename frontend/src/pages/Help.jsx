@@ -89,7 +89,7 @@ const HelpSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   let menuItems = [];
 
@@ -426,7 +426,7 @@ const Help = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');

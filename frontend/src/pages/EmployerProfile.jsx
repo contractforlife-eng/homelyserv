@@ -78,7 +78,7 @@ const EmployerSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
@@ -349,7 +349,7 @@ const EmployerProfile = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const checkPremiumStatus = () => {
     const userId = user?.id || user?.email;

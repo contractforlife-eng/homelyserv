@@ -77,7 +77,7 @@ const EmployerSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
@@ -421,7 +421,7 @@ const EmployerComplaints = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // ============================================================
   // Load complaints only for the current employer

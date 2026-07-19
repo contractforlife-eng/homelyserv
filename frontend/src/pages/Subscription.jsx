@@ -100,7 +100,7 @@ const SubscriptionSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = isEmployer ? [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
@@ -453,7 +453,7 @@ const Subscription = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [

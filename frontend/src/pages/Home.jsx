@@ -136,7 +136,7 @@ const Home = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // Service categories
   const categories = [

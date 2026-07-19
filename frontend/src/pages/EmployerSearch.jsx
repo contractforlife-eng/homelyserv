@@ -104,7 +104,7 @@ const EmployerSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
@@ -469,7 +469,7 @@ const EmployerSearch = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // ============================================================
   // 3. EFFECTS

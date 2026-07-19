@@ -80,7 +80,7 @@ const WorkerSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
@@ -451,7 +451,7 @@ const WorkerMessages = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // Load user and conversations
   useEffect(() => {

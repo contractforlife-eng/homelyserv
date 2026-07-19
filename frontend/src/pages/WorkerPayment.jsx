@@ -75,7 +75,7 @@ const WorkerSidebar = ({
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
@@ -524,7 +524,7 @@ const WorkerPayment = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // ============================================
   // 4. DATA LOADING FUNCTIONS
