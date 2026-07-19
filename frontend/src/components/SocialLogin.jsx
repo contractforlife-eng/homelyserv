@@ -28,15 +28,28 @@ export default function SocialLogin({ onLoginSuccess }) {
       setFbLoaded(true);
     };
 
-    const script = document.createElement('script');
-    script.src = 'https://connect.facebook.net/en_US/sdk.js';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
+    // Load Facebook SDK - check if already loaded
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/en_US/sdk.js';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    } else {
+      // SDK already loaded, check if FB is initialized
+      if (window.FB) {
+        setFbLoaded(true);
+      }
+    }
 
     return () => {
-      const scriptElement = document.querySelector('script[src="https://connect.facebook.net/en_US/sdk.js"]');
-      if (scriptElement) scriptElement.remove();
+      // Cleanup only if we added the script
+      const scriptElement = document.getElementById('facebook-jssdk');
+      if (scriptElement && scriptElement.parentNode) {
+        // Don't remove it as it might be used elsewhere
+        // scriptElement.remove();
+      }
     };
   }, []);
 
@@ -93,23 +106,6 @@ export default function SocialLogin({ onLoginSuccess }) {
     }
   };
 
-  // Generate JWT-like token (fallback if backend is not available)
-  const generateToken = (user) => {
-    const header = { alg: 'HS256', typ: 'JWT' };
-    const payload = {
-      userId: user.id || user.email,
-      email: user.email,
-      role: user.role,
-      id: user.id,
-      fullName: user.fullName,
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
-    };
-    const encodedHeader = btoa(JSON.stringify(header));
-    const encodedPayload = btoa(JSON.stringify(payload));
-    const signature = btoa('homelyserv_secret_key_2026');
-    return `${encodedHeader}.${encodedPayload}.${signature}`;
-  };
-
   // Google Login Handler
   const handleGoogleSuccess = (credentialResponse) => {
     console.log('Google login success:', credentialResponse);
@@ -140,14 +136,20 @@ export default function SocialLogin({ onLoginSuccess }) {
       return;
     }
 
+    if (!window.FB) {
+      toast.error('Facebook SDK not loaded. Please refresh the page.');
+      return;
+    }
+
     window.FB.login(function(response) {
       if (response.authResponse) {
         window.FB.api('/me', { fields: 'id,name,email,picture' }, function(userInfo) {
+          console.log('Facebook user info:', userInfo);
           const userData = {
             id: userInfo.id,
             email: userInfo.email || `fb_${userInfo.id}@facebook.com`,
             name: userInfo.name,
-            picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=${userInfo.name}&background=1877F2&color=fff`
+            picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.name)}&background=1877F2&color=fff`
           };
           handleSocialLogin('facebook', userData);
         });
@@ -167,14 +169,14 @@ export default function SocialLogin({ onLoginSuccess }) {
 
       <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
         {/* Google Login */}
-        <div className="w-full sm:w-auto min-w-[200px]">
+        <div className="w-full sm:w-auto min-w-[200px] google-btn-wrapper">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
             theme="outline"
             size="large"
             shape="pill"
-            text="signin"
+            text="signin_with"
             width="200"
             logo_alignment="center"
           />
