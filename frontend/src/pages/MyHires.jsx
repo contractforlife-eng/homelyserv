@@ -1,7 +1,8 @@
-// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH AUTO-CONVERSATION CREATION
+// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -993,10 +994,10 @@ const MyHires = () => {
                 </div>
                 <span className="text-sm font-medium text-gray-700 hidden sm:inline">{user?.fullName || 'Employer'}</span>
               </div>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"

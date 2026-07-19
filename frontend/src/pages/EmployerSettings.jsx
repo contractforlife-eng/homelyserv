@@ -1,7 +1,8 @@
-// src/pages/EmployerSettings.jsx - WITH PREMIUM BADGE FIX
+// src/pages/EmployerSettings.jsx - WITH PREMIUM BADGE FIX AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -114,7 +115,6 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -122,7 +122,8 @@ const EmployerSidebar = ({
   };
   
   const isPremium = userIsPremium();
-    return (
+  
+  return (
     <>
       {mobileMenuOpen && (
         <div 
@@ -289,7 +290,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerSettings Component - WITH FULL FUNCTIONALITY
+// Main EmployerSettings Component - WITH FULL FUNCTIONALITY AND NOTIFICATION BELL
 const EmployerSettings = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -549,12 +550,10 @@ const EmployerSettings = () => {
     setSaveSuccess(false);
     
     setTimeout(() => {
-      // Save settings to localStorage
       localStorage.setItem('employer_settings', JSON.stringify(settings));
       setSaving(false);
       setSaveSuccess(true);
       
-      // Apply dark mode
       if (settings.darkMode) {
         document.documentElement.classList.add('dark');
       } else {
@@ -565,7 +564,6 @@ const EmployerSettings = () => {
     }, 1000);
   };
 
-  // ===== Password Change Functionality =====
   const handlePasswordChange = () => {
     setPasswordError('');
     
@@ -584,13 +582,10 @@ const EmployerSettings = () => {
       return;
     }
     
-    // Check current password (for demo, using stored password)
     const storedUser = localStorage.getItem('homelyserv_user');
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        // In a real app, you'd verify with the backend
-        // For demo, we'll just check if the password field exists
         if (userData.password && userData.password !== passwordData.currentPassword) {
           setPasswordError(t.wrongPassword);
           return;
@@ -600,11 +595,9 @@ const EmployerSettings = () => {
       }
     }
     
-    // Update password
     const updatedUser = { ...user, password: passwordData.newPassword };
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
-    // Update in users list
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const userIndex = users.findIndex(u => u.email === user.email);
@@ -624,27 +617,21 @@ const EmployerSettings = () => {
     }, 2000);
   };
 
-  // ===== Delete Account Functionality =====
   const handleDeleteAccount = () => {
     if (deleteConfirmText !== 'DELETE') {
       alert('Please type DELETE to confirm');
       return;
     }
     
-    // Delete user data
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const updatedUsers = users.filter(u => u.email !== user.email);
       localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
       
-      // Remove user from current session
       localStorage.removeItem('homelyserv_user');
       localStorage.removeItem('homelyserv_token');
-      
-      // Remove user settings
       localStorage.removeItem('employer_settings');
       
-      // Remove user profiles
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       delete profiles[user.email];
       localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
@@ -657,7 +644,6 @@ const EmployerSettings = () => {
     }
   };
 
-  // ===== Export Data Functionality =====
   const handleExportData = () => {
     const data = {
       user: user,
@@ -720,10 +706,9 @@ const EmployerSettings = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className={`p-2 rounded-lg hover:bg-gray-100 transition-colors relative ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600'}`}>
-                <Bell size={20} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className={`px-3 py-1.5 border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 ${
@@ -762,7 +747,6 @@ const EmployerSettings = () => {
             <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.preferences}</h3>
               <div className="space-y-4">
-                {/* Language */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.language}</p>
@@ -782,7 +766,6 @@ const EmployerSettings = () => {
                   </select>
                 </div>
 
-                {/* Dark Mode */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.darkMode}</p>
@@ -802,7 +785,6 @@ const EmployerSettings = () => {
                   </button>
                 </div>
 
-                {/* Auto Save */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.autoSave}</p>
@@ -828,7 +810,6 @@ const EmployerSettings = () => {
             <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.general}</h3>
               <div className="space-y-4">
-                {/* Timezone */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.timezone}</p>
@@ -871,7 +852,6 @@ const EmployerSettings = () => {
                   </select>
                 </div>
 
-                {/* Currency */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.currency}</p>
@@ -895,7 +875,6 @@ const EmployerSettings = () => {
                   </select>
                 </div>
 
-                {/* Date Format */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.dateFormat}</p>

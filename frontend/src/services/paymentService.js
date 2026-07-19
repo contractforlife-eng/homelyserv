@@ -1,5 +1,5 @@
 // src/services/paymentService.js
-// Complete Payment Service with Backend Integration
+// Complete Payment Service with Backend Integration - FIXED TOKEN HANDLING
 
 // ============================================================
 // API BASE URL
@@ -11,22 +11,74 @@ const API_BASE = import.meta.env.VITE_API_URL
 console.log('📍 Payment API Base URL:', API_BASE);
 
 // ============================================================
+// HELPER: Get valid token
+// ============================================================
+const getValidToken = () => {
+  // Try to get token from homelyserv_token first
+  let token = localStorage.getItem('homelyserv_token');
+  
+  // If not found, try auth-storage
+  if (!token) {
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        token = parsed?.state?.token || null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Error parsing auth-storage:', e);
+    }
+  }
+  
+  // Validate token format (JWT has 3 parts separated by dots)
+  if (token) {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.warn('⚠️ Invalid token format detected, clearing...');
+      localStorage.removeItem('homelyserv_token');
+      localStorage.removeItem('auth-storage');
+      return null;
+    }
+    
+    // Check if token is expired
+    try {
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = payload.exp || payload.expiresIn;
+      if (exp && Date.now() >= exp * 1000) {
+        console.warn('⚠️ Token expired, clearing...');
+        localStorage.removeItem('homelyserv_token');
+        localStorage.removeItem('auth-storage');
+        return null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not parse token payload:', e);
+    }
+  }
+  
+  return token || null;
+};
+
+// ============================================================
+// HELPER: Clear auth data on 401
+// ============================================================
+const clearAuthData = () => {
+  localStorage.removeItem('homelyserv_token');
+  localStorage.removeItem('homelyserv_user');
+  localStorage.removeItem('auth-storage');
+  console.log('🔑 Auth data cleared');
+};
+
+// ============================================================
 // PAYMENT INTENT - Calls Backend
 // ============================================================
 
-/**
- * Create Payment Intent via Backend
- * @param {object} paymentData - Payment data
- * @returns {object} - Payment result
- */
 export const createPaymentIntent = async (paymentData) => {
   try {
     console.log('📤 Creating payment intent via backend:', paymentData);
     console.log('📍 Full URL:', `${API_BASE}/create-payment-intent`);
 
-    // Get authentication token
-    const token = localStorage.getItem('homelyserv_token') ||
-                  (localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage'))?.state?.token : null);
+    // Get valid token
+    const token = getValidToken();
 
     const headers = {
       'Content-Type': 'application/json',
@@ -35,21 +87,44 @@ export const createPaymentIntent = async (paymentData) => {
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('✅ Token found, adding to headers');
+    } else {
+      console.warn('⚠️ No valid token found');
     }
 
-    console.log('📤 Headers:', headers);
+    console.log('📤 Headers:', { ...headers, Authorization: token ? 'Bearer ***' : 'None' });
 
     const response = await fetch(`${API_BASE}/create-payment-intent`, {
       method: 'POST',
       headers,
       body: JSON.stringify(paymentData),
-      credentials: 'include' // Important for CORS with credentials
+      credentials: 'include'
     });
 
     console.log('📥 Response status:', response.status);
-    console.log('📥 Response status text:', response.statusText);
 
-    // Check if response is OK
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      console.error('❌ Authentication failed');
+      clearAuthData();
+      
+      // Check if it's a JWT error
+      try {
+        const errorData = await response.json();
+        if (errorData.error === 'JWT_MALFORMED' || errorData.error === 'JWT_EXPIRED') {
+          console.log('🔑 Token invalid, redirecting to login...');
+          // Redirect to login after a short delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1000);
+          throw new Error('Your session has expired. Please log in again.');
+        }
+      } catch (e) {
+        // If response is not JSON
+        throw new Error('Authentication failed. Please log in again.');
+      }
+    }
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       
@@ -58,7 +133,6 @@ export const createPaymentIntent = async (paymentData) => {
         errorMessage = errorData.error || errorData.message || errorMessage;
         console.error('❌ Error response:', errorData);
       } catch (e) {
-        // If response is not JSON, try to get text
         try {
           const text = await response.text();
           console.error('❌ Error response text:', text);
@@ -89,13 +163,6 @@ export const createPaymentIntent = async (paymentData) => {
 // PAYMOB INTEGRATION - Via Backend
 // ============================================================
 
-/**
- * 1. Create Paymob Payment (via Backend)
- * @param {number} amount - Payment amount in EGP
- * @param {string} orderId - Your order reference ID
- * @param {object} customerData - Customer billing information
- * @returns {object} - Payment result with iframe URL
- */
 export const createPaymobPayment = async (amount, orderId, customerData) => {
   console.log(`🔄 Creating Paymob payment via backend for: ${amount} EGP`);
   console.log('📦 Customer data:', customerData);
@@ -123,11 +190,6 @@ export const createPaymobPayment = async (amount, orderId, customerData) => {
   }
 };
 
-/**
- * 2. Verify Paymob Payment (via Backend)
- * @param {object} paymentData - Payment data from webhook
- * @returns {object} - Verification result
- */
 export const verifyPaymobPayment = async (paymentData) => {
   try {
     const { paymentId } = paymentData;
@@ -164,11 +226,6 @@ export const verifyPaymobPayment = async (paymentData) => {
   }
 };
 
-/**
- * 3. Process Paymob Webhook (via Backend)
- * @param {object} webhookData - Webhook data from Paymob
- * @returns {object} - Processed transaction
- */
 export const processPaymobWebhook = async (webhookData) => {
   try {
     console.log('📨 Processing Paymob webhook via backend');
@@ -201,13 +258,6 @@ export const processPaymobWebhook = async (webhookData) => {
 // PAYPAL INTEGRATION - Via Backend
 // ============================================================
 
-/**
- * 1. Create PayPal Order (via Backend)
- * @param {number} amount - Payment amount
- * @param {string} orderId - Your order reference ID
- * @param {object} customerData - Customer information
- * @returns {object} - PayPal order result
- */
 export const createPayPalOrder = async (amount, orderId, customerData) => {
   console.log(`🔄 Creating PayPal order via backend for: ${amount} EGP`);
   console.log('📦 Customer data:', customerData);
@@ -234,22 +284,35 @@ export const createPayPalOrder = async (amount, orderId, customerData) => {
   }
 };
 
-/**
- * 2. Capture PayPal Payment (via Backend)
- * @param {string} orderId - PayPal order ID
- * @returns {object} - Capture result
- */
 export const capturePayPalOrder = async (orderId) => {
   try {
     console.log(`🔍 Capturing PayPal order via backend: ${orderId}`);
     
+    const token = getValidToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${API_BASE}/capture-paypal/${orderId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       credentials: 'include'
     });
+    
+    if (response.status === 401) {
+      clearAuthData();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+      return {
+        success: false,
+        error: 'Session expired. Please log in again.'
+      };
+    }
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -267,11 +330,6 @@ export const capturePayPalOrder = async (orderId) => {
   }
 };
 
-/**
- * 3. Process PayPal Webhook (via Backend)
- * @param {object} webhookData - Webhook data from PayPal
- * @returns {object} - Processed transaction
- */
 export const processPayPalWebhook = async (webhookData) => {
   try {
     console.log('📨 Processing PayPal webhook via backend');
@@ -509,14 +567,29 @@ export const completePayment = async (orderId, userId) => {
   try {
     console.log('✅ Completing payment:', { orderId, userId });
     
+    const token = getValidToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${API_BASE}/complete-payment`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ orderId, userId }),
       credentials: 'include'
     });
+
+    if (response.status === 401) {
+      clearAuthData();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+      throw new Error('Session expired. Please log in again.');
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -577,14 +650,29 @@ export const verifyPayment = async (transactionId, orderId) => {
   try {
     console.log(`🔍 Verifying payment:`, { transactionId, orderId });
     
+    const token = getValidToken();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${API_BASE}/verify`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ transactionId, orderId }),
       credentials: 'include'
     });
+
+    if (response.status === 401) {
+      clearAuthData();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+      throw new Error('Session expired. Please log in again.');
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

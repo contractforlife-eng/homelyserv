@@ -1,7 +1,8 @@
-// src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH AUTO-OPEN CHAT
+// src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -298,7 +299,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER MESSAGES COMPONENT - WITH AUTO-OPEN CHAT
+// MAIN EMPLOYER MESSAGES COMPONENT - WITH WORKING NOTIFICATION BELL
 // ============================================================
 const EmployerMessages = () => {
   const navigate = useNavigate();
@@ -769,10 +770,10 @@ const EmployerMessages = () => {
                   )}
                 </div>
               </div>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full"></span>
-              </button>
+              
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"

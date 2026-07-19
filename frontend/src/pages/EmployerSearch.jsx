@@ -1,9 +1,10 @@
-// src/pages/EmployerSearch.jsx - COMPLETE WITH PREMIUM BADGE FIX
+// src/pages/EmployerSearch.jsx - COMPLETE WITH PREMIUM BADGE FIX AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -120,7 +121,6 @@ const EmployerSidebar = ({
 
   const getProfileImage = () => user?.profileImage || null;
 
-  // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -490,7 +490,6 @@ const EmployerSearch = () => {
         if (profiles[parsedUser.email]) {
           parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
         }
-        // Check if user has premium subscription
         const userId = parsedUser.id || parsedUser.email;
         parsedUser.isPremium = isUserPremium(userId);
         setUser(parsedUser);
@@ -529,7 +528,6 @@ const EmployerSearch = () => {
       
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
-        // Check if worker has premium subscription
         const workerId = worker.id || worker.email;
         const isPremium = isUserPremium(workerId);
         
@@ -895,10 +893,10 @@ const EmployerSearch = () => {
                   )}
                 </div>
               </div>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -1238,7 +1236,6 @@ const EmployerSearch = () => {
                                 </span>
                               )}
                             </div>
-                            {/* CONTACT INFO HIDDEN */}
                             <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
                               <LockIcon size={12} />
                               <span>{t.contactHidden}</span>

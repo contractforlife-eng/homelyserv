@@ -1,7 +1,8 @@
-// src/pages/EmployerComplaints.jsx - UPDATED TO SHOW ADMIN RESPONSES
+// src/pages/EmployerComplaints.jsx - UPDATED TO SHOW ADMIN RESPONSES WITH NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -275,7 +276,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerComplaints Component
+// Main EmployerComplaints Component - WITH NOTIFICATION BELL
 const EmployerComplaints = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -689,10 +690,9 @@ const EmployerComplaints = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -904,7 +904,6 @@ const EmployerComplaints = () => {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Show expand button if there's an admin response */}
                         {complaint.adminResponse && (
                           <button
                             onClick={() => toggleExpand(complaint.id)}
@@ -987,7 +986,6 @@ const EmployerComplaints = () => {
                       </div>
                     )}
 
-                    {/* Status messages */}
                     {complaint.status === 'resolved' && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <span className="text-sm text-green-600 flex items-center gap-1">

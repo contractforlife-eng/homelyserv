@@ -1,7 +1,8 @@
-// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged
+// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   ArrowLeft,
   User,
@@ -303,7 +304,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER PAYMENTS COMPONENT
+// MAIN EMPLOYER PAYMENTS COMPONENT - WITH NOTIFICATION BELL
 // ============================================================
 const EmployerPayments = () => {
   const navigate = useNavigate();
@@ -540,38 +541,31 @@ const EmployerPayments = () => {
       const employerEmail = user.email;
       console.log('📂 Loading commission payments for employer:', employerEmail);
 
-      // Get all payments from all_payments
-      // Get all payments from all_payments
-      // Get all payments from all_payments
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       
-      // Filter commission payments for this employer
       let employerPayments = allPayments.filter(
         p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
              (p.type === 'commission' || p.paymentType === 'commission')
       );
 
-      // Get employer offers for additional payment data
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const employerAcceptedOffers = employerOffers.filter(
         o => (o.status === 'accepted' || o.status === 'completed' || o.status === 'terminated') && 
              (o.employerEmail === employerEmail || o.employerId === employerEmail)
       );
 
-      // FIX A: Track existing offerIds globally from all_payments AND employerPayments to stop race conditions
       const existingPaymentOfferIds = new Set([
         ...allPayments.map(p => p.offerId),
         ...employerPayments.map(p => p.offerId)
       ].filter(Boolean));
       
       let newPayments = [];
-      const commissionRate = 0.15; // Force 15% to align across MyHires and PaymentOptions
+      const commissionRate = 0.15;
       
       employerAcceptedOffers.forEach(offer => {
         if (!existingPaymentOfferIds.has(offer.id)) {
           const fullSalary = Number(offer.amount || 0);
 
-          // Force check alternative attributes or evaluate explicit 15% rate math
           const commission =
               Number(offer.commission) ||
               Number(offer.paymentAmount) ||
@@ -579,8 +573,6 @@ const EmployerPayments = () => {
               Math.round(fullSalary * commissionRate * 100) / 100;
           
           const payment = {
-            // FIX B: Use a deterministic ID built off offer.id. 
-            // This prevents random timestamp keys from overwriting your active object cache.
             id: offer.paymentId || `PAY-${offer.id}`, 
             offerId: offer.id,
             workerId: offer.workerId || offer.workerEmail,
@@ -608,11 +600,10 @@ const EmployerPayments = () => {
             type: 'commission'
           };
           newPayments.push(payment);
-          existingPaymentOfferIds.add(offer.id); // Guard against multi-creation duplication in the same execution cycle
+          existingPaymentOfferIds.add(offer.id);
         }
       });
 
-      // Merge new payments cleanly with the database
       if (newPayments.length > 0) {
         const totalUpdatedPayments = [...allPayments, ...newPayments];
         localStorage.setItem('all_payments', JSON.stringify(totalUpdatedPayments));
@@ -623,7 +614,6 @@ const EmployerPayments = () => {
         );
       }
 
-      // Remove local display array duplicates defensively
       const uniquePayments = [];
       const seenIds = new Set();
       employerPayments.forEach(p => {
@@ -634,7 +624,6 @@ const EmployerPayments = () => {
       });
       employerPayments = uniquePayments;
 
-      // Sort by date (newest first)
       employerPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       console.log(`✅ Loaded ${employerPayments.length} unique commission payments`);
@@ -642,7 +631,6 @@ const EmployerPayments = () => {
       setPayments(employerPayments);
       setFilteredPayments(employerPayments);
 
-      // Calculate stats
       const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
       const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
       const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
@@ -772,7 +760,6 @@ const EmployerPayments = () => {
 
   const pendingPayment = {
     paymentId: paymentData.id,
-    // FIX: Read explicitly from paymentData.commission which is set to 840
     amount: Number(paymentData.commission || 0), 
     fullSalary: Number(paymentData.fullSalary || 0),
     workerName: paymentData.workerName,
@@ -788,8 +775,6 @@ const EmployerPayments = () => {
   };
 
   localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-  
-  // (Keep the rest of your workerData setup code below it identical)
     
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
@@ -944,10 +929,9 @@ const EmployerPayments = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"

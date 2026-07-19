@@ -1,7 +1,8 @@
-// src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD AND PREMIUM BADGE FIX
+// src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD, PREMIUM BADGE, AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -30,7 +31,8 @@ import {
   Save,
   Camera,
   CreditCard,
-  Crown
+  Crown,
+  CheckCircle
 } from 'lucide-react';
 
 // Employer Sidebar Component - WITH PREMIUM BADGE FIX
@@ -100,7 +102,6 @@ const EmployerSidebar = ({
     return null;
   };
 
-  // // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -108,7 +109,8 @@ const EmployerSidebar = ({
   };
   
   const isPremium = userIsPremium();
-    return (
+
+  return (
     <>
       {mobileMenuOpen && (
         <div 
@@ -275,7 +277,7 @@ const EmployerSidebar = ({
   );
 };
 
-// Main EmployerProfile Component - WITH PHOTO UPLOAD AND PREMIUM BADGE
+// Main EmployerProfile Component - WITH PHOTO UPLOAD, PREMIUM BADGE, AND NOTIFICATION BELL
 const EmployerProfile = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -349,7 +351,6 @@ const EmployerProfile = () => {
 
   const t = translations[language];
 
-  // ✅ FIX: Check premium status directly using the user ID
   const checkPremiumStatus = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -599,10 +600,9 @@ const EmployerProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"

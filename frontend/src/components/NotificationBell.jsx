@@ -1,200 +1,300 @@
 // src/components/NotificationBell.jsx
-import React, { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, X, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
+import { 
+  getNotifications, 
+  getUnreadCount, 
+  markAsRead, 
+  markAllAsRead, 
+  deleteNotification,
+  clearAllNotifications 
+} from '../utils/notificationService';
+import { useNavigate } from 'react-router-dom';
 
-const NotificationBell = ({ position = 'right' }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const NotificationBell = ({ userId, className = '' }) => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const dropdownRef = useRef(null);
+  const bellRef = useRef(null);
 
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotifications();
-    }
-  }, [isOpen]);
-
-  const fetchNotifications = async () => {
-    setLoading(true);
+  // Load notifications
+  const loadNotifications = () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      console.log('🔔 Fetching notifications...');
+      const all = getNotifications(userId);
+      const unread = getUnreadCount(userId);
       
-      if (!token) {
-        console.warn('No token found');
-        setNotifications([]);
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Sort by newest first
+      all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📨 Notifications:', data);
-      
-      if (data.success) {
-        setNotifications(data.notifications || []);
-      } else if (Array.isArray(data)) {
-        setNotifications(data);
-      } else {
-        setNotifications([]);
-      }
+      setNotifications(all);
+      setUnreadCount(unread);
     } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
+      console.error('Error loading notifications:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  // Load on mount and when userId changes
+  useEffect(() => {
+    loadNotifications();
+  }, [userId]);
+
+  // Listen for new notification events
+  useEffect(() => {
+    const handleNewNotification = (event) => {
+      if (event.detail && event.detail.userId === userId) {
+        loadNotifications();
+      }
+    };
+
+    window.addEventListener('newNotification', handleNewNotification);
+    return () => window.removeEventListener('newNotification', handleNewNotification);
+  }, [userId]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target) &&
+        bellRef.current && 
+        !bellRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  // Handle marking as read
+  const handleMarkAsRead = (notificationId) => {
+    markAsRead(notificationId, userId);
+    loadNotifications();
+  };
+
+  // Handle marking all as read
+  const handleMarkAllAsRead = () => {
+    markAllAsRead(userId);
+    loadNotifications();
+  };
+
+  // Handle deleting a notification
+  const handleDelete = (notificationId, e) => {
+    e.stopPropagation();
+    deleteNotification(notificationId, userId);
+    loadNotifications();
+  };
+
+  // Handle clearing all
+  const handleClearAll = () => {
+    if (window.confirm('Clear all notifications?')) {
+      clearAllNotifications(userId);
+      loadNotifications();
+    }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification) => {
+    // Mark as read
+    if (!notification.read) {
+      markAsRead(notification.id, userId);
+    }
+    
+    // Navigate if there's a link
+    if (notification.link) {
+      navigate(notification.link);
+      setIsOpen(false);
+    }
+  };
+
+  // Format time
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Get icon for notification type
+  const getNotificationIcon = (type) => {
+    const icons = {
+      new_message: '💬',
+      hire_response: '📋',
+      complaint_update: '📌',
+      payment_confirmation: '💰',
+      offer_response: '📩',
+      worker_applied: '👤',
+      system_update: '⚙️',
+      promotional: '📢'
+    };
+    return icons[type] || '🔔';
+  };
+
   return (
-    <div className="relative" style={{ display: 'inline-block' }}>
+    <div className={`relative ${className}`}>
+      {/* Bell Button */}
       <button
+        ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          padding: '8px',
-          borderRadius: '50%',
-          border: 'none',
-          background: isOpen ? 'rgba(0,0,0,0.05)' : 'transparent',
-          color: '#1a3a1a',
-          cursor: 'pointer',
-          position: 'relative',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        onMouseEnter={(e) => {
-          if (!isOpen) {
-            e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isOpen) {
-            e.currentTarget.style.background = 'transparent';
-          }
-        }}
+        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        aria-label="Notifications"
       >
-        <Bell size={20} />
-        {notifications && notifications.length > 0 && (
-          <span style={{
-            position: 'absolute',
-            top: '4px',
-            right: '4px',
-            width: '10px',
-            height: '10px',
-            background: '#ef4444',
-            borderRadius: '50%',
-            border: '2px solid #ffffff',
-          }} />
+        <Bell size={20} className="text-gray-600" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
       </button>
 
+      {/* Dropdown */}
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          [position === 'right' ? 'right' : 'left']: 0,
-          top: 'calc(100% + 8px)',
-          width: '320px',
-          maxHeight: '400px',
-          background: '#ffffff',
-          borderRadius: '12px',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-          border: '1px solid #e5e7eb',
-          overflow: 'hidden',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid #e5e7eb',
-            fontWeight: '600',
-            fontSize: '14px',
-            color: '#1a3a1a',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <span>Notifications</span>
-            {loading && (
-              <span style={{ fontSize: '12px', color: '#6b7280' }}>Loading...</span>
-            )}
+        <div
+          ref={dropdownRef}
+          className="absolute right-0 mt-2 w-96 max-h-[500px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-800">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {unreadCount} unread
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-xs text-gray-600 flex items-center gap-1"
+                >
+                  <CheckCheck size={14} />
+                  <span>Mark all read</span>
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-xs text-red-600 flex items-center gap-1"
+                >
+                  <Trash2 size={14} />
+                  <span>Clear all</span>
+                </button>
+              )}
+            </div>
           </div>
-          <div style={{
-            maxHeight: '300px',
-            overflowY: 'auto',
-          }}>
-            {loading ? (
-              <div style={{
-                padding: '24px 16px',
-                textAlign: 'center',
-                color: '#6b7280',
-              }}>
-                <div style={{
-                  display: 'inline-block',
-                  width: '24px',
-                  height: '24px',
-                  border: '3px solid #e5e7eb',
-                  borderTop: '3px solid #2e7d32',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                }} />
+
+          {/* Notification List */}
+          <div className="overflow-y-auto max-h-[400px]">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
               </div>
-            ) : notifications && notifications.length > 0 ? (
-              notifications.map((n, index) => (
-                <div key={n.id || index} style={{
-                  padding: '12px 16px',
-                  borderBottom: index < notifications.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f9fafb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}>
-                  <p style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#1a3a1a',
-                    margin: '0 0 4px 0',
-                  }}>{n.title || 'Notification'}</p>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#6b7280',
-                    margin: 0,
-                  }}>{n.message || n.body || 'No message'}</p>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                <Bell size={40} className="text-gray-300 mb-2" />
+                <p className="text-sm">No notifications yet</p>
+                <p className="text-xs mt-1">We'll notify you when something happens</p>
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 ${
+                    !notification.read ? 'bg-blue-50/50' : ''
+                  }`}
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl">
+                    {notification.icon || getNotificationIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {notification.title}
+                      </p>
+                      {!notification.read && (
+                        <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5"></span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-gray-400">
+                        {formatTime(notification.createdAt)}
+                      </span>
+                      {notification.link && (
+                        <span className="text-[10px] text-teal-600 flex items-center gap-0.5">
+                          <ExternalLink size={10} />
+                          View
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    {!notification.read && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAsRead(notification.id);
+                        }}
+                        className="p-1 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                        title="Mark as read"
+                      >
+                        <Check size={12} />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => handleDelete(notification.id, e)}
+                      className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
+                      title="Delete"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 </div>
               ))
-            ) : (
-              <div style={{
-                padding: '32px 16px',
-                textAlign: 'center',
-                color: '#6b7280',
-              }}>
-                <Bell size={32} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
-                <p style={{ fontSize: '14px', margin: 0 }}>No new notifications</p>
-              </div>
             )}
           </div>
+
+          {/* Footer */}
+          {notifications.length > 0 && (
+            <div className="p-2 border-t border-gray-200 text-center">
+              <button
+                onClick={() => {
+                  navigate('/notifications');
+                  setIsOpen(false);
+                }}
+                className="text-xs text-teal-600 hover:text-teal-700 transition-colors"
+              >
+                View all notifications
+              </button>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Add spin animation */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

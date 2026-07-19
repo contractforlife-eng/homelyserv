@@ -1,7 +1,8 @@
-// src/pages/EmployerDashboard.jsx - WITH REAL DATA
+// src/pages/EmployerDashboard.jsx - WITH WORKING NOTIFICATION BELL (NO TEST NOTIFICATIONS)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import NotificationBell from '../components/NotificationBell';
 import {
   Home,
   User,
@@ -279,7 +280,7 @@ const EmployerSidebar = ({
 };
 
 // ============================================================
-// MAIN EMPLOYER DASHBOARD - WITH REAL DATA
+// MAIN EMPLOYER DASHBOARD - WITH WORKING NOTIFICATION BELL
 // ============================================================
 const EmployerDashboard = () => {
   const navigate = useNavigate();
@@ -508,6 +509,9 @@ const EmployerDashboard = () => {
     }
   };
 
+  // ============================================================
+  // USE EFFECTS
+  // ============================================================
   useEffect(() => {
     // Check for payment success from navigation state
     if (location.state?.paymentSuccess) {
@@ -576,6 +580,9 @@ const EmployerDashboard = () => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // ============================================================
+  // HANDLERS
+  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -597,6 +604,9 @@ const EmployerDashboard = () => {
     navigate('/login');
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (!user || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -666,12 +676,10 @@ const EmployerDashboard = () => {
                   )}
                 </div>
               </div>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
-                {stats.unreadMessages > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
+              
+              {/* WORKING NOTIFICATION BELL */}
+              <NotificationBell userId={user?.id || user?.email} />
+              
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
