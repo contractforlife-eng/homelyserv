@@ -1,4 +1,4 @@
-// src/pages/WorkerDashboard.jsx - RED AND WHITE THEME
+// src/pages/WorkerDashboard.jsx - RED AND WHITE THEME WITH ENHANCED NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -26,7 +26,14 @@ import {
   CreditCard,
   Shield,
   Sparkles,
-  Crown
+  Crown,
+  ThumbsUp,
+  AlertCircle,
+  Star,
+  FileText,
+  Calendar,
+  DollarSign,
+  Award
 } from 'lucide-react';
 
 // Sidebar Component - RED THEME
@@ -381,45 +388,382 @@ const WorkerDashboard = () => {
 
   const t = translations[language];
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
+  // ============================================================
+  // TOGGLE FUNCTIONS - DEFINED BEFORE THEY'RE USED
+  // ============================================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
 
-    const userData = localStorage.getItem('homelyserv_user');
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
 
-        const profiles = JSON.parse(
-          localStorage.getItem('homelyserv_profiles') || '{}'
-        );
-
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage =
-            profiles[parsedUser.email].profileImage || null;
-        }
-
-        setUser(parsedUser);
-      } catch (error) {
-        console.error(error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, [navigate]);
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
 
   // ============================================================
-  // FIXED: Load stats only for the current worker
+  // NOTIFICATION GENERATION FUNCTIONS
+  // ============================================================
+
+  // Generate notification for offer status change
+  const generateOfferNotification = (offer, action, employerName) => {
+    const notification = {
+      id: `offer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'offer',
+      title: '',
+      message: '',
+      time: new Date().toISOString(),
+      read: false,
+      link: '/worker/offers',
+      icon: 'briefcase'
+    };
+
+    switch (action) {
+      case 'accepted':
+        notification.title = 'Offer Accepted ✅';
+        notification.message = `${employerName || 'Employer'} has accepted your offer for "${offer.jobTitle || 'position'}"`;
+        notification.icon = 'check';
+        break;
+      case 'rejected':
+        notification.title = 'Offer Rejected ❌';
+        notification.message = `${employerName || 'Employer'} has rejected your offer for "${offer.jobTitle || 'position'}"`;
+        notification.icon = 'x';
+        break;
+      case 'pending':
+        notification.title = 'New Offer Pending ⏳';
+        notification.message = `Your offer for "${offer.jobTitle || 'position'}" is pending review`;
+        notification.icon = 'clock';
+        break;
+      case 'in_progress':
+        notification.title = 'Offer In Progress 🔄';
+        notification.message = `${employerName || 'Employer'} has started work on "${offer.jobTitle || 'position'}"`;
+        notification.icon = 'zap';
+        break;
+      case 'completed':
+        notification.title = 'Offer Completed 🎉';
+        notification.message = `Work on "${offer.jobTitle || 'position'}" has been completed successfully!`;
+        notification.icon = 'check';
+        break;
+      case 'interview':
+        notification.title = 'Interview Scheduled 📅';
+        notification.message = `${employerName || 'Employer'} has scheduled an interview for "${offer.jobTitle || 'position'}"`;
+        notification.icon = 'calendar';
+        break;
+      default:
+        notification.title = 'Offer Updated';
+        notification.message = `Your offer for "${offer.jobTitle || 'position'}" has been updated`;
+        notification.icon = 'briefcase';
+    }
+
+    return notification;
+  };
+
+  // Generate notification for complaint update
+  const generateComplaintNotification = (complaint, action) => {
+    const notification = {
+      id: `complaint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'complaint',
+      time: new Date().toISOString(),
+      read: false,
+      link: '/worker-complaints',
+      icon: 'alert'
+    };
+
+    switch (action) {
+      case 'resolved':
+        notification.title = 'Complaint Resolved ✅';
+        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been resolved by admin`;
+        notification.icon = 'check';
+        break;
+      case 'response':
+        notification.title = 'Complaint Response 📨';
+        notification.message = `Admin has responded to your complaint "${complaint.subject || 'issue'}"`;
+        notification.icon = 'message';
+        break;
+      case 'escalated':
+        notification.title = 'Complaint Escalated ⬆️';
+        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been escalated to senior management`;
+        notification.icon = 'alert';
+        break;
+      case 'closed':
+        notification.title = 'Complaint Closed 📕';
+        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been closed`;
+        notification.icon = 'check';
+        break;
+      default:
+        notification.title = 'Complaint Update';
+        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been updated`;
+        notification.icon = 'alert';
+    }
+
+    return notification;
+  };
+
+  // Generate notification for payment
+  const generatePaymentNotification = (payment, action) => {
+    const notification = {
+      id: `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'payment',
+      time: new Date().toISOString(),
+      read: false,
+      link: '/worker-payment',
+      icon: 'dollar'
+    };
+
+    switch (action) {
+      case 'received':
+        notification.title = 'Payment Received 💰';
+        notification.message = `You have received EGP ${payment.amount || 0} from ${payment.employerName || 'employer'}`;
+        notification.icon = 'dollar';
+        break;
+      case 'pending':
+        notification.title = 'Payment Pending ⏳';
+        notification.message = `Payment of EGP ${payment.amount || 0} is pending approval`;
+        notification.icon = 'clock';
+        break;
+      case 'confirmed':
+        notification.title = 'Payment Confirmed ✅';
+        notification.message = `Payment of EGP ${payment.amount || 0} has been confirmed`;
+        notification.icon = 'check';
+        break;
+      default:
+        notification.title = 'Payment Update';
+        notification.message = `Your payment of EGP ${payment.amount || 0} has been updated`;
+        notification.icon = 'dollar';
+    }
+
+    return notification;
+  };
+
+  // Generate notification for new message
+  const generateMessageNotification = (message, senderName) => {
+    return {
+      id: `message_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'message',
+      title: 'New Message 💬',
+      message: `${senderName || 'Someone'} sent you a new message: "${message.preview || message.message?.substring(0, 50) || 'New message'}"`,
+      time: new Date().toISOString(),
+      read: false,
+      link: '/worker-messages',
+      icon: 'message'
+    };
+  };
+
+  // Generate notification for profile review
+  const generateProfileNotification = (action) => {
+    const notification = {
+      id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'profile',
+      time: new Date().toISOString(),
+      read: false,
+      link: '/worker-profile',
+      icon: 'user'
+    };
+
+    switch (action) {
+      case 'approved':
+        notification.title = 'Profile Approved ✅';
+        notification.message = 'Your profile has been approved by admin. You can now apply for jobs!';
+        notification.icon = 'check';
+        break;
+      case 'rejected':
+        notification.title = 'Profile Needs Review 📝';
+        notification.message = 'Your profile needs some updates. Please check your profile for details.';
+        notification.icon = 'alert';
+        break;
+      case 'viewed':
+        notification.title = 'Profile Viewed 👀';
+        notification.message = 'An employer has viewed your profile';
+        notification.icon = 'user';
+        break;
+      default:
+        notification.title = 'Profile Update';
+        notification.message = 'Your profile has been updated';
+        notification.icon = 'user';
+    }
+
+    return notification;
+  };
+
+  // Generate notification for subscription/premium
+  const generateSubscriptionNotification = (action) => {
+    const notification = {
+      id: `subscription_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'subscription',
+      time: new Date().toISOString(),
+      read: false,
+      link: '/subscription',
+      icon: 'crown'
+    };
+
+    switch (action) {
+      case 'activated':
+        notification.title = 'Premium Activated 👑';
+        notification.message = 'Congratulations! Your Premium subscription is now active. Enjoy exclusive features!';
+        notification.icon = 'crown';
+        break;
+      case 'expiring':
+        notification.title = 'Premium Expiring Soon ⏰';
+        notification.message = 'Your Premium subscription will expire in 7 days. Renew now to keep your benefits!';
+        notification.icon = 'clock';
+        break;
+      case 'expired':
+        notification.title = 'Premium Expired ❌';
+        notification.message = 'Your Premium subscription has expired. Renew now to regain access to premium features.';
+        notification.icon = 'x';
+        break;
+      default:
+        notification.title = 'Subscription Update';
+        notification.message = 'Your subscription has been updated';
+        notification.icon = 'crown';
+    }
+
+    return notification;
+  };
+
+  // ============================================================
+  // CHECK FOR NEW NOTIFICATIONS FROM VARIOUS SOURCES
+  // ============================================================
+  const checkForNewNotifications = () => {
+    if (!user?.email) return;
+
+    const currentUserEmail = user.email;
+    const currentUserId = user.id || user.email;
+    const existingNotifications = JSON.parse(
+      localStorage.getItem(`worker_notifications_${currentUserEmail}`) || '[]'
+    );
+    
+    const newNotifications = [];
+    const existingIds = new Set(existingNotifications.map(n => n.id));
+
+    // 1. Check for offer updates
+    const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+    const workerOffers = employerOffers.filter(
+      offer => offer.workerEmail === currentUserEmail
+    );
+
+    workerOffers.forEach(offer => {
+      const existingOfferNotif = existingNotifications.find(
+        n => n.type === 'offer' && n.message.includes(offer.jobTitle || 'position')
+      );
+      
+      if (!existingOfferNotif || !existingOfferNotif.message.includes(offer.status)) {
+        const notif = generateOfferNotification(
+          offer, 
+          offer.status, 
+          offer.employerName
+        );
+        newNotifications.push(notif);
+      }
+    });
+
+    // 2. Check for complaint updates
+    const complaints = JSON.parse(localStorage.getItem('homelyserv_complaints') || '[]');
+    const workerComplaints = complaints.filter(
+      c => c.workerEmail === currentUserEmail || c.workerId === currentUserId
+    );
+
+    workerComplaints.forEach(complaint => {
+      const existingComplaintNotif = existingNotifications.find(
+        n => n.type === 'complaint' && n.message.includes(complaint.subject || 'issue')
+      );
+      
+      if (complaint.status === 'resolved' || complaint.status === 'closed' || complaint.adminResponse) {
+        const action = complaint.status === 'resolved' ? 'resolved' : 
+                       complaint.status === 'closed' ? 'closed' : 'response';
+        if (!existingComplaintNotif) {
+          const notif = generateComplaintNotification(complaint, action);
+          newNotifications.push(notif);
+        }
+      }
+    });
+
+    // 3. Check for payment updates
+    const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
+    const workerPayments = payments.filter(
+      p => p.workerId === currentUserId || p.workerEmail === currentUserEmail
+    );
+
+    workerPayments.forEach(payment => {
+      const existingPaymentNotif = existingNotifications.find(
+        n => n.type === 'payment' && n.message.includes(`EGP ${payment.amount || 0}`)
+      );
+      
+      if (payment.status === 'completed' || payment.status === 'paid') {
+        if (!existingPaymentNotif) {
+          const notif = generatePaymentNotification(payment, 'received');
+          newNotifications.push(notif);
+        }
+      }
+    });
+
+    // 4. Check for new messages
+    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+    Object.keys(allMessages).forEach(convId => {
+      const msgs = allMessages[convId] || [];
+      msgs.forEach(msg => {
+        if (msg.recipientId === currentUserId && !msg.read) {
+          const existingMsgNotif = existingNotifications.find(
+            n => n.type === 'message' && n.message.includes(msg.message?.substring(0, 30) || '')
+          );
+          if (!existingMsgNotif) {
+            const notif = generateMessageNotification(msg, msg.senderName || 'Someone');
+            newNotifications.push(notif);
+            msg.read = true;
+          }
+        }
+      });
+      localStorage.setItem('homelyserv_chat_messages', JSON.stringify(allMessages));
+    });
+
+    // 5. Check for profile updates
+    const profile = JSON.parse(localStorage.getItem(`homelyserv_profile_${currentUserEmail}`) || '{}');
+    if (profile.status === 'approved' || profile.status === 'rejected') {
+      const existingProfileNotif = existingNotifications.find(
+        n => n.type === 'profile' && n.message.includes('profile')
+      );
+      if (!existingProfileNotif) {
+        const notif = generateProfileNotification(profile.status === 'approved' ? 'approved' : 'rejected');
+        newNotifications.push(notif);
+      }
+    }
+
+    // 6. Check for subscription updates
+    const subscription = JSON.parse(localStorage.getItem(`homelyserv_subscription_${currentUserId}`) || '{}');
+    if (subscription.status === 'active') {
+      const existingSubNotif = existingNotifications.find(
+        n => n.type === 'subscription' && n.message.includes('Premium')
+      );
+      if (!existingSubNotif) {
+        const notif = generateSubscriptionNotification('activated');
+        newNotifications.push(notif);
+      }
+    }
+
+    if (newNotifications.length > 0) {
+      const updatedNotifications = [...newNotifications, ...existingNotifications]
+        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .slice(0, 50);
+
+      localStorage.setItem(`worker_notifications_${currentUserEmail}`, JSON.stringify(updatedNotifications));
+      setNotifications(updatedNotifications);
+    }
+  };
+
+  // ============================================================
+  // LOAD STATS
   // ============================================================
   const loadRealStats = () => {
     try {
@@ -428,27 +772,18 @@ const WorkerDashboard = () => {
       const currentUserEmail = user.email;
       const currentUserId = user.id || user.email;
       
-      // Get all employer offers
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      
-      // FILTER: Only offers meant for this worker
       const workerOffers = employerOffers.filter(
         offer => offer.workerEmail === currentUserEmail
       );
       
-      console.log(`📊 Worker ${currentUserEmail} has ${workerOffers.length} offers`);
-      
-      // Count offers by status
       const pendingOffers = workerOffers.filter(o => o.status === 'pending').length;
       const acceptedOffers = workerOffers.filter(o => o.status === 'accepted').length;
       const inProgressOffers = workerOffers.filter(o => o.status === 'in_progress').length;
       const rejectedOffers = workerOffers.filter(o => o.status === 'rejected').length;
       const completedOffers = workerOffers.filter(o => o.status === 'completed').length;
       
-      // Also check worker-specific storage
       const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUserEmail}`) || '[]');
-      
-      // Combine and deduplicate
       const allWorkerOffers = [...workerOffers];
       workerSpecificOffers.forEach(offer => {
         if (!allWorkerOffers.find(o => o.id === offer.id)) {
@@ -456,31 +791,18 @@ const WorkerDashboard = () => {
         }
       });
       
-      // Recalculate with combined data
-      const totalPending = allWorkerOffers.filter(o => o.status === 'pending').length;
-      const totalAccepted = allWorkerOffers.filter(o => o.status === 'accepted').length;
-      const totalInProgress = allWorkerOffers.filter(o => o.status === 'in_progress').length;
-      const totalRejected = allWorkerOffers.filter(o => o.status === 'rejected').length;
-      const totalCompleted = allWorkerOffers.filter(o => o.status === 'completed').length;
-      
-      // Get applied offers from worker_applied_offers
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      // FILTER: Only applications by this worker
       const workerAppliedOffers = appliedOffers.filter(
         offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
       );
       
-      // Get saved offers
       const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
-      // FILTER: Only saved offers by this worker
       const workerSavedOffers = savedOffers.filter(
         offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
       );
       
-      // Calculate profile views (stored per worker)
       const profileViews = parseInt(localStorage.getItem(`profile_views_${currentUserEmail}`) || '0');
       
-      // Calculate messages for this worker
       let messagesCount = 0;
       if (currentUserId) {
         const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
@@ -494,7 +816,6 @@ const WorkerDashboard = () => {
         });
       }
       
-      // Calculate payments for this worker
       const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
       const workerPayments = payments.filter(
         p => p.workerId === currentUserId || p.workerEmail === currentUserEmail
@@ -504,7 +825,6 @@ const WorkerDashboard = () => {
         .filter(p => p.status === 'completed' || p.status === 'paid')
         .reduce((sum, p) => sum + (p.amount || 0), 0);
       
-      // Set stats with filtered data
       setStats({
         totalApplications: workerAppliedOffers.length,
         activeOffers: allWorkerOffers.filter(o => o.status === 'active' || o.status === 'open').length,
@@ -512,28 +832,16 @@ const WorkerDashboard = () => {
         savedJobs: workerSavedOffers.length,
         profileViews: profileViews,
         messages: messagesCount,
-        completedJobs: totalCompleted,
+        completedJobs: completedOffers,
         pendingPayments: pendingPayments,
         totalEarnings: totalEarnings,
-        pendingOffers: totalPending,
-        acceptedOffers: totalAccepted,
-        inProgressOffers: totalInProgress,
-        rejectedOffers: totalRejected,
-        completedOffers: totalCompleted
+        pendingOffers: pendingOffers,
+        acceptedOffers: acceptedOffers,
+        inProgressOffers: inProgressOffers,
+        rejectedOffers: rejectedOffers,
+        completedOffers: completedOffers
       });
       
-      console.log(`📊 Stats loaded for ${currentUserEmail}:`, {
-        totalOffers: allWorkerOffers.length,
-        pending: totalPending,
-        accepted: totalAccepted,
-        inProgress: totalInProgress,
-        rejected: totalRejected,
-        completed: totalCompleted,
-        applications: workerAppliedOffers.length,
-        earnings: totalEarnings
-      });
-      
-      // Generate recent activity with filtered data
       generateRecentActivity(
         allWorkerOffers,
         workerAppliedOffers,
@@ -548,7 +856,7 @@ const WorkerDashboard = () => {
   };
 
   // ============================================================
-  // FIXED: Generate activity only for this worker
+  // GENERATE RECENT ACTIVITY
   // ============================================================
   const generateRecentActivity = (
     workerOffers,
@@ -559,7 +867,6 @@ const WorkerDashboard = () => {
   ) => {
     const activities = [];
     
-    // Add offer activities
     workerOffers.forEach(offer => {
       let statusText = '';
       let icon = 'offer';
@@ -597,7 +904,6 @@ const WorkerDashboard = () => {
       });
     });
     
-    // Add payment activities
     payments.forEach(payment => {
       activities.push({
         icon: 'payment',
@@ -607,7 +913,6 @@ const WorkerDashboard = () => {
       });
     });
     
-    // Sort by time (most recent first)
     activities.sort((a, b) => {
       const dateA = new Date(a.time);
       const dateB = new Date(b.time);
@@ -617,6 +922,9 @@ const WorkerDashboard = () => {
     setRecentActivity(activities.slice(0, 10));
   };
 
+  // ============================================================
+  // LOAD NOTIFICATIONS
+  // ============================================================
   const loadNotifications = () => {
     try {
       if (!user?.email) return;
@@ -631,24 +939,68 @@ const WorkerDashboard = () => {
     }
   };
 
+  // ============================================================
+  // USE EFFECTS
+  // ============================================================
+  useEffect(() => {
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+
+    const userData = localStorage.getItem('homelyserv_user');
+
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        const profiles = JSON.parse(
+          localStorage.getItem('homelyserv_profiles') || '{}'
+        );
+
+        if (profiles[parsedUser.email]) {
+          parsedUser.profileImage =
+            profiles[parsedUser.email].profileImage || null;
+        }
+
+        setUser(parsedUser);
+      } catch (error) {
+        console.error(error);
+        navigate('/login');
+      }
+    } else {
+      navigate('/login');
+    }
+
+    const sidebarState = localStorage.getItem('sidebar_collapsed');
+
+    if (sidebarState) {
+      setSidebarCollapsed(JSON.parse(sidebarState));
+    }
+  }, [navigate]);
+
   useEffect(() => {
     if (user) {
       loadRealStats();
       loadNotifications();
+      checkForNewNotifications();
     }
   }, [user]);
 
-  // Refresh stats periodically
+  // Check for new notifications periodically
   useEffect(() => {
     if (!user) return;
     
     const interval = setInterval(() => {
+      checkForNewNotifications();
       loadRealStats();
-    }, 10000);
+    }, 15000);
     
     return () => clearInterval(interval);
   }, [user]);
 
+  // ============================================================
+  // NOTIFICATION HANDLERS
+  // ============================================================
   const markNotificationRead = (id) => {
     const updated = notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
@@ -663,30 +1015,43 @@ const WorkerDashboard = () => {
     localStorage.setItem(`worker_notifications_${user.email}`, JSON.stringify(updated));
   };
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
+  const getNotificationIcon = (type, icon) => {
+    const iconMap = {
+      'offer': <Briefcase size={16} className="text-blue-600" />,
+      'complaint': <AlertTriangle size={16} className="text-red-600" />,
+      'payment': <DollarSign size={16} className="text-green-600" />,
+      'message': <MessageCircle size={16} className="text-indigo-600" />,
+      'profile': <User size={16} className="text-purple-600" />,
+      'subscription': <Crown size={16} className="text-yellow-600" />,
+      'check': <CheckCircle size={16} className="text-green-600" />,
+      'x': <X size={16} className="text-red-600" />,
+      'clock': <Clock size={16} className="text-yellow-600" />,
+      'zap': <Zap size={16} className="text-orange-600" />,
+      'calendar': <Calendar size={16} className="text-blue-600" />,
+      'alert': <AlertCircle size={16} className="text-red-600" />,
+      'dollar': <DollarSign size={16} className="text-green-600" />,
+      'crown': <Crown size={16} className="text-yellow-600" />,
+      'user': <User size={16} className="text-purple-600" />,
+      'message': <MessageCircle size={16} className="text-indigo-600" />,
+      'briefcase': <Briefcase size={16} className="text-blue-600" />,
+      'star': <Star size={16} className="text-yellow-600" />,
+      'award': <Award size={16} className="text-purple-600" />,
+      'thumbsup': <ThumbsUp size={16} className="text-green-600" />,
+      'file': <FileText size={16} className="text-blue-600" />,
+    };
+    return iconMap[icon] || <Bell size={16} className="text-gray-600" />;
   };
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
+  const getNotificationBgColor = (type) => {
+    const colorMap = {
+      'offer': 'bg-blue-50',
+      'complaint': 'bg-red-50',
+      'payment': 'bg-green-50',
+      'message': 'bg-indigo-50',
+      'profile': 'bg-purple-50',
+      'subscription': 'bg-yellow-50',
+    };
+    return colorMap[type] || 'bg-gray-50';
   };
 
   if (user === null) {
@@ -738,16 +1103,24 @@ const WorkerDashboard = () => {
                 >
                   <Bell size={20} className="text-gray-600" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                      {unreadCount}
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
                 </button>
                 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                    <div className="p-3 border-b border-gray-200 flex justify-between items-center">
-                      <h4 className="font-semibold text-gray-800">{t.notifications}</h4>
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
+                    <div className="p-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl">
+                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Bell size={16} />
+                        {t.notifications}
+                        {unreadCount > 0 && (
+                          <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </h4>
                       {notifications.length > 0 && (
                         <button 
                           onClick={markAllRead}
@@ -759,25 +1132,54 @@ const WorkerDashboard = () => {
                     </div>
                     <div className="divide-y divide-gray-100">
                       {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 text-sm">
-                          {t.noNotifications}
+                        <div className="p-8 text-center text-gray-500">
+                          <div className="text-5xl mb-3">🔔</div>
+                          <p className="font-medium">{t.noNotifications}</p>
+                          <p className="text-sm mt-1">New notifications will appear here</p>
                         </div>
                       ) : (
-                        notifications.slice(0, 5).map((notification) => (
-                          <div 
-                            key={notification.id} 
-                            className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.read ? 'bg-red-50' : ''}`}
-                            onClick={() => markNotificationRead(notification.id)}
+                        notifications.slice(0, 10).map((notification) => (
+                          <Link
+                            key={notification.id}
+                            to={notification.link || '#'}
+                            className={`block p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-red-50/50' : ''}`}
+                            onClick={() => {
+                              markNotificationRead(notification.id);
+                              setShowNotifications(false);
+                            }}
                           >
-                            <p className="text-sm text-gray-800">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
-                          </div>
+                            <div className="flex gap-3">
+                              <div className={`w-10 h-10 rounded-full ${getNotificationBgColor(notification.type)} flex items-center justify-center flex-shrink-0`}>
+                                {getNotificationIcon(notification.type, notification.icon)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                    {notification.title || 'Notification'}
+                                  </p>
+                                  {!notification.read && (
+                                    <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5"></span>
+                                  )}
+                                </div>
+                                <p className={`text-sm ${!notification.read ? 'text-gray-700' : 'text-gray-500'} truncate`}>
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {new Date(notification.time).toLocaleDateString()} at {new Date(notification.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
                         ))
                       )}
-                      {notifications.length > 5 && (
-                        <div className="p-2 text-center">
-                          <Link to="/notifications" className="text-sm text-red-600 hover:text-red-700 font-medium">
-                            {t.viewAll}
+                      {notifications.length > 10 && (
+                        <div className="p-2 text-center border-t border-gray-100">
+                          <Link 
+                            to="/notifications" 
+                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            {t.viewAll} ({notifications.length - 10} more)
                           </Link>
                         </div>
                       )}
@@ -819,7 +1221,7 @@ const WorkerDashboard = () => {
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
-                {t.languageToggle}
+                {language === 'en' ? 'العربية' : 'English'}
               </button>
               {!userIsPremium && (
                 <Link
@@ -856,7 +1258,7 @@ const WorkerDashboard = () => {
                   )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
@@ -868,7 +1270,7 @@ const WorkerDashboard = () => {
                   <p className="text-white/80 mt-1">{t.overview}</p>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Link
                   to="/worker/offers"
                   className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"

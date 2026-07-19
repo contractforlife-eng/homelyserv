@@ -1,8 +1,8 @@
-// src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS
+// src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
-import { isUserPremium, getVerificationBadge } from '../utils/subscriptionService';
+import { JOB_OPTIONS } from '../constants/jobOptions';
+import { isUserPremium } from '../utils/subscriptionService';
 import {
   User,
   Mail,
@@ -32,11 +32,10 @@ import {
   Camera,
   ChevronDown,
   Shield,
-  Sparkles,
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - RED THEME (unchanged)
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -279,7 +278,7 @@ const WorkerProfile = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -308,7 +307,35 @@ const WorkerProfile = () => {
 
   const jobOptions = JOB_OPTIONS;
 
-  // ✅ ADDED: Fetch notifications function
+  // ============================================================
+  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
+  // ============================================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  // ============================================================
+  // NOTIFICATION FUNCTIONS
+  // ============================================================
+  
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -318,6 +345,20 @@ const WorkerProfile = () => {
         return;
       }
 
+      // Check localStorage for notifications first
+      const userEmail = user?.email;
+      if (userEmail) {
+        const storedNotifications = JSON.parse(
+          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
+        );
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications.slice(0, 10));
+          setNotificationLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -346,7 +387,7 @@ const WorkerProfile = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -564,27 +605,6 @@ const WorkerProfile = () => {
     document.documentElement.lang = language;
   }, [language]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
   const handleEditToggle = () => {
     if (isEditing) {
       const userData = loadUserData();
@@ -764,7 +784,7 @@ const WorkerProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => {
@@ -778,7 +798,7 @@ const WorkerProfile = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">

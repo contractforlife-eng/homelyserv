@@ -1,4 +1,4 @@
-// src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS
+// src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -39,7 +39,7 @@ import {
   ensureConversationExists
 } from '../utils/chatService';
 
-// Worker Sidebar Component - RED THEME (unchanged, kept for brevity)
+// Worker Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -298,11 +298,40 @@ const WorkerMessages = () => {
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
 
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
 
+  // ============================================================
+  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
+  // ============================================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    localStorage.removeItem('homelyserv_selected_conversation_worker');
+    navigate('/login');
+  };
+
+  // ============================================================
+  // IS PREMIUM CHECK
+  // ============================================================
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -311,7 +340,10 @@ const WorkerMessages = () => {
 
   const userIsPremium = isPremium();
 
-  // ✅ ADDED: Fetch notifications function
+  // ============================================================
+  // NOTIFICATION FUNCTIONS
+  // ============================================================
+  
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -321,6 +353,20 @@ const WorkerMessages = () => {
         return;
       }
 
+      // Check localStorage for notifications first
+      const userEmail = user?.email;
+      if (userEmail) {
+        const storedNotifications = JSON.parse(
+          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
+        );
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications.slice(0, 10));
+          setNotificationLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -349,7 +395,7 @@ const WorkerMessages = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -493,15 +539,13 @@ const WorkerMessages = () => {
   }, [user, refreshKey]);
 
   // ============================================================
-  // AUTO-REFRESH FROM SERVER - polls the API so messages from the
-  // other person show up without a manual refresh
+  // AUTO-REFRESH FROM SERVER
   // ============================================================
   useEffect(() => {
     if (!user) return;
     const userId = user.id || user.email;
     if (!userId) return;
 
-    // Clear existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -563,28 +607,6 @@ const WorkerMessages = () => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_selected_conversation_worker');
-    navigate('/login');
-  };
 
   const handleSelectConversation = (conversationId) => {
     console.log('📨 Selecting conversation:', conversationId);
@@ -725,7 +747,7 @@ const WorkerMessages = () => {
                 </div>
               </div>
               
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -737,7 +759,7 @@ const WorkerMessages = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">

@@ -1,4 +1,4 @@
-// src/pages/WorkerPayment.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS
+// src/pages/WorkerPayment.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 // ============================================
-// 1. SIDEBAR COMPONENT - RED THEME (unchanged)
+// 1. SIDEBAR COMPONENT - RED THEME
 // ============================================
 const WorkerSidebar = ({ 
   language, 
@@ -281,7 +281,7 @@ const WorkerPayment = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -310,7 +310,34 @@ const WorkerPayment = () => {
     monthlySalary: 0
   });
 
-  // ✅ Check if user has premium subscription
+  // ============================================
+  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
+  // ============================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  // ============================================
+  // IS PREMIUM CHECK
+  // ============================================
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -319,7 +346,10 @@ const WorkerPayment = () => {
 
   const userIsPremium = isPremium();
 
-  // ✅ ADDED: Fetch notifications function
+  // ============================================
+  // NOTIFICATION FUNCTIONS
+  // ============================================
+  
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -329,6 +359,20 @@ const WorkerPayment = () => {
         return;
       }
 
+      // Check localStorage for notifications first
+      const userEmail = user?.email;
+      if (userEmail) {
+        const storedNotifications = JSON.parse(
+          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
+        );
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications.slice(0, 10));
+          setNotificationLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -357,7 +401,7 @@ const WorkerPayment = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -635,25 +679,6 @@ const WorkerPayment = () => {
   // ============================================
   // 6. HANDLERS
   // ============================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
   const handlePaymentInfoChange = (e) => {
     const { name, value } = e.target;
     setWorkerPaymentInfo(prev => ({ ...prev, [name]: value }));
@@ -799,7 +824,7 @@ const WorkerPayment = () => {
                 </div>
               </div>
               
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -811,7 +836,7 @@ const WorkerPayment = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">

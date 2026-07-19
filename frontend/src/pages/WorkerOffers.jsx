@@ -1,7 +1,7 @@
-// src/pages/WorkerOffers.jsx - WITH WORKING NOTIFICATIONS
+// src/pages/WorkerOffers.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { JOB_OPTIONS, getJobLabel } from '../constants/jobOptions';
+import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
@@ -70,7 +70,7 @@ import {
   getUserConversations,
 } from '../utils/chatService';
 
-// Sidebar Component - RED THEME (same as before, kept for brevity)
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -321,10 +321,39 @@ const WorkerOffers = () => {
   const [processingOffer, setProcessingOffer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
+
+  // ============================================================
+  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
+  // ============================================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  const toggleExpand = (offerId) => {
+    setExpandedOffer(expandedOffer === offerId ? null : offerId);
+  };
 
   const isPremium = () => {
     const userId = user?.id || user?.email;
@@ -334,7 +363,10 @@ const WorkerOffers = () => {
 
   const userIsPremium = isPremium();
 
-  // ✅ ADDED: Fetch notifications function
+  // ============================================================
+  // NOTIFICATION FUNCTIONS
+  // ============================================================
+  
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -344,6 +376,20 @@ const WorkerOffers = () => {
         return;
       }
 
+      // Check localStorage for notifications first
+      const userEmail = user?.email;
+      if (userEmail) {
+        const storedNotifications = JSON.parse(
+          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
+        );
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications.slice(0, 10));
+          setNotificationLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -372,7 +418,7 @@ const WorkerOffers = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -495,7 +541,7 @@ const WorkerOffers = () => {
   const t = translations[language];
 
   // ============================================================
-  // Load Offers - FIXED with better data handling
+  // Load Offers
   // ============================================================
   const loadOffers = (userParam) => {
     try {
@@ -577,7 +623,6 @@ const WorkerOffers = () => {
       // If there are accepted offers, switch to accepted tab to show them
       const hasAccepted = allOffers.some(o => o.status === 'accepted' || o.status === 'in_progress');
       if (hasAccepted && activeTab === 'pending') {
-        // Don't auto-switch, let user see the count on the tab
         console.log('✅ There are accepted/in-progress offers available');
       }
       
@@ -857,31 +902,6 @@ const WorkerOffers = () => {
   // ============================================================
   // UI Helpers
   // ============================================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
-  const toggleExpand = (offerId) => {
-    setExpandedOffer(expandedOffer === offerId ? null : offerId);
-  };
-
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
@@ -1316,7 +1336,7 @@ const WorkerOffers = () => {
                 </span>
               </div>
               
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -1328,7 +1348,7 @@ const WorkerOffers = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">

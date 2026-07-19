@@ -1,4 +1,4 @@
-// src/pages/Register.jsx - RED, WHITE, AND GREEN THEME WITH SOCIAL LOGIN
+// src/pages/Register.jsx - RED AND WHITE THEME ONLY
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -204,11 +204,11 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-green-50 p-4 relative overflow-hidden">
-      {/* Decorative background elements */}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-4 relative overflow-hidden">
+      {/* Decorative background elements - Red only */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-green-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-100/10 rounded-full blur-3xl"></div>
       
       <div className="w-full max-w-lg relative z-10">
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-8 border border-red-100/50 transition-all duration-300">
@@ -240,23 +240,23 @@ function Register() {
             </div>
           </div>
 
-          {/* Logo & Brand */}
+          {/* Logo & Brand - Red only */}
           <div className="text-center mb-8 pt-2">
             <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-green-500 rounded-full blur-xl opacity-60 scale-110"></div>
+              <div className="absolute inset-0 bg-red-500/30 rounded-full blur-xl opacity-60 scale-110"></div>
               
-              <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-red-600 via-red-700 to-green-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30 transform transition-transform hover:scale-105 duration-300">
+              <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30 transform transition-transform hover:scale-105 duration-300">
                 <div className="relative">
-                  <Shield size={64} className="text-white/30 absolute -inset-1" strokeWidth={1.5} />
+                  <Shield size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
                     <Home size={36} className="text-white" strokeWidth={2} />
-                    <Sparkles size={16} className="text-green-200 absolute -top-1 -right-1" />
+                    <Sparkles size={16} className="text-red-200 absolute -top-1 -right-1" />
                   </div>
                 </div>
               </div>
               
               <div className="mt-4">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-green-700 bg-clip-text text-transparent tracking-tight">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
                 <p className="text-xs text-gray-400 tracking-widest uppercase mt-1 font-light">Create Your Account</p>
@@ -292,7 +292,7 @@ function Register() {
                   onChange={handleChange}
                   className={`w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border ${
                     errors.fullName ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400`}
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
                   placeholder="Enter your full name"
                   required
                 />
@@ -314,7 +314,7 @@ function Register() {
                   onChange={handleChange}
                   className={`w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border ${
                     errors.email ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400`}
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
                   placeholder="Enter your email"
                   required
                 />
@@ -334,7 +334,7 @@ function Register() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400"
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -350,7 +350,7 @@ function Register() {
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400"
                   placeholder="Enter your location"
                 />
               </div>
@@ -402,7 +402,7 @@ function Register() {
                   onChange={handleChange}
                   className={`w-full pl-11 pr-12 py-3.5 bg-gray-50/80 border ${
                     errors.password ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400`}
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
                   placeholder="Create a password (min 6 characters)"
                   required
                 />
@@ -431,7 +431,7 @@ function Register() {
                   onChange={handleChange}
                   className={`w-full pl-11 pr-12 py-3.5 bg-gray-50/80 border ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400`}
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
                   placeholder="Confirm your password"
                   required
                 />
@@ -448,10 +448,11 @@ function Register() {
               )}
             </div>
 
+            {/* Register Button - Red only */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-red-600 via-red-700 to-green-700 text-white py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -467,10 +468,9 @@ function Register() {
             </button>
           </form>
 
-          {/* Social Login - Google & Facebook Only */}
+          {/* Social Login */}
           <SocialLogin onLoginSuccess={(user) => {
             console.log('Social login success:', user);
-            // After social login, redirect to dashboard
             const role = user.role?.toUpperCase();
             if (role === 'EMPLOYER') {
               navigate('/employer-dashboard');
@@ -483,6 +483,7 @@ function Register() {
             }
           }} />
 
+          {/* Login Link */}
           <p className="text-center text-gray-600 mt-6">
             Already have an account?{' '}
             <Link to="/login" className="text-red-600 font-semibold hover:text-red-700 transition-colors hover:underline">
@@ -493,7 +494,9 @@ function Register() {
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-400">
               By creating an account, you agree to our{' '}
-              <Link to="/terms" className="text-red-500 hover:text-red-600 transition-colors hover:underline">Terms of Service</Link>
+              <Link to="/terms" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
+                Terms of Service
+              </Link>
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-// src/pages/WorkerComplaints.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS
+// src/pages/WorkerComplaints.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -30,7 +30,7 @@ import {
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - RED THEME (unchanged, kept for brevity)
+// Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
   language, 
   sidebarCollapsed, 
@@ -290,11 +290,39 @@ const WorkerComplaints = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
 
+  // ============================================================
+  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
+  // ============================================================
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    localStorage.setItem('homelyserv_language', newLang);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('homelyserv_token');
+    localStorage.removeItem('homelyserv_user');
+    navigate('/login');
+  };
+
+  // ============================================================
+  // IS PREMIUM CHECK
+  // ============================================================
   const isPremium = () => {
     const userId = user?.id || user?.email;
     if (!userId) return false;
@@ -303,7 +331,10 @@ const WorkerComplaints = () => {
 
   const userIsPremium = isPremium();
 
-  // ✅ ADDED: Fetch notifications function
+  // ============================================================
+  // NOTIFICATION FUNCTIONS
+  // ============================================================
+  
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -313,6 +344,20 @@ const WorkerComplaints = () => {
         return;
       }
 
+      // Check localStorage for notifications first
+      const userEmail = user?.email;
+      if (userEmail) {
+        const storedNotifications = JSON.parse(
+          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
+        );
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications.slice(0, 10));
+          setNotificationLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -341,7 +386,7 @@ const WorkerComplaints = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -590,27 +635,6 @@ const WorkerComplaints = () => {
     setFilteredComplaints(filtered);
   }, [complaints, statusFilter, searchTerm, t.categories]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewComplaint(prev => ({
@@ -766,7 +790,7 @@ const WorkerComplaints = () => {
                 </div>
               </div>
               
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -778,7 +802,7 @@ const WorkerComplaints = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
