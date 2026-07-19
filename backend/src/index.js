@@ -20,7 +20,7 @@ import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
 import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notifications.js';
-
+import oauthRoutes from './routes/oauth.js';
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -305,7 +305,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
-
+app.use('/api/oauth', oauthRoutes);
 // ============================================================
 // Socket.IO Event Handlers
 // ============================================================

@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+// src/components/SocialLogin.jsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
-import useAuthStore from '../store/authStore';
-import GoogleLogin from './GoogleLogin';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 
-export default function SocialLogin() {
+export default function SocialLogin({ onLoginSuccess }) {
   const navigate = useNavigate();
-  const { setUser, setToken } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [fbLoaded, setFbLoaded] = useState(false);
 
+  // Initialize Facebook SDK
   useEffect(() => {
     if (window.FB) {
       setFbLoaded(true);
@@ -36,36 +35,105 @@ export default function SocialLogin() {
     document.body.appendChild(script);
 
     return () => {
-      const script = document.querySelector('script[src="https://connect.facebook.net/en_US/sdk.js"]');
-      if (script) script.remove();
+      const scriptElement = document.querySelector('script[src="https://connect.facebook.net/en_US/sdk.js"]');
+      if (scriptElement) scriptElement.remove();
     };
   }, []);
 
+  // Handle social login - calls backend
   const handleSocialLogin = async (provider, providerData) => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/social-login', {
-        provider: provider,
-        providerId: providerData.id || providerData.sub,
-        email: providerData.email,
-        fullName: providerData.name || providerData.fullName,
-        avatar: providerData.picture || providerData.avatar
+      const response = await fetch('http://localhost:5000/api/oauth/social-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: provider,
+          providerId: providerData.id,
+          email: providerData.email,
+          fullName: providerData.name,
+          avatar: providerData.picture
+        })
       });
 
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        setUser(response.data.user);
-        setToken(response.data.token);
-        toast.success(`Welcome ${response.data.user.fullName}!`);
-        navigate('/');
+      const data = await response.json();
+      
+      if (data.success) {
+        // Save token and user data
+        localStorage.setItem('homelyserv_token', data.token);
+        localStorage.setItem('homelyserv_user', JSON.stringify(data.user));
+        
+        toast.success(`Welcome ${data.user.fullName}!`);
+        
+        if (onLoginSuccess) {
+          onLoginSuccess(data.user);
+        }
+        
+        // Redirect based on role
+        const role = data.user.role?.toUpperCase();
+        if (role === 'EMPLOYER') {
+          navigate('/employer-dashboard');
+        } else if (role === 'WORKER') {
+          navigate('/worker-dashboard');
+        } else if (role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/employer-dashboard');
+        }
+      } else {
+        toast.error(data.message || 'Social login failed');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Social login failed');
+      console.error('Social login error:', error);
+      toast.error('Social login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  // Generate JWT-like token (fallback if backend is not available)
+  const generateToken = (user) => {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const payload = {
+      userId: user.id || user.email,
+      email: user.email,
+      role: user.role,
+      id: user.id,
+      fullName: user.fullName,
+      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+    };
+    const encodedHeader = btoa(JSON.stringify(header));
+    const encodedPayload = btoa(JSON.stringify(payload));
+    const signature = btoa('homelyserv_secret_key_2026');
+    return `${encodedHeader}.${encodedPayload}.${signature}`;
+  };
+
+  // Google Login Handler
+  const handleGoogleSuccess = (credentialResponse) => {
+    console.log('Google login success:', credentialResponse);
+    try {
+      const payload = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
+      const userData = {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture
+      };
+      handleSocialLogin('google', userData);
+    } catch (error) {
+      console.error('Error decoding Google token:', error);
+      toast.error('Google login failed');
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error('Google login failed');
+    toast.error('Google login failed. Please try again.');
+  };
+
+  // Facebook Login Handler
   const handleFacebookLogin = () => {
     if (!fbLoaded) {
       toast.info('Facebook SDK is loading. Please try again.');
@@ -75,12 +143,13 @@ export default function SocialLogin() {
     window.FB.login(function(response) {
       if (response.authResponse) {
         window.FB.api('/me', { fields: 'id,name,email,picture' }, function(userInfo) {
-          handleSocialLogin('facebook', {
+          const userData = {
             id: userInfo.id,
             email: userInfo.email || `fb_${userInfo.id}@facebook.com`,
             name: userInfo.name,
-            picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=FB&background=1877F2&color=fff`
-          });
+            picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=${userInfo.name}&background=1877F2&color=fff`
+          };
+          handleSocialLogin('facebook', userData);
         });
       } else {
         toast.error('Facebook login cancelled or failed');
@@ -88,82 +157,92 @@ export default function SocialLogin() {
     }, { scope: 'email,public_profile' });
   };
 
-  const handleTwitterLogin = () => {
-    toast.info('Twitter login is in demo mode. Using mock account.');
-    const mockTwitterData = {
-      id: 'tw_' + Date.now(),
-      email: 'twitter_user_' + Date.now() + '@twitter.com',
-      name: 'Twitter User',
-      picture: 'https://ui-avatars.com/api/?name=TW&background=1DA1F2&color=fff'
-    };
-    handleSocialLogin('twitter', mockTwitterData);
-  };
-
-  const handleTelegramLogin = () => {
-    toast.info('Telegram login is in demo mode. Using mock account.');
-    const mockTelegramData = {
-      id: 'tg_' + Date.now(),
-      email: 'telegram_user_' + Date.now() + '@telegram.com',
-      name: 'Telegram User',
-      picture: 'https://ui-avatars.com/api/?name=TL&background=0088CC&color=fff'
-    };
-    handleSocialLogin('telegram', mockTelegramData);
-  };
-
-  const handleSignalLogin = () => {
-    toast.info('Signal login is in demo mode. Using mock account.');
-    const mockSignalData = {
-      id: 'sg_' + Date.now(),
-      email: 'signal_user_' + Date.now() + '@signal.com',
-      name: 'Signal User',
-      picture: 'https://ui-avatars.com/api/?name=SG&background=3A76F0&color=fff'
-    };
-    handleSocialLogin('signal', mockSignalData);
-  };
-
-  const socialButtons = [
-    { provider: 'Facebook', icon: '🔷', color: '#1877F2', onClick: handleFacebookLogin },
-    { provider: 'Twitter', icon: '🐦', color: '#1DA1F2', onClick: handleTwitterLogin },
-    { provider: 'Telegram', icon: '✈️', color: '#0088CC', onClick: handleTelegramLogin },
-    { provider: 'Signal', icon: '📱', color: '#3A76F0', onClick: handleSignalLogin },
-  ];
-
   return (
-    <div className="social-login">
-      <div className="social-divider">
-        <span>OR CONTINUE WITH</span>
+    <div className="mt-6">
+      <div className="flex items-center gap-4 mb-5">
+        <div className="flex-1 border-t border-gray-200"></div>
+        <span className="text-sm text-gray-400 whitespace-nowrap font-medium">Or continue with</span>
+        <div className="flex-1 border-t border-gray-200"></div>
       </div>
 
-      {/* Google Login - Centered */}
-      <div className="google-login-section">
-        <GoogleLogin />
-      </div>
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+        {/* Google Login */}
+        <div className="w-full sm:w-auto min-w-[200px]">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            shape="pill"
+            text="signin"
+            width="200"
+            logo_alignment="center"
+          />
+        </div>
 
-      <div className="social-divider" style={{ margin: '12px 0' }}>
-        <span>Other providers</span>
-      </div>
-
-      <div className="social-buttons">
-        {socialButtons.map((btn) => (
-          <button
-            key={btn.provider}
-            onClick={btn.onClick}
-            disabled={loading || (btn.provider === 'Facebook' && !fbLoaded)}
-            className="social-btn"
-            style={{ borderColor: btn.color }}
-          >
-            <span className="social-icon">{btn.icon}</span>
-            {btn.provider}
-            {btn.provider === 'Facebook' && !fbLoaded && ' (Loading...)'}
-          </button>
-        ))}
+        {/* Facebook Login */}
+        <button
+          onClick={handleFacebookLogin}
+          disabled={loading || !fbLoaded}
+          className={`facebook-btn flex items-center justify-center gap-2 px-6 py-3 rounded-xl border transition-all duration-200 w-full sm:w-auto min-w-[200px] ${
+            loading || !fbLoaded 
+              ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-100' 
+              : 'border-gray-200 hover:border-[#1877F2] hover:bg-[#1877F2] hover:text-white group'
+          }`}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+          </svg>
+          <span className="text-sm font-medium">Facebook</span>
+        </button>
       </div>
 
       {loading && (
-        <div className="social-loading">
-          <span className="spinner"></span> Logging in...
+        <div className="mt-4 text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-gray-500">
+            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            Logging in...
+          </div>
         </div>
       )}
+
+      <style>{`
+        .facebook-btn {
+          background: white;
+          color: #374151;
+          font-weight: 500;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .facebook-btn:hover:not(:disabled) {
+          color: white;
+          box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+        }
+        .facebook-btn svg {
+          color: #1877F2;
+          transition: color 0.2s ease;
+        }
+        .facebook-btn:hover:not(:disabled) svg {
+          color: white;
+        }
+        .facebook-btn:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+        .google-btn-wrapper {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+        }
+        .google-btn-wrapper > div {
+          width: 100% !important;
+          max-width: 200px !important;
+        }
+        .google-btn-wrapper iframe {
+          width: 100% !important;
+          min-width: 200px !important;
+          height: 44px !important;
+        }
+      `}</style>
     </div>
   );
 }

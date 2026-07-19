@@ -1,7 +1,8 @@
-// src/pages/Login.jsx - RED AND WHITE THEME
+// src/pages/Login.jsx - RED, WHITE, AND GREEN THEME WITH SOCIAL LOGIN
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
+import SocialLogin from '../components/SocialLogin';
 import { isUserPremium, getUserSubscription, syncPremiumStatus } from '../utils/subscriptionService';
 
 function Login() {
@@ -12,6 +13,8 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
+  const [showPasswordField, setShowPasswordField] = useState(false);
+  const [isEmailValid, setIsEmailValid] = useState(false);
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -20,6 +23,23 @@ function Login() {
     { code: 'ru', name: 'Russian', flag: '🇷🇺' },
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
+
+  // Generate a simple JWT-like token
+  const generateToken = (user) => {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const payload = {
+      userId: user.id || user.email,
+      email: user.email,
+      role: user.role,
+      id: user.id,
+      fullName: user.fullName,
+      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+    };
+    const encodedHeader = btoa(JSON.stringify(header));
+    const encodedPayload = btoa(JSON.stringify(payload));
+    const signature = btoa('homelyserv_secret_key_2026');
+    return `${encodedHeader}.${encodedPayload}.${signature}`;
+  };
 
   // Create admin user on component mount
   useEffect(() => {
@@ -64,7 +84,7 @@ function Login() {
     createAdminUser();
   }, []);
 
-  // Check if user is already logged in and restore premium status
+  // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem('homelyserv_token');
     const userData = localStorage.getItem('homelyserv_user');
@@ -74,10 +94,6 @@ function Login() {
         const userId = user.id || user.email;
         const isPremium = isUserPremium(userId);
         const subscription = getUserSubscription(userId);
-        
-        console.log('🔄 Restoring premium status for:', user.fullName);
-        console.log('🔄 Premium status:', isPremium);
-        console.log('🔄 Subscription:', subscription);
         
         const updatedUser = {
           ...user,
@@ -112,13 +128,8 @@ function Login() {
   const checkRegisteredUser = (email) => {
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      console.log('📦 Checking registered users for email:', email);
-      
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (user) {
-        console.log('✅ Found registered user:', user.fullName);
-        console.log('✅ User role:', user.role);
-        console.log('✅ Stored premium status:', user.isPremium);
         return user;
       }
     } catch (error) {
@@ -131,7 +142,6 @@ function Login() {
     try {
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       if (profiles[email]) {
-        console.log('📥 Found saved profile data for:', email);
         return profiles[email];
       }
     } catch (error) {
@@ -150,8 +160,7 @@ function Login() {
 
     if (userData) {
       user = { ...userData };
-      token = `user_token_${Date.now()}`;
-      console.log('✅ Using existing user data:', user.fullName);
+      token = generateToken(user);
     } else {
       if (role === 'WORKER') {
         user = {
@@ -169,7 +178,7 @@ function Login() {
           isPremium: false,
           subscriptionActive: false
         };
-        token = `worker_token_${Date.now()}`;
+        token = generateToken(user);
       } else if (role === 'EMPLOYER') {
         user = {
           id: `employer_${Date.now()}`,
@@ -183,7 +192,7 @@ function Login() {
           isPremium: false,
           subscriptionActive: false
         };
-        token = `employer_token_${Date.now()}`;
+        token = generateToken(user);
       } else if (role === 'ADMIN') {
         user = {
           id: `admin_${Date.now()}`,
@@ -194,27 +203,22 @@ function Login() {
           isPremium: false,
           subscriptionActive: false
         };
-        token = `admin_token_${Date.now()}`;
+        token = generateToken(user);
       } else {
         setError('Invalid role selected');
         setLoading(false);
         return;
       }
-      console.log('🆕 Created new user:', user.fullName);
     }
 
     const savedProfile = getSavedProfileData(user.email);
     if (savedProfile) {
       user = { ...user, ...savedProfile };
-      console.log('📥 Merged saved profile data');
     }
 
     const userId = user.id || user.email;
     const isPremium = isUserPremium(userId);
     const subscription = getUserSubscription(userId);
-    
-    console.log(`🔍 Premium status for ${user.fullName} (${user.role}):`, isPremium);
-    console.log('📋 Subscription data:', subscription);
     
     user.isPremium = isPremium;
     user.subscriptionActive = isPremium;
@@ -231,7 +235,6 @@ function Login() {
           subscription: subscription
         };
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
-        console.log('✅ Updated users list with premium status');
       }
     } catch (error) {
       console.error('Error updating users list:', error);
@@ -246,7 +249,6 @@ function Login() {
           subscriptionActive: isPremium
         };
         localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-        console.log('✅ Updated profiles with premium status');
       }
     } catch (error) {
       console.error('Error updating profiles:', error);
@@ -262,7 +264,6 @@ function Login() {
           userFullName: user.fullName
         };
         localStorage.setItem('homelyserv_subscriptions', JSON.stringify(subscriptions));
-        console.log('✅ Updated subscription data');
       }
     } catch (error) {
       console.error('Error updating subscriptions:', error);
@@ -273,19 +274,32 @@ function Login() {
     
     console.log('✅ Login successful:', user.fullName);
     console.log('✅ User role:', user.role);
-    console.log('✅ User email:', user.email);
-    console.log('✅ Premium status:', user.isPremium);
-    console.log('✅ Subscription:', user.subscription);
     
     setTimeout(() => {
       redirectUser(user);
     }, 500);
   };
 
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    setIsEmailValid(true);
+    setShowPasswordField(true);
+    setError('');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('🔄 Form submitted with email:', email);
-    
     setError('');
     setLoading(true);
     
@@ -304,7 +318,6 @@ function Login() {
         return;
       }
 
-      console.log('✅ Found registered user, logging in:', registeredUser.fullName);
       loginUser(registeredUser, registeredUser.role, email);
       return;
     }
@@ -337,15 +350,23 @@ function Login() {
     }
   };
 
+  const handleBackToEmail = () => {
+    setShowPasswordField(false);
+    setIsEmailValid(false);
+    setPassword('');
+    setError('');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-red-100 to-white p-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-red-200/40 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-300/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-100/20 rounded-full blur-3xl"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-green-50 p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-green-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/20 rounded-full blur-3xl"></div>
       
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/20 p-8 border border-red-100/50">
+        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-8 border border-red-100/50 transition-all duration-300">
           
+          {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
@@ -372,25 +393,23 @@ function Login() {
             </div>
           </div>
 
+          {/* Logo & Brand */}
           <div className="text-center mb-8 pt-2">
             <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-700 rounded-full blur-xl opacity-60 scale-110"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-green-500 rounded-full blur-xl opacity-60 scale-110"></div>
               
-              <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-red-600 via-red-700 to-red-800 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/40 transform transition-transform hover:scale-105 duration-300">
+              <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-red-600 via-red-700 to-green-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30 transform transition-transform hover:scale-105 duration-300">
                 <div className="relative">
                   <Shield size={64} className="text-white/30 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
                     <Home size={36} className="text-white" strokeWidth={2} />
-                    <Sparkles size={16} className="text-red-200 absolute -top-1 -right-1" />
+                    <Sparkles size={16} className="text-green-200 absolute -top-1 -right-1" />
                   </div>
                 </div>
-                
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-200 rounded-full"></div>
-                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-red-300 rounded-full"></div>
               </div>
               
               <div className="mt-4">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-red-800 bg-clip-text text-transparent tracking-tight">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-green-700 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
                 <p className="text-xs text-gray-400 tracking-widest uppercase mt-1 font-light">Premium Home Services</p>
@@ -399,12 +418,13 @@ function Login() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2 animate-shake">
               <AlertCircle size={16} /> {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
+            {/* Email Field - Always Visible */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
               <div className="relative group">
@@ -413,14 +433,40 @@ function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !showPasswordField) {
+                      e.preventDefault();
+                      handleEmailSubmit(e);
+                    }
+                  }}
+                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
+                    showPasswordField ? 'opacity-50 pointer-events-none' : ''
+                  }`}
                   placeholder="Enter your email"
+                  disabled={showPasswordField}
                   required
                 />
+                {!showPasswordField && (
+                  <button
+                    type="button"
+                    onClick={handleEmailSubmit}
+                    className="absolute right-2 top-2 p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    <ArrowRight size={18} />
+                  </button>
+                )}
+                {showPasswordField && (
+                  <div className="absolute right-3 top-3.5 text-green-600">
+                    <CheckCircle size={18} />
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mb-2">
+            {/* Password Field - Appears After Email */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showPasswordField ? 'max-h-40 opacity-100 mb-2' : 'max-h-0 opacity-0'
+            }`}>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative group">
                 <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
@@ -431,6 +477,7 @@ function Login() {
                   className="w-full pl-11 pr-12 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
                   placeholder="Enter your password"
                   required
+                  autoFocus={showPasswordField}
                 />
                 <button
                   type="button"
@@ -442,61 +489,67 @@ function Login() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-6">
-              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500" />
-                Remember me
-              </label>
-              <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-medium transition-colors">
-                Forgot password?
-              </Link>
+            {/* Forgot Password - Appears After Email */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showPasswordField ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500" />
+                  Remember me
+                </label>
+                <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-medium transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-red-600 via-red-700 to-red-800 text-white py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Loading...
-                </div>
-              ) : (
-                <>
-                  Sign In
-                  <LogIn size={20} />
-                </>
-              )}
-            </button>
+            {/* Login Button - Appears After Email */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showPasswordField ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-red-600 via-red-700 to-green-700 text-white py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Loading...
+                  </div>
+                ) : (
+                  <>
+                    Sign In
+                    <LogIn size={20} />
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Back to Email Button - Appears After Email */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showPasswordField ? 'max-h-20 opacity-100 mt-3' : 'max-h-0 opacity-0'
+            }`}>
+              <button
+                type="button"
+                onClick={handleBackToEmail}
+                className="w-full text-center text-sm text-gray-500 hover:text-red-600 transition-colors"
+              >
+                ← Use a different email
+              </button>
+            </div>
           </form>
 
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="text-sm text-gray-400">Or continue with</span>
-            <div className="flex-1 border-t border-gray-200"></div>
-          </div>
+          {/* ============================================================
+              SOCIAL LOGIN - Google, Facebook, Apple
+              ============================================================ */}
+          <SocialLogin onLoginSuccess={(user) => {
+            console.log('Social login success:', user);
+            // Additional logic if needed
+          }} />
 
-          <div className="flex justify-center gap-3">
-            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-200 transition-all duration-200 flex items-center justify-center group">
-              <svg className="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-            </button>
-            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-200 transition-all duration-200 flex items-center justify-center text-blue-600 font-bold group">
-              <span className="group-hover:scale-110 transition-transform">f</span>
-            </button>
-            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-200 transition-all duration-200 flex items-center justify-center text-black font-bold group">
-              <span className="group-hover:scale-110 transition-transform">𝕏</span>
-            </button>
-            <button className="w-12 h-12 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-red-200 transition-all duration-200 flex items-center justify-center text-green-600 font-bold group">
-              <span className="group-hover:scale-110 transition-transform">💬</span>
-            </button>
-          </div>
-
+          {/* Register Link */}
           <p className="text-center text-gray-600 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-red-600 font-semibold hover:text-red-700 transition-colors hover:underline">
@@ -505,6 +558,17 @@ function Login() {
           </p>
         </div>
       </div>
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+          20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
