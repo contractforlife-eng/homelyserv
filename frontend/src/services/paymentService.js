@@ -1,7 +1,9 @@
 // src/services/paymentService.js
 // Complete Payment Service with Backend Integration
 
-const API_BASE = 'http://localhost:5000/api/payments';
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api/payments`
+  : 'http://localhost:5000/api/payments';
 
 // ============================================================
 // PAYMENT INTENT - Calls Backend
@@ -15,21 +17,31 @@ const API_BASE = 'http://localhost:5000/api/payments';
 export const createPaymentIntent = async (paymentData) => {
   try {
     console.log('📤 Creating payment intent via backend:', paymentData);
-    
+
+    // Get authentication token
+    const token = localStorage.getItem('homelyserv_token') ||
+                  (localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage'))?.state?.token : null);
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE}/create-payment-intent`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(paymentData)
     });
 
     const data = await response.json();
-    
+
     if (!data.success) {
       throw new Error(data.error || 'Payment creation failed');
     }
-    
+
     console.log('✅ Payment intent created:', data);
     return data;
   } catch (error) {
@@ -213,7 +225,9 @@ export const processPayPalWebhook = async (webhookData) => {
 };
 
 // ============================================================
-// TRANSACTION MANAGEMENT (localStorage fallback)
+// TRANSACTION MANAGEMENT (DEPRECATED - Use backend API instead)
+// The following localStorage functions are deprecated.
+// Use the backend API functions: getUserPayments, getPaymentStatus, completePayment
 // ============================================================
 
 export const saveTransaction = (transaction) => {

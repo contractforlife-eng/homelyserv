@@ -1,5 +1,7 @@
 // src/utils/chatService.js - WORKING VERSION
-const API_BASE = 'http://localhost:5000/api/chat';
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api/chat`
+  : 'http://localhost:5000/api/chat';
 
 const authHeaders = () => {
   const token = localStorage.getItem('homelyserv_token');

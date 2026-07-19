@@ -7,6 +7,9 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Apply authentication middleware to all payment routes
+router.use(authenticate);
+
 // ============================================================
 // PAYMOB CONFIGURATION - YOUR REAL DATA
 // ============================================================
@@ -65,26 +68,71 @@ router.post('/create-payment-intent', async (req, res) => {
       hireId,
       paymentMethod = 'paymob',
       paymentType,
-      salary
+      salary,
+      phone,
+      firstName,
+      lastName,
+      city,
+      country
     } = req.body;
 
     console.log('📊 Creating payment intent:', { amount, userId, workerName, paymentMethod });
 
+    // Input validation
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Invalid amount'
       });
     }
+
+    if (!paymentMethod || !['paymob', 'paypal'].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment method'
+      });
+    }
+
+    if (paymentType === 'recruitment' && (!salary || salary <= 0)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Salary is required for recruitment payments'
+      });
+    }
+
+    // Validate email format if provided
+    if (userEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format'
+      });
+    }
+
+    // Validate phone format if provided (Egypt: 11 digits starting with 01)
+    if (phone && !/^01[0-9]{9}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format (must be 11 digits starting with 01)'
+      });
+    }
+
+    // Validate recruitment payment amount (15% of salary)
     if (paymentType === 'recruitment') {
-  // require salary to be sent alongside amount, and verify the math server-side
-  if (!salary || Math.abs(amount - Math.round(salary * 0.15 * 100) / 100) > 0.01) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid payment amount for application fee'
-    });
-  }
-}
+      if (!salary || salary <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Salary is required for recruitment payments'
+        });
+      }
+      const expectedAmount = Math.round(salary * 0.15 * 100) / 100;
+      if (Math.abs(amount - expectedAmount) > 0.01) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid payment amount for application fee. Expected: ${expectedAmount}, Received: ${amount}`
+        });
+      }
+    }
+
     // ============================================================
     // REAL PAYMOB PAYMENT - NO MOCK FALLBACK
     // ============================================================
@@ -142,25 +190,23 @@ router.post('/create-payment-intent', async (req, res) => {
         const orderId = orderResponse.data.id;
         console.log(`✅ Paymob order created: ${orderId}`);
 
-        // Step 3: Get payment key - FIXED BILLING DATA
+        // Step 3: Get payment key - BILLING DATA FROM REQUEST
         console.log('🔑 Getting Paymob payment key...');
         
-        // Make sure phone number is valid (11 digits for Egypt)
-        const phoneNumber = '01009189851'; // Use your valid phone number
-        
+        // Use billing data from request or fallback to user data
         const billingData = {
           apartment: 'NA',
-          email: userEmail || 'contractforlife@gmail.com',
+          email: userEmail || '',
           floor: 'NA',
-          first_name: workerName?.split(' ')[0] || 'Emad',
+          first_name: firstName || workerName?.split(' ')[0] || '',
           street: 'NA',
           building: 'NA',
-          phone_number: phoneNumber,
+          phone_number: phone || '',
           shipping_method: 'NA',
           postal_code: 'NA',
-          city: 'Cairo',
-          country: 'EG',
-          last_name: workerName?.split(' ').pop() || 'Abdelhalem',
+          city: city || 'Cairo',
+          country: country || 'EG',
+          last_name: lastName || workerName?.split(' ').pop() || '',
           state: 'NA'
         };
 

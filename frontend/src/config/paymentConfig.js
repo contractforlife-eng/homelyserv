@@ -2,12 +2,24 @@
 // Complete Payment Configuration with ALL credentials (Sandbox + Live)
 
 // Helper function to safely get environment variables
-const getEnv = (key, fallback = '') => {
+// For security, sensitive credentials should not have hardcoded fallbacks
+const getEnv = (key, fallback = '', isSensitive = false) => {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env[key] || fallback;
+    const value = import.meta.env[key];
+    if (isSensitive && !value) {
+      console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
+    }
+    return value || fallback;
   }
   if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] || fallback;
+    const value = process.env[key];
+    if (isSensitive && !value) {
+      console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
+    }
+    return value || fallback;
+  }
+  if (isSensitive) {
+    console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
   }
   return fallback;
 };
@@ -21,16 +33,16 @@ export const PAYMENT_CONFIG = {
   // ============================================================
   paymob: {
     // Your Paymob API Key
-    apiKey: getEnv('VITE_PAYMOB_API_KEY', 'ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6VXhNaUo5LmV5SnVZVzFsSWpvaWFXNXBkR2xoYkNJc0ltTnNZWE56SWpvaVRXVnlZMmhoYm5RaUxDSndjbTltYVd4bFgzQnJJam96T0RVeE16TjkuQ2xsTEYyM1Z1bExxRGdhaWhpU3AtVHV4X1pFRTdwRDRIV2Z0NzZEWlQwMDNMSUtZYnJwUFlJclN0QzRwVWpKQWdYWnM4blY5LWVFSVM4S1kydmFvWHc='),
+    apiKey: getEnv('VITE_PAYMOB_API_KEY', '', true),
     
     // HMAC Secret for webhook verification
-    hmacSecret: getEnv('VITE_PAYMOB_HMAC_SECRET', '5A19D2DDF93FC9CBF430BB3EFA57CADD'),
+    hmacSecret: getEnv('VITE_PAYMOB_HMAC_SECRET', '', true),
     
     // Main Integration ID (TAP ON PHONE - Online Card)
-    integrationId: getEnv('VITE_PAYMOB_INTEGRATION_ID', '2662716'),
+    integrationId: getEnv('VITE_PAYMOB_INTEGRATION_ID', '', true),
     
     // IFRAME ID for payment page
-    iframeId: getEnv('VITE_PAYMOB_IFRAME_ID', '492734'),
+    iframeId: getEnv('VITE_PAYMOB_IFRAME_ID', '', true),
     
     // Paymob API Base URL
     baseUrl: getEnv('VITE_PAYMOB_BASE_URL', 'https://accept.paymob.com/api'),
@@ -89,13 +101,13 @@ export const PAYMENT_CONFIG = {
   // ============================================================
   paypal: {
     // Automatically switch between Sandbox and Live based on environment
-    clientId: isProduction 
-      ? getEnv('VITE_PAYPAL_LIVE_CLIENT_ID', 'ASR4w_mrfpxARStHBMi-NwKsUFqp_gjziWbKRAqab078sbTxD9mHc-wm57f7h9c9fMS5mlumPi43mvaF')
-      : getEnv('VITE_PAYPAL_SANDBOX_CLIENT_ID', 'ASEecJrW8iznmOZNT4qf8P7Ng4AZVi2QxgIikdxuVzy-AkXy7j9iCyCMtW99s1gg9ylrGHWVE2lIE3F1'),
-    
+    clientId: isProduction
+      ? getEnv('VITE_PAYPAL_LIVE_CLIENT_ID', '', true)
+      : getEnv('VITE_PAYPAL_SANDBOX_CLIENT_ID', '', true),
+
     clientSecret: isProduction
-      ? getEnv('VITE_PAYPAL_LIVE_SECRET', 'ENWQUNzftWDZaJDiIfO0e0OtBrl6DuIbJnYAqOjxR8vpQ8WrHoHmLu5FXl2hepWx2Ed1F9h4E7dx8aEk')
-      : getEnv('VITE_PAYPAL_SANDBOX_SECRET', 'EHO-HV7mDVintkgpfkfssl0Iy9du5LuZhhjcmtd46cxo3TONPFyM8dcIHHuiSBCyqRp0c6roZF4HSw3X'),
+      ? getEnv('VITE_PAYPAL_LIVE_SECRET', '', true)
+      : getEnv('VITE_PAYPAL_SANDBOX_SECRET', '', true),
     
     // PayPal API Base URL
     baseUrl: isProduction
