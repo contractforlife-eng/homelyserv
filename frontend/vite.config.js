@@ -11,8 +11,9 @@ export default defineConfig({
       'react-router-dom',
       'lucide-react',
       '@react-oauth/google',
-      'react-facebook-login',
-      'react-apple-signin-auth'
+      // Remove these if you're not using them:
+      // 'react-facebook-login',  // REMOVED - not needed anymore
+      // 'react-apple-signin-auth' // Remove if not using Apple Sign In
     ],
     // Force re-optimization
     force: true
