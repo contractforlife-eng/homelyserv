@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged WITH WORKING NOTIFICATION BELL
+// src/pages/EmployerPayments.jsx - FIXED: Only commission is charged WITH WORKING NOTIFICATION BELL AND PAYMENT STATUS UPDATE
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -348,7 +348,8 @@ const EmployerPayments = () => {
         accepted: 'Accepted',
         rejected: 'Rejected',
         processing: 'Processing',
-        waiting_payment: 'Waiting for Payment'
+        waiting_payment: 'Waiting for Payment',
+        in_progress: 'In Progress'
       },
       table: {
         id: 'Payment ID',
@@ -416,7 +417,10 @@ const EmployerPayments = () => {
       payNowToUnlock: 'Pay commission to unlock contact information',
       contactRevealed: 'Contact information revealed',
       waitingForPayment: 'Waiting for payment confirmation',
-      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.'
+      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.',
+      paymentSuccess: 'Payment completed successfully! Worker can now start working.',
+      markPaid: 'Mark as Paid',
+      markPaidConfirm: 'Mark this payment as completed? This will unlock contact info and notify the worker.'
     },
     ar: {
       title: 'المدفوعات',
@@ -435,7 +439,8 @@ const EmployerPayments = () => {
         accepted: 'مقبولة',
         rejected: 'مرفوضة',
         processing: 'قيد المعالجة',
-        waiting_payment: 'في انتظار الدفع'
+        waiting_payment: 'في انتظار الدفع',
+        in_progress: 'قيد التنفيذ'
       },
       table: {
         id: 'رقم الدفع',
@@ -503,7 +508,10 @@ const EmployerPayments = () => {
       payNowToUnlock: 'ادفع العمولة لفتح معلومات الاتصال',
       contactRevealed: 'تم فتح معلومات الاتصال',
       waitingForPayment: 'في انتظار تأكيد الدفع',
-      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.'
+      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.',
+      paymentSuccess: 'تم الدفع بنجاح! يمكن للعامل البدء في العمل.',
+      markPaid: 'تحديد كمكتمل',
+      markPaidConfirm: 'تحديد هذه الدفعة كمكتملة؟ سيتم فتح معلومات الاتصال وإشعار العامل.'
     }
   };
 
@@ -515,6 +523,182 @@ const EmployerPayments = () => {
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
     localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
+  };
+
+  // ============================================================
+  // PAYMENT SUCCESS HANDLER - Updates offer status after payment
+  // ============================================================
+  const handlePaymentSuccess = (paymentId, offerId) => {
+    try {
+      console.log(`✅ Payment completed for offer: ${offerId}`);
+      
+      // Get all employer offers
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      
+      // Find the offer
+      const offer = employerOffers.find(o => o.id === offerId);
+      if (!offer) {
+        console.error('❌ Offer not found:', offerId);
+        return false;
+      }
+      
+      // Update the offer status
+      const updatedOffers = employerOffers.map(o => {
+        if (o.id === offerId) {
+          return {
+            ...o,
+            paymentCompleted: true,
+            paymentDate: new Date().toISOString(),
+            paymentId: paymentId,
+            paymentStatus: 'completed',
+            // If the worker accepted, set to in_progress
+            status: o.workerResponse === 'accepted' || o.status === 'accepted' ? 'in_progress' : 'accepted',
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return o;
+      });
+      localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
+      console.log('✅ Updated employer_offers with payment completion');
+      
+      // Update worker's offer status
+      if (offer.workerEmail) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
+        const updatedWorkerOffers = workerOffers.map(o => {
+          if (o.id === offerId) {
+            return {
+              ...o,
+              paymentCompleted: true,
+              paymentDate: new Date().toISOString(),
+              paymentId: paymentId,
+              paymentStatus: 'completed',
+              status: 'in_progress',
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return o;
+        });
+        
+        // If not exists, add it
+        if (!updatedWorkerOffers.some(o => o.id === offerId)) {
+          updatedWorkerOffers.push({
+            ...offer,
+            paymentCompleted: true,
+            paymentDate: new Date().toISOString(),
+            paymentId: paymentId,
+            paymentStatus: 'completed',
+            status: 'in_progress',
+            updatedAt: new Date().toISOString()
+          });
+        }
+        
+        localStorage.setItem(`worker_offers_${offer.workerEmail}`, JSON.stringify(updatedWorkerOffers));
+        console.log(`✅ Updated worker_offers for ${offer.workerEmail}`);
+      }
+      
+      // Create notification for worker
+      createPaymentNotification(offer);
+      
+      // Update payment record
+      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      const updatedPayments = allPayments.map(p => {
+        if (p.offerId === offerId && (p.type === 'commission' || p.paymentType === 'commission')) {
+          return {
+            ...p,
+            status: 'completed',
+            paymentVerified: true,
+            contactRevealed: true,
+            paymentId: paymentId,
+            completedAt: new Date().toISOString()
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('all_payments', JSON.stringify(updatedPayments));
+      console.log('✅ Updated payment record');
+      
+      // Also update in employer_payments
+      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      const updatedEmployerPayments = employerPayments.map(p => {
+        if (p.offerId === offerId) {
+          return {
+            ...p,
+            status: 'completed',
+            paymentVerified: true,
+            contactRevealed: true,
+            paymentId: paymentId,
+            completedAt: new Date().toISOString()
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('employer_payments', JSON.stringify(updatedEmployerPayments));
+      
+      console.log('✅ Payment success fully processed');
+      
+      // Show success message
+      alert(t.paymentSuccess);
+      
+      // Refresh the data
+      loadData();
+      
+      return true;
+      
+    } catch (error) {
+      console.error('Error processing payment success:', error);
+      alert('Error processing payment. Please try again.');
+      return false;
+    }
+  };
+
+  // ============================================================
+  // CREATE PAYMENT NOTIFICATION
+  // ============================================================
+  const createPaymentNotification = (offer) => {
+    try {
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'payment_received',
+        title: 'Payment Received 💰',
+        message: `Payment for "${offer.jobTitle || 'job offer'}" has been completed. You can now start working!`,
+        offerId: offer.id,
+        offerTitle: offer.jobTitle || 'Job Offer',
+        workerEmail: offer.workerEmail,
+        workerName: offer.workerName || 'Worker',
+        employerName: offer.employerName || 'Employer',
+        date: new Date().toISOString(),
+        read: false,
+        link: '/worker/offers'
+      };
+      
+      // Check if notification already exists to avoid duplicates
+      const exists = notifications.some(n => 
+        n.offerId === offer.id && n.type === 'payment_received'
+      );
+      
+      if (!exists) {
+        notifications.push(notification);
+        localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+        console.log('✅ Payment notification created for worker');
+      } else {
+        console.log('ℹ️ Payment notification already exists for this offer');
+      }
+    } catch (error) {
+      console.error('Error creating notification:', error);
+    }
+  };
+
+  // ============================================================
+  // MARK PAYMENT AS COMPLETED (Manual override for testing)
+  // ============================================================
+  const markPaymentAsCompleted = (payment) => {
+    if (!confirm(t.markPaidConfirm)) {
+      return;
+    }
+    
+    const paymentId = 'manual_' + Date.now();
+    handlePaymentSuccess(paymentId, payment.offerId);
   };
 
   // ============================================================
@@ -550,7 +734,7 @@ const EmployerPayments = () => {
 
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const employerAcceptedOffers = employerOffers.filter(
-        o => (o.status === 'accepted' || o.status === 'completed' || o.status === 'terminated') && 
+        o => (o.status === 'accepted' || o.status === 'completed' || o.status === 'terminated' || o.status === 'in_progress') && 
              (o.employerEmail === employerEmail || o.employerId === employerEmail)
       );
 
@@ -572,6 +756,9 @@ const EmployerPayments = () => {
               Number(offer.platformFee) ||
               Math.round(fullSalary * commissionRate * 100) / 100;
           
+          // Check if payment was already completed
+          const isCompleted = offer.paymentCompleted === true || offer.status === 'in_progress' || offer.status === 'completed';
+          
           const payment = {
             id: offer.paymentId || `PAY-${offer.id}`, 
             offerId: offer.id,
@@ -587,10 +774,10 @@ const EmployerPayments = () => {
             jobTitle: offer.jobTitle || 'Service Provider',
             commission: commission, 
             fullSalary: fullSalary,
-            status: offer.status === 'completed' ? 'completed' : 'pending',
+            status: isCompleted ? 'completed' : 'pending',
             paymentMethod: null,
-            paymentVerified: offer.status === 'completed',
-            contactRevealed: offer.status === 'completed',
+            paymentVerified: isCompleted,
+            contactRevealed: isCompleted,
             createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             description: offer.description || `Commission for hiring ${offer.workerName}`,
@@ -751,30 +938,34 @@ const EmployerPayments = () => {
   };
 
   const handleProcessPayment = (payment) => {
-  const paymentData = payment || selectedPayment;
-  
-  if (!paymentData) {
-    alert('Payment not found');
-    return;
-  }
+    const paymentData = payment || selectedPayment;
+    
+    if (!paymentData) {
+      alert('Payment not found');
+      return;
+    }
 
-  const pendingPayment = {
-    paymentId: paymentData.id,
-    amount: Number(paymentData.commission || 0), 
-    fullSalary: Number(paymentData.fullSalary || 0),
-    workerName: paymentData.workerName,
-    workerId: paymentData.workerId || paymentData.id,
-    workerEmail: paymentData.workerEmail || '',
-    jobTitle: paymentData.jobTitle || 'Service Provider',
-    description: paymentData.description || `Commission for ${paymentData.workerName}`,
-    paymentType: 'commission',
-    offerId: paymentData.offerId,
-    employerId: user?.id || user?.email,
-    employerName: user?.fullName || 'Employer',
-    returnTo: '/employer-payments'
-  };
+    const pendingPayment = {
+      paymentId: paymentData.id,
+      amount: Number(paymentData.commission || 0), 
+      fullSalary: Number(paymentData.fullSalary || 0),
+      workerName: paymentData.workerName,
+      workerId: paymentData.workerId || paymentData.id,
+      workerEmail: paymentData.workerEmail || '',
+      jobTitle: paymentData.jobTitle || 'Service Provider',
+      description: paymentData.description || `Commission for ${paymentData.workerName}`,
+      paymentType: 'commission',
+      offerId: paymentData.offerId,
+      employerId: user?.id || user?.email,
+      employerName: user?.fullName || 'Employer',
+      returnTo: '/employer-payments',
+      // Pass the payment success callback
+      onPaymentSuccess: (paymentId) => {
+        handlePaymentSuccess(paymentId, paymentData.offerId);
+      }
+    };
 
-  localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
     
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
@@ -786,7 +977,8 @@ const EmployerPayments = () => {
       fullSalary: paymentData.fullSalary || 0,
       workerSkills: paymentData.workerSkills || [],
       rating: paymentData.workerRating || 4.5,
-      profileImage: paymentData.workerImage || ''
+      profileImage: paymentData.workerImage || '',
+      offerId: paymentData.offerId
     };
 
     localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
@@ -855,7 +1047,8 @@ const EmployerPayments = () => {
       pending: 'bg-yellow-100 text-yellow-800',
       accepted: 'bg-blue-100 text-blue-800',
       rejected: 'bg-red-100 text-red-800',
-      processing: 'bg-purple-100 text-purple-800'
+      processing: 'bg-purple-100 text-purple-800',
+      in_progress: 'bg-teal-100 text-teal-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -867,6 +1060,7 @@ const EmployerPayments = () => {
       case 'accepted': return <ThumbsUp size={14} />;
       case 'rejected': return <X size={14} />;
       case 'processing': return <RefreshCw size={14} />;
+      case 'in_progress': return <Briefcase size={14} />;
       default: return <AlertTriangle size={14} />;
     }
   };
@@ -1164,13 +1358,23 @@ const EmployerPayments = () => {
                               <Eye size={16} />
                             </button>
                             {payment.status === 'pending' && !payment.paymentVerified && (
-                              <button
-                                onClick={() => handleProcessPayment(payment)}
-                                className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
-                              >
-                                <CreditCard size={12} />
-                                {t.actions.payNow}
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => handleProcessPayment(payment)}
+                                  className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                  <CreditCard size={12} />
+                                  {t.actions.payNow}
+                                </button>
+                                {/* Manual "Mark as Paid" button for testing */}
+                                <button
+                                  onClick={() => markPaymentAsCompleted(payment)}
+                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                  <CheckCircle size={12} />
+                                  {t.markPaid}
+                                </button>
+                              </>
                             )}
                             {payment.status === 'completed' && payment.contactRevealed === true && (
                               <>
@@ -1389,13 +1593,22 @@ const EmployerPayments = () => {
               </button>
               
               {selectedPayment && selectedPayment.status === 'pending' && !selectedPayment.paymentVerified && (
-                <button
-                  onClick={() => handleProcessPayment(selectedPayment)}
-                  className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
-                >
-                  <CreditCard size={16} />
-                  {t.actions.payNow}
-                </button>
+                <>
+                  <button
+                    onClick={() => handleProcessPayment(selectedPayment)}
+                    className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                  >
+                    <CreditCard size={16} />
+                    {t.actions.payNow}
+                  </button>
+                  <button
+                    onClick={() => markPaymentAsCompleted(selectedPayment)}
+                    className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={16} />
+                    {t.markPaid}
+                  </button>
+                </>
               )}
               
               {selectedPayment && selectedPayment.status === 'completed' && selectedPayment.contactRevealed && (

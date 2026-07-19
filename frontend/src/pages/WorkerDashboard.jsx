@@ -1032,7 +1032,6 @@ const WorkerDashboard = () => {
       'dollar': <DollarSign size={16} className="text-green-600" />,
       'crown': <Crown size={16} className="text-yellow-600" />,
       'user': <User size={16} className="text-purple-600" />,
-      'message': <MessageCircle size={16} className="text-indigo-600" />,
       'briefcase': <Briefcase size={16} className="text-blue-600" />,
       'star': <Star size={16} className="text-yellow-600" />,
       'award': <Award size={16} className="text-purple-600" />,

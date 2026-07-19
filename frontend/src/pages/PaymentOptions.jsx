@@ -1,4 +1,4 @@
-// src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION
+// src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION - FIXED
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -295,6 +295,7 @@ const PaymentOptions = () => {
   const [pollingInterval, setPollingInterval] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paypalOrderId, setPaypalOrderId] = useState(null);
+  const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
@@ -354,11 +355,13 @@ const PaymentOptions = () => {
       orderId: 'Order ID',
       amount: 'Amount',
       currency: 'EGP',
-      paypalOpened: 'PayPal window opened. Complete the payment there.',
+      paypalOpened: '🔄 PayPal window opened. Complete the payment there.',
       checkingPayment: 'Checking payment status...',
       waitingApproval: '⏳ Waiting for you to approve the payment in PayPal...',
       paymentApproved: '✅ Payment approved! Finalizing...',
-      reopenPaypal: 'Reopen PayPal Window'
+      reopenPaypal: 'Reopen PayPal Window',
+      paypalDidNotOpen: '⚠️ PayPal window didn\'t open automatically. Click below to open it manually.',
+      completingPayment: 'Completing your payment...'
     },
     ar: {
       title: 'خيارات الدفع',
@@ -395,11 +398,13 @@ const PaymentOptions = () => {
       orderId: 'رقم الطلب',
       amount: 'المبلغ',
       currency: 'EGP',
-      paypalOpened: 'تم فتح نافذة PayPal. أكمل الدفع هناك.',
+      paypalOpened: '🔄 تم فتح نافذة PayPal. أكمل الدفع هناك.',
       checkingPayment: 'جاري التحقق من حالة الدفع...',
       waitingApproval: '⏳ في انتظار موافقتك على الدفع في PayPal...',
       paymentApproved: '✅ تم الموافقة على الدفع! جاري الإنهاء...',
-      reopenPaypal: 'إعادة فتح نافذة PayPal'
+      reopenPaypal: 'إعادة فتح نافذة PayPal',
+      paypalDidNotOpen: '⚠️ لم تفتح نافذة PayPal تلقائياً. انقر أدناه لفتحها يدوياً.',
+      completingPayment: 'جاري إكمال دفعتك...'
     }
   };
 
@@ -569,6 +574,7 @@ const PaymentOptions = () => {
       localStorage.removeItem('homelyserv_pending_payment');
       localStorage.removeItem('homelyserv_selected_worker');
       localStorage.removeItem('homelyserv_paypal_order_id');
+      localStorage.removeItem('homelyserv_paypal_approval_url');
 
       setPaymentSuccess(true);
       setIsProcessing(false);
@@ -657,10 +663,7 @@ const PaymentOptions = () => {
         }
         
         // Check for ORDER_NOT_APPROVED error
-        if (result.error && (
-          result.error.includes('ORDER_NOT_APPROVED') || 
-          result.error.includes('not approved')
-        )) {
+        if (result.error && (result.error.includes('ORDER_NOT_APPROVED') || result.error.includes('not approved'))) {
           console.log('⏳ Order not approved yet, waiting...');
           setPaymentMessage(t.waitingApproval);
           // Continue polling - this is expected until user approves
@@ -762,19 +765,23 @@ const PaymentOptions = () => {
           console.log('🔗 Opening PayPal:', result.approvalUrl);
           
           // Store the approval URL for manual reopening
+          setPaypalApprovalUrl(result.approvalUrl);
           localStorage.setItem('homelyserv_paypal_approval_url', result.approvalUrl);
+          localStorage.setItem('homelyserv_paypal_order_id', result.paypalOrderId || result.orderId);
           
           // Open PayPal in new window
           const paypalWindow = window.open(result.approvalUrl, '_blank', 'width=800,height=600');
           
-          if (!paypalWindow) {
-            throw new Error('Popup blocked. Please allow popups for this site.');
+          if (!paypalWindow || paypalWindow.closed || typeof paypalWindow.closed === 'undefined') {
+            // Popup was blocked or closed
+            setPaymentMessage(t.paypalDidNotOpen);
+            // Still start polling and show the reopen button
+            startPollingPayPalOrder(result.paypalOrderId || result.orderId);
+          } else {
+            setPaymentMessage(t.paypalOpened);
+            // Start polling for payment completion
+            startPollingPayPalOrder(result.paypalOrderId || result.orderId);
           }
-          
-          setPaymentMessage(t.paypalOpened);
-          
-          // Start polling for payment completion
-          startPollingPayPalOrder(result.paypalOrderId || result.orderId);
         } else {
           throw new Error(result.error || 'PayPal payment failed');
         }
@@ -910,9 +917,7 @@ const PaymentOptions = () => {
           user={user}
           handleLogout={handleLogout}
         />
-        <main className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
+        <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
           <div className="p-4 md:p-6">
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <div className="text-6xl mb-4">💳</div>
@@ -943,9 +948,7 @@ const PaymentOptions = () => {
         handleLogout={handleLogout}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
+      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
@@ -962,7 +965,6 @@ const PaymentOptions = () => {
             <div className="flex items-center gap-3">
               <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
                 <Bell size={20} className="text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
@@ -1161,7 +1163,7 @@ const PaymentOptions = () => {
                     <span className="text-sm text-gray-700">{paymentMessage || t.paymentVerifying}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    If the PayPal window didn't open, click the button below to open it manually.
+                    {paymentMessage === t.paypalDidNotOpen ? t.paypalDidNotOpen : t.paypalOpened}
                   </p>
                 </div>
                 
@@ -1169,18 +1171,18 @@ const PaymentOptions = () => {
                 <button
                   onClick={() => {
                     const approvalUrl = localStorage.getItem('homelyserv_paypal_approval_url');
-                    const orderId = localStorage.getItem('homelyserv_paypal_order_id');
                     if (approvalUrl) {
-                      window.open(approvalUrl, '_blank', 'width=800,height=600');
-                      setPaymentMessage('🔄 PayPal window reopened. Please complete the payment.');
-                    } else if (orderId) {
-                      window.open(`https://www.sandbox.paypal.com/checkoutnow?token=${orderId}`, '_blank');
-                      setPaymentMessage('🔄 PayPal window reopened. Please complete the payment.');
+                      const newWindow = window.open(approvalUrl, '_blank', 'width=800,height=600');
+                      if (!newWindow || newWindow.closed) {
+                        setPaymentMessage('⚠️ Popup blocked. Please allow popups or click the link below.');
+                      } else {
+                        setPaymentMessage('🔄 PayPal window reopened. Please complete the payment.');
+                      }
                     } else {
                       setPaymentError('Could not find PayPal order. Please try again.');
                     }
                   }}
-                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition"
+                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition w-full"
                 >
                   {t.reopenPaypal}
                 </button>
@@ -1197,10 +1199,22 @@ const PaymentOptions = () => {
                     localStorage.removeItem('homelyserv_paypal_order_id');
                     localStorage.removeItem('homelyserv_paypal_approval_url');
                   }}
-                  className="mt-3 text-sm text-red-500 hover:text-red-600 transition block mx-auto"
+                  className="mt-3 text-sm text-red-500 hover:text-red-600 transition block w-full"
                 >
                   Cancel Payment
                 </button>
+
+                {/* Direct link fallback */}
+                {paypalApprovalUrl && (
+                  <a
+                    href={paypalApprovalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 text-sm text-teal-600 hover:text-teal-700 underline block"
+                  >
+                    Click here if PayPal doesn't open
+                  </a>
+                )}
               </div>
             </div>
           )}

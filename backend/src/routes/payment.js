@@ -28,7 +28,10 @@ const PaymentSchema = new mongoose.Schema({
   paymobOrderId: { type: String },
   paymobTransactionId: { type: String },
   paypalOrderId: { type: String },
+  approvalUrl: { type: String },
+  captureId: { type: String },
   metadata: { type: Object, default: {} },
+  completedAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -144,7 +147,7 @@ const getPaymobPaymentKey = async (authToken, orderId, amount, customerData) => 
 };
 
 // ============================================================
-// PAYPAL INTEGRATION
+// PAYPAL INTEGRATION - FIXED
 // ============================================================
 
 const getPayPalAccessToken = async () => {
@@ -153,10 +156,12 @@ const getPayPalAccessToken = async () => {
       `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`
     ).toString('base64');
     
+    const url = process.env.PAYPAL_MODE === 'production' 
+      ? 'https://api-m.paypal.com/v1/oauth2/token'
+      : 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
+    
     const response = await axios.post(
-      process.env.PAYPAL_MODE === 'production' 
-        ? 'https://api-m.paypal.com/v1/oauth2/token'
-        : 'https://api-m.sandbox.paypal.com/v1/oauth2/token',
+      url,
       'grant_type=client_credentials',
       {
         headers: {
@@ -190,6 +195,12 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
     
+    const returnUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-success`;
+    const cancelUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-cancel`;
+    
+    console.log(`🔗 Return URL: ${returnUrl}`);
+    console.log(`🔗 Cancel URL: ${cancelUrl}`);
+    
     const response = await axios.post(
       `${baseUrl}/v2/checkout/orders`,
       {
@@ -198,6 +209,17 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
           {
             reference_id: orderId,
             description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`,
+            custom_id: JSON.stringify({
+              orderId: orderId,
+              transactionId: customerData?.transactionId,
+              userEmail: customerData?.email,
+              workerId: customerData?.workerId,
+              workerName: customerData?.workerName,
+              jobTitle: customerData?.jobTitle,
+              employerId: customerData?.employerId,
+              employerName: customerData?.employerName,
+              hireId: customerData?.hireId
+            }),
             amount: {
               currency_code: 'USD',
               value: finalAmount.toFixed(2)
@@ -205,8 +227,8 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
           }
         ],
         application_context: {
-          return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-success`,
-          cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-cancel`,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
           brand_name: 'HomelyServ',
           landing_page: 'LOGIN',
           user_action: 'PAY_NOW',
@@ -286,6 +308,7 @@ router.post('/create-payment-intent', async (req, res) => {
       employerId,
       employerName,
       hireId,
+      transactionId,
       description: `Payment for ${jobTitle || 'service'} - ${workerName || 'worker'}`
     };
 
@@ -371,8 +394,11 @@ router.post('/create-payment-intent', async (req, res) => {
         }
         
         payment.paypalOrderId = paypalOrderId;
+        payment.approvalUrl = approvalUrl;
         payment.status = 'processing';
         await payment.save();
+        
+        console.log(`✅ PayPal order created with approval URL: ${approvalUrl}`);
         
         result = {
           success: true,
@@ -386,8 +412,6 @@ router.post('/create-payment-intent', async (req, res) => {
           currency: 'EGP',
           paymentMethod: 'paypal'
         };
-        
-        console.log('✅ PayPal order created');
         
       } catch (error) {
         console.error('❌ PayPal integration error:', error);
@@ -420,7 +444,47 @@ router.post('/create-payment-intent', async (req, res) => {
 });
 
 /**
- * Capture PayPal Order - FIXED with better error handling
+ * Get PayPal Approval URL
+ * GET /api/payments/paypal-approval/:orderId
+ */
+router.get('/paypal-approval/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const payment = await Payment.findOne({ paypalOrderId: orderId });
+    
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Payment not found'
+      });
+    }
+    
+    if (!payment.approvalUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'No approval URL found for this payment'
+      });
+    }
+    
+    res.json({
+      success: true,
+      approvalUrl: payment.approvalUrl,
+      orderId: payment.orderId,
+      transactionId: payment.transactionId
+    });
+    
+  } catch (error) {
+    console.error('❌ Get approval URL error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get approval URL'
+    });
+  }
+});
+
+/**
+ * Capture PayPal Order - FIXED
  * POST /api/payments/capture-paypal/:orderId
  */
 router.post('/capture-paypal/:orderId', async (req, res) => {
@@ -428,7 +492,13 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
     const { orderId } = req.params;
     console.log(`🔍 Capturing PayPal order: ${orderId}`);
 
-    const payment = await Payment.findOne({ paypalOrderId: orderId });
+    // Find by paypalOrderId
+    let payment = await Payment.findOne({ paypalOrderId: orderId });
+    
+    // If not found, try by orderId
+    if (!payment) {
+      payment = await Payment.findOne({ orderId: orderId });
+    }
     
     if (!payment) {
       console.log(`❌ Payment not found for order: ${orderId}`);
@@ -440,10 +510,12 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
     console.log(`✅ Found payment for order: ${orderId}, status: ${payment.status}`);
 
+    // If already completed, return success
     if (payment.status === 'completed') {
       console.log(`✅ Payment already completed: ${orderId}`);
       return res.json({
         success: true,
+        message: 'Payment already completed',
         transaction: {
           id: payment.transactionId,
           orderId: payment.orderId,
@@ -454,82 +526,48 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
       });
     }
 
-    try {
-      const accessToken = await getPayPalAccessToken();
-      console.log('✅ PayPal access token obtained');
+    // Check if payment is still pending approval
+    if (payment.status === 'pending' || payment.status === 'processing') {
+      // Get PayPal access token
+      let accessToken;
+      try {
+        accessToken = await getPayPalAccessToken();
+        console.log('✅ PayPal access token obtained');
+      } catch (tokenError) {
+        console.error('❌ Failed to get PayPal access token:', tokenError.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to authenticate with PayPal. Please try again.'
+        });
+      }
 
       const baseUrl = process.env.PAYPAL_MODE === 'production'
         ? 'https://api-m.paypal.com'
         : 'https://api-m.sandbox.paypal.com';
       
-      const captureResponse = await axios.post(
-        `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
-        {},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
+      try {
+        // First, check the order status
+        const orderCheck = await axios.get(
+          `${baseUrl}/v2/checkout/orders/${orderId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
           }
-        }
-      );
-
-      console.log('📥 PayPal capture response status:', captureResponse.data?.status);
-
-      if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
-        payment.status = 'completed';
-        payment.updatedAt = new Date();
-        await payment.save();
+        );
         
-        console.log(`✅ PayPal order captured successfully: ${orderId}`);
+        console.log(`📊 Order ${orderId} status: ${orderCheck.data?.status}`);
         
-        return res.json({
-          success: true,
-          transaction: {
-            id: payment.transactionId,
-            orderId: payment.orderId,
-            amount: payment.amount,
-            status: 'completed',
-            paymentMethod: 'paypal',
-            paypalOrderId: orderId,
-            captureId: captureResponse.data.id
-          }
-        });
-      } else {
-        const orderStatus = captureResponse.data?.status || 'unknown';
-        console.log(`⏳ Order ${orderId} status: ${orderStatus}`);
-        
-        if (orderStatus === 'APPROVED') {
-          return res.json({
-            success: false,
-            error: 'Order approved but not yet captured. Please try again.',
-            status: 'APPROVED'
-          });
-        }
-        
-        if (orderStatus === 'CREATED') {
-          return res.json({
-            success: false,
-            error: 'Order created but not approved by user.',
-            status: 'CREATED'
-          });
-        }
-        
-        throw new Error(`PayPal capture failed with status: ${orderStatus}`);
-      }
-    } catch (captureError) {
-      console.error('❌ PayPal capture API error:', captureError.response?.data || captureError.message);
-      
-      if (captureError.response?.data?.details) {
-        const details = captureError.response.data.details;
-        
-        const alreadyCaptured = details.some(d => d.issue === 'ORDER_ALREADY_CAPTURED');
-        if (alreadyCaptured) {
+        // If order is already completed, update and return
+        if (orderCheck.data?.status === 'COMPLETED') {
           payment.status = 'completed';
-          payment.updatedAt = new Date();
+          payment.completedAt = new Date();
+          payment.captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
           await payment.save();
           
           return res.json({
             success: true,
+            message: 'Payment already completed',
             transaction: {
               id: payment.transactionId,
               orderId: payment.orderId,
@@ -540,27 +578,142 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           });
         }
         
-        const notApproved = details.some(d => d.issue === 'ORDER_NOT_APPROVED');
-        if (notApproved) {
+        // If order is APPROVED, capture it
+        if (orderCheck.data?.status === 'APPROVED') {
+          console.log(`🔄 Order ${orderId} is APPROVED, attempting to capture...`);
+          
+          const captureResponse = await axios.post(
+            `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+            {},
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+              }
+            }
+          );
+
+          console.log(`📥 PayPal capture response status: ${captureResponse.data?.status}`);
+
+          if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
+            payment.status = 'completed';
+            payment.completedAt = new Date();
+            payment.captureId = captureResponse.data.id || captureResponse.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+            await payment.save();
+            
+            console.log(`✅ PayPal order captured successfully: ${orderId}`);
+            
+            return res.json({
+              success: true,
+              message: 'Payment captured successfully',
+              transaction: {
+                id: payment.transactionId,
+                orderId: payment.orderId,
+                amount: payment.amount,
+                status: 'completed',
+                paymentMethod: 'paypal',
+                paypalOrderId: orderId,
+                captureId: payment.captureId
+              }
+            });
+          } else {
+            // If capture didn't complete, return the status
+            return res.json({
+              success: false,
+              error: `Order status: ${captureResponse.data?.status || 'unknown'}`,
+              status: captureResponse.data?.status || 'unknown'
+            });
+          }
+        }
+        
+        // If order is CREATED or PENDING_APPROVAL, user hasn't approved yet
+        if (orderCheck.data?.status === 'CREATED' || orderCheck.data?.status === 'PAYER_ACTION_REQUIRED') {
           return res.json({
             success: false,
-            error: 'Order not approved by user yet.',
-            status: 'PENDING_APPROVAL'
+            error: 'Order not approved by user yet. Please complete the PayPal approval process.',
+            status: 'PENDING_APPROVAL',
+            approvalUrl: payment.approvalUrl
           });
         }
+        
+        // Any other status
+        return res.json({
+          success: false,
+          error: `Order status: ${orderCheck.data?.status || 'unknown'}`,
+          status: orderCheck.data?.status || 'unknown'
+        });
+        
+      } catch (captureError) {
+        console.error('❌ PayPal capture API error:', captureError.response?.data || captureError.message);
+        
+        const errorData = captureError.response?.data;
+        
+        // Handle specific error cases
+        if (errorData?.details) {
+          const details = errorData.details;
+          
+          // Check for ORDER_ALREADY_CAPTURED
+          const alreadyCaptured = details.some(d => d.issue === 'ORDER_ALREADY_CAPTURED');
+          if (alreadyCaptured) {
+            payment.status = 'completed';
+            payment.completedAt = new Date();
+            await payment.save();
+            
+            return res.json({
+              success: true,
+              message: 'Payment was already captured',
+              transaction: {
+                id: payment.transactionId,
+                orderId: payment.orderId,
+                amount: payment.amount,
+                status: 'completed',
+                paymentMethod: 'paypal'
+              }
+            });
+          }
+          
+          // Check for ORDER_NOT_APPROVED
+          const notApproved = details.some(d => d.issue === 'ORDER_NOT_APPROVED');
+          if (notApproved) {
+            return res.json({
+              success: false,
+              error: 'Order not approved by user yet.',
+              status: 'PENDING_APPROVAL',
+              approvalUrl: payment.approvalUrl
+            });
+          }
+          
+          // Check for COMPLIANCE_VIOLATION
+          const complianceViolation = details.some(d => d.issue === 'COMPLIANCE_VIOLATION');
+          if (complianceViolation) {
+            return res.json({
+              success: false,
+              error: 'Payment cannot be processed due to compliance restrictions. Please use a different payment method.',
+              status: 'COMPLIANCE_VIOLATION',
+              useAlternative: true
+            });
+          }
+        }
+        
+        // Generic error
+        const errorMessage = errorData?.message || 
+                            errorData?.error_description ||
+                            captureError.message ||
+                            'PayPal capture failed';
+        
+        return res.status(500).json({
+          success: false,
+          error: errorMessage,
+          details: errorData || null
+        });
       }
-      
-      const errorMessage = captureError.response?.data?.message || 
-                          captureError.response?.data?.error_description ||
-                          captureError.message ||
-                          'PayPal capture failed';
-      
-      return res.status(500).json({
-        success: false,
-        error: errorMessage,
-        details: captureError.response?.data || null
-      });
     }
+
+    // If payment status is failed or any other status
+    return res.status(400).json({
+      success: false,
+      error: `Payment cannot be captured. Current status: ${payment.status}`
+    });
 
   } catch (error) {
     console.error('❌ PayPal capture error:', error);
@@ -581,7 +734,7 @@ router.get('/status/:paymentId', async (req, res) => {
     console.log(`🔍 Checking payment status: ${paymentId}`);
 
     const payment = await Payment.findOne({ 
-      $or: [{ transactionId: paymentId }, { orderId: paymentId }] 
+      $or: [{ transactionId: paymentId }, { orderId: paymentId }, { paypalOrderId: paymentId }] 
     });
 
     if (!payment) {
@@ -589,6 +742,33 @@ router.get('/status/:paymentId', async (req, res) => {
         success: false,
         error: 'Payment not found'
       });
+    }
+
+    // If PayPal payment, check status from PayPal
+    if (payment.paymentMethod === 'paypal' && payment.paypalOrderId && payment.status !== 'completed') {
+      try {
+        const accessToken = await getPayPalAccessToken();
+        const baseUrl = process.env.PAYPAL_MODE === 'production'
+          ? 'https://api-m.paypal.com'
+          : 'https://api-m.sandbox.paypal.com';
+        
+        const orderCheck = await axios.get(
+          `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (orderCheck.data?.status === 'COMPLETED') {
+          payment.status = 'completed';
+          payment.completedAt = new Date();
+          await payment.save();
+        }
+      } catch (error) {
+        console.log('⚠️ Could not check PayPal status:', error.message);
+      }
     }
 
     res.json({
@@ -605,7 +785,9 @@ router.get('/status/:paymentId', async (req, res) => {
         jobTitle: payment.jobTitle,
         employerName: payment.employerName,
         createdAt: payment.createdAt,
-        updatedAt: payment.updatedAt
+        updatedAt: payment.updatedAt,
+        completedAt: payment.completedAt,
+        approvalUrl: payment.approvalUrl
       }
     });
 
@@ -619,17 +801,17 @@ router.get('/status/:paymentId', async (req, res) => {
 });
 
 /**
- * Complete Payment (Manual completion)
+ * Complete Payment (Manual completion for testing)
  * POST /api/payments/complete-payment
  */
 router.post('/complete-payment', async (req, res) => {
   try {
     const { orderId, transactionId, userId } = req.body;
 
-    console.log('✅ Completing payment:', { orderId, transactionId, userId });
+    console.log('✅ Completing payment manually:', { orderId, transactionId, userId });
 
     const payment = await Payment.findOne({
-      $or: [{ orderId }, { transactionId }]
+      $or: [{ orderId }, { transactionId }, { paypalOrderId: orderId }]
     });
 
     if (!payment) {
@@ -640,11 +822,13 @@ router.post('/complete-payment', async (req, res) => {
     }
 
     payment.status = 'completed';
+    payment.completedAt = new Date();
     payment.updatedAt = new Date();
     await payment.save();
 
     res.json({
       success: true,
+      message: 'Payment completed successfully',
       payment: {
         id: payment.transactionId,
         orderId: payment.orderId,
@@ -690,7 +874,8 @@ router.get('/user/:userId', async (req, res) => {
         jobTitle: p.jobTitle,
         employerName: p.employerName,
         createdAt: p.createdAt,
-        updatedAt: p.updatedAt
+        updatedAt: p.updatedAt,
+        completedAt: p.completedAt
       }))
     });
 
@@ -712,7 +897,7 @@ router.post('/verify', async (req, res) => {
     const { transactionId, orderId } = req.body;
 
     const payment = await Payment.findOne({
-      $or: [{ transactionId }, { orderId }]
+      $or: [{ transactionId }, { orderId }, { paypalOrderId: orderId }]
     });
 
     if (!payment) {
@@ -754,7 +939,7 @@ router.post('/webhook', async (req, res) => {
     const { transactionId, orderId, status, amount, merchant_order_id } = req.body;
 
     const payment = await Payment.findOne({
-      $or: [{ orderId: merchant_order_id || orderId }, { transactionId }, { paymobOrderId: orderId }]
+      $or: [{ orderId: merchant_order_id || orderId }, { transactionId }, { paymobOrderId: orderId }, { paypalOrderId: orderId }]
     });
 
     if (!payment) {
@@ -771,6 +956,10 @@ router.post('/webhook', async (req, res) => {
     if (newStatus !== payment.status) {
       payment.status = newStatus;
       payment.updatedAt = new Date();
+      
+      if (newStatus === 'completed') {
+        payment.completedAt = new Date();
+      }
       
       if (transactionId) {
         payment.paymobTransactionId = transactionId;
