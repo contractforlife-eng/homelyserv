@@ -1,4 +1,4 @@
-// src/pages/WorkerComplaints.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
+// src/pages/WorkerComplaints.jsx - FIXED: Shows admin responses properly
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -27,7 +27,9 @@ import {
   CreditCard,
   Shield,
   Sparkles,
-  Crown
+  Crown,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 // Sidebar Component - RED THEME
@@ -271,7 +273,7 @@ const WorkerSidebar = ({
   );
 };
 
-// Main WorkerComplaints Component - RED THEME WITH WORKING NOTIFICATIONS
+// Main WorkerComplaints Component - FIXED: Shows admin responses
 const WorkerComplaints = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -283,6 +285,7 @@ const WorkerComplaints = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
+  const [expandedComplaint, setExpandedComplaint] = useState(null);
   const [newComplaint, setNewComplaint] = useState({
     title: '',
     description: '',
@@ -344,7 +347,6 @@ const WorkerComplaints = () => {
         return;
       }
 
-      // Check localStorage for notifications first
       const userEmail = user?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
@@ -357,7 +359,6 @@ const WorkerComplaints = () => {
         }
       }
 
-      // Fallback to API if available
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -386,7 +387,6 @@ const WorkerComplaints = () => {
     }
   };
 
-  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -443,7 +443,9 @@ const WorkerComplaints = () => {
       actions: {
         view: 'View Details',
         resolve: 'Mark as Resolved',
-        reject: 'Reject'
+        reject: 'Reject',
+        expand: 'Show Response',
+        collapse: 'Hide Response'
       },
       languageToggle: 'العربية',
       notifications: 'Notifications',
@@ -452,7 +454,9 @@ const WorkerComplaints = () => {
       noComplaintsDesc: 'Submit a complaint and we\'ll help you resolve it',
       premiumBadge: 'Premium Verified',
       getPremium: 'Get Premium',
-      noNotifications: 'No new notifications'
+      noNotifications: 'No new notifications',
+      adminResponse: 'Admin Response',
+      responded: 'Responded'
     },
     ar: {
       title: 'الشكاوى',
@@ -503,7 +507,9 @@ const WorkerComplaints = () => {
       actions: {
         view: 'عرض التفاصيل',
         resolve: 'تحديد كمحلولة',
-        reject: 'رفض'
+        reject: 'رفض',
+        expand: 'عرض الرد',
+        collapse: 'إخفاء الرد'
       },
       languageToggle: 'English',
       notifications: 'الإشعارات',
@@ -512,64 +518,45 @@ const WorkerComplaints = () => {
       noComplaintsDesc: 'قدم شكوى وسنساعدك في حلها',
       premiumBadge: 'مميز معتمد',
       getPremium: 'اشتراك مميز',
-      noNotifications: 'لا توجد إشعارات جديدة'
+      noNotifications: 'لا توجد إشعارات جديدة',
+      adminResponse: 'رد الإدارة',
+      responded: 'تم الرد'
     }
   };
 
   const t = translations[language] || translations.en;
 
+  // ============================================================
+  // Load complaints - FIXED: Loads from worker_complaints
+  // ============================================================
   const loadComplaints = () => {
     try {
       const userEmail = user?.email;
+      const userId = user?.id || userEmail;
       if (!userEmail) {
         setComplaints([]);
         setFilteredComplaints([]);
         return;
       }
 
+      // Load from worker_complaints storage
       const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
       
+      // Filter complaints for this worker
       const userComplaints = savedComplaints.filter(
-        c => c.userEmail === userEmail || c.userId === userEmail
+        c => c.userEmail === userEmail || c.userId === userId || c.workerEmail === userEmail
       );
       
       userComplaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
+      console.log(`✅ Loaded ${userComplaints.length} complaints for worker: ${userEmail}`);
+      
       setComplaints(userComplaints);
       setFilteredComplaints(userComplaints);
-      
-      console.log(`✅ Loaded ${userComplaints.length} complaints for user: ${userEmail}`);
     } catch (error) {
       console.error('Error loading complaints:', error);
       setComplaints([]);
       setFilteredComplaints([]);
-    }
-  };
-
-  const cleanupFakeComplaints = () => {
-    try {
-      const userEmail = user?.email;
-      if (!userEmail) return;
-
-      const savedComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
-      
-      const validComplaints = savedComplaints.filter(c => {
-        const belongsToUser = c.userEmail === userEmail || c.userId === userEmail;
-        const hasValidData = c.id && c.title && c.description;
-        const isFake = c.isFake === true || 
-                       (c.title && c.title.includes('Test')) ||
-                       (c.title && c.title.includes('Fake')) ||
-                       (c.description && c.description.includes('test'));
-        
-        return belongsToUser && hasValidData && !isFake;
-      });
-      
-      localStorage.setItem('worker_complaints', JSON.stringify(validComplaints));
-      loadComplaints();
-      
-      console.log(`🧹 Cleaned up complaints. Removed ${savedComplaints.length - validComplaints.length} fake/old complaints.`);
-    } catch (error) {
-      console.error('Error cleaning up complaints:', error);
     }
   };
 
@@ -606,7 +593,6 @@ const WorkerComplaints = () => {
 
   useEffect(() => {
     if (user) {
-      cleanupFakeComplaints();
       loadComplaints();
     }
   }, [user]);
@@ -628,12 +614,16 @@ const WorkerComplaints = () => {
       filtered = filtered.filter(c =>
         c.title?.toLowerCase().includes(searchLower) ||
         c.description?.toLowerCase().includes(searchLower) ||
-        t.categories[c.category]?.toLowerCase().includes(searchLower)
+        (t.categories[c.category] || '').toLowerCase().includes(searchLower)
       );
     }
 
     setFilteredComplaints(filtered);
   }, [complaints, statusFilter, searchTerm, t.categories]);
+
+  const toggleExpand = (complaintId) => {
+    setExpandedComplaint(expandedComplaint === complaintId ? null : complaintId);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -652,10 +642,12 @@ const WorkerComplaints = () => {
       status: 'pending',
       date: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
-      response: null,
+      adminResponse: null,
+      adminResponseAt: null,
       userId: user?.id || user?.email,
       userEmail: user?.email,
       userName: user?.fullName,
+      workerEmail: user?.email,
       isFake: false
     };
     
@@ -698,6 +690,18 @@ const WorkerComplaints = () => {
       case 'rejected': return <X size={16} />;
       default: return <AlertCircle size={16} />;
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const stats = {
@@ -802,7 +806,6 @@ const WorkerComplaints = () => {
                   )}
                 </button>
 
-                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
@@ -1066,66 +1069,106 @@ const WorkerComplaints = () => {
                         <div className="flex items-center gap-3">
                           <AlertTriangle size={20} className="text-red-600" />
                           <h3 className="font-semibold text-gray-800">{complaint.title}</h3>
+                          {complaint.adminResponse && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                              <Shield size={12} />
+                              {t.responded}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{complaint.description}</p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{complaint.description}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
                           <span className="text-gray-500">
                             {t.categories[complaint.category] || complaint.category}
                           </span>
                           <span className="text-gray-300">|</span>
                           <span className="text-gray-500">{complaint.date}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
+                            {getStatusIcon(complaint.status)}
+                            {t.status[complaint.status] || complaint.status}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
-                          {getStatusIcon(complaint.status)}
-                          {t.status[complaint.status] || complaint.status}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {complaint.adminResponse && (
+                          <button
+                            onClick={() => toggleExpand(complaint.id)}
+                            className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center gap-1"
+                          >
+                            {expandedComplaint === complaint.id ? (
+                              <>
+                                <ChevronUp size={14} />
+                                {t.actions.collapse}
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={14} />
+                                {t.actions.expand}
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {complaint.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'inProgress')}
+                              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1"
+                            >
+                              <AlertCircle size={14} />
+                              {t.actions.view}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} />
+                              {t.actions.resolve}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                            >
+                              <X size={14} />
+                              {t.actions.reject}
+                            </button>
+                          </>
+                        )}
+                        {complaint.status === 'inProgress' && (
+                          <>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} />
+                              {t.actions.resolve}
+                            </button>
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                            >
+                              <X size={14} />
+                              {t.actions.reject}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {complaint.status === 'pending' && (
-                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'inProgress')}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1"
-                        >
-                          <AlertCircle size={14} />
-                          {t.actions.view}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <CheckCircle size={14} />
-                          {t.actions.resolve}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                          className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
-                        >
-                          <X size={14} />
-                          {t.actions.reject}
-                        </button>
-                      </div>
-                    )}
-
-                    {complaint.status === 'inProgress' && (
-                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1"
-                        >
-                          <CheckCircle size={14} />
-                          {t.actions.resolve}
-                        </button>
-                        <button
-                          onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                          className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
-                        >
-                          <X size={14} />
-                          {t.actions.reject}
-                        </button>
+                    {/* Admin Response Section - FIXED: Now shows properly */}
+                    {expandedComplaint === complaint.id && complaint.adminResponse && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield size={16} className="text-green-600" />
+                            <h4 className="font-semibold text-green-700">{t.adminResponse}</h4>
+                          </div>
+                          <p className="text-gray-700 whitespace-pre-wrap">{complaint.adminResponse}</p>
+                          {complaint.adminResponseAt && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              {formatDate(complaint.adminResponseAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 

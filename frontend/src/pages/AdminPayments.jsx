@@ -1,4 +1,4 @@
-// src/pages/AdminPayments.jsx - WITH WORKING NOTIFICATION BELL
+// src/pages/AdminPayments.jsx - FULLY FIXED: Loads ALL payment sources correctly
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -50,7 +50,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
-  // Load notifications from localStorage
   const loadNotifications = () => {
     setLoading(true);
     try {
@@ -71,7 +70,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     }
   };
 
-  // Check for new notifications
   const checkForNewNotifications = () => {
     const existingNotifications = JSON.parse(
       localStorage.getItem('admin_notifications') || '[]'
@@ -80,7 +78,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     const newNotifications = [];
     const existingIds = new Set(existingNotifications.map(n => n.id));
 
-    // 1. Check for new user registrations
+    // Check for new user registrations
     const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
     const recentUsers = users.filter(u => {
       const createdAt = new Date(u.createdAt);
@@ -99,14 +97,12 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           read: false,
           createdAt: new Date().toISOString(),
           link: '/admin/users',
-          icon: 'user_plus',
-          userEmail: user.email,
-          userRole: user.role
+          icon: 'user_plus'
         });
       }
     });
 
-    // 2. Check for new payments
+    // Check for new payments
     const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
     const recentPayments = allPayments.filter(p => {
       const createdAt = new Date(p.createdAt);
@@ -121,22 +117,19 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           id: notifId,
           type: 'new_payment',
           title: 'New Payment Received 💰',
-          message: `Payment of ${payment.amount || 0} EGP from ${payment.employerName || 'Employer'} for ${payment.jobTitle || 'service'}`,
+          message: `Payment of ${payment.amount || 0} EGP from ${payment.employerName || 'Employer'}`,
           read: false,
           createdAt: new Date().toISOString(),
           link: '/admin/payments',
-          icon: 'dollar',
-          amount: payment.amount,
-          employerName: payment.employerName
+          icon: 'dollar'
         });
       }
     });
 
-    // 3. Check for new complaints
+    // Check for new complaints
     const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
     const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
     const allComplaints = [...employerComplaints, ...workerComplaints];
-    
     const recentComplaints = allComplaints.filter(c => {
       const createdAt = new Date(c.createdAt);
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -150,89 +143,11 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           id: notifId,
           type: 'new_complaint',
           title: 'New Complaint Received 📋',
-          message: `${complaint.userName || 'A user'} submitted a complaint: "${complaint.title || complaint.subject}"`,
+          message: `${complaint.userName || 'A user'} submitted a complaint`,
           read: false,
           createdAt: new Date().toISOString(),
           link: '/admin/complaints',
-          icon: 'alert',
-          complaintId: complaint.id,
-          complaintTitle: complaint.title || complaint.subject
-        });
-      }
-    });
-
-    // 4. Check for new hires
-    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-    const recentHires = hires.filter(h => {
-      const createdAt = new Date(h.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && h.status === 'active';
-    });
-
-    recentHires.forEach(hire => {
-      const notifId = `new_hire_${hire.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_hire',
-          title: 'New Hire Contract 🤝',
-          message: `${hire.employerName || 'Employer'} hired ${hire.workerName || 'a worker'} for ${hire.jobTitle || 'a position'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/hires',
-          icon: 'briefcase',
-          hireId: hire.id
-        });
-      }
-    });
-
-    // 5. Check for premium activations
-    const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
-    Object.values(subscriptions).forEach(sub => {
-      if (sub.status === 'active' && sub.activatedAt) {
-        const activatedAt = new Date(sub.activatedAt);
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        if (activatedAt > oneDayAgo) {
-          const notifId = `premium_activation_${sub.userId}`;
-          if (!existingIds.has(notifId)) {
-            newNotifications.push({
-              id: notifId,
-              type: 'premium_activation',
-              title: 'Premium Activated 👑',
-              message: `${sub.userFullName || 'A user'} (${sub.userEmail}) activated Premium subscription`,
-              read: false,
-              createdAt: new Date().toISOString(),
-              link: '/admin/users',
-              icon: 'crown',
-              userEmail: sub.userEmail
-            });
-          }
-        }
-      }
-    });
-
-    // 6. Check for payment verification requests
-    const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
-    const recentVerifications = verificationRequests.filter(req => {
-      const createdAt = new Date(req.submittedAt || req.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && req.status === 'pending';
-    });
-
-    recentVerifications.forEach(req => {
-      const notifId = `payment_verification_${req.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'payment_verification',
-          title: 'Payment Verification Request 📋',
-          message: `Payment of ${req.amount || 0} EGP from ${req.employerName || 'Employer'} needs verification`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/payments',
-          icon: 'dollar',
-          amount: req.amount,
-          employerName: req.employerName
+          icon: 'alert'
         });
       }
     });
@@ -263,9 +178,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id);
     setIsOpen(false);
-    if (onNotificationClick) {
-      onNotificationClick(notification);
-    }
     if (notification.link) {
       window.location.href = notification.link;
     }
@@ -276,9 +188,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_user': <UserPlus size={16} className="text-blue-400" />,
       'new_payment': <DollarSign size={16} className="text-green-400" />,
       'new_complaint': <AlertTriangle size={16} className="text-red-400" />,
-      'new_hire': <Briefcase size={16} className="text-purple-400" />,
-      'premium_activation': <Crown size={16} className="text-yellow-400" />,
-      'payment_verification': <Shield size={16} className="text-orange-400" />
+      'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
     return icons[type] || <Bell size={16} className="text-gray-400" />;
   };
@@ -300,7 +210,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
 
   useEffect(() => {
     loadNotifications();
-    
     const interval = setInterval(checkForNewNotifications, 10000);
     setTimeout(checkForNewNotifications, 1000);
     
@@ -311,7 +220,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     };
     
     document.addEventListener('mousedown', handleClickOutside);
-    
     return () => {
       clearInterval(interval);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -365,7 +273,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
               </button>
             </div>
           </div>
-          
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
               <div className="p-6 text-center text-gray-400 text-sm">
@@ -410,7 +317,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
               ))
             )}
           </div>
-          
           {notifications.length > 20 && (
             <div className="p-2 text-center border-t border-yellow-500/10">
               <Link 
@@ -772,37 +678,186 @@ const AdminPayments = () => {
   const t = translations[language] || translations.en;
 
   // ============================================================
-  // loadPayments
+  // loadPayments - FIXED: Loads from ALL payment sources
   // ============================================================
   const loadPayments = () => {
     setLoading(true);
     
     try {
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      console.log('📋 Loaded from all_payments:', allPayments.length);
+      const allPayments = [];
+      const seenIds = new Set();
+
+      // 1. Load from all_payments (main payment storage)
+      const allPaymentsData = JSON.parse(localStorage.getItem('all_payments') || '[]');
+      console.log('📋 Loaded from all_payments:', allPaymentsData.length);
       
+      allPaymentsData.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          if (!p.status) {
+            p.status = p.paymentVerified ? 'completed' : 'pending';
+          }
+          allPayments.push(p);
+        }
+      });
+
+      // 2. Load from employer_payments
+      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+      console.log('📋 Loaded from employer_payments:', employerPayments.length);
+      
+      employerPayments.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          if (!p.status) {
+            p.status = p.paymentVerified ? 'completed' : 'pending';
+          }
+          allPayments.push(p);
+        }
+      });
+
+      // 3. Load from admin_payments
+      const adminPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
+      console.log('📋 Loaded from admin_payments:', adminPayments.length);
+      
+      adminPayments.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          if (!p.status) {
+            p.status = p.paymentVerified ? 'completed' : 'pending';
+          }
+          allPayments.push(p);
+        }
+      });
+
+      // 4. Load from payment verification requests
       const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
-      
-      const mergedPayments = [...allPayments];
+      console.log('📋 Loaded from verification_requests:', verificationRequests.length);
       
       verificationRequests.forEach(req => {
-        if (!mergedPayments.find(p => p.id === req.id)) {
-          mergedPayments.push({
+        const id = req.id || req.paymentId || 'REQ-' + Date.now();
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          allPayments.push({
             ...req,
-            id: req.id || 'REQ-' + Date.now(),
-            status: 'pending_verification',
-            paymentMethod: req.paymentMethod || 'Unknown'
+            id: id,
+            status: req.status || 'pending_verification',
+            paymentMethod: req.paymentMethod || 'Unknown',
+            amount: req.amount || 0,
+            workerName: req.workerName || req.userName || 'Unknown',
+            employerName: req.employerName || 'Unknown',
+            createdAt: req.submittedAt || req.createdAt || new Date().toISOString()
           });
         }
       });
+
+      // 5. Load from worker_payments
+      const workerPayments = JSON.parse(localStorage.getItem('worker_payments') || '[]');
+      console.log('📋 Loaded from worker_payments:', workerPayments.length);
       
-      mergedPayments.sort((a, b) => new Date(b.createdAt || b.submittedAt || b.date) - new Date(a.createdAt || a.submittedAt || a.date));
+      workerPayments.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          if (!p.status) {
+            p.status = p.paymentVerified ? 'completed' : 'pending';
+          }
+          allPayments.push(p);
+        }
+      });
+
+      // 6. Load from homelyserv_payments
+      const homelyPayments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
+      console.log('📋 Loaded from homelyserv_payments:', homelyPayments.length);
       
-      setPayments(mergedPayments);
-      setFilteredPayments(mergedPayments);
+      homelyPayments.forEach(p => {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          if (!p.status) {
+            p.status = p.paymentVerified ? 'completed' : 'pending';
+          }
+          allPayments.push(p);
+        }
+      });
+
+      // 7. Generate payments from employer_offers that are completed
+      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const completedOffers = employerOffers.filter(o => 
+        o.status === 'completed' || 
+        o.status === 'in_progress' || 
+        o.paymentCompleted === true
+      );
+      console.log('📋 Completed offers found:', completedOffers.length);
       
-      localStorage.setItem('admin_payments', JSON.stringify(mergedPayments));
-      console.log('✅ Admin payments loaded:', mergedPayments.length);
+      completedOffers.forEach(offer => {
+        const paymentId = offer.paymentId || `PAY-${offer.id}`;
+        if (!seenIds.has(paymentId)) {
+          seenIds.add(paymentId);
+          allPayments.push({
+            id: paymentId,
+            offerId: offer.id,
+            amount: offer.amount || offer.salary || 0,
+            currency: 'EGP',
+            status: 'completed',
+            paymentVerified: true,
+            contactRevealed: true,
+            workerName: offer.workerName || 'Worker',
+            workerEmail: offer.workerEmail || '',
+            workerPhone: offer.workerPhone || '',
+            employerName: offer.employerName || 'Employer',
+            employerEmail: offer.employerEmail || '',
+            jobTitle: offer.jobTitle || 'Service',
+            paymentMethod: offer.paymentMethod || 'Unknown',
+            description: offer.description || `Payment for ${offer.jobTitle || 'service'}`,
+            createdAt: offer.hiredAt || offer.updatedAt || offer.createdAt || new Date().toISOString(),
+            completedAt: offer.hiredAt || offer.updatedAt || new Date().toISOString()
+          });
+        }
+      });
+
+      // 8. Generate payments from hires
+      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      const activeHires = hires.filter(h => h.status === 'active' || h.status === 'completed');
+      console.log('📋 Active hires found:', activeHires.length);
+      
+      activeHires.forEach(hire => {
+        const paymentId = hire.paymentId || `HIRE-PAY-${hire.id}`;
+        if (!seenIds.has(paymentId)) {
+          seenIds.add(paymentId);
+          allPayments.push({
+            id: paymentId,
+            hireId: hire.id,
+            amount: hire.salary || hire.amount || 0,
+            currency: 'EGP',
+            status: 'completed',
+            paymentVerified: true,
+            contactRevealed: true,
+            workerName: hire.workerName || 'Worker',
+            workerEmail: hire.workerEmail || '',
+            workerPhone: hire.workerPhone || '',
+            employerName: hire.employerName || 'Employer',
+            employerEmail: hire.employerEmail || '',
+            jobTitle: hire.jobTitle || 'Service',
+            paymentMethod: hire.paymentMethod || 'Unknown',
+            description: hire.description || `Hire payment for ${hire.jobTitle || 'service'}`,
+            createdAt: hire.createdAt || new Date().toISOString(),
+            completedAt: hire.updatedAt || new Date().toISOString()
+          });
+        }
+      });
+
+      // Sort by date (newest first)
+      allPayments.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date || a.submittedAt || 0);
+        const dateB = new Date(b.createdAt || b.date || b.submittedAt || 0);
+        return dateB - dateA;
+      });
+
+      console.log('✅ Total unique payments loaded:', allPayments.length);
+      
+      setPayments(allPayments);
+      setFilteredPayments(allPayments);
+      
+      // Save to admin_payments for persistence
+      localStorage.setItem('admin_payments', JSON.stringify(allPayments));
       
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -1084,9 +1139,9 @@ const AdminPayments = () => {
 
   const stats = {
     total: payments.length,
-    completed: payments.filter(p => p.status === 'completed').length,
-    pending: payments.filter(p => p.status === 'pending' || p.status === 'pending_verification').length,
-    failed: payments.filter(p => p.status === 'failed').length
+    completed: payments.filter(p => p.status === 'completed' || p.paymentVerified === true).length,
+    pending: payments.filter(p => p.status === 'pending' || p.status === 'pending_verification' || !p.paymentVerified).length,
+    failed: payments.filter(p => p.status === 'failed' || p.status === 'rejected').length
   };
 
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -1142,7 +1197,6 @@ const AdminPayments = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* WORKING NOTIFICATION BELL */}
               <NotificationBell userId={user?.id || user?.email} />
               
               <button
@@ -1260,6 +1314,7 @@ const AdminPayments = () => {
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
               <div className="text-6xl mb-4">💰</div>
               <h3 className="text-xl font-semibold text-white mb-2">{t.noPayments}</h3>
+              <p className="text-gray-400">No payments found. Payments will appear here once transactions are made.</p>
             </div>
           ) : (
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
@@ -1279,7 +1334,7 @@ const AdminPayments = () => {
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredPayments.map((payment) => (
                       <tr key={payment.id} className="hover:bg-white/5 transition">
-                        <td className="px-4 py-3 text-gray-300 text-sm font-mono">{payment.id}</td>
+                        <td className="px-4 py-3 text-gray-300 text-sm font-mono">{payment.id || 'N/A'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
@@ -1290,13 +1345,13 @@ const AdminPayments = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-white font-medium">{formatCurrency(payment.amount)}</td>
+                        <td className="px-4 py-3 text-white font-medium">{formatCurrency(payment.amount || 0)}</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{formatDate(payment.date || payment.createdAt || payment.submittedAt)}</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{payment.paymentMethod || payment.method || 'Unknown'}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status)}`}>
-                            {getStatusIcon(payment.status)}
-                            {getStatusLabel(payment.status)}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status || 'pending')}`}>
+                            {getStatusIcon(payment.status || 'pending')}
+                            {getStatusLabel(payment.status || 'pending')}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -1362,11 +1417,11 @@ const AdminPayments = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm text-gray-400">{t.modal.paymentId}</p>
-                    <p className="text-lg font-bold text-white">{selectedPayment.id}</p>
+                    <p className="text-lg font-bold text-white">{selectedPayment.id || 'N/A'}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
-                    {getStatusIcon(selectedPayment.status)}
-                    {getStatusLabel(selectedPayment.status)}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status || 'pending')}`}>
+                    {getStatusIcon(selectedPayment.status || 'pending')}
+                    {getStatusLabel(selectedPayment.status || 'pending')}
                   </span>
                 </div>
               </div>
@@ -1404,7 +1459,7 @@ const AdminPayments = () => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <p className="text-sm text-gray-400">{t.modal.amount}</p>
-                  <p className="text-2xl font-bold text-yellow-500">{formatCurrency(selectedPayment.amount)}</p>
+                  <p className="text-2xl font-bold text-yellow-500">{formatCurrency(selectedPayment.amount || 0)}</p>
                 </div>
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <p className="text-sm text-gray-400">{t.modal.date}</p>
