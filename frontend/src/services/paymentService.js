@@ -1,9 +1,14 @@
 // src/services/paymentService.js
 // Complete Payment Service with Backend Integration
 
+// ============================================================
+// API BASE URL
+// ============================================================
 const API_BASE = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL}/api/payments`
   : 'http://localhost:5000/api/payments';
+
+console.log('📍 Payment API Base URL:', API_BASE);
 
 // ============================================================
 // PAYMENT INTENT - Calls Backend
@@ -17,6 +22,7 @@ const API_BASE = import.meta.env.VITE_API_URL
 export const createPaymentIntent = async (paymentData) => {
   try {
     console.log('📤 Creating payment intent via backend:', paymentData);
+    console.log('📍 Full URL:', `${API_BASE}/create-payment-intent`);
 
     // Get authentication token
     const token = localStorage.getItem('homelyserv_token') ||
@@ -24,28 +30,57 @@ export const createPaymentIntent = async (paymentData) => {
 
     const headers = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    console.log('📤 Headers:', headers);
+
     const response = await fetch(`${API_BASE}/create-payment-intent`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify(paymentData),
+      credentials: 'include' // Important for CORS with credentials
     });
 
-    const data = await response.json();
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response status text:', response.statusText);
 
-    if (!data.success) {
-      throw new Error(data.error || 'Payment creation failed');
+    // Check if response is OK
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.error('❌ Error response:', errorData);
+      } catch (e) {
+        // If response is not JSON, try to get text
+        try {
+          const text = await response.text();
+          console.error('❌ Error response text:', text);
+          if (text) errorMessage = text;
+        } catch (textError) {
+          // Ignore
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
 
+    const data = await response.json();
     console.log('✅ Payment intent created:', data);
     return data;
   } catch (error) {
     console.error('❌ Payment intent error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
     throw error;
   }
 };
@@ -63,20 +98,29 @@ export const createPaymentIntent = async (paymentData) => {
  */
 export const createPaymobPayment = async (amount, orderId, customerData) => {
   console.log(`🔄 Creating Paymob payment via backend for: ${amount} EGP`);
+  console.log('📦 Customer data:', customerData);
   
-  return createPaymentIntent({
-    amount,
-    paymentMethod: 'paymob',
-    userEmail: customerData?.email,
-    workerName: customerData?.firstName + ' ' + customerData?.lastName,
-    userId: customerData?.userId,
-    workerId: customerData?.workerId,
-    jobTitle: customerData?.jobTitle,
-    employerId: customerData?.employerId,
-    employerName: customerData?.employerName,
-    hireId: customerData?.hireId,
-    phone: customerData?.phone
-  });
+  try {
+    const result = await createPaymentIntent({
+      amount: Number(amount),
+      paymentMethod: 'paymob',
+      userEmail: customerData?.email || 'employer@example.com',
+      workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
+      userId: customerData?.userId,
+      workerId: customerData?.workerId,
+      jobTitle: customerData?.jobTitle || 'Service',
+      employerId: customerData?.employerId,
+      employerName: customerData?.employerName || 'Employer',
+      hireId: customerData?.hireId,
+      phone: customerData?.phone || '+201234567890',
+      description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Paymob payment creation failed:', error);
+    throw error;
+  }
 };
 
 /**
@@ -89,7 +133,14 @@ export const verifyPaymobPayment = async (paymentData) => {
     const { paymentId } = paymentData;
     console.log(`🔍 Verifying Paymob payment: ${paymentId}`);
     
-    const response = await fetch(`${API_BASE}/status/${paymentId}`);
+    const response = await fetch(`${API_BASE}/status/${paymentId}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
     
     if (data.success && data.payment) {
@@ -127,8 +178,13 @@ export const processPaymobWebhook = async (webhookData) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(webhookData)
+      body: JSON.stringify(webhookData),
+      credentials: 'include'
     });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
     
     const data = await response.json();
     return data;
@@ -153,20 +209,29 @@ export const processPaymobWebhook = async (webhookData) => {
  * @returns {object} - PayPal order result
  */
 export const createPayPalOrder = async (amount, orderId, customerData) => {
-  console.log(`🔄 Creating PayPal order via backend for: ${amount}`);
+  console.log(`🔄 Creating PayPal order via backend for: ${amount} EGP`);
+  console.log('📦 Customer data:', customerData);
   
-  return createPaymentIntent({
-    amount,
-    paymentMethod: 'paypal',
-    userEmail: customerData?.email,
-    workerName: customerData?.firstName + ' ' + customerData?.lastName,
-    userId: customerData?.userId,
-    workerId: customerData?.workerId,
-    jobTitle: customerData?.jobTitle,
-    employerId: customerData?.employerId,
-    employerName: customerData?.employerName,
-    hireId: customerData?.hireId
-  });
+  try {
+    const result = await createPaymentIntent({
+      amount: Number(amount),
+      paymentMethod: 'paypal',
+      userEmail: customerData?.email || 'employer@example.com',
+      workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
+      userId: customerData?.userId,
+      workerId: customerData?.workerId,
+      jobTitle: customerData?.jobTitle || 'Service',
+      employerId: customerData?.employerId,
+      employerName: customerData?.employerName || 'Employer',
+      hireId: customerData?.hireId,
+      description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('❌ PayPal order creation failed:', error);
+    throw error;
+  }
 };
 
 /**
@@ -182,10 +247,16 @@ export const capturePayPalOrder = async (orderId) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      }
+      },
+      credentials: 'include'
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
+    console.log('✅ PayPal capture result:', data);
     return data;
   } catch (error) {
     console.error('❌ PayPal capture error:', error);
@@ -210,8 +281,13 @@ export const processPayPalWebhook = async (webhookData) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(webhookData)
+      body: JSON.stringify(webhookData),
+      credentials: 'include'
     });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
     
     const data = await response.json();
     return data;
@@ -225,13 +301,28 @@ export const processPayPalWebhook = async (webhookData) => {
 };
 
 // ============================================================
-// TRANSACTION MANAGEMENT (DEPRECATED - Use backend API instead)
-// The following localStorage functions are deprecated.
-// Use the backend API functions: getUserPayments, getPaymentStatus, completePayment
+// TRANSACTION MANAGEMENT
 // ============================================================
 
 export const saveTransaction = (transaction) => {
   try {
+    // Try to save via backend
+    fetch(`${API_BASE}/complete-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orderId: transaction.orderId,
+        transactionId: transaction.id,
+        userId: transaction.userId
+      }),
+      credentials: 'include'
+    }).catch(err => {
+      console.warn('Backend save failed, using localStorage:', err);
+    });
+
+    // Also save locally for offline/fallback
     const userData = localStorage.getItem('homelyserv_user');
     if (userData) {
       try {
@@ -258,19 +349,19 @@ export const saveTransaction = (transaction) => {
     const payment = {
       id: transaction.id,
       transactionId: transaction.id,
-      paymentId: transaction.paymentId,
+      paymentId: transaction.paymentId || transaction.id,
       amount: transaction.amount,
-      currency: transaction.currency,
-      status: transaction.status,
+      currency: transaction.currency || 'EGP',
+      status: transaction.status || 'completed',
       paymentMethod: transaction.paymentMethod,
       orderId: transaction.orderId,
       reference: transaction.reference,
-      type: transaction.transactionType,
+      type: transaction.transactionType || 'payment',
       userId: transaction.userId,
       userEmail: transaction.userEmail,
       metadata: transaction.metadata,
-      createdAt: transaction.createdAt,
-      updatedAt: transaction.updatedAt
+      createdAt: transaction.createdAt || new Date().toISOString(),
+      updatedAt: transaction.updatedAt || new Date().toISOString()
     };
     
     const paymentIndex = payments.findIndex(p => p.id === payment.id);
@@ -416,15 +507,23 @@ export const isPaymentPending = (transaction) => {
 
 export const completePayment = async (orderId, userId) => {
   try {
+    console.log('✅ Completing payment:', { orderId, userId });
+    
     const response = await fetch(`${API_BASE}/complete-payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ orderId, userId })
+      body: JSON.stringify({ orderId, userId }),
+      credentials: 'include'
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     const data = await response.json();
+    console.log('✅ Payment completed:', data);
     return data;
   } catch (error) {
     console.error('❌ Error completing payment:', error);
@@ -434,8 +533,18 @@ export const completePayment = async (orderId, userId) => {
 
 export const getPaymentStatus = async (paymentId) => {
   try {
-    const response = await fetch(`${API_BASE}/status/${paymentId}`);
+    console.log(`🔍 Getting payment status: ${paymentId}`);
+    
+    const response = await fetch(`${API_BASE}/status/${paymentId}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
+    console.log('✅ Payment status:', data);
     return data;
   } catch (error) {
     console.error('❌ Error getting payment status:', error);
@@ -445,11 +554,47 @@ export const getPaymentStatus = async (paymentId) => {
 
 export const getUserPayments = async (userId) => {
   try {
-    const response = await fetch(`${API_BASE}/user/${userId}`);
+    console.log(`📂 Getting payments for user: ${userId}`);
+    
+    const response = await fetch(`${API_BASE}/user/${userId}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
+    console.log('✅ User payments:', data);
     return data;
   } catch (error) {
     console.error('❌ Error getting user payments:', error);
+    throw error;
+  }
+};
+
+export const verifyPayment = async (transactionId, orderId) => {
+  try {
+    console.log(`🔍 Verifying payment:`, { transactionId, orderId });
+    
+    const response = await fetch(`${API_BASE}/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ transactionId, orderId }),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Payment verified:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Payment verification error:', error);
     throw error;
   }
 };
@@ -463,6 +608,7 @@ export default {
   completePayment,
   getPaymentStatus,
   getUserPayments,
+  verifyPayment,
   createPaymobPayment,
   verifyPaymobPayment,
   processPaymobWebhook,

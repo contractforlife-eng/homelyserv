@@ -51,41 +51,136 @@ if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET) {
 
 console.log('-------------------------------\n');
 
-// Rest of your file stays completely identical from here down...
 const app = express();
 const server = http.createServer(app);
-// ...
 
 // ============================================================
-// CORS Configuration
+// CORS Configuration - FIXED
 // ============================================================
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:5174',
   'https://homelyserv-nznn.vercel.app',
   'https://gas-clapped-copper.ngrok-free.dev',
   'http://192.168.100.12:5173',
   'http://192.168.100.12:3000',
-  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{4,5}$/
 ];
 
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST']
+// Dynamic origin function for CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    // Check for ngrok subdomains
+    const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
+    
+    if (isAllowed || isNgrok) {
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
+};
+
+// Apply CORS middleware FIRST
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// Additional CORS headers middleware (fallback)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  if (origin) {
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
+    
+    if (isAllowed || isNgrok) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    }
   }
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
 });
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// ============================================================
+// Body Parser - After CORS
+// ============================================================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ============================================================
+// Socket.IO Configuration
+// ============================================================
+const io = new Server(server, {
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = allowedOrigins.some(allowed => {
+        if (allowed instanceof RegExp) {
+          return allowed.test(origin);
+        }
+        return allowed === origin;
+      });
+      
+      const isNgrok = /^https:\/\/.*\.ngrok-free\.dev$/.test(origin);
+      
+      if (isAllowed || isNgrok) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 
 // ============================================================
 // MongoDB Connection
 // ============================================================
-// Using process.env.DATABASE_URL to align with your Prisma Atlas setup
 const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/homelyserv';
 
 mongoose.connect(MONGODB_URI)
@@ -199,14 +294,6 @@ app.get('/', (req, res) => {
   res.json({ message: 'HomelyServ API is running!' });
 });
 
-// CORS headers fallback middleware
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  next();
-});
-
 // ============================================================
 // API Routes Mount point
 // ============================================================
@@ -218,8 +305,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+
 // ============================================================
-// Socket.IO Configuration
+// Socket.IO Event Handlers
 // ============================================================
 io.on('connection', (socket) => {
   console.log('🔌 User connected:', socket.id);
@@ -283,3 +371,5 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔗 Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}\n`);
 });
+
+export default app;
