@@ -28,7 +28,10 @@ import {
   Shield,
   Sparkles,
   RefreshCw,
-  Crown
+  Crown,
+  Trash2,
+  Mail,
+  User as UserIcon
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -36,7 +39,8 @@ import {
   sendMessage,
   markMessagesAsRead,
   getConversationId,
-  ensureConversationExists
+  ensureConversationExists,
+  deleteConversation
 } from '../utils/chatService';
 
 // Worker Sidebar Component - RED THEME
@@ -295,8 +299,10 @@ const WorkerMessages = () => {
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -602,6 +608,22 @@ const WorkerMessages = () => {
       await markMessagesAsRead(conversationId, userId);
     }
   };
+
+  // Close dropdown when selected conversation changes
+  useEffect(() => {
+    setDropdownOpen(false);
+  }, [selectedConversationId]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -940,16 +962,59 @@ const WorkerMessages = () => {
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 relative" ref={dropdownRef}>
                         <button className="p-2 rounded-lg hover:bg-gray-100 transition">
                           <Phone size={18} className="text-gray-600" />
                         </button>
                         <button className="p-2 rounded-lg hover:bg-gray-100 transition">
                           <Video size={18} className="text-gray-600" />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
+                        <button
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className="p-2 rounded-lg hover:bg-gray-100 transition"
+                        >
                           <MoreVertical size={18} className="text-gray-600" />
                         </button>
+                        {dropdownOpen && (
+                          <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                            <button
+                              onClick={async () => {
+                                setDropdownOpen(false);
+                                if (selectedConversationId) {
+                                  const success = await deleteConversation(selectedConversationId);
+                                  if (success) {
+                                    console.log('🗑️ Deleted conversation:', selectedConversationId);
+                                    const userId = user?.id || user?.email;
+                                    if (userId) {
+                                      const updated = await getUserConversations(userId);
+                                      setConversations(updated);
+                                    }
+                                    setSelectedConversationId(null);
+                                    setMessages([]);
+                                  }
+                                }
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
+                            >
+                              <Trash2 size={16} />
+                              Delete Conversation
+                            </button>
+                            <button
+                              disabled
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 flex items-center gap-2 cursor-not-allowed"
+                            >
+                              <Mail size={16} />
+                              Mark as unread
+                            </button>
+                            <button
+                              disabled
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 flex items-center gap-2 cursor-not-allowed"
+                            >
+                              <UserIcon size={16} />
+                              View Employer Profile
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
