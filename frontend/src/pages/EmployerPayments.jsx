@@ -1247,14 +1247,16 @@ let employerPayments = allPayments.filter((p) => {
         }
       }
       
-      // Store worker info in localStorage (same keys as MyHires)
-      localStorage.setItem('homelyserv_chat_worker_id', workerId);
-      localStorage.setItem('homelyserv_chat_worker_name', workerName);
-      localStorage.setItem('homelyserv_chat_worker_image', payment.workerImage || '');
-      localStorage.setItem('homelyserv_chat_hire_id', payment.offerId || payment.id || '');
-      localStorage.setItem('homelyserv_chat_hire_job', payment.jobTitle || '');
+      // Navigate to messages with worker info in URL parameters
+      const params = new URLSearchParams({
+        workerId: workerId,
+        workerName: workerName,
+        workerImage: payment.workerImage || '',
+        hireId: payment.offerId || payment.id || '',
+        job: payment.jobTitle || ''
+      });
       
-      navigate('/employer-messages');
+      navigate(`/employer-messages?${params.toString()}`);
     }
   };
 

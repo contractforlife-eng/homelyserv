@@ -864,35 +864,15 @@ const WorkerOffers = () => {
   // ============================================================
   // Conversation Creation
   // ============================================================
-  const createConversationAndSendWelcome = (offer, workerId, workerName, employerId, employerName) => {
+  const createConversationAndSendWelcome = async (offer, workerId, workerName, employerId, employerName) => {
     try {
-      const conversationId = getConversationId(workerId, employerId);
-      const conversations = JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]');
-      const existingConv = conversations.find(c => c.id === conversationId);
+      const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
       
-      if (!existingConv) {
-        const newConversation = {
-          id: conversationId,
-          participants: [
-            { id: workerId, name: workerName, role: 'WORKER' },
-            { id: employerId, name: employerName, role: 'EMPLOYER' }
-          ],
-          lastMessage: `✅ Offer accepted: ${offer.jobTitle || 'Job Offer'}`,
-          lastMessageTime: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        conversations.push(newConversation);
-        localStorage.setItem('homelyserv_conversations', JSON.stringify(conversations));
-        
-        const welcomeMessage = `Hello! I've accepted your job offer for ${offer.jobTitle || 'the position'}. I'm excited to work with you. Let me know the next steps.`;
-        
-        sendMessage(workerId, workerName, 'WORKER', employerId, employerName, welcomeMessage);
-        console.log('✅ Conversation created and welcome message sent');
-      }
+      // Use the backend API to ensure conversation exists and send message
+      const result = await sendMessage(workerId, workerName, 'WORKER', employerId, employerName, welcomeMessage);
+      console.log('✅ Conversation created and welcome message sent');
       
-      return conversationId;
+      return result?.conversationId || getConversationId(workerId, employerId);
     } catch (error) {
       console.error('Error creating conversation:', error);
       return null;

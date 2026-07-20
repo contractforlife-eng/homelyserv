@@ -1,0 +1,75 @@
+diff --git a/frontend/src/pages/WorkerDashboard.jsx b/frontend/src/pages/WorkerDashboard.jsx
+index 05404f3..8210937 100644
+--- a/frontend/src/pages/WorkerDashboard.jsx
++++ b/frontend/src/pages/WorkerDashboard.jsx
+@@ -3,6 +3,10 @@ import React, { useState, useEffect } from 'react';
+ import { Link, useNavigate, useLocation } from 'react-router-dom';
+ import { isUserPremium } from '../utils/subscriptionService';
+ import { syncCurrentUser } from "../utils/syncUser";
++import {
++  getUserConversations,
++  getTotalUnreadCount
++} from '../utils/chatService';
+ import {
+   Home,
+   User,
+@@ -718,24 +722,8 @@ const WorkerDashboard = () => {
+       }
+     });
+ 
+-    // 4. Check for new messages
+-    const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+-    Object.keys(allMessages).forEach(convId => {
+-      const msgs = allMessages[convId] || [];
+-      msgs.forEach(msg => {
+-        if (msg.recipientId === currentUserId && !msg.read) {
+-          const existingMsgNotif = existingNotifications.find(
+-            n => n.type === 'message' && n.message.includes(msg.message?.substring(0, 30) || '')
+-          );
+-          if (!existingMsgNotif) {
+-            const notif = generateMessageNotification(msg, msg.senderName || 'Someone');
+-            newNotifications.push(notif);
+-            msg.read = true;
+-          }
+-        }
+-      });
+-      localStorage.setItem('homelyserv_chat_messages', JSON.stringify(allMessages));
+-    });
++    // 4. Check for new messages (using backend API)
++    // Message notifications are now handled by the backend
+ 
+     // 5. Check for profile updates
+     const profile = JSON.parse(localStorage.getItem(`homelyserv_profile_${currentUserEmail}`) || '{}');
+@@ -774,7 +762,7 @@ const WorkerDashboard = () => {
+   // ============================================================
+   // LOAD STATS
+   // ============================================================
+-  const loadRealStats = () => {
++  const loadRealStats = async () => {
+     try {
+       if (!user?.email) return;
+ 
+@@ -812,17 +800,14 @@ const WorkerDashboard = () => {
+       
+       const profileViews = parseInt(localStorage.getItem(`profile_views_${currentUserEmail}`) || '0');
+       
++      // Get message count from backend
+       let messagesCount = 0;
+       if (currentUserId) {
+-        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
+-        Object.keys(allMessages).forEach(convId => {
+-          const msgs = allMessages[convId] || [];
+-          msgs.forEach(msg => {
+-            if (msg.recipientId === currentUserId || msg.senderId === currentUserId) {
+-              messagesCount++;
+-            }
+-          });
+-        });
++        try {
++          messagesCount = await getTotalUnreadCount(currentUserId);
++        } catch (error) {
++          console.error('Error getting message count:', error);
++        }
+       }
+       
+       const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');

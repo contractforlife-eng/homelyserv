@@ -726,19 +726,6 @@ const AdminMessages = () => {
         console.log('📋 Initial load - admin conversations:', userConversations);
         setConversations(userConversations);
 
-        const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_admin');
-        if (savedConversationId) {
-          const exists = userConversations.some(c => c.id === savedConversationId);
-          if (exists) {
-            setSelectedConversationId(savedConversationId);
-            const conversationMessages = await getConversationMessages(savedConversationId);
-            setMessages(conversationMessages);
-            await markMessagesAsRead(savedConversationId, userId);
-          } else {
-            localStorage.removeItem('homelyserv_selected_conversation_admin');
-          }
-        }
-
         setLoading(false);
       };
 
@@ -881,8 +868,6 @@ const AdminMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    localStorage.setItem('homelyserv_selected_conversation_admin', conversationId);
-    
     const userId = user?.id || user?.email;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
@@ -928,7 +913,6 @@ const AdminMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_selected_conversation_admin');
     navigate('/login');
   };
 
@@ -940,7 +924,7 @@ const AdminMessages = () => {
   };
 
   // Start a new chat with a selected user
-  const handleStartNewChat = (selectedUser) => {
+  const handleStartNewChat = async (selectedUser) => {
     console.log('🆕 Starting new chat with user:', selectedUser);
     
     // Check if conversation already exists
@@ -953,50 +937,34 @@ const AdminMessages = () => {
       return;
     }
 
-    // Create a new conversation
-    const newConv = {
-      id: `conv_${Date.now()}`,
-      otherUserId: selectedUser.id || selectedUser.email,
-      otherUserName: selectedUser.name,
-      role: selectedUser.role,
-      avatar: selectedUser.avatar,
-      lastMessage: 'No messages yet',
-      time: 'Just now',
-      unread: 0
-    };
-
-    setConversations(prev => [newConv, ...prev]);
-    setSelectedConversationId(newConv.id);
-    setMessages([]);
-    setShowAllUsers(false);
-    
-    localStorage.setItem('homelyserv_selected_conversation_admin', newConv.id);
-    
-    // Store the conversation in the chat service
-    const allConversations = JSON.parse(localStorage.getItem('chat_conversations') || '{}');
+    // Create a new conversation by sending a system message
     const userId = user?.id || user?.email;
-    
-    if (!allConversations[userId]) {
-      allConversations[userId] = [];
-    }
-    
-    // Check if this conversation already exists in storage
-    const existingInStorage = allConversations[userId].some(
-      c => c.otherUserId === selectedUser.id || c.otherUserId === selectedUser.email
+    if (!userId) return;
+
+    const result = await ensureConversationExists(
+      userId,
+      user.fullName || 'Admin',
+      'ADMIN',
+      selectedUser.id || selectedUser.email,
+      selectedUser.name,
+      selectedUser.role
     );
-    
-    if (!existingInStorage) {
-      allConversations[userId].push({
-        id: newConv.id,
-        otherUserId: selectedUser.id || selectedUser.email,
-        otherUserName: selectedUser.name,
-        role: selectedUser.role,
-        avatar: selectedUser.avatar,
-        lastMessage: 'No messages yet',
-        time: new Date().toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        unread: 0
-      });
-      localStorage.setItem('chat_conversations', JSON.stringify(allConversations));
+
+    if (result) {
+      // Refresh conversations to get the new one
+      const updatedConversations = await getUserConversations(userId);
+      setConversations(updatedConversations);
+      
+      // Find and open the new conversation
+      const newConv = updatedConversations.find(
+        c => c.otherUserId === selectedUser.id || c.otherUserId === selectedUser.email
+      );
+      
+      if (newConv) {
+        setSelectedConversationId(newConv.id);
+        setMessages([]);
+        setShowAllUsers(false);
+      }
     }
   };
 

@@ -748,26 +748,32 @@ const AdminDashboard = () => {
   }, [navigate]);
 
   const loadStats = async () => {
+    let users = [];
 
-  let users = [];
+    try {
+      const response = await api.get('/api/auth/users');
 
-  try {
-    const response = await api.get('/api/auth/users');
+      if (response.data.success) {
+        users = response.data.users || [];
+      }
 
-    if (response.data.success) {
-      users = response.data.users || [];
+      console.log('✅ Loaded users from MongoDB:', users.length);
+
+    } catch (error) {
+      console.error('❌ Failed loading users from backend:', error);
     }
 
-    console.log('✅ Loaded users from MongoDB:', users.length);
+    // Get message stats from backend
+    let totalMessages = 0;
+    try {
+      const msgResponse = await api.get('/api/chat/messages/stats');
+      if (msgResponse.data.success) {
+        totalMessages = msgResponse.data.totalMessages || 0;
+      }
+    } catch (error) {
+      console.error('Error loading message stats:', error);
+    }
 
-  } catch (error) {
-    console.error('❌ Failed loading users from backend:', error);
-  }
-
-
-  const payments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
-  const messages = JSON.parse(localStorage.getItem('admin_messages') || '[]');
-    
     // Load complaints from all sources
     const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
     const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
@@ -776,9 +782,9 @@ const AdminDashboard = () => {
     
     setStats({
       totalUsers: users.length,
-      totalPayments: payments.length,
-      totalMessages: messages.length,
-      pendingActions: messages.filter(m => m.status === 'pending').length,
+      totalPayments: 0,
+      totalMessages: totalMessages,
+      pendingActions: 0,
       totalComplaints: allComplaints.length,
       pendingComplaints: allComplaints.filter(c => c.status === 'pending').length
     });

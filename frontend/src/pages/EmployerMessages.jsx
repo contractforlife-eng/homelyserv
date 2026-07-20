@@ -422,19 +422,6 @@ const EmployerMessages = () => {
         console.log('📋 Initial load - employer conversations:', userConversations);
         setConversations(userConversations);
 
-        const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_employer');
-        if (savedConversationId) {
-          const exists = userConversations.some(c => c.id === savedConversationId);
-          if (exists) {
-            setSelectedConversationId(savedConversationId);
-            const conversationMessages = await getConversationMessages(savedConversationId);
-            setMessages(conversationMessages);
-            await markMessagesAsRead(savedConversationId, userId);
-          } else {
-            localStorage.removeItem('homelyserv_selected_conversation_employer');
-          }
-        }
-
         setLoading(false);
       };
 
@@ -515,10 +502,10 @@ const EmployerMessages = () => {
   useEffect(() => {
     if (!user || autoOpenDoneRef.current) return;
 
-    // Check if we have a worker to chat with
-    const workerId = localStorage.getItem('homelyserv_chat_worker_id');
-    const workerName = localStorage.getItem('homelyserv_chat_worker_name');
-    const workerImage = localStorage.getItem('homelyserv_chat_worker_image') || '';
+    // Check if we have a worker to chat with via URL params or state
+    const params = new URLSearchParams(window.location.search);
+    const workerId = params.get('workerId');
+    const workerName = params.get('workerName');
     
     if (!workerId) return;
     
@@ -532,13 +519,6 @@ const EmployerMessages = () => {
     
     // Mark as done so we don't re-trigger
     autoOpenDoneRef.current = true;
-    
-    // Clear the stored values so they don't trigger again
-    localStorage.removeItem('homelyserv_chat_worker_id');
-    localStorage.removeItem('homelyserv_chat_worker_name');
-    localStorage.removeItem('homelyserv_chat_worker_image');
-    localStorage.removeItem('homelyserv_chat_hire_id');
-    localStorage.removeItem('homelyserv_chat_hire_job');
     
     // Find the conversation with this worker
     const conversation = conversations.find(
@@ -605,8 +585,6 @@ const EmployerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    localStorage.setItem('homelyserv_selected_conversation_employer', conversationId);
-    
     const userId = user?.id || user?.email;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
@@ -652,7 +630,6 @@ const EmployerMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_selected_conversation_employer');
     navigate('/login');
   };
 

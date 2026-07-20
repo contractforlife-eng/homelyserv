@@ -331,7 +331,6 @@ const WorkerMessages = () => {
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
     localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_selected_conversation_worker');
     navigate('/login');
   };
 
@@ -501,19 +500,6 @@ const WorkerMessages = () => {
         console.log('📋 Initial load - worker conversations:', userConversations);
         setConversations(userConversations);
 
-        const savedConversationId = localStorage.getItem('homelyserv_selected_conversation_worker');
-        if (savedConversationId) {
-          const exists = userConversations.some(c => c.id === savedConversationId);
-          if (exists) {
-            setSelectedConversationId(savedConversationId);
-            const conversationMessages = await getConversationMessages(savedConversationId);
-            setMessages(conversationMessages);
-            await markMessagesAsRead(savedConversationId, userId);
-          } else {
-            localStorage.removeItem('homelyserv_selected_conversation_worker');
-          }
-        }
-
         setLoading(false);
       };
 
@@ -600,8 +586,6 @@ const WorkerMessages = () => {
     const conversationMessages = await getConversationMessages(conversationId);
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
-    
-    localStorage.setItem('homelyserv_selected_conversation_worker', conversationId);
     
     const userId = user?.id || user?.email;
     if (userId) {

@@ -431,20 +431,9 @@ const EmployerDashboard = () => {
       // 4. Get unread messages from chat service
       let unreadMessages = 0;
       try {
-        const conversations = await getUserConversations(employerId);
-        unreadMessages = conversations.reduce((total, conv) => total + (conv.unread || 0), 0);
+        unreadMessages = await getTotalUnreadCount(employerId);
       } catch (error) {
         console.error('Error getting unread messages:', error);
-        // Fallback to localStorage
-        const allMessages = JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}');
-        Object.keys(allMessages).forEach(convId => {
-          const msgs = allMessages[convId] || [];
-          msgs.forEach(msg => {
-            if (msg.recipientId === employerId && !msg.read) {
-              unreadMessages++;
-            }
-          });
-        });
       }
 
       // 5. Get total workers (from users)

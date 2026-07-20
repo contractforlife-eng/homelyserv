@@ -844,15 +844,8 @@ const MyHires = () => {
       setCreatingConversation(false);
     }
     
-    // Store the worker info in localStorage
-    localStorage.setItem('homelyserv_chat_worker_id', workerId);
-    localStorage.setItem('homelyserv_chat_worker_name', workerName);
-    localStorage.setItem('homelyserv_chat_worker_image', hire.workerImage || '');
-    localStorage.setItem('homelyserv_chat_hire_id', hire.id || hire.offerId || '');
-    localStorage.setItem('homelyserv_chat_hire_job', hire.jobTitle || '');
-    
-    // Navigate to messages page
-    navigate('/employer-messages');
+    // Navigate to messages page with worker info as URL parameters
+    navigate(`/employer-messages?workerId=${encodeURIComponent(workerId)}&workerName=${encodeURIComponent(workerName)}`);
   };
 
   const handlePayNow = (hire) => {

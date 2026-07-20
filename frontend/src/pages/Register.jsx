@@ -1,6 +1,7 @@
 // src/pages/Register.jsx - RED AND WHITE THEME ONLY
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from "../utils/api";
 import { 
   User, 
   Mail, 
@@ -117,81 +118,36 @@ function Register() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      const newUser = {
-        id: `user_${Date.now()}`,
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        role: formData.role,
-        phone: formData.phone || '',
-        location: formData.location || '',
-        createdAt: new Date().toISOString(),
-        profileComplete: false,
-        bio: '',
-        skills: [],
-        experience: '',
-        hourlyRate: ''
-      };
+      const response = await api.post("/api/auth/register", {
+  fullName: formData.fullName.trim(),
+  email: formData.email.trim().toLowerCase(),
+  password: formData.password,
+  role: formData.role,
+  phone: formData.phone || "",
+  location: formData.location || ""
+});
 
-      console.log('📝 Creating new user:', newUser);
+if (!response.data.success) {
+  throw new Error(response.data.message || "Registration failed");
+}
 
-      let existingUsers = [];
-      try {
-        const storedUsers = localStorage.getItem('homelyserv_users');
-        existingUsers = storedUsers ? JSON.parse(storedUsers) : [];
-        console.log('📦 Existing users:', existingUsers);
-      } catch (error) {
-        console.error('Error parsing existing users:', error);
-        existingUsers = [];
-      }
+console.log("✅ User registered in MongoDB:", response.data.user);
 
-      const userExists = existingUsers.find(
-        u => u.email?.trim().toLowerCase() === formData.email.trim().toLowerCase()
-      );
-      if (userExists) {
-        console.log('⚠️ User already exists:', userExists);
-        setErrors({ general: 'User with this email already exists. Please login.' });
-        setLoading(false);
-        return;
-      }
+setSuccess(true);
 
-      existingUsers.push(newUser);
-      localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
-      
-      const userData = {
-        id: newUser.id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role,
-        phone: newUser.phone,
-        location: newUser.location,
-        bio: '',
-        skills: [],
-        experience: '',
-        hourlyRate: ''
-      };
-      
-      localStorage.setItem('homelyserv_user', JSON.stringify(userData));
-      
-      console.log('✅ User created successfully:', newUser);
-      console.log('✅ All users:', JSON.parse(localStorage.getItem('homelyserv_users')));
+setFormData({
+  fullName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  phone: "",
+  location: "",
+  role: "WORKER"
+});
 
-      setSuccess(true);
-      
-      setFormData({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        phone: '',
-        location: '',
-        role: 'WORKER'
-      });
-
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+setTimeout(() => {
+  navigate("/login");
+}, 2000);
 
     } catch (error) {
       console.error('❌ Registration error:', error);

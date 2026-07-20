@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import api from '../utils/api';
 import {
   Home,
   User,
@@ -764,26 +765,57 @@ const WorkerSettings = () => {
   };
 
   // ===== Export Data Functionality =====
-  const handleExportData = () => {
-    const data = {
-      user: user,
-      settings: settings,
-      offers: JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]'),
-      conversations: JSON.parse(localStorage.getItem('homelyserv_conversations') || '[]'),
-      messages: JSON.parse(localStorage.getItem('homelyserv_chat_messages') || '{}'),
-      complaints: JSON.parse(localStorage.getItem('worker_complaints') || '[]'),
-      payments: JSON.parse(localStorage.getItem('worker_payments') || '[]'),
-      savedJobs: JSON.parse(localStorage.getItem('worker_saved_offers') || '[]'),
-      exportDate: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `worker_data_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportData = async () => {
+    try {
+      const workerId = user?.id || user?.email;
+      
+      // Get conversations from backend
+      let conversations = [];
+      let messages = {};
+      try {
+        const convsResponse = await api.get(`/api/chat/conversations/${workerId}`);
+        if (convsResponse.data.success) {
+          conversations = convsResponse.data.conversations || [];
+        }
+      } catch (error) {
+        console.error('Error loading conversations for export:', error);
+      }
+      
+      // Get messages for each conversation
+      for (const conv of conversations) {
+        try {
+          const msgsResponse = await api.get(`/api/chat/messages/${conv.id}`);
+          if (msgsResponse.data.success) {
+            messages[conv.id] = msgsResponse.data.messages || [];
+          }
+        } catch (error) {
+          console.error('Error loading messages for export:', error);
+        }
+      }
+      
+      const data = {
+        user: user,
+        settings: settings,
+        offers: JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]'),
+        conversations: conversations,
+        messages: messages,
+        complaints: JSON.parse(localStorage.getItem('worker_complaints') || '[]'),
+        payments: JSON.parse(localStorage.getItem('worker_payments') || '[]'),
+        savedJobs: JSON.parse(localStorage.getItem('worker_saved_offers') || '[]'),
+        exportDate: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `worker_data_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Failed to export data. Please try again.');
+    }
   };
 
   const userProfileImage = user?.profileImage || null;
