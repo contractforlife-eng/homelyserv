@@ -1,4 +1,4 @@
-// src/pages/EmployerPayments.jsx - COMPLETE FIXED FILE
+// src/pages/EmployerPayments.jsx - FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -310,10 +310,15 @@ const debugPayments = (userEmail) => {
   console.log('📋 employer_payments count:', employerPayments.length);
   console.log('📋 employer_payments:', employerPayments);
   
-  const userPayments = allPayments.filter(p => 
-    p.employerEmail === userEmail || p.employerId === userEmail
-  );
-  console.log(`📋 Payments for ${userEmail}:`, userPayments);
+  const user = JSON.parse(localStorage.getItem('homelyserv_user'));
+
+const userPayments = allPayments.filter(p =>
+  p.employerEmail === user.email ||
+  p.employerId === user.id ||
+  p.employerId === user.email
+);
+
+console.table(userPayments);
   
   const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
   const userOffers = employerOffers.filter(o => 
@@ -577,7 +582,7 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // PAYMENT SUCCESS HANDLER
+  // PAYMENT SUCCESS HANDLER - FIXED
   // ============================================================
   const handlePaymentSuccess = (paymentId, offerId) => {
     try {
@@ -674,7 +679,7 @@ const EmployerPayments = () => {
         console.log(`✅ Updated worker_offers for ${offer.workerEmail}`);
       }
       
-      // 3. CREATE PAYMENT RECORD
+      // 3. CREATE PAYMENT RECORD - FIXED with all required fields
       const commissionRate = 0.15;
       const fullSalary = Number(offer.amount || 0);
       const commission = Math.round(fullSalary * commissionRate * 100) / 100;
@@ -704,11 +709,15 @@ const EmployerPayments = () => {
         description: offer.description || `Commission for hiring ${offer.workerName}`,
         reference: 'REF-' + offer.id,
         paymentType: 'commission',
-        type: 'commission'
+        type: 'commission', // <-- CRITICAL: This must be set for filtering
+        hasReceipt: false,
+        paymentId: paymentId || 'PAY-' + Date.now()
       };
       
       console.log('📋 Creating payment record with employer email:', user.email);
+      console.log('📋 Payment record:', paymentRecord);
       
+      // 4. SAVE TO all_payments
       let allPayments = [];
       try {
         allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
@@ -717,11 +726,13 @@ const EmployerPayments = () => {
         allPayments = [];
       }
       
+      // Remove any existing payment with same offerId
       const filteredPayments = allPayments.filter(p => p.offerId !== offerId);
       filteredPayments.push(paymentRecord);
       localStorage.setItem('all_payments', JSON.stringify(filteredPayments));
-      console.log('✅ Updated all_payments');
+      console.log('✅ Updated all_payments. New count:', filteredPayments.length);
       
+      // 5. SAVE TO employer_payments
       let employerPayments = [];
       try {
         employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
@@ -733,9 +744,9 @@ const EmployerPayments = () => {
       const empFiltered = employerPayments.filter(p => p.offerId !== offerId);
       empFiltered.push(paymentRecord);
       localStorage.setItem('employer_payments', JSON.stringify(empFiltered));
-      console.log('✅ Updated employer_payments');
+      console.log('✅ Updated employer_payments. New count:', empFiltered.length);
       
-      // 4. CREATE NOTIFICATION
+      // 6. CREATE NOTIFICATION
       try {
         const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
         const notification = {
@@ -770,6 +781,7 @@ const EmployerPayments = () => {
       
       alert(t.paymentSuccess);
       
+      // Force reload of payments
       setLoading(true);
       setTimeout(() => {
         loadData();
@@ -801,7 +813,7 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // LOAD DATA
+  // LOAD DATA - FIXED to properly load all payments
   // ============================================================
   const loadData = () => {
     if (isLoadingRef.current) {
@@ -824,6 +836,7 @@ const EmployerPayments = () => {
       const employerEmail = user.email;
       console.log('📂 Loading commission payments for employer:', employerEmail);
 
+      // 1. GET PAYMENTS FROM all_payments
       let allPayments = [];
       try {
         allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
@@ -833,39 +846,95 @@ const EmployerPayments = () => {
         allPayments = [];
       }
       
-      let employerPayments = allPayments.filter(
-        p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
-             (p.type === 'commission' || p.paymentType === 'commission')
-      );
+      // Filter for this employer's commission payments
+      const employerId = user?.id;
+let employerPayments = allPayments.filter((p) => {
+  const isCurrentEmployer =
+    p.employerId === employerId ||
+    p.employerEmail === employerEmail ||
+    p.employerId === employerEmail; // للتوافق مع البيانات القديمة
+
+  const isSupportedPayment =
+    ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
+    ['commission', 'recruitment'].includes(p.type);
+
+  return isCurrentEmployer && isSupportedPayment;
+});
       
       console.log(`📋 Found ${employerPayments.length} commission payments in all_payments`);
 
+      // 2. GET PAYMENTS FROM employer_payments
       let empPayments = [];
       try {
         empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
+        console.log('📋 employer_payments count:', empPayments.length);
       } catch (e) {
         console.error('Error reading employer_payments:', e);
         empPayments = [];
       }
       
-      const empFiltered = empPayments.filter(
-        p => (p.employerId === employerEmail || p.employerEmail === employerEmail) &&
-             (p.type === 'commission' || p.paymentType === 'commission')
-      );
+      const empFiltered = empPayments.filter((p) => {
+  const isCurrentEmployer =
+    p.employerId === employerId ||
+    p.employerEmail === user?.email ||
+    p.employerId === user?.email;
+
+  const isSupportedPayment =
+    ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
+    ['commission', 'recruitment'].includes(p.type);
+
+  return isCurrentEmployer && isSupportedPayment;
+});
       
+      console.log(`📋 Found ${empFiltered.length} commission payments in employer_payments`);
+
+      // 3. MERGE PAYMENTS (deduplicate by offerId or id)
       const mergedMap = {};
       [...employerPayments, ...empFiltered].forEach(p => {
-        if (p.id && !mergedMap[p.id]) {
-          mergedMap[p.id] = p;
+        // Use offerId as key if available, otherwise use id
+        const key = p.offerId || p.id;
+        if (key && !mergedMap[key]) {
+          mergedMap[key] = p;
+        } else if (key && mergedMap[key]) {
+          // If duplicate, merge and keep the one with more data
+          const existing = mergedMap[key];
+          if (p.status === 'completed' && existing.status !== 'completed') {
+            mergedMap[key] = { ...existing, ...p };
+          }
         }
       });
       employerPayments = Object.values(mergedMap);
+      console.table(
+  employerPayments.map(p => ({
+    id: p.id,
+    employerId: p.employerId,
+    employerEmail: p.employerEmail,
+    paymentType: p.paymentType,
+    type: p.type,
+    status: p.status
+  }))
+);
+      console.log(`📋 After merging: ${employerPayments.length} unique payments`);
 
+      // 4. CHECK OFFERS FOR ANY MISSING PAYMENTS
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const employerAcceptedOffers = employerOffers.filter(
-        o => (o.status === 'accepted' || o.status === 'completed' || o.status === 'terminated' || o.status === 'in_progress') && 
-             (o.employerEmail === employerEmail || o.employerId === employerEmail)
-      );
+      const employerAcceptedOffers = employerOffers.filter((o) => {
+  const isEmployer =
+    o.employerId === employerId ||
+    o.employerEmail === employerEmail ||
+    o.employerId === employerEmail; // دعم البيانات القديمة
+
+  const isAccepted =
+    o.status === 'accepted' ||
+    o.status === 'completed' ||
+    o.status === 'terminated' ||
+    o.status === 'in_progress' ||
+    o.paymentCompleted === true;
+
+  return isEmployer && isAccepted;
+});
+
+      console.log(`📋 Found ${employerAcceptedOffers.length} accepted/completed offers`);
 
       const existingPaymentOfferIds = new Set(employerPayments.map(p => p.offerId).filter(Boolean));
       
@@ -873,11 +942,31 @@ const EmployerPayments = () => {
       let newPayments = [];
       
       employerAcceptedOffers.forEach(offer => {
+        // Check if payment exists for this offer
         if (!existingPaymentOfferIds.has(offer.id)) {
           const fullSalary = Number(offer.amount || 0);
           const commission = Math.round(fullSalary * commissionRate * 100) / 100;
           
-          const isCompleted = offer.paymentCompleted === true || offer.status === 'in_progress' || offer.status === 'completed';
+          // Determine if payment should be considered completed
+          const isCompleted = offer.paymentCompleted === true || 
+                             offer.status === 'in_progress' || 
+                             offer.status === 'completed' ||
+                             offer.paymentStatus === 'completed';
+          
+          // Check if there's a payment record in all_payments with this offerId
+          const existingPayment = allPayments.find(p => p.offerId === offer.id);
+          if (existingPayment) {
+            // Use existing payment data
+            const payment = {
+  ...existingPayment,
+  employerId: employerId,
+  employerEmail: employerEmail
+};
+            newPayments.push(payment);
+            existingPaymentOfferIds.add(offer.id);
+            console.log(`📋 Using existing payment for offer ${offer.id}`);
+            return;
+          }
           
           const payment = {
             id: offer.paymentId || `PAY-${offer.id}`,
@@ -889,28 +978,31 @@ const EmployerPayments = () => {
             workerLocation: offer.workerLocation || 'Not specified',
             workerRating: offer.workerRating || 4.5,
             workerImage: offer.workerImage || '',
-            employerId: employerEmail,
+            employerId: employerId,
             employerEmail: employerEmail,
             jobTitle: offer.jobTitle || 'Service Provider',
             commission: commission,
             fullSalary: fullSalary,
             status: isCompleted ? 'completed' : 'pending',
-            paymentMethod: null,
-            paymentVerified: isCompleted,
-            contactRevealed: isCompleted,
+            paymentVerified: isCompleted || false,
+            contactRevealed: isCompleted || false,
+            paymentMethod: isCompleted ? 'commission' : null,
+            paymentType: 'commission',
+            type: 'commission', // <-- CRITICAL
             createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            completedAt: isCompleted ? new Date().toISOString() : null,
             description: offer.description || `Commission for hiring ${offer.workerName}`,
             reference: 'REF-' + offer.id,
-            hasReceipt: false,
-            paymentType: 'commission',
-            type: 'commission'
+            hasReceipt: false
           };
           newPayments.push(payment);
           existingPaymentOfferIds.add(offer.id);
+          console.log(`📋 Created new payment for offer ${offer.id}`);
         }
       });
 
+      // 5. SAVE NEW PAYMENTS
       if (newPayments.length > 0) {
         const updatedAllPayments = [...allPayments, ...newPayments];
         localStorage.setItem('all_payments', JSON.stringify(updatedAllPayments));
@@ -918,17 +1010,26 @@ const EmployerPayments = () => {
         console.log(`✅ Added ${newPayments.length} new payments`);
       }
 
-      employerPayments.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+      // 6. SORT BY DATE
+      employerPayments.sort((a, b) => 
+        new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0)
+      );
 
-      console.log(`✅ Loaded ${employerPayments.length} unique commission payments`);
+      console.log(`✅ Loaded ${employerPayments.length} total commission payments`);
 
+      // 7. UPDATE STATE
       setPayments(employerPayments);
       setFilteredPayments(employerPayments);
 
-      const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
+      // 8. CALCULATE STATS
+      const completedPayments = employerPayments.filter(p => 
+        p.status === 'completed' || p.paymentVerified === true
+      );
       const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
       const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
-      const pendingCount = employerPayments.filter(p => p.status === 'pending' && !p.paymentVerified).length;
+      const pendingCount = employerPayments.filter(p => 
+        (p.status === 'pending' || p.status === 'waiting_payment') && !p.paymentVerified
+      ).length;
       const completedCount = completedPayments.length;
 
       const uniqueWorkers = new Set();
@@ -951,6 +1052,7 @@ const EmployerPayments = () => {
       
     } catch (error) {
       console.error('Error loading payments:', error);
+      console.error('Error details:', error.stack);
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -1128,11 +1230,15 @@ const EmployerPayments = () => {
   };
 
   const handleDebug = () => {
-    if (user?.email) {
-      debugPayments(user.email);
-      alert('Debug data printed to console. Check the browser console (F12).');
-    }
-  };
+  console.log("Current User:", user);
+  console.log("User ID:", user?.id);
+  console.log("User Email:", user?.email);
+
+  if (user?.email) {
+    debugPayments(user.email);
+    alert('Debug data printed to console. Check the browser console (F12).');
+  }
+};
 
   const getStatusColor = (status) => {
     const colors = {
@@ -1387,7 +1493,7 @@ const EmployerPayments = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredPayments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={payment.id || payment.offerId} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-medium text-gray-800 truncate max-w-[80px]">{payment.id}</span>

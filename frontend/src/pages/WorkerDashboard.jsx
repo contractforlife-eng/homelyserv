@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import { syncCurrentUser } from "../utils/syncUser";
 import {
   Home,
   User,
@@ -282,10 +283,18 @@ const WorkerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => syncCurrentUser());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    const updatedUser = syncCurrentUser();
+
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+  }, []);
   const [stats, setStats] = useState({
+    
     totalApplications: 0,
     activeOffers: 0,
     interviews: 0,

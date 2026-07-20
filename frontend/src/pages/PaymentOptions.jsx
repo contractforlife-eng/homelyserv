@@ -538,26 +538,37 @@ const PaymentOptions = () => {
 
       // Create payment record
       const paymentRecord = {
-        id: 'PAY-' + Date.now(),
-        offerId: pendingPayment?.offerId,
-        hireId: hireId,
-        workerId: workerData?.workerId || workerData?.workerEmail,
-        workerName: workerData?.workerName,
-        workerEmail: workerData?.workerEmail,
-        jobTitle: workerData?.desiredJob || 'Service Provider',
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName || 'Employer',
-        amount: total,
-        status: 'completed',
-        paymentMethod: selectedMethod,
-        paymentType: pendingPayment?.paymentType || 'recruitment',
-        transactionId: paymentData?.transactionId || 'TXN-' + Date.now(),
-        paymentId: paymentData?.paymentId,
-        createdAt: new Date().toISOString(),
-        contactRevealed: true,
-        paymentVerified: true,
-        fullSalary: pendingPayment?.fullSalary || workerData?.salary || total,
-        commission: total
+    id: 'PAY-' + Date.now(),
+    offerId: pendingPayment?.offerId,
+    hireId: hireId,
+
+    workerId: workerData?.workerId || workerData?.workerEmail,
+    workerName: workerData?.workerName,
+    workerEmail: workerData?.workerEmail,
+    jobTitle: workerData?.desiredJob || 'Service Provider',
+
+    employerId: user?.id || user?.email,
+    employerEmail: user?.email || '',
+    employerName: user?.fullName || 'Employer',
+
+    amount: total,
+    status: 'completed',
+
+    paymentMethod: selectedMethod,
+
+    paymentType: pendingPayment?.paymentType || 'recruitment',
+    type: pendingPayment?.paymentType || 'recruitment',
+
+    transactionId: paymentData?.transactionId || 'TXN-' + Date.now(),
+    paymentId: paymentData?.paymentId,
+
+    createdAt: new Date().toISOString(),
+
+    contactRevealed: true,
+    paymentVerified: true,
+
+    fullSalary: pendingPayment?.fullSalary || workerData?.salary || total,
+    commission: total
       };
 
       // Save to all_payments

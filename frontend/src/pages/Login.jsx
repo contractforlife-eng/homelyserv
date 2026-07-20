@@ -234,7 +234,16 @@ function Login() {
           subscriptionActive: isPremium,
           subscription: subscription
         };
-        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        const safeUser = {
+  ...user
+};
+
+delete safeUser.profileImage;
+
+localStorage.setItem(
+ "homelyserv_user",
+ JSON.stringify(safeUser)
+);
       }
     } catch (error) {
       console.error('Error updating users list:', error);
@@ -270,6 +279,13 @@ function Login() {
     }
 
     localStorage.setItem('homelyserv_token', token);
+    console.log(
+  "USER SIZE BEFORE STORAGE:",
+  (JSON.stringify(user).length / 1024).toFixed(2),
+  "KB"
+);
+
+console.log("USER DATA:", user);
     localStorage.setItem('homelyserv_user', JSON.stringify(user));
     
     console.log('✅ Login successful:', user.fullName);

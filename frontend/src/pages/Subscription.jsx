@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import { capturePayPalOrder } from "../services/paymentService";
 import {
   Shield,
   Star,

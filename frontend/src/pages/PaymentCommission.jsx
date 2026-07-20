@@ -73,6 +73,8 @@ const PaymentCommission = () => {
   // Process successful payment
   const processSuccessfulPayment = (paymentData) => {
     try {
+      console.log("Commission Data:", commissionData);
+      
       const result = markCommissionPaid(
         commissionData.offerId,
         commissionData.workerId,
