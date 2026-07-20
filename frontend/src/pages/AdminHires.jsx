@@ -701,7 +701,7 @@ const AdminHires = () => {
     }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.en;
 
   // ============================================================
   // Load Hires from localStorage
