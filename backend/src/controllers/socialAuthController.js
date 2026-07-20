@@ -1,3 +1,16 @@
+// ============================================================
+// ⚠️  NOT WIRED UP - DO NOT MOUNT THIS ROUTE AS-IS  ⚠️
+// PHASE 0 SECURITY NOTE (audit §2.3): this file is not imported by
+// any route and cannot currently run in production. It is also
+// currently broken (uses CommonJS `require` in an ES module project).
+// It accepts `provider`/`providerId`/`email`/`fullName` directly from
+// the request body with NO verification that the caller actually
+// authenticated with that provider, then signs a real session token
+// for that identity - the same class of auth-bypass bug as
+// googleAuthController.js. Do not import/mount this file until it
+// verifies the provider token server-side. See routes/oauth.js for
+// the currently disabled, safe placeholder for social login.
+// ============================================================
 const prisma = require('../utils/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');

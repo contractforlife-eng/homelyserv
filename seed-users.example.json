@@ -1,0 +1,30 @@
+[
+  {
+    "fullName": "Example Worker",
+    "email": "worker-example@yourdomain.test",
+    "password": "REPLACE_WITH_A_STRONG_PASSWORD",
+    "role": "WORKER",
+    "phone": "",
+    "location": "Cairo, Egypt",
+    "profileComplete": true
+  },
+  {
+    "fullName": "Example Employer",
+    "email": "employer-example@yourdomain.test",
+    "password": "REPLACE_WITH_A_STRONG_PASSWORD",
+    "role": "EMPLOYER",
+    "phone": "",
+    "location": "Giza, Egypt",
+    "companyName": "Example Company",
+    "profileComplete": true
+  },
+  {
+    "fullName": "Example Admin",
+    "email": "admin-example@yourdomain.test",
+    "password": "REPLACE_WITH_A_STRONG_PASSWORD",
+    "role": "ADMIN",
+    "phone": "",
+    "location": "Cairo, Egypt",
+    "profileComplete": true
+  }
+]

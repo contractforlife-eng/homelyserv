@@ -1,8 +1,11 @@
 // backend/src/middleware/auth.js
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/jwtSecret.js';
 
-// Use the same JWT_SECRET that's in your .env file
-const JWT_SECRET = process.env.JWT_SECRET || 'homelyserv_secret_key_2026';
+// PHASE 0 SECURITY FIX (audit §2.8): no hardcoded fallback secret.
+// getJwtSecret() throws if JWT_SECRET is missing/weak; that error is
+// caught below and surfaced as a 500 rather than silently signing/
+// verifying tokens with a secret that was committed to source control.
 
 export const authenticate = (req, res, next) => {
   try {
@@ -41,9 +44,14 @@ export const authenticate = (req, res, next) => {
     console.log(`🔑 Token received: ${token.substring(0, 20)}...`);
     console.log(`🔑 Token length: ${token.length}`);
     
+    // Resolve the signing secret first (outside the JWT-error try/catch
+    // below) so a missing/weak JWT_SECRET is reported as a 500 server
+    // configuration error, not a misleading 401 "invalid token".
+    const jwtSecret = getJwtSecret();
+
     // Verify the token
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, jwtSecret);
       console.log(`✅ Token verified for user: ${decoded.userId || decoded.email || 'unknown'}`);
       
       // Attach user info to request

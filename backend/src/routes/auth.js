@@ -3,6 +3,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { getJwtSecret } from '../config/jwtSecret.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -41,7 +43,7 @@ router.post('/register', async (req, res) => {
     // Generate token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_super_secret_key_2026',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -97,7 +99,7 @@ router.post('/login', async (req, res) => {
     // Generate token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_super_secret_key_2026',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -122,9 +124,11 @@ router.post('/login', async (req, res) => {
 });
 
 // ============================================================
-// GET ALL USERS - FIXED (ADD THIS)
+// GET ALL USERS (Admin only)
+// PHASE 0 SECURITY FIX (audit §3): this previously had no auth check
+// at all and leaked every user's PII to anonymous callers.
 // ============================================================
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
   try {
     // Get ALL users - NO filters
     const users = await User.find({})
@@ -149,9 +153,10 @@ router.get('/users', async (req, res) => {
 });
 
 // ============================================================
-// GET USER BY ID (ADD THIS TOO)
+// GET USER BY ID (Admin only)
+// PHASE 0 SECURITY FIX (audit §3): this previously had no auth check.
 // ============================================================
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', requireAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     
@@ -189,7 +194,7 @@ router.get('/verify', async (req, res) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'homelyserv_super_secret_key_2026');
+    const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
@@ -252,7 +257,7 @@ router.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
     
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'homelyserv_super_secret_key_2026');
+    const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.userId);
     
     if (!user) {

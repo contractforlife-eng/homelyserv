@@ -21,6 +21,7 @@ import paymentRoutes from './routes/payment.js';
 import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notifications.js';
 import oauthRoutes from './routes/oauth.js';
+import { requireAdmin } from './middleware/auth.js';
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -213,8 +214,13 @@ app.get('/api/test', (req, res) => {
 
 // ============================================================
 // DEBUG: SHOW ALL USERS
+// PHASE 0 SECURITY FIX (audit §2.9): previously unauthenticated,
+// leaked every user's email/fullName/role to anonymous callers.
+// Debug endpoints like this should not exist in production at all;
+// they are gated behind admin auth here as an interim fix and should
+// be removed entirely in a later phase.
 // ============================================================
-app.get('/api/debug/all-users', async (req, res) => {
+app.get('/api/debug/all-users', requireAdmin, async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const users = await User.find({});
@@ -244,8 +250,9 @@ app.get('/api/debug/all-users', async (req, res) => {
 
 // ============================================================
 // DEBUG: CHECK USER COUNT
+// PHASE 0 SECURITY FIX (audit §2.9): previously unauthenticated.
 // ============================================================
-app.get('/api/debug/user-count', async (req, res) => {
+app.get('/api/debug/user-count', requireAdmin, async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const count = await User.countDocuments();
@@ -266,8 +273,9 @@ app.get('/api/debug/user-count', async (req, res) => {
 
 // ============================================================
 // DEBUG: FIX USER LISTING
+// PHASE 0 SECURITY FIX (audit §2.9): previously unauthenticated.
 // ============================================================
-app.get('/api/users/all', async (req, res) => {
+app.get('/api/users/all', requireAdmin, async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const users = await User.find({})

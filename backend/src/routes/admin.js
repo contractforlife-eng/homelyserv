@@ -1,8 +1,16 @@
 // backend/src/routes/admin.js
 import express from 'express';
 import User from '../models/User.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// PHASE 0 SECURITY FIX (audit §2.2): this entire router previously had
+// NO authentication or authorization check at all - any anonymous
+// request could list/search all users, view PII, suspend/activate/
+// delete accounts, etc. Every route below now requires a valid JWT
+// belonging to a user with role === 'ADMIN'.
+router.use(requireAdmin);
 
 // ============================================================
 // Get All Users (Admin Only) - FIXED: Shows ALL users

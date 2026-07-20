@@ -1,3 +1,18 @@
+// ============================================================
+// ⚠️  NOT WIRED UP - DO NOT MOUNT THIS ROUTE AS-IS  ⚠️
+// PHASE 0 SECURITY NOTE (audit §2.3): this file is not imported by
+// any route and cannot currently run in production. It is also
+// currently broken (uses CommonJS `require` in an ES module project).
+// It is left here only for reference and contains a KNOWN AUTH-BYPASS
+// VULNERABILITY: verifyGoogleToken() below uses jwt.decode() instead
+// of jwt.verify(), which does NOT check the token's signature,
+// issuer, or audience. Anyone could forge a fake "Google credential"
+// with any email and be logged in as that user with no proof of
+// identity. Do not import/mount this file until it is rewritten to
+// verify tokens server-side (e.g. with google-auth-library's
+// OAuth2Client.verifyIdToken). See routes/oauth.js for the currently
+// disabled, safe placeholder for social login.
+// ============================================================
 const prisma = require('../utils/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
