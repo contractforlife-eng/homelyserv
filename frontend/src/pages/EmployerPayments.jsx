@@ -1210,6 +1210,22 @@ let employerPayments = allPayments.filter((p) => {
         image: payment.workerImage || ''
       };
       localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
+      const recipient = chatData;
+
+localStorage.setItem(
+  'homelyserv_chat_worker_id',
+  recipient.workerId || recipient.id || recipient.email
+);
+
+localStorage.setItem(
+  'homelyserv_chat_worker_name',
+  recipient.workerName || recipient.name || 'Worker'
+);
+
+localStorage.setItem(
+  'homelyserv_chat_worker_image',
+  recipient.workerImage || recipient.image || ''
+);
       navigate('/employer-messages');
     }
   };
