@@ -1192,7 +1192,7 @@ let employerPayments = allPayments.filter((p) => {
     navigate('/payment-options');
   };
 
-  const handleContact = (payment, method) => {
+  const handleContact = async (payment, method) => {
     const phone = payment.workerPhone;
     
     if (method === 'whatsapp') {
@@ -1203,29 +1203,57 @@ let employerPayments = allPayments.filter((p) => {
         alert('No phone number available');
       }
     } else if (method === 'message') {
-      const chatData = {
-        id: payment.workerId || payment.workerEmail,
-        name: payment.workerName,
-        role: 'worker',
-        image: payment.workerImage || ''
-      };
-      localStorage.setItem('homelyserv_chat_recipient', JSON.stringify(chatData));
-      const recipient = chatData;
-
-localStorage.setItem(
-  'homelyserv_chat_worker_id',
-  recipient.workerId || recipient.id || recipient.email
-);
-
-localStorage.setItem(
-  'homelyserv_chat_worker_name',
-  recipient.workerName || recipient.name || 'Worker'
-);
-
-localStorage.setItem(
-  'homelyserv_chat_worker_image',
-  recipient.workerImage || recipient.image || ''
-);
+      const workerId = payment.workerId || payment.workerEmail;
+      const workerName = payment.workerName || 'Worker';
+      
+      console.log('💬 Opening chat with worker from Payments:', { workerId, workerName });
+      
+      if (!workerId) {
+        console.error('No worker ID found for payment:', payment);
+        alert('Unable to open chat: Worker ID not found');
+        return;
+      }
+      
+      try {
+        setCreatingConversation(true);
+      } catch (e) {
+        // setCreatingConversation may not exist in this scope, ignore
+      }
+      
+      const employerId = user?.id || user?.email;
+      const employerName = user?.fullName || 'Employer';
+      
+      // Create/ensure conversation before navigating (identical to MyHires pattern)
+      try {
+        const result = await sendMessage(
+          employerId,
+          employerName,
+          'EMPLOYER',
+          workerId,
+          workerName,
+          `Hello ${workerName}! Let's discuss your work.`
+        );
+        
+        if (result) {
+          console.log('✅ Conversation ensured from Payments page');
+        }
+      } catch (error) {
+        console.error('Error ensuring conversation:', error);
+      } finally {
+        try {
+          setCreatingConversation(false);
+        } catch (e) {
+          // ignore
+        }
+      }
+      
+      // Store worker info in localStorage (same keys as MyHires)
+      localStorage.setItem('homelyserv_chat_worker_id', workerId);
+      localStorage.setItem('homelyserv_chat_worker_name', workerName);
+      localStorage.setItem('homelyserv_chat_worker_image', payment.workerImage || '');
+      localStorage.setItem('homelyserv_chat_hire_id', payment.offerId || payment.id || '');
+      localStorage.setItem('homelyserv_chat_hire_job', payment.jobTitle || '');
+      
       navigate('/employer-messages');
     }
   };

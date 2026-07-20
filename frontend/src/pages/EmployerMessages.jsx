@@ -507,7 +507,7 @@ const EmployerMessages = () => {
   }, [user, selectedConversationId]);
 
   // ============================================================
-  // AUTO-OPEN CHAT FROM MY HIRES PAGE
+  // AUTO-OPEN CHAT FROM MY HIRES / PAYMENTS PAGE
   // ============================================================
   useEffect(() => {
     if (!user || autoOpenDoneRef.current) return;
@@ -517,71 +517,77 @@ const EmployerMessages = () => {
     const workerName = localStorage.getItem('homelyserv_chat_worker_name');
     const workerImage = localStorage.getItem('homelyserv_chat_worker_image') || '';
     
-    if (workerId) {
-      console.log('💬 Auto-opening chat with worker:', { workerId, workerName });
-      
-      // Mark as done so we don't re-trigger
-      autoOpenDoneRef.current = true;
-      
-      // Clear the stored values so they don't trigger again
-      localStorage.removeItem('homelyserv_chat_worker_id');
-      localStorage.removeItem('homelyserv_chat_worker_name');
-      localStorage.removeItem('homelyserv_chat_worker_image');
-      localStorage.removeItem('homelyserv_chat_hire_id');
-      localStorage.removeItem('homelyserv_chat_hire_job');
-      
-      // Find the conversation with this worker
-      const conversation = conversations.find(
-        conv => conv.otherUserId === workerId
-      );
-      
-      if (conversation) {
-        // If conversation exists, open it
-        console.log('✅ Found existing conversation:', conversation.id);
-        setSelectedConversationId(conversation.id);
-        loadMessagesForConversation(conversation.id);
-      } else {
-        // If no conversation exists, create one
-        console.log('🔄 No conversation found, creating one...');
-        const createAndOpenConversation = async () => {
-          const userId = user.id || user.email;
-          const senderName = user.fullName || 'Employer';
-          const senderRole = 'EMPLOYER';
-          const recipientId = workerId;
-          const recipientName = workerName || 'Worker';
+    if (!workerId) return;
+    
+    // Wait for conversations to finish loading before attempting auto-open
+    if (loading) {
+      console.log('⏳ Conversations still loading, waiting before auto-open...');
+      return;
+    }
+    
+    console.log('💬 Auto-opening chat with worker:', { workerId, workerName });
+    
+    // Mark as done so we don't re-trigger
+    autoOpenDoneRef.current = true;
+    
+    // Clear the stored values so they don't trigger again
+    localStorage.removeItem('homelyserv_chat_worker_id');
+    localStorage.removeItem('homelyserv_chat_worker_name');
+    localStorage.removeItem('homelyserv_chat_worker_image');
+    localStorage.removeItem('homelyserv_chat_hire_id');
+    localStorage.removeItem('homelyserv_chat_hire_job');
+    
+    // Find the conversation with this worker
+    const conversation = conversations.find(
+      conv => conv.otherUserId === workerId
+    );
+    
+    if (conversation) {
+      // If conversation exists, open it
+      console.log('✅ Found existing conversation:', conversation.id);
+      setSelectedConversationId(conversation.id);
+      loadMessagesForConversation(conversation.id);
+    } else {
+      // If no conversation exists, create one
+      console.log('🔄 No conversation found, creating one...');
+      const createAndOpenConversation = async () => {
+        const userId = user.id || user.email;
+        const senderName = user.fullName || 'Employer';
+        const senderRole = 'EMPLOYER';
+        const recipientId = workerId;
+        const recipientName = workerName || 'Worker';
+        
+        // Send a welcome message to start the conversation
+        const result = await sendMessage(
+          userId,
+          senderName,
+          senderRole,
+          recipientId,
+          recipientName,
+          `Hello! I'd like to discuss the job opportunity with you.`
+        );
+        
+        if (result) {
+          console.log('✅ Welcome message sent, refreshing conversations...');
+          // Refresh conversations and open the new chat
+          const updatedConversations = await getUserConversations(userId);
+          setConversations(updatedConversations);
           
-          // Send a welcome message to start the conversation
-          const result = await sendMessage(
-            userId,
-            senderName,
-            senderRole,
-            recipientId,
-            recipientName,
-            `Hello! I'd like to discuss the job opportunity with you.`
+          const newConversation = updatedConversations.find(
+            conv => conv.otherUserId === workerId
           );
           
-          if (result) {
-            console.log('✅ Welcome message sent, refreshing conversations...');
-            // Refresh conversations and open the new chat
-            const updatedConversations = await getUserConversations(userId);
-            setConversations(updatedConversations);
-            
-            const newConversation = updatedConversations.find(
-              conv => conv.otherUserId === workerId
-            );
-            
-            if (newConversation) {
-              console.log('✅ New conversation created:', newConversation.id);
-              setSelectedConversationId(newConversation.id);
-              loadMessagesForConversation(newConversation.id);
-            }
+          if (newConversation) {
+            console.log('✅ New conversation created:', newConversation.id);
+            setSelectedConversationId(newConversation.id);
+            loadMessagesForConversation(newConversation.id);
           }
-        };
-        
-        createAndOpenConversation();
-      }
+        }
+      };
+      
+      createAndOpenConversation();
     }
-  }, [user, conversations]);
+  }, [user, conversations, loading]);
 
   // Scroll to bottom of messages
   useEffect(() => {
