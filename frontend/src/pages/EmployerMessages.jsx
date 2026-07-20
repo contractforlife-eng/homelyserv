@@ -510,7 +510,7 @@ const EmployerMessages = () => {
   // AUTO-OPEN CHAT FROM MY HIRES PAGE
   // ============================================================
   useEffect(() => {
-    if (!user || conversations.length === 0 || autoOpenDoneRef.current) return;
+    if (!user || autoOpenDoneRef.current) return;
 
     // Check if we have a worker to chat with
     const workerId = localStorage.getItem('homelyserv_chat_worker_id');
