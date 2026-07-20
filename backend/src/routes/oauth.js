@@ -1,40 +1,97 @@
 // backend/src/routes/oauth.js
+// Google OAuth server-side token verification
 import express from 'express';
+import { OAuth2Client } from 'google-auth-library';
+import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/jwtSecret.js';
 
 const router = express.Router();
 
-// ============================================================
-// SOCIAL LOGIN - Google & Facebook
-//
-// PHASE 0 SECURITY FIX (audit §2.3): this endpoint previously
-// trusted client-supplied `email`/`fullName`/`provider` fields as
-// proof of identity with NO verification against Google/Facebook,
-// and then signed a real HomelyServ JWT for that identity. Anyone
-// could POST an arbitrary email (including an existing user's email)
-// and receive a valid, signed session token for that account with no
-// password and no proof of ownership - a full authentication bypass /
-// account-takeover path.
-//
-// It also read/wrote user records via `localStorage`, which does not
-// exist in a Node.js server process, so the "create or find user"
-// logic silently no-op'd on every call (wrapped in try/catch).
-//
-// This endpoint is disabled until it is reimplemented to verify the
-// provider token server-side (e.g. Google: exchange/validate the
-// `credential` with `google-auth-library`'s `OAuth2Client.verifyIdToken`
-// and check `aud`/`iss`/`exp`; Facebook: validate the access token
-// against Facebook's `debug_token` endpoint using the app secret) and
-// to persist users through the real database layer rather than
-// localStorage. That work is scheduled for a later phase - see the
-// audit report, §2.3 and §6 step 4.
-// ============================================================
-router.post('/social-login', (req, res) => {
-  console.warn('⚠️  /api/oauth/social-login called while disabled (Phase 0 security fix - see audit §2.3)');
-  return res.status(503).json({
-    success: false,
-    message: 'Social login is temporarily disabled while server-side provider token verification is implemented. Please use email/password login in the meantime.',
-    code: 'SOCIAL_LOGIN_DISABLED'
-  });
+const GOOGLE_CLIENT_ID = '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com';
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+const generateRandomPassword = () => {
+  return Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+};
+
+// POST /api/oauth/social-login
+// Verifies Google ID token server-side and returns a HomelyServ JWT
+router.post('/social-login', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing Google credential'
+      });
+    }
+
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email || !payload.name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Google token payload'
+      });
+    }
+
+    const email = payload.email;
+    const fullName = payload.name;
+    const profileImage = payload.picture || null;
+
+    // Find existing user by email
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user with random password (password is required by schema)
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      user = new User({
+        fullName,
+        email,
+        password: hashedPassword,
+        role: 'WORKER',
+        profileImage
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token (same format as /auth/login)
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      getJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
+    // Return user without password
+    const userData = user.toObject();
+    delete userData.password;
+
+    res.json({
+      success: true,
+      token,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Google social login error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Google authentication failed'
+    });
+  }
 });
 
 export default router;

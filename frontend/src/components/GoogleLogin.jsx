@@ -1,11 +1,8 @@
-import { GoogleOAuthProvider, GoogleLogin as GoogleLoginButton } from '@react-oauth/google';
+import { GoogleLogin as GoogleLoginButton } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
-
-// Your Google Client ID from Google Cloud Console
-const GOOGLE_CLIENT_ID = '559915954281-60dus88msec2ic1ebst0tfuk7oebpj9e.apps.googleusercontent.com';
 
 function GoogleLoginComponent() {
   const navigate = useNavigate();
@@ -53,9 +50,5 @@ function GoogleLoginComponent() {
 }
 
 export default function GoogleLogin() {
-  return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <GoogleLoginComponent />
-    </GoogleOAuthProvider>
-  );
+  return <GoogleLoginComponent />;
 }

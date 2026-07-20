@@ -24,64 +24,31 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
-  // Generate a simple JWT-like token
-  const generateToken = (user) => {
-    const header = { alg: 'HS256', typ: 'JWT' };
-    const payload = {
-      userId: user.id || user.email,
-      email: user.email,
-      role: user.role,
-      id: user.id,
-      fullName: user.fullName,
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
-    };
-    const encodedHeader = btoa(JSON.stringify(header));
-    const encodedPayload = btoa(JSON.stringify(payload));
-    const signature = btoa('homelyserv_secret_key_2026');
-    return `${encodedHeader}.${encodedPayload}.${signature}`;
-  };
-
-  // Create admin user on component mount
+  // Check if user is already logged in
   useEffect(() => {
-    const createAdminUser = () => {
-      const adminUser = {
-        id: 'admin_emad',
-        fullName: 'Emad',
-        email: 'emad@homelyserv.com',
-        password: 'killuemad',
-        role: 'ADMIN',
-        phone: '+201009189851',
-        location: 'Cairo, Egypt',
-        bio: 'System Administrator',
-        skills: ['Management', 'Administration'],
-        experience: '5 years',
-        hourlyRate: '0',
-        createdAt: new Date().toISOString(),
-        profileComplete: true,
-        isPremium: false,
-        subscriptionActive: false
-      };
-
-      let existingUsers = [];
+    const token = localStorage.getItem('homelyserv_token');
+    const userData = localStorage.getItem('homelyserv_user');
+    if (token && userData) {
       try {
-        const storedUsers = localStorage.getItem('homelyserv_users');
-        existingUsers = storedUsers ? JSON.parse(storedUsers) : [];
+        const user = JSON.parse(userData);
+        const userId = user.id || user.email;
+        const isPremium = isUserPremium(userId);
+        const subscription = getUserSubscription(userId);
+        
+        const updatedUser = {
+          ...user,
+          isPremium: isPremium,
+          subscriptionActive: isPremium,
+          subscription: subscription
+        };
+        
+        localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
+        syncPremiumStatus(userId, user.email);
+        redirectUser(updatedUser);
       } catch (error) {
-        console.error('Error parsing existing users:', error);
-        existingUsers = [];
+        console.error('Error parsing user data:', error);
       }
-
-      const adminExists = existingUsers.find(u => u.email.toLowerCase() === 'emad@homelyserv.com');
-      if (!adminExists) {
-        existingUsers.push(adminUser);
-        localStorage.setItem('homelyserv_users', JSON.stringify(existingUsers));
-        console.log('✅ Admin user created: emad@homelyserv.com');
-      } else {
-        console.log('ℹ️ Admin user already exists');
-      }
-    };
-
-    createAdminUser();
+    }
   }, []);
 
   // Check if user is already logged in
@@ -125,175 +92,55 @@ function Login() {
     }
   };
 
-  const checkRegisteredUser = (email) => {
-    try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (user) {
-        return user;
-      }
-    } catch (error) {
-      console.error('Error checking registered users:', error);
-    }
-    return null;
-  };
-
-  const getSavedProfileData = (email) => {
-    try {
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (profiles[email]) {
-        return profiles[email];
-      }
-    } catch (error) {
-      console.error('Error loading profile data:', error);
-    }
-    return null;
-  };
-
-  const loginUser = (userData, role, email) => {
-    console.log('🔄 Logging in user:', email, 'role:', role);
+  const loginUser = async (email, password) => {
     setError('');
     setLoading(true);
 
-    let user = {};
-    let token = '';
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (userData) {
-      user = { ...userData };
-      token = generateToken(user);
-    } else {
-      if (role === 'WORKER') {
-        user = {
-          id: `worker_${Date.now()}`,
-          fullName: email === 'worker@homelyserv.com' ? 'Ahmed Ali' : 'Worker',
-          email: email || 'worker@homelyserv.com',
-          role: 'WORKER',
-          profileComplete: true,
-          phone: '+201234567890',
-          location: 'Cairo, Egypt',
-          bio: 'Experienced professional in home services.',
-          skills: ['Child Care', 'First Aid', 'Communication'],
-          experience: '3 years',
-          hourlyRate: '35',
-          isPremium: false,
-          subscriptionActive: false
-        };
-        token = generateToken(user);
-      } else if (role === 'EMPLOYER') {
-        user = {
-          id: `employer_${Date.now()}`,
-          fullName: email === 'employer@homelyserv.com' ? 'Sara Mohamed' : 'Employer',
-          email: email || 'employer@homelyserv.com',
-          role: 'EMPLOYER',
-          companyName: 'Company Name',
-          phone: '+201234567891',
-          location: 'Cairo, Egypt',
-          bio: 'Looking for professional home service providers.',
-          isPremium: false,
-          subscriptionActive: false
-        };
-        token = generateToken(user);
-      } else if (role === 'ADMIN') {
-        user = {
-          id: `admin_${Date.now()}`,
-          fullName: 'Admin User',
-          email: email || 'admin@homelyserv.com',
-          role: 'ADMIN',
-          phone: '+201234567892',
-          isPremium: false,
-          subscriptionActive: false
-        };
-        token = generateToken(user);
-      } else {
-        setError('Invalid role selected');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.message || 'Invalid email or password');
         setLoading(false);
         return;
       }
-    }
 
-    const savedProfile = getSavedProfileData(user.email);
-    if (savedProfile) {
-      user = { ...user, ...savedProfile };
-    }
+      const user = data.user;
+      const token = data.token;
 
-    const userId = user.id || user.email;
-    const isPremium = isUserPremium(userId);
-    const subscription = getUserSubscription(userId);
-    
-    user.isPremium = isPremium;
-    user.subscriptionActive = isPremium;
-    user.subscription = subscription;
+      const userId = user.id || user.email;
+      const isPremium = isUserPremium(userId);
+      const subscription = getUserSubscription(userId);
 
-    try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === user.email);
-      if (userIndex !== -1) {
-        users[userIndex] = {
-          ...users[userIndex],
-          isPremium: isPremium,
-          subscriptionActive: isPremium,
-          subscription: subscription
-        };
-        const safeUser = {
-  ...user
-};
+      const updatedUser = {
+        ...user,
+        isPremium,
+        subscriptionActive: isPremium,
+        subscription
+      };
 
-delete safeUser.profileImage;
+      localStorage.setItem('homelyserv_token', token);
+      localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
 
-localStorage.setItem(
- "homelyserv_user",
- JSON.stringify(safeUser)
-);
-      }
+      syncPremiumStatus(userId, user.email);
+
+      console.log('✅ Login successful:', updatedUser.fullName);
+      console.log('✅ User role:', updatedUser.role);
+
+      redirectUser(updatedUser);
     } catch (error) {
-      console.error('Error updating users list:', error);
+      console.error('Login error:', error);
+      setError('Login failed. Please try again.');
+      setLoading(false);
     }
-
-    try {
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (profiles[user.email]) {
-        profiles[user.email] = {
-          ...profiles[user.email],
-          isPremium: isPremium,
-          subscriptionActive: isPremium
-        };
-        localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-      }
-    } catch (error) {
-      console.error('Error updating profiles:', error);
-    }
-
-    try {
-      const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
-      if (subscriptions[userId]) {
-        subscriptions[userId] = {
-          ...subscriptions[userId],
-          userEmail: user.email,
-          userRole: user.role,
-          userFullName: user.fullName
-        };
-        localStorage.setItem('homelyserv_subscriptions', JSON.stringify(subscriptions));
-      }
-    } catch (error) {
-      console.error('Error updating subscriptions:', error);
-    }
-
-    localStorage.setItem('homelyserv_token', token);
-    console.log(
-  "USER SIZE BEFORE STORAGE:",
-  (JSON.stringify(user).length / 1024).toFixed(2),
-  "KB"
-);
-
-console.log("USER DATA:", user);
-    localStorage.setItem('homelyserv_user', JSON.stringify(user));
-    
-    console.log('✅ Login successful:', user.fullName);
-    console.log('✅ User role:', user.role);
-    
-    setTimeout(() => {
-      redirectUser(user);
-    }, 500);
   };
 
   const handleEmailSubmit = (e) => {
@@ -318,52 +165,14 @@ console.log("USER DATA:", user);
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       setLoading(false);
       return;
     }
 
-    const registeredUser = checkRegisteredUser(email);
-
-    if (registeredUser) {
-      if (registeredUser.password !== password) {
-        setError('Invalid email or password');
-        setLoading(false);
-        return;
-      }
-
-      loginUser(registeredUser, registeredUser.role, email);
-      return;
-    }
-
-    // Demo accounts
-    if (
-      (email.toLowerCase() === 'contractforlife@gmail.com' ||
-        email.toLowerCase() === 'worker') &&
-      password === 'test1234'
-    ) {
-      loginUser(null, 'WORKER', email);
-    }
-    else if (
-      (email.toLowerCase() === 'max@cargotrust.us' ||
-        email.toLowerCase() === 'employer') &&
-      password === 'test1234'
-    ) {
-      loginUser(null, 'EMPLOYER', email);
-    }
-    else if (
-      (email.toLowerCase() === 'admin@homelyserv.com' ||
-        email.toLowerCase() === 'admin') &&
-      password === 'test1234'
-    ) {
-      loginUser(null, 'ADMIN', email);
-    }
-    else {
-      setError('Invalid email or password');
-      setLoading(false);
-    }
+    loginUser(email, password);
   };
 
   const handleBackToEmail = () => {

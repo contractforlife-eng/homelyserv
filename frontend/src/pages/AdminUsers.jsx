@@ -1,6 +1,7 @@
 // src/pages/AdminUsers.jsx - WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Home,
   Users,
@@ -72,7 +73,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
   };
 
   // Check for new notifications from various sources
-  const checkForNewNotifications = () => {
+  const checkForNewNotifications = async () => {
     const existingNotifications = JSON.parse(
       localStorage.getItem('admin_notifications') || '[]'
     );
@@ -80,8 +81,19 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     const newNotifications = [];
     const existingIds = new Set(existingNotifications.map(n => n.id));
 
-    // 1. Check for new user registrations
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+    // 1. Check for new user registrations from MongoDB
+    let users = [];
+    
+    try {
+      const response = await api.get('/api/auth/users');
+      
+      if (response.data.success) {
+        users = response.data.users || [];
+      }
+    } catch (error) {
+      console.error('Failed to load users for notifications:', error);
+    }
+    
     const recentUsers = users.filter(u => {
       const createdAt = new Date(u.createdAt);
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -707,38 +719,52 @@ const AdminUsers = () => {
   const t = translations[language] || translations.en;
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'ADMIN') {
+    const loadUsers = async () => {
+      const savedLang = localStorage.getItem('homelyserv_language');
+      if (savedLang) {
+        setLanguage(savedLang);
+      }
+      
+      const userData = localStorage.getItem('homelyserv_user');
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          if (parsedUser.role !== 'ADMIN') {
+            navigate('/login');
+            return;
+          }
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
           navigate('/login');
-          return;
         }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+      } else {
         navigate('/login');
       }
-    } else {
-      navigate('/login');
-    }
 
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
+      const sidebarState = localStorage.getItem('sidebar_collapsed');
+      if (sidebarState) {
+        setSidebarCollapsed(JSON.parse(sidebarState));
+      }
 
-    // Load users from localStorage
-    const storedUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    setUsers(storedUsers);
-    setFilteredUsers(storedUsers);
-    setLoading(false);
+      // Load users from MongoDB API
+      try {
+        const response = await api.get('/api/auth/users');
+        
+        if (response.data.success) {
+          const fetchedUsers = response.data.users || [];
+          setUsers(fetchedUsers);
+          setFilteredUsers(fetchedUsers);
+          console.log('✅ Loaded users from MongoDB:', fetchedUsers.length);
+        }
+      } catch (error) {
+        console.error('❌ Failed loading users from backend:', error);
+      }
+      
+      setLoading(false);
+    };
+
+    loadUsers();
   }, [navigate]);
 
   useEffect(() => {
@@ -796,7 +822,7 @@ const AdminUsers = () => {
       return u;
     });
     setUsers(updatedUsers);
-    localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
+    setFilteredUsers(updatedUsers);
   };
 
   const updateUserStatus = (userId, newStatus) => {
@@ -807,7 +833,7 @@ const AdminUsers = () => {
       return u;
     });
     setUsers(updatedUsers);
-    localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
+    setFilteredUsers(updatedUsers);
   };
 
   const getStatusColor = (status) => {
@@ -1036,7 +1062,7 @@ const AdminUsers = () => {
                   </thead>
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-white/5 transition">
+                      <tr key={u._id || u.id || u.email} className="hover:bg-white/5 transition">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">

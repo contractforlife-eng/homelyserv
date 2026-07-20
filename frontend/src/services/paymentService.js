@@ -14,48 +14,34 @@ console.log('📍 Payment API Base URL:', API_BASE);
 // HELPER: Get valid token
 // ============================================================
 const getValidToken = () => {
-  // Try to get token from homelyserv_token first
-  let token = localStorage.getItem('homelyserv_token');
+  const token = localStorage.getItem('homelyserv_token');
   
-  // If not found, try auth-storage
   if (!token) {
-    try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        token = parsed?.state?.token || null;
-      }
-    } catch (e) {
-      console.warn('⚠️ Error parsing auth-storage:', e);
-    }
+    return null;
   }
   
   // Validate token format (JWT has 3 parts separated by dots)
-  if (token) {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      console.warn('⚠️ Invalid token format detected, clearing...');
-      localStorage.removeItem('homelyserv_token');
-      localStorage.removeItem('auth-storage');
-      return null;
-    }
-    
-    // Check if token is expired
-    try {
-      const payload = JSON.parse(atob(parts[1]));
-      const exp = payload.exp || payload.expiresIn;
-      if (exp && Date.now() >= exp * 1000) {
-        console.warn('⚠️ Token expired, clearing...');
-        localStorage.removeItem('homelyserv_token');
-        localStorage.removeItem('auth-storage');
-        return null;
-      }
-    } catch (e) {
-      console.warn('⚠️ Could not parse token payload:', e);
-    }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    console.warn('⚠️ Invalid token format detected, clearing...');
+    localStorage.removeItem('homelyserv_token');
+    return null;
   }
   
-  return token || null;
+  // Check if token is expired
+  try {
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp || payload.expiresIn;
+    if (exp && Date.now() >= exp * 1000) {
+      console.warn('⚠️ Token expired, clearing...');
+      localStorage.removeItem('homelyserv_token');
+      return null;
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not parse token payload:', e);
+  }
+  
+  return token;
 };
 
 // ============================================================

@@ -1,6 +1,7 @@
 // src/pages/AdminDashboard.jsx - WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Home,
   Users,
@@ -268,7 +269,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
   };
 
   // Check for new notifications from various sources
-  const checkForNewNotifications = () => {
+  const checkForNewNotifications = async () => {
     const existingNotifications = JSON.parse(
       localStorage.getItem('admin_notifications') || '[]'
     );
@@ -277,12 +278,24 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     const existingIds = new Set(existingNotifications.map(n => n.id));
 
     // 1. Check for new user registrations
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const recentUsers = users.filter(u => {
-      const createdAt = new Date(u.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo;
-    });
+    // 1. Check for new user registrations from MongoDB
+let users = [];
+
+try {
+  const response = await api.get('/api/auth/users')
+
+  if (response.data.success) {
+    users = response.data.users || [];
+  }
+} catch (error) {
+  console.error('Failed to load users for notifications:', error);
+}
+
+const recentUsers = users.filter(u => {
+  const createdAt = new Date(u.createdAt);
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return createdAt > oneDayAgo;
+});
 
     recentUsers.forEach(user => {
       const notifId = `new_user_${user.id}`;
@@ -734,10 +747,26 @@ const AdminDashboard = () => {
     loadStats();
   }, [navigate]);
 
-  const loadStats = () => {
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const payments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
-    const messages = JSON.parse(localStorage.getItem('admin_messages') || '[]');
+  const loadStats = async () => {
+
+  let users = [];
+
+  try {
+    const response = await api.get('/api/auth/users');
+
+    if (response.data.success) {
+      users = response.data.users || [];
+    }
+
+    console.log('✅ Loaded users from MongoDB:', users.length);
+
+  } catch (error) {
+    console.error('❌ Failed loading users from backend:', error);
+  }
+
+
+  const payments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
+  const messages = JSON.parse(localStorage.getItem('admin_messages') || '[]');
     
     // Load complaints from all sources
     const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');

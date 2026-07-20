@@ -107,17 +107,44 @@ export default function SocialLogin({ onLoginSuccess }) {
   };
 
   // Google Login Handler
-  const handleGoogleSuccess = (credentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     console.log('Google login success:', credentialResponse);
     try {
-      const payload = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
-      const userData = {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture
-      };
-      handleSocialLogin('google', userData);
+      const response = await fetch('http://localhost:5000/api/oauth/social-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          credential: credentialResponse.credential
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        localStorage.setItem('homelyserv_token', data.token);
+        localStorage.setItem('homelyserv_user', JSON.stringify(data.user));
+        
+        toast.success(`Welcome ${data.user.fullName}!`);
+        
+        if (onLoginSuccess) {
+          onLoginSuccess(data.user);
+        }
+        
+        const role = data.user.role?.toUpperCase();
+        if (role === 'EMPLOYER') {
+          navigate('/employer-dashboard');
+        } else if (role === 'WORKER') {
+          navigate('/worker-dashboard');
+        } else if (role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/employer-dashboard');
+        }
+      } else {
+        toast.error(data.message || 'Google login failed');
+      }
     } catch (error) {
       console.error('Error decoding Google token:', error);
       toast.error('Google login failed');

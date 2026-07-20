@@ -1,51 +1,46 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // استخدام المتغير أو الرابط الاحتياطي
   baseURL: import.meta.env.VITE_API_URL || 'https://gas-clapped-copper.ngrok-free.dev'
 });
 
-export default api;
 
-// Request interceptor to add token
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-storage') 
-      ? JSON.parse(localStorage.getItem('auth-storage'))?.state?.token 
-      : null;
-    
+    const token = localStorage.getItem('homelyserv_token');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth-storage');
+      localStorage.removeItem('homelyserv_token');
+      localStorage.removeItem('homelyserv_user');
+
+      if (
+        window.location.pathname !== '/login' &&
+        window.location.pathname !== '/register'
+      ) {
+        window.location.href = '/login';
+      }
+    }
+
     return Promise.reject(error);
   }
 );
 
-// Response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle 401 Unauthorized - token expired
-    if (error.response?.status === 401) {
-      // Clear auth state and redirect to login
-      localStorage.removeItem('auth-storage');
-      localStorage.removeItem('homelyserv_token');
-      localStorage.removeItem('homelyserv_user');
-      
-      // Redirect to login if not already there
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-        window.location.href = '/login';
-      }
-    }
-    
-    // Handle 403 Forbidden
-    if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.response.data.message);
-    }
-    
-    return Promise.reject(error);
-  }
-);
+
+export default api;
