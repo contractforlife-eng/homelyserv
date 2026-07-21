@@ -1,0 +1,12 @@
+This project uses:
+- React + Vite frontend
+- Express backend
+- MongoDB
+
+Rules:
+- Never modify UI unless requested.
+- Never introduce fake data.
+- Preserve authentication.
+- Modify only requested files.
+- Always provide the list of changed files.
+- Run build only after finishing the task.
