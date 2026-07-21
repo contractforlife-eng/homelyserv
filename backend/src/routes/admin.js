@@ -1,6 +1,7 @@
 // backend/src/routes/admin.js
 import express from 'express';
 import User from '../models/User.js';
+import prisma from '../lib/prisma.js';
 import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -204,7 +205,15 @@ router.get('/dashboard', async (req, res) => {
     const newUsers = await User.countDocuments({
       createdAt: { $gte: sevenDaysAgo }
     });
-    
+
+    // Get Prisma stats
+    const totalHires = await prisma.hire.count();
+    const totalOffers = await prisma.offer.count();
+    const totalPayments = await prisma.payment.aggregate({
+      where: { status: 'completed' },
+      _sum: { amount: true }
+    });
+
     res.json({
       success: true,
       stats: {
@@ -215,9 +224,9 @@ router.get('/dashboard', async (req, res) => {
         suspendedUsers,
         pendingUsers,
         newUsersLast7Days: newUsers,
-        totalPayments: 0,
+        totalPayments: totalPayments._sum.amount || 0,
         totalComplaints: 0,
-        totalHires: 0
+        totalHires
       }
     });
   } catch (error) {
@@ -235,10 +244,21 @@ router.get('/dashboard', async (req, res) => {
 // ============================================================
 router.get('/payments', async (req, res) => {
   try {
-    // In production, fetch from Payment model
+    const payments = await prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            email: true
+          }
+        }
+      }
+    });
+
     res.json({
       success: true,
-      payments: []
+      payments
     });
   } catch (error) {
     console.error('Get payments error:', error);
@@ -255,10 +275,12 @@ router.get('/payments', async (req, res) => {
 // ============================================================
 router.get('/complaints', async (req, res) => {
   try {
-    // In production, fetch from Complaint model
+    // Note: No Complaint model exists in the current schema.
+    // Returning empty array with explanation for future implementation.
     res.json({
       success: true,
-      complaints: []
+      complaints: [],
+      message: 'Complaints model not yet implemented'
     });
   } catch (error) {
     console.error('Get complaints error:', error);
@@ -275,10 +297,19 @@ router.get('/complaints', async (req, res) => {
 // ============================================================
 router.get('/hires', async (req, res) => {
   try {
-    // In production, fetch from Hire model
+    const hires = await prisma.hire.findMany({
+      include: {
+        worker: {
+          include: { user: { select: { fullName: true, phone: true, city: true } } }
+        },
+        employer: { select: { fullName: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
     res.json({
       success: true,
-      hires: []
+      hires
     });
   } catch (error) {
     console.error('Get hires error:', error);

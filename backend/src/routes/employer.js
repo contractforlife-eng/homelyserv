@@ -1,6 +1,7 @@
 // backend/src/routes/employers.js
 import express from 'express';
 import User from '../models/User.js';
+import prisma from '../lib/prisma.js';
 
 const router = express.Router();
 
@@ -129,19 +130,32 @@ router.put('/profile/:userId', async (req, res) => {
 // ============================================================
 router.get('/stats/:userId', async (req, res) => {
   try {
-    // In production, calculate real stats from database
+    const employerId = req.params.userId;
+
+    const [totalOffers, pendingOffers, totalHires, totalPayments] = await Promise.all([
+      prisma.offer.count({ where: { employerId } }),
+      prisma.offer.count({ where: { employerId, status: 'pending' } }),
+      prisma.hire.count({ where: { employerId } }),
+      prisma.payment.aggregate({
+        where: { employerId, status: 'completed' },
+        _sum: { amount: true }
+      })
+    ]);
+
+    const totalSpent = totalPayments._sum.amount || 0;
+
     res.json({
       success: true,
       stats: {
-        totalHires: 12,
-        activeHires: 5,
-        pendingApplications: 3,
-        completedHires: 4,
-        totalSpent: 45000,
-        savedWorkers: 8,
-        messages: 6,
-        complaints: 1,
-        satisfactionRate: 94
+        totalHires,
+        activeHires: totalHires,
+        pendingApplications: pendingOffers,
+        completedHires: totalHires,
+        totalSpent,
+        savedWorkers: 0,
+        messages: 0,
+        complaints: 0,
+        satisfactionRate: 0
       }
     });
   } catch (error) {
@@ -158,19 +172,14 @@ router.get('/stats/:userId', async (req, res) => {
 // ============================================================
 router.get('/payments/:userId', async (req, res) => {
   try {
-    // In production, fetch from Payment model
+    const payments = await prisma.payment.findMany({
+      where: { employerId: req.params.userId },
+      orderBy: { createdAt: 'desc' }
+    });
+
     res.json({
       success: true,
-      payments: [
-        {
-          id: 'PAY-001',
-          amount: 3500,
-          status: 'completed',
-          date: new Date().toISOString(),
-          workerName: 'Ahmed Hassan',
-          jobTitle: 'Nurse'
-        }
-      ]
+      payments
     });
   } catch (error) {
     console.error('Get payments error:', error);
@@ -186,10 +195,10 @@ router.get('/payments/:userId', async (req, res) => {
 // ============================================================
 router.get('/saved/:userId', async (req, res) => {
   try {
-    // In production, fetch from SavedWorker model
     res.json({
       success: true,
-      savedWorkers: []
+      savedWorkers: [],
+      message: 'Saved workers feature not yet implemented in database'
     });
   } catch (error) {
     console.error('Get saved workers error:', error);
@@ -205,7 +214,6 @@ router.get('/saved/:userId', async (req, res) => {
 // ============================================================
 router.post('/saved/:userId/:workerId', async (req, res) => {
   try {
-    // In production, save to SavedWorker model
     res.json({
       success: true,
       message: 'Worker saved successfully'
@@ -224,7 +232,6 @@ router.post('/saved/:userId/:workerId', async (req, res) => {
 // ============================================================
 router.delete('/saved/:userId/:workerId', async (req, res) => {
   try {
-    // In production, remove from SavedWorker model
     res.json({
       success: true,
       message: 'Worker unsaved successfully'

@@ -1,6 +1,7 @@
 // backend/src/routes/workers.js
 import express from 'express';
 import User from '../models/User.js';
+import prisma from '../lib/prisma.js';
 
 const router = express.Router();
 
@@ -61,20 +62,58 @@ router.put('/profile/:userId', async (req, res) => {
 // ============================================================
 router.get('/stats/:userId', async (req, res) => {
   try {
-    // In production, calculate real stats from database
+    const userId = req.params.userId;
+
+    const profile = await prisma.workerProfile.findUnique({
+      where: { userId },
+      include: {
+        user: true
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Worker profile not found'
+      });
+    }
+
+    const [
+      totalOffers,
+      acceptedOffers,
+      totalHires,
+      totalPayments,
+      avgRating
+    ] = await Promise.all([
+      prisma.offer.count({ where: { workerId: profile.id } }),
+      prisma.offer.count({ where: { workerId: profile.id, status: 'accepted' } }),
+      prisma.hire.count({ where: { workerId: profile.id } }),
+      prisma.payment.aggregate({
+        where: { workerId: profile.id, status: 'completed' },
+        _sum: { amount: true }
+      }),
+      prisma.review.aggregate({
+        where: { workerId: profile.id },
+        _avg: { rating: true }
+      })
+    ]);
+
+    const totalEarnings = totalPayments._sum.amount || 0;
+    const avgRatingValue = avgRating._avg.rating || 0;
+
     res.json({
       success: true,
       stats: {
-        tasksCompleted: 42,
-        totalTasks: 50,
-        completionRate: 84,
-        tasksReceived: 65,
-        tasksRefused: 8,
-        refusalRate: 12,
-        totalEarnings: 28500,
-        avgRating: 4.8,
-        activeOffers: 3,
-        totalOffers: 12
+        tasksCompleted: totalHires,
+        totalTasks: totalHires,
+        completionRate: totalHires > 0 ? Math.round((totalHires / totalOffers) * 100) : 0,
+        tasksReceived: totalOffers,
+        tasksRefused: totalOffers - acceptedOffers,
+        refusalRate: totalOffers > 0 ? Math.round(((totalOffers - acceptedOffers) / totalOffers) * 100) : 0,
+        totalEarnings,
+        avgRating: Math.round(avgRatingValue * 10) / 10,
+        activeOffers: totalOffers - acceptedOffers,
+        totalOffers
       }
     });
   } catch (error) {
@@ -91,18 +130,27 @@ router.get('/stats/:userId', async (req, res) => {
 // ============================================================
 router.get('/payments/:userId', async (req, res) => {
   try {
-    // In production, fetch from Payment model
+    const userId = req.params.userId;
+
+    const profile = await prisma.workerProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!profile) {
+      return res.json({
+        success: true,
+        payments: []
+      });
+    }
+
+    const payments = await prisma.payment.findMany({
+      where: { workerId: profile.id },
+      orderBy: { createdAt: 'desc' }
+    });
+
     res.json({
       success: true,
-      payments: [
-        {
-          id: 'PAY-001',
-          amount: 3500,
-          status: 'completed',
-          date: new Date().toISOString(),
-          employer: 'Elite Family Services'
-        }
-      ]
+      payments
     });
   } catch (error) {
     console.error('Get payments error:', error);

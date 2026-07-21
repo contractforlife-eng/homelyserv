@@ -1,79 +1,40 @@
 // backend/src/routes/hires.js
 import express from 'express';
-import User from '../models/User.js';
+import {
+  sendOffer,
+  respondToOffer,
+  getMyHires,
+  updateHireStatus,
+  getAllHires
+} from '../controllers/hireController.js';
+
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // ============================================================
-// Create a Hire
+// Create a Hire / Send Offer
 // ============================================================
-router.post('/', async (req, res) => {
-  try {
-    const { workerId, employerId, jobTitle, description, amount, location, contractType } = req.body;
-    
-    // In production, create a Hire record
-    res.json({
-      success: true,
-      hire: {
-        id: 'hire_' + Date.now(),
-        workerId,
-        employerId,
-        jobTitle,
-        description,
-        amount,
-        location,
-        contractType,
-        status: 'PENDING',
-        createdAt: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    console.error('Create hire error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create hire'
-    });
-  }
-});
+router.post('/', authenticate, sendOffer);
 
 // ============================================================
 // Get Hires for a User
 // ============================================================
-router.get('/user/:userId', async (req, res) => {
-  try {
-    // In production, fetch from Hire model
-    res.json({
-      success: true,
-      hires: []
-    });
-  } catch (error) {
-    console.error('Get hires error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get hires'
-    });
-  }
-});
+router.get('/user/:userId', authenticate, getMyHires);
 
 // ============================================================
 // Update Hire Status
 // ============================================================
-router.put('/:hireId/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    // In production, update Hire record
-    res.json({
-      success: true,
-      message: 'Hire status updated successfully',
-      status
-    });
-  } catch (error) {
-    console.error('Update hire status error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update hire status'
-    });
-  }
-});
+router.put('/:hireId/status', updateHireStatus);
+
+// ============================================================
+// Respond to Offer (accept/reject)
+// ============================================================
+router.put('/offer/:offerId/respond', authenticate, respondToOffer);
+
+// ============================================================
+// Get All Hires (admin only)
+// ============================================================
+router.get('/all', getAllHires);
 
 export default router;

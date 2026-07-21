@@ -1,24 +1,5 @@
 // backend/src/controllers/paymentController.js
-import mongoose from 'mongoose';
-
-// Payment Schema
-const PaymentSchema = new mongoose.Schema({
-  userId: String,
-  workerId: String,
-  workerName: String,
-  employerId: String,
-  employerName: String,
-  amount: Number,
-  jobTitle: String,
-  paymentMethod: String,
-  paymentId: String,
-  status: { type: String, default: 'pending' },
-  hireId: String,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const Payment = mongoose.models.Payment || mongoose.model('Payment', PaymentSchema);
+import prisma from '../lib/prisma.js';
 
 // Get worker payments
 export const getWorkerPayments = async (req, res) => {
@@ -34,13 +15,16 @@ export const getWorkerPayments = async (req, res) => {
     console.log('📊 Fetching payments for user:', userId);
 
     try {
-      const payments = await Payment.find({
-        $or: [
-          { userId: userId },
-          { workerId: userId },
-          { employerId: userId }
-        ]
-      }).sort({ createdAt: -1 });
+      const payments = await prisma.payment.findMany({
+        where: {
+          OR: [
+            { userId: userId },
+            { workerId: userId },
+            { employerId: userId }
+          ]
+        },
+        orderBy: { createdAt: 'desc' }
+      });
 
       return res.json({
         success: true,

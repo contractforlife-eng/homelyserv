@@ -1,43 +1,10 @@
 // backend/src/routes/payment.js
 import express from 'express';
-import mongoose from 'mongoose';
 import crypto from 'crypto';
 import axios from 'axios';
+import prisma from '../lib/prisma.js';
 
 const router = express.Router();
-
-// ============================================================
-// MODELS
-// ============================================================
-const PaymentSchema = new mongoose.Schema({
-  orderId: { type: String, required: true, unique: true },
-  transactionId: { type: String, required: true, unique: true },
-  amount: { type: Number, required: true },
-  currency: { type: String, default: 'EGP' },
-  paymentMethod: { type: String, enum: ['paymob', 'paypal', 'credit_card'], default: 'paymob' },
-  status: { type: String, enum: ['pending', 'processing', 'completed', 'failed'], default: 'pending' },
-  userEmail: { type: String },
-  userId: { type: String },
-  workerId: { type: String },
-  workerName: { type: String },
-  jobTitle: { type: String },
-  employerId: { type: String },
-  employerName: { type: String },
-  hireId: { type: String },
-  phone: { type: String },
-  paymobOrderId: { type: String },
-  paymobTransactionId: { type: String },
-  paypalOrderId: { type: String },
-  approvalUrl: { type: String },
-  captureId: { type: String },
-  offerId: { type: String },
-  metadata: { type: Object, default: {} },
-  completedAt: { type: Date },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const Payment = mongoose.model('Payment', PaymentSchema);
 
 // ============================================================
 // HELPER FUNCTIONS
@@ -59,7 +26,7 @@ const getPaymobAuthToken = async () => {
     const response = await axios.post('https://accept.paymob.com/api/auth/tokens', {
       api_key: process.env.PAYMOB_API_KEY
     });
-    
+
     if (response.data && response.data.token) {
       console.log('✅ Paymob auth token obtained');
       return response.data.token;
@@ -95,7 +62,7 @@ const createPaymobOrder = async (authToken, amount, orderId, customerData) => {
         phone_number: customerData?.phone || '+201234567890'
       }
     });
-    
+
     if (response.data && response.data.id) {
       console.log('✅ Paymob order created:', response.data.id);
       return response.data;
@@ -134,7 +101,7 @@ const getPaymobPaymentKey = async (authToken, orderId, amount, customerData) => 
       integration_id: integrationId,
       lock_order_when_paid: true
     });
-    
+
     if (response.data && response.data.token) {
       console.log('✅ Paymob payment key generated');
       return response.data.token;
@@ -156,11 +123,11 @@ const getPayPalAccessToken = async () => {
     const auth = Buffer.from(
       `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`
     ).toString('base64');
-    
-    const url = process.env.PAYPAL_MODE === 'production' 
+
+    const url = process.env.PAYPAL_MODE === 'production'
       ? 'https://api-m.paypal.com/v1/oauth2/token'
       : 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
-    
+
     const response = await axios.post(
       url,
       'grant_type=client_credentials',
@@ -171,7 +138,7 @@ const getPayPalAccessToken = async () => {
         }
       }
     );
-    
+
     if (response.data && response.data.access_token) {
       console.log('✅ PayPal access token obtained');
       return response.data.access_token;
@@ -189,19 +156,19 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
     const egpToUsdRate = 0.033;
     const usdAmount = Math.round((amount * egpToUsdRate) * 100) / 100;
     const finalAmount = Math.max(usdAmount, 1.00);
-    
+
     console.log(`💰 Converting EGP ${amount} to USD ${finalAmount} (rate: ${egpToUsdRate})`);
-    
+
     const baseUrl = process.env.PAYPAL_MODE === 'production'
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
-    
+
     const returnUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-success`;
     const cancelUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-cancel`;
-    
+
     console.log(`🔗 Return URL: ${returnUrl}`);
     console.log(`🔗 Cancel URL: ${cancelUrl}`);
-    
+
     const response = await axios.post(
       `${baseUrl}/v2/checkout/orders`,
       {
@@ -244,7 +211,7 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
         }
       }
     );
-    
+
     if (response.data && response.data.id) {
       console.log('✅ PayPal order created:', response.data.id);
       return response.data;
@@ -258,7 +225,7 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
 };
 
 // ============================================================
-// UPDATE OFFER AFTER PAYMENT - FIXED VERSION
+// UPDATE OFFER AFTER PAYMENT - Prisma version (replaces Mongoose localStorage and Offer model)
 // ============================================================
 const updateOfferAfterPayment = async (offerId, captureId) => {
   try {
@@ -266,146 +233,35 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
       console.log('⚠️ No offerId provided, skipping offer update');
       return false;
     }
-    
+
     console.log(`📝 Updating offer ${offerId} after payment...`);
-    
-    // ============================================================
-    // 1. GET EMPLOYER OFFERS
-    // ============================================================
-    let employerOffers = [];
-    try {
-      employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-    } catch (e) {
-      console.error('Error reading employer_offers:', e);
-      employerOffers = [];
-    }
-    
-    // Find the offer
-    const offer = employerOffers.find(o => o.id === offerId);
-    if (!offer) {
-      console.log(`⚠️ Offer ${offerId} not found in employer_offers`);
+
+    // Find the hire (offer) in Prisma
+    const hire = await prisma.hire.findFirst({
+      where: { id: offerId }
+    });
+
+    if (!hire) {
+      console.log(`⚠️ Hire/Offer ${offerId} not found in database`);
       return false;
     }
-    
-    console.log(`📋 Found offer: ${offer.jobTitle || 'Untitled'} for ${offer.workerEmail || 'unknown worker'}`);
-    
-    // ============================================================
-    // 2. UPDATE EMPLOYER_OFFERS
-    // ============================================================
-    const updatedEmployerOffers = employerOffers.map(o => {
-      if (o.id === offerId) {
-        return {
-          ...o,
-          paymentCompleted: true,
-          paymentDate: new Date().toISOString(),
-          paymentId: captureId,
-          paymentStatus: 'completed',
-          status: 'in_progress',
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return o;
-    });
-    localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-    console.log('✅ Updated employer_offers');
-    
-    // ============================================================
-    // 3. UPDATE WORKER_OFFERS - THIS IS THE KEY FIX
-    // ============================================================
-    if (offer.workerEmail) {
-      const workerEmail = offer.workerEmail;
-      const storageKey = `worker_offers_${workerEmail}`;
-      
-      let workerOffers = [];
-      try {
-        workerOffers = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      } catch (e) {
-        console.error(`Error reading ${storageKey}:`, e);
-        workerOffers = [];
-      }
-      
-      console.log(`📋 Current worker offers for ${workerEmail}:`, workerOffers.length);
-      
-      // Build the updated offer data
-      const updatedWorkerOffer = {
-        ...offer,
-        paymentCompleted: true,
-        paymentDate: new Date().toISOString(),
-        paymentId: captureId,
+
+    console.log(`📋 Found hire: ${hire.status} for employer ${hire.employerId}`);
+
+    // Update the hire with payment completion
+    await prisma.hire.update({
+      where: { id: hire.id },
+      data: {
         paymentStatus: 'completed',
-        status: 'paid', // <-- This changes the status to "Paid" for the worker
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Check if offer exists in worker_offers
-      const existingIndex = workerOffers.findIndex(o => o.id === offerId);
-      
-      if (existingIndex !== -1) {
-        // Update existing offer
-        workerOffers[existingIndex] = updatedWorkerOffer;
-        console.log(`✅ Updated existing worker offer at index ${existingIndex}`);
-      } else {
-        // Add new offer
-        workerOffers.push(updatedWorkerOffer);
-        console.log(`✅ Added new worker offer`);
+        paymentReference: captureId || ('CAPTURED_' + Date.now()),
+        status: 'paid'
       }
-      
-      // Also update any other offers with same job title (for consistency)
-      workerOffers = workerOffers.map(o => {
-        if (o.jobTitle === offer.jobTitle && o.employerName === offer.employerName && o.id !== offerId) {
-          console.log(`🔄 Also updating related offer: ${o.id}`);
-          return {
-            ...o,
-            paymentCompleted: true,
-            paymentStatus: 'completed',
-            status: 'paid'
-          };
-        }
-        return o;
-      });
-      
-      // Save back to localStorage
-      localStorage.setItem(storageKey, JSON.stringify(workerOffers));
-      console.log(`✅ Updated worker_offers for ${workerEmail} to "paid"`);
-      console.log(`📋 Updated worker offers count: ${workerOffers.length}`);
-    }
-    
-    // ============================================================
-    // 4. CREATE NOTIFICATION FOR WORKER
-    // ============================================================
-    try {
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'payment_received',
-        title: 'Payment Received 💰',
-        message: `Payment for "${offer.jobTitle || 'job offer'}" has been completed. You can now start working!`,
-        offerId: offerId,
-        offerTitle: offer.jobTitle || 'Job Offer',
-        workerEmail: offer.workerEmail,
-        workerName: offer.workerName || 'Worker',
-        employerName: offer.employerName || 'Employer',
-        date: new Date().toISOString(),
-        read: false,
-        link: '/worker/offers'
-      };
-      
-      // Check if notification already exists to avoid duplicates
-      const exists = notifications.some(n => n.offerId === offerId && n.type === 'payment_received');
-      if (!exists) {
-        notifications.push(notification);
-        localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-        console.log('✅ Notification created for worker');
-      } else {
-        console.log('ℹ️ Notification already exists for this offer');
-      }
-    } catch (e) {
-      console.error('Error creating notification:', e);
-    }
-    
+    });
+
+    console.log(`✅ Hire/Offer ${offerId} updated to "paid" in Prisma`);
     console.log('✅ Offer update completed successfully');
     return true;
-    
+
   } catch (error) {
     console.error('❌ Error updating offer after payment:', error);
     return false;
@@ -422,24 +278,24 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
  */
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    const { 
-      amount, 
-      paymentMethod, 
-      userEmail, 
-      workerName, 
-      userId, 
-      workerId, 
-      jobTitle, 
-      employerId, 
-      employerName, 
-      hireId, 
+    const {
+      amount,
+      paymentMethod,
+      userEmail,
+      workerName,
+      userId,
+      workerId,
+      jobTitle,
+      employerId,
+      employerName,
+      hireId,
       phone,
-      offerId  // <-- Add offerId to the request
+      offerId
     } = req.body;
 
-    console.log('📤 Creating payment intent:', { 
-      amount, 
-      paymentMethod, 
+    console.log('📤 Creating payment intent:', {
+      amount,
+      paymentMethod,
       userEmail,
       jobTitle,
       offerId
@@ -467,37 +323,37 @@ router.post('/create-payment-intent', async (req, res) => {
       employerId,
       employerName,
       hireId,
-      offerId,  // <-- Pass offerId
+      offerId,
       transactionId,
       description: `Payment for ${jobTitle || 'service'} - ${workerName || 'worker'}`
     };
 
-    const payment = new Payment({
-      orderId,
-      transactionId,
-      amount: Number(amount),
-      currency: 'EGP',
-      paymentMethod: paymentMethod || 'paymob',
-      status: 'pending',
-      userEmail: userEmail || 'employer@example.com',
-      userId: userId || userEmail,
-      workerId,
-      workerName: workerName || 'Worker',
-      jobTitle,
-      employerId,
-      employerName,
-      hireId,
-      offerId,  // <-- Store offerId in payment
-      phone,
-      metadata: {
-        createdFrom: 'payment-intent',
-        source: 'frontend',
-        originalAmount: amount,
-        originalCurrency: 'EGP'
+    const payment = await prisma.payment.create({
+      data: {
+        orderId,
+        transactionId,
+        amount: Number(amount),
+        currency: 'EGP',
+        paymentMethod: paymentMethod || 'paymob',
+        status: 'pending',
+        userEmail: userEmail || 'employer@example.com',
+        userId: userId || userEmail || null,
+        workerId: workerId || null,
+        workerName: workerName || 'Worker',
+        jobTitle: jobTitle || null,
+        employerId: employerId || null,
+        employerName: employerName || null,
+        hireId: hireId || null,
+        offerId: offerId || null,
+        phone: phone || null,
+        metadata: {
+          createdFrom: 'payment-intent',
+          source: 'frontend',
+          originalAmount: amount,
+          originalCurrency: 'EGP'
+        }
       }
     });
-
-    await payment.save();
     console.log('✅ Payment record created:', transactionId);
 
     let result;
@@ -508,13 +364,17 @@ router.post('/create-payment-intent', async (req, res) => {
         const paymobOrder = await createPaymobOrder(authToken, amount, orderId, customerData);
         const paymobOrderId = paymobOrder.id;
         const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, amount, customerData);
-        
-        payment.paymobOrderId = paymobOrderId;
-        payment.status = 'processing';
-        await payment.save();
-        
+
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            paymobOrderId: String(paymobOrderId),
+            status: 'processing'
+          }
+        });
+
         const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey}`;
-        
+
         result = {
           success: true,
           orderId,
@@ -526,41 +386,49 @@ router.post('/create-payment-intent', async (req, res) => {
           currency: 'EGP',
           paymentMethod: 'paymob'
         };
-        
+
         console.log('✅ Paymob payment created with iframe');
-        
+
       } catch (error) {
         console.error('❌ Paymob integration error:', error);
-        payment.status = 'failed';
-        payment.metadata.error = error.message;
-        await payment.save();
-        
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'failed',
+            metadata: { ...(payment.metadata || {}), error: error.message }
+          }
+        });
+
         return res.status(500).json({
           success: false,
           error: error.message || 'Paymob payment failed'
         });
       }
-      
+
     } else if (paymentMethod === 'paypal') {
       try {
         const accessToken = await getPayPalAccessToken();
         const paypalOrder = await createPayPalOrder(accessToken, amount, orderId, customerData);
         const paypalOrderId = paypalOrder.id;
-        
+
         const approvalLink = paypalOrder.links.find(link => link.rel === 'approve');
         const approvalUrl = approvalLink?.href;
-        
+
         if (!approvalUrl) {
           throw new Error('No approval URL found in PayPal response');
         }
-        
-        payment.paypalOrderId = paypalOrderId;
-        payment.approvalUrl = approvalUrl;
-        payment.status = 'processing';
-        await payment.save();
-        
+
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            paypalOrderId,
+            approvalUrl,
+            status: 'processing'
+          }
+        });
+
         console.log(`✅ PayPal order created with approval URL: ${approvalUrl}`);
-        
+
         result = {
           success: true,
           orderId,
@@ -573,19 +441,23 @@ router.post('/create-payment-intent', async (req, res) => {
           currency: 'EGP',
           paymentMethod: 'paypal'
         };
-        
+
       } catch (error) {
         console.error('❌ PayPal integration error:', error);
-        payment.status = 'failed';
-        payment.metadata.error = error.message;
-        await payment.save();
-        
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: 'failed',
+            metadata: { ...(payment.metadata || {}), error: error.message }
+          }
+        });
+
         return res.status(500).json({
           success: false,
           error: error.message || 'PayPal payment failed'
         });
       }
-      
+
     } else {
       return res.status(400).json({
         success: false,
@@ -611,30 +483,32 @@ router.post('/create-payment-intent', async (req, res) => {
 router.get('/paypal-approval/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    
-    const payment = await Payment.findOne({ paypalOrderId: orderId });
-    
+
+    const payment = await prisma.payment.findFirst({
+      where: { paypalOrderId: orderId }
+    });
+
     if (!payment) {
       return res.status(404).json({
         success: false,
         error: 'Payment not found'
       });
     }
-    
+
     if (!payment.approvalUrl) {
       return res.status(400).json({
         success: false,
         error: 'No approval URL found for this payment'
       });
     }
-    
+
     res.json({
       success: true,
       approvalUrl: payment.approvalUrl,
       orderId: payment.orderId,
       transactionId: payment.transactionId
     });
-    
+
   } catch (error) {
     console.error('❌ Get approval URL error:', error);
     res.status(500).json({
@@ -645,7 +519,7 @@ router.get('/paypal-approval/:orderId', async (req, res) => {
 });
 
 /**
- * Capture PayPal Order - FIXED WITH COMPLIANCE FALLBACK
+ * Capture PayPal Order
  * POST /api/payments/capture-paypal/:orderId
  */
 router.post('/capture-paypal/:orderId', async (req, res) => {
@@ -654,13 +528,17 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
     console.log(`🔍 Capturing PayPal order: ${orderId}`);
 
     // Find by paypalOrderId
-    let payment = await Payment.findOne({ paypalOrderId: orderId });
-    
+    let payment = await prisma.payment.findFirst({
+      where: { paypalOrderId: orderId }
+    });
+
     // If not found, try by orderId
     if (!payment) {
-      payment = await Payment.findOne({ orderId: orderId });
+      payment = await prisma.payment.findFirst({
+        where: { orderId: orderId }
+      });
     }
-    
+
     if (!payment) {
       console.log(`❌ Payment not found for order: ${orderId}`);
       return res.status(404).json({
@@ -705,7 +583,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
       const baseUrl = process.env.PAYPAL_MODE === 'production'
         ? 'https://api-m.paypal.com'
         : 'https://api-m.sandbox.paypal.com';
-      
+
       try {
         // First, check the order status
         const orderCheck = await axios.get(
@@ -716,19 +594,25 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             }
           }
         );
-        
+
         console.log(`📊 Order ${orderId} status: ${orderCheck.data?.status}`);
-        
+
         // If order is already completed, update and return
         if (orderCheck.data?.status === 'COMPLETED') {
-          payment.status = 'completed';
-          payment.completedAt = new Date();
-          payment.captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
-          await payment.save();
-          
+          const captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'completed',
+              completedAt: new Date(),
+              captureId: captureId || null
+            }
+          });
+
           // Update offer
-          await updateOfferAfterPayment(payment.offerId, payment.captureId);
-          
+          await updateOfferAfterPayment(payment.offerId, captureId);
+
           return res.json({
             success: true,
             message: 'Payment already completed',
@@ -741,11 +625,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             }
           });
         }
-        
+
         // If order is APPROVED, capture it
         if (orderCheck.data?.status === 'APPROVED') {
           console.log(`🔄 Order ${orderId} is APPROVED, attempting to capture...`);
-          
+
           const captureResponse = await axios.post(
             `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
             {},
@@ -760,16 +644,22 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           console.log(`📥 PayPal capture response status: ${captureResponse.data?.status}`);
 
           if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
-            payment.status = 'completed';
-            payment.completedAt = new Date();
-            payment.captureId = captureResponse.data.id || captureResponse.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
-            await payment.save();
-            
+            const captureId = captureResponse.data.id || captureResponse.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'completed',
+                completedAt: new Date(),
+                captureId: captureId || null
+              }
+            });
+
             console.log(`✅ PayPal order captured successfully: ${orderId}`);
-            
+
             // Update offer
-            await updateOfferAfterPayment(payment.offerId, payment.captureId);
-            
+            await updateOfferAfterPayment(payment.offerId, captureId);
+
             return res.json({
               success: true,
               message: 'Payment captured successfully',
@@ -780,7 +670,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
                 status: 'completed',
                 paymentMethod: 'paypal',
                 paypalOrderId: orderId,
-                captureId: payment.captureId
+                captureId: captureId
               }
             });
           } else {
@@ -792,7 +682,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             });
           }
         }
-        
+
         // If order is CREATED or PENDING_APPROVAL, user hasn't approved yet
         if (orderCheck.data?.status === 'CREATED' || orderCheck.data?.status === 'PAYER_ACTION_REQUIRED') {
           return res.json({
@@ -802,33 +692,38 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             approvalUrl: payment.approvalUrl
           });
         }
-        
+
         // Any other status
         return res.json({
           success: false,
           error: `Order status: ${orderCheck.data?.status || 'unknown'}`,
           status: orderCheck.data?.status || 'unknown'
         });
-        
+
       } catch (captureError) {
         console.error('❌ PayPal capture API error:', captureError.response?.data || captureError.message);
-        
+
         const errorData = captureError.response?.data;
-        
+
         // Handle specific error cases
         if (errorData?.details) {
           const details = errorData.details;
-          
+
           // Check for ORDER_ALREADY_CAPTURED
           const alreadyCaptured = details.some(d => d.issue === 'ORDER_ALREADY_CAPTURED');
           if (alreadyCaptured) {
-            payment.status = 'completed';
-            payment.completedAt = new Date();
-            await payment.save();
-            
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'completed',
+                completedAt: new Date(),
+                captureId: 'CAPTURED_' + Date.now()
+              }
+            });
+
             // Update offer
-            await updateOfferAfterPayment(payment.offerId, payment.captureId || 'CAPTURED_' + Date.now());
-            
+            await updateOfferAfterPayment(payment.offerId, 'CAPTURED_' + Date.now());
+
             return res.json({
               success: true,
               message: 'Payment was already captured',
@@ -841,7 +736,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               }
             });
           }
-          
+
           // Check for ORDER_NOT_APPROVED
           const notApproved = details.some(d => d.issue === 'ORDER_NOT_APPROVED');
           if (notApproved) {
@@ -852,29 +747,33 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               approvalUrl: payment.approvalUrl
             });
           }
-          
-          // ============================================================
-          // FIX: Handle COMPLIANCE_VIOLATION with fallback for development
-          // ============================================================
+
+          // Handle COMPLIANCE_VIOLATION with fallback for development
           const complianceViolation = details.some(d => d.issue === 'COMPLIANCE_VIOLATION');
           if (complianceViolation) {
             console.log('⚠️ COMPLIANCE_VIOLATION detected');
-            
+
             // In development mode, simulate successful capture
             if (process.env.NODE_ENV === 'development' || process.env.PAYPAL_MODE === 'sandbox') {
               console.log('🔄 Development mode: Simulating successful capture...');
-              
+
+              const testCaptureId = 'TEST_CAPTURE_' + Date.now();
+
               // Update payment status to completed
-              payment.status = 'completed';
-              payment.completedAt = new Date();
-              payment.captureId = 'TEST_CAPTURE_' + Date.now();
-              await payment.save();
-              
+              await prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                  status: 'completed',
+                  completedAt: new Date(),
+                  captureId: testCaptureId
+                }
+              });
+
               // Update offer status
-              await updateOfferAfterPayment(payment.offerId, payment.captureId);
-              
+              await updateOfferAfterPayment(payment.offerId, testCaptureId);
+
               console.log('✅ Payment simulated successfully for testing');
-              
+
               return res.json({
                 success: true,
                 message: 'Payment completed (test mode - compliance bypass)',
@@ -884,11 +783,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
                   amount: payment.amount,
                   status: 'completed',
                   paymentMethod: 'paypal',
-                  captureId: payment.captureId
+                  captureId: testCaptureId
                 }
               });
             }
-            
+
             // In production, return the error
             return res.json({
               success: false,
@@ -898,13 +797,13 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             });
           }
         }
-        
+
         // Generic error
-        const errorMessage = errorData?.message || 
+        const errorMessage = errorData?.message ||
                             errorData?.error_description ||
                             captureError.message ||
                             'PayPal capture failed';
-        
+
         return res.status(500).json({
           success: false,
           error: errorMessage,
@@ -937,8 +836,14 @@ router.get('/status/:paymentId', async (req, res) => {
     const { paymentId } = req.params;
     console.log(`🔍 Checking payment status: ${paymentId}`);
 
-    const payment = await Payment.findOne({ 
-      $or: [{ transactionId: paymentId }, { orderId: paymentId }, { paypalOrderId: paymentId }] 
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { transactionId: paymentId },
+          { orderId: paymentId },
+          { paypalOrderId: paymentId }
+        ]
+      }
     });
 
     if (!payment) {
@@ -955,7 +860,7 @@ router.get('/status/:paymentId', async (req, res) => {
         const baseUrl = process.env.PAYPAL_MODE === 'production'
           ? 'https://api-m.paypal.com'
           : 'https://api-m.sandbox.paypal.com';
-        
+
         const orderCheck = await axios.get(
           `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}`,
           {
@@ -964,11 +869,17 @@ router.get('/status/:paymentId', async (req, res) => {
             }
           }
         );
-        
+
         if (orderCheck.data?.status === 'COMPLETED') {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'completed',
+              completedAt: new Date()
+            }
+          });
           payment.status = 'completed';
           payment.completedAt = new Date();
-          await payment.save();
         }
       } catch (error) {
         console.log('⚠️ Could not check PayPal status:', error.message);
@@ -1014,8 +925,14 @@ router.post('/complete-payment', async (req, res) => {
 
     console.log('✅ Completing payment manually:', { orderId, transactionId, userId });
 
-    const payment = await Payment.findOne({
-      $or: [{ orderId }, { transactionId }, { paypalOrderId: orderId }]
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { orderId },
+          { transactionId },
+          { paypalOrderId: orderId }
+        ]
+      }
     });
 
     if (!payment) {
@@ -1025,11 +942,14 @@ router.post('/complete-payment', async (req, res) => {
       });
     }
 
-    payment.status = 'completed';
-    payment.completedAt = new Date();
-    payment.updatedAt = new Date();
-    await payment.save();
-    
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'completed',
+        completedAt: new Date()
+      }
+    });
+
     // Update offer
     await updateOfferAfterPayment(payment.offerId, 'MANUAL_' + Date.now());
 
@@ -1040,7 +960,7 @@ router.post('/complete-payment', async (req, res) => {
         id: payment.transactionId,
         orderId: payment.orderId,
         amount: payment.amount,
-        status: payment.status,
+        status: 'completed',
         paymentMethod: payment.paymentMethod
       }
     });
@@ -1063,9 +983,16 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     console.log(`📂 Getting payments for user: ${userId}`);
 
-    const payments = await Payment.find({
-      $or: [{ userId }, { userEmail: userId }, { employerId: userId }]
-    }).sort({ createdAt: -1 });
+    const payments = await prisma.payment.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          { userEmail: userId },
+          { employerId: userId }
+        ]
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json({
       success: true,
@@ -1103,8 +1030,14 @@ router.post('/verify', async (req, res) => {
   try {
     const { transactionId, orderId } = req.body;
 
-    const payment = await Payment.findOne({
-      $or: [{ transactionId }, { orderId }, { paypalOrderId: orderId }]
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { transactionId },
+          { orderId },
+          { paypalOrderId: orderId }
+        ]
+      }
     });
 
     if (!payment) {
@@ -1145,8 +1078,15 @@ router.post('/webhook', async (req, res) => {
 
     const { transactionId, orderId, status, amount, merchant_order_id } = req.body;
 
-    const payment = await Payment.findOne({
-      $or: [{ orderId: merchant_order_id || orderId }, { transactionId }, { paymobOrderId: orderId }, { paypalOrderId: orderId }]
+    const payment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { orderId: merchant_order_id || orderId },
+          { transactionId },
+          { paymobOrderId: orderId },
+          { paypalOrderId: orderId }
+        ]
+      }
     });
 
     if (!payment) {
@@ -1154,25 +1094,27 @@ router.post('/webhook', async (req, res) => {
       return res.json({ success: true, message: 'Webhook processed (payment not found)' });
     }
 
-    const newStatus = status === 'success' || status === 'completed' || status === 'COMPLETED' 
-      ? 'completed' 
-      : status === 'failed' || status === 'FAILED' 
-        ? 'failed' 
+    const newStatus = status === 'success' || status === 'completed' || status === 'COMPLETED'
+      ? 'completed'
+      : status === 'failed' || status === 'FAILED'
+        ? 'failed'
         : payment.status;
 
     if (newStatus !== payment.status) {
-      payment.status = newStatus;
-      payment.updatedAt = new Date();
-      
+      const updateData = { status: newStatus };
+
       if (newStatus === 'completed') {
-        payment.completedAt = new Date();
+        updateData.completedAt = new Date();
       }
-      
+
       if (transactionId) {
-        payment.paymobTransactionId = transactionId;
+        updateData.paymobTransactionId = transactionId;
       }
-      
-      await payment.save();
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: updateData
+      });
       console.log(`✅ Payment ${payment.transactionId} updated to ${newStatus}`);
     }
 

@@ -1,10 +1,12 @@
 // backend/prisma/schema.prisma - FULL FIXED VERSION WITH PAYMENT MODEL
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Document {
@@ -71,14 +73,14 @@ model Hire {
 }
 
 model Message {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  senderId       String   @db.ObjectId
-  receiverId     String   @db.ObjectId
-  hireId         String?  @db.ObjectId
-  content        String
-  isRead         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiverId String   @db.ObjectId
+  hireId     String?  @db.ObjectId
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
   // CHAT SYSTEM FIELDS
   conversationId String?  @map("conversationId")
   senderName     String?  @map("senderName")
@@ -87,11 +89,11 @@ model Message {
   recipientRole  String?  @map("recipientRole")
   delivered      Boolean  @default(true)
   updatedAt      DateTime @updatedAt @map("updatedAt")
-  
+
   // Relations
-  Hire                           Hire?    @relation(fields: [hireId], references: [id])
-  User_Message_receiverIdToUser  User     @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
-  User_Message_senderIdToUser    User     @relation("Message_senderIdToUser", fields: [senderId], references: [id])
+  Hire                          Hire? @relation(fields: [hireId], references: [id])
+  User_Message_receiverIdToUser User  @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
+  User_Message_senderIdToUser   User  @relation("Message_senderIdToUser", fields: [senderId], references: [id])
 
   @@index([conversationId])
   @@index([senderId])
@@ -111,24 +113,35 @@ model Notification {
 }
 
 model Payment {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String   @db.ObjectId @map("userId")
-  workerId      String   @map("workerId")
-  workerName    String   @map("workerName")
-  employerId    String   @map("employerId")
-  employerName  String   @map("employerName")
-  amount        Float
-  jobTitle      String   @map("jobTitle")
-  paymentMethod String   @map("paymentMethod")
-  paymentId     String?  @map("paymentId")
-  status        String   @default("pending")
-  date          DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  User          User     @relation(fields: [userId], references: [id])
-  Hire          Hire?    @relation(fields: [hireId], references: [id])
-  hireId        String?  @db.ObjectId @map("hireId")
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  orderId             String    @unique @map("orderId")
+  transactionId       String    @unique @map("transactionId")
+  amount              Float
+  currency            String    @default("EGP") @map("currency")
+  paymentMethod       String    @default("paymob") @map("paymentMethod")
+  status              String    @default("pending")
+  userEmail           String?   @map("userEmail")
+  userId              String?   @map("userId") @db.ObjectId
+  workerId            String?   @map("workerId")
+  workerName          String?   @map("workerName")
+  jobTitle            String?   @map("jobTitle")
+  employerId          String?   @map("employerId")
+  employerName        String?   @map("employerName")
+  hireId              String?   @map("hireId") @db.ObjectId
+  phone               String?   @map("phone")
+  paymobOrderId       String?   @map("paymobOrderId")
+  paymobTransactionId String?   @map("paymobTransactionId")
+  paypalOrderId       String?   @map("paypalOrderId")
+  approvalUrl         String?   @map("approvalUrl")
+  captureId           String?   @map("captureId")
+  offerId             String?   @map("offerId")
+  metadata            Json?     @default("{}") @map("metadata")
+  completedAt         DateTime? @map("completedAt")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  User User? @relation(fields: [userId], references: [id])
+  Hire Hire? @relation(fields: [hireId], references: [id])
 
   @@index([userId])
   @@index([workerId])
@@ -159,7 +172,7 @@ model User {
   fullName                         String
   phone                            String?
   city                             String?
-  activationCode                   String?          
+  activationCode                   String?
   isVerified                       Boolean          @default(false)
   isSuspended                      Boolean          @default(false)
   language                         String           @default("en")
@@ -174,6 +187,8 @@ model User {
   Review                           Review[]
   WorkerProfile                    WorkerProfile?
   Payment                          Payment[]
+  OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
+  Subscription                     Subscription[]
 }
 
 model WorkerProfile {
@@ -198,6 +213,7 @@ model WorkerProfile {
   Experience      Experience[]
   Hire            Hire[]
   Review          Review[]
+  Offer           Offer[]      @relation("WorkerOffers")
   User            User         @relation(fields: [userId], references: [id])
 }
 
@@ -205,4 +221,44 @@ enum Role {
   WORKER
   EMPLOYER
   ADMIN
+}
+
+model Offer {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  employerId String @db.ObjectId
+  workerId   String @db.ObjectId
+
+  jobTitle String
+  message  String?
+
+  salary Float
+  status String @default("pending")
+  // pending
+  // accepted
+  // rejected
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Employer User          @relation("EmployerOffers", fields: [employerId], references: [id])
+  Worker   WorkerProfile @relation("WorkerOffers", fields: [workerId], references: [id])
+}
+
+model Subscription {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+
+  plan   String
+  amount Float
+  status String @default("active")
+
+  startDate DateTime @default(now())
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User User @relation(fields: [userId], references: [id])
 }
