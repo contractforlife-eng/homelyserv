@@ -57,30 +57,31 @@ import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
 
+import { useAuth } from './context/AuthContext';
+
 // Messages Redirect Component
 const MessagesRedirect = () => {
-  const userData = localStorage.getItem('homelyserv_user');
+  const { user, isAuthenticated, loading } = useAuth();
   
   React.useEffect(() => {
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        if (user.role === 'WORKER') {
-          window.location.href = '/worker-messages';
-        } else if (user.role === 'EMPLOYER') {
-          window.location.href = '/employer-messages';
-        } else if (user.role === 'ADMIN') {
-          window.location.href = '/admin/messages';
-        } else {
-          window.location.href = '/login';
-        }
-      } catch (error) {
-        window.location.href = '/login';
-      }
+    if (loading) return;
+    
+    if (!isAuthenticated || !user) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    const role = user.role?.toUpperCase();
+    if (role === 'WORKER') {
+      window.location.href = '/worker-messages';
+    } else if (role === 'EMPLOYER') {
+      window.location.href = '/employer-messages';
+    } else if (role === 'ADMIN') {
+      window.location.href = '/admin/messages';
     } else {
       window.location.href = '/login';
     }
-  }, [userData]);
+  }, [user, isAuthenticated, loading]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -94,30 +95,37 @@ const MessagesRedirect = () => {
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
+  const { user, isAuthenticated, loading } = useAuth();
   const token = localStorage.getItem('homelyserv_token');
-  const userData = localStorage.getItem('homelyserv_user');
   
-  if (!token || !userData) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!token || !isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
   
-  try {
-    const user = JSON.parse(userData);
-    if (requiredRole && user.role !== requiredRole) {
-      // Redirect to appropriate dashboard based on role
-      if (user.role === 'WORKER') {
-        return <Navigate to="/worker-dashboard" replace />;
-      } else if (user.role === 'EMPLOYER') {
-        return <Navigate to="/employer-dashboard" replace />;
-      } else if (user.role === 'ADMIN') {
-        return <Navigate to="/admin" replace />;
-      }
-      return <Navigate to="/login" replace />;
+  if (requiredRole && user.role !== requiredRole) {
+    // Redirect to appropriate dashboard based on role
+    if (user.role === 'WORKER') {
+      return <Navigate to="/worker-dashboard" replace />;
+    } else if (user.role === 'EMPLOYER') {
+      return <Navigate to="/employer-dashboard" replace />;
+    } else if (user.role === 'ADMIN') {
+      return <Navigate to="/admin" replace />;
     }
-    return children;
-  } catch (error) {
     return <Navigate to="/login" replace />;
   }
+  
+  return children;
 };
 
 function App() {

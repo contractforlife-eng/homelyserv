@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import Logo from '../components/Logo';
+import useAuthStore from '../store/authStore';
 
 function Login() {
   const navigate = useNavigate();
@@ -31,8 +32,12 @@ function Login() {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('homelyserv_token', response.data.token);
+        useAuthStore.setState({
+          user: response.data.user,
+          token: response.data.token,
+          isAuthenticated: true
+        });
         const role = response.data.user.role;
         if (role === 'ADMIN') {
           navigate('/admin');

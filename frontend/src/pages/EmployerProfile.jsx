@@ -1,6 +1,7 @@
 // src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD, PREMIUM BADGE, AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import {
@@ -280,6 +281,7 @@ const EmployerSidebar = ({
 // Main EmployerProfile Component - WITH PHOTO UPLOAD, PREMIUM BADGE, AND NOTIFICATION BELL
 const EmployerProfile = () => {
   const navigate = useNavigate();
+  const { user: authUser, logout: authLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -359,18 +361,6 @@ const EmployerProfile = () => {
 
   const isPremium = checkPremiumStatus();
 
-  const loadUserData = () => {
-    try {
-      const userData = localStorage.getItem('homelyserv_user');
-      if (userData) {
-        return JSON.parse(userData);
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-    return null;
-  };
-
   const loadSavedProfile = (email) => {
     try {
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
@@ -389,7 +379,7 @@ const EmployerProfile = () => {
       setLanguage(savedLang);
     }
 
-    const userData = loadUserData();
+    const userData = authUser;
     if (userData) {
       const savedProfile = loadSavedProfile(userData.email);
       
@@ -451,27 +441,24 @@ const EmployerProfile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
+    authLogout();
   };
 
   const handleEditToggle = () => {
     if (isEditing) {
-      const userData = loadUserData();
-      if (userData) {
-        const savedProfile = loadSavedProfile(userData.email);
+      if (user) {
+        const savedProfile = loadSavedProfile(user.email);
         setFormData({
-          fullName: savedProfile?.fullName || userData.fullName || '',
-          email: userData.email || '',
-          phone: savedProfile?.phone || userData.phone || '',
-          location: savedProfile?.location || userData.location || '',
-          bio: savedProfile?.bio || userData.bio || '',
-          company: savedProfile?.company || userData.company || '',
-          website: savedProfile?.website || userData.website || '',
-          profileImage: savedProfile?.profileImage || userData.profileImage || ''
+          fullName: savedProfile?.fullName || user.fullName || '',
+          email: user.email || '',
+          phone: savedProfile?.phone || user.phone || '',
+          location: savedProfile?.location || user.location || '',
+          bio: savedProfile?.bio || user.bio || '',
+          company: savedProfile?.company || user.company || '',
+          website: savedProfile?.website || user.website || '',
+          profileImage: savedProfile?.profileImage || user.profileImage || ''
         });
-        setImagePreview(savedProfile?.profileImage || userData.profileImage || '');
+        setImagePreview(savedProfile?.profileImage || user.profileImage || '');
       }
     }
     setIsEditing(!isEditing);

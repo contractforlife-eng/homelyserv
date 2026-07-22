@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
-import { isUserPremium, getUserSubscription, syncPremiumStatus } from '../utils/subscriptionService';
+import useAuthStore from '../store/authStore';
 
 function Login() {
   const navigate = useNavigate();
@@ -24,57 +24,14 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
-  // Check if user is already logged in
+  // Check if user is already logged in — redirect based on token only
   useEffect(() => {
     const token = localStorage.getItem('homelyserv_token');
-    const userData = localStorage.getItem('homelyserv_user');
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData);
-        const userId = user.id || user.email;
-        const isPremium = isUserPremium(userId);
-        const subscription = getUserSubscription(userId);
-        
-        const updatedUser = {
-          ...user,
-          isPremium: isPremium,
-          subscriptionActive: isPremium,
-          subscription: subscription
-        };
-        
-        localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
-        syncPremiumStatus(userId, user.email);
-        redirectUser(updatedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
-  }, []);
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const token = localStorage.getItem('homelyserv_token');
-    const userData = localStorage.getItem('homelyserv_user');
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData);
-        const userId = user.id || user.email;
-        const isPremium = isUserPremium(userId);
-        const subscription = getUserSubscription(userId);
-        
-        const updatedUser = {
-          ...user,
-          isPremium: isPremium,
-          subscriptionActive: isPremium,
-          subscription: subscription
-        };
-        
-        localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
-        syncPremiumStatus(userId, user.email);
-        redirectUser(updatedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
+    if (token) {
+      // Token exists but user may not be in Zustand store yet;
+      // AuthContext.checkAuth() will load it from /api/auth/verify
+      // Just redirect to the generic handler; the verify check will route correctly
+      navigate('/messages');
     }
   }, []);
 
@@ -116,26 +73,19 @@ function Login() {
       const user = data.user;
       const token = data.token;
 
-      const userId = user.id || user.email;
-      const isPremium = isUserPremium(userId);
-      const subscription = getUserSubscription(userId);
-
-      const updatedUser = {
-        ...user,
-        isPremium,
-        subscriptionActive: isPremium,
-        subscription
-      };
-
       localStorage.setItem('homelyserv_token', token);
-      localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
 
-      syncPremiumStatus(userId, user.email);
+      // Update Zustand store — user lives in memory, not localStorage
+      useAuthStore.setState({
+        user,
+        token,
+        isAuthenticated: true
+      });
 
-      console.log('✅ Login successful:', updatedUser.fullName);
-      console.log('✅ User role:', updatedUser.role);
+      console.log('✅ Login successful:', user.fullName);
+      console.log('✅ User role:', user.role);
 
-      redirectUser(updatedUser);
+      redirectUser(user);
     } catch (error) {
       console.error('Login error:', error);
       setError('Login failed. Please try again.');

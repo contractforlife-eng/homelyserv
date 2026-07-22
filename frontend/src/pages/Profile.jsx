@@ -6,10 +6,12 @@ import {
   Star, Shield, Award, Clock, FileText, Download,
   Trash2, Plus, Minus, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { getUser, updateUser, getUserImage, getUserName, clearUser } from '../utils/userHelpers';
+import useAuthStore from '../store/authStore';
+import { getUserImage, getUserName } from '../utils/userHelpers';
 
 function Profile() {
   const navigate = useNavigate();
+  const { user: authUser, logout: authLogout } = useAuthStore();
   const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,23 +39,22 @@ function Profile() {
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
-    const userData = getUser();
-    if (userData) {
-      setUser(userData);
+    if (authUser) {
+      setUser(authUser);
       const profileData = {
-        fullName: userData.fullName || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        city: userData.city || '',
-        role: userData.role || 'worker',
-        category: userData.category || 'Nanny',
-        experience: userData.experience || '5',
-        salary: userData.salary || '3500',
-        availability: userData.availability || 'Available',
-        workType: userData.workType || 'Full-Time',
-        bio: userData.bio || 'Experienced professional with a passion for helping others.',
-        skills: userData.skills || ['Childcare', 'First Aid'],
-        image: userData.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
+        fullName: authUser.fullName || '',
+        email: authUser.email || '',
+        phone: authUser.phone || '',
+        city: authUser.city || '',
+        role: (authUser.role || 'worker').toLowerCase(),
+        category: authUser.category || 'Nanny',
+        experience: authUser.experience || '5',
+        salary: authUser.salary || '3500',
+        availability: authUser.availability || 'Available',
+        workType: authUser.workType || 'Full-Time',
+        bio: authUser.bio || 'Experienced professional with a passion for helping others.',
+        skills: authUser.skills || ['Childcare', 'First Aid'],
+        image: authUser.image || 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face'
       };
       setProfile(profileData);
       setEditData(profileData);
@@ -61,7 +62,7 @@ function Profile() {
     } else {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [authUser, navigate]);
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -72,7 +73,6 @@ function Profile() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Compress image
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -121,8 +121,8 @@ function Profile() {
       image: editData.image
     };
     
-    const savedUser = updateUser(updatedUser);
-    setUser(savedUser);
+    // Update local state only — backend API integration pending
+    setUser(updatedUser);
   }
   
   setIsEditing(false);
@@ -155,9 +155,7 @@ function Profile() {
   };
 
   const handleLogout = () => {
-    clearUser();
-    navigate('/login');
-    window.location.reload();
+    authLogout();
   };
 
   if (loading) {

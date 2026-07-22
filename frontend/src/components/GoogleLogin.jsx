@@ -16,12 +16,16 @@ function GoogleLoginComponent() {
       });
 
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('homelyserv_token', response.data.token);
         setUser(response.data.user);
         setToken(response.data.token);
         toast.success(`Welcome ${response.data.user.fullName}!`);
-        navigate('/');
+        
+        // Redirect based on role
+        const role = response.data.user.role?.toUpperCase();
+        if (role === 'ADMIN') navigate('/admin');
+        else if (role === 'EMPLOYER') navigate('/employer-dashboard');
+        else navigate('/worker-dashboard');
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Google login failed');

@@ -1,6 +1,7 @@
 // src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
@@ -272,6 +273,7 @@ const WorkerSidebar = ({
 // Main WorkerProfile Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerProfile = () => {
   const navigate = useNavigate();
+  const { user: authUser, logout: authLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -327,9 +329,7 @@ const WorkerProfile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
+    authLogout();
   };
 
   // ============================================================
@@ -552,7 +552,7 @@ const WorkerProfile = () => {
       setLanguage(savedLang);
     }
 
-    const userData = loadUserData();
+    const userData = authUser;
     if (userData) {
       const savedProfile = loadSavedProfile(userData.email);
       
@@ -607,22 +607,21 @@ const WorkerProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      const userData = loadUserData();
-      if (userData) {
-        const savedProfile = loadSavedProfile(userData.email);
+      if (user) {
+        const savedProfile = loadSavedProfile(user.email);
         setFormData({
-          fullName: savedProfile?.fullName || userData.fullName || '',
-          email: userData.email || '',
-          phone: savedProfile?.phone || userData.phone || '',
-          location: savedProfile?.location || userData.location || '',
-          bio: savedProfile?.bio || userData.bio || 'Experienced professional in home services.',
-          skills: savedProfile?.skills || userData.skills || ['Child Care', 'First Aid', 'Communication'],
-          experience: savedProfile?.experience || userData.experience || '3 years',
-          hourlyRate: savedProfile?.hourlyRate || userData.hourlyRate || '35',
-          profileImage: savedProfile?.profileImage || userData.profileImage || '',
-          desiredJob: savedProfile?.desiredJob || userData.desiredJob || ''
+          fullName: savedProfile?.fullName || user.fullName || '',
+          email: user.email || '',
+          phone: savedProfile?.phone || user.phone || '',
+          location: savedProfile?.location || user.location || '',
+          bio: savedProfile?.bio || user.bio || 'Experienced professional in home services.',
+          skills: savedProfile?.skills || user.skills || ['Child Care', 'First Aid', 'Communication'],
+          experience: savedProfile?.experience || user.experience || '3 years',
+          hourlyRate: savedProfile?.hourlyRate || user.hourlyRate || '35',
+          profileImage: savedProfile?.profileImage || user.profileImage || '',
+          desiredJob: savedProfile?.desiredJob || user.desiredJob || ''
         });
-        setImagePreview(savedProfile?.profileImage || userData.profileImage || '');
+        setImagePreview(savedProfile?.profileImage || user.profileImage || '');
       }
     }
     setIsEditing(!isEditing);

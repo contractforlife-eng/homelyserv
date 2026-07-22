@@ -98,16 +98,15 @@ const useAuthStore = create(
         
         // Clear persisted storage
         localStorage.removeItem('homelyserv_token');
-        localStorage.removeItem('homelyserv_user');
         
         return { success: true };
       },
       
       // Check if user is authenticated (verify token)
       checkAuth: async () => {
-        const { token, user } = get();
+        const { token } = get();
         
-        if (!token || !user) {
+        if (!token) {
           set({ isAuthenticated: false });
           return { success: false };
         }
@@ -120,9 +119,9 @@ const useAuthStore = create(
             }
           });
           
-          if (response.data.valid) {
+          if (response.data?.success && response.data?.user) {
             set({
-              user: response.data.user || user,
+              user: response.data.user,
               isAuthenticated: true,
               error: null
             });
@@ -339,14 +338,12 @@ const useAuthStore = create(
           language: 'en'
         });
         localStorage.removeItem('homelyserv_token');
-        localStorage.removeItem('homelyserv_user');
         delete axios.defaults.headers.common['Authorization'];
       }
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         language: state.language

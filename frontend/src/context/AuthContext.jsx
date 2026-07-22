@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -22,28 +23,30 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     try {
       const token = localStorage.getItem('homelyserv_token');
-      const userData = localStorage.getItem('homelyserv_user');
       
-      console.log('🔍 Checking auth...');
-      console.log('Token exists:', !!token);
-      console.log('User data exists:', !!userData);
+      if (!token) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
 
-      if (token && userData) {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+      // Verify token with backend — fetches user from MongoDB
+      const response = await api.get('/api/auth/verify');
+      
+      if (response.data?.success && response.data?.user) {
+        const userData = response.data.user;
+        setUser(userData);
         setIsAuthenticated(true);
-        console.log('✅ User authenticated:', parsedUser.fullName || parsedUser.email);
-        console.log('✅ User role:', parsedUser.role);
       } else {
         setUser(null);
         setIsAuthenticated(false);
-        console.log('❌ No user data found');
       }
     } catch (error) {
-      console.error('Error checking auth:', error);
+      console.error('Auth verification failed:', error);
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -53,18 +56,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     localStorage.setItem('homelyserv_token', token);
-    localStorage.setItem('homelyserv_user', JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
-    console.log('✅ User logged in:', userData.fullName || userData.email);
   };
 
   const logout = () => {
     localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
     setUser(null);
     setIsAuthenticated(false);
-    console.log('👋 User logged out');
     navigate('/login');
   };
 

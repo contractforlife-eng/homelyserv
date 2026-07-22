@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
+import useAuthStore from '../store/authStore';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 
@@ -74,10 +75,15 @@ export default function SocialLogin({ onLoginSuccess }) {
       const data = await response.json();
       
       if (data.success) {
-        // Save token and user data
         localStorage.setItem('homelyserv_token', data.token);
-        localStorage.setItem('homelyserv_user', JSON.stringify(data.user));
-        
+
+        // Update Zustand store — user lives in memory, not localStorage
+        useAuthStore.setState({
+          user: data.user,
+          token: data.token,
+          isAuthenticated: true
+        });
+
         toast.success(`Welcome ${data.user.fullName}!`);
         
         if (onLoginSuccess) {
@@ -124,8 +130,14 @@ export default function SocialLogin({ onLoginSuccess }) {
       
       if (data.success) {
         localStorage.setItem('homelyserv_token', data.token);
-        localStorage.setItem('homelyserv_user', JSON.stringify(data.user));
-        
+
+        // Update Zustand store — user lives in memory, not localStorage
+        useAuthStore.setState({
+          user: data.user,
+          token: data.token,
+          isAuthenticated: true
+        });
+
         toast.success(`Welcome ${data.user.fullName}!`);
         
         if (onLoginSuccess) {
