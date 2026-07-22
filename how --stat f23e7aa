@@ -1,0 +1,18 @@
+[33mcommit 5c6935347a12387264957994030b78f4035bcce4[m
+Author: contractforlife-eng <contractforlife@gmail.com>
+Date:   Tue Jul 21 19:10:16 2026 +0300
+
+    Integrate Prisma offers hires payments and replace mock backend data
+
+ backend/package.json                         |   4 [32m+[m[31m-[m
+ backend/prisma/schema.prisma                 | 122 [32m++++[m[31m--[m
+ backend/src/controllers/hireController.js    | 142 [32m+++++[m[31m-[m
+ backend/src/controllers/paymentController.js |  38 [32m+[m[31m-[m
+ backend/src/index.js                         |   2 [32m+[m
+ backend/src/lib/prisma.js                    |  16 [32m+[m[31m-[m
+ backend/src/routes/admin.js                  |  49 [32m++[m[31m-[m
+ backend/src/routes/employer.js               |  57 [32m+[m[31m--[m
+ backend/src/routes/hires.js                  |  85 [32m+[m[31m---[m
+ backend/src/routes/payment.js                | 632 [32m++++++++++++[m[31m---------------[m
+ backend/src/routes/workers.js                |  90 [32m+++[m[31m-[m
+ 11 files changed, 688 insertions(+), 549 deletions(-)
