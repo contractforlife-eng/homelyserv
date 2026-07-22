@@ -35,6 +35,7 @@ import {
   Shield,
   Crown
 } from 'lucide-react';
+import api from '../utils/api';
 
 // Sidebar Component - RED THEME
 const WorkerSidebar = ({ 
@@ -274,7 +275,7 @@ const WorkerSidebar = ({
 const WorkerProfile = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-  const authLoading = useAuthStore(state => state.isLoading);
+  const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
@@ -474,20 +475,9 @@ const WorkerProfile = () => {
 
   const isPremium = checkPremiumStatus();
 
-  const loadSavedProfile = (email) => {
-    try {
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (email && profiles[email]) {
-        return profiles[email];
-      }
-    } catch (error) {
-      console.error('Error loading saved profile:', error);
-    }
-    return null;
-  };
-
   const loadRealStats = (userEmail, userId) => {
     try {
+      // Calculate stats from localStorage data
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       const completedJobs = appliedOffers.filter(id => {
@@ -512,9 +502,7 @@ const WorkerProfile = () => {
       
       const completionPercent = Math.round((completedFields / totalFields) * 100);
       
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userRecord = users.find(u => u.email === userEmail);
-      const memberSince = userRecord?.createdAt || new Date().toISOString();
+      const memberSince = authUser?.createdAt || new Date().toISOString();
       
       setRealStats({
         memberSince: new Date(memberSince).toLocaleDateString('en-US', {
@@ -562,40 +550,20 @@ const WorkerProfile = () => {
       return;
     }
 
-    const savedProfile = loadSavedProfile(authUser.email);
-    
-    let profileData;
-    if (savedProfile) {
-      profileData = {
-        fullName: savedProfile.fullName || authUser.fullName || '',
-        email: authUser.email || '',
-        phone: savedProfile.phone || authUser.phone || '',
-        location: savedProfile.location || authUser.location || '',
-        bio: savedProfile.bio || authUser.bio || 'Experienced professional in home services.',
-        skills: savedProfile.skills || authUser.skills || ['Child Care', 'First Aid', 'Communication'],
-        experience: savedProfile.experience || authUser.experience || '3 years',
-        hourlyRate: savedProfile.hourlyRate || authUser.hourlyRate || '35',
-        profileImage: savedProfile.profileImage || authUser.profileImage || '',
-        desiredJob: savedProfile.desiredJob || authUser.desiredJob || ''
-      };
-      setImagePreview(savedProfile.profileImage || authUser.profileImage || '');
-    } else {
-      profileData = {
-        fullName: authUser.fullName || '',
-        email: authUser.email || '',
-        phone: authUser.phone || '',
-        location: authUser.location || '',
-        bio: authUser.bio || 'Experienced professional in home services.',
-        skills: authUser.skills || ['Child Care', 'First Aid', 'Communication'],
-        experience: authUser.experience || '3 years',
-        hourlyRate: authUser.hourlyRate || '35',
-        profileImage: authUser.profileImage || '',
-        desiredJob: authUser.desiredJob || ''
-      };
-      setImagePreview(authUser.profileImage || '');
-    }
-    
-    setFormData(profileData);
+    // Load profile data from authUser
+    setFormData({
+      fullName: authUser.fullName || '',
+      email: authUser.email || '',
+      phone: authUser.phone || '',
+      location: authUser.location || '',
+      bio: authUser.bio || 'Experienced professional in home services.',
+      skills: authUser.skills || ['Child Care', 'First Aid', 'Communication'],
+      experience: authUser.experience || '3 years',
+      hourlyRate: authUser.hourlyRate || '35',
+      profileImage: authUser.profileImage || '',
+      desiredJob: authUser.desiredJob || ''
+    });
+    setImagePreview(authUser.profileImage || '');
     loadRealStats(authUser.email, authUser.id);
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
@@ -606,22 +574,20 @@ const WorkerProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      if (authUser) {
-        const savedProfile = loadSavedProfile(authUser.email);
-        setFormData({
-          fullName: savedProfile?.fullName || authUser.fullName || '',
-          email: authUser.email || '',
-          phone: savedProfile?.phone || authUser.phone || '',
-          location: savedProfile?.location || authUser.location || '',
-          bio: savedProfile?.bio || authUser.bio || 'Experienced professional in home services.',
-          skills: savedProfile?.skills || authUser.skills || ['Child Care', 'First Aid', 'Communication'],
-          experience: savedProfile?.experience || authUser.experience || '3 years',
-          hourlyRate: savedProfile?.hourlyRate || authUser.hourlyRate || '35',
-          profileImage: savedProfile?.profileImage || authUser.profileImage || '',
-          desiredJob: savedProfile?.desiredJob || authUser.desiredJob || ''
-        });
-        setImagePreview(savedProfile?.profileImage || authUser.profileImage || '');
-      }
+      // Reset form data to current authUser data when canceling
+      setFormData({
+        fullName: authUser.fullName || '',
+        email: authUser.email || '',
+        phone: authUser.phone || '',
+        location: authUser.location || '',
+        bio: authUser.bio || 'Experienced professional in home services.',
+        skills: authUser.skills || ['Child Care', 'First Aid', 'Communication'],
+        experience: authUser.experience || '3 years',
+        hourlyRate: authUser.hourlyRate || '35',
+        profileImage: authUser.profileImage || '',
+        desiredJob: authUser.desiredJob || ''
+      });
+      setImagePreview(authUser.profileImage || '');
     }
     setIsEditing(!isEditing);
     setSaveSuccess(false);
@@ -673,67 +639,45 @@ const WorkerProfile = () => {
     }));
   };
 
-  const handleSave = () => {
-    const updatedUser = {
-      ...authUser,
-      fullName: formData.fullName,
-      phone: formData.phone,
-      location: formData.location,
-      bio: formData.bio,
-      skills: formData.skills,
-      experience: formData.experience,
-      hourlyRate: formData.hourlyRate,
-      profileImage: formData.profileImage,
-      desiredJob: formData.desiredJob
-    };
-
-    localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
-    
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    profiles[authUser.email] = {
-      fullName: formData.fullName,
-      phone: formData.phone,
-      location: formData.location,
-      bio: formData.bio,
-      skills: formData.skills,
-      experience: formData.experience,
-      hourlyRate: formData.hourlyRate,
-      profileImage: formData.profileImage,
-      desiredJob: formData.desiredJob,
-      updatedAt: new Date().toISOString()
-    };
-    localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-    
+  const handleSave = async () => {
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === authUser.email);
-      if (userIndex !== -1) {
-        users[userIndex] = {
-          ...users[userIndex],
-          fullName: formData.fullName,
-          phone: formData.phone,
-          location: formData.location,
-          bio: formData.bio,
-          skills: formData.skills,
-          experience: formData.experience,
-          hourlyRate: formData.hourlyRate,
-          profileImage: formData.profileImage,
-          desiredJob: formData.desiredJob
+      // Update user profile via API
+      const response = await api.put('/api/users/profile', {
+        fullName: formData.fullName,
+        phone: formData.phone,
+        location: formData.location,
+        bio: formData.bio,
+        skills: formData.skills,
+        experience: formData.experience,
+        hourlyRate: formData.hourlyRate,
+        profileImage: formData.profileImage,
+        desiredJob: formData.desiredJob
+      });
+
+      if (response.data.success) {
+        // Update local authStore user data
+        const updatedUser = {
+          ...authUser,
+          ...formData
         };
-        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+        // Update authStore (if there's a method to update user)
+        // For now, we'll rely on the API response
+        
+        setIsEditing(false);
+        setSaveSuccess(true);
+        alert(t.saved);
+        loadRealStats(authUser.email, authUser.id);
+        
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(response.data.message || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating users list:', error);
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
     }
-    
-    setIsEditing(false);
-    setSaveSuccess(true);
-    alert(t.saved);
-    loadRealStats(authUser.email, authUser.id);
-    
-    setTimeout(() => {
-      setSaveSuccess(false);
-    }, 3000);
   };
 
   const getJobLabel = (value) => {

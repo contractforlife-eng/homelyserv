@@ -296,7 +296,7 @@ const EmployerSidebar = ({
 const EmployerSettings = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-  const authLoading = useAuthStore(state => state.isLoading);
+  const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
   
@@ -305,6 +305,7 @@ const EmployerSettings = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   
   // Settings state
   const [settings, setSettings] = useState({
@@ -410,7 +411,8 @@ const EmployerSettings = () => {
       notificationsTitle: 'Notifications',
       public: 'Public',
       private: 'Private',
-      contacts: 'Contacts Only'
+      contacts: 'Contacts Only',
+      errorSaving: 'Failed to save settings. Please try again.'
     },
     ar: {
       title: 'الإعدادات',
@@ -478,7 +480,8 @@ const EmployerSettings = () => {
       notificationsTitle: 'الإشعارات',
       public: 'عام',
       private: 'خاص',
-      contacts: 'جهات الاتصال فقط'
+      contacts: 'جهات الاتصال فقط',
+      errorSaving: 'فشل حفظ الإعدادات. يرجى المحاولة مرة أخرى.'
     }
   };
 
@@ -551,11 +554,37 @@ const EmployerSettings = () => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
+    setSaveError(null);
     
-    setTimeout(() => {
+    try {
+      const response = await api.put('/api/users/settings', {
+        userId: authUser?.id,
+        settings: settings
+      });
+
+      if (response.data.success) {
+        // Save settings to localStorage as backup
+        localStorage.setItem('employer_settings', JSON.stringify(settings));
+        setSaving(false);
+        setSaveSuccess(true);
+        
+        if (settings.darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        throw new Error(response.data.message || t.errorSaving);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSaveError(error.message || t.errorSaving);
+      // Fallback: save to localStorage only
       localStorage.setItem('employer_settings', JSON.stringify(settings));
       setSaving(false);
       setSaveSuccess(true);
@@ -567,10 +596,10 @@ const EmployerSettings = () => {
       }
       
       setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1000);
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     setPasswordError('');
     
     if (!passwordData.currentPassword) {
@@ -588,63 +617,48 @@ const EmployerSettings = () => {
       return;
     }
     
-    const storedUser = localStorage.getItem('homelyserv_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData.password && userData.password !== passwordData.currentPassword) {
-          setPasswordError(t.wrongPassword);
-          return;
-        }
-      } catch (e) {
-        console.error('Error checking password:', e);
-      }
-    }
-    
-    const updatedUser = { ...authUser, password: passwordData.newPassword };
-    localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
-    
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === authUser.email);
-      if (userIndex !== -1) {
-        users[userIndex].password = passwordData.newPassword;
-        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+      const response = await api.put('/api/users/change-password', {
+        userId: authUser?.id,
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      if (response.data.success) {
+        setPasswordSuccess(true);
+        setTimeout(() => {
+          setPasswordSuccess(false);
+          setShowPasswordModal(false);
+          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || t.wrongPassword);
       }
-    } catch (e) {
-      console.error('Error updating user password:', e);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setPasswordError(error.message || t.wrongPassword);
     }
-    
-    setPasswordSuccess(true);
-    setTimeout(() => {
-      setPasswordSuccess(false);
-      setShowPasswordModal(false);
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    }, 2000);
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') {
       alert('Please type DELETE to confirm');
       return;
     }
     
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const updatedUsers = users.filter(u => u.email !== authUser.email);
-      localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
-      
-      localStorage.removeItem('homelyserv_user');
-      localStorage.removeItem('homelyserv_token');
-      localStorage.removeItem('employer_settings');
-      
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      delete profiles[authUser.email];
-      localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-      
-      alert('Account deleted successfully');
-      logout();
-      navigate('/login');
+      const response = await api.delete('/api/users/account', {
+        data: { userId: authUser?.id }
+      });
+
+      if (response.data.success) {
+        localStorage.removeItem('employer_settings');
+        alert('Account deleted successfully');
+        logout();
+        navigate('/login');
+      } else {
+        throw new Error(response.data.message || 'Failed to delete account');
+      }
     } catch (error) {
       console.error('Error deleting account:', error);
       alert('Error deleting account. Please try again.');
@@ -783,6 +797,14 @@ const EmployerSettings = () => {
             </div>
           )}
 
+          {/* Save Error Message */}
+          {saveError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle size={16} />
+              {saveError}
+            </div>
+          )}
+
           {/* Settings Container */}
           <div className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl shadow-sm border overflow-hidden`}>
             {/* Preferences */}
@@ -797,11 +819,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.language}
                     onChange={(e) => handleSettingChange('language', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    )}`}
+                    }`}
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -815,9 +837,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.darkMode ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -834,9 +856,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.autoSave ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -860,11 +882,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.timezone}
                     onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    )}`}
+                    }`}
                   >
                     <option value="UTC-12">UTC-12</option>
                     <option value="UTC-11">UTC-11</option>
@@ -902,11 +924,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.currency}
                     onChange={(e) => handleSettingChange('currency', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    )}`}
+                    }`}
                   >
                     <option value="EGP">EGP - Egyptian Pound</option>
                     <option value="USD">USD - US Dollar</option>
@@ -925,11 +947,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.dateFormat}
                     onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    )}`}
+                    }`}
                   >
                     <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                     <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -951,9 +973,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('notifications', !settings.notifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.notifications ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -970,9 +992,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.emailNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -989,9 +1011,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.pushNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1008,9 +1030,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.smsNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1034,11 +1056,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.profileVisibility}
                     onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    )}`}
+                    }`}
                   >
                     <option value="public">{t.public}</option>
                     <option value="private">{t.private}</option>
@@ -1053,9 +1075,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.showOnlineStatus ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1072,9 +1094,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.allowMessages ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1092,11 +1114,11 @@ const EmployerSettings = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => setShowPasswordModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                  )}`}
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-teal-600" />
@@ -1115,9 +1137,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.twoFactorAuth ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1140,9 +1162,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.saveSearchHistory ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1159,9 +1181,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
-                    className={`relative w-12 h-6 rounded-full transition ${(
+                    className={`relative w-12 h-6 rounded-full transition ${
                       settings.showRecommended ? 'bg-teal-600' : 'bg-gray-300'
-                    )}`}
+                    }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1173,11 +1195,11 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={handleExportData}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                  )}`}
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Download size={20} className="text-teal-600" />
@@ -1191,11 +1213,11 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400' 
                       : 'bg-red-50 hover:bg-red-100 text-red-600'
-                  )}`}
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 size={20} className="text-red-500" />
@@ -1255,11 +1277,11 @@ const EmployerSettings = () => {
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={passwordData.currentPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        )}`}
+                        }`}
                         placeholder="Enter current password"
                       />
                       <button
@@ -1280,11 +1302,11 @@ const EmployerSettings = () => {
                         type={showNewPassword ? 'text' : 'password'}
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        )}`}
+                        }`}
                         placeholder="Enter new password (min 6 characters)"
                       />
                       <button
@@ -1305,11 +1327,11 @@ const EmployerSettings = () => {
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        )}`}
+                        }`}
                         placeholder="Confirm new password"
                       />
                       <button
@@ -1332,11 +1354,11 @@ const EmployerSettings = () => {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowPasswordModal(false)}
-                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${(
+                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
                       settings.darkMode 
                         ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    )}`}
+                    }`}
                   >
                     {t.cancel}
                   </button>
@@ -1381,11 +1403,11 @@ const EmployerSettings = () => {
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${(
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                   settings.darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-200 text-gray-700'
-                )}`}
+                }`}
                 placeholder="Type DELETE"
               />
             </div>
@@ -1393,11 +1415,11 @@ const EmployerSettings = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${(
+                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
                   settings.darkMode 
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                )}`}
+                }`}
               >
                 {t.cancel}
               </button>

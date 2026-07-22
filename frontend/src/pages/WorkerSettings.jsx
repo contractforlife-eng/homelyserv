@@ -311,7 +311,7 @@ const WorkerSidebar = ({
 const WorkerSettings = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-  const authLoading = useAuthStore(state => state.isLoading);
+  const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
   
@@ -659,12 +659,37 @@ const WorkerSettings = () => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
     
-    setTimeout(() => {
-      // Save settings to localStorage
+    try {
+      // Save settings to backend
+      const response = await api.put('/api/users/settings', {
+        userId: authUser?.id,
+        settings: settings
+      });
+
+      if (response.data.success) {
+        // Save settings to localStorage as backup
+        localStorage.setItem('worker_settings', JSON.stringify(settings));
+        setSaving(false);
+        setSaveSuccess(true);
+        
+        // Apply dark mode
+        if (settings.darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        throw new Error(response.data.message || 'Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      // Fallback: save to localStorage only
       localStorage.setItem('worker_settings', JSON.stringify(settings));
       setSaving(false);
       setSaveSuccess(true);
@@ -677,11 +702,11 @@ const WorkerSettings = () => {
       }
       
       setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1000);
+    }
   };
 
   // ===== Password Change Functionality =====
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     setPasswordError('');
     
     if (!passwordData.currentPassword) {
@@ -699,67 +724,49 @@ const WorkerSettings = () => {
       return;
     }
     
-    // Check current password (for demo, using stored password)
-    const storedUser = localStorage.getItem('homelyserv_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData.password && userData.password !== passwordData.currentPassword) {
-          setPasswordError(t.wrongPassword);
-          return;
-        }
-      } catch (e) {
-        console.error('Error checking password:', e);
-      }
-    }
-    
-    // Update password
-    const updatedUser = { ...authUser, password: passwordData.newPassword };
-    localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
-    
-    // Update in users list
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === authUser.email);
-      if (userIndex !== -1) {
-        users[userIndex].password = passwordData.newPassword;
-        localStorage.setItem('homelyserv_users', JSON.stringify(users));
+      const response = await api.put('/api/users/change-password', {
+        userId: authUser?.id,
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      if (response.data.success) {
+        setPasswordSuccess(true);
+        setTimeout(() => {
+          setPasswordSuccess(false);
+          setShowPasswordModal(false);
+          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || t.wrongPassword);
       }
-    } catch (e) {
-      console.error('Error updating user password:', e);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setPasswordError(error.message || t.wrongPassword);
     }
-    
-    setPasswordSuccess(true);
-    setTimeout(() => {
-      setPasswordSuccess(false);
-      setShowPasswordModal(false);
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    }, 2000);
   };
 
   // ===== Delete Account Functionality =====
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') {
       alert('Please type DELETE to confirm');
       return;
     }
     
     try {
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const updatedUsers = users.filter(u => u.email !== authUser.email);
-      localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
-      
-      localStorage.removeItem('homelyserv_user');
-      localStorage.removeItem('homelyserv_token');
-      localStorage.removeItem('worker_settings');
-      
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      delete profiles[authUser.email];
-      localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
-      
-      alert('Account deleted successfully');
-      logout();
-      navigate('/login');
+      const response = await api.delete('/api/users/account', {
+        data: { userId: authUser?.id }
+      });
+
+      if (response.data.success) {
+        localStorage.removeItem('worker_settings');
+        alert('Account deleted successfully');
+        logout();
+        navigate('/login');
+      } else {
+        throw new Error(response.data.message || 'Failed to delete account');
+      }
     } catch (error) {
       console.error('Error deleting account:', error);
       alert('Error deleting account. Please try again.');

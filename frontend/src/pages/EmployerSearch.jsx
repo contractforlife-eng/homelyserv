@@ -6,6 +6,7 @@ import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constan
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
+import api from '../utils/api';
 import {
   Home,
   User,
@@ -306,8 +307,9 @@ const EmployerSearch = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
-  const authLoading = useAuthStore(state => state.isLoading);
+  const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
   
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -506,24 +508,40 @@ const EmployerSearch = () => {
       return;
     }
 
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[authUser.email]) {
-      authUser.profileImage = profiles[authUser.email].profileImage || null;
-    }
-    authUser.isPremium = isUserPremium(authUser.id || authUser.email);
-
-    loadWorkersFromStorage();
+    loadWorkersFromBackend();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
+  // ============================================================
+  // 4. LOAD WORKERS FROM BACKEND
+  // ============================================================
+  const loadWorkersFromBackend = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/users/workers');
+      
+      if (response.data.success) {
+        const workers = response.data.users || [];
+        setAllWorkers(workers);
+        console.log(`✅ Loaded ${workers.length} workers from backend`);
+      } else {
+        throw new Error(response.data.message || 'Failed to load workers');
+      }
+    } catch (error) {
+      console.error('Error loading workers from backend:', error);
+      // Fallback: try loading from localStorage as backup
+      loadWorkersFromStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback: load workers from localStorage if backend fails
   const loadWorkersFromStorage = () => {
     try {
-      console.log('📂 Loading workers from localStorage...');
+      console.log('📂 Loading workers from localStorage (fallback)...');
       
       const allUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      console.log('📌 Total users in localStorage:', allUsers.length);
-      
       const workers = allUsers.filter(user => user.role === 'WORKER');
-      console.log(`📌 Found ${workers.length} workers in homelyserv_users`);
       
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
       
@@ -555,10 +573,10 @@ const EmployerSearch = () => {
       });
       
       setAllWorkers(mergedWorkers);
-      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage`);
+      console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage (fallback)`);
       
     } catch (error) {
-      console.error('Error loading workers:', error);
+      console.error('Error loading workers from storage:', error);
       setAllWorkers([]);
     }
   };
@@ -569,7 +587,7 @@ const EmployerSearch = () => {
   }, [language]);
 
   // ============================================================
-  // 4. HANDLERS
+  // 5. HANDLERS
   // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -587,8 +605,7 @@ const EmployerSearch = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -620,75 +637,97 @@ const EmployerSearch = () => {
   };
 
   // ============================================================
-  // 5. HIRE NOW - Send offer to worker
+  // 6. HIRE NOW - Send offer to worker
   // ============================================================
-  const handleHireNow = (worker) => {
-    if (!authUser) {
+  const handleHireNow = async (worker) => {
+    if (!isAuthenticated || !authUser) {
       alert('Please login first');
       return;
     }
 
-    const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-    const existingOffer = existingOffers.find(
-      o => o.workerId === (worker.id || worker.email) && o.employerId === authUser.email && o.status !== 'rejected'
-    );
+    try {
+      const response = await api.post('/api/offers/create', {
+        employerId: authUser.id,
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        jobTitle: worker.desiredJob || 'Service Provider',
+        hourlyRate: worker.hourlyRate || 30,
+        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+      });
 
-    if (existingOffer) {
-      alert(`You already have a pending offer with ${worker.fullName}. Please wait for their response.`);
-      return;
+      if (response.data.success) {
+        const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
+        alert(successMsg);
+      } else {
+        throw new Error(response.data.message || t.hireError);
+      }
+    } catch (error) {
+      console.error('Error hiring worker:', error);
+      
+      // Fallback: use localStorage if backend fails
+      const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const existingOffer = existingOffers.find(
+        o => o.workerId === (worker.id || worker.email) && o.employerId === authUser.email && o.status !== 'rejected'
+      );
+
+      if (existingOffer) {
+        alert(`You already have a pending offer with ${worker.fullName}. Please wait for their response.`);
+        return;
+      }
+
+      const offer = {
+        id: 'offer_' + Date.now(),
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        workerPhone: worker.phone || '',
+        workerLocation: worker.location || 'Not specified',
+        workerRating: worker.rating || 4.5,
+        workerSkills: worker.skills || [],
+        workerImage: worker.profileImage || '',
+        employerId: authUser.id || authUser.email,
+        employerName: authUser.fullName || 'Employer',
+        employerEmail: authUser.email,
+        jobTitle: worker.desiredJob || 'Service Provider',
+        hourlyRate: worker.hourlyRate || 30,
+        amount: (worker.hourlyRate || 30) * 40 * 4,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+        contactRevealed: false,
+        paymentConfirmed: false,
+        paymentVerified: false
+      };
+
+      const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      offers.push(offer);
+      localStorage.setItem('employer_offers', JSON.stringify(offers));
+
+      const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
+      workerOffers.push(offer);
+      localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(workerOffers));
+
+      const notification = {
+        id: 'notif_' + Date.now(),
+        type: 'offer_received',
+        message: `New job offer from ${authUser.fullName || 'Employer'}`,
+        offerId: offer.id,
+        offerTitle: offer.jobTitle,
+        employerName: authUser.fullName || 'Employer',
+        workerId: worker.id || worker.email,
+        workerEmail: worker.email,
+        date: new Date().toISOString(),
+        read: false
+      };
+      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
+      notifications.push(notification);
+      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
+
+      const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
+      alert(successMsg);
     }
-
-    const offer = {
-      id: 'offer_' + Date.now(),
-      workerId: worker.id || worker.email,
-      workerName: worker.fullName,
-      workerEmail: worker.email,
-      workerPhone: worker.phone || '',
-      workerLocation: worker.location || 'Not specified',
-      workerRating: worker.rating || 4.5,
-      workerSkills: worker.skills || [],
-      workerImage: worker.profileImage || '',
-      employerId: authUser.email,
-      employerName: authUser.fullName || 'Employer',
-      employerEmail: authUser.email,
-      jobTitle: worker.desiredJob || 'Service Provider',
-      hourlyRate: worker.hourlyRate || 30,
-      amount: (worker.hourlyRate || 30) * 40 * 4,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-      contactRevealed: false,
-      paymentConfirmed: false,
-      paymentVerified: false
-    };
-
-    const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-    offers.push(offer);
-    localStorage.setItem('employer_offers', JSON.stringify(offers));
-
-    const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
-    workerOffers.push(offer);
-    localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(workerOffers));
-
-    const notification = {
-      id: 'notif_' + Date.now(),
-      type: 'offer_received',
-      message: `New job offer from ${authUser.fullName || 'Employer'}`,
-      offerId: offer.id,
-      offerTitle: offer.jobTitle,
-      employerName: authUser.fullName || 'Employer',
-      workerId: worker.id || worker.email,
-      workerEmail: worker.email,
-      date: new Date().toISOString(),
-      read: false
-    };
-    const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-    notifications.push(notification);
-    localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-
-    const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
-    alert(successMsg);
   };
 
   const getJobLabel = (value) => {
@@ -706,7 +745,7 @@ const EmployerSearch = () => {
   const locationOptionsDynamic = getUniqueLocations();
 
   // ============================================================
-  // 6. SEARCH FUNCTION
+  // 7. SEARCH FUNCTION
   // ============================================================
   const handleSearch = () => {
     console.log('🔍 Starting search...');
@@ -822,7 +861,7 @@ const EmployerSearch = () => {
   };
 
   // ============================================================
-  // 7. RENDER
+  // 8. RENDER
   // ============================================================
   if (authLoading) {
     return (

@@ -4,45 +4,40 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import WorkerSidebar from './WorkerSidebar';
 import WorkerHeader from './WorkerHeader';
+import useAuthStore from '../../store/authStore';
 
 function WorkerLayout() {
   const navigate = useNavigate();
-
-  const [user, setUser] = useState(null);
+  
+  // Get authenticated user from authStore
+  const authUser = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem('homelyserv_user');
-
-    if (!userData) {
+    // Check authentication
+    if (!isAuthenticated || !authUser) {
       navigate('/login');
       return;
     }
 
-    setUser(JSON.parse(userData));
-
-    const savedLang =
-      localStorage.getItem('homelyserv_language') || 'en';
-
+    // Load language preference
+    const savedLang = localStorage.getItem('homelyserv_language') || 'en';
     setLanguage(savedLang);
 
-    const sidebar =
-      JSON.parse(
-        localStorage.getItem('sidebar_collapsed') || 'false'
-      );
-
+    // Load sidebar preference
+    const sidebar = JSON.parse(localStorage.getItem('sidebar_collapsed') || 'false');
     setSidebarCollapsed(sidebar);
-  }, [navigate]);
+  }, [navigate, isAuthenticated, authUser]);
 
   const toggleSidebar = () => {
     const value = !sidebarCollapsed;
     setSidebarCollapsed(value);
-    localStorage.setItem(
-      'sidebar_collapsed',
-      JSON.stringify(value)
-    );
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(value));
   };
 
   const toggleMobileMenu = () => {
@@ -50,15 +45,15 @@ function WorkerLayout() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_user');
-    localStorage.removeItem('homelyserv_token');
+    logout();
     navigate('/login');
   };
 
-  if (!user) {
+  // Show loading state
+  if (!authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading...
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -66,7 +61,7 @@ function WorkerLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <WorkerSidebar
-        user={user}
+        user={authUser}
         language={language}
         sidebarCollapsed={sidebarCollapsed}
         mobileMenuOpen={mobileMenuOpen}
@@ -81,7 +76,7 @@ function WorkerLayout() {
         }`}
       >
         <WorkerHeader
-          user={user}
+          user={authUser}
           language={language}
           toggleMobileMenu={toggleMobileMenu}
         />

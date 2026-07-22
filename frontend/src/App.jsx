@@ -5,18 +5,13 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 // Public Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import ForgotPassword from './pages/ForgotPassword';
 
 // Common Protected Pages
-import Search from './pages/Search';
 import MyHires from './pages/MyHires';
-// import Messages from './pages/Messages'; // REMOVED - Using role-specific messages instead
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import JobDetails from './pages/JobDetails';
 import Help from './pages/Help';
@@ -142,14 +137,7 @@ function App() {
       <Route path="/terms" element={<Terms />} />
 
       {/* ========== COMMON PROTECTED ROUTES ========== */}
-      <Route 
-        path="/search" 
-        element={
-          <ProtectedRoute>
-            <Search />
-          </ProtectedRoute>
-        } 
-      />
+      
       <Route 
         path="/my-hires" 
         element={
@@ -159,32 +147,12 @@ function App() {
         } 
       />
       
-      {/* ===== FIX: Redirect /messages to role-specific messages ===== */}
+      {/* Messages Redirect */}
       <Route 
         path="/messages" 
-        element={
-          <ProtectedRoute>
-            <MessagesRedirect />
-          </ProtectedRoute>
-        } 
+        element={<MessagesRedirect />} 
       />
       
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        } 
-      />
       <Route 
         path="/notifications" 
         element={
