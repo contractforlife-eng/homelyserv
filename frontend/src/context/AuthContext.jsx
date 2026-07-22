@@ -39,6 +39,8 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data?.success && response.data?.user) {
         const userData = response.data.user;
+        // Normalize role to uppercase to prevent case-mismatch routing loops
+        userData.role = userData.role?.toUpperCase();
         setUser(userData);
         setIsAuthenticated(true);
       } else {
