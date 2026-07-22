@@ -1,9 +1,14 @@
 // src/pages/EmployerPostJob.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 const EmployerPostJob = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -24,6 +29,21 @@ const EmployerPostJob = () => {
   const [requirement, setRequirement] = useState('');
   const [benefit, setBenefit] = useState('');
 
+  // Check authentication and redirect if needed
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
@@ -37,6 +57,9 @@ const EmployerPostJob = () => {
       status: 'new',
       isSaved: false,
       isApplied: false,
+      employerId: authUser?.id || authUser?.email,
+      employerEmail: authUser?.email,
+      employerName: authUser?.fullName || 'Employer',
       companyInfo: {
         industry: 'Home Services',
         size: '10-50 employees',
@@ -99,6 +122,21 @@ const EmployerPostJob = () => {
       benefits: prev.benefits.filter((_, i) => i !== index)
     }));
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from "../utils/api";
+import useAuthStore from "../store/authStore";
 import { 
   User, 
   Mail, 
@@ -116,38 +117,36 @@ function Register() {
     setErrors({});
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       const response = await api.post("/api/auth/register", {
-  fullName: formData.fullName.trim(),
-  email: formData.email.trim().toLowerCase(),
-  password: formData.password,
-  role: formData.role,
-  phone: formData.phone || "",
-  location: formData.location || ""
-});
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+        phone: formData.phone || "",
+        location: formData.location || ""
+      });
 
-if (!response.data.success) {
-  throw new Error(response.data.message || "Registration failed");
-}
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Registration failed");
+      }
 
-console.log("✅ User registered in MongoDB:", response.data.user);
+      console.log("✅ User registered in MongoDB:", response.data.user);
 
-setSuccess(true);
+      setSuccess(true);
 
-setFormData({
-  fullName: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  phone: "",
-  location: "",
-  role: "WORKER"
-});
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        phone: "",
+        location: "",
+        role: "WORKER"
+      });
 
-setTimeout(() => {
-  navigate("/login");
-}, 2000);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
 
     } catch (error) {
       console.error('❌ Registration error:', error);

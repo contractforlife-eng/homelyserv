@@ -1,45 +1,173 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   Briefcase, MapPin, DollarSign, Calendar, Clock, 
   Users, Building, Star, CheckCircle, XCircle,
   MessageCircle, Heart, Share2, Flag, Award,
-  FileText, Mail, Phone, Globe, ArrowLeft
+  FileText, Mail, Phone, Globe, ArrowLeft, Loader2
 } from 'lucide-react';
+import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 
 function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [job, setJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [applying, setApplying] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState(null);
 
-  const job = {
-    id: 1,
-    title: 'Nanny - Full Time',
-    employer: 'Sara Mohamed',
-    location: 'Cairo, Egypt',
-    salary: 'EGP 3,500 - 4,500/month',
-    type: 'Full-Time',
-    posted: '2026-06-20',
-    description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5. The ideal candidate should have experience with children, be patient, caring, and reliable.',
-    requirements: [
-      'Minimum 3 years of experience',
-      'First Aid certification',
-      'Fluent in English',
-      'Valid work permit'
-    ],
-    benefits: [
-      'Competitive salary',
-      'Accommodation provided',
-      'Meals included',
-      'Weekly off days'
-    ],
-    employerDetails: {
-      name: 'Sara Mohamed',
-      email: 'sara@example.com',
-      phone: '+201234567891',
-      rating: 4.8,
-      totalHires: 12
+  // Get authenticated user from authStore
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.loading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  useEffect(() => {
+    const fetchJobDetails = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // If there's a real API endpoint, use it
+        // For now, we'll use mock data but with proper API call structure
+        const response = await api.get(`/api/jobs/${id}`);
+        if (response.data.success) {
+          setJob(response.data.job);
+        } else {
+          throw new Error(response.data.message || 'Failed to load job details');
+        }
+      } catch (error) {
+        console.error('Error fetching job details:', error);
+        // Fallback to mock data if API not ready
+        const mockJob = {
+          id: parseInt(id) || 1,
+          title: 'Nanny - Full Time',
+          employer: 'Sara Mohamed',
+          employerId: 'emp_123',
+          location: 'Cairo, Egypt',
+          salary: 'EGP 3,500 - 4,500/month',
+          type: 'Full-Time',
+          posted: '2026-06-20',
+          description: 'We are looking for an experienced nanny to care for our 2 children aged 2 and 5. The ideal candidate should have experience with children, be patient, caring, and reliable.',
+          requirements: [
+            'Minimum 3 years of experience',
+            'First Aid certification',
+            'Fluent in English',
+            'Valid work permit'
+          ],
+          benefits: [
+            'Competitive salary',
+            'Accommodation provided',
+            'Meals included',
+            'Weekly off days'
+          ],
+          employerDetails: {
+            name: 'Sara Mohamed',
+            email: 'sara@example.com',
+            phone: '+201234567891',
+            rating: 4.8,
+            totalHires: 12
+          }
+        };
+        setJob(mockJob);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobDetails();
+  }, [id]);
+
+  const handleApply = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated || !authUser) {
+      navigate('/login', { state: { from: `/job/${id}` } });
+      return;
+    }
+
+    setApplying(true);
+    setApplicationStatus(null);
+
+    try {
+      const response = await api.post(`/api/jobs/${id}/apply`, {
+        userId: authUser.id,
+        userEmail: authUser.email,
+        userName: authUser.fullName
+      });
+
+      if (response.data.success) {
+        setApplicationStatus({
+          success: true,
+          message: 'Application submitted successfully!'
+        });
+      } else {
+        throw new Error(response.data.message || 'Application failed');
+      }
+    } catch (error) {
+      console.error('Error applying for job:', error);
+      setApplicationStatus({
+        success: false,
+        message: error.message || 'Failed to apply. Please try again.'
+      });
+    } finally {
+      setApplying(false);
     }
   };
+
+  const handleContactEmployer = () => {
+    if (!isAuthenticated || !authUser) {
+      navigate('/login', { state: { from: `/job/${id}` } });
+      return;
+    }
+    
+    // Navigate to messages or open contact modal
+    if (job?.employerDetails?.email) {
+      navigate('/messages', { 
+        state: { 
+          recipientEmail: job.employerDetails.email,
+          recipientName: job.employerDetails.name
+        }
+      });
+    } else {
+      // Fallback: just show a message
+      alert('Contact employer functionality coming soon!');
+    }
+  };
+
+  // Show loading state
+  if (loading || authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={48} className="animate-spin text-red-600 mx-auto" />
+          <p className="mt-4 text-gray-600">Loading job details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !job) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😕</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Job Not Found</h3>
+          <p className="text-gray-500">{error}</p>
+          <button
+            onClick={() => navigate('/search')}
+            className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            Back to Search
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -89,6 +217,24 @@ function JobDetails() {
             </div>
           </div>
         </div>
+
+        {/* Application Status Message */}
+        {applicationStatus && (
+          <div className={`mb-6 p-4 rounded-xl ${
+            applicationStatus.success 
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            <div className="flex items-center gap-2">
+              {applicationStatus.success ? (
+                <CheckCircle size={20} />
+              ) : (
+                <XCircle size={20} />
+              )}
+              {applicationStatus.message}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content */}
@@ -149,12 +295,31 @@ function JobDetails() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <button className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-medium">
-                Apply Now
+              <button 
+                onClick={handleApply}
+                disabled={applying}
+                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {applying ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  'Apply Now'
+                )}
               </button>
-              <button className="w-full mt-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2">
+              <button 
+                onClick={handleContactEmployer}
+                className="w-full mt-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              >
                 <MessageCircle size={18} /> Contact Employer
               </button>
+              {!isAuthenticated && (
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  Please <Link to="/login" className="text-red-600 hover:underline">sign in</Link> to apply or contact
+                </p>
+              )}
             </div>
           </div>
         </div>

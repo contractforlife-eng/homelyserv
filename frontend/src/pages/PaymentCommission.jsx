@@ -13,11 +13,13 @@ import {
   AlertCircle,
   Loader2,
   Crown,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
-import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS } from '../config/paymentConfig';
+import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
   const navigate = useNavigate();
@@ -27,6 +29,11 @@ const PaymentCommission = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymobIframe, setPaymobIframe] = useState(null);
+
+  // Get authenticated user from authStore
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.loading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
@@ -49,13 +56,19 @@ const PaymentCommission = () => {
   ];
 
   useEffect(() => {
+    // Check authentication
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
     const data = localStorage.getItem('homelyserv_commission_payment');
     if (data) {
       setCommissionData(JSON.parse(data));
     } else {
       navigate('/worker/offers');
     }
-  }, [navigate]);
+  }, [navigate, isAuthenticated, authUser]);
 
   // Handle Paymob iframe message
   const handlePaymobMessage = (event) => {
@@ -118,18 +131,25 @@ const PaymentCommission = () => {
       return;
     }
 
+    // Check if user is authenticated
+    if (!isAuthenticated || !authUser) {
+      setPaymentError('Please log in to make a payment');
+      return;
+    }
+
     setProcessing(true);
     setPaymentError(null);
 
     try {
       const orderId = 'COMM-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
       const customerData = {
-        firstName: commissionData.workerName?.split(' ')[0] || 'Worker',
-        lastName: commissionData.workerName?.split(' ').slice(1).join(' ') || 'User',
-        email: commissionData.workerEmail || 'worker@example.com',
-        phone: '+201234567890',
+        firstName: authUser?.fullName?.split(' ')[0] || commissionData.workerName?.split(' ')[0] || 'Worker',
+        lastName: authUser?.fullName?.split(' ').slice(1).join(' ') || commissionData.workerName?.split(' ').slice(1).join(' ') || 'User',
+        email: authUser?.email || commissionData.workerEmail || 'worker@example.com',
+        phone: authUser?.phone || '+201234567890',
         country: 'EG',
         city: 'Cairo',
+        userId: authUser?.id,
         items: [
           {
             name: `Commission for ${commissionData.offerTitle || 'Offer'}`,
@@ -210,7 +230,8 @@ const PaymentCommission = () => {
         status: 'completed',
         paidAt: new Date().toISOString(),
         company: data.company,
-        offerTitle: data.offerTitle
+        offerTitle: data.offerTitle,
+        userId: authUser?.id
       };
 
       const receipts = JSON.parse(localStorage.getItem('commission_receipts') || '[]');
@@ -229,6 +250,15 @@ const PaymentCommission = () => {
       window.removeEventListener('message', handlePaymobMessage);
     };
   }, []);
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+      </div>
+    );
+  }
 
   if (!commissionData) {
     return (

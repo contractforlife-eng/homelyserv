@@ -1,6 +1,7 @@
 // src/pages/WorkerSettings.jsx - COMPREHENSIVE SETTINGS WITH RED THEME + WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
 import {
@@ -72,7 +73,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -123,14 +124,14 @@ const WorkerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -187,7 +188,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -199,10 +200,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -210,7 +211,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -309,8 +310,12 @@ const WorkerSidebar = ({
 // Main WorkerSettings Component - COMPREHENSIVE WITH RED THEME + WORKING NOTIFICATIONS
 const WorkerSettings = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -380,8 +385,7 @@ const WorkerSettings = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -389,7 +393,7 @@ const WorkerSettings = () => {
   // IS PREMIUM CHECK
   // ============================================================
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -410,7 +414,7 @@ const WorkerSettings = () => {
       }
 
       // Check localStorage for notifications first
-      const userEmail = user?.email;
+      const userEmail = authUser?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
           localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
@@ -615,39 +619,36 @@ const WorkerSettings = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-        
-        // Load saved settings
-        const savedSettings = localStorage.getItem('worker_settings');
-        if (savedSettings) {
-          try {
-            const parsedSettings = JSON.parse(savedSettings);
-            setSettings(prev => ({ ...prev, ...parsedSettings }));
-          } catch (e) {
-            console.error('Error parsing settings:', e);
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+
+    // Load saved settings
+    const savedSettings = localStorage.getItem('worker_settings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(prev => ({ ...prev, ...parsedSettings }));
+      } catch (e) {
+        console.error('Error parsing settings:', e);
+      }
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -713,13 +714,13 @@ const WorkerSettings = () => {
     }
     
     // Update password
-    const updatedUser = { ...user, password: passwordData.newPassword };
+    const updatedUser = { ...authUser, password: passwordData.newPassword };
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
     // Update in users list
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === user.email);
+      const userIndex = users.findIndex(u => u.email === authUser.email);
       if (userIndex !== -1) {
         users[userIndex].password = passwordData.newPassword;
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
@@ -745,7 +746,7 @@ const WorkerSettings = () => {
     
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const updatedUsers = users.filter(u => u.email !== user.email);
+      const updatedUsers = users.filter(u => u.email !== authUser.email);
       localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
       
       localStorage.removeItem('homelyserv_user');
@@ -753,10 +754,11 @@ const WorkerSettings = () => {
       localStorage.removeItem('worker_settings');
       
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      delete profiles[user.email];
+      delete profiles[authUser.email];
       localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
       
       alert('Account deleted successfully');
+      logout();
       navigate('/login');
     } catch (error) {
       console.error('Error deleting account:', error);
@@ -767,7 +769,7 @@ const WorkerSettings = () => {
   // ===== Export Data Functionality =====
   const handleExportData = async () => {
     try {
-      const workerId = user?.id || user?.email;
+      const workerId = authUser?.id || authUser?.email;
       
       // Get conversations from backend
       let conversations = [];
@@ -794,9 +796,9 @@ const WorkerSettings = () => {
       }
       
       const data = {
-        user: user,
+        user: authUser,
         settings: settings,
-        offers: JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]'),
+        offers: JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]'),
         conversations: conversations,
         messages: messages,
         complaints: JSON.parse(localStorage.getItem('worker_complaints') || '[]'),
@@ -809,7 +811,7 @@ const WorkerSettings = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `worker_data_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `worker_data_${authUser.email}_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -818,14 +820,31 @@ const WorkerSettings = () => {
     }
   };
 
-  const userProfileImage = user?.profileImage || null;
+  const userProfileImage = authUser?.profileImage || null;
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 mb-6">Please login to view your settings</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
@@ -839,7 +858,7 @@ const WorkerSettings = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -865,7 +884,7 @@ const WorkerSettings = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -879,7 +898,7 @@ const WorkerSettings = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={`text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} hidden sm:inline`}>
-                    {user?.fullName || 'Worker'}
+                    {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">

@@ -1,6 +1,7 @@
 // src/pages/WorkerPayment.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
@@ -41,7 +42,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -88,10 +89,10 @@ const WorkerSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -152,7 +153,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -164,10 +165,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -175,7 +176,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -276,8 +277,12 @@ const WorkerSidebar = ({
 // ============================================
 const WorkerPayment = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -330,8 +335,7 @@ const WorkerPayment = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -339,7 +343,7 @@ const WorkerPayment = () => {
   // IS PREMIUM CHECK
   // ============================================
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -360,7 +364,7 @@ const WorkerPayment = () => {
       }
 
       // Check localStorage for notifications first
-      const userEmail = user?.email;
+      const userEmail = authUser?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
           localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
@@ -530,18 +534,18 @@ const WorkerPayment = () => {
   // 4. DATA LOADING FUNCTIONS
   // ============================================
   const loadPaymentData = () => {
-    if (!user) return;
+    if (!authUser) return;
     
     setLoading(true);
 
     try {
-      const userId = user.id || user.email;
+      const userId = authUser.id || authUser.email;
       
       const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
       
       const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       const workerPaymentsFromAll = allPayments.filter(p => 
-        p.workerId === userId || p.workerEmail === userId || p.workerEmail === user.email
+        p.workerId === userId || p.workerEmail === userId || p.workerEmail === authUser.email
       );
       
       let mergedPayments = [...savedPayments];
@@ -580,7 +584,7 @@ const WorkerPayment = () => {
               status: 'completed',
               description: `Payment for ${offer.title || 'service'}`,
               workerId: userId,
-              workerEmail: user.email,
+              workerEmail: authUser.email,
               createdAt: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString()
             });
           }
@@ -610,7 +614,7 @@ const WorkerPayment = () => {
     const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const totalTasksCompleted = completedPayments.length;
     
-    const hourlyRate = user?.hourlyRate || 35;
+    const hourlyRate = authUser?.hourlyRate || 35;
     const monthlySalary = totalEarned / 6;
     
     setWorkerStats({
@@ -628,21 +632,6 @@ const WorkerPayment = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        setUser(null);
-      }
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -650,10 +639,28 @@ const WorkerPayment = () => {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (authUser) {
+      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+      if (profiles[authUser.email]) {
+        authUser.profileImage = profiles[authUser.email].profileImage || null;
+      }
       loadPaymentData();
     }
-  }, [user]);
+  }, [authUser]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -685,8 +692,8 @@ const WorkerPayment = () => {
   };
 
   const handleSavePaymentInfo = () => {
-    if (user) {
-      localStorage.setItem(`worker_payment_info_${user.id}`, JSON.stringify(workerPaymentInfo));
+    if (authUser) {
+      localStorage.setItem(`worker_payment_info_${authUser.id}`, JSON.stringify(workerPaymentInfo));
       setIsEditingPaymentInfo(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -720,16 +727,16 @@ const WorkerPayment = () => {
   const stats = {
     totalEarned: workerStats.totalEarned || 0,
     tasksCompleted: workerStats.totalTasksCompleted || 0,
-    hourlyRate: workerStats.hourlyRate || user?.hourlyRate || 0,
+    hourlyRate: workerStats.hourlyRate || authUser?.hourlyRate || 0,
     monthlySalary: workerStats.monthlySalary || 0
   };
 
-  const userProfileImage = user?.profileImage || null;
+  const userProfileImage = authUser?.profileImage || null;
 
   // ============================================
   // 7. RENDER - LOADING STATE
   // ============================================
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -743,7 +750,7 @@ const WorkerPayment = () => {
   // ============================================
   // 8. RENDER - USER NOT FOUND
   // ============================================
-  if (!user) {
+  if (!authUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -771,7 +778,7 @@ const WorkerPayment = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -799,7 +806,7 @@ const WorkerPayment = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -813,7 +820,7 @@ const WorkerPayment = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Worker'}
+                    {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
@@ -909,7 +916,7 @@ const WorkerPayment = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (

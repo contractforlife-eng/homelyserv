@@ -1,6 +1,7 @@
 // src/pages/AdminPayments.jsx - FULLY FIXED: Loads ALL payment sources correctly
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import {
   Home,
   Users,
@@ -1009,35 +1010,37 @@ const AdminPayments = () => {
   // ============================================================
   // useEffect
   // ============================================================
+  // Use authStore as single source of truth
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
+
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'ADMIN') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+  }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'ADMIN') {
+      navigate('/login');
+      return;
+    }
+
+    setUser(authUser);
     loadPayments();
-    
-  }, [navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -1083,8 +1086,7 @@ const AdminPayments = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 

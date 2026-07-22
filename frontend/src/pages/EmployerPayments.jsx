@@ -1,6 +1,7 @@
 // src/pages/EmployerPayments.jsx - FIXED VERSION
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import {
@@ -65,7 +66,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -115,10 +116,10 @@ const EmployerSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return checkUserPremium(userId);
   };
@@ -175,7 +176,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -187,10 +188,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -198,7 +199,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -310,15 +311,12 @@ const debugPayments = (userEmail) => {
   console.log('📋 employer_payments count:', employerPayments.length);
   console.log('📋 employer_payments:', employerPayments);
   
-  const user = JSON.parse(localStorage.getItem('homelyserv_user'));
-
-const userPayments = allPayments.filter(p =>
-  p.employerEmail === user.email ||
-  p.employerId === user.id ||
-  p.employerId === user.email
-);
-
-console.table(userPayments);
+  const userPayments = allPayments.filter(p =>
+    p.employerEmail === userEmail ||
+    p.employerId === userEmail
+  );
+  
+  console.table(userPayments);
   
   const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
   const userOffers = employerOffers.filter(o => 
@@ -334,8 +332,11 @@ console.table(userPayments);
 const EmployerPayments = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -588,14 +589,14 @@ const EmployerPayments = () => {
     try {
       console.log('✅ Payment completed for offer:', offerId);
       console.log('✅ Payment ID:', paymentId);
-      console.log('✅ Current user:', user?.email);
+      console.log('✅ Current user:', authUser?.email);
       
       if (!offerId) {
         console.error('❌ No offerId provided');
         return false;
       }
 
-      if (!user?.email) {
+      if (!authUser?.email) {
         console.error('❌ No user email found');
         return false;
       }
@@ -626,8 +627,8 @@ const EmployerPayments = () => {
             paymentId: paymentId,
             paymentStatus: 'completed',
             status: 'in_progress',
-            employerEmail: user.email,
-            employerId: user.id || user.email,
+            employerEmail: authUser.email,
+            employerId: authUser.id || authUser.email,
             updatedAt: new Date().toISOString()
           };
         }
@@ -655,7 +656,7 @@ const EmployerPayments = () => {
               paymentId: paymentId,
               paymentStatus: 'completed',
               status: 'paid',
-              employerEmail: user.email,
+              employerEmail: authUser.email,
               updatedAt: new Date().toISOString()
             };
           }
@@ -670,7 +671,7 @@ const EmployerPayments = () => {
             paymentId: paymentId,
             paymentStatus: 'completed',
             status: 'paid',
-            employerEmail: user.email,
+            employerEmail: authUser.email,
             updatedAt: new Date().toISOString()
           });
         }
@@ -694,8 +695,8 @@ const EmployerPayments = () => {
         workerLocation: offer.workerLocation || 'Not specified',
         workerRating: offer.workerRating || 4.5,
         workerImage: offer.workerImage || '',
-        employerId: user.id || user.email,
-        employerEmail: user.email,
+        employerId: authUser.id || authUser.email,
+        employerEmail: authUser.email,
         jobTitle: offer.jobTitle || 'Service Provider',
         commission: commission,
         fullSalary: fullSalary,
@@ -714,7 +715,7 @@ const EmployerPayments = () => {
         paymentId: paymentId || 'PAY-' + Date.now()
       };
       
-      console.log('📋 Creating payment record with employer email:', user.email);
+      console.log('📋 Creating payment record with employer email:', authUser.email);
       console.log('📋 Payment record:', paymentRecord);
       
       // 4. SAVE TO all_payments
@@ -758,7 +759,7 @@ const EmployerPayments = () => {
           offerTitle: offer.jobTitle || 'Job Offer',
           workerEmail: offer.workerEmail,
           workerName: offer.workerName || 'Worker',
-          employerName: user.fullName || 'Employer',
+          employerName: authUser.fullName || 'Employer',
           date: new Date().toISOString(),
           read: false,
           link: '/worker/offers'
@@ -821,7 +822,7 @@ const EmployerPayments = () => {
       return;
     }
 
-    if (!user?.email) {
+    if (!authUser?.email) {
       console.log('❌ No user email, skipping load');
       setPayments([]);
       setFilteredPayments([]);
@@ -833,7 +834,7 @@ const EmployerPayments = () => {
     setLoading(true);
     
     try {
-      const employerEmail = user.email;
+      const employerEmail = authUser.email;
       console.log('📂 Loading commission payments for employer:', employerEmail);
 
       // 1. GET PAYMENTS FROM all_payments
@@ -847,19 +848,19 @@ const EmployerPayments = () => {
       }
       
       // Filter for this employer's commission payments
-      const employerId = user?.id;
-let employerPayments = allPayments.filter((p) => {
-  const isCurrentEmployer =
-    p.employerId === employerId ||
-    p.employerEmail === employerEmail ||
-    p.employerId === employerEmail; // للتوافق مع البيانات القديمة
+      const employerId = authUser?.id;
+      let employerPayments = allPayments.filter((p) => {
+        const isCurrentEmployer =
+          p.employerId === employerId ||
+          p.employerEmail === employerEmail ||
+          p.employerId === employerEmail;
 
-  const isSupportedPayment =
-    ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
-    ['commission', 'recruitment'].includes(p.type);
+        const isSupportedPayment =
+          ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
+          ['commission', 'recruitment'].includes(p.type);
 
-  return isCurrentEmployer && isSupportedPayment;
-});
+        return isCurrentEmployer && isSupportedPayment;
+      });
       
       console.log(`📋 Found ${employerPayments.length} commission payments in all_payments`);
 
@@ -874,17 +875,17 @@ let employerPayments = allPayments.filter((p) => {
       }
       
       const empFiltered = empPayments.filter((p) => {
-  const isCurrentEmployer =
-    p.employerId === employerId ||
-    p.employerEmail === user?.email ||
-    p.employerId === user?.email;
+        const isCurrentEmployer =
+          p.employerId === employerId ||
+          p.employerEmail === authUser?.email ||
+          p.employerId === authUser?.email;
 
-  const isSupportedPayment =
-    ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
-    ['commission', 'recruitment'].includes(p.type);
+        const isSupportedPayment =
+          ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
+          ['commission', 'recruitment'].includes(p.type);
 
-  return isCurrentEmployer && isSupportedPayment;
-});
+        return isCurrentEmployer && isSupportedPayment;
+      });
       
       console.log(`📋 Found ${empFiltered.length} commission payments in employer_payments`);
 
@@ -904,35 +905,25 @@ let employerPayments = allPayments.filter((p) => {
         }
       });
       employerPayments = Object.values(mergedMap);
-      console.table(
-  employerPayments.map(p => ({
-    id: p.id,
-    employerId: p.employerId,
-    employerEmail: p.employerEmail,
-    paymentType: p.paymentType,
-    type: p.type,
-    status: p.status
-  }))
-);
       console.log(`📋 After merging: ${employerPayments.length} unique payments`);
 
       // 4. CHECK OFFERS FOR ANY MISSING PAYMENTS
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const employerAcceptedOffers = employerOffers.filter((o) => {
-  const isEmployer =
-    o.employerId === employerId ||
-    o.employerEmail === employerEmail ||
-    o.employerId === employerEmail; // دعم البيانات القديمة
+        const isEmployer =
+          o.employerId === employerId ||
+          o.employerEmail === employerEmail ||
+          o.employerId === employerEmail;
 
-  const isAccepted =
-    o.status === 'accepted' ||
-    o.status === 'completed' ||
-    o.status === 'terminated' ||
-    o.status === 'in_progress' ||
-    o.paymentCompleted === true;
+        const isAccepted =
+          o.status === 'accepted' ||
+          o.status === 'completed' ||
+          o.status === 'terminated' ||
+          o.status === 'in_progress' ||
+          o.paymentCompleted === true;
 
-  return isEmployer && isAccepted;
-});
+        return isEmployer && isAccepted;
+      });
 
       console.log(`📋 Found ${employerAcceptedOffers.length} accepted/completed offers`);
 
@@ -958,10 +949,10 @@ let employerPayments = allPayments.filter((p) => {
           if (existingPayment) {
             // Use existing payment data
             const payment = {
-  ...existingPayment,
-  employerId: employerId,
-  employerEmail: employerEmail
-};
+              ...existingPayment,
+              employerId: employerId,
+              employerEmail: employerEmail
+            };
             newPayments.push(payment);
             existingPaymentOfferIds.add(offer.id);
             console.log(`📋 Using existing payment for offer ${offer.id}`);
@@ -1066,42 +1057,35 @@ let employerPayments = allPayments.filter((p) => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
 
-    const userData = localStorage.getItem('homelyserv_user');
-    
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'EMPLOYER') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
-        console.log('✅ User loaded:', parsedUser.email);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-        return;
-      }
-    } else {
-      navigate('/login');
-      return;
-    }
-
     const sidebarState = localStorage.getItem('employer_sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
-      console.log('🔄 Loading data for user:', user.email);
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (authUser) {
+      console.log('🔄 Loading data for user:', authUser.email);
       loadData();
     }
-  }, [user]);
+  }, [authUser]);
 
   useEffect(() => {
-    if (user) {
+    if (authUser) {
       loadData();
     }
   }, [refreshKey]);
@@ -1159,8 +1143,8 @@ let employerPayments = allPayments.filter((p) => {
       description: paymentData.description || `Commission for ${paymentData.workerName}`,
       paymentType: 'commission',
       offerId: paymentData.offerId,
-      employerId: user?.id || user?.email,
-      employerName: user?.fullName || 'Employer',
+      employerId: authUser?.id || authUser?.email,
+      employerName: authUser?.fullName || 'Employer',
       returnTo: '/employer-payments',
       onPaymentSuccess: (paymentId) => {
         console.log('🔄 Payment callback triggered for offer:', paymentData.offerId);
@@ -1214,16 +1198,13 @@ let employerPayments = allPayments.filter((p) => {
         return;
       }
       
-      try {
-        setCreatingConversation(true);
-      } catch (e) {
-        // setCreatingConversation may not exist in this scope, ignore
-      }
+      // Use the imported sendMessage function
+      const { sendMessage } = require('../utils/chatService');
       
-      const employerId = user?.id || user?.email;
-      const employerName = user?.fullName || 'Employer';
+      const employerId = authUser?.id || authUser?.email;
+      const employerName = authUser?.fullName || 'Employer';
       
-      // Create/ensure conversation before navigating (identical to MyHires pattern)
+      // Create/ensure conversation before navigating
       try {
         const result = await sendMessage(
           employerId,
@@ -1239,12 +1220,6 @@ let employerPayments = allPayments.filter((p) => {
         }
       } catch (error) {
         console.error('Error ensuring conversation:', error);
-      } finally {
-        try {
-          setCreatingConversation(false);
-        } catch (e) {
-          // ignore
-        }
       }
       
       // Navigate to messages with worker info in URL parameters
@@ -1276,15 +1251,15 @@ let employerPayments = allPayments.filter((p) => {
   };
 
   const handleDebug = () => {
-  console.log("Current User:", user);
-  console.log("User ID:", user?.id);
-  console.log("User Email:", user?.email);
+    console.log("Current User:", authUser);
+    console.log("User ID:", authUser?.id);
+    console.log("User Email:", authUser?.email);
 
-  if (user?.email) {
-    debugPayments(user.email);
-    alert('Debug data printed to console. Check the browser console (F12).');
-  }
-};
+    if (authUser?.email) {
+      debugPayments(authUser.email);
+      alert('Debug data printed to console. Check the browser console (F12).');
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -1331,6 +1306,21 @@ let employerPayments = allPayments.filter((p) => {
   // ============================================================
   // RENDER
   // ============================================================
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return null;
+  }
+
   if (loading && payments.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1350,7 +1340,7 @@ let employerPayments = allPayments.filter((p) => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -1371,7 +1361,7 @@ let employerPayments = allPayments.filter((p) => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}

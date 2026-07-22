@@ -1,6 +1,7 @@
 // src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION - FIXED
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
@@ -281,7 +282,6 @@ const PaymentOptions = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workerData, setWorkerData] = useState(null);
@@ -296,6 +296,11 @@ const PaymentOptions = () => {
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
+
+  // Get authenticated user from authStore
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.loading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
@@ -525,7 +530,7 @@ const PaymentOptions = () => {
       const total = calculateTotal();
       
       // Save hire record
-      const hireId = saveHireRecord(workerData, user, {
+      const hireId = saveHireRecord(workerData, authUser, {
         amount: total,
         paymentId: paymentData?.paymentId || paymentData?.transactionId,
         transactionId: paymentData?.transactionId || 'TXN-' + Date.now()
@@ -547,9 +552,9 @@ const PaymentOptions = () => {
     workerEmail: workerData?.workerEmail,
     jobTitle: workerData?.desiredJob || 'Service Provider',
 
-    employerId: user?.id || user?.email,
-    employerEmail: user?.email || '',
-    employerName: user?.fullName || 'Employer',
+    employerId: authUser?.id || authUser?.email,
+    employerEmail: authUser?.email || '',
+    employerName: authUser?.fullName || 'Employer',
 
     amount: total,
     status: 'completed',
@@ -735,16 +740,16 @@ const PaymentOptions = () => {
       const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
       
       const customerData = {
-        email: pendingPayment?.employerEmail || user?.email || 'employer@homelyserv.com',
-        firstName: user?.fullName?.split(' ')[0] || 'Employer',
-        lastName: user?.fullName?.split(' ').slice(1).join(' ') || 'User',
-        phone: pendingPayment?.phone || user?.phone || '+201234567890',
-        userId: user?.id || user?.email,
+        email: pendingPayment?.employerEmail || authUser?.email || 'employer@homelyserv.com',
+        firstName: authUser?.fullName?.split(' ')[0] || 'Employer',
+        lastName: authUser?.fullName?.split(' ').slice(1).join(' ') || 'User',
+        phone: pendingPayment?.phone || authUser?.phone || '+201234567890',
+        userId: authUser?.id || authUser?.email,
         workerId: workerData?.workerId || workerData?.workerEmail,
         workerName: workerData?.workerName,
         jobTitle: workerData?.desiredJob || pendingPayment?.jobTitle || 'Service Provider',
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName || 'Employer',
+        employerId: authUser?.id || authUser?.email,
+        employerName: authUser?.fullName || 'Employer',
         hireId: pendingPayment?.hireId,
         description: pendingPayment?.description || `Commission for hiring ${workerData?.workerName || 'worker'}`
       };
@@ -825,7 +830,7 @@ const PaymentOptions = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    // Do not remove homelyserv_user - it's not used anymore
     navigate('/login');
   };
 
@@ -852,21 +857,16 @@ const PaymentOptions = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'EMPLOYER') {
-          navigate('/login');
-          return;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
+    // Check authentication
+    if (!isAuthenticated || !authUser) {
       navigate('/login');
+      return;
+    }
+
+    // Check if user is employer
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
@@ -893,7 +893,7 @@ const PaymentOptions = () => {
     }
 
     setLoading(false);
-  }, [navigate]);
+  }, [navigate, isAuthenticated, authUser]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -905,12 +905,30 @@ const PaymentOptions = () => {
   // ============================================================
   // RENDER
   // ============================================================
-  if (!user || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{t.loading}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Please Log In</h3>
+          <p className="text-gray-500">You need to be logged in to make a payment.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+          >
+            Log In
+          </button>
         </div>
       </div>
     );
@@ -925,7 +943,7 @@ const PaymentOptions = () => {
           toggleSidebar={toggleSidebar}
           mobileMenuOpen={mobileMenuOpen}
           toggleMobileMenu={toggleMobileMenu}
-          user={user}
+          user={authUser}
           handleLogout={handleLogout}
         />
         <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
@@ -955,7 +973,7 @@ const PaymentOptions = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        user={authUser}
         handleLogout={handleLogout}
       />
 

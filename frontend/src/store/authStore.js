@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
 
-// API base URL - change this to your actual API endpoint
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL || 'https://gas-clapped-copper.ngrok-free.dev'
+// API base URL - must match backend mount point /api
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const useAuthStore = create(
   persist(
@@ -107,22 +107,34 @@ const useAuthStore = create(
         const { token } = get();
         
         if (!token) {
-          set({ isAuthenticated: false });
+          set({ user: null, isAuthenticated: false, loading: false });
           return { success: false };
         }
         
         try {
           // Verify token with server
-          const response = await axios.get(`${API_URL}/auth/verify`, {
+          console.log('🔍 Auth verify URL:', `${API_URL}/api/auth/verify`);
+          console.log('🔍 Token exists:', !!token);
+          
+          const response = await axios.get(`${API_URL}/api/auth/verify`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
           
+          console.log('🔍 Response status:', response.status);
+          
           if (response.data?.success && response.data?.user) {
+            const userData = response.data.user;
+            // Normalize role to uppercase to prevent case-mismatch routing loops
+            userData.role = userData.role?.toUpperCase();
+            console.log('🔍 Returned user role:', userData.role);
+            
             set({
-              user: response.data.user,
+              user: userData,
+              token,
               isAuthenticated: true,
+              loading: false,
               error: null
             });
             return { success: true };

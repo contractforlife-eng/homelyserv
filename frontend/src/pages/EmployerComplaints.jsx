@@ -1,6 +1,7 @@
 // src/pages/EmployerComplaints.jsx - UPDATED TO SHOW ADMIN RESPONSES WITH NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import {
@@ -41,7 +42,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -95,14 +96,14 @@ const EmployerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -157,7 +158,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -169,10 +170,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -180,7 +181,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -279,8 +280,11 @@ const EmployerSidebar = ({
 // Main EmployerComplaints Component - WITH NOTIFICATION BELL
 const EmployerComplaints = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [complaints, setComplaints] = useState([]);
@@ -432,46 +436,40 @@ const EmployerComplaints = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
+    
     setLoading(false);
-  }, [navigate]);
+  }, []);
 
-  // ============================================================
-  // Load complaints when user is set - FILTER BY EMPLOYER
-  // ============================================================
   useEffect(() => {
-    if (!user?.email) return;
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
 
     // Load complaints from localStorage
     const allComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
     
     // FILTER: Only complaints from this employer
     const employerComplaints = allComplaints.filter(
-      complaint => complaint.employerEmail === user.email
+      complaint => complaint.employerEmail === authUser.email
     );
     
-    console.log(`📋 Loaded ${employerComplaints.length} complaints for employer: ${user.email}`);
+    console.log(`📋 Loaded ${employerComplaints.length} complaints for employer: ${authUser.email}`);
     
     setComplaints(employerComplaints);
     setFilteredComplaints(employerComplaints);
-  }, [user]);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -533,7 +531,7 @@ const EmployerComplaints = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!user?.email) {
+    if (!authUser?.email) {
       alert('Please login to submit a complaint');
       return;
     }
@@ -547,9 +545,9 @@ const EmployerComplaints = () => {
       response: null,
       adminResponse: null,
       adminResponseAt: null,
-      employerId: user.id || user.email,
-      employerEmail: user.email,
-      employerName: user.fullName || 'Employer'
+      employerId: authUser.id || authUser.email,
+      employerEmail: authUser.email,
+      employerName: authUser.fullName || 'Employer'
     };
     
     // Get all complaints from storage
@@ -561,7 +559,7 @@ const EmployerComplaints = () => {
     
     // Update state with filtered complaints for this employer
     const employerComplaints = updatedAllComplaints.filter(
-      c => c.employerEmail === user.email
+      c => c.employerEmail === authUser.email
     );
     
     setComplaints(employerComplaints);
@@ -570,7 +568,7 @@ const EmployerComplaints = () => {
     setNewComplaint({ title: '', description: '', category: 'general' });
     setShowForm(false);
     
-    console.log(`✅ Complaint submitted by ${user.email}`);
+    console.log(`✅ Complaint submitted by ${authUser.email}`);
   };
 
   // ============================================================
@@ -589,7 +587,7 @@ const EmployerComplaints = () => {
     
     // Filter for this employer
     const employerComplaints = updatedAllComplaints.filter(
-      c => c.employerEmail === user.email
+      c => c.employerEmail === authUser.email
     );
     
     setComplaints(employerComplaints);
@@ -639,7 +637,7 @@ const EmployerComplaints = () => {
     resolved: complaints.filter(c => c.status === 'resolved').length
   };
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -648,6 +646,10 @@ const EmployerComplaints = () => {
         </div>
       </div>
     );
+  }
+
+  if (!authUser) {
+    return null;
   }
 
   if (loading) {
@@ -669,7 +671,7 @@ const EmployerComplaints = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -691,7 +693,7 @@ const EmployerComplaints = () => {
             </div>
             <div className="flex items-center gap-3">
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}

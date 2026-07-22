@@ -1,6 +1,7 @@
 // src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import {
@@ -73,7 +74,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -124,10 +125,10 @@ const EmployerSidebar = ({
 
   const isActive = (path) => location.pathname === path;
 
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -184,7 +185,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -196,10 +197,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -207,7 +208,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -309,8 +310,11 @@ const EmployerSidebar = ({
 const MyHires = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -326,7 +330,7 @@ const MyHires = () => {
   const [creatingConversation, setCreatingConversation] = useState(false);
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -505,34 +509,37 @@ const MyHires = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'EMPLOYER') {
-          navigate('/login');
-          return;
-        }
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
 
     loadHires();
-  }, [navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
   // ============================================================
   // 4. LOAD HIRES
@@ -541,8 +548,8 @@ const MyHires = () => {
     setLoading(true);
     
     try {
-      const employerEmail = user?.email;
-      const employerId = user?.id || employerEmail;
+      const employerEmail = authUser?.email;
+      const employerId = authUser?.id || employerEmail;
       
       if (!employerEmail) {
         setHires([]);
@@ -625,15 +632,10 @@ const MyHires = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (authUser) {
       loadHires();
     }
-  }, [user]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
+  }, [authUser]);
 
   // ============================================================
   // 5. FILTERS
@@ -671,8 +673,8 @@ const MyHires = () => {
       return false;
     }
     
-    const employerId = user?.id || user?.email;
-    const employerName = user?.fullName || 'Employer';
+    const employerId = authUser?.id || authUser?.email;
+    const employerName = authUser?.fullName || 'Employer';
     
     console.log('💬 Creating conversation for hire:', { workerId, workerName, jobTitle });
     
@@ -816,8 +818,8 @@ const MyHires = () => {
     
     // First, check if conversation exists by trying to send a message
     // If the conversation doesn't exist, this will create it
-    const employerId = user?.id || user?.email;
-    const employerName = user?.fullName || 'Employer';
+    const employerId = authUser?.id || authUser?.email;
+    const employerName = authUser?.fullName || 'Employer';
     const jobTitle = hire.jobTitle || 'the job';
     
     // Try to send a message to create/ensure conversation
@@ -849,48 +851,45 @@ const MyHires = () => {
   };
 
   const handlePayNow = (hire) => {
-  if (hire) {
-    const fullSalary = hire.salary || 0;
-    const applicationFee = Math.round(fullSalary * 0.15 * 100) / 100; // 15% fee
+    if (hire) {
+      const fullSalary = hire.salary || 0;
+      const applicationFee = Math.round(fullSalary * 0.15 * 100) / 100; // 15% fee
 
-    const pendingPayment = {
-      paymentId: hire.hireId || hire.offerId,
-      amount: applicationFee,       // ← charge 15% only
-      fullSalary: fullSalary,       // ← keep for display/receipt
-      feePercentage: 15,
-      workerName: hire.workerName,
-      workerId: hire.workerId || hire.workerEmail,
-      workerEmail: hire.workerEmail || '',
-      jobTitle: hire.jobTitle || 'Service Provider',
-      description: `15% application fee for ${hire.workerName || 'worker'}`,
-      paymentType: 'recruitment',
-      offerId: hire.offerId || hire.hireId,
-      employerId: user?.id || user?.email,
-      employerName: user?.fullName || 'Employer',
-      returnTo: '/my-hires'
-    };
+      const pendingPayment = {
+        paymentId: hire.hireId || hire.offerId,
+        amount: applicationFee,       // ← charge 15% only
+        fullSalary: fullSalary,       // ← keep for display/receipt
+        feePercentage: 15,
+        workerName: hire.workerName,
+        workerId: hire.workerId || hire.workerEmail,
+        workerEmail: hire.workerEmail || '',
+        jobTitle: hire.jobTitle || 'Service Provider',
+        description: `15% application fee for ${hire.workerName || 'worker'}`,
+        paymentType: 'recruitment',
+        offerId: hire.offerId || hire.hireId,
+        employerId: authUser?.id || authUser?.email,
+        employerName: authUser?.fullName || 'Employer',
+        returnTo: '/my-hires'
+      };
 
-    // FIX: Construct the missing worker payload so PaymentOptions can read it dynamically
-    const workerData = {
-      workerId: hire.workerId || hire.workerEmail,
-      workerName: hire.workerName,
-      workerEmail: hire.workerEmail || '',
-      workerPhone: hire.workerPhone || '',
-      workerLocation: hire.workerLocation || 'Not specified',
-      desiredJob: hire.jobTitle || 'Service Provider',
-      rating: hire.workerRating || 4.5,
-      profileImage: hire.workerImage || '',
-      // Add standard fallback rate for computation consistency
-      hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30 
-    };
+      const workerData = {
+        workerId: hire.workerId || hire.workerEmail,
+        workerName: hire.workerName,
+        workerEmail: hire.workerEmail || '',
+        workerPhone: hire.workerPhone || '',
+        workerLocation: hire.workerLocation || 'Not specified',
+        desiredJob: hire.jobTitle || 'Service Provider',
+        rating: hire.workerRating || 4.5,
+        profileImage: hire.workerImage || '',
+        hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30 
+      };
 
-    // Save both values to cache simultaneously
-    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-    localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData)); 
-    
-    navigate('/payment-options');
-  }
-};
+      localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
+      localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData)); 
+      
+      navigate('/payment-options');
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -937,7 +936,7 @@ const MyHires = () => {
     pending: hires.filter(h => h.status === 'pending').length
   };
 
-  if (!user || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -948,6 +947,10 @@ const MyHires = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -956,7 +959,7 @@ const MyHires = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -974,8 +977,8 @@ const MyHires = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt={user.fullName || 'Employer'} className="w-full h-full object-cover" />
+                  {authUser?.profileImage ? (
+                    <img src={authUser.profileImage} alt={authUser.fullName || 'Employer'} className="w-full h-full object-cover" />
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
@@ -985,11 +988,11 @@ const MyHires = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">{user?.fullName || 'Employer'}</span>
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline">{authUser?.fullName || 'Employer'}</span>
               </div>
               
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}
@@ -1015,8 +1018,8 @@ const MyHires = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt={user.fullName || 'Employer'} className="w-full h-full object-cover" />
+                  {authUser?.profileImage ? (
+                    <img src={authUser.profileImage} alt={authUser.fullName || 'Employer'} className="w-full h-full object-cover" />
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}

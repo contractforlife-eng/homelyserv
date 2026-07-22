@@ -1,6 +1,7 @@
 // src/pages/Subscription.jsx - UPDATED WITH PAYMOB & PAYPAL + PREMIUM DESIGN + WORKING NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import { capturePayPalOrder } from "../services/paymentService";
 import {
@@ -64,7 +65,7 @@ const SubscriptionSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout,
   isEmployer 
 }) => {
@@ -123,10 +124,10 @@ const SubscriptionSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const isPremiumUser = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return checkUserPremium(userId);
   };
@@ -170,7 +171,7 @@ const SubscriptionSidebar = ({
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
-                <img src={getProfileImage()} alt={user?.fullName || (isEmployer ? 'Employer' : 'Worker')} className="w-full h-full object-cover" />
+                <img src={getProfileImage()} alt={authUser?.fullName || (isEmployer ? 'Employer' : 'Worker')} className="w-full h-full object-cover" />
               ) : (
                 <User size={20} className="text-white" />
               )}
@@ -180,10 +181,10 @@ const SubscriptionSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
                   {premiumUser && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -191,7 +192,7 @@ const SubscriptionSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -293,8 +294,11 @@ const SubscriptionSidebar = ({
 const Subscription = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [isEmployer, setIsEmployer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -307,14 +311,14 @@ const Subscription = () => {
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [paymobIframe, setPaymobIframe] = useState(null);
   
-  // ✅ ADDED: Notification state
+  // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
   
   const price = isEmployer ? 200 : 100;
 
-  // ✅ ADDED: Fetch notifications function
+  // Fetch notifications function
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
@@ -352,7 +356,7 @@ const Subscription = () => {
     }
   };
 
-  // ✅ ADDED: Fetch notifications when dropdown opens
+  // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
@@ -482,41 +486,37 @@ const Subscription = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const isEmployerRole = parsedUser.role === 'EMPLOYER';
-        setIsEmployer(isEmployerRole);
-        setUser(parsedUser);
-        
-        const userId = parsedUser.id || parsedUser.email;
-        const isPremium = checkUserPremium(userId);
-        const subscription = getUserSubscription(userId);
-        const status = getSubscriptionStatus(userId);
-        
-        setCurrentSubscription(subscription);
-        setSubscriptionStatus(status);
-        
-        if (isPremium) {
-          setPaymentSuccess(true);
-        }
-        
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
+  }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    const isEmployerRole = authUser.role === 'EMPLOYER';
+    setIsEmployer(isEmployerRole);
+    
+    const userId = authUser.id || authUser.email;
+    const isPremium = checkUserPremium(userId);
+    const subscription = getUserSubscription(userId);
+    const status = getSubscriptionStatus(userId);
+    
+    setCurrentSubscription(subscription);
+    setSubscriptionStatus(status);
+    
+    if (isPremium) {
+      setPaymentSuccess(true);
+    }
+    
     setLoading(false);
-  }, [navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -538,14 +538,14 @@ const Subscription = () => {
 
   const processSuccessfulSubscription = (paymentData) => {
     try {
-      const userId = user.id || user.email;
+      const userId = authUser.id || authUser.email;
       const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
       
       const subscription = createSubscription(
         userId,
-        user.email,
+        authUser.email,
         userRole,
-        user.fullName || (isEmployer ? 'Employer' : 'Worker')
+        authUser.fullName || (isEmployer ? 'Employer' : 'Worker')
       );
 
       if (subscription) {
@@ -558,7 +558,7 @@ const Subscription = () => {
         localStorage.setItem('homelyserv_user', JSON.stringify(userData));
         
         const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-        const userIndex = users.findIndex(u => u.email === user.email);
+        const userIndex = users.findIndex(u => u.email === authUser.email);
         if (userIndex !== -1) {
           users[userIndex].isPremium = true;
           users[userIndex].subscriptionActive = true;
@@ -566,16 +566,16 @@ const Subscription = () => {
         }
         
         const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[user.email]) {
-          profiles[user.email].isPremium = true;
-          profiles[user.email].subscriptionActive = true;
+        if (profiles[authUser.email]) {
+          profiles[authUser.email].isPremium = true;
+          profiles[authUser.email].subscriptionActive = true;
           localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
         }
         
         const receipt = {
           id: 'SUB-REC-' + Date.now(),
           userId: userId,
-          userEmail: user.email,
+          userEmail: authUser.email,
           userRole: userRole,
           amount: price,
           currency: 'EGP',
@@ -610,7 +610,7 @@ const Subscription = () => {
       return;
     }
 
-    if (!user) {
+    if (!authUser) {
       setPaymentError('User not found');
       return;
     }
@@ -621,10 +621,10 @@ const Subscription = () => {
     try {
       const orderId = 'SUB-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
       const customerData = {
-        firstName: user?.fullName?.split(' ')[0] || 'Customer',
-        lastName: user?.fullName?.split(' ').slice(1).join(' ') || 'User',
-        email: user?.email || 'customer@homelyserv.com',
-        phone: user?.phone || '+201234567890',
+        firstName: authUser?.fullName?.split(' ')[0] || 'Customer',
+        lastName: authUser?.fullName?.split(' ').slice(1).join(' ') || 'User',
+        email: authUser?.email || 'customer@homelyserv.com',
+        phone: authUser?.phone || '+201234567890',
         country: 'EG',
         city: 'Cairo',
         items: [
@@ -730,7 +730,7 @@ const Subscription = () => {
     };
   }, []);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -741,6 +741,10 @@ const Subscription = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex">
       <SubscriptionSidebar
@@ -749,7 +753,7 @@ const Subscription = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
         isEmployer={isEmployer}
       />
@@ -771,7 +775,7 @@ const Subscription = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* ✅ FIXED: Working Notification Button */}
+              {/* Working Notification Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -783,7 +787,7 @@ const Subscription = () => {
                   )}
                 </button>
 
-                {/* ✅ ADDED: Notification Dropdown */}
+                {/* Notification Dropdown */}
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
@@ -964,11 +968,11 @@ const Subscription = () => {
                               setSelectedMethod(method.id);
                               setPaymentError(null);
                             }}
-                            className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                            className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${(
                               isSelected
                                 ? 'border-purple-500 bg-purple-50 shadow-md'
                                 : 'border-gray-200 hover:border-purple-200 hover:bg-purple-50/30'
-                            } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            )} ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex items-center gap-4">
                               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
@@ -997,11 +1001,11 @@ const Subscription = () => {
                     <button
                       onClick={handleSubscribe}
                       disabled={processing || !selectedMethod}
-                      className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+                      className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
                         processing || !selectedMethod
                           ? 'bg-gray-300 cursor-not-allowed'
                           : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
-                      }`}
+                      )}`}
                     >
                       {processing ? (
                         <>

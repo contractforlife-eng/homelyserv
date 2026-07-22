@@ -1,8 +1,8 @@
 // src/pages/WorkerDashboard.jsx - RED AND WHITE THEME WITH ENHANCED NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import { syncCurrentUser } from "../utils/syncUser";
 import {
   getUserConversations,
   getTotalUnreadCount
@@ -48,7 +48,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -99,14 +99,14 @@ const WorkerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -163,7 +163,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -175,10 +175,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -186,7 +186,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -286,17 +286,13 @@ const WorkerSidebar = ({
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(() => syncCurrentUser());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  useEffect(() => {
-    const updatedUser = syncCurrentUser();
-
-    if (updatedUser) {
-      setUser(updatedUser);
-    }
-  }, []);
   const [stats, setStats] = useState({
     
     totalApplications: 0,
@@ -319,7 +315,7 @@ const WorkerDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -401,7 +397,7 @@ const WorkerDashboard = () => {
 
   const t = translations[language] || translations.en;
 
-  // =======================const t = translations[language] || translations.en;=====================================
+  // ============================================================
   // TOGGLE FUNCTIONS - DEFINED BEFORE THEY'RE USED
   // ============================================================
   
@@ -421,8 +417,7 @@ const WorkerDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
@@ -650,10 +645,10 @@ const WorkerDashboard = () => {
   // CHECK FOR NEW NOTIFICATIONS FROM VARIOUS SOURCES
   // ============================================================
   const checkForNewNotifications = () => {
-    if (!user?.email) return;
+    if (!authUser?.email) return;
 
-    const currentUserEmail = user.email;
-    const currentUserId = user.id || user.email;
+    const currentUserEmail = authUser.email;
+    const currentUserId = authUser.id || authUser.email;
     const existingNotifications = JSON.parse(
       localStorage.getItem(`worker_notifications_${currentUserEmail}`) || '[]'
     );
@@ -764,10 +759,10 @@ const WorkerDashboard = () => {
   // ============================================================
   const loadRealStats = async () => {
     try {
-      if (!user?.email) return;
+      if (!authUser?.email) return;
 
-      const currentUserEmail = user.email;
-      const currentUserId = user.id || user.email;
+      const currentUserEmail = authUser.email;
+      const currentUserId = authUser.id || authUser.email;
       
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const workerOffers = employerOffers.filter(
@@ -921,10 +916,10 @@ const WorkerDashboard = () => {
   // ============================================================
   const loadNotifications = () => {
     try {
-      if (!user?.email) return;
+      if (!authUser?.email) return;
       
       const storedNotifications = JSON.parse(
-        localStorage.getItem(`worker_notifications_${user.email}`) || '[]'
+        localStorage.getItem(`worker_notifications_${authUser.email}`) || '[]'
       );
       setNotifications(storedNotifications);
     } catch (error) {
@@ -942,47 +937,37 @@ const WorkerDashboard = () => {
       setLanguage(savedLang);
     }
 
-    const userData = localStorage.getItem('homelyserv_user');
-
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const profiles = JSON.parse(
-          localStorage.getItem('homelyserv_profiles') || '{}'
-        );
-
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage =
-            profiles[parsedUser.email].profileImage || null;
-        }
-
-        setUser(parsedUser);
-      } catch (error) {
-        console.error(error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
-
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (authUser) {
       loadRealStats();
       loadNotifications();
       checkForNewNotifications();
     }
-  }, [user]);
+  }, [authUser]);
 
   // Check for new notifications periodically
   useEffect(() => {
-    if (!user) return;
+    if (!authUser) return;
     
     const interval = setInterval(() => {
       checkForNewNotifications();
@@ -990,7 +975,7 @@ const WorkerDashboard = () => {
     }, 15000);
     
     return () => clearInterval(interval);
-  }, [user]);
+  }, [authUser]);
 
   // ============================================================
   // NOTIFICATION HANDLERS
@@ -1000,13 +985,13 @@ const WorkerDashboard = () => {
       n.id === id ? { ...n, read: true } : n
     );
     setNotifications(updated);
-    localStorage.setItem(`worker_notifications_${user.email}`, JSON.stringify(updated));
+    localStorage.setItem(`worker_notifications_${authUser.email}`, JSON.stringify(updated));
   };
 
   const markAllRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));
     setNotifications(updated);
-    localStorage.setItem(`worker_notifications_${user.email}`, JSON.stringify(updated));
+    localStorage.setItem(`worker_notifications_${authUser.email}`, JSON.stringify(updated));
   };
 
   const getNotificationIcon = (type, icon) => {
@@ -1047,7 +1032,7 @@ const WorkerDashboard = () => {
     return colorMap[type] || 'bg-gray-50';
   };
 
-  if (user === null) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -1056,6 +1041,10 @@ const WorkerDashboard = () => {
         </div>
       </div>
     );
+  }
+
+  if (!authUser) {
+    return null;
   }
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -1068,7 +1057,7 @@ const WorkerDashboard = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -1182,10 +1171,10 @@ const WorkerDashboard = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1199,7 +1188,7 @@ const WorkerDashboard = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Worker'}
+                    {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
@@ -1235,10 +1224,10 @@ const WorkerDashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1252,7 +1241,7 @@ const WorkerDashboard = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Worker'}!</h1>
+                    <h1 className="text-2xl font-bold">{t.welcome}, {authUser.fullName || 'Worker'}!</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />

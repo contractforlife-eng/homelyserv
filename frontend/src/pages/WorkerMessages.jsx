@@ -1,6 +1,7 @@
 // src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
@@ -50,7 +51,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -101,14 +102,14 @@ const WorkerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -165,7 +166,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -177,10 +178,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -188,7 +189,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -287,14 +288,16 @@ const WorkerSidebar = ({
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerMessages = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -337,8 +340,9 @@ const WorkerMessages = () => {
   // ============================================================
   // IS PREMIUM CHECK
   // ============================================================
+
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -359,7 +363,7 @@ const WorkerMessages = () => {
       }
 
       // Check localStorage for notifications first
-      const userEmail = user?.email;
+      const userEmail = authUser?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
           localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
@@ -465,62 +469,55 @@ const WorkerMessages = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      let parsedUser;
-      try {
-        parsedUser = JSON.parse(userData);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-        return;
-      }
-
-      if (parsedUser.role !== 'WORKER') {
-        navigate('/login');
-        return;
-      }
-
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (profiles[parsedUser.email]) {
-        parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-      }
-
-      setUser(parsedUser);
-
-      const userId = parsedUser.id || parsedUser.email;
-
-      const loadInitialData = async () => {
-        if (!userId) {
-          setLoading(false);
-          return;
-        }
-
-        const userConversations = await getUserConversations(userId);
-        console.log('📋 Initial load - worker conversations:', userConversations);
-        setConversations(userConversations);
-
-        setLoading(false);
-      };
-
-      loadInitialData();
-    } else {
-      navigate('/login');
-      setLoading(false);
-      return;
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
+
+  // Auth check and loading
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+
+    // Load profile image from localStorage if available
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
+
+    const userId = authUser.id || authUser.email;
+
+    const loadInitialData = async () => {
+      if (!userId) {
+        setPageLoading(false);
+        return;
+      }
+
+      const userConversations = await getUserConversations(userId);
+      console.log('📋 Initial load - worker conversations:', userConversations);
+      setConversations(userConversations);
+
+      setPageLoading(false);
+    };
+
+    loadInitialData();
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
-    if (!user) return;
+    if (!authUser) return;
     
-    const userId = user.id || user.email;
+    const userId = authUser.id || authUser.email;
     if (!userId) return;
     
     (async () => {
@@ -528,14 +525,14 @@ const WorkerMessages = () => {
       console.log('🔄 Refresh load - worker conversations:', userConversations);
       setConversations(userConversations);
     })();
-  }, [user, refreshKey]);
+  }, [authUser, refreshKey]);
 
   // ============================================================
   // AUTO-REFRESH FROM SERVER
   // ============================================================
   useEffect(() => {
-    if (!user) return;
-    const userId = user.id || user.email;
+    if (!authUser) return;
+    const userId = authUser.id || authUser.email;
     if (!userId) return;
 
     if (intervalRef.current) {
@@ -572,7 +569,7 @@ const WorkerMessages = () => {
         intervalRef.current = null;
       }
     };
-  }, [user, selectedConversationId]);
+  }, [authUser, selectedConversationId]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -587,7 +584,7 @@ const WorkerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
     }
@@ -626,7 +623,7 @@ const WorkerMessages = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedConversationId || !user) {
+    if (!message.trim() || !selectedConversationId || !authUser) {
       console.log('❌ Cannot send message: missing data');
       return;
     }
@@ -641,8 +638,8 @@ const WorkerMessages = () => {
     console.log('📤 Recipient name:', selectedConv.otherUserName);
 
     const result = await sendMessage(
-      user.id || user.email,
-      user.fullName || 'Worker',
+      authUser.id || authUser.email,
+      authUser.fullName || 'Worker',
       'WORKER',
       selectedConv.otherUserId,
       selectedConv.otherUserName,
@@ -664,8 +661,8 @@ const WorkerMessages = () => {
     
     setIsRefreshing(true);
     
-    if (user) {
-      const userId = user.id || user.email;
+    if (authUser) {
+      const userId = authUser.id || authUser.email;
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
@@ -681,9 +678,9 @@ const WorkerMessages = () => {
     }, 500);
   };
 
-  const userProfileImage = user?.profileImage || null;
+  const userProfileImage = authUser?.profileImage || null;
 
-  if (!user || loading) {
+  if (authLoading || pageLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -694,6 +691,10 @@ const WorkerMessages = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <WorkerSidebar
@@ -702,7 +703,7 @@ const WorkerMessages = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -728,7 +729,7 @@ const WorkerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -742,7 +743,7 @@ const WorkerMessages = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Worker'}
+                    {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
@@ -826,7 +827,7 @@ const WorkerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -853,7 +854,7 @@ const WorkerMessages = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-white/90">
-                  {user?.fullName || 'Worker'}
+                  {authUser?.fullName || 'Worker'}
                 </span>
                 <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
                   {conversations.length} chats
@@ -968,7 +969,7 @@ const WorkerMessages = () => {
                                   const success = await deleteConversation(selectedConversationId);
                                   if (success) {
                                     console.log('🗑️ Deleted conversation:', selectedConversationId);
-                                    const userId = user?.id || user?.email;
+                                    const userId = authUser?.id || authUser?.email;
                                     if (userId) {
                                       const updated = await getUserConversations(userId);
                                       setConversations(updated);
@@ -1054,8 +1055,8 @@ const WorkerMessages = () => {
                               </div>
                               {isWorker && showAvatar && (
                                 <img
-                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Worker')}&background=red&color=fff&size=100&bold=true`}
-                                  alt={user.fullName || 'Worker'}
+                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Worker')}&background=red&color=fff&size=100&bold=true`}
+                                  alt={authUser.fullName || 'Worker'}
                                   className="w-8 h-8 rounded-full object-cover border-2 border-red-200 flex-shrink-0"
                                 />
                               )}

@@ -2,6 +2,7 @@
 // src/pages/Help.jsx - WITH PREMIUM BADGE FIX
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
@@ -51,7 +52,7 @@ const HelpSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout,
   userRole 
 }) => {
@@ -122,17 +123,17 @@ const HelpSidebar = ({
 
   const isTeal = isEmployer;
 
-  // Get profile image from user
+  // Get profile image from authUser
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   // ✅ FIX: Check premium status directly using the user ID
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -188,7 +189,7 @@ const HelpSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'User'} 
+                  alt={authUser?.fullName || 'User'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -200,10 +201,10 @@ const HelpSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'User'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'User'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -211,7 +212,7 @@ const HelpSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -313,8 +314,10 @@ const HelpSidebar = ({
 // Main Help Component - ENHANCED
 const Help = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState('WORKER');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -434,25 +437,16 @@ const Help = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setUserRole(parsedUser.role || 'WORKER');
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
+    // Get user role from authStore
+    if (authUser) {
+      setUserRole(authUser.role || 'WORKER');
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, [authUser]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -515,17 +509,6 @@ const Help = () => {
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   const faqItems = [
     { question: t.faq1, answer: t.faq1Answer },
     { question: t.faq2, answer: t.faq2Answer },
@@ -548,7 +531,7 @@ const Help = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
         userRole={userRole}
       />

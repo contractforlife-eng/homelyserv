@@ -1,6 +1,7 @@
 // src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import {
@@ -62,7 +63,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -116,14 +117,14 @@ const EmployerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -180,7 +181,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -192,10 +193,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -203,7 +204,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -305,8 +306,11 @@ const EmployerSidebar = ({
 const EmployerMessages = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -324,7 +328,7 @@ const EmployerMessages = () => {
   const dropdownRef = useRef(null);
 
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -380,69 +384,60 @@ const EmployerMessages = () => {
 
   const t = translations[language] || translations.en;
 
-  // Load user and conversations
+  // Load conversations
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      let parsedUser;
-      try {
-        parsedUser = JSON.parse(userData);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-        return;
-      }
-
-      if (parsedUser.role !== 'EMPLOYER') {
-        navigate('/login');
-        return;
-      }
-
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (profiles[parsedUser.email]) {
-        parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-      }
-
-      setUser(parsedUser);
-
-      const userId = parsedUser.id || parsedUser.email;
-
-      const loadInitialData = async () => {
-        if (!userId) {
-          setLoading(false);
-          return;
-        }
-
-        const userConversations = await getUserConversations(userId);
-        console.log('📋 Initial load - employer conversations:', userConversations);
-        setConversations(userConversations);
-
-        setLoading(false);
-      };
-
-      loadInitialData();
-    } else {
-      navigate('/login');
-      setLoading(false);
-      return;
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
+
+    const userId = authUser.id || authUser.email;
+
+    const loadInitialData = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      const userConversations = await getUserConversations(userId);
+      console.log('📋 Initial load - employer conversations:', userConversations);
+      setConversations(userConversations);
+
+      setLoading(false);
+    };
+
+    loadInitialData();
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
-    if (!user) return;
+    if (!authUser) return;
     
-    const userId = user.id || user.email;
+    const userId = authUser.id || authUser.email;
     if (!userId) return;
     
     (async () => {
@@ -450,14 +445,14 @@ const EmployerMessages = () => {
       console.log('🔄 Refresh load - employer conversations:', userConversations);
       setConversations(userConversations);
     })();
-  }, [user, refreshKey]);
+  }, [authUser, refreshKey]);
 
   // ============================================================
   // AUTO-REFRESH FROM SERVER
   // ============================================================
   useEffect(() => {
-    if (!user) return;
-    const userId = user.id || user.email;
+    if (!authUser) return;
+    const userId = authUser.id || authUser.email;
     if (!userId) return;
 
     if (intervalRef.current) {
@@ -494,13 +489,13 @@ const EmployerMessages = () => {
         intervalRef.current = null;
       }
     };
-  }, [user, selectedConversationId]);
+  }, [authUser, selectedConversationId]);
 
   // ============================================================
   // AUTO-OPEN CHAT FROM MY HIRES / PAYMENTS PAGE
   // ============================================================
   useEffect(() => {
-    if (!user || autoOpenDoneRef.current) return;
+    if (!authUser || autoOpenDoneRef.current) return;
 
     // Check if we have a worker to chat with via URL params or state
     const params = new URLSearchParams(window.location.search);
@@ -534,8 +529,8 @@ const EmployerMessages = () => {
       // If no conversation exists, create one
       console.log('🔄 No conversation found, creating one...');
       const createAndOpenConversation = async () => {
-        const userId = user.id || user.email;
-        const senderName = user.fullName || 'Employer';
+        const userId = authUser.id || authUser.email;
+        const senderName = authUser.fullName || 'Employer';
         const senderRole = 'EMPLOYER';
         const recipientId = workerId;
         const recipientName = workerName || 'Worker';
@@ -570,7 +565,7 @@ const EmployerMessages = () => {
       
       createAndOpenConversation();
     }
-  }, [user, conversations, loading]);
+  }, [authUser, conversations, loading]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -585,7 +580,7 @@ const EmployerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
     }
@@ -646,7 +641,7 @@ const EmployerMessages = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedConversationId || !user) {
+    if (!message.trim() || !selectedConversationId || !authUser) {
       console.log('❌ Cannot send message: missing data');
       return;
     }
@@ -661,8 +656,8 @@ const EmployerMessages = () => {
     console.log('📤 Recipient name:', selectedConv.otherUserName);
 
     const result = await sendMessage(
-      user.id || user.email,
-      user.fullName || 'Employer',
+      authUser.id || authUser.email,
+      authUser.fullName || 'Employer',
       'EMPLOYER',
       selectedConv.otherUserId,
       selectedConv.otherUserName,
@@ -684,8 +679,8 @@ const EmployerMessages = () => {
     
     setIsRefreshing(true);
     
-    if (user) {
-      const userId = user.id || user.email;
+    if (authUser) {
+      const userId = authUser.id || authUser.email;
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
@@ -701,9 +696,9 @@ const EmployerMessages = () => {
     }, 500);
   };
 
-  const userProfileImage = user?.profileImage || null;
+  const userProfileImage = authUser?.profileImage || null;
 
-  if (!user || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -714,6 +709,10 @@ const EmployerMessages = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -722,7 +721,7 @@ const EmployerMessages = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -748,7 +747,7 @@ const EmployerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -762,7 +761,7 @@ const EmployerMessages = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Employer'}
+                    {authUser?.fullName || 'Employer'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
@@ -774,7 +773,7 @@ const EmployerMessages = () => {
               </div>
               
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}
@@ -804,7 +803,7 @@ const EmployerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -831,7 +830,7 @@ const EmployerMessages = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-white/90">
-                  {user?.fullName || 'Employer'}
+                  {authUser?.fullName || 'Employer'}
                 </span>
                 <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
                   {conversations.length} chats
@@ -950,7 +949,7 @@ const EmployerMessages = () => {
                                   const success = await deleteConversation(selectedConversationId);
                                   if (success) {
                                     console.log('🗑️ Deleted conversation:', selectedConversationId);
-                                    const userId = user?.id || user?.email;
+                                    const userId = authUser?.id || authUser?.email;
                                     if (userId) {
                                       const updated = await getUserConversations(userId);
                                       setConversations(updated);
@@ -1037,8 +1036,8 @@ const EmployerMessages = () => {
                               </div>
                               {isEmployer && showAvatar && (
                                 <img
-                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`}
-                                  alt={user.fullName || 'Employer'}
+                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`}
+                                  alt={authUser.fullName || 'Employer'}
                                   className="w-8 h-8 rounded-full object-cover border-2 border-teal-200 flex-shrink-0"
                                 />
                               )}

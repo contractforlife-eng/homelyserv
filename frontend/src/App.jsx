@@ -1,6 +1,6 @@
 // src/App.jsx - FULLY UPDATED WITH PROPER MESSAGE ROUTING
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 // Public Pages
 import Login from './pages/Login';
@@ -62,26 +62,27 @@ import { useAuth } from './context/AuthContext';
 // Messages Redirect Component
 const MessagesRedirect = () => {
   const { user, isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
   
   React.useEffect(() => {
     if (loading) return;
     
     if (!isAuthenticated || !user) {
-      window.location.href = '/login';
+      navigate('/login', { replace: true });
       return;
     }
     
     const role = user.role?.toUpperCase();
     if (role === 'WORKER') {
-      window.location.href = '/worker-messages';
+      navigate('/worker-messages', { replace: true });
     } else if (role === 'EMPLOYER') {
-      window.location.href = '/employer-messages';
+      navigate('/employer-messages', { replace: true });
     } else if (role === 'ADMIN') {
-      window.location.href = '/admin/messages';
+      navigate('/admin/messages', { replace: true });
     } else {
-      window.location.href = '/login';
+      navigate('/login', { replace: true });
     }
-  }, [user, isAuthenticated, loading]);
+  }, [user, isAuthenticated, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -96,7 +97,6 @@ const MessagesRedirect = () => {
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, isAuthenticated, loading } = useAuth();
-  const token = localStorage.getItem('homelyserv_token');
   
   if (loading) {
     return (
@@ -109,17 +109,18 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
   
-  if (!token || !isAuthenticated || !user) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole && user.role !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    if (user.role === 'WORKER') {
+  const userRole = user.role?.toUpperCase();
+  
+  if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+    if (userRole === 'WORKER') {
       return <Navigate to="/worker-dashboard" replace />;
-    } else if (user.role === 'EMPLOYER') {
+    } else if (userRole === 'EMPLOYER') {
       return <Navigate to="/employer-dashboard" replace />;
-    } else if (user.role === 'ADMIN') {
+    } else if (userRole === 'ADMIN') {
       return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/login" replace />;

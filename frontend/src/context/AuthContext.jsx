@@ -1,7 +1,8 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// AuthContext is a thin wrapper around useAuthStore (single source of truth)
+import React, { createContext, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
+import useAuthStore from '../store/authStore';
 
 const AuthContext = createContext();
 
@@ -14,69 +15,28 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
+  const store = useAuthStore();
 
+  // On mount, verify token with backend via Zustand's checkAuth
   useEffect(() => {
-    checkAuth();
+    const initAuth = async () => {
+      await store.checkAuth();
+    };
+    initAuth();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      
-      if (!token) {
-        setUser(null);
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
-
-      // Verify token with backend — fetches user from MongoDB
-      const response = await api.get('/api/auth/verify');
-      
-      if (response.data?.success && response.data?.user) {
-        const userData = response.data.user;
-        // Normalize role to uppercase to prevent case-mismatch routing loops
-        userData.role = userData.role?.toUpperCase();
-        setUser(userData);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('Auth verification failed:', error);
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = (userData, token) => {
-    localStorage.setItem('homelyserv_token', token);
-    setUser(userData);
-    setIsAuthenticated(true);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('homelyserv_token');
-    setUser(null);
-    setIsAuthenticated(false);
-    navigate('/login');
-  };
-
+  // AuthContext exposes authStore values directly — no duplicate state
   const value = {
-    user,
-    setUser,
-    loading,
-    isAuthenticated,
-    login,
-    logout,
-    checkAuth
+    user: store.user,
+    isAuthenticated: store.isAuthenticated,
+    loading: store.isLoading,
+    login: store.login,
+    logout: () => {
+      store.logout();
+      navigate('/login');
+    },
+    checkAuth: store.checkAuth
   };
 
   return (

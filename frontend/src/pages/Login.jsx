@@ -73,6 +73,9 @@ function Login() {
       const user = data.user;
       const token = data.token;
 
+      // Normalize role to uppercase to prevent case-mismatch routing loops
+      user.role = user.role?.toUpperCase();
+
       localStorage.setItem('homelyserv_token', token);
 
       // Update Zustand store — user lives in memory, not localStorage

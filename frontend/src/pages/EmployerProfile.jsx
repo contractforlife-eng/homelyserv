@@ -43,7 +43,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -97,14 +97,14 @@ const EmployerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -159,7 +159,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -171,10 +171,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -182,7 +182,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -281,9 +281,12 @@ const EmployerSidebar = ({
 // Main EmployerProfile Component - WITH PHOTO UPLOAD, PREMIUM BADGE, AND NOTIFICATION BELL
 const EmployerProfile = () => {
   const navigate = useNavigate();
-  const { user: authUser, logout: authLogout } = useAuthStore();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const { logout: authLogout } = useAuthStore();
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -354,7 +357,7 @@ const EmployerProfile = () => {
   const t = translations[language] || translations.en;
 
   const checkPremiumStatus = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -379,46 +382,53 @@ const EmployerProfile = () => {
       setLanguage(savedLang);
     }
 
-    const userData = authUser;
-    if (userData) {
-      const savedProfile = loadSavedProfile(userData.email);
-      
-      if (savedProfile) {
-        setUser({ ...userData, ...savedProfile });
-        setFormData({
-          fullName: savedProfile.fullName || userData.fullName || '',
-          email: userData.email || '',
-          phone: savedProfile.phone || userData.phone || '',
-          location: savedProfile.location || userData.location || '',
-          bio: savedProfile.bio || userData.bio || '',
-          company: savedProfile.company || userData.company || '',
-          website: savedProfile.website || userData.website || '',
-          profileImage: savedProfile.profileImage || userData.profileImage || ''
-        });
-        setImagePreview(savedProfile.profileImage || userData.profileImage || '');
-      } else {
-        setUser(userData);
-        setFormData({
-          fullName: userData.fullName || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          location: userData.location || '',
-          bio: userData.bio || '',
-          company: userData.company || '',
-          website: userData.website || '',
-          profileImage: userData.profileImage || ''
-        });
-        setImagePreview(userData.profileImage || '');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+
+    const savedProfile = loadSavedProfile(authUser.email);
+    
+    if (savedProfile) {
+      setFormData({
+        fullName: savedProfile.fullName || authUser.fullName || '',
+        email: authUser.email || '',
+        phone: savedProfile.phone || authUser.phone || '',
+        location: savedProfile.location || authUser.location || '',
+        bio: savedProfile.bio || authUser.bio || '',
+        company: savedProfile.company || authUser.company || '',
+        website: savedProfile.website || authUser.website || '',
+        profileImage: savedProfile.profileImage || authUser.profileImage || ''
+      });
+      setImagePreview(savedProfile.profileImage || authUser.profileImage || '');
+    } else {
+      setFormData({
+        fullName: authUser.fullName || '',
+        email: authUser.email || '',
+        phone: authUser.phone || '',
+        location: authUser.location || '',
+        bio: authUser.bio || '',
+        company: authUser.company || '',
+        website: authUser.website || '',
+        profileImage: authUser.profileImage || ''
+      });
+      setImagePreview(authUser.profileImage || '');
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -442,23 +452,24 @@ const EmployerProfile = () => {
 
   const handleLogout = () => {
     authLogout();
+    navigate('/login');
   };
 
   const handleEditToggle = () => {
     if (isEditing) {
-      if (user) {
-        const savedProfile = loadSavedProfile(user.email);
+      if (authUser) {
+        const savedProfile = loadSavedProfile(authUser.email);
         setFormData({
-          fullName: savedProfile?.fullName || user.fullName || '',
-          email: user.email || '',
-          phone: savedProfile?.phone || user.phone || '',
-          location: savedProfile?.location || user.location || '',
-          bio: savedProfile?.bio || user.bio || '',
-          company: savedProfile?.company || user.company || '',
-          website: savedProfile?.website || user.website || '',
-          profileImage: savedProfile?.profileImage || user.profileImage || ''
+          fullName: savedProfile?.fullName || authUser.fullName || '',
+          email: authUser.email || '',
+          phone: savedProfile?.phone || authUser.phone || '',
+          location: savedProfile?.location || authUser.location || '',
+          bio: savedProfile?.bio || authUser.bio || '',
+          company: savedProfile?.company || authUser.company || '',
+          website: savedProfile?.website || authUser.website || '',
+          profileImage: savedProfile?.profileImage || authUser.profileImage || ''
         });
-        setImagePreview(savedProfile?.profileImage || user.profileImage || '');
+        setImagePreview(savedProfile?.profileImage || authUser.profileImage || '');
       }
     }
     setIsEditing(!isEditing);
@@ -496,7 +507,7 @@ const EmployerProfile = () => {
 
   const handleSave = () => {
     const updatedUser = {
-      ...user,
+      ...authUser,
       fullName: formData.fullName,
       phone: formData.phone,
       location: formData.location,
@@ -509,7 +520,7 @@ const EmployerProfile = () => {
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
     const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    profiles[user.email] = {
+    profiles[authUser.email] = {
       fullName: formData.fullName,
       phone: formData.phone,
       location: formData.location,
@@ -523,7 +534,7 @@ const EmployerProfile = () => {
     
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === user.email);
+      const userIndex = users.findIndex(u => u.email === authUser.email);
       if (userIndex !== -1) {
         users[userIndex] = {
           ...users[userIndex],
@@ -541,13 +552,12 @@ const EmployerProfile = () => {
       console.error('Error updating users list:', error);
     }
     
-    setUser(updatedUser);
     setIsEditing(false);
     setSaveSuccess(true);
     alert(t.saved);
   };
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -558,6 +568,10 @@ const EmployerProfile = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -566,7 +580,7 @@ const EmployerProfile = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -588,7 +602,7 @@ const EmployerProfile = () => {
             </div>
             <div className="flex items-center gap-3">
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}

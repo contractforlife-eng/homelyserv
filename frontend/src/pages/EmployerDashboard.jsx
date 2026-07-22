@@ -1,9 +1,9 @@
 // src/pages/EmployerDashboard.jsx - WITH WORKING NOTIFICATION BELL (NO TEST NOTIFICATIONS)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
-import { syncCurrentUser } from "../utils/syncUser";
 import {
   Home,
   User,
@@ -45,7 +45,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -99,14 +99,14 @@ const EmployerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -161,7 +161,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -173,10 +173,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -184,7 +184,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -286,8 +286,11 @@ const EmployerSidebar = ({
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
@@ -305,7 +308,7 @@ const EmployerDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -377,13 +380,13 @@ const EmployerDashboard = () => {
   // LOAD REAL DATA
   // ============================================================
   const loadDashboardData = async () => {
-    if (!user) return;
+    if (!authUser) return;
     
     setLoading(true);
     
     try {
-      const employerId = user.id || user.email;
-      const employerEmail = user.email;
+      const employerId = authUser.id || authUser.email;
+      const employerEmail = authUser.email;
       
       console.log('📊 Loading dashboard data for employer:', employerId);
 
@@ -525,45 +528,44 @@ const EmployerDashboard = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        console.log('✅ User loaded in employer dashboard:', parsedUser.fullName);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      console.log('❌ No user data found, redirecting to login');
-      navigate('/login');
-    }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
 
-  // Load data when user is set
   useEffect(() => {
-    if (user) {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (authUser) {
       loadDashboardData();
     }
-  }, [user]);
+  }, [authUser]);
 
   // Auto-refresh data every 30 seconds
   useEffect(() => {
-    if (!user) return;
+    if (!authUser) return;
     
     const interval = setInterval(() => {
       loadDashboardData();
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [user]);
+  }, [authUser]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -589,15 +591,14 @@ const EmployerDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
   // ============================================================
   // RENDER
   // ============================================================
-  if (!user || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -608,6 +609,10 @@ const EmployerDashboard = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -616,7 +621,7 @@ const EmployerDashboard = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -639,10 +644,10 @@ const EmployerDashboard = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -656,7 +661,7 @@ const EmployerDashboard = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Employer'}
+                    {authUser?.fullName || 'Employer'}
                   </span>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
@@ -668,7 +673,7 @@ const EmployerDashboard = () => {
               </div>
               
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}
@@ -714,10 +719,10 @@ const EmployerDashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -731,7 +736,7 @@ const EmployerDashboard = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.welcome}, {user.fullName || 'Employer'}!</h1>
+                    <h1 className="text-2xl font-bold">{t.welcome}, {authUser.fullName || 'Employer'}!</h1>
                     {isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
@@ -850,8 +855,7 @@ const EmployerDashboard = () => {
                 <Search size={20} className="text-teal-600" />
                 <span className="font-medium text-teal-700">{t.findWorkers}</span>
               </Link>
-              <Link
-                to="/my-hires"
+              <Link                to="/my-hires"
                 className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
               >
                 <FileCheck size={20} className="text-green-600" />

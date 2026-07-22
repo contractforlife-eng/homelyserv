@@ -1,6 +1,7 @@
 // src/pages/WorkerOffers.jsx - FIXED: Shows "Paid" status when payment is completed
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
@@ -78,7 +79,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -125,10 +126,10 @@ const WorkerSidebar = ({
   ];
 
   const isActive = (path) => location.pathname === path;
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -185,7 +186,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -197,10 +198,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -208,7 +209,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -310,13 +311,17 @@ const WorkerSidebar = ({
 const WorkerOffers = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
+  
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOffer, setExpandedOffer] = useState(null);
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [processingOffer, setProcessingOffer] = useState(null);
@@ -347,8 +352,7 @@ const WorkerOffers = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -357,7 +361,7 @@ const WorkerOffers = () => {
   };
 
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -377,7 +381,7 @@ const WorkerOffers = () => {
         return;
       }
 
-      const userEmail = user?.email;
+      const userEmail = authUser?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
           localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
@@ -551,7 +555,7 @@ const WorkerOffers = () => {
   // ============================================================
   const loadOffers = (userParam) => {
     try {
-      const currentUser = userParam || user;
+      const currentUser = userParam || authUser;
       if (!currentUser?.email) {
         setOffers([]);
         return;
@@ -644,49 +648,47 @@ const WorkerOffers = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'WORKER') {
-          navigate('/login');
-          return;
-        }
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-        loadOffers(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    setLoading(false);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
-      loadOffers(user);
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
     }
-  }, [user, refreshKey]);
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
+
+    loadOffers(authUser);
+    setLoading(false);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (authUser) {
+      loadOffers(authUser);
+    }
+  }, [authUser, refreshKey]);
+
+  useEffect(() => {
+    if (!authUser) return;
     const interval = setInterval(() => {
-      loadOffers(user);
+      loadOffers(authUser);
     }, 15000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [authUser]);
 
   // ============================================================
   // Accept Offer Handler
@@ -714,21 +716,21 @@ const WorkerOffers = () => {
       console.log('✅ Updated employer_offers');
 
       // Update in worker-specific storage
-      if (user?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+      if (authUser?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
           o.id === offer.id ? updatedOffer : o
         );
         if (!updatedWorkerOffers.some(o => o.id === offer.id)) {
           updatedWorkerOffers.push(updatedOffer);
         }
-        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
         console.log('✅ Updated worker-specific storage');
       }
 
       // Create conversation
-      const workerId = user?.id || user?.email;
-      const workerName = user?.fullName || 'Worker';
+      const workerId = authUser?.id || authUser?.email;
+      const workerName = authUser?.fullName || 'Worker';
       const employerId = offer.employerId || offer.employerEmail;
       const employerName = offer.employerName || 'Employer';
 
@@ -740,7 +742,7 @@ const WorkerOffers = () => {
       const notification = {
         id: 'notif_' + Date.now(),
         type: 'offer_accepted',
-        message: `${user?.fullName || 'Worker'} has accepted your job offer for ${offer.jobTitle}`,
+        message: `${authUser?.fullName || 'Worker'} has accepted your job offer for ${offer.jobTitle}`,
         offerId: offer.id,
         offerTitle: offer.jobTitle,
         workerId: workerId,
@@ -795,12 +797,12 @@ const WorkerOffers = () => {
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
 
-      if (user?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+      if (authUser?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
           o.id === offer.id ? updatedOffer : o
         );
-        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
@@ -841,12 +843,12 @@ const WorkerOffers = () => {
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
 
-      if (user?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${user.email}`) || '[]');
+      if (authUser?.email) {
+        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
           o.id === offer.id ? updatedOffer : o
         );
-        localStorage.setItem(`worker_offers_${user.email}`, JSON.stringify(updatedWorkerOffers));
+        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
       }
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
@@ -1254,7 +1256,7 @@ const WorkerOffers = () => {
   // ============================================================
   // Loading State
   // ============================================================
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -1265,7 +1267,7 @@ const WorkerOffers = () => {
     );
   }
 
-  if (!user) {
+  if (!authUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -1287,7 +1289,7 @@ const WorkerOffers = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -1311,10 +1313,10 @@ const WorkerOffers = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1327,7 +1329,7 @@ const WorkerOffers = () => {
                   )}
                 </div>
                 <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                  {user?.fullName || 'Worker'}
+                  {authUser?.fullName || 'Worker'}
                 </span>
               </div>
               
@@ -1467,7 +1469,7 @@ const WorkerOffers = () => {
               </div>
               <button
                 onClick={() => {
-                  loadOffers(user);
+                  loadOffers(authUser);
                   setRefreshKey(prev => prev + 1);
                 }}
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition flex items-center gap-2 text-sm"

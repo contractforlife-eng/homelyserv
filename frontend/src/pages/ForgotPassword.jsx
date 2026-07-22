@@ -1,22 +1,48 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import api from '../utils/api';
 
 function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (!email) {
       setError('Please enter your email address');
       return;
     }
-    // Simulate sending reset email
-    setSubmitted(true);
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
     setError('');
+
+    try {
+      const response = await api.post('/api/auth/forgot-password', {
+        email: email.trim().toLowerCase()
+      });
+
+      if (response.data.success) {
+        setSubmitted(true);
+        setError('');
+      } else {
+        throw new Error(response.data.message || 'Failed to send reset link');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to send reset link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,10 +85,16 @@ function ForgotPassword() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${
+                    error ? 'border-red-500' : 'border-gray-200'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200`}
                   placeholder="Enter your email"
                   required
+                  disabled={loading}
                 />
               </div>
               {error && (
@@ -74,9 +106,17 @@ function ForgotPassword() {
 
             <button
               type="submit"
-              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg"
+              disabled={loading}
+              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Send Reset Link
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Reset Link'
+              )}
             </button>
           </form>
         )}

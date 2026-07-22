@@ -48,6 +48,7 @@ import {
   debugChatData,
   deleteConversation
 } from '../utils/chatService';
+import useAuthStore from '../store/authStore';
 
 // ============================================================
 // NOTIFICATION BELL COMPONENT
@@ -684,63 +685,55 @@ const AdminMessages = () => {
 
   const t = translations[language] || translations.en;
 
-  // Load user and conversations
+  // Use authStore as single source of truth
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
+
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
-    }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      let parsedUser;
-      try {
-        parsedUser = JSON.parse(userData);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-        return;
-      }
-
-      if (parsedUser.role !== 'ADMIN') {
-        navigate('/login');
-        return;
-      }
-
-      setUser(parsedUser);
-
-      const userId = parsedUser.id || parsedUser.email;
-
-      const loadInitialData = async () => {
-        if (!userId) {
-          setLoading(false);
-          return;
-        }
-
-        // Load all registered users
-        const allRegisteredUsers = loadAllUsers();
-        setAllUsers(allRegisteredUsers);
-        console.log('📋 All registered users loaded:', allRegisteredUsers.length);
-
-        const userConversations = await getUserConversations(userId);
-        console.log('📋 Initial load - admin conversations:', userConversations);
-        setConversations(userConversations);
-
-        setLoading(false);
-      };
-
-      loadInitialData();
-    } else {
-      navigate('/login');
-      setLoading(false);
-      return;
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!authUser || authUser.role !== 'ADMIN') {
+      navigate('/login');
+      setLoading(false);
+      return;
+    }
+
+    setUser(authUser);
+
+    const userId = authUser.id || authUser.email;
+
+    const loadInitialData = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      const allRegisteredUsers = loadAllUsers();
+      setAllUsers(allRegisteredUsers);
+      console.log('📋 All registered users loaded:', allRegisteredUsers.length);
+
+      const userConversations = await getUserConversations(userId);
+      console.log('📋 Initial load - admin conversations:', userConversations);
+      setConversations(userConversations);
+
+      setLoading(false);
+    };
+
+    loadInitialData();
+  }, [authUser, authLoading, navigate]);
 
   // Function to load all registered users from localStorage
   const loadAllUsers = () => {
@@ -911,8 +904,7 @@ const AdminMessages = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 

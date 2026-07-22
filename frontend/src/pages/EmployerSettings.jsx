@@ -1,6 +1,7 @@
 // src/pages/EmployerSettings.jsx - WITH PREMIUM BADGE FIX AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import NotificationBell from '../components/NotificationBell';
 import api from '../utils/api';
@@ -56,7 +57,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -110,14 +111,14 @@ const EmployerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -172,7 +173,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -184,10 +185,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -195,7 +196,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -294,8 +295,12 @@ const EmployerSidebar = ({
 // Main EmployerSettings Component - WITH FULL FUNCTIONALITY AND NOTIFICATION BELL
 const EmployerSettings = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -485,35 +490,36 @@ const EmployerSettings = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        
-        // Load saved settings
-        const savedSettings = localStorage.getItem('employer_settings');
-        if (savedSettings) {
-          try {
-            const parsedSettings = JSON.parse(savedSettings);
-            setSettings(prev => ({ ...prev, ...parsedSettings }));
-          } catch (e) {
-            console.error('Error parsing settings:', e);
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-  }, [navigate]);
+    
+    // Load saved settings
+    const savedSettings = localStorage.getItem('employer_settings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(prev => ({ ...prev, ...parsedSettings }));
+      } catch (e) {
+        console.error('Error parsing settings:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -537,8 +543,7 @@ const EmployerSettings = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -596,12 +601,12 @@ const EmployerSettings = () => {
       }
     }
     
-    const updatedUser = { ...user, password: passwordData.newPassword };
+    const updatedUser = { ...authUser, password: passwordData.newPassword };
     localStorage.setItem('homelyserv_user', JSON.stringify(updatedUser));
     
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const userIndex = users.findIndex(u => u.email === user.email);
+      const userIndex = users.findIndex(u => u.email === authUser.email);
       if (userIndex !== -1) {
         users[userIndex].password = passwordData.newPassword;
         localStorage.setItem('homelyserv_users', JSON.stringify(users));
@@ -626,7 +631,7 @@ const EmployerSettings = () => {
     
     try {
       const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const updatedUsers = users.filter(u => u.email !== user.email);
+      const updatedUsers = users.filter(u => u.email !== authUser.email);
       localStorage.setItem('homelyserv_users', JSON.stringify(updatedUsers));
       
       localStorage.removeItem('homelyserv_user');
@@ -634,10 +639,11 @@ const EmployerSettings = () => {
       localStorage.removeItem('employer_settings');
       
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      delete profiles[user.email];
+      delete profiles[authUser.email];
       localStorage.setItem('homelyserv_profiles', JSON.stringify(profiles));
       
       alert('Account deleted successfully');
+      logout();
       navigate('/login');
     } catch (error) {
       console.error('Error deleting account:', error);
@@ -647,7 +653,7 @@ const EmployerSettings = () => {
 
   const handleExportData = async () => {
     try {
-      const employerId = user?.id || user?.email;
+      const employerId = authUser?.id || authUser?.email;
       
       // Get conversations from backend
       let conversations = [];
@@ -674,7 +680,7 @@ const EmployerSettings = () => {
       }
       
       const data = {
-        user: user,
+        user: authUser,
         settings: settings,
         hires: JSON.parse(localStorage.getItem('homelyserv_hires') || '[]'),
         conversations: conversations,
@@ -689,7 +695,7 @@ const EmployerSettings = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `homelyserv_data_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `homelyserv_data_${authUser.email}_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -698,7 +704,7 @@ const EmployerSettings = () => {
     }
   };
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -709,6 +715,10 @@ const EmployerSettings = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50'} flex`}>
       <EmployerSidebar
@@ -717,7 +727,7 @@ const EmployerSettings = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -739,7 +749,7 @@ const EmployerSettings = () => {
             </div>
             <div className="flex items-center gap-3">
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}
@@ -787,11 +797,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.language}
                     onChange={(e) => handleSettingChange('language', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    }`}
+                    )}`}
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -805,9 +815,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.darkMode ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -824,9 +834,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.autoSave ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -850,11 +860,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.timezone}
                     onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    }`}
+                    )}`}
                   >
                     <option value="UTC-12">UTC-12</option>
                     <option value="UTC-11">UTC-11</option>
@@ -892,11 +902,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.currency}
                     onChange={(e) => handleSettingChange('currency', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    }`}
+                    )}`}
                   >
                     <option value="EGP">EGP - Egyptian Pound</option>
                     <option value="USD">USD - US Dollar</option>
@@ -915,11 +925,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.dateFormat}
                     onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    }`}
+                    )}`}
                   >
                     <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                     <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -941,9 +951,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('notifications', !settings.notifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.notifications ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -960,9 +970,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.emailNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -979,9 +989,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.pushNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -998,9 +1008,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.smsNotifications ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1024,11 +1034,11 @@ const EmployerSettings = () => {
                   <select
                     value={settings.profileVisibility}
                     onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-200 text-gray-700'
-                    }`}
+                    )}`}
                   >
                     <option value="public">{t.public}</option>
                     <option value="private">{t.private}</option>
@@ -1043,9 +1053,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.showOnlineStatus ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1062,9 +1072,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.allowMessages ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1082,11 +1092,11 @@ const EmployerSettings = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => setShowPasswordModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                  }`}
+                  )}`}
                 >
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-teal-600" />
@@ -1105,9 +1115,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.twoFactorAuth ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1130,9 +1140,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.saveSearchHistory ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1149,9 +1159,9 @@ const EmployerSettings = () => {
                   </div>
                   <button
                     onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    className={`relative w-12 h-6 rounded-full transition ${(
                       settings.showRecommended ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
+                    )}`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
@@ -1163,11 +1173,11 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={handleExportData}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                  }`}
+                  )}`}
                 >
                   <div className="flex items-center gap-3">
                     <Download size={20} className="text-teal-600" />
@@ -1181,11 +1191,11 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
+                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${(
                     settings.darkMode 
                       ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400' 
                       : 'bg-red-50 hover:bg-red-100 text-red-600'
-                  }`}
+                  )}`}
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 size={20} className="text-red-500" />
@@ -1245,11 +1255,11 @@ const EmployerSettings = () => {
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={passwordData.currentPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        }`}
+                        )}`}
                         placeholder="Enter current password"
                       />
                       <button
@@ -1270,11 +1280,11 @@ const EmployerSettings = () => {
                         type={showNewPassword ? 'text' : 'password'}
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        }`}
+                        )}`}
                         placeholder="Enter new password (min 6 characters)"
                       />
                       <button
@@ -1295,11 +1305,11 @@ const EmployerSettings = () => {
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${(
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
                             : 'bg-white border-gray-200 text-gray-700'
-                        }`}
+                        )}`}
                         placeholder="Confirm new password"
                       />
                       <button
@@ -1322,11 +1332,11 @@ const EmployerSettings = () => {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowPasswordModal(false)}
-                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
+                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${(
                       settings.darkMode 
                         ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                    )}`}
                   >
                     {t.cancel}
                   </button>
@@ -1371,11 +1381,11 @@ const EmployerSettings = () => {
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${(
                   settings.darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
                     : 'bg-white border-gray-200 text-gray-700'
-                }`}
+                )}`}
                 placeholder="Type DELETE"
               />
             </div>
@@ -1383,11 +1393,11 @@ const EmployerSettings = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
+                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${(
                   settings.darkMode 
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                )}`}
               >
                 {t.cancel}
               </button>

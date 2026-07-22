@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { 
   Home, Briefcase, User, Search, Clock, DollarSign,
   MessageCircle, Settings, LogOut, AlertCircle,
@@ -8,7 +9,9 @@ import {
 } from 'lucide-react';
 
 function EmployerPending() {
-  const userData = JSON.parse(localStorage.getItem('user') || '{}');
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   const pendingApplications = [
     {
@@ -45,6 +48,21 @@ function EmployerPending() {
     }
   ];
 
+  // Check authentication and redirect if needed
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      window.location.href = '/login';
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      window.location.href = '/login';
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading]);
+
   const handlePayFee = (id) => {
     alert(`Processing payment for application #${id}`);
   };
@@ -60,6 +78,21 @@ function EmployerPending() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -71,10 +104,10 @@ function EmployerPending() {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
-              {userData.fullName?.charAt(0) || 'E'}
+              {authUser.fullName?.charAt(0) || 'E'}
             </div>
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{userData.fullName || 'Employer'}</p>
+              <p className="font-semibold text-gray-800 text-sm">{authUser.fullName || 'Employer'}</p>
               <p className="text-xs text-gray-500">Employer</p>
             </div>
           </div>

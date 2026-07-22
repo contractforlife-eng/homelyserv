@@ -1,6 +1,7 @@
 // src/pages/EmployerSearch.jsx - COMPLETE WITH PREMIUM BADGE FIX AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -68,7 +69,7 @@ const EmployerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -119,10 +120,10 @@ const EmployerSidebar = ({
 
   const isActive = (path) => location.pathname === path;
 
-  const getProfileImage = () => user?.profileImage || null;
+  const getProfileImage = () => authUser?.profileImage || null;
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -179,7 +180,7 @@ const EmployerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Employer'} 
+                  alt={authUser?.fullName || 'Employer'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -191,10 +192,10 @@ const EmployerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Employer'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -202,7 +203,7 @@ const EmployerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'employer@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'employer@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -304,8 +305,11 @@ const EmployerSidebar = ({
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -478,29 +482,6 @@ const EmployerSearch = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== 'EMPLOYER') {
-          navigate('/login');
-          return;
-        }
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        const userId = parsedUser.id || parsedUser.email;
-        parsedUser.isPremium = isUserPremium(userId);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -510,9 +491,29 @@ const EmployerSearch = () => {
     if (saved) {
       setSavedWorkers(JSON.parse(saved));
     }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'EMPLOYER') {
+      navigate('/login');
+      return;
+    }
+
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
+    authUser.isPremium = isUserPremium(authUser.id || authUser.email);
 
     loadWorkersFromStorage();
-  }, [navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   const loadWorkersFromStorage = () => {
     try {
@@ -622,14 +623,14 @@ const EmployerSearch = () => {
   // 5. HIRE NOW - Send offer to worker
   // ============================================================
   const handleHireNow = (worker) => {
-    if (!user) {
+    if (!authUser) {
       alert('Please login first');
       return;
     }
 
     const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
     const existingOffer = existingOffers.find(
-      o => o.workerId === (worker.id || worker.email) && o.employerId === user.email && o.status !== 'rejected'
+      o => o.workerId === (worker.id || worker.email) && o.employerId === authUser.email && o.status !== 'rejected'
     );
 
     if (existingOffer) {
@@ -647,9 +648,9 @@ const EmployerSearch = () => {
       workerRating: worker.rating || 4.5,
       workerSkills: worker.skills || [],
       workerImage: worker.profileImage || '',
-      employerId: user.email,
-      employerName: user.fullName || 'Employer',
-      employerEmail: user.email,
+      employerId: authUser.email,
+      employerName: authUser.fullName || 'Employer',
+      employerEmail: authUser.email,
       jobTitle: worker.desiredJob || 'Service Provider',
       hourlyRate: worker.hourlyRate || 30,
       amount: (worker.hourlyRate || 30) * 40 * 4,
@@ -673,10 +674,10 @@ const EmployerSearch = () => {
     const notification = {
       id: 'notif_' + Date.now(),
       type: 'offer_received',
-      message: `New job offer from ${user.fullName || 'Employer'}`,
+      message: `New job offer from ${authUser.fullName || 'Employer'}`,
       offerId: offer.id,
       offerTitle: offer.jobTitle,
-      employerName: user.fullName || 'Employer',
+      employerName: authUser.fullName || 'Employer',
       workerId: worker.id || worker.email,
       workerEmail: worker.email,
       date: new Date().toISOString(),
@@ -823,7 +824,7 @@ const EmployerSearch = () => {
   // ============================================================
   // 7. RENDER
   // ============================================================
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -834,6 +835,10 @@ const EmployerSearch = () => {
     );
   }
 
+  if (!authUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <EmployerSidebar
@@ -842,7 +847,7 @@ const EmployerSearch = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -866,16 +871,16 @@ const EmployerSearch = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <User size={16} className="text-white m-1" />
                   )}
-                  {user?.isPremium && (
+                  {authUser?.isPremium && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
                       <Crown size={8} className="text-white" />
                     </div>
@@ -883,9 +888,9 @@ const EmployerSearch = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Employer'}
+                    {authUser?.fullName || 'Employer'}
                   </span>
-                  {user?.isPremium && (
+                  {authUser?.isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
@@ -895,7 +900,7 @@ const EmployerSearch = () => {
               </div>
               
               {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
+              <NotificationBell userId={authUser?.id || authUser?.email} />
               
               <button
                 onClick={toggleLanguage}
@@ -922,16 +927,16 @@ const EmployerSearch = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
-                  {user?.profileImage ? (
+                  {authUser?.profileImage ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={user.fullName || 'Employer'} 
+                      src={authUser.profileImage} 
+                      alt={authUser.fullName || 'Employer'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
-                  {user?.isPremium && (
+                  {authUser?.isPremium && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
                       <Crown size={10} className="text-white" />
                     </div>
@@ -940,7 +945,7 @@ const EmployerSearch = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
-                    {user?.isPremium && (
+                    {authUser?.isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
                         Premium Verified

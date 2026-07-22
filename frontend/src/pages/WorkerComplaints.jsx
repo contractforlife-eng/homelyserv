@@ -1,6 +1,7 @@
 // src/pages/WorkerComplaints.jsx - FIXED: Shows admin responses properly
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import {
   Home,
@@ -39,7 +40,7 @@ const WorkerSidebar = ({
   toggleSidebar, 
   mobileMenuOpen, 
   toggleMobileMenu, 
-  user, 
+  authUser, 
   handleLogout 
 }) => {
   const location = useLocation();
@@ -90,14 +91,14 @@ const WorkerSidebar = ({
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (authUser?.profileImage) {
+      return authUser.profileImage;
     }
     return null;
   };
 
   const userIsPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -154,7 +155,7 @@ const WorkerSidebar = ({
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
-                  alt={user?.fullName || 'Worker'} 
+                  alt={authUser?.fullName || 'Worker'} 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -166,10 +167,10 @@ const WorkerSidebar = ({
                 </div>
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{user.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -177,7 +178,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{user.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -276,8 +277,12 @@ const WorkerSidebar = ({
 // Main WorkerComplaints Component - FIXED: Shows admin responses
 const WorkerComplaints = () => {
   const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const logout = useAuthStore(state => state.logout);
+  
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [complaints, setComplaints] = useState([]);
@@ -318,8 +323,7 @@ const WorkerComplaints = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    logout();
     navigate('/login');
   };
 
@@ -327,7 +331,7 @@ const WorkerComplaints = () => {
   // IS PREMIUM CHECK
   // ============================================================
   const isPremium = () => {
-    const userId = user?.id || user?.email;
+    const userId = authUser?.id || authUser?.email;
     if (!userId) return false;
     return isUserPremium(userId);
   };
@@ -347,7 +351,7 @@ const WorkerComplaints = () => {
         return;
       }
 
-      const userEmail = user?.email;
+      const userEmail = authUser?.email;
       if (userEmail) {
         const storedNotifications = JSON.parse(
           localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
@@ -531,8 +535,8 @@ const WorkerComplaints = () => {
   // ============================================================
   const loadComplaints = () => {
     try {
-      const userEmail = user?.email;
-      const userId = user?.id || userEmail;
+      const userEmail = authUser?.email;
+      const userId = authUser?.id || userEmail;
       if (!userEmail) {
         setComplaints([]);
         setFilteredComplaints([]);
@@ -566,36 +570,38 @@ const WorkerComplaints = () => {
       setLanguage(savedLang);
     }
     
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-        if (profiles[parsedUser.email]) {
-          parsedUser.profileImage = profiles[parsedUser.email].profileImage || null;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
-
-    setLoading(false);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+
+    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
+    if (profiles[authUser.email]) {
+      authUser.profileImage = profiles[authUser.email].profileImage || null;
+    }
+
+    setLoading(false);
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (authUser) {
       loadComplaints();
     }
-  }, [user]);
+  }, [authUser]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -644,10 +650,10 @@ const WorkerComplaints = () => {
       createdAt: new Date().toISOString(),
       adminResponse: null,
       adminResponseAt: null,
-      userId: user?.id || user?.email,
-      userEmail: user?.email,
-      userName: user?.fullName,
-      workerEmail: user?.email,
+      userId: authUser?.id || authUser?.email,
+      userEmail: authUser?.email,
+      userName: authUser?.fullName,
+      workerEmail: authUser?.email,
       isFake: false
     };
     
@@ -711,14 +717,31 @@ const WorkerComplaints = () => {
     resolved: complaints.filter(c => c.status === 'resolved').length
   };
 
-  const userProfileImage = user?.profileImage || null;
+  const userProfileImage = authUser?.profileImage || null;
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 mb-6">Please login to view your complaints</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
@@ -743,7 +766,7 @@ const WorkerComplaints = () => {
         toggleSidebar={toggleSidebar}
         mobileMenuOpen={mobileMenuOpen}
         toggleMobileMenu={toggleMobileMenu}
-        user={user}
+        authUser={authUser}
         handleLogout={handleLogout}
       />
 
@@ -769,7 +792,7 @@ const WorkerComplaints = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -783,7 +806,7 @@ const WorkerComplaints = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {user?.fullName || 'Worker'}
+                    {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
@@ -859,7 +882,7 @@ const WorkerComplaints = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={user.fullName || 'Worker'} 
+                      alt={authUser.fullName || 'Worker'} 
                       className="w-full h-full object-cover"
                     />
                   ) : (

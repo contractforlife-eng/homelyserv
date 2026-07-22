@@ -151,8 +151,7 @@ useEffect(() => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     onLogout();
     navigate('/login');
   };
