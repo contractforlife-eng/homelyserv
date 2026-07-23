@@ -654,10 +654,6 @@ const WorkerPayment = () => {
 
   useEffect(() => {
     if (authUser) {
-      const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      if (profiles[authUser.email]) {
-        authUser.profileImage = profiles[authUser.email].profileImage || null;
-      }
       loadPaymentData();
     }
   }, [authUser]);

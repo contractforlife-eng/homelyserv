@@ -601,24 +601,26 @@ const WorkerProfile = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         alert('Image size should be less than 5MB');
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const imageData = reader.result;
-        setImagePreview(imageData);
+
+      // Upload the file using the existing multipart/form-data implementation in authStore
+      const uploadResult = await uploadProfilePhoto(file);
+      if (uploadResult.success && uploadResult.user) {
+        const imageUrl = uploadResult.user.profileImage || uploadResult.user.profileImage;
+        setImagePreview(imageUrl);
         setFormData(prev => ({
           ...prev,
-          profileImage: imageData
+          profileImage: imageUrl
         }));
-      };
-      reader.readAsDataURL(file);
+      } else {
+        alert(uploadResult.error || 'Photo upload failed. Please try again.');
+      }
     }
   };
 
@@ -660,6 +662,7 @@ const WorkerProfile = () => {
           ...authUser,
           ...formData
         };
+
         // Update authStore (if there's a method to update user)
         // For now, we'll rely on the API response
         

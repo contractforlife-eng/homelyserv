@@ -667,11 +667,6 @@ const WorkerOffers = () => {
       return;
     }
 
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[authUser.email]) {
-      authUser.profileImage = profiles[authUser.email].profileImage || null;
-    }
-
     loadOffers(authUser);
     setLoading(false);
   }, [authUser, isAuthenticated, authLoading, navigate]);

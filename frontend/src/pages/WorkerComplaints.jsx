@@ -589,11 +589,6 @@ const WorkerComplaints = () => {
       return;
     }
 
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[authUser.email]) {
-      authUser.profileImage = profiles[authUser.email].profileImage || null;
-    }
-
     setLoading(false);
   }, [authUser, isAuthenticated, authLoading, navigate]);
 

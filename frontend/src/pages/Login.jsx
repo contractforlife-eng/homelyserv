@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import useAuthStore from '../store/authStore';
+import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
 
 function Login() {
   const navigate = useNavigate();
@@ -84,6 +85,18 @@ function Login() {
 
       console.log('✅ Login successful:', user.fullName);
       console.log('✅ User role:', user.role);
+
+      // One-time migration: if profileImage is missing in MongoDB but
+      // exists in legacy localStorage, copy it to MongoDB now.
+      // This is async and non-blocking — the user navigates immediately.
+      migrateLegacyProfileIfNeeded(user, token).then(migratedUser => {
+        if (migratedUser) {
+          console.log('✅ Profile image migrated — updating store');
+          useAuthStore.setState({
+            user: migratedUser
+          });
+        }
+      });
 
       redirectUser(user);
     } catch (error) {

@@ -528,11 +528,6 @@ const MyHires = () => {
       return;
     }
 
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[authUser.email]) {
-      authUser.profileImage = profiles[authUser.email].profileImage || null;
-    }
-
     loadHires();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -214,6 +214,51 @@ router.get('/verify', async (req, res) => {
     res.status(401).json({
       success: false,
       message: 'Invalid token'
+    });
+  }
+});
+
+// ============================================================
+// Update Profile (generic — works for any authenticated user)
+// Used by the legacy profile image migration to save profileImage
+// to MongoDB without needing role-specific endpoints.
+// ============================================================
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { profileImage } = req.body;
+
+    // Only update profileImage — this endpoint is intentionally scoped
+    // to prevent accidental overwrites of other user fields.
+    if (profileImage === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'profileImage is required'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { profileImage },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
     });
   }
 });

@@ -489,12 +489,6 @@ const WorkerMessages = () => {
       return;
     }
 
-    // Load profile image from localStorage if available
-    const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-    if (profiles[authUser.email]) {
-      authUser.profileImage = profiles[authUser.email].profileImage || null;
-    }
-
     const userId = authUser.id || authUser.email;
 
     const loadInitialData = async () => {
