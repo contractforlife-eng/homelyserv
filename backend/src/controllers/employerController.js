@@ -1,4 +1,4 @@
-const prisma = require('../utils/prisma');
+const prisma = require('../lib/prisma');
 
 // CREATE OR UPDATE EMPLOYER PROFILE
 const upsertEmployerProfile = async (req, res) => {

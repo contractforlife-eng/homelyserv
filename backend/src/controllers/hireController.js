@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma.js';
+import prisma from '../lib/prisma.js';
 
 // SEND JOB OFFER (creates an Offer record instead of Hire)
 export const sendOffer = async (req, res) => {

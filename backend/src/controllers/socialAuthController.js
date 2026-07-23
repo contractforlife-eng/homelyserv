@@ -11,7 +11,7 @@
 // verifies the provider token server-side. See routes/oauth.js for
 // the currently disabled, safe placeholder for social login.
 // ============================================================
-const prisma = require('../utils/prisma');
+const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -58,7 +58,9 @@ const socialLogin = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'homelyserv_secret_key_2026',
+      // PHASE 0 SECURITY FIX: no hardcoded fallback secret.
+      // When this file is converted to ESM, use getJwtSecret() from config/jwtSecret.js instead.
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 

@@ -20,7 +20,7 @@ const useAuthStore = create(
       register: async (userData, userType) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/auth/register`, {
+          const response = await axios.post(`${API_URL}/api/auth/register`, {
             ...userData,
             userType
           });
@@ -53,7 +53,7 @@ const useAuthStore = create(
       login: async (email, password, role) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(`${API_URL}/auth/login`, {
+          const response = await axios.post(`${API_URL}/api/auth/login`, {
             email,
             password,
             role
@@ -170,7 +170,7 @@ const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const { token } = get();
-          const response = await axios.put(`${API_URL}/auth/profile`, userData, {
+          const response = await axios.put(`${API_URL}/api/auth/profile`, userData, {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -198,7 +198,7 @@ const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const { token } = get();
-          await axios.post(`${API_URL}/auth/change-password`, {
+          await axios.post(`${API_URL}/api/auth/change-password`, {
             currentPassword,
             newPassword
           }, {
@@ -223,7 +223,7 @@ const useAuthStore = create(
       forgotPassword: async (email) => {
         set({ isLoading: true, error: null });
         try {
-          await axios.post(`${API_URL}/auth/forgot-password`, { email });
+          await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
           set({ isLoading: false, error: null });
           return { success: true };
         } catch (error) {
@@ -240,7 +240,7 @@ const useAuthStore = create(
       resetPassword: async (token, newPassword) => {
         set({ isLoading: true, error: null });
         try {
-          await axios.post(`${API_URL}/auth/reset-password`, {
+          await axios.post(`${API_URL}/api/auth/reset-password`, {
             token,
             newPassword
           });
@@ -264,7 +264,7 @@ const useAuthStore = create(
           const formData = new FormData();
           formData.append('photo', file);
           
-          const response = await axios.post(`${API_URL}/auth/upload-photo`, formData, {
+          const response = await axios.post(`${API_URL}/api/auth/upload-photo`, formData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -310,19 +310,19 @@ const useAuthStore = create(
       // Check if user is worker
       isWorker: () => {
         const { user } = get();
-        return user?.role === 'worker';
+        return user?.role?.toUpperCase() === 'WORKER';
       },
       
       // Check if user is employer
       isEmployer: () => {
         const { user } = get();
-        return user?.role === 'employer';
+        return user?.role?.toUpperCase() === 'EMPLOYER';
       },
       
       // Check if user is admin
       isAdmin: () => {
         const { user } = get();
-        return user?.role === 'admin';
+        return user?.role?.toUpperCase() === 'ADMIN';
       },
       
       // Get user's full name

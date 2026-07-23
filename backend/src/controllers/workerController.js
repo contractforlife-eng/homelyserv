@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma.js';
+import prisma from '../lib/prisma.js';
 
 // Get all workers
 export const getAllWorkers = async (req, res) => {

@@ -24,15 +24,13 @@ function Login() {
     { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
   ];
 
-  // Check if user is already logged in — redirect based on token only
+  // Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {
-  
-  const token = localStorage.getItem("homelyserv_token");
-
-  if (token) {
-        navigate("/messages");
-  }
-}, []);
+    const { token, isAuthenticated } = useAuthStore.getState();
+    if (token && isAuthenticated) {
+      navigate("/messages");
+    }
+  }, []);
 
   const redirectUser = (user) => {
     const role = user?.role?.toUpperCase();

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../utils/prisma.js';
+import prisma from '../lib/prisma.js';
+import { getJwtSecret } from '../config/jwtSecret.js';
 
 // REGISTER
 export const register = async (req, res) => {
@@ -45,7 +46,7 @@ export const register = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
@@ -113,7 +114,7 @@ export const login = async (req, res) => {
     // Generate token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
