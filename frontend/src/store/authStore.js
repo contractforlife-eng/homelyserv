@@ -5,6 +5,18 @@ import axios from 'axios';
 // API base URL - must match backend mount point /api
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const normalizeUser = (userData) => {
+  if (!userData) return null;
+  const normalized = { ...userData };
+  if (normalized._id && !normalized.id) {
+    normalized.id = normalized._id;
+  }
+  if (normalized.role) {
+    normalized.role = String(normalized.role).toUpperCase();
+  }
+  return normalized;
+};
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -17,64 +29,64 @@ const useAuthStore = create(
       language: localStorage.getItem('homelyserv_language') || 'en',
       
       // Registration
-      register: async (userData, userType) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await axios.post(`${API_URL}/api/auth/register`, {
-            ...userData,
-            userType
-          });
-          
-          const { user, token } = response.data;
-          
-          set({
-            user,
-            token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-          
-          // Store token in axios default headers
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          return { success: true, user };
-        } catch (error) {
-          const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-          set({
-            isLoading: false,
-            error: errorMessage
-          });
-          return { success: false, error: errorMessage };
-        }
-      },
+  register: async (userData, userType) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
+        ...userData,
+        userType
+      });
       
-      // Login
-      login: async (email, password, role) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await axios.post(`${API_URL}/api/auth/login`, {
-            email,
-            password,
-            role
-          });
-          
-          const { user, token } = response.data;
-          
-          set({
-            user,
-            token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
-          
-          // Store token in axios default headers
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          return { success: true, user };
-        } catch (error) {
-          const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      const { user, token } = response.data;
+      const normalizedUser = normalizeUser(user);
+      
+      set({
+        user: normalizedUser,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+      
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { success: true, user: normalizedUser };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+      set({
+        isLoading: false,
+        error: errorMessage
+      });
+      return { success: false, error: errorMessage };
+    }
+  },
+  
+  // Login
+  login: async (email, password, role) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
+        email,
+        password,
+        role
+      });
+      
+      const { user, token } = response.data;
+      const normalizedUser = normalizeUser(user);
+      
+      set({
+        user: normalizedUser,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+      
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { success: true, user: normalizedUser };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
           set({
             isLoading: false,
             error: errorMessage
@@ -130,13 +142,12 @@ const useAuthStore = create(
     console.log('🔍 Response status:', response.status);
 
     if (response.data?.success && response.data?.user) {
-      const userData = response.data.user;
-      userData.role = userData.role?.toUpperCase();
-
-      console.log('🔍 Returned user role:', userData.role);
+      const normalizedUser = normalizeUser(response.data.user);
+      console.log('🔍 Returned user role:', normalizedUser.role);
+      console.log('🔍 Normalized user id:', normalizedUser.id);
 
       set({
-        user: userData,
+        user: normalizedUser,
         token,
         isAuthenticated: true,
         isLoading: false,
@@ -271,13 +282,15 @@ const useAuthStore = create(
             }
           });
           
+          const normalizedUser = normalizeUser(response.data.user);
+          
           set({
-            user: response.data.user,
+            user: normalizedUser,
             isLoading: false,
             error: null
           });
           
-          return { success: true, user: response.data.user };
+          return { success: true, user: normalizedUser };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Photo upload failed.';
           set({

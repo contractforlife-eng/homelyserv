@@ -51,9 +51,17 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  website: {
+    type: String,
+    default: ''
+  },
   profileComplete: {
     type: Boolean,
     default: false
+  },
+  desiredJob: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

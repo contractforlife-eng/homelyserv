@@ -35,7 +35,8 @@ import {
   CreditCard,
   Crown,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 
 // Employer Sidebar Component - WITH PREMIUM BADGE FIX
@@ -286,6 +287,7 @@ const EmployerProfile = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const uploadProfilePhoto = useAuthStore(state => state.uploadProfilePhoto);
   const { logout: authLogout } = useAuthStore();
   
   const [language, setLanguage] = useState('en');
@@ -298,13 +300,14 @@ const EmployerProfile = () => {
     phone: '',
     location: '',
     bio: '',
-    company: '',
+    companyName: '',
     website: '',
     profileImage: ''
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [pendingImageFile, setPendingImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const translations = {
@@ -402,7 +405,7 @@ const EmployerProfile = () => {
       phone: authUser.phone || '',
       location: authUser.location || '',
       bio: authUser.bio || '',
-      company: authUser.company || '',
+      companyName: authUser.companyName || '',
       website: authUser.website || '',
       profileImage: authUser.profileImage || ''
     });
@@ -436,18 +439,18 @@ const EmployerProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Reset form data to current authUser data when canceling
       setFormData({
         fullName: authUser.fullName || '',
         email: authUser.email || '',
         phone: authUser.phone || '',
         location: authUser.location || '',
         bio: authUser.bio || '',
-        company: authUser.company || '',
+        companyName: authUser.companyName || '',
         website: authUser.website || '',
         profileImage: authUser.profileImage || ''
       });
       setImagePreview(authUser.profileImage || '');
+      setPendingImageFile(null);
     }
     setIsEditing(!isEditing);
     setSaveSuccess(false);
@@ -469,15 +472,11 @@ const EmployerProfile = () => {
         alert('Image size should be less than 5MB');
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        const imageData = reader.result;
-        setImagePreview(imageData);
-        setFormData(prev => ({
-          ...prev,
-          profileImage: imageData
-        }));
+        setImagePreview(reader.result);
+        setPendingImageFile(file);
       };
       reader.readAsDataURL(file);
     }
@@ -488,18 +487,37 @@ const EmployerProfile = () => {
     setSaveError(null);
 
     try {
-      const response = await api.put('/api/users/profile', {
-        userId: authUser?.id,
+      const userId = authUser?.id || authUser?._id;
+      if (!userId) {
+        alert('User ID not found. Please log in again.');
+        setSaving(false);
+        return;
+      }
+
+      let profileImageUrl = formData.profileImage;
+
+      if (pendingImageFile) {
+        const uploadResult = await uploadProfilePhoto(pendingImageFile);
+        if (uploadResult.success && uploadResult.user) {
+          profileImageUrl = uploadResult.user.profileImage;
+        } else {
+          throw new Error(uploadResult.error || 'Photo upload failed');
+        }
+      }
+
+      const response = await api.put(`/api/employers/profile/${userId}`, {
         fullName: formData.fullName,
         phone: formData.phone,
         location: formData.location,
         bio: formData.bio,
-        company: formData.company,
+        companyName: formData.companyName,
         website: formData.website,
-        profileImage: formData.profileImage
+        profileImage: profileImageUrl
       });
 
       if (response.data.success) {
+        useAuthStore.setState({ user: response.data.user });
+        setPendingImageFile(null);
         setIsEditing(false);
         setSaveSuccess(true);
         alert(t.saved);
@@ -741,8 +759,8 @@ const EmployerProfile = () => {
                   <Briefcase size={18} className="absolute left-3 top-3 text-gray-400" />
                   <input
                     type="text"
-                    name="company"
-                    value={formData.company}
+                    name="companyName"
+                    value={formData.companyName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
@@ -791,12 +809,13 @@ const EmployerProfile = () => {
                   disabled={saving}
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50"
                 >
-                  <Save size={18} />
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {saving ? 'Saving...' : t.saveChanges}
                 </button>
                 <button
                   onClick={handleEditToggle}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  disabled={saving}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>

@@ -1,29 +1,19 @@
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
+import { v2 as cloudinary } from 'cloudinary';
+import multer from 'multer';
+import { Readable } from 'stream';
 
-// Configure Cloudinary with your credentials
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dyvtslk6u',
   api_key: process.env.CLOUDINARY_API_KEY || '128863751431449',
   api_secret: process.env.CLOUDINARY_API_SECRET || 'JLHqJ8jlx2uOCxDqF6L4aS35ukE'
 });
 
-// Configure storage for Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'homelyserv',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }]
-  }
-});
+const storage = multer.memoryStorage();
 
-// Create multer upload instance
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024
   },
   fileFilter: function (req, file, cb) {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -36,7 +26,35 @@ const upload = multer({
   }
 });
 
-// Helper function to delete image from Cloudinary
+const uploadFromBuffer = (fileBuffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'homelyserv',
+        ...options
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(result);
+      }
+    );
+
+    Readable.from(fileBuffer).pipe(uploadStream);
+  });
+};
+
+const uploadImage = async (fileBuffer, options = {}) => {
+  try {
+    const result = await uploadFromBuffer(fileBuffer, options);
+    return result;
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw error;
+  }
+};
+
 const deleteImage = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
@@ -47,24 +65,5 @@ const deleteImage = async (publicId) => {
   }
 };
 
-// Helper function to upload image directly
-const uploadImage = async (filePath, options = {}) => {
-  try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder: 'homelyserv',
-      ...options
-    });
-    return result;
-  } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    throw error;
-  }
-};
-
-module.exports = {
-  cloudinary,
-  storage,
-  upload,
-  deleteImage,
-  uploadImage
-};
+export { cloudinary, upload, uploadFromBuffer, uploadImage, deleteImage };
+export default { cloudinary, upload, uploadFromBuffer, uploadImage, deleteImage };

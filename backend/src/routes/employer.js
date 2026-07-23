@@ -2,6 +2,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -82,9 +83,11 @@ router.get('/profile/:userId', async (req, res) => {
         message: 'User not found'
       });
     }
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    userObj.id = userObj._id;
     res.json({
       success: true,
-      user
+      user: userObj
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -98,13 +101,27 @@ router.get('/profile/:userId', async (req, res) => {
 // ============================================================
 // Update Employer Profile
 // ============================================================
-router.put('/profile/:userId', async (req, res) => {
+router.put('/profile/:userId', authenticate, async (req, res) => {
   try {
-    const { fullName, phone, location, companyName, bio, profileImage } = req.body;
+    const targetUserId = req.params.userId;
+    const authenticatedUserId = req.userId;
+
+    console.log('[EmployerProfile] req.params.userId:', targetUserId);
+    console.log('[EmployerProfile] req.userId:', authenticatedUserId);
+    console.log('[EmployerProfile] req.body:', req.body);
+
+    if (targetUserId !== authenticatedUserId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update your own profile'
+      });
+    }
+
+    const { fullName, phone, location, companyName, bio, profileImage, website } = req.body;
     
     const user = await User.findByIdAndUpdate(
-      req.params.userId,
-      { fullName, phone, location, companyName, bio, profileImage },
+      authenticatedUserId,
+      { fullName, phone, location, companyName, bio, profileImage, website },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -115,7 +132,10 @@ router.put('/profile/:userId', async (req, res) => {
       });
     }
 
-    res.json({ success: true, user });
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    userObj.id = userObj._id;
+
+    res.json({ success: true, user: userObj });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({

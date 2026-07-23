@@ -291,6 +291,7 @@ const WorkerMessages = () => {
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
+  const { logout: authLogout } = useAuthStore();
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -332,8 +333,7 @@ const WorkerMessages = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    authLogout();
     navigate('/login');
   };
 

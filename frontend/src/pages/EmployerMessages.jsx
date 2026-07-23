@@ -309,6 +309,7 @@ const EmployerMessages = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const { logout: authLogout } = useAuthStore();
   
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -618,8 +619,7 @@ const EmployerMessages = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    authLogout();
     navigate('/login');
   };
 

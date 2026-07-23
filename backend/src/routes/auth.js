@@ -5,12 +5,20 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { upload, uploadFromBuffer } from '../utils/cloudinary.js';
 
-const router = express.Router();
+
+const serializeUser = (user) => {
+  if (!user) return null;
+  const obj = user.toObject ? user.toObject() : { ...user };
+  obj.id = obj._id;
+  return obj;
+};
 
 // ============================================================
 // Register
 // ============================================================
+const router = express.Router();
 router.post('/register', async (req, res) => {
   try {
     const { fullName, email, password, role, phone, location } = req.body;
@@ -48,7 +56,7 @@ router.post('/register', async (req, res) => {
     );
 
     // Return user data (without password)
-    const userData = user.toObject();
+    const userData = serializeUser(user);
     delete userData.password;
 
     res.status(201).json({
@@ -104,7 +112,7 @@ router.post('/login', async (req, res) => {
     );
 
     // Return user data (without password)
-    const userData = user.toObject();
+    const userData = serializeUser(user);
     delete userData.password;
 
     res.json({
@@ -140,7 +148,7 @@ router.get('/users', requireAdmin, async (req, res) => {
     res.json({
       success: true,
       count: users.length,
-      users: users
+      users: users.map(serializeUser)
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -169,7 +177,7 @@ router.get('/users/:id', requireAdmin, async (req, res) => {
 
     res.json({
       success: true,
-      user
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -206,7 +214,7 @@ router.get('/verify', async (req, res) => {
 
     res.json({
       success: true,
-      user
+      user: serializeUser(user)
     });
 
   } catch (error) {
@@ -251,7 +259,7 @@ router.put('/profile', authenticate, async (req, res) => {
 
     res.json({
       success: true,
-      user
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -331,4 +339,72 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ============================================================
+// Upload Profile Photo
+// ============================================================
+router.post(
+  '/upload-photo',
+  authenticate,
+  upload.single('photo'),
+  async (req, res) => {
+    try {
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No photo uploaded'
+        });
+      }
+
+      const uploaded = await uploadFromBuffer(req.file.buffer, {
+        folder: 'homelyserv',
+        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+      });
+
+      const imageUrl = uploaded.secure_url;
+
+      const user = await User.findByIdAndUpdate(
+        req.userId,
+        { profileImage: imageUrl },
+        {
+          new: true
+        }
+      ).select('-password');
+
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+
+      res.json({
+        success: true,
+        message: 'Photo uploaded successfully',
+        user: serializeUser(user)
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        'Upload photo error:',
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message: 'Upload failed',
+        error: error.message
+      });
+
+    }
+
+  }
+);
+// ============================================================
+// Export Router
+// ============================================================
 export default router;

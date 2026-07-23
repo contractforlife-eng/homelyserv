@@ -2,6 +2,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -17,7 +18,9 @@ router.get('/profile/:userId', async (req, res) => {
         message: 'User not found'
       });
     }
-    res.json({ success: true, user });
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    userObj.id = userObj._id;
+    res.json({ success: true, user: userObj });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({
@@ -30,13 +33,27 @@ router.get('/profile/:userId', async (req, res) => {
 // ============================================================
 // Update Worker Profile
 // ============================================================
-router.put('/profile/:userId', async (req, res) => {
+router.put('/profile/:userId', authenticate, async (req, res) => {
   try {
-    const { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage } = req.body;
+    const targetUserId = req.params.userId;
+    const authenticatedUserId = req.userId;
+
+    console.log('[WorkerProfile] req.params.userId:', targetUserId);
+    console.log('[WorkerProfile] req.userId:', authenticatedUserId);
+    console.log('[WorkerProfile] req.body:', req.body);
+
+    if (targetUserId !== authenticatedUserId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update your own profile'
+      });
+    }
+
+    const { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage, desiredJob } = req.body;
     
     const user = await User.findByIdAndUpdate(
-      req.params.userId,
-      { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage },
+      authenticatedUserId,
+      { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage, desiredJob },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -47,7 +64,10 @@ router.put('/profile/:userId', async (req, res) => {
       });
     }
 
-    res.json({ success: true, user });
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    userObj.id = userObj._id;
+
+    res.json({ success: true, user: userObj });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({

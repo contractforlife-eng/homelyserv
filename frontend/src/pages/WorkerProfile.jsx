@@ -274,10 +274,15 @@ const WorkerSidebar = ({
 // Main WorkerProfile Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerProfile = () => {
   const navigate = useNavigate();
+
+  // Auth Store
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const uploadProfilePhoto = useAuthStore(state => state.uploadProfilePhoto);
   const { logout: authLogout } = useAuthStore();
+
+  // Local State
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -303,6 +308,8 @@ const WorkerProfile = () => {
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
+  const [pendingImageFile, setPendingImageFile] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [realStats, setRealStats] = useState({
     memberSince: '',
     rating: 0,
@@ -574,7 +581,6 @@ const WorkerProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Reset form data to current authUser data when canceling
       setFormData({
         fullName: authUser.fullName || '',
         email: authUser.email || '',
@@ -588,6 +594,7 @@ const WorkerProfile = () => {
         desiredJob: authUser.desiredJob || ''
       });
       setImagePreview(authUser.profileImage || '');
+      setPendingImageFile(null);
     }
     setIsEditing(!isEditing);
     setSaveSuccess(false);
@@ -601,7 +608,7 @@ const WorkerProfile = () => {
     }));
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -609,18 +616,12 @@ const WorkerProfile = () => {
         return;
       }
 
-      // Upload the file using the existing multipart/form-data implementation in authStore
-      const uploadResult = await uploadProfilePhoto(file);
-      if (uploadResult.success && uploadResult.user) {
-        const imageUrl = uploadResult.user.profileImage || uploadResult.user.profileImage;
-        setImagePreview(imageUrl);
-        setFormData(prev => ({
-          ...prev,
-          profileImage: imageUrl
-        }));
-      } else {
-        alert(uploadResult.error || 'Photo upload failed. Please try again.');
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setPendingImageFile(file);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -642,9 +643,27 @@ const WorkerProfile = () => {
   };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
-      // Update user profile via API
-      const response = await api.put('/api/users/profile', {
+      const userId = authUser?.id || authUser?._id;
+      if (!userId) {
+        alert('User ID not found. Please log in again.');
+        setSaving(false);
+        return;
+      }
+
+      let profileImageUrl = formData.profileImage;
+
+      if (pendingImageFile) {
+        const uploadResult = await uploadProfilePhoto(pendingImageFile);
+        if (uploadResult.success && uploadResult.user) {
+          profileImageUrl = uploadResult.user.profileImage;
+        } else {
+          throw new Error(uploadResult.error || 'Photo upload failed');
+        }
+      }
+
+      const response = await api.put(`/api/workers/profile/${userId}`, {
         fullName: formData.fullName,
         phone: formData.phone,
         location: formData.location,
@@ -652,34 +671,25 @@ const WorkerProfile = () => {
         skills: formData.skills,
         experience: formData.experience,
         hourlyRate: formData.hourlyRate,
-        profileImage: formData.profileImage,
+        profileImage: profileImageUrl,
         desiredJob: formData.desiredJob
       });
 
       if (response.data.success) {
-        // Update local authStore user data
-        const updatedUser = {
-          ...authUser,
-          ...formData
-        };
-
-        // Update authStore (if there's a method to update user)
-        // For now, we'll rely on the API response
-        
+        useAuthStore.setState({ user: response.data.user });
+        setPendingImageFile(null);
         setIsEditing(false);
         setSaveSuccess(true);
         alert(t.saved);
-        loadRealStats(authUser.email, authUser.id);
-        
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
+        setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         throw new Error(response.data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1119,14 +1129,20 @@ const WorkerProfile = () => {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+                  disabled={saving}
+                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                 >
-                  <Save size={18} />
-                  {t.saveChanges}
+                  {saving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {saving ? 'Saving...' : t.saveChanges}
                 </button>
                 <button
                   onClick={handleEditToggle}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  disabled={saving}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>
