@@ -51,6 +51,7 @@ import AdminReports from './pages/AdminReports';
 import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
+import AdminProfile from './pages/AdminProfile';
 
 import { useAuth } from './context/AuthContext';
 
@@ -416,21 +417,29 @@ function App() {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/admin/settings" 
+      <Route
+        path="/admin/settings"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/hires" 
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/hires"
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminHires />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ========== FALLBACK ========== */}

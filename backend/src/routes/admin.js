@@ -2,9 +2,16 @@
 import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const serializeUser = (user) => {
+  if (!user) return null;
+  const obj = user.toObject ? user.toObject() : { ...user };
+  obj.id = obj._id;
+  return obj;
+};
 
 // PHASE 0 SECURITY FIX (audit §2.2): this entire router previously had
 // NO authentication or authorization check at all - any anonymous
@@ -370,6 +377,59 @@ router.get('/users/role/:role', async (req, res) => {
       success: false,
       message: 'Failed to get users',
       error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Get Admin Profile
+// ============================================================
+router.get('/profile', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    res.json({ success: true, user: serializeUser(user) });
+  } catch (error) {
+    console.error('Get admin profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get admin profile'
+    });
+  }
+});
+
+// ============================================================
+// Update Admin Profile
+// ============================================================
+router.put('/profile', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { fullName, phone, language, profileImage } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { fullName, phone, language, profileImage },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    res.json({ success: true, user: serializeUser(user) });
+  } catch (error) {
+    console.error('Update admin profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update admin profile'
     });
   }
 });

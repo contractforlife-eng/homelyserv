@@ -62,6 +62,14 @@ const UserSchema = new mongoose.Schema({
   desiredJob: {
     type: String,
     default: ''
+  },
+  language: {
+    type: String,
+    default: 'en'
+  },
+  lastLogin: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
