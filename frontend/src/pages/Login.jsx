@@ -26,14 +26,13 @@ function Login() {
 
   // Check if user is already logged in — redirect based on token only
   useEffect(() => {
-    const token = localStorage.getItem('homelyserv_token');
-    if (token) {
-      // Token exists but user may not be in Zustand store yet;
-      // AuthContext.checkAuth() will load it from /api/auth/verify
-      // Just redirect to the generic handler; the verify check will route correctly
-      navigate('/messages');
-    }
-  }, []);
+  
+  const token = localStorage.getItem("homelyserv_token");
+
+  if (token) {
+        navigate("/messages");
+  }
+}, []);
 
   const redirectUser = (user) => {
     const role = user?.role?.toUpperCase();

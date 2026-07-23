@@ -62,10 +62,13 @@ const MessagesRedirect = () => {
   React.useEffect(() => {
     if (loading) return;
     
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated) {
       navigate('/login', { replace: true });
       return;
     }
+    
+    // If user is null (during checkAuth), wait for user to be populated
+    if (!user) return;
     
     const role = user.role?.toUpperCase();
     if (role === 'WORKER') {
@@ -104,8 +107,20 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
   
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // If user is null (during checkAuth), show loading instead of redirecting
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
   
   const userRole = user.role?.toUpperCase();

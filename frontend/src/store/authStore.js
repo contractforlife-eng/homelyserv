@@ -104,52 +104,67 @@ const useAuthStore = create(
       
       // Check if user is authenticated (verify token)
       checkAuth: async () => {
-        const { token } = get();
-        
-        if (!token) {
-          set({ user: null, isAuthenticated: false, loading: false });
-          return { success: false };
-        }
-        
-        try {
-          // Verify token with server
-          console.log('🔍 Auth verify URL:', `${API_URL}/api/auth/verify`);
-          console.log('🔍 Token exists:', !!token);
-          
-          const response = await axios.get(`${API_URL}/api/auth/verify`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          
-          console.log('🔍 Response status:', response.status);
-          
-          if (response.data?.success && response.data?.user) {
-            const userData = response.data.user;
-            // Normalize role to uppercase to prevent case-mismatch routing loops
-            userData.role = userData.role?.toUpperCase();
-            console.log('🔍 Returned user role:', userData.role);
-            
-            set({
-              user: userData,
-              token,
-              isAuthenticated: true,
-              loading: false,
-              error: null
-            });
-            return { success: true };
-          } else {
-            // Token invalid
-            get().logout();
-            return { success: false };
-          }
-        } catch (error) {
-          // Token verification failed
-          get().logout();
-          return { success: false };
-        }
-      },
-      
+  set({ isLoading: true });
+
+  const { token } = get();
+
+  if (!token) {
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false
+    });
+    return { success: false };
+  }
+
+  try {
+    console.log('🔍 Auth verify URL:', `${API_URL}/api/auth/verify`);
+    console.log('🔍 Token exists:', !!token);
+
+    const response = await axios.get(`${API_URL}/api/auth/verify`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    console.log('🔍 Response status:', response.status);
+
+    if (response.data?.success && response.data?.user) {
+      const userData = response.data.user;
+      userData.role = userData.role?.toUpperCase();
+
+      console.log('🔍 Returned user role:', userData.role);
+
+      set({
+        user: userData,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+
+      return { success: true };
+    }
+
+    get().logout();
+
+    set({
+      isLoading: false
+    });
+
+    return { success: false };
+
+  } catch (error) {
+
+    get().logout();
+
+    set({
+      isLoading: false
+    });
+
+    return { success: false };
+  }
+},
       // Update user profile
       updateProfile: async (userData) => {
         set({ isLoading: true, error: null });

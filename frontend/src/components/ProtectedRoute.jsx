@@ -5,7 +5,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   const user = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const loading = useAuthStore(state => state.loading);
+  const loading = useAuthStore(state => state.isLoading);
 
 
   if (loading) {
