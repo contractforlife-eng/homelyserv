@@ -67,6 +67,7 @@ const AdminSidebar = ({
     { id: 'profile', label: t.profile, icon: UserIcon, path: '/admin/profile' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
     { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
     { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },

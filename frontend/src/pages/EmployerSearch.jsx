@@ -517,10 +517,10 @@ const EmployerSearch = () => {
   const loadWorkersFromBackend = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/users/workers');
+      const response = await api.get('/api/employers/search');
       
       if (response.data.success) {
-        const workers = response.data.users || [];
+        const workers = response.data.workers || [];
         setAllWorkers(workers);
         console.log(`✅ Loaded ${workers.length} workers from backend`);
       } else {
@@ -646,7 +646,7 @@ const EmployerSearch = () => {
     }
 
     try {
-      const response = await api.post('/api/offers/create', {
+      const response = await api.post('/api/hires', {
         employerId: authUser.id,
         workerId: worker.id || worker.email,
         workerName: worker.fullName,

@@ -280,7 +280,7 @@ const AdminProfile = () => {
   const loadStats = async () => {
     try {
       const [usersRes, hiresRes, paymentsRes] = await Promise.all([
-        api.get('/api/auth/users'),
+        api.get('/api/admin/users'),
         api.get('/api/admin/hires'),
         api.get('/api/admin/payments')
       ]);

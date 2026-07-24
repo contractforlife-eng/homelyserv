@@ -100,7 +100,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
 let users = [];
 
 try {
-  const response = await api.get('/api/auth/users')
+  const response = await api.get('/api/admin/users')
 
   if (response.data.success) {
     users = response.data.users || [];
@@ -571,7 +571,7 @@ const AdminDashboard = () => {
     let users = [];
 
     try {
-      const response = await api.get('/api/auth/users');
+      const response = await api.get('/api/admin/users');
 
       if (response.data.success) {
         users = response.data.users || [];

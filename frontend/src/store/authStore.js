@@ -110,6 +110,8 @@ const useAuthStore = create(
         
         // Clear persisted storage
         localStorage.removeItem('homelyserv_token');
+        // Clear Zustand persist storage to prevent rehydration of stale auth state
+        localStorage.removeItem('auth-storage');
         
         return { success: true };
       },

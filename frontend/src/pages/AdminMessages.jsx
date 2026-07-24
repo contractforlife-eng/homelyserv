@@ -49,6 +49,7 @@ import {
   deleteConversation
 } from '../utils/chatService';
 import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 
 import AdminSidebar from '../components/AdminSidebar.jsx';
 
@@ -537,7 +538,7 @@ const AdminMessages = () => {
         return;
       }
 
-      const allRegisteredUsers = loadAllUsers();
+      const allRegisteredUsers = await loadAllUsers();
       setAllUsers(allRegisteredUsers);
       console.log('📋 All registered users loaded:', allRegisteredUsers.length);
 
@@ -551,11 +552,27 @@ const AdminMessages = () => {
     loadInitialData();
   }, [authUser, authLoading, navigate]);
 
-  // Function to load all registered users from localStorage
-  const loadAllUsers = () => {
+  // Function to load all registered users from backend API + localStorage fallback
+  const loadAllUsers = async () => {
+    try {
+      const response = await api.get('/api/admin/users');
+      if (response.data.success && Array.isArray(response.data.users)) {
+        return response.data.users.map(u => ({
+          id: u.id || u._id || u.email,
+          name: u.fullName || u.name || u.email || 'User',
+          email: u.email,
+          role: u.role?.toUpperCase() || 'USER',
+          avatar: u.profileImage || null,
+          status: 'online'
+        }));
+      }
+    } catch (err) {
+      console.warn('⚠️ Failed to fetch users from API, falling back to localStorage:', err.message);
+    }
+
+    // Fallback: load from localStorage
     const users = [];
     
-    // Load employer users
     const employerUsers = JSON.parse(localStorage.getItem('employer_users') || '[]');
     employerUsers.forEach(u => {
       if (u.email) {
@@ -570,7 +587,6 @@ const AdminMessages = () => {
       }
     });
 
-    // Load worker users
     const workerUsers = JSON.parse(localStorage.getItem('worker_users') || '[]');
     workerUsers.forEach(u => {
       if (u.email) {
@@ -585,7 +601,6 @@ const AdminMessages = () => {
       }
     });
 
-    // Also check for users in homelyserv_users
     const homelyUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
     homelyUsers.forEach(u => {
       if (u.email && !users.some(existing => existing.email === u.email)) {
@@ -600,7 +615,6 @@ const AdminMessages = () => {
       }
     });
 
-    // Remove duplicates by email
     const uniqueUsers = users.filter((user, index, self) => 
       index === self.findIndex(u => u.email === user.email)
     );
