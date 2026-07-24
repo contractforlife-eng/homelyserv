@@ -350,6 +350,35 @@ const useAuthStore = create(
         return user?.email || '';
       },
       
+      // Update user settings
+      updateSettings: async (settings) => {
+        set({ isLoading: true, error: null });
+        try {
+          const { token } = get();
+          const response = await axios.put(`${API_URL}/api/auth/settings`, { settings }, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          set({
+            user: response.data.user,
+            isLoading: false,
+            error: null
+          });
+          
+          return { success: true, user: response.data.user };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Settings update failed.';
+          set({
+            isLoading: false,
+            error: errorMessage
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+      
       // Get user's profile completion status
       getProfileCompletion: () => {
         const { user } = get();

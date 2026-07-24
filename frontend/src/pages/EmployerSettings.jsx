@@ -299,6 +299,7 @@ const EmployerSettings = () => {
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
+  const updateSettings = useAuthStore(state => state.updateSettings);
   
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -498,16 +499,29 @@ const EmployerSettings = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
     
-    // Load saved settings
-    const savedSettings = localStorage.getItem('employer_settings');
-    if (savedSettings) {
+    // Load saved settings from backend
+    const loadSettings = async () => {
       try {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsedSettings }));
-      } catch (e) {
-        console.error('Error parsing settings:', e);
+        const response = await api.get('/api/auth/settings');
+        if (response.data.success) {
+          setSettings(prev => ({ ...prev, ...response.data.settings }));
+        }
+      } catch (error) {
+        console.error('Error loading settings from backend:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('employer_settings');
+        if (savedSettings) {
+          try {
+            const parsedSettings = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsedSettings }));
+          } catch (e) {
+            console.error('Error parsing settings:', e);
+          }
+        }
       }
-    }
+    };
+    
+    loadSettings();
   }, []);
 
   useEffect(() => {
@@ -560,13 +574,9 @@ const EmployerSettings = () => {
     setSaveError(null);
     
     try {
-      const response = await api.put('/api/users/settings', {
-        userId: authUser?.id,
-        settings: settings
-      });
-
-      if (response.data.success) {
-        // Save settings to localStorage as backup
+      const result = await updateSettings(settings);
+      
+      if (result.success) {
         localStorage.setItem('employer_settings', JSON.stringify(settings));
         setSaving(false);
         setSaveSuccess(true);
@@ -579,12 +589,11 @@ const EmployerSettings = () => {
         
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(response.data.message || t.errorSaving);
+        throw new Error(result.error || t.errorSaving);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
       setSaveError(error.message || t.errorSaving);
-      // Fallback: save to localStorage only
       localStorage.setItem('employer_settings', JSON.stringify(settings));
       setSaving(false);
       setSaveSuccess(true);
@@ -618,8 +627,7 @@ const EmployerSettings = () => {
     }
     
     try {
-      const response = await api.put('/api/users/change-password', {
-        userId: authUser?.id,
+      const response = await api.put('/api/auth/change-password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
@@ -647,9 +655,7 @@ const EmployerSettings = () => {
     }
     
     try {
-      const response = await api.delete('/api/users/account', {
-        data: { userId: authUser?.id }
-      });
+      const response = await api.delete('/api/auth/account');
 
       if (response.data.success) {
         localStorage.removeItem('employer_settings');

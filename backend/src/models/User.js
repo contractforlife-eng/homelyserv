@@ -70,6 +70,27 @@ const UserSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: null
+  },
+  settings: {
+    type: Object,
+    default: {
+      darkMode: false,
+      notifications: true,
+      emailNotifications: true,
+      pushNotifications: true,
+      smsNotifications: false,
+      twoFactorAuth: false,
+      autoSave: true,
+      timezone: 'UTC+2',
+      currency: 'EGP',
+      dateFormat: 'DD/MM/YYYY',
+      profileVisibility: 'public',
+      showOnlineStatus: true,
+      allowMessages: true,
+      saveSearchHistory: true,
+      showRecommended: true,
+      availableForHire: true
+    }
   }
 }, {
   timestamps: true

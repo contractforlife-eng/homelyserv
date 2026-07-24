@@ -1,6 +1,7 @@
 // backend/src/routes/admin.js
 import express from 'express';
 import User from '../models/User.js';
+import SystemSettings from '../models/SystemSettings.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
@@ -430,6 +431,93 @@ router.put('/profile', authenticate, requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update admin profile'
+    });
+  }
+});
+
+// ============================================================
+// Get System Settings
+// ============================================================
+router.get('/settings', authenticate, requireAdmin, async (req, res) => {
+  try {
+    let settings = await SystemSettings.findOne({ key: 'platform' });
+    
+    if (!settings) {
+      settings = await SystemSettings.create({
+        key: 'platform',
+        data: {
+          siteName: 'HomelyServ',
+          siteDescription: 'Home Services Platform',
+          contactEmail: 'admin@homelyserv.com',
+          contactPhone: '',
+          address: '',
+          darkMode: false,
+          primaryColor: '#f59e0b',
+          secondaryColor: '#d97706',
+          language: 'en',
+          systemNotifications: true,
+          emailNotifications: true,
+          pushNotifications: true,
+          complaintNotifications: true,
+          paymentNotifications: true,
+          twoFactorAuth: false,
+          sessionTimeout: 30,
+          maxLoginAttempts: 5,
+          requireEmailVerification: false,
+          requirePhoneVerification: false,
+          currency: 'EGP',
+          commissionRate: 10,
+          minWithdrawal: 100,
+          maxWithdrawal: 10000,
+          paymentMethods: ['cash', 'bank_transfer'],
+          allowRegistration: true,
+          requireApproval: false,
+          maxUsersPerIp: 5,
+          autoSuspendAfter: 30,
+          debugMode: false,
+          maintenanceMode: false,
+          cacheEnabled: true,
+          backupSchedule: 'daily'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: settings.data
+    });
+  } catch (error) {
+    console.error('Get system settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get system settings'
+    });
+  }
+});
+
+// ============================================================
+// Update System Settings
+// ============================================================
+router.put('/settings', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const data = req.body.settings || req.body;
+    
+    const settings = await SystemSettings.findOneAndUpdate(
+      { key: 'platform' },
+      { data: data },
+      { new: true, upsert: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'System settings saved successfully',
+      settings: settings.data
+    });
+  } catch (error) {
+    console.error('Update system settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update system settings'
     });
   }
 });

@@ -708,16 +708,29 @@ const AdminSettings = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    // Load saved settings
-    const savedSettings = localStorage.getItem('admin_settings');
-    if (savedSettings) {
+    // Load saved settings from backend
+    const loadSettings = async () => {
       try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsed }));
+        const response = await api.get('/api/admin/settings');
+        if (response.data.success) {
+          setSettings(prev => ({ ...prev, ...response.data.settings }));
+        }
       } catch (error) {
-        console.error('Error loading settings:', error);
+        console.error('Error loading settings from backend:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('admin_settings');
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          } catch (e) {
+            console.error('Error parsing settings:', e);
+          }
+        }
       }
-    }
+    };
+    
+    loadSettings();
   }, []);
 
   useEffect(() => {
@@ -772,18 +785,31 @@ const AdminSettings = () => {
     navigate('/login');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
     setSaveMessage(null);
-    setTimeout(() => {
-      localStorage.setItem('admin_settings', JSON.stringify(settings));
+    try {
+      const response = await api.put('/api/admin/settings', {
+        settings: settings
+      });
+
+      if (response.data.success) {
+        localStorage.setItem('admin_settings', JSON.stringify(settings));
+        setSaving(false);
+        setSaveMessage(t.actions.saved);
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        throw new Error(response.data.message || 'Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
       setSaving(false);
-      setSaveMessage(t.actions.saved);
+      setSaveMessage('Failed to save settings. Please try again.');
       setTimeout(() => setSaveMessage(null), 3000);
-    }, 1000);
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setNotificationMessage({ type: 'error', text: t.actions.passwordMismatch });
       return;
@@ -792,9 +818,23 @@ const AdminSettings = () => {
       setNotificationMessage({ type: 'error', text: t.actions.passwordLength });
       return;
     }
-    setNotificationMessage({ type: 'success', text: t.actions.passwordChanged });
-    setShowPasswordModal(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    try {
+      const response = await api.put('/api/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      if (response.data.success) {
+        setNotificationMessage({ type: 'success', text: t.actions.passwordChanged });
+        setShowPasswordModal(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        throw new Error(response.data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setNotificationMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+    }
   };
 
   const handleBackup = () => {

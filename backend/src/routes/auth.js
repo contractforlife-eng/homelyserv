@@ -404,6 +404,187 @@ router.post(
 
   }
 );
+
+// ============================================================
+// Get User Settings
+// ============================================================
+router.get('/settings', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('settings');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: user.settings || {}
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get settings'
+    });
+  }
+});
+
+// ============================================================
+// Update User Settings
+// ============================================================
+router.put('/settings', authenticate, async (req, res) => {
+  try {
+    const settings = req.body.settings || req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { settings: settings } },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Settings saved successfully',
+      user: serializeUser(user)
+    });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update settings'
+    });
+  }
+});
+
+// ============================================================
+// Change Password
+// ============================================================
+router.put('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+});
+
+// ============================================================
+// Delete Account
+// ============================================================
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    await User.findByIdAndDelete(req.userId);
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account'
+    });
+  }
+});
+
+// ============================================================
+// Change Password (POST - legacy/via authStore)
+// ============================================================
+router.post('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+});
+
 // ============================================================
 // Export Router
 // ============================================================
