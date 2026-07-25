@@ -536,7 +536,7 @@ const WorkerProfile = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleEditToggle}
-                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
+                   className="bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   {isEditing ? <X size={16} /> : <Edit size={16} />}
                   {isEditing ? t.cancel : t.editProfile}

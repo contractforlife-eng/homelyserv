@@ -412,14 +412,14 @@ const EmployerDashboard = () => {
               <div className="flex gap-3">
                 <Link
                   to="/employer-search"
-                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-white text-teal-700 dark:bg-gray-800/20 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Search size={16} />
                   {t.findWorkers}
                 </Link>
                 <Link
                   to="/employer-profile"
-                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-white text-teal-700 dark:bg-gray-800/20 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <User size={16} />
                   {t.viewProfile}
