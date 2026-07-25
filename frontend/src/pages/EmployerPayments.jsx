@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import { sendMessage } from '../utils/chatService';
 import {
-  ArrowLeft,
   User,
   Briefcase,
   DollarSign,
@@ -14,35 +14,16 @@ import {
   Star,
   CheckCircle,
   CreditCard,
-  Wallet,
-  Building2,
   Shield,
-  Home,
   MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
   Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
   Globe,
   X,
-  FileCheck,
   Search,
-  AlertTriangle,
-  UserCheck,
-  Calendar,
   Clock,
-  Download,
   Eye,
-  TrendingUp,
-  TrendingDown,
-  Filter,
   RefreshCw,
-  Receipt,
   Copy,
-  ChevronDown,
   Users,
   BarChart3,
   Phone,
@@ -50,44 +31,8 @@ import {
   Lock,
   Unlock,
   MessageSquare,
-  ExternalLink,
-  ThumbsUp,
-  FileText,
-  Crown,
   Info
 } from 'lucide-react';
-import { isUserPremium as checkUserPremium } from '../utils/subscriptionService';
-
-// ============================================================
-// DEBUG FUNCTION
-// ============================================================
-const debugPayments = (userEmail) => {
-  console.log('🔍 DEBUGGING PAYMENTS');
-  console.log('========================================');
-  console.log('Current user email:', userEmail);
-  
-  const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-  console.log('📋 all_payments count:', allPayments.length);
-  console.log('📋 all_payments:', allPayments);
-  
-  const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-  console.log('📋 employer_payments count:', employerPayments.length);
-  console.log('📋 employer_payments:', employerPayments);
-  
-  const userPayments = allPayments.filter(p =>
-    p.employerEmail === userEmail ||
-    p.employerId === userEmail
-  );
-  
-  console.table(userPayments);
-  
-  const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-  const userOffers = employerOffers.filter(o => 
-    o.employerEmail === userEmail || o.employerId === userEmail
-  );
-  console.log(`📋 Offers for ${userEmail}:`, userOffers);
-  console.log('========================================');
-};
 
 // ============================================================
 // MAIN EMPLOYER PAYMENTS COMPONENT
@@ -100,8 +45,6 @@ const EmployerPayments = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
@@ -120,9 +63,6 @@ const EmployerPayments = () => {
   });
   const isLoadingRef = React.useRef(false);
 
-  // ============================================================
-  // TRANSLATIONS - DEFINED INSIDE COMPONENT
-  // ============================================================
   const translations = {
     en: {
       title: 'Payments',
@@ -313,15 +253,6 @@ const EmployerPayments = () => {
   // ============================================================
   // TOGGLE FUNCTIONS
   // ============================================================
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -335,52 +266,26 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // FORCE RELOAD
-  // ============================================================
-  const forceReload = () => {
-    console.log('🔄 Force reloading payments...');
-    setRefreshKey(prev => prev + 1);
-    setTimeout(() => {
-      loadData();
-    }, 100);
-  };
-
-  // ============================================================
-  // PAYMENT SUCCESS HANDLER - FIXED
+  // PAYMENT SUCCESS HANDLER
   // ============================================================
   const handlePaymentSuccess = (paymentId, offerId) => {
     try {
       console.log('✅ Payment completed for offer:', offerId);
-      console.log('✅ Payment ID:', paymentId);
-      console.log('✅ Current user:', authUser?.email);
       
-      if (!offerId) {
-        console.error('❌ No offerId provided');
+      if (!offerId || !authUser?.email) {
+        console.error('❌ Missing required data');
         return false;
       }
 
-      if (!authUser?.email) {
-        console.error('❌ No user email found');
-        return false;
-      }
-
-      let employerOffers = [];
-      try {
-        employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      } catch (e) {
-        console.error('Error reading employer_offers:', e);
-        employerOffers = [];
-      }
-      
+      let employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const offer = employerOffers.find(o => o.id === offerId);
+      
       if (!offer) {
         console.error('❌ Offer not found:', offerId);
         return false;
       }
       
-      console.log('📋 Found offer:', offer.jobTitle, 'for', offer.workerEmail);
-      
-      // 1. UPDATE EMPLOYER_OFFERS
+      // Update employer offers
       const updatedOffers = employerOffers.map(o => {
         if (o.id === offerId) {
           return {
@@ -398,18 +303,10 @@ const EmployerPayments = () => {
         return o;
       });
       localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      console.log('✅ Updated employer_offers');
       
-      // 2. UPDATE WORKER_OFFERS
+      // Update worker offers
       if (offer.workerEmail) {
-        let workerOffers = [];
-        try {
-          workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
-        } catch (e) {
-          console.error('Error reading worker_offers:', e);
-          workerOffers = [];
-        }
-        
+        let workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => {
           if (o.id === offerId) {
             return {
@@ -425,25 +322,10 @@ const EmployerPayments = () => {
           }
           return o;
         });
-        
-        if (!updatedWorkerOffers.some(o => o.id === offerId)) {
-          updatedWorkerOffers.push({
-            ...offer,
-            paymentCompleted: true,
-            paymentDate: new Date().toISOString(),
-            paymentId: paymentId,
-            paymentStatus: 'completed',
-            status: 'paid',
-            employerEmail: authUser.email,
-            updatedAt: new Date().toISOString()
-          });
-        }
-        
         localStorage.setItem(`worker_offers_${offer.workerEmail}`, JSON.stringify(updatedWorkerOffers));
-        console.log(`✅ Updated worker_offers for ${offer.workerEmail}`);
       }
       
-      // 3. CREATE PAYMENT RECORD - FIXED with all required fields
+      // Create payment record
       const commissionRate = 0.15;
       const fullSalary = Number(offer.amount || 0);
       const commission = Math.round(fullSalary * commissionRate * 100) / 100;
@@ -473,79 +355,25 @@ const EmployerPayments = () => {
         description: offer.description || `Commission for hiring ${offer.workerName}`,
         reference: 'REF-' + offer.id,
         paymentType: 'commission',
-        type: 'commission', // <-- CRITICAL: This must be set for filtering
-        hasReceipt: false,
-        paymentId: paymentId || 'PAY-' + Date.now()
+        type: 'commission',
+        hasReceipt: false
       };
       
-      console.log('📋 Creating payment record with employer email:', authUser.email);
-      console.log('📋 Payment record:', paymentRecord);
-      
-      // 4. SAVE TO all_payments
-      let allPayments = [];
-      try {
-        allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      } catch (e) {
-        console.error('Error reading all_payments:', e);
-        allPayments = [];
-      }
-      
-      // Remove any existing payment with same offerId
+      // Save to all_payments
+      let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       const filteredPayments = allPayments.filter(p => p.offerId !== offerId);
       filteredPayments.push(paymentRecord);
       localStorage.setItem('all_payments', JSON.stringify(filteredPayments));
-      console.log('✅ Updated all_payments. New count:', filteredPayments.length);
       
-      // 5. SAVE TO employer_payments
-      let employerPayments = [];
-      try {
-        employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      } catch (e) {
-        console.error('Error reading employer_payments:', e);
-        employerPayments = [];
-      }
-      
+      // Save to employer_payments
+      let employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
       const empFiltered = employerPayments.filter(p => p.offerId !== offerId);
       empFiltered.push(paymentRecord);
       localStorage.setItem('employer_payments', JSON.stringify(empFiltered));
-      console.log('✅ Updated employer_payments. New count:', empFiltered.length);
-      
-      // 6. CREATE NOTIFICATION
-      try {
-        const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-        const notification = {
-          id: 'notif_' + Date.now(),
-          type: 'payment_received',
-          title: 'Payment Received 💰',
-          message: `Payment for "${offer.jobTitle || 'job offer'}" has been completed. You can now start working!`,
-          offerId: offer.id,
-          offerTitle: offer.jobTitle || 'Job Offer',
-          workerEmail: offer.workerEmail,
-          workerName: offer.workerName || 'Worker',
-          employerName: authUser.fullName || 'Employer',
-          date: new Date().toISOString(),
-          read: false,
-          link: '/worker/offers'
-        };
-        
-        const exists = notifications.some(n => 
-          n.offerId === offer.id && n.type === 'payment_received'
-        );
-        
-        if (!exists) {
-          notifications.push(notification);
-          localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-          console.log('✅ Payment notification created for worker');
-        }
-      } catch (e) {
-        console.error('Error creating notification:', e);
-      }
-      
-      console.log('✅ Payment success fully processed');
       
       alert(t.paymentSuccess);
       
-      // Force reload of payments
+      // Force reload
       setLoading(true);
       setTimeout(() => {
         loadData();
@@ -572,21 +400,14 @@ const EmployerPayments = () => {
     }
     
     const paymentId = 'manual_' + Date.now();
-    console.log('🔄 Marking payment as completed:', paymentId, 'for offer:', payment.offerId);
     handlePaymentSuccess(paymentId, payment.offerId);
   };
 
   // ============================================================
-  // LOAD DATA - FIXED to properly load all payments
+  // LOAD DATA
   // ============================================================
   const loadData = () => {
-    if (isLoadingRef.current) {
-      console.log('⏳ Load already in progress, skipping...');
-      return;
-    }
-
-    if (!authUser?.email) {
-      console.log('❌ No user email, skipping load');
+    if (isLoadingRef.current || !authUser?.email) {
       setPayments([]);
       setFilteredPayments([]);
       setLoading(false);
@@ -598,127 +419,60 @@ const EmployerPayments = () => {
     
     try {
       const employerEmail = authUser.email;
-      console.log('📂 Loading commission payments for employer:', employerEmail);
-
-      // 1. GET PAYMENTS FROM all_payments
-      let allPayments = [];
-      try {
-        allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-        console.log('📋 all_payments count:', allPayments.length);
-      } catch (e) {
-        console.error('Error reading all_payments:', e);
-        allPayments = [];
-      }
-      
-      // Filter for this employer's commission payments
       const employerId = authUser?.id;
+      
+      // Get payments from all_payments
+      let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       let employerPayments = allPayments.filter((p) => {
-        const isCurrentEmployer =
-          p.employerId === employerId ||
-          p.employerEmail === employerEmail ||
-          p.employerId === employerEmail;
-
-        const isSupportedPayment =
-          ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
-          ['commission', 'recruitment'].includes(p.type);
-
+        const isCurrentEmployer = p.employerId === employerId || p.employerEmail === employerEmail;
+        const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
         return isCurrentEmployer && isSupportedPayment;
       });
       
-      console.log(`📋 Found ${employerPayments.length} commission payments in all_payments`);
-
-      // 2. GET PAYMENTS FROM employer_payments
-      let empPayments = [];
-      try {
-        empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-        console.log('📋 employer_payments count:', empPayments.length);
-      } catch (e) {
-        console.error('Error reading employer_payments:', e);
-        empPayments = [];
-      }
-      
+      // Get payments from employer_payments
+      let empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
       const empFiltered = empPayments.filter((p) => {
-        const isCurrentEmployer =
-          p.employerId === employerId ||
-          p.employerEmail === authUser?.email ||
-          p.employerId === authUser?.email;
-
-        const isSupportedPayment =
-          ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) ||
-          ['commission', 'recruitment'].includes(p.type);
-
+        const isCurrentEmployer = p.employerId === employerId || p.employerEmail === authUser?.email;
+        const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
         return isCurrentEmployer && isSupportedPayment;
       });
       
-      console.log(`📋 Found ${empFiltered.length} commission payments in employer_payments`);
-
-      // 3. MERGE PAYMENTS (deduplicate by offerId or id)
+      // Merge payments
       const mergedMap = {};
       [...employerPayments, ...empFiltered].forEach(p => {
-        // Use offerId as key if available, otherwise use id
         const key = p.offerId || p.id;
         if (key && !mergedMap[key]) {
           mergedMap[key] = p;
         } else if (key && mergedMap[key]) {
-          // If duplicate, merge and keep the one with more data
-          const existing = mergedMap[key];
-          if (p.status === 'completed' && existing.status !== 'completed') {
-            mergedMap[key] = { ...existing, ...p };
+          if (p.status === 'completed' && mergedMap[key].status !== 'completed') {
+            mergedMap[key] = { ...mergedMap[key], ...p };
           }
         }
       });
       employerPayments = Object.values(mergedMap);
-      console.log(`📋 After merging: ${employerPayments.length} unique payments`);
-
-      // 4. CHECK OFFERS FOR ANY MISSING PAYMENTS
+      
+      // Check offers for missing payments
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const employerAcceptedOffers = employerOffers.filter((o) => {
-        const isEmployer =
-          o.employerId === employerId ||
-          o.employerEmail === employerEmail ||
-          o.employerId === employerEmail;
-
-        const isAccepted =
-          o.status === 'accepted' ||
-          o.status === 'completed' ||
-          o.status === 'terminated' ||
-          o.status === 'in_progress' ||
-          o.paymentCompleted === true;
-
+        const isEmployer = o.employerId === employerId || o.employerEmail === employerEmail;
+        const isAccepted = o.status === 'accepted' || o.status === 'completed' || o.status === 'in_progress' || o.paymentCompleted === true;
         return isEmployer && isAccepted;
       });
 
-      console.log(`📋 Found ${employerAcceptedOffers.length} accepted/completed offers`);
-
       const existingPaymentOfferIds = new Set(employerPayments.map(p => p.offerId).filter(Boolean));
-      
       const commissionRate = 0.15;
       let newPayments = [];
       
       employerAcceptedOffers.forEach(offer => {
-        // Check if payment exists for this offer
         if (!existingPaymentOfferIds.has(offer.id)) {
           const fullSalary = Number(offer.amount || 0);
           const commission = Math.round(fullSalary * commissionRate * 100) / 100;
+          const isCompleted = offer.paymentCompleted === true || offer.status === 'in_progress' || offer.status === 'completed';
           
-          // Determine if payment should be considered completed
-          const isCompleted = offer.paymentCompleted === true || 
-                             offer.status === 'in_progress' || 
-                             offer.status === 'completed' ||
-                             offer.paymentStatus === 'completed';
-          
-          // Check if there's a payment record in all_payments with this offerId
           const existingPayment = allPayments.find(p => p.offerId === offer.id);
           if (existingPayment) {
-            // Use existing payment data
-            const payment = {
-              ...existingPayment,
-              employerId: employerId,
-              employerEmail: employerEmail
-            };
-            newPayments.push(payment);
+            newPayments.push({ ...existingPayment, employerId: employerId, employerEmail: employerEmail });
             existingPaymentOfferIds.add(offer.id);
-            console.log(`📋 Using existing payment for offer ${offer.id}`);
             return;
           }
           
@@ -742,7 +496,7 @@ const EmployerPayments = () => {
             contactRevealed: isCompleted || false,
             paymentMethod: isCompleted ? 'commission' : null,
             paymentType: 'commission',
-            type: 'commission', // <-- CRITICAL
+            type: 'commission',
             createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             completedAt: isCompleted ? new Date().toISOString() : null,
@@ -752,38 +506,26 @@ const EmployerPayments = () => {
           };
           newPayments.push(payment);
           existingPaymentOfferIds.add(offer.id);
-          console.log(`📋 Created new payment for offer ${offer.id}`);
         }
       });
 
-      // 5. SAVE NEW PAYMENTS
       if (newPayments.length > 0) {
         const updatedAllPayments = [...allPayments, ...newPayments];
         localStorage.setItem('all_payments', JSON.stringify(updatedAllPayments));
         employerPayments = [...employerPayments, ...newPayments];
-        console.log(`✅ Added ${newPayments.length} new payments`);
       }
 
-      // 6. SORT BY DATE
-      employerPayments.sort((a, b) => 
-        new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0)
-      );
+      // Sort by date
+      employerPayments.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
 
-      console.log(`✅ Loaded ${employerPayments.length} total commission payments`);
-
-      // 7. UPDATE STATE
       setPayments(employerPayments);
       setFilteredPayments(employerPayments);
 
-      // 8. CALCULATE STATS
-      const completedPayments = employerPayments.filter(p => 
-        p.status === 'completed' || p.paymentVerified === true
-      );
+      // Calculate stats
+      const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
       const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
       const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
-      const pendingCount = employerPayments.filter(p => 
-        (p.status === 'pending' || p.status === 'waiting_payment') && !p.paymentVerified
-      ).length;
+      const pendingCount = employerPayments.filter(p => (p.status === 'pending' || p.status === 'waiting_payment') && !p.paymentVerified).length;
       const completedCount = completedPayments.length;
 
       const uniqueWorkers = new Set();
@@ -802,11 +544,8 @@ const EmployerPayments = () => {
         totalSalary: totalFullSalary
       });
 
-      console.log(`📊 Stats: Total Commission: ${totalCommissionPaid}, Pending: ${pendingCount}, Completed: ${completedCount}`);
-      
     } catch (error) {
       console.error('Error loading payments:', error);
-      console.error('Error details:', error.stack);
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -814,26 +553,19 @@ const EmployerPayments = () => {
   };
 
   // ============================================================
-  // useEffect
+  // USE EFFECTS
   // ============================================================
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) setLanguage(savedLang);
-
-    const sidebarState = localStorage.getItem('employer_sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
-
     if (!isAuthenticated || !authUser) {
       navigate('/login');
       return;
     }
-
     if (authUser.role !== 'EMPLOYER') {
       navigate('/login');
       return;
@@ -842,16 +574,9 @@ const EmployerPayments = () => {
 
   useEffect(() => {
     if (authUser) {
-      console.log('🔄 Loading data for user:', authUser.email);
       loadData();
     }
-  }, [authUser]);
-
-  useEffect(() => {
-    if (authUser) {
-      loadData();
-    }
-  }, [refreshKey]);
+  }, [authUser, refreshKey]);
 
   // Filter payments
   useEffect(() => {
@@ -889,7 +614,6 @@ const EmployerPayments = () => {
 
   const handleProcessPayment = (payment) => {
     const paymentData = payment || selectedPayment;
-    
     if (!paymentData) {
       alert('Payment not found');
       return;
@@ -910,7 +634,6 @@ const EmployerPayments = () => {
       employerName: authUser?.fullName || 'Employer',
       returnTo: '/employer-payments',
       onPaymentSuccess: (paymentId) => {
-        console.log('🔄 Payment callback triggered for offer:', paymentData.offerId);
         handlePaymentSuccess(paymentId, paymentData.offerId);
       }
     };
@@ -953,39 +676,20 @@ const EmployerPayments = () => {
       const workerId = payment.workerId || payment.workerEmail;
       const workerName = payment.workerName || 'Worker';
       
-      console.log('💬 Opening chat with worker from Payments:', { workerId, workerName });
-      
       if (!workerId) {
-        console.error('No worker ID found for payment:', payment);
         alert('Unable to open chat: Worker ID not found');
         return;
       }
       
-      // Use the imported sendMessage function
-      const { sendMessage } = require('../utils/chatService');
-      
       const employerId = authUser?.id || authUser?.email;
       const employerName = authUser?.fullName || 'Employer';
       
-      // Create/ensure conversation before navigating
       try {
-        const result = await sendMessage(
-          employerId,
-          employerName,
-          'EMPLOYER',
-          workerId,
-          workerName,
-          `Hello ${workerName}! Let's discuss your work.`
-        );
-        
-        if (result) {
-          console.log('✅ Conversation ensured from Payments page');
-        }
+        await sendMessage(employerId, employerName, 'EMPLOYER', workerId, workerName, `Hello ${workerName}! Let's discuss your work.`);
       } catch (error) {
         console.error('Error ensuring conversation:', error);
       }
       
-      // Navigate to messages with worker info in URL parameters
       const params = new URLSearchParams({
         workerId: workerId,
         workerName: workerName,
@@ -1009,19 +713,7 @@ const EmployerPayments = () => {
   };
 
   const handleRefresh = () => {
-    console.log('🔄 Manual refresh triggered');
     loadData();
-  };
-
-  const handleDebug = () => {
-    console.log("Current User:", authUser);
-    console.log("User ID:", authUser?.id);
-    console.log("User Email:", authUser?.email);
-
-    if (authUser?.email) {
-      debugPayments(authUser.email);
-      alert('Debug data printed to console. Check the browser console (F12).');
-    }
   };
 
   const getStatusColor = (status) => {
@@ -1040,7 +732,7 @@ const EmployerPayments = () => {
     switch (status) {
       case 'completed': return <CheckCircle size={14} />;
       case 'pending': return <Clock size={14} />;
-      case 'accepted': return <ThumbsUp size={14} />;
+      case 'accepted': return <CheckCircle size={14} />;
       case 'rejected': return <X size={14} />;
       case 'processing': return <RefreshCw size={14} />;
       case 'in_progress': return <Briefcase size={14} />;
@@ -1051,11 +743,7 @@ const EmployerPayments = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const formatCurrency = (amount) => {
@@ -1096,60 +784,23 @@ const EmployerPayments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <EmployerSidebar
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        rightContent={
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw size={16} />
+            {t.refresh}
+          </button>
+        }
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3 lg:px-6">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <RefreshCw size={16} />
-                {t.refresh}
-              </button>
-              <button
-                onClick={handleDebug}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 text-xs text-gray-500"
-                title="Debug - Check console"
-              >
-                🐛 Debug
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 lg:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
@@ -1264,30 +915,14 @@ const EmployerPayments = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.id}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.worker}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                        {t.table.job}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.commission}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                        {t.table.fullSalary}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                        {t.table.date}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.status}
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {t.table.actions}
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.id}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.worker}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">{t.table.job}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.commission}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t.table.fullSalary}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t.table.date}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.status}</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1296,10 +931,7 @@ const EmployerPayments = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-medium text-gray-800 truncate max-w-[80px]">{payment.id}</span>
-                            <button
-                              onClick={() => handleCopyId(payment.id)}
-                              className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                            >
+                            <button onClick={() => handleCopyId(payment.id)} className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
                               <Copy size={13} />
                             </button>
                           </div>
@@ -1314,9 +946,7 @@ const EmployerPayments = () => {
                               )}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-800">
-                                {payment.workerName || 'Unknown'}
-                              </p>
+                              <p className="text-sm font-medium text-gray-800">{payment.workerName || 'Unknown'}</p>
                               {payment.workerEmail && (
                                 <p className="text-xs text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}
@@ -1357,26 +987,16 @@ const EmployerPayments = () => {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
-                            <button
-                              onClick={() => handleViewDetails(payment)}
-                              className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                              title={t.actions.view}
-                            >
+                            <button onClick={() => handleViewDetails(payment)} className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors" title={t.actions.view}>
                               <Eye size={16} />
                             </button>
                             {payment.status === 'pending' && !payment.paymentVerified && (
                               <>
-                                <button
-                                  onClick={() => handleProcessPayment(payment)}
-                                  className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
-                                >
+                                <button onClick={() => handleProcessPayment(payment)} className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
                                   <CreditCard size={12} />
                                   {t.actions.payNow}
                                 </button>
-                                <button
-                                  onClick={() => markPaymentAsCompleted(payment)}
-                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
-                                >
+                                <button onClick={() => markPaymentAsCompleted(payment)} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
                                   <CheckCircle size={12} />
                                   {t.markPaid}
                                 </button>
@@ -1384,17 +1004,11 @@ const EmployerPayments = () => {
                             )}
                             {payment.status === 'completed' && payment.contactRevealed === true && (
                               <>
-                                <button
-                                  onClick={() => handleContact(payment, 'whatsapp')}
-                                  className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1"
-                                >
+                                <button onClick={() => handleContact(payment, 'whatsapp')} className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1">
                                   <MessageSquare size={12} />
                                   WhatsApp
                                 </button>
-                                <button
-                                  onClick={() => handleContact(payment, 'message')}
-                                  className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1"
-                                >
+                                <button onClick={() => handleContact(payment, 'message')} className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1">
                                   <MessageCircle size={12} />
                                   Message
                                 </button>
@@ -1410,7 +1024,6 @@ const EmployerPayments = () => {
             </div>
           )}
         </div>
-      </main>
 
       {/* Details Modal */}
       {showDetailsModal && selectedPayment && (
@@ -1418,10 +1031,7 @@ const EmployerPayments = () => {
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">{t.modal.title}</h2>
-              <button
-                onClick={handleCloseModal}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
+              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -1478,9 +1088,7 @@ const EmployerPayments = () => {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">
-                        {selectedPayment.workerName || 'Unknown'}
-                      </p>
+                      <p className="font-medium text-gray-800">{selectedPayment.workerName || 'Unknown'}</p>
                       {selectedPayment.workerEmail && (
                         <p className="text-sm text-gray-500">{selectedPayment.workerEmail}</p>
                       )}
@@ -1533,10 +1141,7 @@ const EmployerPayments = () => {
                         <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                           <Phone size={16} className="text-gray-400" />
                           <span className="text-sm">{selectedPayment.workerPhone}</span>
-                          <button
-                            onClick={() => handleContact(selectedPayment, 'whatsapp')}
-                            className="ml-auto px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition flex items-center gap-1"
-                          >
+                          <button onClick={() => handleContact(selectedPayment, 'whatsapp')} className="ml-auto px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition flex items-center gap-1">
                             <MessageSquare size={12} />
                             WhatsApp
                           </button>
@@ -1546,10 +1151,7 @@ const EmployerPayments = () => {
                         <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                           <Mail size={16} className="text-gray-400" />
                           <span className="text-sm truncate">{selectedPayment.workerEmail}</span>
-                          <button
-                            onClick={() => handleContact(selectedPayment, 'message')}
-                            className="ml-auto px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition flex items-center gap-1"
-                          >
+                          <button onClick={() => handleContact(selectedPayment, 'message')} className="ml-auto px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition flex items-center gap-1">
                             <MessageCircle size={12} />
                             Message
                           </button>
@@ -1562,10 +1164,7 @@ const EmployerPayments = () => {
                     <Lock size={32} className="text-yellow-500 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">{t.modal.contactLocked}</p>
                     {selectedPayment.status === 'pending' && (
-                      <button
-                        onClick={() => handleProcessPayment(selectedPayment)}
-                        className="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 mx-auto"
-                      >
+                      <button onClick={() => handleProcessPayment(selectedPayment)} className="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 mx-auto">
                         <CreditCard size={14} />
                         {t.actions.payNow}
                       </button>
@@ -1589,26 +1188,17 @@ const EmployerPayments = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200">
-              <button
-                onClick={handleCloseModal}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-              >
+              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
                 {t.modal.close}
               </button>
               
               {selectedPayment && selectedPayment.status === 'pending' && !selectedPayment.paymentVerified && (
                 <>
-                  <button
-                    onClick={() => handleProcessPayment(selectedPayment)}
-                    className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
-                  >
+                  <button onClick={() => handleProcessPayment(selectedPayment)} className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
                     <CreditCard size={16} />
                     {t.actions.payNow}
                   </button>
-                  <button
-                    onClick={() => markPaymentAsCompleted(selectedPayment)}
-                    className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
-                  >
+                  <button onClick={() => markPaymentAsCompleted(selectedPayment)} className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
                     <CheckCircle size={16} />
                     {t.markPaid}
                   </button>
@@ -1617,17 +1207,11 @@ const EmployerPayments = () => {
               
               {selectedPayment && selectedPayment.status === 'completed' && selectedPayment.contactRevealed && (
                 <>
-                  <button
-                    onClick={() => handleContact(selectedPayment, 'whatsapp')}
-                    className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-                  >
+                  <button onClick={() => handleContact(selectedPayment, 'whatsapp')} className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
                     <MessageSquare size={16} />
                     WhatsApp
                   </button>
-                  <button
-                    onClick={() => handleContact(selectedPayment, 'message')}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-                  >
+                  <button onClick={() => handleContact(selectedPayment, 'message')} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
                     <MessageCircle size={16} />
                     Message
                   </button>
@@ -1637,7 +1221,8 @@ const EmployerPayments = () => {
           </div>
         </div>
       )}
-    </div>
+
+    </DashboardLayout>
   );
 };
 

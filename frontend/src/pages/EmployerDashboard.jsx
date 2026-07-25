@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   Home,
   User,
@@ -50,8 +50,6 @@ const EmployerDashboard = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -287,26 +285,7 @@ const EmployerDashboard = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, []);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!isAuthenticated || !authUser) {
-      navigate('/login');
-      return;
-    }
-
-    if (authUser.role !== 'EMPLOYER') {
-      navigate('/login');
-      return;
-    }
-  }, [authUser, isAuthenticated, authLoading, navigate]);
 
   // Load data when user is authenticated
   useEffect(() => {
@@ -340,15 +319,6 @@ const EmployerDashboard = () => {
     localStorage.setItem('homelyserv_language', newLang);
   };
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const handleLogout = () => {
     useAuthStore.getState().logout();
     navigate('/login');
@@ -368,82 +338,15 @@ const EmployerDashboard = () => {
     );
   }
 
-  if (!authUser) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <EmployerSidebar
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.dashboard}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isPremium}
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.dashboard}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-teal-100 overflow-hidden border-2 border-teal-200 relative">
-                  {authUser?.profileImage ? (
-                    <img 
-                      src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-teal-600 m-1" />
-                  )}
-                  {isPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {authUser?.fullName || 'Employer'}
-                  </span>
-                  {isPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {showSuccessBanner && (
@@ -675,9 +578,8 @@ const EmployerDashboard = () => {
             )}
           </div>
         </div>
-      </main>
-    </div>
-  );
-};
+      </DashboardLayout>
+    );
+  };
 
 export default EmployerDashboard;

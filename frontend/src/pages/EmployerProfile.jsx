@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import {
   Home,
@@ -50,8 +50,6 @@ const EmployerProfile = () => {
   const { logout: authLogout } = useAuthStore();
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -137,11 +135,6 @@ const EmployerProfile = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, []);
 
   useEffect(() => {
@@ -180,15 +173,6 @@ const EmployerProfile = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
     localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const handleLogout = () => {
@@ -309,47 +293,14 @@ const EmployerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <EmployerSidebar
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isPremium}
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
@@ -582,8 +533,7 @@ const EmployerProfile = () => {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

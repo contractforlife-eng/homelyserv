@@ -6,9 +6,13 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import useThemeStore from './store/themeStore';
 import './index.css';
 
 const GOOGLE_CLIENT_ID = '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com';
+
+// Initialize global theme (dark mode) from persisted store before rendering
+useThemeStore.getState().initializeTheme();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

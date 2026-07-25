@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   Home,
   User,
@@ -69,8 +69,6 @@ const EmployerMessages = () => {
   const { logout: authLogout } = useAuthStore();
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
@@ -147,11 +145,6 @@ const EmployerMessages = () => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
-    }
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
     }
   }, []);
 
@@ -366,15 +359,6 @@ const EmployerMessages = () => {
     localStorage.setItem('homelyserv_language', newLang);
   };
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const handleLogout = () => {
     authLogout();
     navigate('/login');
@@ -466,85 +450,24 @@ const EmployerMessages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <EmployerSidebar
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
+        rightContent={
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            {t.refresh}
+          </button>
+        }
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={authUser.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {authUser?.fullName || 'Employer'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                {t.refresh}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {/* Welcome Banner - TEAL THEME */}
@@ -837,8 +760,7 @@ const EmployerMessages = () => {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

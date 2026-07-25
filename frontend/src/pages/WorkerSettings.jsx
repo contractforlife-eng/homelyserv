@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import WorkerSidebar from '../components/worker/WorkerSidebar';
 import api from '../utils/api';
@@ -75,6 +76,7 @@ const WorkerSettings = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
   const updateSettings = useAuthStore(state => state.updateSettings);
+  const { isDark, toggleTheme } = useThemeStore();
   
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -448,19 +450,17 @@ const WorkerSettings = () => {
     setSaving(true);
     setSaveSuccess(false);
     
+    // Sync darkMode into settings from the global theme store before saving
+    const settingsToSave = { ...settings, darkMode: isDark };
+    setSettings(settingsToSave);
+
     try {
-      const result = await updateSettings(settings);
+      const result = await updateSettings(settingsToSave);
       
       if (result.success) {
-        localStorage.setItem('worker_settings', JSON.stringify(settings));
+        localStorage.setItem('worker_settings', JSON.stringify(settingsToSave));
         setSaving(false);
         setSaveSuccess(true);
-        
-        if (settings.darkMode) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
         
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
@@ -468,15 +468,9 @@ const WorkerSettings = () => {
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      localStorage.setItem('worker_settings', JSON.stringify(settings));
+      localStorage.setItem('worker_settings', JSON.stringify(settingsToSave));
       setSaving(false);
       setSaveSuccess(true);
-      
-      if (settings.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
       
       setTimeout(() => setSaveSuccess(false), 3000);
     }
@@ -803,21 +797,21 @@ const WorkerSettings = () => {
                   </select>
                 </div>
 
-                {/* Dark Mode */}
+                {/* Dark Mode - uses global theme store */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.darkMode}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.darkModeDesc}</p>
+                    <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t.darkMode}</p>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t.darkModeDesc}</p>
                   </div>
                   <button
-                    onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
+                    onClick={toggleTheme}
                     className={`relative w-12 h-6 rounded-full transition ${
-                      settings.darkMode ? 'bg-red-600' : 'bg-gray-300'
+                      isDark ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
-                        settings.darkMode ? 'right-1' : 'left-1'
+                        isDark ? 'right-1' : 'left-1'
                       }`}
                     />
                   </button>

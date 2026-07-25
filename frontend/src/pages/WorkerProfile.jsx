@@ -4,7 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   User,
   Mail,
@@ -18,21 +19,14 @@ import {
   Globe,
   Menu,
   Bell,
-  ChevronLeft,
-  ChevronRight,
-  Home,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
+  ChevronDown,
+  Camera,
   Star,
   Award,
   Clock,
   CheckCircle,
   AlertTriangle,
   CreditCard,
-  Camera,
-  ChevronDown,
   Shield,
   Crown
 } from 'lucide-react';
@@ -52,8 +46,6 @@ const WorkerProfile = () => {
 
   // Local State
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
   // Notification state
@@ -91,15 +83,6 @@ const WorkerProfile = () => {
   // TOGGLE FUNCTIONS - DEFINED AT THE TOP
   // ============================================================
   
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -305,11 +288,6 @@ const WorkerProfile = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, []);
 
   useEffect(() => {
@@ -482,92 +460,62 @@ const WorkerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <WorkerSidebar
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
-      />
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isPremium}
+        customNotificationComponent={
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+            >
+              <Bell size={20} className="text-gray-600" />
+              {notifications && notifications.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+              )}
+            </button>
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    setIsNotificationsOpen(!isNotificationsOpen);
-                  }}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-                >
-                  <Bell size={20} className="text-gray-600" />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            {/* Notification Dropdown */}
+            {isNotificationsOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                  <span>{t.notifications}</span>
+                  {notificationLoading && (
+                    <span className="text-xs text-gray-400">Loading...</span>
                   )}
-                </button>
-
-                {/* Notification Dropdown */}
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
-                      <span>{t.notifications}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400">Loading...</span>
-                      )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notificationLoading ? (
+                    <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                      Loading notifications...
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
+                  ) : notifications && notifications.length > 0 ? (
+                    notifications.map((n, index) => (
+                      <div 
+                        key={n.id || index} 
+                        className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                      >
+                        <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                      {t.noNotifications}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
+            )}
           </div>
-        </header>
+        }
+      />
 
         <div className="p-4 md:p-6">
           {/* Welcome Banner - RED THEME */}
@@ -918,8 +866,7 @@ const WorkerProfile = () => {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

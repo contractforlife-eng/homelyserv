@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   getUserConversations,
   getTotalUnreadCount
@@ -44,6 +45,7 @@ import {
 
 // Main WorkerDashboard Component - RED THEME
 const WorkerDashboard = () => {
+  
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
@@ -51,8 +53,6 @@ const WorkerDashboard = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
     
     totalApplications: 0,
@@ -161,15 +161,6 @@ const WorkerDashboard = () => {
   // TOGGLE FUNCTIONS - DEFINED BEFORE THEY'RE USED
   // ============================================================
   
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -696,11 +687,6 @@ const WorkerDashboard = () => {
     if (savedLang) {
       setLanguage(savedLang);
     }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, []);
 
   useEffect(() => {
@@ -810,173 +796,147 @@ const WorkerDashboard = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <WorkerSidebar
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.dashboard}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
-      />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.dashboard}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-                >
-                  <Bell size={20} className="text-gray-600" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold px-1">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
+        customNotificationComponent={
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+            >
+              <Bell size={20} className="text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
+                <div className="p-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl">
+                  <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Bell size={16} />
+                    {t.notifications}
+                    {unreadCount > 0 && (
+                      <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </h4>
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={markAllRead}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium"
+                    >
+                      {t.markAllRead}
+                    </button>
                   )}
-                </button>
-                
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-y-auto">
-                    <div className="p-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl">
-                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                        <Bell size={16} />
-                        {t.notifications}
-                        {unreadCount > 0 && (
-                          <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                            {unreadCount} new
-                          </span>
-                        )}
-                      </h4>
-                      {notifications.length > 0 && (
-                        <button 
-                          onClick={markAllRead}
-                          className="text-xs text-red-600 hover:text-red-700 font-medium"
-                        >
-                          {t.markAllRead}
-                        </button>
-                      )}
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <div className="text-5xl mb-3">🔔</div>
+                      <p className="font-medium">{t.noNotifications}</p>
+                      <p className="text-sm mt-1">New notifications will appear here</p>
                     </div>
-                    <div className="divide-y divide-gray-100">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                          <div className="text-5xl mb-3">🔔</div>
-                          <p className="font-medium">{t.noNotifications}</p>
-                          <p className="text-sm mt-1">New notifications will appear here</p>
-                        </div>
-                      ) : (
-                        notifications.slice(0, 10).map((notification) => (
-                          <Link
-                            key={notification.id}
-                            to={notification.link || '#'}
-                            className={`block p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-red-50/50' : ''}`}
-                            onClick={() => {
-                              markNotificationRead(notification.id);
-                              setShowNotifications(false);
-                            }}
-                          >
-                            <div className="flex gap-3">
-                              <div className={`w-10 h-10 rounded-full ${getNotificationBgColor(notification.type)} flex items-center justify-center flex-shrink-0`}>
-                                {getNotificationIcon(notification.type, notification.icon)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                                    {notification.title || 'Notification'}
-                                  </p>
-                                  {!notification.read && (
-                                    <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5"></span>
-                                  )}
-                                </div>
-                                <p className={`text-sm ${!notification.read ? 'text-gray-700' : 'text-gray-500'} truncate`}>
-                                  {notification.message}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {new Date(notification.time).toLocaleDateString()} at {new Date(notification.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        ))
-                      )}
-                      {notifications.length > 10 && (
-                        <div className="p-2 text-center border-t border-gray-100">
-                          <Link 
-                            to="/notifications" 
-                            className="text-sm text-red-600 hover:text-red-700 font-medium"
-                            onClick={() => setShowNotifications(false)}
-                          >
-                            {t.viewAll} ({notifications.length - 10} more)
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {authUser?.profileImage ? (
-                    <img 
-                      src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
                   ) : (
-                    <User size={16} className="text-white m-1" />
+                    notifications.slice(0, 10).map((notification) => (
+                      <Link
+                        key={notification.id}
+                        to={notification.link || '#'}
+                        className={`block p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-red-50/50' : ''}`}
+                        onClick={() => {
+                          markNotificationRead(notification.id);
+                          setShowNotifications(false);
+                        }}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`w-10 h-10 rounded-full ${getNotificationBgColor(notification.type)} flex items-center justify-center flex-shrink-0`}>
+                            {getNotificationIcon(notification.type, notification.icon)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                {notification.title || 'Notification'}
+                              </p>
+                              {!notification.read && (
+                                <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5"></span>
+                              )}
+                            </div>
+                            <p className={`text-sm ${!notification.read ? 'text-gray-700' : 'text-gray-500'} truncate`}>
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {new Date(notification.time).toLocaleDateString()} at {new Date(notification.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
                   )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
+                  {notifications.length > 10 && (
+                    <div className="p-2 text-center border-t border-gray-100">
+                      <Link 
+                        to="/notifications" 
+                        className="text-sm text-red-600 hover:text-red-700 font-medium"
+                        onClick={() => setShowNotifications(false)}
+                      >
+                        {t.viewAll} ({notifications.length - 10} more)
+                      </Link>
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-                    {authUser?.fullName || 'Worker'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
               </div>
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {language === 'en' ? 'العربية' : 'English'}
-              </button>
-              {!userIsPremium && (
-                <Link
-                  to="/subscription"
-                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
-                >
-                  <Crown size={14} />
-                  <span className="hidden sm:inline">{t.getPremium}</span>
-                </Link>
+            )}
+          </div>
+        }
+        rightContent={
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
+              {authUser?.profileImage ? (
+                <img 
+                  src={authUser.profileImage} 
+                  alt={authUser.fullName || 'Worker'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={16} className="text-white m-1" />
+              )}
+              {userIsPremium && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                  <Crown size={8} className="text-white" />
+                </div>
               )}
             </div>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                {authUser?.fullName || 'Worker'}
+              </span>
+              {userIsPremium && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
+                  <Crown size={10} className="text-yellow-500" />
+                  Premium
+                </span>
+              )}
+            </div>
+            {!userIsPremium && (
+              <Link
+                to="/subscription"
+                className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
+              >
+                <Crown size={14} />
+                <span className="hidden sm:inline">{t.getPremium}</span>
+              </Link>
+            )}
           </div>
-        </header>
+        }
+      />
 
         <div className="p-4 md:p-6">
           {/* Welcome Banner - RED THEME */}
@@ -1195,8 +1155,7 @@ const WorkerDashboard = () => {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

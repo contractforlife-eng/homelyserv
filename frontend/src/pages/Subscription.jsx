@@ -300,8 +300,6 @@ const Subscription = () => {
   
   const [language, setLanguage] = useState('en');
   const [isEmployer, setIsEmployer] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -310,6 +308,8 @@ const Subscription = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [paymobIframe, setPaymobIframe] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);

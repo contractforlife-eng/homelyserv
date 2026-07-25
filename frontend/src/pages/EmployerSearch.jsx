@@ -5,8 +5,8 @@ import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
+import NotificationBell from '../components/NotificationBell';
 import api from '../utils/api';
 import {
   Home,
@@ -74,8 +74,6 @@ const EmployerSearch = () => {
   const logout = useAuthStore(state => state.logout);
   
   const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
@@ -85,6 +83,8 @@ const EmployerSearch = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [savedWorkers, setSavedWorkers] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const [advancedFilters, setAdvancedFilters] = useState({
     minRating: 0,

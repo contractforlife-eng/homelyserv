@@ -100,18 +100,18 @@ const WorkerSidebar = ({
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && (
             <Link to="/worker-dashboard" className="flex items-center gap-2">
               <div className="relative">
                 <Shield size={28} className="text-red-500" />
                 <Home size={14} className="text-red-300 absolute -bottom-1 -right-1" />
               </div>
-              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -122,19 +122,19 @@ const WorkerSidebar = ({
           )}
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors hidden lg:block text-gray-600 dark:text-gray-300"
           >
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
           <button
             onClick={toggleMobileMenu}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden text-gray-600 dark:text-gray-300"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+        <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
               {getProfileImage() ? (
@@ -155,7 +155,7 @@ const WorkerSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || 'Worker'}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
@@ -163,7 +163,7 @@ const WorkerSidebar = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{authUser.email || 'worker@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -171,12 +171,12 @@ const WorkerSidebar = ({
 
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
           {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
               {t.overview}
             </div>
           )}
           {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">
               •
             </div>
           )}
@@ -187,11 +187,11 @@ const WorkerSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? 'bg-red-50 text-red-600'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600' : ''} />
+              <item.icon size={20} className={isActive(item.path) ? 'text-red-600 dark:text-red-400' : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -209,11 +209,11 @@ const WorkerSidebar = ({
             </Link>
           ))}
 
-          <div className="border-t border-gray-200 my-3"></div>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
           <Link
             to="/worker-settings"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -227,7 +227,7 @@ const WorkerSidebar = ({
           </Link>
           <Link
             to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -241,7 +241,7 @@ const WorkerSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
