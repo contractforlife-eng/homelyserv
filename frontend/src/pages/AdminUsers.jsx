@@ -880,7 +880,7 @@ const AdminUsers = () => {
                   </thead>
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredUsers.map((u) => (
-                      <tr key={u._id || u.id || u.email} className="hover:bg-white dark:bg-gray-800/5 transition">
+                      <tr key={u._id || u.id || u.email} className="hover:bg-yellow-500/5 transition">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">

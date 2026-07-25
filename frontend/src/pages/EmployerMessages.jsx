@@ -734,7 +734,7 @@ const EmployerMessages = () => {
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         />
                         <button
                           type="submit"

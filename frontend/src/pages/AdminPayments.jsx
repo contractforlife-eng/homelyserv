@@ -1153,7 +1153,7 @@ const AdminPayments = () => {
                   </thead>
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredPayments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-white dark:bg-gray-800/5 transition">
+                      <tr key={payment.id} className="hover:bg-yellow-500/5 transition">
                         <td className="px-4 py-3 text-gray-300 text-sm font-mono">{payment.id || 'N/A'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">

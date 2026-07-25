@@ -1047,7 +1047,7 @@ const AdminMessages = () => {
                           <button
                             key={userItem.id || userItem.email}
                             onClick={() => handleStartNewChat(userItem)}
-                            className="w-full p-4 flex items-center gap-3 hover:bg-white dark:bg-gray-800/5 transition border-b border-yellow-500/10 text-left"
+                            className="w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left"
                           >
                             <img
                               src={userItem.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=yellow&color=000&size=100&bold=true`}
@@ -1093,7 +1093,7 @@ const AdminMessages = () => {
                           <button
                             key={conv.id}
                             onClick={() => handleSelectConversation(conv.id)}
-                            className={`w-full p-4 flex items-center gap-3 hover:bg-white dark:bg-gray-800/5 transition border-b border-yellow-500/10 ${
+                            className={`w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 ${
                               selectedConversationId === conv.id ? 'bg-yellow-500/10 border-l-4 border-l-yellow-500' : ''
                             }`}
                           >
@@ -1147,14 +1147,14 @@ const AdminMessages = () => {
                       <div className="flex gap-2 relative" ref={dropdownRef}>
                         <button 
                           onClick={() => setShowAllUsers(true)}
-                          className="p-2 rounded-lg hover:bg-white dark:bg-gray-800/5 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
                           title={t.startNewChat}
                         >
                           <UserPlus size={18} />
                         </button>
                         <button
                           onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="p-2 rounded-lg hover:bg-white dark:bg-gray-800/5 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
                         >
                           <MoreVertical size={18} />
                         </button>

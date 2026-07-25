@@ -714,8 +714,7 @@ const Subscription = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
@@ -746,7 +745,7 @@ const Subscription = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex">
       <SubscriptionSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -885,7 +884,7 @@ const Subscription = () => {
             <div className="max-w-5xl mx-auto">
               {/* Header */}
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 rounded-full text-yellow-700 text-sm font-semibold mb-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full text-yellow-700 dark:text-yellow-400 text-sm font-semibold mb-4">
                   <Sparkles size={16} />
                   Premium Features
                 </div>
@@ -971,7 +970,7 @@ const Subscription = () => {
                             className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${(
                               isSelected
                                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-md'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-purple-200 hover:bg-purple-50 dark:bg-purple-900/30/30'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'
                             )} ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex items-center gap-4">

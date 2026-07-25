@@ -1088,7 +1088,7 @@ const AdminHires = () => {
                           <Eye size={16} />
                           {t.actions.view}
                         </button>
-                        <button className="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-white dark:bg-gray-800/5 transition flex items-center gap-2">
+                        <button className="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-yellow-500/5 transition flex items-center gap-2">
                           <MessageCircle size={16} />
                           {t.actions.contact}
                         </button>

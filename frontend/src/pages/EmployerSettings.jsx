@@ -60,7 +60,9 @@ const EmployerSettings = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
   const updateSettings = useAuthStore(state => state.updateSettings);
-  const { isDark, toggleTheme } = useThemeStore();
+  const theme = useThemeStore(state => state.theme);
+  const toggleTheme = useThemeStore(state => state.toggleTheme);
+  const isDark = theme === 'dark';
   
   const [language, setLanguage] = useState('en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -71,7 +73,6 @@ const EmployerSettings = () => {
   
   // Settings state
   const [settings, setSettings] = useState({
-    darkMode: false,
     notifications: true,
     emailNotifications: true,
     pushNotifications: true,
@@ -334,9 +335,7 @@ const EmployerSettings = () => {
     setSaveSuccess(false);
     setSaveError(null);
     
-    // Sync darkMode into settings from the global theme store before saving
-    const settingsToSave = { ...settings, darkMode: isDark };
-    setSettings(settingsToSave);
+    const settingsToSave = { ...settings };
 
     try {
       const result = await updateSettings(settingsToSave);
@@ -493,7 +492,7 @@ const EmployerSettings = () => {
   }
 
   return (
-    <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50 dark:bg-gray-900'} flex`}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -507,17 +506,17 @@ const EmployerSettings = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'} border-b sticky top-0 z-30`}>
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className={`p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 dark:text-gray-300'}`}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden text-gray-600 dark:text-gray-300"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} hidden sm:block`}>{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -526,11 +525,7 @@ const EmployerSettings = () => {
               
               <button
                 onClick={toggleLanguage}
-                className={`px-3 py-1.5 border rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 ${
-                  settings.darkMode 
-                    ? 'border-gray-700 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
-                }`}
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -565,24 +560,20 @@ const EmployerSettings = () => {
           )}
 
           {/* Settings Container */}
-          <div className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'} rounded-xl shadow-sm border overflow-hidden`}>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
             {/* Preferences */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.preferences}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.language}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.languageDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
                   </div>
                   <select
                     value={settings.language}
                     onChange={(e) => handleSettingChange('language', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                      settings.darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -592,8 +583,8 @@ const EmployerSettings = () => {
                 {/* Dark Mode - uses global theme store */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.darkMode}</p>
-                    <p className={`text-sm ${isDark ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.darkModeDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.darkMode}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.darkModeDesc}</p>
                   </div>
                   <button
                     onClick={toggleTheme}
@@ -611,8 +602,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.autoSave}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.autoSaveDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.autoSave}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.autoSaveDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
@@ -631,22 +622,18 @@ const EmployerSettings = () => {
             </div>
 
             {/* General */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.general}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.general}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.timezone}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.timezoneDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.timezone}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.timezoneDesc}</p>
                   </div>
                   <select
                     value={settings.timezone}
                     onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                      settings.darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="UTC-12">UTC-12</option>
                     <option value="UTC-11">UTC-11</option>
@@ -678,17 +665,13 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.currency}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.currencyDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.currency}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.currencyDesc}</p>
                   </div>
                   <select
                     value={settings.currency}
                     onChange={(e) => handleSettingChange('currency', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                      settings.darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="EGP">EGP - Egyptian Pound</option>
                     <option value="USD">USD - US Dollar</option>
@@ -701,17 +684,13 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.dateFormat}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.dateFormatDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.dateFormat}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.dateFormatDesc}</p>
                   </div>
                   <select
                     value={settings.dateFormat}
                     onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                      settings.darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                     <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -723,13 +702,13 @@ const EmployerSettings = () => {
             </div>
 
             {/* Notifications */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.notificationsTitle}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.notificationsTitle}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.notifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.notificationsDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.notifications}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.notificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('notifications', !settings.notifications)}
@@ -747,8 +726,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.emailNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.emailNotificationsDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.emailNotifications}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.emailNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
@@ -766,8 +745,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.pushNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.pushNotificationsDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.pushNotifications}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.pushNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
@@ -785,8 +764,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.smsNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.smsNotificationsDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.smsNotifications}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.smsNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
@@ -805,22 +784,18 @@ const EmployerSettings = () => {
             </div>
 
             {/* Privacy */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.privacy}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.privacy}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.profileVisibility}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.profileVisibilityDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.profileVisibility}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.profileVisibilityDesc}</p>
                   </div>
                   <select
                     value={settings.profileVisibility}
                     onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
-                    className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                      settings.darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="public">{t.public}</option>
                     <option value="private">{t.private}</option>
@@ -830,8 +805,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.showOnlineStatus}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.showOnlineStatusDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.showOnlineStatus}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.showOnlineStatusDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
@@ -849,8 +824,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.allowMessages}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.allowMessagesDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.allowMessages}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.allowMessagesDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
@@ -869,22 +844,18 @@ const EmployerSettings = () => {
             </div>
 
             {/* Security */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.security}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.security}</h3>
               <div className="space-y-4">
                 <button
                   onClick={() => setShowPasswordModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
-                    settings.darkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
-                      : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                  }`}
+                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                 >
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-teal-600" />
                     <div className="text-left">
                       <p className="font-medium">{t.changePassword}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.changePasswordDesc}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.changePasswordDesc}</p>
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -892,8 +863,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.twoFactorAuth}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.twoFactorAuthDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.twoFactorAuth}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.twoFactorAuthDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
@@ -912,13 +883,13 @@ const EmployerSettings = () => {
             </div>
 
             {/* Data */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.data}</h3>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.data}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.saveSearchHistory}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.saveSearchHistoryDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.saveSearchHistory}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.saveSearchHistoryDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
@@ -936,8 +907,8 @@ const EmployerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.showRecommended}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.showRecommendedDesc}</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.showRecommended}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.showRecommendedDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
@@ -955,17 +926,13 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={handleExportData}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
-                    settings.darkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
-                      : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                  }`}
+                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                 >
                   <div className="flex items-center gap-3">
                     <Download size={20} className="text-teal-600" />
                     <div className="text-left">
                       <p className="font-medium">{t.exportData}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.exportDataDesc}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.exportDataDesc}</p>
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -973,17 +940,13 @@ const EmployerSettings = () => {
 
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
-                    settings.darkMode 
-                      ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400' 
-                      : 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600'
-                  }`}
+                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400"
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 size={20} className="text-red-500" />
                     <div className="text-left">
                       <p className="font-medium">{t.deleteAccount}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.deleteAccountDesc}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.deleteAccountDesc}</p>
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -992,7 +955,7 @@ const EmployerSettings = () => {
             </div>
 
             {/* Save Button */}
-            <div className={`p-6 border-t ${settings.darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}`}>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <button
                 onClick={handleSave}
                 disabled={saving}
@@ -1009,12 +972,12 @@ const EmployerSettings = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-bold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.changePassword}</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.changePassword}</h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className={`p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition ${settings.darkMode ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
               >
                 <X size={20} />
               </button>
@@ -1023,13 +986,13 @@ const EmployerSettings = () => {
             {passwordSuccess ? (
               <div className="text-center py-6">
                 <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-                <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.passwordChanged}</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">{t.passwordChanged}</p>
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t.currentPassword}
                     </label>
                     <div className="relative">
@@ -1037,16 +1000,12 @@ const EmployerSettings = () => {
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={passwordData.currentPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                          settings.darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                        }`}
+                        className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         placeholder="Enter current password"
                       />
                       <button
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1054,7 +1013,7 @@ const EmployerSettings = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t.newPassword}
                     </label>
                     <div className="relative">
@@ -1062,16 +1021,12 @@ const EmployerSettings = () => {
                         type={showNewPassword ? 'text' : 'password'}
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                          settings.darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                        }`}
+                        className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         placeholder="Enter new password (min 6 characters)"
                       />
                       <button
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1079,7 +1034,7 @@ const EmployerSettings = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t.confirmPassword}
                     </label>
                     <div className="relative">
@@ -1087,16 +1042,12 @@ const EmployerSettings = () => {
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                          settings.darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                        }`}
+                        className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         placeholder="Confirm new password"
                       />
                       <button
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1114,11 +1065,7 @@ const EmployerSettings = () => {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowPasswordModal(false)}
-                    className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
-                      settings.darkMode 
-                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
-                    }`}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
                   >
                     {t.cancel}
                   </button>
@@ -1138,12 +1085,12 @@ const EmployerSettings = () => {
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-bold text-red-600`}>{t.deleteAccount}</h3>
+              <h3 className="text-xl font-bold text-red-600">{t.deleteAccount}</h3>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className={`p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition ${settings.darkMode ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
               >
                 <X size={20} />
               </button>
@@ -1151,23 +1098,19 @@ const EmployerSettings = () => {
 
             <div className="text-center py-4">
               <Trash2 size={48} className="text-red-500 mx-auto mb-3" />
-              <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.deleteConfirm}</p>
-              <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'} mt-2`}>{t.deleteWarning}</p>
+              <p className="text-lg font-semibold text-gray-800 dark:text-white">{t.deleteConfirm}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.deleteWarning}</p>
             </div>
 
             <div className="mt-4">
-              <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t.deleteConfirmText}
               </label>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                  settings.darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
+                className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 placeholder="Type DELETE"
               />
             </div>
@@ -1175,11 +1118,7 @@ const EmployerSettings = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
-                  settings.darkMode 
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
-                }`}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
               >
                 {t.cancel}
               </button>

@@ -33,6 +33,22 @@ function Login() {
     }
   }, []);
 
+  // Isolate Login from the global dashboard dark mode.
+  // Login must always use its own original (light) design.
+  // We remove the "dark" class on mount and restore the previous state on unmount.
+  useEffect(() => {
+    const html = document.documentElement;
+    const wasDark = html.classList.contains('dark');
+    if (wasDark) {
+      html.classList.remove('dark');
+    }
+    return () => {
+      if (wasDark) {
+        html.classList.add('dark');
+      }
+    };
+  }, []);
+
   const redirectUser = (user) => {
     const role = user?.role?.toUpperCase();
 
