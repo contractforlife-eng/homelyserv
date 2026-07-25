@@ -426,7 +426,6 @@ const AdminMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -524,7 +523,6 @@ const AdminMessages = () => {
 
     if (!authUser || authUser.role !== 'ADMIN') {
       navigate('/login');
-      setLoading(false);
       return;
     }
 
@@ -534,7 +532,6 @@ const AdminMessages = () => {
 
     const loadInitialData = async () => {
       if (!userId) {
-        setLoading(false);
         return;
       }
 
@@ -545,8 +542,6 @@ const AdminMessages = () => {
       const userConversations = await getUserConversations(userId);
       console.log('📋 Initial load - admin conversations:', userConversations);
       setConversations(userConversations);
-
-      setLoading(false);
     };
 
     loadInitialData();
@@ -900,7 +895,7 @@ const AdminMessages = () => {
 
   const userProfileImage = user?.profileImage || null;
 
-  if (!user || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
@@ -909,6 +904,10 @@ const AdminMessages = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

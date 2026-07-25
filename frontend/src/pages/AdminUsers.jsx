@@ -440,7 +440,6 @@ const AdminUsers = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
 
   const translations = {
     en: {
@@ -582,8 +581,6 @@ const AdminUsers = () => {
     } catch (error) {
       console.error('❌ Failed loading users from backend:', error);
     }
-    
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -682,18 +679,7 @@ const AdminUsers = () => {
     paused: users.filter(u => u.status === 'paused').length
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
@@ -702,6 +688,10 @@ const AdminUsers = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

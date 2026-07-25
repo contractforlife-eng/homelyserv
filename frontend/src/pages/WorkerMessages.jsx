@@ -58,7 +58,6 @@ const WorkerMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
-  const [pageLoading, setPageLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -253,15 +252,12 @@ const WorkerMessages = () => {
 
     const loadInitialData = async () => {
       if (!userId) {
-        setPageLoading(false);
         return;
       }
 
       const userConversations = await getUserConversations(userId);
       console.log('📋 Initial load - worker conversations:', userConversations);
       setConversations(userConversations);
-
-      setPageLoading(false);
     };
 
     loadInitialData();
@@ -434,7 +430,7 @@ const WorkerMessages = () => {
 
   const userProfileImage = authUser?.profileImage || null;
 
-  if (authLoading || pageLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

@@ -72,7 +72,6 @@ const EmployerMessages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -165,15 +164,12 @@ const EmployerMessages = () => {
 
     const loadInitialData = async () => {
       if (!userId) {
-        setLoading(false);
         return;
       }
 
       const userConversations = await getUserConversations(userId);
       console.log('📋 Initial load - employer conversations:', userConversations);
       setConversations(userConversations);
-
-      setLoading(false);
     };
 
     loadInitialData();
@@ -250,12 +246,6 @@ const EmployerMessages = () => {
     
     if (!workerId) return;
     
-    // Wait for conversations to finish loading before attempting auto-open
-    if (loading) {
-      console.log('⏳ Conversations still loading, waiting before auto-open...');
-      return;
-    }
-    
     console.log('💬 Auto-opening chat with worker:', { workerId, workerName });
     
     // Mark as done so we don't re-trigger
@@ -311,7 +301,7 @@ const EmployerMessages = () => {
       
       createAndOpenConversation();
     }
-  }, [authUser, conversations, loading]);
+  }, [authUser, conversations]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -434,7 +424,7 @@ const EmployerMessages = () => {
 
   const userProfileImage = authUser?.profileImage || null;
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
