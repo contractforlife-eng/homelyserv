@@ -296,10 +296,10 @@ const WorkerProfileView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -307,10 +307,10 @@ const WorkerProfileView = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -318,7 +318,7 @@ const WorkerProfileView = () => {
 
   if (!worker) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
         <EmployerSidebar
           language={language}
           sidebarCollapsed={sidebarCollapsed}
@@ -332,9 +332,9 @@ const WorkerProfileView = () => {
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
           <div className="p-4 md:p-6">
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">👤</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noWorkerData}</h3>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
               <button
                 onClick={handleBack}
                 className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -349,7 +349,7 @@ const WorkerProfileView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -363,27 +363,27 @@ const WorkerProfileView = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
+                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -396,7 +396,7 @@ const WorkerProfileView = () => {
           {/* Back Button */}
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition mb-4"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 transition mb-4"
           >
             <ArrowLeft size={18} />
             {t.back}
@@ -405,7 +405,7 @@ const WorkerProfileView = () => {
           {/* Profile Header */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-24 h-24 rounded-full bg-white dark:bg-gray-800/20 flex items-center justify-center flex-shrink-0">
                 {worker?.profileImage ? (
                   <img 
                     src={worker.profileImage} 
@@ -437,14 +437,14 @@ const WorkerProfileView = () => {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={handleHireNow}
-                  className="px-6 py-2 bg-white text-teal-700 rounded-lg font-medium hover:bg-teal-50 transition flex items-center gap-2"
+                  className="px-6 py-2 bg-white dark:bg-gray-800 text-teal-700 rounded-lg font-medium hover:bg-teal-50 dark:bg-teal-900/30 transition flex items-center gap-2"
                 >
                   <UserCheck size={18} />
                   {t.hire}
                 </button>
                 <button
                   onClick={handleContactWorker}
-                  className="px-6 py-2 border border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition flex items-center gap-2"
+                  className="px-6 py-2 border border-white/30 text-white rounded-lg font-medium hover:bg-white dark:bg-gray-800/10 transition flex items-center gap-2"
                 >
                   <MessageCircle size={18} />
                   {t.contact}
@@ -456,88 +456,88 @@ const WorkerProfileView = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - About & Skills */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">{t.about}</h3>
-                <p className="text-gray-600">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t.about}</h3>
+                <p className="text-gray-600 dark:text-gray-300">
                   {worker.bio || t.noBio}
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">{t.skills}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t.skills}</h3>
                 {worker.skills && worker.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {worker.skills.map((skill, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm">
+                      <span key={idx} className="px-3 py-1 bg-teal-50 dark:bg-teal-900/30 text-teal-700 rounded-full text-sm">
                         {skill}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">{t.noSkills}</p>
+                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noSkills}</p>
                 )}
               </div>
             </div>
 
             {/* Right Column - Details */}
             <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Details</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Details</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t.experience}</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.experience}</span>
                     <span className="font-medium">{worker.experience || '0 years'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t.hourlyRate}</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.hourlyRate}</span>
                     <span className="font-medium text-teal-600">EGP {worker.hourlyRate}/hr</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t.availability}</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.availability}</span>
                     <span className="font-medium text-green-600">{t.available}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t.memberSince}</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.memberSince}</span>
                     <span className="font-medium">June 2025</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.contactInfo}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.contactInfo}</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <div className="flex items-center gap-3">
-                      <Mail size={16} className="text-gray-400" />
-                      <span className="text-gray-600">{worker.email}</span>
+                      <Mail size={16} className="text-gray-400 dark:text-gray-500" />
+                      <span className="text-gray-600 dark:text-gray-300">{worker.email}</span>
                     </div>
                     <button
                       onClick={handleCopyEmail}
-                      className="p-1 hover:bg-gray-100 rounded transition"
+                      className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
                       title={t.copyEmail}
                     >
                       {copied ? (
                         <Check size={14} className="text-green-500" />
                       ) : (
-                        <Copy size={14} className="text-gray-400" />
+                        <Copy size={14} className="text-gray-400 dark:text-gray-500" />
                       )}
                     </button>
                   </div>
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <div className="flex items-center gap-3">
-                      <Phone size={16} className="text-gray-400" />
-                      <span className="text-gray-600">{worker.phone || 'Not provided'}</span>
+                      <Phone size={16} className="text-gray-400 dark:text-gray-500" />
+                      <span className="text-gray-600 dark:text-gray-300">{worker.phone || 'Not provided'}</span>
                     </div>
                     {worker.phone && (
                       <button
                         onClick={handleCopyPhone}
-                        className="p-1 hover:bg-gray-100 rounded transition"
+                        className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
                         title={t.copyEmail}
                       >
                         {copied ? (
                           <Check size={14} className="text-green-500" />
                         ) : (
-                          <Copy size={14} className="text-gray-400" />
+                          <Copy size={14} className="text-gray-400 dark:text-gray-500" />
                         )}
                       </button>
                     )}
@@ -552,55 +552,55 @@ const WorkerProfileView = () => {
       {/* Contact Options Modal */}
       {showContactOptions && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">{t.contactOptions}</h3>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t.contactOptions}</h3>
               <button
                 onClick={() => setShowContactOptions(false)}
-                className="p-1 hover:bg-gray-100 rounded-lg transition"
+                className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition"
               >
-                <X size={20} className="text-gray-500" />
+                <X size={20} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               </button>
             </div>
             <div className="space-y-3">
               {worker?.email && (
                 <button
                   onClick={handleSendEmail}
-                  className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+                  className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
                 >
                   <Mail size={20} className="text-teal-600" />
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">{t.sendEmail}</p>
-                    <p className="text-sm text-gray-500">{worker.email}</p>
+                    <p className="font-medium text-gray-800 dark:text-white">{t.sendEmail}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{worker.email}</p>
                   </div>
                 </button>
               )}
               {worker?.phone && (
                 <button
                   onClick={handleCallPhone}
-                  className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+                  className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
                 >
                   <Phone size={20} className="text-teal-600" />
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">{t.callPhone}</p>
-                    <p className="text-sm text-gray-500">{worker.phone}</p>
+                    <p className="font-medium text-gray-800 dark:text-white">{t.callPhone}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{worker.phone}</p>
                   </div>
                 </button>
               )}
               <button
                 onClick={handleStartChat}
-                className="w-full p-3 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-300 transition flex items-center gap-3"
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
               >
                 <MessageCircle size={20} className="text-teal-600" />
                 <div className="text-left">
-                  <p className="font-medium text-gray-800">{t.startChat}</p>
-                  <p className="text-sm text-gray-500">Start a conversation with {worker.fullName}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{t.startChat}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Start a conversation with {worker.fullName}</p>
                 </div>
               </button>
             </div>
             <button
               onClick={() => setShowContactOptions(false)}
-              className="w-full mt-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              className="w-full mt-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
             >
               {t.close}
             </button>

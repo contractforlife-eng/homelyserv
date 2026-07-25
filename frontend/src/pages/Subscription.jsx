@@ -140,17 +140,17 @@ const SubscriptionSidebar = ({
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileMenu} />
       )}
 
-      <aside className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+      <aside className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
         sidebarCollapsed ? 'w-20' : 'w-64'
       } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && (
             <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
               <div className="relative">
                 <Shield size={28} className={isEmployer ? 'text-teal-500' : 'text-amber-500'} />
                 <Home size={14} className={isEmployer ? 'text-teal-300' : 'text-amber-300'} />
               </div>
-              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -159,15 +159,15 @@ const SubscriptionSidebar = ({
               <Home size={14} className={isEmployer ? 'text-teal-300' : 'text-amber-300'} />
             </Link>
           )}
-          <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block">
+          <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors hidden lg:block">
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <button onClick={toggleMobileMenu} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden">
+          <button onClick={toggleMobileMenu} className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden">
             <X size={18} />
           </button>
         </div>
 
-        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+        <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
@@ -184,15 +184,15 @@ const SubscriptionSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
+                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
                   {premiumUser && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -200,12 +200,12 @@ const SubscriptionSidebar = ({
 
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
           {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
               {t.overview}
             </div>
           )}
           {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">
               •
             </div>
           )}
@@ -216,8 +216,8 @@ const SubscriptionSidebar = ({
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
-                  ? isEmployer ? 'bg-teal-50 text-teal-600' : 'bg-amber-50 text-amber-600'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                  ? isEmployer ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600' : 'bg-amber-50 text-amber-600'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <item.icon size={20} className={isActive(item.path) ? (isEmployer ? 'text-teal-600' : 'text-amber-600') : ''} />
@@ -238,11 +238,11 @@ const SubscriptionSidebar = ({
             </Link>
           ))}
 
-          <div className="border-t border-gray-200 my-3"></div>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
           <Link
             to={isEmployer ? '/employer-settings' : '/worker-settings'}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -256,7 +256,7 @@ const SubscriptionSidebar = ({
           </Link>
           <Link
             to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -270,7 +270,7 @@ const SubscriptionSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isEmployer ? 'text-teal-600 hover:bg-teal-50' : 'text-amber-600 hover:bg-amber-50'} group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isEmployer ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-amber-600 hover:bg-amber-50'} group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -732,10 +732,10 @@ const Subscription = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -761,17 +761,17 @@ const Subscription = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -779,9 +779,9 @@ const Subscription = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
                 >
-                  <Bell size={20} className="text-gray-600" />
+                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
                   {notifications && notifications.length > 0 && (
                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white"></span>
                   )}
@@ -789,30 +789,30 @@ const Subscription = () => {
 
                 {/* Notification Dropdown */}
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
                       <span>{t.notifications}</span>
                       {notificationLoading && (
-                        <span className="text-xs text-gray-400">Loading...</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
                       )}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           Loading notifications...
                         </div>
                       ) : notifications && notifications.length > 0 ? (
                         notifications.map((n, index) => (
                           <div 
                             key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                           >
-                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           {t.noNotifications}
                         </div>
                       )}
@@ -823,7 +823,7 @@ const Subscription = () => {
 
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -836,7 +836,7 @@ const Subscription = () => {
           {/* Back Button */}
           <button
             onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
           >
             <ArrowLeft size={18} />
             {t.back}
@@ -844,12 +844,12 @@ const Subscription = () => {
 
           {paymentSuccess ? (
             // Success State
-            <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-2xl mx-auto text-center border border-green-100">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-10 max-w-2xl mx-auto text-center border border-green-100">
               <div className="w-28 h-28 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <CheckCircle size={56} className="text-white" />
               </div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-3">{t.payment.success}</h2>
-              <p className="text-gray-600 text-lg mb-8">{t.payment.successMessage}</p>
+              <h2 className="text-4xl font-bold text-gray-800 dark:text-white mb-3">{t.payment.success}</h2>
+              <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">{t.payment.successMessage}</p>
               
               <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 mb-8 border border-yellow-200">
                 <div className="flex items-center gap-4 justify-center">
@@ -857,15 +857,15 @@ const Subscription = () => {
                     <Crown size={28} className="text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-bold text-gray-800 text-lg">
+                    <p className="font-bold text-gray-800 dark:text-white text-lg">
                       {isEmployer ? 'Employer' : 'Worker'} Premium
                     </p>
-                    <p className="text-sm text-gray-600">Active Subscription</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Active Subscription</p>
                   </div>
                   <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">Active</span>
                 </div>
                 {currentSubscription?.expiresAt && (
-                  <p className="text-sm text-gray-500 mt-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-3">
                     {t.status.expiresAt.replace('{date}', new Date(currentSubscription.expiresAt).toLocaleDateString())}
                   </p>
                 )}
@@ -889,10 +889,10 @@ const Subscription = () => {
                   <Sparkles size={16} />
                   Premium Features
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
                   Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">Premium</span> Features
                 </h1>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                   Get verified and access exclusive benefits to boost your profile
                 </p>
               </div>
@@ -900,22 +900,22 @@ const Subscription = () => {
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Pricing Card - Takes 2/5 of the space */}
                 <div className="lg:col-span-2">
-                  <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100 sticky top-24">
+                  <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 sticky top-24">
                     <div className="text-center mb-6">
                       <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Crown size={36} className="text-white" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800">{t.pricing.title}</h3>
-                      <p className="text-gray-500">{t.pricing.description}</p>
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t.pricing.title}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.pricing.description}</p>
                       <div className="mt-4">
                         <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">EGP {price}</span>
-                        <span className="text-gray-500 text-lg">/month</span>
+                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-lg">/month</span>
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       {t.pricing.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3 text-gray-700">
+                        <div key={index} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                           <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                             <CheckCircle size={14} className="text-white" />
                           </div>
@@ -925,7 +925,7 @@ const Subscription = () => {
                     </div>
 
                     {subscriptionStatus?.active && (
-                      <div className="mt-6 p-4 bg-green-50 rounded-2xl border border-green-200">
+                      <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl border border-green-200">
                         <div className="flex items-center gap-2 text-green-700">
                           <CheckCircle size={18} />
                           <span className="font-semibold">{t.status.active}</span>
@@ -945,18 +945,18 @@ const Subscription = () => {
 
                 {/* Payment Form - Takes 3/5 of the space */}
                 <div className="lg:col-span-3">
-                  <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-6">{t.payment.title}</h3>
+                  <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{t.payment.title}</h3>
                     
                     {paymentError && (
-                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 flex items-start gap-3">
+                      <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-2xl text-red-600 flex items-start gap-3">
                         <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
                         <span>{paymentError}</span>
                       </div>
                     )}
 
                     <div className="space-y-4 mb-8">
-                      <p className="font-medium text-gray-700">{t.payment.chooseMethod}</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-300">{t.payment.chooseMethod}</p>
                       {paymentMethods.map((method) => {
                         const isSelected = selectedMethod === method.id;
                         const Icon = method.icon;
@@ -970,8 +970,8 @@ const Subscription = () => {
                             }}
                             className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${(
                               isSelected
-                                ? 'border-purple-500 bg-purple-50 shadow-md'
-                                : 'border-gray-200 hover:border-purple-200 hover:bg-purple-50/30'
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-md'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-purple-200 hover:bg-purple-50 dark:bg-purple-900/30/30'
                             )} ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex items-center gap-4">
@@ -980,14 +980,14 @@ const Subscription = () => {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="font-semibold text-gray-800 text-lg">{method.name}</p>
+                                  <p className="font-semibold text-gray-800 dark:text-white text-lg">{method.name}</p>
                                   {method.badge && (
                                     <span className={`px-2.5 py-1 ${method.badgeColor} text-xs font-semibold rounded-full`}>
                                       {method.badge}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-500">{method.description}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{method.description}</p>
                               </div>
                               {isSelected && (
                                 <CheckCircle size={28} className="text-purple-600 flex-shrink-0" />
@@ -1020,7 +1020,7 @@ const Subscription = () => {
                       )}
                     </button>
 
-                    <p className="text-sm text-gray-400 text-center mt-4">
+                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center mt-4">
                       🔒 {t.securePayment}
                     </p>
                   </div>
@@ -1034,16 +1034,16 @@ const Subscription = () => {
       {/* Paymob Iframe Modal */}
       {paymobIframe && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">Pay with Paymob</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Pay with Paymob</h3>
               <button
                 onClick={() => {
                   setPaymobIframe(null);
                   setProcessing(false);
                   window.removeEventListener('message', handlePaymobMessage);
                 }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
               >
                 <X size={20} />
               </button>

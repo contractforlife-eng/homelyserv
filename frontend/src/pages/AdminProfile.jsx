@@ -322,7 +322,7 @@ const AdminProfile = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -352,7 +352,7 @@ const AdminProfile = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -414,7 +414,7 @@ const AdminProfile = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalUsers}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalUsers}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-400" />
                 </div>
@@ -423,7 +423,7 @@ const AdminProfile = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalWorkers}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalWorkers}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <UserIcon size={20} className="text-red-400" />
                 </div>
@@ -432,7 +432,7 @@ const AdminProfile = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalEmployers}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalEmployers}</p>
                 <div className="w-10 h-10 bg-teal-500/20 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-teal-400" />
                 </div>
@@ -441,7 +441,7 @@ const AdminProfile = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalHires}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalHires}</p>
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <BarChart3 size={20} className="text-purple-400" />
                 </div>
@@ -450,7 +450,7 @@ const AdminProfile = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalPayments}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalPayments}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <Settings size={20} className="text-green-400" />
                 </div>
@@ -459,7 +459,7 @@ const AdminProfile = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.totalComplaints}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalComplaints}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-red-400" />
                 </div>
@@ -473,7 +473,7 @@ const AdminProfile = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.profilePhoto}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.profilePhoto}</label>
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-500/30 bg-gray-800 relative">
@@ -502,15 +502,15 @@ const AdminProfile = () => {
                     )}
                   </div>
                   {isEditing && (
-                    <p className="text-sm text-gray-500 mt-2">{t.changePhoto}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.fullName}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.fullName}</label>
                 <div className="relative">
-                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="fullName"
@@ -518,30 +518,30 @@ const AdminProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400'
+                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.email}</label>
                 <div className="relative">
-                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 rounded-lg"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.phone}</label>
                 <div className="relative">
-                  <Phone size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <Phone size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <input
                     type="tel"
                     name="phone"
@@ -549,23 +549,23 @@ const AdminProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400'
+                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.language}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.language}</label>
                 <div className="relative">
-                  <Globe size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <Globe size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <select
                     name="language"
                     value={formData.language}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400'
+                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
                     }`}
                   >
                     <option value="en">English</option>
@@ -575,27 +575,27 @@ const AdminProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.memberSince}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.memberSince}</label>
                 <div className="relative">
-                  <Calendar size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <Calendar size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     value={formatDate(authUser.createdAt)}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 rounded-lg"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.lastLogin}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.lastLogin}</label>
                 <div className="relative">
-                  <Clock size={18} className="absolute left-3 top-3 text-gray-500" />
+                  <Clock size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     value={formatDate(authUser.lastLogin)}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 rounded-lg"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
                   />
                 </div>
               </div>

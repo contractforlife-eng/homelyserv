@@ -150,17 +150,17 @@ const HelpSidebar = ({
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && (
             <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
               <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold text-sm">H</span>
               </div>
-              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -170,20 +170,20 @@ const HelpSidebar = ({
           )}
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors hidden lg:block"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors hidden lg:block"
           >
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
           <button
             onClick={toggleMobileMenu}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Profile section with image AND PREMIUM BADGE */}
-        <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'text-center' : ''}`}>
+        <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-amber-100'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
@@ -204,15 +204,15 @@ const HelpSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 truncate">{authUser.fullName || 'User'}</p>
+                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || 'User'}</p>
                   {isPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -220,12 +220,12 @@ const HelpSidebar = ({
 
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
           {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
               {t.overview}
             </div>
           )}
           {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">
               •
             </div>
           )}
@@ -237,9 +237,9 @@ const HelpSidebar = ({
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
                   ? isTeal 
-                    ? 'bg-teal-50 text-teal-600'
+                    ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600'
                     : 'bg-amber-50 text-amber-600'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-amber-600') : ''} />
@@ -260,11 +260,11 @@ const HelpSidebar = ({
             </Link>
           ))}
 
-          <div className="border-t border-gray-200 my-3"></div>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
           <Link
             to={isEmployer ? '/employer-settings' : '/worker-settings'}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -278,7 +278,7 @@ const HelpSidebar = ({
           </Link>
           <Link
             to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 group ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -292,7 +292,7 @@ const HelpSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50' : 'text-amber-600 hover:bg-amber-50'} group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-amber-600 hover:bg-amber-50'} group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
@@ -523,7 +523,7 @@ const Help = () => {
   const isTeal = isEmployer;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar */}
       <HelpSidebar
         language={language}
@@ -541,27 +541,27 @@ const Help = () => {
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
         {/* Top Header Bar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
+                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
               </button>
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -581,44 +581,44 @@ const Help = () => {
           </div>
 
           {/* Search */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
 
           {/* Popular Topics */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">{t.popularTopics}</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t.popularTopics}</h3>
             <div className="flex flex-wrap gap-2">
-              <button className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm hover:bg-teal-100 transition">
+              <button className="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/30 text-teal-700 rounded-full text-sm hover:bg-teal-100 transition">
                 <Zap size={14} className="inline mr-1" />
                 {t.gettingStarted}
               </button>
-              <button className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100 transition">
+              <button className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 rounded-full text-sm hover:bg-blue-100 transition">
                 <User size={14} className="inline mr-1" />
                 {t.accountManagement}
               </button>
-              <button className="px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm hover:bg-green-100 transition">
+              <button className="px-3 py-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 rounded-full text-sm hover:bg-green-100 transition">
                 <Briefcase size={14} className="inline mr-1" />
                 {t.hiring}
               </button>
-              <button className="px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full text-sm hover:bg-yellow-100 transition">
+              <button className="px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 rounded-full text-sm hover:bg-yellow-100 transition">
                 <DollarSign size={14} className="inline mr-1" />
                 {t.payments}
               </button>
-              <button className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm hover:bg-purple-100 transition">
+              <button className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 rounded-full text-sm hover:bg-purple-100 transition">
                 <Shield size={14} className="inline mr-1" />
                 {t.security}
               </button>
-              <button className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm hover:bg-red-100 transition">
+              <button className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-full text-sm hover:bg-red-100 transition">
                 <AlertCircle size={14} className="inline mr-1" />
                 {t.troubleshooting}
               </button>
@@ -627,120 +627,120 @@ const Help = () => {
 
           {/* Quick Support Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Mail size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
-              <p className="font-medium text-gray-800">{t.email}</p>
-              <p className="text-xs text-gray-500 mt-1">support@homelyserv.com</p>
+              <p className="font-medium text-gray-800 dark:text-white">{t.email}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">support@homelyserv.com</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Phone size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
-              <p className="font-medium text-gray-800">{t.phone}</p>
-              <p className="text-xs text-gray-500 mt-1">+20 123 456 789</p>
+              <p className="font-medium text-gray-800 dark:text-white">{t.phone}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">+20 123 456 789</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <MessageSquare size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
-              <p className="font-medium text-gray-800">{t.chat}</p>
-              <p className="text-xs text-gray-500 mt-1">Available 24/7</p>
+              <p className="font-medium text-gray-800 dark:text-white">{t.chat}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Available 24/7</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center hover:shadow-md transition group">
-              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 group-hover:bg-teal-100' : 'bg-red-50 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+              <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <BookOpen size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
-              <p className="font-medium text-gray-800">{t.documentation}</p>
-              <p className="text-xs text-gray-500 mt-1">User Guide</p>
+              <p className="font-medium text-gray-800 dark:text-white">{t.documentation}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">User Guide</p>
             </div>
           </div>
 
           {/* Support Stats */}
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-lg flex items-center justify-center`}>
+                <div className={`w-10 h-10 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-red-50 dark:bg-red-900/30'} rounded-lg flex items-center justify-center`}>
                   <Clock size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-800">{t.supportHours}</p>
-                  <p className="text-sm text-gray-500">{t.supportHoursDesc}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{t.supportHours}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.supportHoursDesc}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 ${isTeal ? 'bg-teal-50' : 'bg-red-50'} rounded-lg flex items-center justify-center`}>
+                <div className={`w-10 h-10 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-red-50 dark:bg-red-900/30'} rounded-lg flex items-center justify-center`}>
                   <Headphones size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-800">{t.responseTime}</p>
-                  <p className="text-sm text-gray-500">{t.responseTimeDesc}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{t.responseTime}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.responseTimeDesc}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* FAQ Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.faq}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.faq}</h3>
             
             {filteredFaqs.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-3">🔍</div>
-                <p className="text-gray-500">{t.noResults}</p>
-                <p className="text-sm text-gray-400">{t.tryDifferent}</p>
+                <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noResults}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.tryDifferent}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {filteredFaqs.map((faq, index) => (
                   <div
                     key={index}
-                    className="border border-gray-200 rounded-lg overflow-hidden"
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                   >
                     <button
                       onClick={() => toggleFaq(index)}
-                      className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition ${
-                        expandedFaq === index ? (isTeal ? 'bg-teal-50' : 'bg-red-50') : ''
+                      className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:bg-gray-900 transition ${
+                        expandedFaq === index ? (isTeal ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-red-50 dark:bg-red-900/30') : ''
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <FileQuestion size={18} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
-                        <span className="font-medium text-gray-800">{faq.question}</span>
+                        <span className="font-medium text-gray-800 dark:text-white">{faq.question}</span>
                       </div>
                       {expandedFaq === index ? (
-                        <ChevronUp size={18} className="text-gray-400" />
+                        <ChevronUp size={18} className="text-gray-400 dark:text-gray-500" />
                       ) : (
-                        <ChevronDown size={18} className="text-gray-400" />
+                        <ChevronDown size={18} className="text-gray-400 dark:text-gray-500" />
                       )}
                     </button>
                     {expandedFaq === index && (
-                      <div className="p-4 border-t border-gray-200 bg-gray-50">
-                        <p className="text-sm text-gray-600">{faq.answer}</p>
+                      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{faq.answer}</p>
                         
                         {/* Feedback Section */}
                         {!feedbackSubmitted ? (
-                          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-4">
-                            <span className="text-sm text-gray-500">{t.feedback}</span>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-4">
+                            <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.feedback}</span>
                             <button
                               onClick={() => handleFeedback('yes')}
-                              className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-sm"
+                              className="flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 rounded-lg hover:bg-green-100 transition text-sm"
                             >
                               <ThumbsUp size={14} />
                               {t.yes}
                             </button>
                             <button
                               onClick={() => handleFeedback('no')}
-                              className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition text-sm"
+                              className="flex items-center gap-1 px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-lg hover:bg-red-100 transition text-sm"
                             >
                               <ThumbsUp size={14} className="rotate-180" />
                               {t.no}
                             </button>
                           </div>
                         ) : (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2 text-green-600">
                               <CheckCircle size={16} />
                               <span className="text-sm">{t.thankYou}</span>
@@ -756,15 +756,15 @@ const Help = () => {
           </div>
 
           {/* Feedback Section */}
-          <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">{t.sendFeedback}</h3>
-            <p className="text-sm text-gray-500 mb-4">We value your feedback to improve our support</p>
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{t.sendFeedback}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">We value your feedback to improve our support</p>
             <div className="flex flex-col sm:flex-row gap-3">
               <textarea
                 value={feedbackText}
                 onChange={(e) => setFeedbackText(e.target.value)}
                 placeholder={t.feedbackPlaceholder}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                 rows="2"
               />
               <button

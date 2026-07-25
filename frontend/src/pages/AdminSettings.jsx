@@ -277,7 +277,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_hire': <Briefcase size={16} className="text-purple-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   const getTimeAgo = (dateString) => {
@@ -319,7 +319,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -356,7 +356,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -365,15 +365,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -392,10 +392,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -438,7 +438,7 @@ const ToggleSwitch = ({ value, onChange, disabled = false }) => {
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-yellow-500/20'}`}
     >
       <div
-        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${
+        className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition-all duration-300 ${
           value ? 'right-1' : 'left-1'
         }`}
       />
@@ -896,7 +896,7 @@ const AdminSettings = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -922,7 +922,7 @@ const AdminSettings = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -979,7 +979,7 @@ const AdminSettings = () => {
                 className={`px-4 py-2 text-sm font-medium transition rounded-lg ${
                   activeTab === tab
                     ? 'bg-yellow-500 text-black'
-                    : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-500/10'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10'
                 }`}
               >
                 {t.tabs[tab]}
@@ -994,7 +994,7 @@ const AdminSettings = () => {
                 <h3 className="text-lg font-semibold text-white mb-4">{t.general.title}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.siteName}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteName}</label>
                     <input
                       type="text"
                       value={settings.siteName}
@@ -1003,7 +1003,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.siteDescription}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteDescription}</label>
                     <textarea
                       value={settings.siteDescription}
                       onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
@@ -1012,7 +1012,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.contactEmail}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactEmail}</label>
                     <input
                       type="email"
                       value={settings.contactEmail}
@@ -1021,7 +1021,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.contactPhone}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactPhone}</label>
                     <input
                       type="text"
                       value={settings.contactPhone}
@@ -1030,7 +1030,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.general.address}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.address}</label>
                     <input
                       type="text"
                       value={settings.address}
@@ -1049,7 +1049,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.appearance.darkMode}</p>
-                      <p className="text-sm text-gray-500">Switch between light and dark theme</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Switch between light and dark theme</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.darkMode} 
@@ -1057,7 +1057,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.primaryColor}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.primaryColor}</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="color"
@@ -1074,7 +1074,7 @@ const AdminSettings = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.secondaryColor}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.secondaryColor}</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="color"
@@ -1091,7 +1091,7 @@ const AdminSettings = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.appearance.language}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
                     <select
                       value={settings.language}
                       onChange={(e) => {
@@ -1116,7 +1116,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.systemNotifications}</p>
-                      <p className="text-sm text-gray-500">Enable or disable system notifications</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable or disable system notifications</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.systemNotifications} 
@@ -1126,7 +1126,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.emailNotifications}</p>
-                      <p className="text-sm text-gray-500">Receive updates via email</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Receive updates via email</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.emailNotifications} 
@@ -1136,7 +1136,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.pushNotifications}</p>
-                      <p className="text-sm text-gray-500">Enable push notifications</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable push notifications</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.pushNotifications} 
@@ -1146,7 +1146,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
-                      <p className="text-sm text-gray-500">Get notified about new complaints</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Get notified about new complaints</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.complaintNotifications} 
@@ -1156,7 +1156,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
-                      <p className="text-sm text-gray-500">Get notified about payment activity</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Get notified about payment activity</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.paymentNotifications} 
@@ -1174,7 +1174,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.security.twoFactorAuth}</p>
-                      <p className="text-sm text-gray-500">Require two-factor authentication</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require two-factor authentication</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.twoFactorAuth} 
@@ -1182,7 +1182,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.security.sessionTimeout}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.sessionTimeout}</label>
                     <input
                       type="number"
                       value={settings.sessionTimeout}
@@ -1191,7 +1191,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.security.maxLoginAttempts}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.maxLoginAttempts}</label>
                     <input
                       type="number"
                       value={settings.maxLoginAttempts}
@@ -1202,7 +1202,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.security.requireEmailVerification}</p>
-                      <p className="text-sm text-gray-500">Require email verification for new users</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require email verification for new users</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.requireEmailVerification} 
@@ -1212,7 +1212,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.security.requirePhoneVerification}</p>
-                      <p className="text-sm text-gray-500">Require phone verification for new users</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require phone verification for new users</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.requirePhoneVerification} 
@@ -1235,7 +1235,7 @@ const AdminSettings = () => {
                 <h3 className="text-lg font-semibold text-white mb-4">{t.payment.title}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.currency}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.currency}</label>
                     <select
                       value={settings.currency}
                       onChange={(e) => handleSettingChange('currency', e.target.value)}
@@ -1248,7 +1248,7 @@ const AdminSettings = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.commissionRate}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.commissionRate}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -1258,7 +1258,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.minWithdrawal}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.minWithdrawal}</label>
                     <input
                       type="number"
                       value={settings.minWithdrawal}
@@ -1267,7 +1267,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.maxWithdrawal}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.maxWithdrawal}</label>
                     <input
                       type="number"
                       value={settings.maxWithdrawal}
@@ -1276,7 +1276,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.payment.paymentMethods}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.paymentMethods}</label>
                     <div className="space-y-2">
                       {['credit_card', 'bank_transfer', 'cash', 'paypal', 'stripe'].map((method) => (
                         <label key={method} className="flex items-center gap-3 p-2 bg-[#0a0a0a] rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500/30 transition">
@@ -1308,7 +1308,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.users.allowRegistration}</p>
-                      <p className="text-sm text-gray-500">Allow new user registrations</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Allow new user registrations</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.allowRegistration} 
@@ -1318,7 +1318,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.users.requireApproval}</p>
-                      <p className="text-sm text-gray-500">Require admin approval for new users</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require admin approval for new users</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.requireApproval} 
@@ -1326,7 +1326,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.users.maxUsersPerIp}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.maxUsersPerIp}</label>
                     <input
                       type="number"
                       value={settings.maxUsersPerIp}
@@ -1335,7 +1335,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.users.autoSuspendAfter}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.autoSuspendAfter}</label>
                     <input
                       type="number"
                       value={settings.autoSuspendAfter}
@@ -1354,7 +1354,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.system.debugMode}</p>
-                      <p className="text-sm text-gray-500">Enable debug mode for developers</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable debug mode for developers</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.debugMode} 
@@ -1364,7 +1364,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.system.maintenanceMode}</p>
-                      <p className="text-sm text-gray-500">Put the site in maintenance mode</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Put the site in maintenance mode</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.maintenanceMode} 
@@ -1374,7 +1374,7 @@ const AdminSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-300">{t.system.cacheEnabled}</p>
-                      <p className="text-sm text-gray-500">Enable caching for better performance</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable caching for better performance</p>
                     </div>
                     <ToggleSwitch 
                       value={settings.cacheEnabled} 
@@ -1382,7 +1382,7 @@ const AdminSettings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">{t.system.backupSchedule}</label>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.system.backupSchedule}</label>
                     <select
                       value={settings.backupSchedule}
                       onChange={(e) => handleSettingChange('backupSchedule', e.target.value)}
@@ -1447,14 +1447,14 @@ const AdminSettings = () => {
               <h2 className="text-xl font-semibold text-white">{t.actions.changePassword}</h2>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.currentPassword}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.currentPassword}</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
@@ -1463,7 +1463,7 @@ const AdminSettings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.newPassword}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.newPassword}</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
@@ -1472,7 +1472,7 @@ const AdminSettings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">{t.actions.confirmPassword}</label>
+                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.confirmPassword}</label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}

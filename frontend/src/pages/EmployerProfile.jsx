@@ -279,10 +279,10 @@ const EmployerProfile = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -320,7 +320,7 @@ const EmployerProfile = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleEditToggle}
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   {isEditing ? <X size={16} /> : <Edit size={16} />}
                   {isEditing ? t.cancel : t.editProfile}
@@ -337,25 +337,25 @@ const EmployerProfile = () => {
           </div>
 
           {saveSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
               {t.saved}
             </div>
           )}
 
           {saveError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-sm flex items-center gap-2">
               <AlertCircle size={16} />
               {saveError}
             </div>
           )}
 
           {/* Profile Photo Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
+          <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.profilePhoto}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100 relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100 dark:bg-gray-800 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
@@ -363,7 +363,7 @@ const EmployerProfile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-teal-50">
+                    <div className="w-full h-full flex items-center justify-center bg-teal-50 dark:bg-teal-900/30">
                       <User size={48} className="text-teal-300" />
                     </div>
                   )}
@@ -386,22 +386,22 @@ const EmployerProfile = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-sm text-gray-500 mt-2">{t.changePhoto}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
               )}
               {!isEditing && imagePreview && (
-                <p className="text-xs text-gray-400 mt-2">Photo uploaded</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">Photo uploaded</p>
               )}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
+          <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-6">{t.personalInfo}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.fullName}</label>
                 <div className="relative">
-                  <User size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <User size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="fullName"
@@ -409,30 +409,30 @@ const EmployerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.email}</label>
                 <div className="relative">
-                  <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Mail size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-100 bg-gray-50 rounded-lg"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.phone}</label>
                 <div className="relative">
-                  <Phone size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Phone size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="tel"
                     name="phone"
@@ -440,16 +440,16 @@ const EmployerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.location}</label>
                 <div className="relative">
-                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="location"
@@ -457,16 +457,16 @@ const EmployerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.company}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.company}</label>
                 <div className="relative">
-                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="companyName"
@@ -474,16 +474,16 @@ const EmployerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.website}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.website}</label>
                 <div className="relative">
-                  <Globe size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Globe size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="website"
@@ -491,14 +491,14 @@ const EmployerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                     }`}
                   />
                 </div>
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.bio}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.bio}</label>
                 <textarea
                   name="bio"
                   value={formData.bio}
@@ -506,7 +506,7 @@ const EmployerProfile = () => {
                   disabled={!isEditing}
                   rows="4"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    isEditing ? 'border-gray-200 dark:border-gray-700 dark:border-gray-600' : 'border-gray-100 dark:border-gray-700 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700/50'
                   }`}
                 />
               </div>
@@ -525,7 +525,7 @@ const EmployerProfile = () => {
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>

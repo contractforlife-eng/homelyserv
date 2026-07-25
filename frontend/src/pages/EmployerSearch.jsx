@@ -627,10 +627,10 @@ const EmployerSearch = () => {
   // ============================================================
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -641,7 +641,7 @@ const EmployerSearch = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -656,17 +656,17 @@ const EmployerSearch = () => {
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -688,11 +688,11 @@ const EmployerSearch = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
                     {authUser?.fullName || 'Employer'}
                   </span>
                   {authUser?.isPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
                     </span>
@@ -705,14 +705,14 @@ const EmployerSearch = () => {
               
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'compact' : 'grid')}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 {viewMode === 'grid' && <LayoutGrid size={16} />}
                 {viewMode === 'list' && <List size={16} />}
@@ -727,7 +727,7 @@ const EmployerSearch = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 md:p-8 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {authUser?.profileImage ? (
                     <img 
                       src={authUser.profileImage} 
@@ -764,22 +764,22 @@ const EmployerSearch = () => {
           </div>
           
           {/* Search Section */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1 relative">
-                <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-gray-600"
+                className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-2 text-gray-600 dark:text-gray-300"
               >
                 <SlidersHorizontal size={18} />
                 {showFilters ? t.hideFilters : t.showFilters}
@@ -799,14 +799,14 @@ const EmployerSearch = () => {
             </div>
 
             {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.jobType}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.jobType}</label>
                     <select
                       value={selectedJob}
                       onChange={(e) => setSelectedJob(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
                     >
                       {jobOptions.map((job) => (
                         <option key={job} value={job}>{job}</option>
@@ -814,11 +814,11 @@ const EmployerSearch = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.location}</label>
                     <select
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
                     >
                       {locationOptionsDynamic.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
@@ -827,15 +827,15 @@ const EmployerSearch = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.advancedFilters}</h4>
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t.advancedFilters}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.minRating}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.minRating}</label>
                       <select
                         value={advancedFilters.minRating}
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minRating: parseFloat(e.target.value) }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
                       >
                         {ratingOptions.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -844,11 +844,11 @@ const EmployerSearch = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.minExperience}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.minExperience}</label>
                       <select
                         value={advancedFilters.minExperience}
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minExperience: parseInt(e.target.value) }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
                       >
                         {experienceLevels.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -857,11 +857,11 @@ const EmployerSearch = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.availability}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.availability}</label>
                       <select
                         value={advancedFilters.availability}
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, availability: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
                       >
                         <option value="all">All</option>
                         <option value="available">{t.available}</option>
@@ -870,7 +870,7 @@ const EmployerSearch = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.maxHourlyRate}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.maxHourlyRate}</label>
                       <input
                         type="range"
                         min="10"
@@ -880,7 +880,7 @@ const EmployerSearch = () => {
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxHourlyRate: parseInt(e.target.value) }))}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-gray-500">
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         <span>10</span>
                         <span className="font-medium text-teal-600">{advancedFilters.maxHourlyRate} EGP</span>
                         <span>100</span>
@@ -888,11 +888,11 @@ const EmployerSearch = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.language}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.language}</label>
                       <select
                         value={advancedFilters.language}
                         onChange={(e) => setAdvancedFilters(prev => ({ ...prev, language: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
                       >
                         {languageOptions.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -901,11 +901,11 @@ const EmployerSearch = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{t.sortBy}</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{t.sortBy}</label>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
                       >
                         <option value="relevance">{t.relevance}</option>
                         <option value="rating">{t.ratingHigh}</option>
@@ -920,7 +920,7 @@ const EmployerSearch = () => {
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={clearFilters}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-teal-600 transition"
+                    className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-teal-600 transition"
                   >
                     {t.clearFilters}
                   </button>
@@ -931,10 +931,10 @@ const EmployerSearch = () => {
 
           {/* Results */}
           {showResults && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">{t.results}</h3>
-                <span className="text-sm text-gray-500">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.results}</h3>
+                <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {searchResults.length} worker{searchResults.length !== 1 ? 's' : ''} found
                 </span>
               </div>
@@ -942,8 +942,8 @@ const EmployerSearch = () => {
               {searchResults.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🔍</div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noResults}</h3>
-                  <p className="text-gray-500">{t.tryAgain}</p>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noResults}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.tryAgain}</p>
                   <button
                     onClick={clearFilters}
                     className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -961,9 +961,9 @@ const EmployerSearch = () => {
                   {searchResults.map((worker) => (
                     <div 
                       key={worker.id || worker.email} 
-                      className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition ${
+                      className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition ${
                         viewMode === 'compact' ? 'p-3' : ''
-                      } ${worker.isPremium ? 'border-yellow-300 bg-yellow-50/10' : ''}`}
+                      } ${worker.isPremium ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/30/10' : ''}`}
                     >
                       <div className={`flex ${viewMode === 'list' ? 'flex-row' : 'flex-col'} gap-4`}>
                         <div className={`flex items-start gap-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
@@ -988,11 +988,11 @@ const EmployerSearch = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <h4 className={`font-semibold text-gray-800 ${viewMode === 'compact' ? 'text-sm' : ''}`}>
+                                <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
                                   {worker.fullName}
                                 </h4>
                                 {worker.isPremium && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                                     <Crown size={10} className="text-yellow-500" />
                                     Premium
                                   </span>
@@ -1000,49 +1000,49 @@ const EmployerSearch = () => {
                               </div>
                               <button
                                 onClick={() => toggleSaveWorker(worker.id || worker.email)}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                               >
                                 <Heart 
                                   size={viewMode === 'compact' ? 14 : 18} 
-                                  className={savedWorkers.includes(worker.id || worker.email) ? 'fill-red-500 text-red-500' : 'text-gray-400'} 
+                                  className={savedWorkers.includes(worker.id || worker.email) ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'} 
                                 />
                               </button>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                               <Briefcase size={viewMode === 'compact' ? 12 : 14} />
                               <span>{getJobLabel(worker.desiredJob)}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                               <MapPin size={viewMode === 'compact' ? 12 : 14} />
                               <span className="truncate">{worker.location || 'Not specified'}</span>
                             </div>
                             {viewMode !== 'compact' && (
                               <>
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                   <DollarSign size={14} />
                                   <span>EGP {worker.hourlyRate}/hr</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                   <StarIcon size={14} className="text-yellow-500" />
                                   <span>{worker.rating || 4.5} ★</span>
-                                  <span className="text-gray-400">•</span>
+                                  <span className="text-gray-400 dark:text-gray-500">•</span>
                                   <span>{worker.experience || 0} {t.experienceYears}</span>
                                 </div>
                               </>
                             )}
                             <div className="flex flex-wrap gap-1 mt-2">
                               {worker.skills?.slice(0, viewMode === 'compact' ? 2 : 3).map((skill, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full">
+                                <span key={idx} className="px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-700 text-xs rounded-full">
                                   {skill}
                                 </span>
                               ))}
                               {worker.skills?.length > (viewMode === 'compact' ? 2 : 3) && (
-                                <span className="px-2 py-0.5 bg-gray-50 text-gray-500 text-xs rounded-full">
+                                <span className="px-2 py-0.5 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs rounded-full">
                                   +{worker.skills.length - (viewMode === 'compact' ? 2 : 3)}
                                 </span>
                               )}
                             </div>
-                            <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+                            <div className="mt-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                               <LockIcon size={12} />
                               <span>{t.contactHidden}</span>
                             </div>
@@ -1061,7 +1061,7 @@ const EmployerSearch = () => {
                               localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
                               navigate('/worker-profile-view');
                             }}
-                            className="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1"
+                            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-1"
                           >
                             <Eye size={14} />
                             {viewMode === 'compact' ? '' : t.viewProfile}

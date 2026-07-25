@@ -138,10 +138,10 @@ function JobDetails() {
   // Show loading state
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={48} className="animate-spin text-red-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading job details...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading job details...</p>
         </div>
       </div>
     );
@@ -149,11 +149,11 @@ function JobDetails() {
 
   if (error && !job) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">😕</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Job Not Found</h3>
-          <p className="text-gray-500">{error}</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Job Not Found</h3>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{error}</p>
           <button
             onClick={() => navigate('/search')}
             className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -170,50 +170,50 @@ function JobDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <Link to="/search" className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition mb-4">
+        <Link to="/search" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-red-600 transition mb-4">
           <ArrowLeft size={18} /> Back to Search
         </Link>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">{job.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-white">{job.title}</h1>
               <div className="flex items-center gap-4 mt-2">
-                <span className="flex items-center gap-1 text-gray-600">
-                  <Building size={18} className="text-gray-400" /> {job.employer}
+                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                  <Building size={18} className="text-gray-400 dark:text-gray-500" /> {job.employer}
                 </span>
-                <span className="flex items-center gap-1 text-gray-600">
-                  <MapPin size={18} className="text-gray-400" /> {job.location}
+                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                  <MapPin size={18} className="text-gray-400 dark:text-gray-500" /> {job.location}
                 </span>
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <Heart size={20} className="text-gray-400" />
+              <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition">
+                <Heart size={20} className="text-gray-400 dark:text-gray-500" />
               </button>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <Share2 size={20} className="text-gray-400" />
+              <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition">
+                <Share2 size={20} className="text-gray-400 dark:text-gray-500" />
               </button>
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <Flag size={20} className="text-gray-400" />
+              <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition">
+                <Flag size={20} className="text-gray-400 dark:text-gray-500" />
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Salary</p>
-              <p className="font-semibold text-gray-800">{job.salary}</p>
+            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Salary</p>
+              <p className="font-semibold text-gray-800 dark:text-white">{job.salary}</p>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Job Type</p>
-              <p className="font-semibold text-gray-800">{job.type}</p>
+            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Job Type</p>
+              <p className="font-semibold text-gray-800 dark:text-white">{job.type}</p>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Posted</p>
-              <p className="font-semibold text-gray-800">{job.posted}</p>
+            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Posted</p>
+              <p className="font-semibold text-gray-800 dark:text-white">{job.posted}</p>
             </div>
           </div>
         </div>
@@ -222,8 +222,8 @@ function JobDetails() {
         {applicationStatus && (
           <div className={`mb-6 p-4 rounded-xl ${
             applicationStatus.success 
-              ? 'bg-green-50 border border-green-200 text-green-700'
-              : 'bg-red-50 border border-red-200 text-red-700'
+              ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 text-green-700'
+              : 'bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700'
           }`}>
             <div className="flex items-center gap-2">
               {applicationStatus.success ? (
@@ -239,27 +239,27 @@ function JobDetails() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-3">Job Description</h2>
-              <p className="text-gray-600 leading-relaxed">{job.description}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">Job Description</h2>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{job.description}</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-3">Requirements</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">Requirements</h2>
               <ul className="space-y-2">
                 {job.requirements.map((req, i) => (
-                  <li key={i} className="flex items-center gap-2 text-gray-600">
+                  <li key={i} className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                     <CheckCircle size={16} className="text-green-500" /> {req}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-3">Benefits</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">Benefits</h2>
               <ul className="space-y-2">
                 {job.benefits.map((benefit, i) => (
-                  <li key={i} className="flex items-center gap-2 text-gray-600">
+                  <li key={i} className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                     <Award size={16} className="text-blue-500" /> {benefit}
                   </li>
                 ))}
@@ -269,32 +269,32 @@ function JobDetails() {
 
           {/* Sidebar */}
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">Employer</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Employer</h3>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold">
                   {job.employerDetails.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{job.employerDetails.name}</p>
+                  <p className="font-semibold text-gray-800 dark:text-white">{job.employerDetails.name}</p>
                   <div className="flex items-center gap-1">
                     <Star size={14} className="fill-yellow-400 text-yellow-400" />
                     <span className="text-sm">{job.employerDetails.rating}</span>
-                    <span className="text-xs text-gray-400">({job.employerDetails.totalHires} hires)</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">({job.employerDetails.totalHires} hires)</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Mail size={14} className="text-gray-400" /> {job.employerDetails.email}
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                  <Mail size={14} className="text-gray-400 dark:text-gray-500" /> {job.employerDetails.email}
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Phone size={14} className="text-gray-400" /> {job.employerDetails.phone}
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                  <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {job.employerDetails.phone}
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
               <button 
                 onClick={handleApply}
                 disabled={applying}
@@ -311,12 +311,12 @@ function JobDetails() {
               </button>
               <button 
                 onClick={handleContactEmployer}
-                className="w-full mt-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                className="w-full mt-3 border border-gray-300 dark:border-gray-600 py-3 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-2"
               >
                 <MessageCircle size={18} /> Contact Employer
               </button>
               {!isAuthenticated && (
-                <p className="text-xs text-gray-500 text-center mt-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center mt-3">
                   Please <Link to="/login" className="text-red-600 hover:underline">sign in</Link> to apply or contact
                 </p>
               )}

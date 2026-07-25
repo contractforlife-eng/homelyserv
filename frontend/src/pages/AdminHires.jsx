@@ -262,7 +262,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_hire': <Briefcase size={16} className="text-purple-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   const getTimeAgo = (dateString) => {
@@ -304,7 +304,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -341,7 +341,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -350,15 +350,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -377,10 +377,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -698,7 +698,7 @@ const AdminHires = () => {
       completed: 'bg-blue-500/20 text-blue-400',
       cancelled: 'bg-red-500/20 text-red-400'
     };
-    return colors[status] || 'bg-gray-500/20 text-gray-400';
+    return colors[status] || 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
   };
 
   const getStatusIcon = (status) => {
@@ -707,7 +707,7 @@ const AdminHires = () => {
       case 'active': return <CheckCircle size={16} className="text-green-400" />;
       case 'completed': return <CheckCircle size={16} className="text-blue-400" />;
       case 'cancelled': return <XCircle size={16} className="text-red-400" />;
-      default: return <AlertCircle size={16} className="text-gray-400" />;
+      default: return <AlertCircle size={16} className="text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -716,7 +716,7 @@ const AdminHires = () => {
       case 'satisfied': return <ThumbsUp size={16} className="text-green-400" />;
       case 'neutral': return <Minus size={16} className="text-yellow-400" />;
       case 'unsatisfied': return <ThumbsDown size={16} className="text-red-400" />;
-      default: return <Minus size={16} className="text-gray-400" />;
+      default: return <Minus size={16} className="text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -725,7 +725,7 @@ const AdminHires = () => {
       case 'satisfied': return 'bg-green-500/20 text-green-400';
       case 'neutral': return 'bg-yellow-500/20 text-yellow-400';
       case 'unsatisfied': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+      default: return 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
     }
   };
 
@@ -764,7 +764,7 @@ const AdminHires = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -775,7 +775,7 @@ const AdminHires = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -801,7 +801,7 @@ const AdminHires = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -843,7 +843,7 @@ const AdminHires = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.total}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Briefcase size={20} className="text-blue-400" />
                 </div>
@@ -852,7 +852,7 @@ const AdminHires = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.active}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.active}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-400" />
                 </div>
@@ -861,7 +861,7 @@ const AdminHires = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.pending}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
@@ -870,7 +870,7 @@ const AdminHires = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.completed}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-blue-400" />
                 </div>
@@ -879,7 +879,7 @@ const AdminHires = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.cancelled}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.cancelled}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <XCircle size={20} className="text-red-400" />
                 </div>
@@ -892,7 +892,7 @@ const AdminHires = () => {
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.table.searchPlaceholder}
@@ -919,7 +919,7 @@ const AdminHires = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               Showing <span className="font-semibold text-white">{filteredHires.length}</span> hires
             </p>
           </div>
@@ -929,7 +929,7 @@ const AdminHires = () => {
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-white mb-2">{t.noHires}</h3>
-              <p className="text-gray-400">No hires have been made yet</p>
+              <p className="text-gray-400 dark:text-gray-500">No hires have been made yet</p>
               <button
                 onClick={handleRefresh}
                 className="mt-4 px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition"
@@ -954,8 +954,8 @@ const AdminHires = () => {
                           </div>
                           <div>
                             <h3 className="font-semibold text-white">{hire.worker.name}</h3>
-                            <p className="text-sm text-gray-400">{hire.position}</p>
-                            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                            <p className="text-sm text-gray-400 dark:text-gray-500">{hire.position}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                               <span className="flex items-center gap-1">
                                 <MapPin size={12} />
                                 {hire.worker.location}
@@ -975,7 +975,7 @@ const AdminHires = () => {
 
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <DollarSign size={16} className="text-gray-400" />
+                          <DollarSign size={16} className="text-gray-400 dark:text-gray-500" />
                           <span className="font-semibold text-white">
                             {formatCurrency(hire.salary)}
                           </span>
@@ -992,13 +992,13 @@ const AdminHires = () => {
                             {getSatisfactionLabel(hire.satisfaction)}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                           {formatDate(hire.createdAt)}
                         </div>
                         {expandedHire === hire.id ? (
-                          <ChevronUp size={18} className="text-gray-400" />
+                          <ChevronUp size={18} className="text-gray-400 dark:text-gray-500" />
                         ) : (
-                          <ChevronDown size={18} className="text-gray-400" />
+                          <ChevronDown size={18} className="text-gray-400 dark:text-gray-500" />
                         )}
                       </div>
                     </div>
@@ -1008,21 +1008,21 @@ const AdminHires = () => {
                     <div className="border-t border-yellow-500/20 p-4 bg-[#0a0a0a]">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <h4 className="font-semibold text-gray-400 mb-2 flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
                             <UserCheck size={16} className="text-yellow-400" />
                             Worker Details
                           </h4>
                           <div className="space-y-1.5 text-sm">
                             <div className="flex items-center gap-2">
-                              <Mail size={14} className="text-gray-500" />
+                              <Mail size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.worker.email}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Phone size={14} className="text-gray-500" />
+                              <Phone size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.worker.phone}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Briefcase size={14} className="text-gray-500" />
+                              <Briefcase size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.worker.category}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1032,21 +1032,21 @@ const AdminHires = () => {
                           </div>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-400 mb-2 flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
                             <Building2 size={16} className="text-yellow-400" />
                             Employer Details
                           </h4>
                           <div className="space-y-1.5 text-sm">
                             <div className="flex items-center gap-2">
-                              <User size={14} className="text-gray-500" />
+                              <User size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.employer.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Mail size={14} className="text-gray-500" />
+                              <Mail size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.employer.email}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Phone size={14} className="text-gray-500" />
+                              <Phone size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                               <span className="text-gray-300">{hire.employer.phone}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1059,15 +1059,15 @@ const AdminHires = () => {
                       
                       <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div className="bg-[#1a1a1a] rounded-lg p-3">
-                          <p className="text-xs text-gray-500">Hire ID</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Hire ID</p>
                           <p className="text-sm font-medium text-white">{hire.id}</p>
                         </div>
                         <div className="bg-[#1a1a1a] rounded-lg p-3">
-                          <p className="text-xs text-gray-500">Start Date</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Start Date</p>
                           <p className="text-sm font-medium text-white">{formatDate(hire.startDate)}</p>
                         </div>
                         <div className="bg-[#1a1a1a] rounded-lg p-3">
-                          <p className="text-xs text-gray-500">Payment Status</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Payment Status</p>
                           <p className={`text-sm font-medium ${
                             hire.paymentStatus === 'confirmed' ? 'text-green-400' : 'text-yellow-400'
                           }`}>
@@ -1075,7 +1075,7 @@ const AdminHires = () => {
                           </p>
                         </div>
                         <div className="bg-[#1a1a1a] rounded-lg p-3">
-                          <p className="text-xs text-gray-500">Satisfaction</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Satisfaction</p>
                           <p className={`text-sm font-medium flex items-center gap-1 ${getSatisfactionColor(hire.satisfaction)}`}>
                             {getSatisfactionIcon(hire.satisfaction)}
                             {getSatisfactionLabel(hire.satisfaction)}
@@ -1088,7 +1088,7 @@ const AdminHires = () => {
                           <Eye size={16} />
                           {t.actions.view}
                         </button>
-                        <button className="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-white/5 transition flex items-center gap-2">
+                        <button className="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-white dark:bg-gray-800/5 transition flex items-center gap-2">
                           <MessageCircle size={16} />
                           {t.actions.contact}
                         </button>

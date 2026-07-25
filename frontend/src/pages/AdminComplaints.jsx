@@ -284,7 +284,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'premium_activation': <Crown size={16} className="text-yellow-400" />,
       'complaint_response': <MessageCircle size={16} className="text-indigo-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   const getTimeAgo = (dateString) => {
@@ -326,7 +326,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -363,7 +363,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -372,15 +372,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -399,10 +399,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -999,7 +999,7 @@ const AdminComplaints = () => {
       resolved: 'bg-green-500/20 text-green-400',
       rejected: 'bg-red-500/20 text-red-400'
     };
-    return colors[status] || 'bg-gray-500/20 text-gray-400';
+    return colors[status] || 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
   };
 
   const getStatusIcon = (status) => {
@@ -1008,7 +1008,7 @@ const AdminComplaints = () => {
       case 'inProgress': return <AlertCircle size={16} className="text-blue-400" />;
       case 'resolved': return <CheckCircle size={16} className="text-green-400" />;
       case 'rejected': return <X size={16} className="text-red-400" />;
-      default: return <AlertCircle size={16} className="text-gray-400" />;
+      default: return <AlertCircle size={16} className="text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -1021,7 +1021,7 @@ const AdminComplaints = () => {
       case 'employer': return <Briefcase size={14} className="text-blue-400" />;
       case 'worker': return <UserCheck size={14} className="text-green-400" />;
       case 'admin': return <Shield size={14} className="text-purple-400" />;
-      default: return <UserIcon size={14} className="text-gray-400" />;
+      default: return <UserIcon size={14} className="text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -1062,7 +1062,7 @@ const AdminComplaints = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -1073,7 +1073,7 @@ const AdminComplaints = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -1099,7 +1099,7 @@ const AdminComplaints = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -1146,7 +1146,7 @@ const AdminComplaints = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.total}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <FileText size={20} className="text-blue-400" />
                 </div>
@@ -1155,7 +1155,7 @@ const AdminComplaints = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.pending}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
@@ -1164,7 +1164,7 @@ const AdminComplaints = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.inProgress}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.inProgress}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-blue-400" />
                 </div>
@@ -1173,7 +1173,7 @@ const AdminComplaints = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.resolved}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.resolved}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-400" />
                 </div>
@@ -1182,7 +1182,7 @@ const AdminComplaints = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.rejected}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.rejected}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-red-400" />
                 </div>
@@ -1191,7 +1191,7 @@ const AdminComplaints = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">From Workers</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">From Workers</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <UserCheck size={20} className="text-green-400" />
                 </div>
@@ -1204,7 +1204,7 @@ const AdminComplaints = () => {
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.table.searchPlaceholder}
@@ -1240,7 +1240,7 @@ const AdminComplaints = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               Showing <span className="font-semibold text-white">{filteredComplaints.length}</span> complaints
             </p>
           </div>
@@ -1250,7 +1250,7 @@ const AdminComplaints = () => {
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-white mb-2">{t.noComplaints}</h3>
-              <p className="text-gray-400">Complaints from workers and employers will appear here</p>
+              <p className="text-gray-400 dark:text-gray-500">Complaints from workers and employers will appear here</p>
               <button
                 onClick={handleRefresh}
                 className="mt-4 px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition"
@@ -1271,21 +1271,21 @@ const AdminComplaints = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           {getSourceIcon(complaint.source)}
-                          <span className="text-xs font-medium text-gray-400">
+                          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
                             {getSourceLabel(complaint.source)}
                           </span>
-                          <span className="text-gray-500">|</span>
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">|</span>
                           <AlertTriangle size={20} className="text-yellow-400" />
                           <div>
                             <h3 className="font-semibold text-white">{complaint.title}</h3>
-                            <p className="text-sm text-gray-400">{complaint.userName}</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500">{complaint.userName}</p>
                           </div>
                         </div>
                         <p className="text-sm text-gray-300 mt-1 line-clamp-2">{complaint.description}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                          <span className="text-gray-500">{getCategoryLabel(complaint.category)}</span>
-                          <span className="text-gray-600">|</span>
-                          <span className="text-gray-500">{formatDate(complaint.submittedAt || complaint.date || complaint.createdAt)}</span>
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{getCategoryLabel(complaint.category)}</span>
+                          <span className="text-gray-600 dark:text-gray-300">|</span>
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(complaint.submittedAt || complaint.date || complaint.createdAt)}</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
                             {getStatusIcon(complaint.status)}
                             {getStatusLabel(complaint.status)}
@@ -1350,7 +1350,7 @@ const AdminComplaints = () => {
               <h2 className="text-xl font-semibold text-white">{t.modal.title}</h2>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <X size={20} />
               </button>
@@ -1359,7 +1359,7 @@ const AdminComplaints = () => {
               <div className="bg-[#0a0a0a] rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-400">{t.modal.complaintId}</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.complaintId}</p>
                     <p className="text-lg font-bold text-white">{selectedComplaint.id}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedComplaint.status)}`}>
@@ -1371,53 +1371,53 @@ const AdminComplaints = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-2">
                     <UserIcon size={16} className="text-yellow-500" />
                     {t.modal.from}
                   </h3>
                   <p className="font-medium text-white">{selectedComplaint.userName}</p>
                   <div className="flex items-center gap-2 mt-1">
                     {getSourceIcon(selectedComplaint.source)}
-                    <span className="text-sm text-gray-400">{getSourceLabel(selectedComplaint.source)}</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500">{getSourceLabel(selectedComplaint.source)}</span>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">{selectedComplaint.userEmail}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{selectedComplaint.userEmail}</p>
                   {selectedComplaint.phone && (
-                    <p className="text-sm text-gray-400">{selectedComplaint.phone}</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">{selectedComplaint.phone}</p>
                   )}
                 </div>
 
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-2">
                     <FileText size={16} className="text-yellow-500" />
                     Details
                   </h3>
-                  <p className="text-sm text-gray-400">{t.modal.category}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.category}</p>
                   <p className="font-medium text-white">{getCategoryLabel(selectedComplaint.category)}</p>
-                  <p className="text-sm text-gray-400 mt-2">{t.modal.date}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">{t.modal.date}</p>
                   <p className="font-medium text-white">{formatDate(selectedComplaint.submittedAt || selectedComplaint.date || selectedComplaint.createdAt)}</p>
                 </div>
               </div>
 
               <div className="mt-4 bg-[#0a0a0a] rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">{t.modal.description}</h3>
+                <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">{t.modal.description}</h3>
                 <p className="text-white whitespace-pre-wrap">{selectedComplaint.description}</p>
               </div>
 
               {/* Admin Response Section */}
               <div className="mt-4 bg-[#0a0a0a] rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
                   <Shield size={16} className="text-yellow-500" />
                   {t.modal.response}
                 </h3>
                 {selectedComplaint.adminResponse ? (
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <p className="text-white whitespace-pre-wrap">{selectedComplaint.adminResponse}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                       {formatDate(selectedComplaint.adminResponseAt)}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">{t.modal.noResponse}</p>
+                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">{t.modal.noResponse}</p>
                 )}
                 
                 <div className="mt-3">

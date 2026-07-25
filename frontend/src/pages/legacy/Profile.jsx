@@ -167,12 +167,12 @@ function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/worker-dashboard" className="text-gray-600 hover:text-red-600 transition">← Back</Link>
-            <h1 className="text-2xl font-bold text-gray-800">My Profile</h1>
+            <Link to="/worker-dashboard" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back</Link>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">My Profile</h1>
           </div>
           <div className="flex gap-3">
             {saved && (
@@ -185,7 +185,7 @@ function Profile() {
                 <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
                   <Save size={18} /> Save
                 </button>
-                <button onClick={handleCancel} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
+                <button onClick={handleCancel} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-2">
                   <X size={18} /> Cancel
                 </button>
               </>
@@ -200,12 +200,12 @@ function Profile() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
             <AlertCircle size={18} /> {error}
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
           {/* Profile Image */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
             <div className="relative">
@@ -213,13 +213,13 @@ function Profile() {
                 <img 
                   src={editData.image} 
                   alt={profile.fullName} 
-                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1589571894960-20bbe2828c42?w=150&h=150&fit=crop&crop=face';
                   }}
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center text-3xl font-bold text-gray-500">
+                <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-gray-200 dark:border-gray-700 flex items-center justify-center text-3xl font-bold text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {profile.fullName?.charAt(0) || 'U'}
                 </div>
               )}
@@ -244,22 +244,22 @@ function Profile() {
                   type="text"
                   value={editData.fullName}
                   onChange={(e) => setEditData({...editData, fullName: e.target.value})}
-                  className="text-2xl font-bold text-gray-800 w-full px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="text-2xl font-bold text-gray-800 dark:text-white w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <h2 className="text-2xl font-bold text-gray-800">{profile.fullName || 'User'}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{profile.fullName || 'User'}</h2>
               )}
               {isEditing ? (
                 <select
                   value={editData.role}
                   onChange={(e) => setEditData({...editData, role: e.target.value})}
-                  className="text-gray-500 text-sm px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 mt-1"
+                  className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 mt-1"
                 >
                   <option value="worker">Worker</option>
                   <option value="employer">Employer</option>
                 </select>
               ) : (
-                <p className="text-gray-500">{profile.role || 'No role'}</p>
+                <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{profile.role || 'No role'}</p>
               )}
             </div>
           </div>
@@ -267,68 +267,68 @@ function Profile() {
           {/* Profile Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
               {isEditing ? (
                 <input
                   type="text"
                   value={editData.fullName}
                   onChange={(e) => setEditData({...editData, fullName: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.fullName || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.fullName || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Email</label>
               {isEditing ? (
                 <input
                   type="email"
                   value={editData.email}
                   onChange={(e) => setEditData({...editData, email: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.email || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.email || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone</label>
               {isEditing ? (
                 <input
                   type="tel"
                   value={editData.phone}
                   onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.phone || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.phone || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">City</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">City</label>
               {isEditing ? (
                 <input
                   type="text"
                   value={editData.city}
                   onChange={(e) => setEditData({...editData, city: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.city || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.city || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Category</label>
               {isEditing ? (
                 <select
                   value={editData.category}
                   onChange={(e) => setEditData({...editData, category: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Nanny">Nanny</option>
                   <option value="Elderly Caregiver">Elderly Caregiver</option>
@@ -341,45 +341,45 @@ function Profile() {
                   <option value="Security Guard">Security Guard</option>
                 </select>
               ) : (
-                <p className="text-gray-800">{profile.category || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.category || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Experience (years)</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Experience (years)</label>
               {isEditing ? (
                 <input
                   type="number"
                   value={editData.experience}
                   onChange={(e) => setEditData({...editData, experience: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">{profile.experience || '0'} years</p>
+                <p className="text-gray-800 dark:text-white">{profile.experience || '0'} years</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Expected Salary (EGP/month)</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Expected Salary (EGP/month)</label>
               {isEditing ? (
                 <input
                   type="number"
                   value={editData.salary}
                   onChange={(e) => setEditData({...editData, salary: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
               ) : (
-                <p className="text-gray-800">EGP {profile.salary || '0'}</p>
+                <p className="text-gray-800 dark:text-white">EGP {profile.salary || '0'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Availability</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Availability</label>
               {isEditing ? (
                 <select
                   value={editData.availability}
                   onChange={(e) => setEditData({...editData, availability: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Available">Available</option>
                   <option value="Part-Time">Part-Time</option>
@@ -387,17 +387,17 @@ function Profile() {
                   <option value="Not Available">Not Available</option>
                 </select>
               ) : (
-                <p className="text-gray-800">{profile.availability || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.availability || 'Not set'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Work Type</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Work Type</label>
               {isEditing ? (
                 <select
                   value={editData.workType}
                   onChange={(e) => setEditData({...editData, workType: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Full-Time">Full-Time</option>
                   <option value="Part-Time">Part-Time</option>
@@ -405,31 +405,31 @@ function Profile() {
                   <option value="Temporary">Temporary</option>
                 </select>
               ) : (
-                <p className="text-gray-800">{profile.workType || 'Not set'}</p>
+                <p className="text-gray-800 dark:text-white">{profile.workType || 'Not set'}</p>
               )}
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Bio</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Bio</label>
               {isEditing ? (
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData({...editData, bio: e.target.value})}
                   rows="3"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
                 />
               ) : (
-                <p className="text-gray-600">{profile.bio || 'Not set'}</p>
+                <p className="text-gray-600 dark:text-gray-300">{profile.bio || 'Not set'}</p>
               )}
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Skills</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Skills</label>
               {isEditing ? (
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2">
                     {editData.skills.map((skill, i) => (
-                      <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm flex items-center gap-1">
+                      <span key={i} className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-full text-sm flex items-center gap-1">
                         {skill}
                         <button
                           type="button"
@@ -447,7 +447,7 @@ function Profile() {
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
                       placeholder="Add a skill..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500"
                       onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
                     />
                     <button
@@ -462,7 +462,7 @@ function Profile() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map((skill, i) => (
-                    <span key={i} className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
+                    <span key={i} className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-full text-sm">
                       {skill}
                     </span>
                   ))}

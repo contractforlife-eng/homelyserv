@@ -232,9 +232,9 @@ const Home = () => {
   const isRTL = language === 'ar';
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-800">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -242,21 +242,21 @@ const Home = () => {
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">H</span>
               </div>
-              <span className="font-bold text-gray-800 text-lg">HomelyServ</span>
+              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-gray-600 hover:text-red-600 transition">{t.home}</Link>
-              <Link to="/about" className="text-gray-600 hover:text-red-600 transition">{t.about}</Link>
-              <Link to="/contact" className="text-gray-600 hover:text-red-600 transition">{t.contact}</Link>
+              <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t.home}</Link>
+              <Link to="/about" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t.about}</Link>
+              <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t.contact}</Link>
               
               <button
                 onClick={toggleLanguage}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-gray-50 transition text-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-red-300 hover:bg-gray-50 dark:bg-gray-900 transition text-sm"
               >
-                <Globe size={15} className="text-gray-500" />
-                <span className="text-gray-600 text-xs font-medium">{t.languageToggle}</span>
+                <Globe size={15} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300 text-xs font-medium">{t.languageToggle}</span>
               </button>
 
               {isLoggedIn ? (
@@ -269,7 +269,7 @@ const Home = () => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
                   >
                     {t.logout}
                   </button>
@@ -278,7 +278,7 @@ const Home = () => {
                 <div className="flex items-center gap-3">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-2"
                   >
                     <LogIn size={16} />
                     {t.login}
@@ -296,7 +296,7 @@ const Home = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -305,18 +305,18 @@ const Home = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-200 py-4 px-4">
+          <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-4">
             <div className="flex flex-col gap-3">
-              <Link to="/" className="text-gray-600 hover:text-red-600 transition py-2">{t.home}</Link>
-              <Link to="/about" className="text-gray-600 hover:text-red-600 transition py-2">{t.about}</Link>
-              <Link to="/contact" className="text-gray-600 hover:text-red-600 transition py-2">{t.contact}</Link>
+              <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition py-2">{t.home}</Link>
+              <Link to="/about" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition py-2">{t.about}</Link>
+              <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition py-2">{t.contact}</Link>
               
               <button
                 onClick={toggleLanguage}
-                className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-gray-50 transition text-sm"
+                className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-red-300 hover:bg-gray-50 dark:bg-gray-900 transition text-sm"
               >
-                <Globe size={15} className="text-gray-500" />
-                <span className="text-gray-600 text-sm font-medium">{t.languageToggle}</span>
+                <Globe size={15} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">{t.languageToggle}</span>
               </button>
 
               {isLoggedIn ? (
@@ -329,7 +329,7 @@ const Home = () => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
                   >
                     {t.logout}
                   </button>
@@ -338,7 +338,7 @@ const Home = () => {
                 <div className="flex flex-col gap-2">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-center"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition text-center"
                   >
                     {t.login}
                   </Link>
@@ -369,7 +369,7 @@ const Home = () => {
           </div>
 
           {/* Search Bar */}
-          <div className="bg-white rounded-2xl shadow-2xl p-4 max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 max-w-4xl mx-auto">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3">
               <div className="flex-1 relative">
                 <input
@@ -377,7 +377,7 @@ const Home = () => {
                   placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 dark:text-white"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
@@ -385,7 +385,7 @@ const Home = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full md:w-48 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 appearance-none bg-white"
+                  className="w-full md:w-48 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 dark:text-white appearance-none bg-white dark:bg-gray-800"
                   dir={isRTL ? 'rtl' : 'ltr'}
                 >
                   <option value="">{t.allCategories}</option>
@@ -427,7 +427,7 @@ const Home = () => {
       {/* Categories Grid */}
       <section className="py-16 px-4 max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">{t.browseServices}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t.browseServices}</h2>
           <Link to="/search" className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
             {t.viewAll} <ArrowRight size={18} />
           </Link>
@@ -437,12 +437,12 @@ const Home = () => {
             <button
               key={category.id}
               onClick={() => handleCategoryClick(category.id)}
-              className="bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-300 rounded-xl p-4 text-center transition-all duration-200 group"
+              className="bg-gray-50 dark:bg-gray-900 hover:bg-red-50 dark:bg-red-900/30 border border-gray-200 dark:border-gray-700 hover:border-red-300 rounded-xl p-4 text-center transition-all duration-200 group"
             >
               <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
                 {category.icon}
               </div>
-              <div className="text-sm font-medium text-gray-700 group-hover:text-red-600">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-red-600">
                 {category.label}
               </div>
             </button>
@@ -451,10 +451,10 @@ const Home = () => {
       </section>
 
       {/* Top Rated Workers */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800">{t.topRated}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t.topRated}</h2>
             <Link to="/search" className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
               {t.seeAll} <ChevronRight size={18} />
             </Link>
@@ -463,18 +463,18 @@ const Home = () => {
             {topWorkers.map((worker) => (
               <div
                 key={worker.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-100 dark:border-gray-700"
               >
                 <div className="p-4">
                   <div className="flex items-start gap-3">
                     <img
                       src={worker.image}
                       alt={worker.name}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-gray-200"
+                      className="w-14 h-14 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-800 truncate">{worker.name}</h3>
-                      <p className="text-sm text-gray-500 truncate">{worker.category}</p>
+                      <h3 className="font-semibold text-gray-800 dark:text-white truncate">{worker.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{worker.category}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Star size={14} className="fill-yellow-400 text-yellow-400" />
                         <span className="text-sm font-medium">{worker.rating}</span>
@@ -482,16 +482,16 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1.5 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <MapPin size={14} className="text-gray-400" />
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>{worker.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <DollarSign size={14} className="text-gray-400" />
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                      <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>EGP {worker.salary.toLocaleString()}/month</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-gray-400" />
+                      <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                       <span className={`font-medium ${worker.availability === 'Available' ? 'text-green-600' : 'text-orange-500'}`}>
                         {worker.availability}
                       </span>
@@ -511,35 +511,35 @@ const Home = () => {
       </section>
 
       {/* Trust & Verification Banner */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-white dark:bg-gray-800">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 md:p-12">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-2xl p-8 md:p-12">
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
                   <Shield size={28} className="text-red-600" />
-                  <h3 className="text-xl font-bold text-gray-800">{t.verified}</h3>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.verified}</h3>
                 </div>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   {t.verifiedDesc}
                 </p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-4">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle size={18} className="text-green-500" />
-                    <span className="text-sm text-gray-700">{t.identityVerified}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t.identityVerified}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle size={18} className="text-green-500" />
-                    <span className="text-sm text-gray-700">{t.documentCheck}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t.documentCheck}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle size={18} className="text-green-500" />
-                    <span className="text-sm text-gray-700">{t.ratingSystem}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t.ratingSystem}</span>
                   </div>
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <div className="bg-white rounded-full p-4 shadow-md">
+                <div className="bg-white dark:bg-gray-800 rounded-full p-4 shadow-md">
                   <Users size={48} className="text-red-600" />
                 </div>
               </div>
@@ -549,16 +549,16 @@ const Home = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 text-center mb-12">{t.howItWorks}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center mb-12">{t.howItWorks}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users size={28} className="text-red-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">{t.step1Title}</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-2">{t.step1Title}</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {t.step1Desc}
               </p>
             </div>
@@ -566,8 +566,8 @@ const Home = () => {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search size={28} className="text-red-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">{t.step2Title}</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-2">{t.step2Title}</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {t.step2Desc}
               </p>
             </div>
@@ -575,8 +575,8 @@ const Home = () => {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Award size={28} className="text-red-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">{t.step3Title}</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-2">{t.step3Title}</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 {t.step3Desc}
               </p>
             </div>
@@ -590,7 +590,7 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             {t.readyTitle}
           </h2>
-          <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-gray-400 dark:text-gray-500 mb-8 max-w-2xl mx-auto">
             {t.readyDesc}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -607,7 +607,7 @@ const Home = () => {
               {t.browseProfessionals}
             </Link>
           </div>
-          <p className="text-gray-500 text-sm mt-4">
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm mt-4">
             {t.noFees}
           </p>
         </div>
@@ -628,7 +628,7 @@ const Home = () => {
               <Link to="/contact" className="hover:text-white transition">{t.contact}</Link>
               <Link to="/terms" className="hover:text-white transition">Terms</Link>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
               © {new Date().getFullYear()} HomelyServ. All rights reserved.
             </p>
           </div>

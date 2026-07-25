@@ -657,7 +657,7 @@ const MyHires = () => {
       pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
       completed: 'bg-purple-100 text-purple-800 border border-purple-200'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white';
   };
 
   const getStatusIcon = (status) => {
@@ -695,10 +695,10 @@ const MyHires = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -709,7 +709,7 @@ const MyHires = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -721,14 +721,14 @@ const MyHires = () => {
       />
 
       <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <button onClick={toggleMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden">
+              <button onClick={toggleMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden">
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -745,7 +745,7 @@ const MyHires = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">{authUser?.fullName || 'Employer'}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{authUser?.fullName || 'Employer'}</span>
               </div>
               
               {/* WORKING NOTIFICATION BELL */}
@@ -753,14 +753,14 @@ const MyHires = () => {
               
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
               </button>
               <button
                 onClick={handleRefresh}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <RefreshCw size={16} />
                 {t.refresh}
@@ -774,7 +774,7 @@ const MyHires = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
                   {authUser?.profileImage ? (
                     <img src={authUser.profileImage} alt={authUser.fullName || 'Employer'} className="w-full h-full object-cover" />
                   ) : (
@@ -795,62 +795,62 @@ const MyHires = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.total}</p>
+                <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-teal-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.total}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.active}</p>
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.active}</p>
+                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.active}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.active}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.terminated}</p>
-                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.terminated}</p>
+                <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                   <XIcon size={20} className="text-red-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.terminated}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.terminated}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+                <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pending}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
             </div>
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex flex-col lg:flex-row gap-3">
               <div className="flex-1 relative">
-                <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-700 text-sm"
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="active">{t.filters.active}</option>
@@ -864,17 +864,17 @@ const MyHires = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{filteredHires.length}</span> hires
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> hires
             </p>
           </div>
 
           {/* Hires List */}
           {filteredHires.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500">{t.empty.description}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
@@ -887,7 +887,7 @@ const MyHires = () => {
               {filteredHires.map((hire) => (
                 <div
                   key={hire.id || hire.hireId || hire.offerId}
-                  className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition ${
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition ${
                     hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted' ? 'border-green-200' :
                     hire.status === 'terminated' ? 'border-red-200' : 'border-yellow-200'
                   }`}
@@ -909,19 +909,19 @@ const MyHires = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-800">{hire.workerName || 'Unknown Worker'}</h3>
+                            <h3 className="font-semibold text-gray-800 dark:text-white">{hire.workerName || 'Unknown Worker'}</h3>
                             {hire.isPremium && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                                 <Crown size={10} className="text-yellow-500" />
                                 Premium
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             <Briefcase size={14} />
                             <span>{hire.jobTitle || 'Service Provider'}</span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                             <span className="flex items-center gap-1">
                               <DollarSign size={14} className="text-green-600" />
                               {formatCurrency(hire.salary)} {t.salaryPerMonth}
@@ -947,7 +947,7 @@ const MyHires = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleViewDetails(hire)}
-                            className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                            className="p-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition"
                             title={t.actions.view}
                           >
                             <Eye size={16} />
@@ -957,7 +957,7 @@ const MyHires = () => {
                               <button
                                 onClick={() => handleSendMessage(hire)}
                                 disabled={creatingConversation}
-                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50"
+                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
                                 title={t.actions.message}
                               >
                                 {creatingConversation ? (
@@ -968,14 +968,14 @@ const MyHires = () => {
                               </button>
                               <button
                                 onClick={() => handlePayNow(hire)}
-                                className="p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                                className="p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 dark:bg-green-900/30 rounded-lg transition"
                                 title={t.actions.pay}
                               >
                                 <CreditCard size={16} />
                               </button>
                               <button
                                 onClick={() => handleTerminateClick(hire)}
-                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:bg-red-900/30 rounded-lg transition"
                                 title={t.actions.terminate}
                               >
                                 <XIcon size={16} />
@@ -996,10 +996,10 @@ const MyHires = () => {
       {/* Details Modal */}
       {showDetailsModal && selectedHire && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">{t.modal.title}</h2>
-              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t.modal.title}</h2>
+              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -1019,15 +1019,15 @@ const MyHires = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-gray-800">{selectedHire.workerName}</h3>
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">{selectedHire.workerName}</h3>
                     {selectedHire.isPremium && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                         <Crown size={10} className="text-yellow-500" />
                         Premium
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-500">{selectedHire.jobTitle}</p>
+                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedHire.jobTitle}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(selectedHire.status)}`}>
                       {getStatusIcon(selectedHire.status)}
@@ -1038,24 +1038,24 @@ const MyHires = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.salary}</p>
-                  <p className="text-lg font-bold text-gray-800">{formatCurrency(selectedHire.salary)} {t.salaryPerMonth}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.salary}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t.salaryPerMonth}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.startDate}</p>
-                  <p className="text-lg font-bold text-gray-800">{formatDate(selectedHire.startDate)}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.startDate}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.startDate)}</p>
                 </div>
                 {selectedHire.terminationDate && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-500">{t.modal.endDate}</p>
-                    <p className="text-lg font-bold text-gray-800">{formatDate(selectedHire.terminationDate)}</p>
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.endDate}</p>
+                    <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.terminationDate)}</p>
                   </div>
                 )}
                 {selectedHire.workerRating && (
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-500">{t.modal.rating}</p>
-                    <p className="text-lg font-bold text-gray-800 flex items-center gap-1">
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.rating}</p>
+                    <p className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-1">
                       <StarIcon size={18} className="text-yellow-500" />
                       {selectedHire.workerRating}
                     </p>
@@ -1063,24 +1063,24 @@ const MyHires = () => {
                 )}
               </div>
 
-              <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                <h4 className="font-semibold text-gray-700 mb-2">{t.modal.contact}</h4>
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.modal.contact}</h4>
                 <div className="space-y-2 text-sm">
                   {selectedHire.workerEmail && (
                     <div className="flex items-center gap-2">
-                      <Mail size={14} className="text-gray-400" />
+                      <Mail size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>{selectedHire.workerEmail}</span>
                     </div>
                   )}
                   {selectedHire.workerPhone && (
                     <div className="flex items-center gap-2">
-                      <Phone size={14} className="text-gray-400" />
+                      <Phone size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>{selectedHire.workerPhone}</span>
                     </div>
                   )}
                   {selectedHire.workerLocation && selectedHire.workerLocation !== 'Not specified' && (
                     <div className="flex items-center gap-2">
-                      <MapPin size={14} className="text-gray-400" />
+                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>{selectedHire.workerLocation}</span>
                     </div>
                   )}
@@ -1088,16 +1088,16 @@ const MyHires = () => {
               </div>
 
               {selectedHire.terminationReason && (
-                <div className="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200">
                   <p className="text-sm text-red-600">{selectedHire.terminationReason}</p>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200">
+            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleCloseModal}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors text-sm"
               >
                 {t.modal.close}
               </button>
@@ -1132,34 +1132,34 @@ const MyHires = () => {
       {/* Terminate Modal */}
       {showTerminateModal && terminatingHire && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-red-600">{t.terminate.title}</h3>
-              <button onClick={() => setShowTerminateModal(false)} className="p-1 rounded-lg hover:bg-gray-100 transition">
-                <X size={20} className="text-gray-500" />
+              <button onClick={() => setShowTerminateModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition">
+                <X size={20} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               </button>
             </div>
             <div className="text-center py-4">
               <AlertTriangle size={48} className="text-red-500 mx-auto mb-3" />
-              <p className="text-gray-700">{t.terminate.confirm}</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-gray-700 dark:text-gray-300">{t.terminate.confirm}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
                 <strong>{terminatingHire.workerName}</strong> - {terminatingHire.jobTitle}
               </p>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.terminate.reason}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.terminate.reason}</label>
               <textarea
                 value={terminateReason}
                 onChange={(e) => setTerminateReason(e.target.value)}
                 placeholder={t.terminate.placeholder}
                 rows="3"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowTerminateModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors"
               >
                 {t.terminate.cancel}
               </button>

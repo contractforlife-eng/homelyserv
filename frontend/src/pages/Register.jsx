@@ -166,28 +166,28 @@ function Register() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-100/10 rounded-full blur-3xl"></div>
       
       <div className="w-full max-w-lg relative z-10">
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-8 border border-red-100/50 transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-8 border border-red-100/50 transition-all duration-300">
           
           {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
                 onClick={() => setShowLanguages(!showLanguages)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-red-200 rounded-xl hover:border-red-400 hover:bg-red-50/50 transition text-sm shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-red-200 rounded-xl hover:border-red-400 hover:bg-red-50 dark:bg-red-900/30/50 transition text-sm shadow-sm"
               >
                 <Globe size={15} className="text-red-600" />
-                <span className="text-gray-600 text-xs font-medium">EN</span>
+                <span className="text-gray-600 dark:text-gray-300 text-xs font-medium">EN</span>
               </button>
               {showLanguages && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-red-100 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-red-100 rounded-xl shadow-lg z-50 overflow-hidden">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => { setShowLanguages(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition text-sm"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 transition text-sm"
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700">{lang.name}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{lang.name}</span>
                     </button>
                   ))}
                 </div>
@@ -214,14 +214,14 @@ function Register() {
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
-                <p className="text-xs text-gray-400 tracking-widest uppercase mt-1 font-light">Create Your Account</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Create Your Account</p>
               </div>
             </div>
           </div>
 
           {/* Success Message */}
           {success && (
-            <div className="mb-4 p-3 bg-green-50/80 backdrop-blur-sm border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30/80 backdrop-blur-sm border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
               Account created successfully! Redirecting to login...
             </div>
@@ -229,7 +229,7 @@ function Register() {
 
           {/* General Error */}
           {errors.general && (
-            <div className="mb-4 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30/80 backdrop-blur-sm border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
               <AlertCircle size={16} /> {errors.general}
             </div>
           )}
@@ -237,17 +237,17 @@ function Register() {
           <form onSubmit={handleSubmit}>
             {/* Full Name */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
               <div className="relative group">
-                <User size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <User size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border ${
-                    errors.fullName ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
+                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                    errors.fullName ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
                   placeholder="Enter your full name"
                   required
                 />
@@ -259,17 +259,17 @@ function Register() {
 
             {/* Email */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
               <div className="relative group">
-                <Mail size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Mail size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
+                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
                   placeholder="Enter your email"
                   required
                 />
@@ -281,15 +281,15 @@ function Register() {
 
             {/* Phone */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number (Optional)</label>
               <div className="relative group">
-                <Phone size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Phone size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500"
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -297,15 +297,15 @@ function Register() {
 
             {/* Location */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Location (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location (Optional)</label>
               <div className="relative group">
-                <MapPin size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <MapPin size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500"
                   placeholder="Enter your location"
                 />
               </div>
@@ -313,15 +313,15 @@ function Register() {
 
             {/* Role Selection */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Register as</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Register as</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'WORKER' }))}
                   className={`p-3 rounded-xl border-2 transition-all duration-200 ${
                     formData.role === 'WORKER'
-                      ? 'border-red-500 bg-red-50 text-red-700 shadow-sm'
-                      : 'border-gray-200 hover:border-red-200 hover:bg-red-50/50 text-gray-600'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   <Briefcase size={20} className="mx-auto mb-1" />
@@ -332,8 +332,8 @@ function Register() {
                   onClick={() => setFormData(prev => ({ ...prev, role: 'EMPLOYER' }))}
                   className={`p-3 rounded-xl border-2 transition-all duration-200 ${
                     formData.role === 'EMPLOYER'
-                      ? 'border-red-500 bg-red-50 text-red-700 shadow-sm'
-                      : 'border-gray-200 hover:border-red-200 hover:bg-red-50/50 text-gray-600'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 dark:bg-red-900/30/50 text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   <User size={20} className="mx-auto mb-1" />
@@ -347,24 +347,24 @@ function Register() {
 
             {/* Password */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
               <div className="relative group">
-                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-12 py-3.5 bg-gray-50/80 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
+                  className={`w-full pl-11 pr-12 py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
                   placeholder="Create a password (min 6 characters)"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-3.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -376,24 +376,24 @@ function Register() {
 
             {/* Confirm Password */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirm Password</label>
               <div className="relative group">
-                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-12 py-3.5 bg-gray-50/80 border ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400`}
+                  className={`w-full pl-11 pr-12 py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
                   placeholder="Confirm your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-3.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -439,7 +439,7 @@ function Register() {
           }} />
 
           {/* Login Link */}
-          <p className="text-center text-gray-600 mt-6">
+          <p className="text-center text-gray-600 dark:text-gray-300 mt-6">
             Already have an account?{' '}
             <Link to="/login" className="text-red-600 font-semibold hover:text-red-700 transition-colors hover:underline">
               Sign In
@@ -447,7 +447,7 @@ function Register() {
           </p>
 
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               By creating an account, you agree to our{' '}
               <Link to="/terms" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
                 Terms of Service

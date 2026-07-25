@@ -311,7 +311,7 @@ const recentUsers = users.filter(u => {
       'payment_failed': <XCircle size={16} className="text-red-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   // Get notification time
@@ -359,7 +359,7 @@ const recentUsers = users.filter(u => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -396,7 +396,7 @@ const recentUsers = users.filter(u => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -405,15 +405,15 @@ const recentUsers = users.filter(u => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -432,10 +432,10 @@ const recentUsers = users.filter(u => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -640,7 +640,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -666,7 +666,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -700,7 +700,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.users}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.users}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-400" />
                 </div>
@@ -709,7 +709,7 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.payments}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.payments}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <CreditCard size={20} className="text-green-400" />
                 </div>
@@ -718,7 +718,7 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.messages}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.messages}</p>
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <MessageCircle size={20} className="text-purple-400" />
                 </div>
@@ -727,7 +727,7 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.complaints}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.complaints}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <AlertTriangle size={20} className="text-red-400" />
                 </div>
@@ -736,7 +736,7 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.pendingComplaints}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pendingComplaints}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
@@ -745,7 +745,7 @@ const AdminDashboard = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.pending}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-orange-400" />
                 </div>
@@ -798,7 +798,7 @@ const AdminDashboard = () => {
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20">
             <h3 className="text-lg font-semibold text-white mb-4">{t.recentActivity}</h3>
             <div className="text-center py-8">
-              <p className="text-gray-500">{t.noActivity}</p>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noActivity}</p>
             </div>
           </div>
         </div>

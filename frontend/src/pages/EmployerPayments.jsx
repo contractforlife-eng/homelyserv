@@ -725,7 +725,7 @@ const EmployerPayments = () => {
       processing: 'bg-purple-100 text-purple-800',
       in_progress: 'bg-teal-100 text-teal-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white';
   };
 
   const getStatusIcon = (status) => {
@@ -759,10 +759,10 @@ const EmployerPayments = () => {
   // ============================================================
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -774,10 +774,10 @@ const EmployerPayments = () => {
 
   if (loading && payments.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -794,7 +794,7 @@ const EmployerPayments = () => {
         rightContent={
           <button
             onClick={handleRefresh}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
           >
             <RefreshCw size={16} />
             {t.refresh}
@@ -816,68 +816,68 @@ const EmployerPayments = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.totalPaid}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.totalPaid}</p>
                 <DollarSign size={16} className="text-green-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalCommissionPaid)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalCommissionPaid)}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.pending}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <Clock size={16} className="text-yellow-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{stats.pendingCount}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.pendingCount}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.completed}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
                 <CheckCircle size={16} className="text-green-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{stats.completedCount}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.completedCount}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.workers}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.workers}</p>
                 <Users size={16} className="text-teal-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{stats.totalWorkers}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.totalWorkers}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.monthlyAverage}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.monthlyAverage}</p>
                 <BarChart3 size={16} className="text-purple-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.monthlyAverage)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.monthlyAverage)}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{t.stats.totalSalary}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.totalSalary}</p>
                 <Briefcase size={16} className="text-orange-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCurrency(stats.totalSalary)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalSalary)}</p>
             </div>
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex flex-col lg:flex-row gap-3">
               <div className="flex-1 relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-700 text-sm"
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="pending">{t.filters.pending}</option>
@@ -891,17 +891,17 @@ const EmployerPayments = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{filteredPayments.length}</span> payments
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredPayments.length}</span> payments
             </p>
           </div>
 
           {/* Payments Table */}
           {filteredPayments.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500">{t.empty.description}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
@@ -910,28 +910,28 @@ const EmployerPayments = () => {
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.id}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.worker}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">{t.table.job}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.commission}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t.table.fullSalary}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t.table.date}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.status}</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.id}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.worker}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">{t.table.job}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.commission}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t.table.fullSalary}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t.table.date}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.status}</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredPayments.map((payment) => (
-                      <tr key={payment.id || payment.offerId} className="hover:bg-gray-50 transition-colors">
+                      <tr key={payment.id || payment.offerId} className="hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium text-gray-800 truncate max-w-[80px]">{payment.id}</span>
-                            <button onClick={() => handleCopyId(payment.id)} className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+                            <span className="text-sm font-medium text-gray-800 dark:text-white truncate max-w-[80px]">{payment.id}</span>
+                            <button onClick={() => handleCopyId(payment.id)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors flex-shrink-0">
                               <Copy size={13} />
                             </button>
                           </div>
@@ -946,26 +946,26 @@ const EmployerPayments = () => {
                               )}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-800">{payment.workerName || 'Unknown'}</p>
+                              <p className="text-sm font-medium text-gray-800 dark:text-white">{payment.workerName || 'Unknown'}</p>
                               {payment.workerEmail && (
-                                <p className="text-xs text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-sm text-gray-700 truncate max-w-[120px]">{payment.jobTitle || '-'}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{payment.jobTitle || '-'}</p>
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission)}</p>
-                          <p className="text-xs text-gray-400">Platform commission</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Platform commission</p>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <p className="text-sm text-gray-700">{formatCurrency(payment.fullSalary)}</p>
-                          <p className="text-xs text-gray-400">Worker's salary</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{formatCurrency(payment.fullSalary)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Worker's salary</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
-                          <p className="text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(payment.createdAt)}</p>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 w-fit ${getStatusColor(payment.status)}`}>
@@ -987,7 +987,7 @@ const EmployerPayments = () => {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
-                            <button onClick={() => handleViewDetails(payment)} className="p-1.5 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors" title={t.actions.view}>
+                            <button onClick={() => handleViewDetails(payment)} className="p-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition-colors" title={t.actions.view}>
                               <Eye size={16} />
                             </button>
                             {payment.status === 'pending' && !payment.paymentVerified && (
@@ -1028,19 +1028,19 @@ const EmployerPayments = () => {
       {/* Details Modal */}
       {showDetailsModal && selectedPayment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">{t.modal.title}</h2>
-              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t.modal.title}</h2>
+              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6">
-              <div className="bg-teal-50 rounded-xl p-4 mb-6">
+              <div className="bg-teal-50 dark:bg-teal-900/30 rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-500">{t.modal.paymentId}</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedPayment.id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.paymentId}</p>
+                    <p className="text-lg font-bold text-gray-800 dark:text-white">{selectedPayment.id}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
                     {getStatusIcon(selectedPayment.status)}
@@ -1050,23 +1050,23 @@ const EmployerPayments = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.commission}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.commission}</p>
                   <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                  <p className="text-xs text-gray-400">Platform commission (15%)</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Platform commission (15%)</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.fullSalary}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.fullSalary}</p>
                   <p className="text-xl font-bold text-orange-600">{formatCurrency(selectedPayment.fullSalary)}</p>
-                  <p className="text-xs text-gray-400">Paid directly to worker</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Paid directly to worker</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">{t.modal.date}</p>
-                  <p className="text-xl font-bold text-gray-800">{formatDate(selectedPayment.createdAt)}</p>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.date}</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">{formatDate(selectedPayment.createdAt)}</p>
                 </div>
               </div>
 
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-2">
                   <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-blue-700">{t.modal.note}</p>
@@ -1074,8 +1074,8 @@ const EmployerPayments = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <User size={16} className="text-teal-600" />
                     {t.modal.worker}
                   </h3>
@@ -1088,40 +1088,40 @@ const EmployerPayments = () => {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{selectedPayment.workerName || 'Unknown'}</p>
+                      <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.workerName || 'Unknown'}</p>
                       {selectedPayment.workerEmail && (
-                        <p className="text-sm text-gray-500">{selectedPayment.workerEmail}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedPayment.workerEmail}</p>
                       )}
                     </div>
                   </div>
                   {selectedPayment.workerPhone && (
-                    <p className="text-sm text-gray-600 flex items-center gap-2">
-                      <Phone size={14} className="text-gray-400" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                      <Phone size={14} className="text-gray-400 dark:text-gray-500" />
                       {selectedPayment.workerPhone}
                     </p>
                   )}
                   {selectedPayment.workerLocation && selectedPayment.workerLocation !== 'Not specified' && (
-                    <p className="text-sm text-gray-600 flex items-center gap-2">
-                      <MapPin size={14} className="text-gray-400" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
                       {selectedPayment.workerLocation}
                     </p>
                   )}
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Briefcase size={16} className="text-teal-600" />
                     {t.modal.job}
                   </h3>
-                  <p className="font-medium text-gray-800">{selectedPayment.jobTitle || '-'}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.jobTitle || '-'}</p>
                   {selectedPayment.paymentMethod && (
-                    <p className="text-sm text-gray-500 mt-1">{t.modal.method}: {selectedPayment.paymentMethod}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{t.modal.method}: {selectedPayment.paymentMethod}</p>
                   )}
                 </div>
               </div>
 
               <div className="mt-6 p-4 rounded-xl border">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   {selectedPayment.contactRevealed ? (
                     <Unlock size={16} className="text-green-600" />
                   ) : (
@@ -1138,8 +1138,8 @@ const EmployerPayments = () => {
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedPayment.workerPhone && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                          <Phone size={16} className="text-gray-400" />
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                          <Phone size={16} className="text-gray-400 dark:text-gray-500" />
                           <span className="text-sm">{selectedPayment.workerPhone}</span>
                           <button onClick={() => handleContact(selectedPayment, 'whatsapp')} className="ml-auto px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition flex items-center gap-1">
                             <MessageSquare size={12} />
@@ -1148,8 +1148,8 @@ const EmployerPayments = () => {
                         </div>
                       )}
                       {selectedPayment.workerEmail && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                          <Mail size={16} className="text-gray-400" />
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                          <Mail size={16} className="text-gray-400 dark:text-gray-500" />
                           <span className="text-sm truncate">{selectedPayment.workerEmail}</span>
                           <button onClick={() => handleContact(selectedPayment, 'message')} className="ml-auto px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition flex items-center gap-1">
                             <MessageCircle size={12} />
@@ -1162,7 +1162,7 @@ const EmployerPayments = () => {
                 ) : (
                   <div className="text-center py-4">
                     <Lock size={32} className="text-yellow-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">{t.modal.contactLocked}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{t.modal.contactLocked}</p>
                     {selectedPayment.status === 'pending' && (
                       <button onClick={() => handleProcessPayment(selectedPayment)} className="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 mx-auto">
                         <CreditCard size={14} />
@@ -1175,20 +1175,20 @@ const EmployerPayments = () => {
 
               {selectedPayment.description && (
                 <div className="mt-4">
-                  <p className="text-sm text-gray-500">{t.modal.description}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.description}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.description}</p>
                 </div>
               )}
               {selectedPayment.reference && (
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">{t.modal.reference}</p>
-                  <p className="font-medium text-gray-800">{selectedPayment.reference}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.reference}</p>
+                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.reference}</p>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200">
-              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors text-sm">
                 {t.modal.close}
               </button>
               

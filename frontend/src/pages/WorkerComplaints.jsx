@@ -440,7 +440,7 @@ const WorkerComplaints = () => {
       resolved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white';
   };
 
   const getStatusIcon = (status) => {
@@ -476,10 +476,10 @@ const WorkerComplaints = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -487,10 +487,10 @@ const WorkerComplaints = () => {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-6">Please login to view your complaints</p>
+          <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 mb-6">Please login to view your complaints</p>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
@@ -504,17 +504,17 @@ const WorkerComplaints = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -528,17 +528,17 @@ const WorkerComplaints = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -560,11 +560,11 @@ const WorkerComplaints = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
                     {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
                     </span>
@@ -576,39 +576,39 @@ const WorkerComplaints = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
                 >
-                  <Bell size={20} className="text-gray-600" />
+                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
                   {notifications && notifications.length > 0 && (
                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                   )}
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
                       <span>{t.notifications}</span>
                       {notificationLoading && (
-                        <span className="text-xs text-gray-400">Loading...</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
                       )}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           Loading notifications...
                         </div>
                       ) : notifications && notifications.length > 0 ? (
                         notifications.map((n, index) => (
                           <div 
                             key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                           >
-                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           {t.noNotifications}
                         </div>
                       )}
@@ -619,7 +619,7 @@ const WorkerComplaints = () => {
 
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -633,7 +633,7 @@ const WorkerComplaints = () => {
           <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -665,7 +665,7 @@ const WorkerComplaints = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowForm(!showForm)}
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
+                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
                 >
                   {showForm ? <X size={16} /> : <AlertTriangle size={16} />}
                   {showForm ? t.form.cancel : t.form.newComplaint}
@@ -685,68 +685,68 @@ const WorkerComplaints = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.total}</p>
+                <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                   <FileText size={20} className="text-red-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.total}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+                <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pending}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.inProgress}</p>
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.inProgress}</p>
+                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.inProgress}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.inProgress}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.resolved}</p>
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.resolved}</p>
+                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.resolved}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.resolved}</p>
             </div>
           </div>
 
           {/* Complaint Form */}
           {showForm && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.form.newComplaint}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.form.newComplaint}</h3>
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.form.titleLabel}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.form.titleLabel}</label>
                     <input
                       type="text"
                       name="title"
                       value={newComplaint.title}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.form.categoryLabel}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.form.categoryLabel}</label>
                     <select
                       name="category"
                       value={newComplaint.category}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
                       {Object.entries(t.categories).map(([key, value]) => (
                         <option key={key} value={key}>{value}</option>
@@ -755,13 +755,13 @@ const WorkerComplaints = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.form.descriptionLabel}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.form.descriptionLabel}</label>
                   <textarea
                     name="description"
                     value={newComplaint.description}
                     onChange={handleInputChange}
                     rows="4"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     required
                   />
                 </div>
@@ -776,7 +776,7 @@ const WorkerComplaints = () => {
                   <button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
                   >
                     {t.form.cancel}
                   </button>
@@ -786,23 +786,23 @@ const WorkerComplaints = () => {
           )}
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.table.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-700"
+                  className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                 >
                   <option value="all">{t.filters.all}</option>
                   <option value="pending">{t.filters.pending}</option>
@@ -816,17 +816,17 @@ const WorkerComplaints = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{filteredComplaints.length}</span> complaints
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredComplaints.length}</span> complaints
             </p>
           </div>
 
           {/* Complaints List */}
           {filteredComplaints.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noComplaints}</h3>
-              <p className="text-gray-500">{t.noComplaintsDesc}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noComplaints}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noComplaintsDesc}</p>
               <button
                 onClick={() => setShowForm(true)}
                 className="mt-4 px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-colors"
@@ -839,14 +839,14 @@ const WorkerComplaints = () => {
               {filteredComplaints.map((complaint) => (
                 <div
                   key={complaint.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition"
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition"
                 >
                   <div className="p-4">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <AlertTriangle size={20} className="text-red-600" />
-                          <h3 className="font-semibold text-gray-800">{complaint.title}</h3>
+                          <h3 className="font-semibold text-gray-800 dark:text-white">{complaint.title}</h3>
                           {complaint.adminResponse && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
                               <Shield size={12} />
@@ -854,13 +854,13 @@ const WorkerComplaints = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{complaint.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{complaint.description}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                          <span className="text-gray-500">
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             {t.categories[complaint.category] || complaint.category}
                           </span>
                           <span className="text-gray-300">|</span>
-                          <span className="text-gray-500">{complaint.date}</span>
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{complaint.date}</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
                             {getStatusIcon(complaint.status)}
                             {t.status[complaint.status] || complaint.status}
@@ -871,7 +871,7 @@ const WorkerComplaints = () => {
                         {complaint.adminResponse && (
                           <button
                             onClick={() => toggleExpand(complaint.id)}
-                            className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center gap-1"
+                            className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center gap-1"
                           >
                             {expandedComplaint === complaint.id ? (
                               <>
@@ -904,7 +904,7 @@ const WorkerComplaints = () => {
                             </button>
                             <button
                               onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 dark:bg-red-900/30 transition flex items-center gap-1"
                             >
                               <X size={14} />
                               {t.actions.reject}
@@ -922,7 +922,7 @@ const WorkerComplaints = () => {
                             </button>
                             <button
                               onClick={() => updateComplaintStatus(complaint.id, 'rejected')}
-                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-1"
+                              className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 dark:bg-red-900/30 transition flex items-center gap-1"
                             >
                               <X size={14} />
                               {t.actions.reject}
@@ -934,15 +934,15 @@ const WorkerComplaints = () => {
 
                     {/* Admin Response Section - FIXED: Now shows properly */}
                     {expandedComplaint === complaint.id && complaint.adminResponse && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 border border-green-200">
                           <div className="flex items-center gap-2 mb-2">
                             <Shield size={16} className="text-green-600" />
                             <h4 className="font-semibold text-green-700">{t.adminResponse}</h4>
                           </div>
-                          <p className="text-gray-700 whitespace-pre-wrap">{complaint.adminResponse}</p>
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{complaint.adminResponse}</p>
                           {complaint.adminResponseAt && (
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
                               {formatDate(complaint.adminResponseAt)}
                             </p>
                           )}
@@ -951,7 +951,7 @@ const WorkerComplaints = () => {
                     )}
 
                     {complaint.status === 'resolved' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <span className="text-sm text-green-600 flex items-center gap-1">
                           <CheckCircle size={14} />
                           This complaint has been resolved
@@ -960,7 +960,7 @@ const WorkerComplaints = () => {
                     )}
 
                     {complaint.status === 'rejected' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <span className="text-sm text-red-600 flex items-center gap-1">
                           <X size={14} />
                           This complaint has been rejected

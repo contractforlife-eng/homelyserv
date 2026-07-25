@@ -273,7 +273,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_hire': <Briefcase size={16} className="text-purple-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   // Get notification time
@@ -321,7 +321,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -358,7 +358,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -367,15 +367,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -394,10 +394,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -660,7 +660,7 @@ const AdminUsers = () => {
       suspended: 'bg-red-500/20 text-red-400',
       paused: 'bg-yellow-500/20 text-yellow-400'
     };
-    return colors[status] || 'bg-gray-500/20 text-gray-400';
+    return colors[status] || 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
   };
 
   const getRoleColor = (role) => {
@@ -669,7 +669,7 @@ const AdminUsers = () => {
       EMPLOYER: 'text-blue-400',
       WORKER: 'text-green-400'
     };
-    return colors[role] || 'text-gray-400';
+    return colors[role] || 'text-gray-400 dark:text-gray-500';
   };
 
   const stats = {
@@ -687,7 +687,7 @@ const AdminUsers = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -698,7 +698,7 @@ const AdminUsers = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -724,7 +724,7 @@ const AdminUsers = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -759,7 +759,7 @@ const AdminUsers = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.total}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-400" />
                 </div>
@@ -768,7 +768,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.workers}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.workers}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <UserCheck size={20} className="text-green-400" />
                 </div>
@@ -777,7 +777,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.employers}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.employers}</p>
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <Briefcase size={20} className="text-purple-400" />
                 </div>
@@ -786,7 +786,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.admins}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.admins}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Shield size={20} className="text-yellow-400" />
                 </div>
@@ -795,7 +795,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.active}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.active}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <Play size={20} className="text-green-400" />
                 </div>
@@ -804,7 +804,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.suspended}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.suspended}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <Pause size={20} className="text-red-400" />
                 </div>
@@ -813,7 +813,7 @@ const AdminUsers = () => {
             </div>
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{t.stats.paused}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.paused}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
@@ -826,7 +826,7 @@ const AdminUsers = () => {
           <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder={t.table.searchPlaceholder}
@@ -852,7 +852,7 @@ const AdminUsers = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               Showing <span className="font-semibold text-white">{filteredUsers.length}</span> users
             </p>
           </div>
@@ -869,18 +869,18 @@ const AdminUsers = () => {
                 <table className="w-full">
                   <thead className="bg-[#0a0a0a] border-b border-yellow-500/20">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Phone</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Location</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Phone</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredUsers.map((u) => (
-                      <tr key={u._id || u.id || u.email} className="hover:bg-white/5 transition">
+                      <tr key={u._id || u.id || u.email} className="hover:bg-white dark:bg-gray-800/5 transition">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">

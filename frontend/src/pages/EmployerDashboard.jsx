@@ -329,10 +329,10 @@ const EmployerDashboard = () => {
   // ============================================================
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -350,14 +350,14 @@ const EmployerDashboard = () => {
 
         <div className="p-4 md:p-6">
           {showSuccessBanner && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between animate-slideDown">
+            <div className="mb-6 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-xl p-4 flex items-center justify-between animate-slideDown">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle size={24} className="text-green-600" />
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                  <CheckCircle size={24} className="text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="font-semibold text-green-800">{t.paymentSuccess}</p>
-                  <p className="text-sm text-green-700">{successMessage}</p>
+                  <p className="font-semibold text-green-800 dark:text-green-300">{t.paymentSuccess}</p>
+                  <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -380,7 +380,7 @@ const EmployerDashboard = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {authUser?.profileImage ? (
                     <img 
                       src={authUser.profileImage} 
@@ -412,14 +412,14 @@ const EmployerDashboard = () => {
               <div className="flex gap-3">
                 <Link
                   to="/employer-search"
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Search size={16} />
                   {t.findWorkers}
                 </Link>
                 <Link
                   to="/employer-profile"
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <User size={16} />
                   {t.viewProfile}
@@ -439,93 +439,93 @@ const EmployerDashboard = () => {
 
           {/* Stats Cards - REAL DATA */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.activeHires}</p>
-                <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.activeHires}</p>
+                <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
                   <Briefcase size={20} className="text-teal-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.activeHires}</p>
-              <p className="text-xs text-gray-400 mt-1">Active contracts</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.activeHires}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Active contracts</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.total}</p>
+                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalHires}</p>
-              <p className="text-xs text-gray-400 mt-1">Total hires</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.totalHires}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Total hires</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.completed}</p>
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
+                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completedHires}</p>
-              <p className="text-xs text-gray-400 mt-1">Completed hires</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.completedHires}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Completed hires</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+                <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pendingApplications}</p>
-              <p className="text-xs text-gray-400 mt-1">Pending applications</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.pendingApplications}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Pending applications</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.messages}</p>
-                <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.messages}</p>
+                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
                   <MessageCircle size={20} className="text-indigo-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.unreadMessages}</p>
-              <p className="text-xs text-gray-400 mt-1">Unread messages</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.unreadMessages}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Unread messages</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.saved}</p>
-                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.saved}</p>
+                <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                   <Heart size={20} className="text-purple-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.savedWorkers}</p>
-              <p className="text-xs text-gray-400 mt-1">Saved workers</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.savedWorkers}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Saved workers</p>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.quickActions}</h3>
+          <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Link
                 to="/employer-search"
-                className="flex items-center gap-3 p-3 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors border border-teal-200"
+                className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/30 hover:bg-teal-100 rounded-lg transition-colors border border-teal-200"
               >
                 <Search size={20} className="text-teal-600" />
                 <span className="font-medium text-teal-700">{t.findWorkers}</span>
               </Link>
               <Link                to="/my-hires"
-                className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+                className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
               >
                 <FileCheck size={20} className="text-green-600" />
                 <span className="font-medium text-green-700">{t.viewHires}</span>
               </Link>
               <Link
                 to="/employer-profile"
-                className="flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+                className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
               >
                 <User size={20} className="text-purple-600" />
                 <span className="font-medium text-purple-700">{t.viewProfile}</span>
@@ -541,33 +541,33 @@ const EmployerDashboard = () => {
           </div>
 
           {/* Recent Activity - REAL DATA */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.recentActivity}</h3>
+          <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.recentActivity}</h3>
             {recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <p>{t.noActivity}</p>
                 <p className="text-sm mt-2">Start hiring workers to see activity here</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 dark:bg-gray-700 rounded-lg">
+                    <div className="w-8 h-8 bg-teal-100 dark:bg-teal-900/50 rounded-full flex items-center justify-center">
                       {activity.icon === 'hire' && <UserPlus size={16} className="text-teal-600" />}
                       {activity.icon === 'offer' && <Briefcase size={16} className="text-blue-600" />}
                       {activity.icon === 'message' && <MessageCircle size={16} className="text-orange-600" />}
                       {!activity.icon && <Briefcase size={16} className="text-teal-600" />}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800">{activity.message}</p>
-                      <p className="text-sm text-gray-500">{activity.time}</p>
+                      <p className="font-medium text-gray-800 dark:text-white dark:text-gray-200">{activity.message}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time}</p>
                     </div>
                     {activity.status && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        activity.status === 'Active' ? 'bg-green-100 text-green-700' :
-                        activity.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
-                        activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
+                        activity.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' :
+                        activity.status === 'Completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' :
+                        activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
+                        'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {activity.status}
                       </span>

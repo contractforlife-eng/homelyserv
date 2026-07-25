@@ -65,10 +65,10 @@ function EmployerPast() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ function EmployerPast() {
   }
 
   return (
-     <div className="min-h-screen bg-gray-50 flex">
+     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
     <EmployerSidebar
   language={language}
   sidebarCollapsed={sidebarCollapsed}
@@ -96,17 +96,17 @@ function EmployerPast() {
     sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
   }`}
 >
-        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Past Applications</h2>
-              <p className="text-gray-500 text-sm">View your application history</p>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Past Applications</h2>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">View your application history</p>
             </div>
             <div className="flex gap-2">
-              <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-1">
+              <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-1">
                 <Download size={16} /> Export
               </button>
-              <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-1">
+              <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-1">
                 <Printer size={16} /> Print
               </button>
             </div>
@@ -116,20 +116,20 @@ function EmployerPast() {
         <div className="p-6">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-sm text-gray-500">Total</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Total</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.total}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-sm text-gray-500">Completed</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Completed</p>
               <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-sm text-gray-500">Incomplete</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Incomplete</p>
               <p className="text-2xl font-bold text-red-600">{stats.incomplete}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-sm text-gray-500">Completion Rate</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Completion Rate</p>
               <p className="text-2xl font-bold text-blue-600">{stats.completionRate}%</p>
             </div>
           </div>
@@ -141,18 +141,18 @@ function EmployerPast() {
                 key={app.id} 
                 className={`rounded-xl shadow-sm border p-4 ${
                   app.status === 'completed' 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-yellow-50 border-yellow-200'
+                    ? 'bg-green-50 dark:bg-green-900/30 border-green-200' 
+                    : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200'
                 }`}
               >
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <img src={app.image} alt={app.workerName} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                    <img src={app.image} alt={app.workerName} className="w-14 h-14 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
                     <div>
-                      <h3 className="font-semibold text-gray-800">{app.workerName}</h3>
-                      <p className="text-sm text-gray-600">{app.position}</p>
+                      <h3 className="font-semibold text-gray-800 dark:text-white">{app.workerName}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{app.position}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center gap-1">
                           <Calendar size={12} /> {app.date} - {app.endDate}
                         </span>
                       </div>
@@ -160,8 +160,8 @@ function EmployerPast() {
                   </div>
 
                   <div className="flex flex-col items-end justify-center min-w-[120px]">
-                    <p className="text-sm text-gray-500">Salary</p>
-                    <p className="font-bold text-gray-800">EGP {app.salary.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Salary</p>
+                    <p className="font-bold text-gray-800 dark:text-white">EGP {app.salary.toLocaleString()}</p>
                     {app.rating && (
                       <div className="flex items-center gap-1 mt-1">
                         <Star size={14} className="fill-yellow-400 text-yellow-400" />
@@ -179,11 +179,11 @@ function EmployerPast() {
                       {app.status === 'completed' ? '✅ Completed' : '⏳ Incomplete'}
                     </span>
                     {app.feedback && (
-                      <p className="text-xs text-gray-600 text-right max-w-[200px]">
+                      <p className="text-xs text-gray-600 dark:text-gray-300 text-right max-w-[200px]">
                         "{app.feedback}"
                       </p>
                     )}
-                    <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition">
+                    <button className="p-1.5 text-blue-600 hover:bg-blue-50 dark:bg-blue-900/30 rounded transition">
                       <Eye size={18} />
                     </button>
                   </div>

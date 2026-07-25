@@ -669,10 +669,10 @@ const PaymentOptions = () => {
   // ============================================================
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -680,11 +680,11 @@ const PaymentOptions = () => {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Please Log In</h3>
-          <p className="text-gray-500">You need to be logged in to make a payment.</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Please Log In</h3>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">You need to be logged in to make a payment.</p>
           <button
             onClick={() => navigate('/login')}
             className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -698,7 +698,7 @@ const PaymentOptions = () => {
 
   if (!workerData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
         <EmployerSidebar
           language={language}
           sidebarCollapsed={sidebarCollapsed}
@@ -710,10 +710,10 @@ const PaymentOptions = () => {
         />
         <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
           <div className="p-4 md:p-6">
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.noWorkerData}</h3>
-              <p className="text-gray-500">{t.goBack}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.goBack}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
@@ -728,7 +728,7 @@ const PaymentOptions = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <EmployerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -740,26 +740,26 @@ const PaymentOptions = () => {
       />
 
       <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell size={20} className="text-gray-600" />
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
+                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
               </button>
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -779,7 +779,7 @@ const PaymentOptions = () => {
 
           {/* Payment Error */}
           {paymentError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
               <AlertCircle size={16} />
               {paymentError}
             </div>
@@ -787,7 +787,7 @@ const PaymentOptions = () => {
 
           {/* Payment Message */}
           {paymentMessage && !paymentError && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
               <AlertCircle size={16} />
               {paymentMessage}
             </div>
@@ -795,14 +795,14 @@ const PaymentOptions = () => {
 
           {/* Success Message */}
           {paymentSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
               {t.success} Redirecting...
             </div>
           )}
 
           {/* Worker Info Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
@@ -817,12 +817,12 @@ const PaymentOptions = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">{workerData?.workerName}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">{workerData?.workerName}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Briefcase size={14} />
                     <span>{workerData?.desiredJob || 'Service Provider'}</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <span className="flex items-center gap-1">
                       <MapPin size={14} />
                       {workerData?.workerLocation || 'Location not specified'}
@@ -839,9 +839,9 @@ const PaymentOptions = () => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">{t.totalAmount}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.totalAmount}</p>
                 <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   {pendingPayment?.paymentType === 'quick_hire_premium'
                     ? 'Quick Hire premium service fee'
                     : '15% recruitment commission included'}
@@ -851,13 +851,13 @@ const PaymentOptions = () => {
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">{t.paymentMethods}</h3>
-                <p className="text-sm text-gray-500">{t.chooseMethod}</p>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymentMethods}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.chooseMethod}</p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <Lock size={16} className="text-green-500" />
                 <span>{t.securePayment}</span>
               </div>
@@ -878,8 +878,8 @@ const PaymentOptions = () => {
                     }}
                     className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
                       isSelected 
-                        ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500 ring-opacity-30'
-                        : 'border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 ring-2 ring-teal-500 ring-opacity-30'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 hover:bg-teal-50 dark:bg-teal-900/30'
                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={isProcessing}
                   >
@@ -889,14 +889,14 @@ const PaymentOptions = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-800">{method.name}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{method.name}</p>
                           {method.badge && (
                             <span className={`px-1.5 py-0.5 ${method.badgeColor} text-[10px] font-semibold rounded`}>
                               {method.badge}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500">{method.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{method.description}</p>
                       </div>
                       {isSelected && (
                         <CheckCircle size={18} className="text-teal-600 flex-shrink-0" />
@@ -929,7 +929,7 @@ const PaymentOptions = () => {
             </button>
             <button
               onClick={handleBack}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-2"
             >
               <ArrowLeft size={18} />
               {t.back}
@@ -943,17 +943,17 @@ const PaymentOptions = () => {
           {/* PayPal Processing Modal */}
           {selectedMethod === PAYMENT_METHODS.PAYPAL && isProcessing && !paymentSuccess && !paymobIframe && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Wallet size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800">{t.paypalTitle}</h3>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paypalTitle}</h3>
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Loader2 size={20} className="animate-spin text-teal-600" />
-                    <span className="text-sm text-gray-700">{paymentMessage || t.paymentVerifying}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{paymentMessage || t.paymentVerifying}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
                     {paymentMessage === t.paypalDidNotOpen ? t.paypalDidNotOpen : t.paypalOpened}
                   </p>
                 </div>
@@ -1011,7 +1011,7 @@ const PaymentOptions = () => {
           )}
 
           {/* Info Message */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100">
             <p className="text-xs text-blue-600 text-center flex items-center justify-center gap-2">
               <Lock size={14} />
               Your payment will be processed securely through Paymob or PayPal. 
@@ -1022,16 +1022,16 @@ const PaymentOptions = () => {
           {/* Paymob Iframe Modal */}
           {paymobIframe && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800">{t.paymobTitle}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymobTitle}</h3>
                   <button
                     onClick={() => {
                       setPaymobIframe(null);
                       setIsProcessing(false);
                       window.removeEventListener('message', handlePaymobMessage);
                     }}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
                   >
                     <X size={20} />
                   </button>

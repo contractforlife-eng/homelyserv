@@ -599,10 +599,10 @@ const WorkerSettings = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -610,10 +610,10 @@ const WorkerSettings = () => {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-6">Please login to view your settings</p>
+          <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 mb-6">Please login to view your settings</p>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
@@ -626,7 +626,7 @@ const WorkerSettings = () => {
   }
 
   return (
-    <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50'} flex`}>
+    <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50 dark:bg-gray-900'} flex`}>
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -640,17 +640,17 @@ const WorkerSettings = () => {
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
-        <header className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b sticky top-0 z-30`}>
+        <header className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'} border-b sticky top-0 z-30`}>
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className={`p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600'}`}
+                className={`p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 dark:text-gray-300'}`}
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} hidden sm:block`}>{t.title}</h2>
+                <h2 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} hidden sm:block`}>{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -672,11 +672,11 @@ const WorkerSettings = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className={`text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} hidden sm:inline`}>
+                  <span className={`text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} hidden sm:inline`}>
                     {authUser?.fullName || 'Worker'}
                   </span>
                   {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
                       Premium
                     </span>
@@ -688,7 +688,7 @@ const WorkerSettings = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className={`p-2 rounded-lg hover:bg-gray-100 transition-colors relative ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600'}`}
+                  className={`p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative ${settings.darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 dark:text-gray-300'}`}
                 >
                   <Bell size={20} />
                   {notifications && notifications.length > 0 && (
@@ -698,30 +698,30 @@ const WorkerSettings = () => {
 
                 {/* Notification Dropdown */}
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
                       <span>{t.notificationsTitle}</span>
                       {notificationLoading && (
-                        <span className="text-xs text-gray-400">Loading...</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
                       )}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           Loading notifications...
                         </div>
                       ) : notifications && notifications.length > 0 ? (
                         notifications.map((n, index) => (
                           <div 
                             key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                           >
-                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           {t.noNotifications}
                         </div>
                       )}
@@ -732,10 +732,10 @@ const WorkerSettings = () => {
 
               <button
                 onClick={toggleLanguage}
-                className={`px-3 py-1.5 border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 ${
                   settings.darkMode 
                     ? 'border-gray-700 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
                 }`}
               >
                 <Globe size={16} />
@@ -765,23 +765,23 @@ const WorkerSettings = () => {
 
           {/* Save Success Message */}
           {saveSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
               {t.saved}
             </div>
           )}
 
           {/* Settings Container */}
-          <div className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl shadow-sm border overflow-hidden`}>
+          <div className={`${settings.darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'} rounded-xl shadow-sm border overflow-hidden`}>
             {/* Preferences */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.preferences}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.preferences}</h3>
               <div className="space-y-4">
                 {/* Language */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.language}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.languageDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.language}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.languageDesc}</p>
                   </div>
                   <select
                     value={settings.language}
@@ -789,7 +789,7 @@ const WorkerSettings = () => {
                     className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <option value="en">English</option>
@@ -800,8 +800,8 @@ const WorkerSettings = () => {
                 {/* Dark Mode - uses global theme store */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t.darkMode}</p>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t.darkModeDesc}</p>
+                    <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.darkMode}</p>
+                    <p className={`text-sm ${isDark ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.darkModeDesc}</p>
                   </div>
                   <button
                     onClick={toggleTheme}
@@ -810,7 +810,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         isDark ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -820,8 +820,8 @@ const WorkerSettings = () => {
                 {/* Auto Save */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.autoSave}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.autoSaveDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.autoSave}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.autoSaveDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
@@ -830,7 +830,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.autoSave ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -840,14 +840,14 @@ const WorkerSettings = () => {
             </div>
 
             {/* General */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.general}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.general}</h3>
               <div className="space-y-4">
                 {/* Timezone */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.timezone}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.timezoneDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.timezone}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.timezoneDesc}</p>
                   </div>
                   <select
                     value={settings.timezone}
@@ -855,7 +855,7 @@ const WorkerSettings = () => {
                     className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <option value="UTC-12">UTC-12</option>
@@ -889,8 +889,8 @@ const WorkerSettings = () => {
                 {/* Currency */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.currency}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.currencyDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.currency}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.currencyDesc}</p>
                   </div>
                   <select
                     value={settings.currency}
@@ -898,7 +898,7 @@ const WorkerSettings = () => {
                     className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <option value="EGP">EGP - Egyptian Pound</option>
@@ -913,8 +913,8 @@ const WorkerSettings = () => {
                 {/* Date Format */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.dateFormat}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.dateFormatDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.dateFormat}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.dateFormatDesc}</p>
                   </div>
                   <select
                     value={settings.dateFormat}
@@ -922,7 +922,7 @@ const WorkerSettings = () => {
                     className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -935,13 +935,13 @@ const WorkerSettings = () => {
             </div>
 
             {/* Notifications */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.notificationsTitle}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.notificationsTitle}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.notifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.notificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.notifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.notificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('notifications', !settings.notifications)}
@@ -950,7 +950,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.notifications ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -959,8 +959,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.emailNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.emailNotificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.emailNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.emailNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
@@ -969,7 +969,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.emailNotifications ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -978,8 +978,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.pushNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.pushNotificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.pushNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.pushNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
@@ -988,7 +988,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.pushNotifications ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -997,8 +997,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.smsNotifications}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.smsNotificationsDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.smsNotifications}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.smsNotificationsDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
@@ -1007,7 +1007,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.smsNotifications ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1017,13 +1017,13 @@ const WorkerSettings = () => {
             </div>
 
             {/* Privacy */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.privacy}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.privacy}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.profileVisibility}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.profileVisibilityDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.profileVisibility}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.profileVisibilityDesc}</p>
                   </div>
                   <select
                     value={settings.profileVisibility}
@@ -1031,7 +1031,7 @@ const WorkerSettings = () => {
                     className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       settings.darkMode 
                         ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <option value="public">{t.public}</option>
@@ -1042,8 +1042,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.showOnlineStatus}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.showOnlineStatusDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.showOnlineStatus}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.showOnlineStatusDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
@@ -1052,7 +1052,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.showOnlineStatus ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1061,8 +1061,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.allowMessages}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.allowMessagesDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.allowMessages}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.allowMessagesDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
@@ -1071,7 +1071,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.allowMessages ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1080,8 +1080,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.availableForHire}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.availableForHireDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.availableForHire}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.availableForHireDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('availableForHire', !settings.availableForHire)}
@@ -1090,7 +1090,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.availableForHire ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1100,31 +1100,31 @@ const WorkerSettings = () => {
             </div>
 
             {/* Security */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.security}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.security}</h3>
               <div className="space-y-4">
                 <button
                   onClick={() => setShowPasswordModal(true)}
                   className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
-                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                      : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-red-600" />
                     <div className="text-left">
                       <p className="font-medium">{t.changePassword}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.changePasswordDesc}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.changePasswordDesc}</p>
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
                 </button>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.twoFactorAuth}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.twoFactorAuthDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.twoFactorAuth}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.twoFactorAuthDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
@@ -1133,7 +1133,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.twoFactorAuth ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1143,13 +1143,13 @@ const WorkerSettings = () => {
             </div>
 
             {/* Data */}
-            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'} mb-4`}>{t.data}</h3>
+            <div className={`p-6 border-b ${settings.darkMode ? 'border-gray-700' : 'border-gray-200 dark:border-gray-700'}`}>
+              <h3 className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'} mb-4`}>{t.data}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.saveSearchHistory}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.saveSearchHistoryDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.saveSearchHistory}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.saveSearchHistoryDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
@@ -1158,7 +1158,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.saveSearchHistory ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1167,8 +1167,8 @@ const WorkerSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t.showRecommended}</p>
-                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.showRecommendedDesc}</p>
+                    <p className={`font-medium ${settings.darkMode ? 'text-gray-200' : 'text-gray-700 dark:text-gray-300'}`}>{t.showRecommended}</p>
+                    <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.showRecommendedDesc}</p>
                   </div>
                   <button
                     onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
@@ -1177,7 +1177,7 @@ const WorkerSettings = () => {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition ${
+                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
                         settings.showRecommended ? 'right-1' : 'left-1'
                       }`}
                     />
@@ -1189,17 +1189,17 @@ const WorkerSettings = () => {
                   className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
-                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                      : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Download size={20} className="text-red-600" />
                     <div className="text-left">
                       <p className="font-medium">{t.exportData}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.exportDataDesc}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.exportDataDesc}</p>
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
                 </button>
 
                 <button
@@ -1207,23 +1207,23 @@ const WorkerSettings = () => {
                   className={`w-full flex items-center justify-between p-4 rounded-lg transition ${
                     settings.darkMode 
                       ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400' 
-                      : 'bg-red-50 hover:bg-red-100 text-red-600'
+                      : 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 size={20} className="text-red-500" />
                     <div className="text-left">
                       <p className="font-medium">{t.deleteAccount}</p>
-                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.deleteAccountDesc}</p>
+                      <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.deleteAccountDesc}</p>
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
                 </button>
               </div>
             </div>
 
             {/* Save Button */}
-            <div className={`p-6 border-t ${settings.darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
+            <div className={`p-6 border-t ${settings.darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'}`}>
               <button
                 onClick={handleSave}
                 disabled={saving}
@@ -1240,12 +1240,12 @@ const WorkerSettings = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-bold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.changePassword}</h3>
+              <h3 className={`text-xl font-bold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.changePassword}</h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className={`p-1 rounded-lg hover:bg-gray-100 transition ${settings.darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500'}`}
+                className={`p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition ${settings.darkMode ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}
               >
                 <X size={20} />
               </button>
@@ -1254,13 +1254,13 @@ const WorkerSettings = () => {
             {passwordSuccess ? (
               <div className="text-center py-6">
                 <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-                <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.passwordChanged}</p>
+                <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.passwordChanged}</p>
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
                       {t.currentPassword}
                     </label>
                     <div className="relative">
@@ -1271,13 +1271,13 @@ const WorkerSettings = () => {
                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white border-gray-200 text-gray-700'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                         placeholder="Enter current password"
                       />
                       <button
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
                       >
                         {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1285,7 +1285,7 @@ const WorkerSettings = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
                       {t.newPassword}
                     </label>
                     <div className="relative">
@@ -1296,13 +1296,13 @@ const WorkerSettings = () => {
                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white border-gray-200 text-gray-700'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                         placeholder="Enter new password (min 6 characters)"
                       />
                       <button
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
                       >
                         {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1310,7 +1310,7 @@ const WorkerSettings = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                    <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
                       {t.confirmPassword}
                     </label>
                     <div className="relative">
@@ -1321,13 +1321,13 @@ const WorkerSettings = () => {
                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                           settings.darkMode 
                             ? 'bg-gray-700 border-gray-600 text-white' 
-                            : 'bg-white border-gray-200 text-gray-700'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                         placeholder="Confirm new password"
                       />
                       <button
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
                       >
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1336,7 +1336,7 @@ const WorkerSettings = () => {
                 </div>
 
                 {passwordError && (
-                  <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+                  <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
                     <AlertCircle size={16} />
                     {passwordError}
                   </div>
@@ -1348,7 +1348,7 @@ const WorkerSettings = () => {
                     className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
                       settings.darkMode 
                         ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
                     }`}
                   >
                     {t.cancel}
@@ -1369,12 +1369,12 @@ const WorkerSettings = () => {
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
+          <div className={`${settings.darkMode ? 'bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl max-w-md w-full p-6 shadow-2xl`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className={`text-xl font-bold text-red-600`}>{t.deleteAccount}</h3>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className={`p-1 rounded-lg hover:bg-gray-100 transition ${settings.darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500'}`}
+                className={`p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition ${settings.darkMode ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-700' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}
               >
                 <X size={20} />
               </button>
@@ -1382,12 +1382,12 @@ const WorkerSettings = () => {
 
             <div className="text-center py-4">
               <Trash2 size={48} className="text-red-500 mx-auto mb-3" />
-              <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>{t.deleteConfirm}</p>
-              <p className={`text-sm ${settings.darkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>{t.deleteWarning}</p>
+              <p className={`text-lg font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{t.deleteConfirm}</p>
+              <p className={`text-sm ${settings.darkMode ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'} mt-2`}>{t.deleteWarning}</p>
             </div>
 
             <div className="mt-4">
-              <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+              <label className={`block text-sm font-medium ${settings.darkMode ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-1`}>
                 {t.deleteConfirmText}
               </label>
               <input
@@ -1397,7 +1397,7 @@ const WorkerSettings = () => {
                 className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
                   settings.darkMode 
                     ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-200 text-gray-700'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
                 placeholder="Type DELETE"
               />
@@ -1409,7 +1409,7 @@ const WorkerSettings = () => {
                 className={`flex-1 px-4 py-2.5 border rounded-lg font-medium transition ${
                   settings.darkMode 
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
                 }`}
               >
                 {t.cancel}

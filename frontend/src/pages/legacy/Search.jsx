@@ -162,26 +162,26 @@ function Search() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-gray-600 hover:text-red-600 transition">
+            <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">
               ← Back
             </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Search Workers</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Search Workers</h1>
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-red-100 text-red-600' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300'}`}
             >
               <Grid size={18} />
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-red-100 text-red-600' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300'}`}
             >
               <List size={18} />
             </button>
@@ -191,21 +191,21 @@ function Search() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 relative">
-              <SearchIcon size={20} className="absolute left-3 top-3 text-gray-400" />
+              <SearchIcon size={20} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search by name, category, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+              className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-2"
             >
               <Sliders size={18} />
               {showFilters ? 'Hide Filters' : 'Show Filters'}
@@ -214,18 +214,18 @@ function Search() {
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Salary</label>
-                <input type="number" placeholder="EGP" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Salary</label>
+                <input type="number" placeholder="EGP" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Salary</label>
-                <input type="number" placeholder="EGP" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Salary</label>
+                <input type="number" placeholder="EGP" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Rating</label>
+                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500">
                   <option value="0">Any</option>
                   <option value="3">3+ Stars</option>
                   <option value="4">4+ Stars</option>
@@ -233,8 +233,8 @@ function Search() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Availability</label>
+                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500">
                   <option value="all">All</option>
                   <option value="available">Available</option>
                   <option value="part-time">Part-Time</option>
@@ -253,8 +253,8 @@ function Search() {
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-full border transition flex items-center gap-2 ${
                 selectedCategory === cat.id 
-                  ? 'border-red-500 bg-red-50 text-red-600' 
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-600' 
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
               }`}
             >
               <span className="text-lg">{cat.icon}</span>
@@ -265,13 +265,13 @@ function Search() {
 
         {/* Results Count & Sort */}
         <div className="flex flex-wrap justify-between items-center mb-4">
-          <p className="text-gray-600">{filteredWorkers.length} workers found</p>
+          <p className="text-gray-600 dark:text-gray-300">{filteredWorkers.length} workers found</p>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-500">Sort by:</label>
+            <label className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Sort by:</label>
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500"
+              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-red-500"
             >
               <option value="rating">Rating</option>
               <option value="salary-low">Salary (Low to High)</option>
@@ -283,10 +283,10 @@ function Search() {
 
         {/* Workers Grid */}
         {filteredWorkers.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
             <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No workers found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">No workers found</h3>
+            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
           </div>
         ) : (
           <div className={viewMode === 'grid' 
@@ -296,7 +296,7 @@ function Search() {
             {filteredWorkers.map((worker) => (
               <div 
                 key={worker.id} 
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition ${
+                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition ${
                   viewMode === 'list' ? 'flex flex-col sm:flex-row p-4' : 'p-4'
                 }`}
               >
@@ -322,23 +322,23 @@ function Search() {
                 <div className={`flex-1 ${viewMode === 'list' ? 'sm:ml-4 mt-3 sm:mt-0' : 'mt-3'}`}>
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{worker.name}</h3>
-                      <p className="text-sm text-gray-500">{worker.categoryLabel}</p>
+                      <h3 className="font-semibold text-gray-800 dark:text-white text-lg">{worker.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{worker.categoryLabel}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Star size={16} className="fill-yellow-400 text-yellow-400" />
                       <span className="font-medium">{worker.rating}</span>
-                      <span className="text-xs text-gray-400">({worker.reviewCount})</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">({worker.reviewCount})</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <MapPin size={14} className="text-gray-400" />
+                    <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
                       {worker.location}
                     </span>
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <DollarSign size={14} className="text-gray-400" />
+                    <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                      <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
                       EGP {worker.salary.toLocaleString()}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -350,30 +350,30 @@ function Search() {
 
                   <div className="mt-2 flex flex-wrap gap-1">
                     {worker.skills.slice(0, 3).map((skill, i) => (
-                      <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
+                      <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300">
                         {skill}
                       </span>
                     ))}
                     {worker.skills.length > 3 && (
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-400">
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-400 dark:text-gray-500">
                         +{worker.skills.length - 3}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <button
                       onClick={() => navigate(`/worker/${worker.id}`)}
                       className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
                     >
                       View Profile
                     </button>
-                    <button className="p-1.5 text-gray-400 hover:text-red-600 transition">
+                    <button className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 transition">
                       <MessageCircle size={18} />
                     </button>
                     <button 
                       onClick={() => toggleSave(worker.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 transition"
+                      className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 transition"
                     >
                       {savedWorkers.includes(worker.id) ? (
                         <Bookmark size={18} className="text-red-600 fill-red-600" />

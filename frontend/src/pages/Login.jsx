@@ -158,28 +158,28 @@ function Login() {
       <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
       
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
+        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
           
           {/* Language Selector */}
           <div className="absolute top-4 right-4">
             <div className="relative">
               <button
                 onClick={() => setShowLanguages(!showLanguages)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50/80 transition-all text-sm shadow-md hover:shadow-red-200"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/90 backdrop-blur-sm border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 dark:bg-red-900/30/80 transition-all text-sm shadow-md hover:shadow-red-200"
               >
                 <Globe size={15} className="text-red-600" />
-                <span className="text-gray-700 text-xs font-medium">EN</span>
+                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">EN</span>
               </button>
               {showLanguages && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border-2 border-red-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border-2 border-red-200 rounded-xl shadow-xl z-50 overflow-hidden">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => { setShowLanguages(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 hover:text-red-600 transition text-sm"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 hover:text-red-600 transition text-sm"
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700">{lang.name}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{lang.name}</span>
                     </button>
                   ))}
                 </div>
@@ -206,13 +206,13 @@ function Login() {
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 via-red-600 to-gray-800 bg-clip-text text-transparent tracking-tight drop-shadow-sm">
                   HomelyServ
                 </h1>
-                <p className="text-xs text-gray-500 tracking-widest uppercase mt-1 font-medium">Premium Home Services</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">Premium Home Services</p>
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50/90 backdrop-blur-sm border-2 border-red-300 rounded-xl text-red-600 text-sm flex items-center gap-2 animate-shake shadow-md shadow-red-200">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30/90 backdrop-blur-sm border-2 border-red-300 rounded-xl text-red-600 text-sm flex items-center gap-2 animate-shake shadow-md shadow-red-200">
               <AlertCircle size={16} className="text-red-500" /> {error}
             </div>
           )}
@@ -220,9 +220,9 @@ function Login() {
           <form onSubmit={handleSubmit}>
             {/* Email Field - Always Visible */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
               <div className="relative group">
-                <Mail size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Mail size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="email"
                   value={email}
@@ -233,7 +233,7 @@ function Login() {
                       handleEmailSubmit(e);
                     }
                   }}
-                  className={`w-full pl-11 pr-4 py-3.5 bg-white/90 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 shadow-sm hover:shadow-red-100 ${
+                  className={`w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100 ${
                     showPasswordField ? 'opacity-50 pointer-events-none' : ''
                   }`}
                   placeholder="Enter your email"
@@ -261,14 +261,14 @@ function Login() {
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
               showPasswordField ? 'max-h-40 opacity-100 mb-2' : 'max-h-0 opacity-0'
             }`}>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
               <div className="relative group">
-                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3.5 bg-white/90 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 shadow-sm hover:shadow-red-100"
+                  className="w-full pl-11 pr-12 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
                   placeholder="Enter your password"
                   required
                   autoFocus={showPasswordField}
@@ -276,7 +276,7 @@ function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-3.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -288,8 +288,8 @@ function Login() {
               showPasswordField ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0'
             }`}>
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 text-red-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-red-400" />
+                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 text-red-600 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-red-400" />
                   Remember me
                 </label>
                 <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-semibold transition-colors hover:underline">
@@ -328,7 +328,7 @@ function Login() {
               <button
                 type="button"
                 onClick={handleBackToEmail}
-                className="w-full text-center text-sm text-gray-500 hover:text-red-600 transition-colors font-medium"
+                className="w-full text-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors font-medium"
               >
                 ← Use a different email
               </button>
@@ -343,7 +343,7 @@ function Login() {
           </div>
 
           {/* Register Link */}
-          <p className="text-center text-gray-600 mt-6">
+          <p className="text-center text-gray-600 dark:text-gray-300 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-red-600 font-bold hover:text-red-700 transition-colors hover:underline hover:underline-offset-2">
               Create one

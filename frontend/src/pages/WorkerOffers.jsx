@@ -650,13 +650,13 @@ const WorkerOffers = () => {
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
-      accepted: 'bg-blue-50 border-blue-200 text-blue-700',
-      paid: 'bg-green-50 border-green-200 text-green-700',
-      rejected: 'bg-red-50 border-red-200 text-red-700',
+      accepted: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 text-blue-700',
+      paid: 'bg-green-50 dark:bg-green-900/30 border-green-200 text-green-700',
+      rejected: 'bg-red-50 dark:bg-red-900/30 border-red-200 text-red-700',
       in_progress: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-      completed: 'bg-purple-50 border-purple-200 text-purple-700'
+      completed: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 text-purple-700'
     };
-    return colors[status] || 'bg-gray-50 border-gray-200 text-gray-700';
+    return colors[status] || 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300';
   };
 
   const getStatusIcon = (status) => {
@@ -667,7 +667,7 @@ const WorkerOffers = () => {
       case 'rejected': return <XCircle size={14} className="text-red-500" />;
       case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
       case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
-      default: return <AlertCircle size={14} className="text-gray-500" />;
+      default: return <AlertCircle size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -765,7 +765,7 @@ const WorkerOffers = () => {
     return (
       <div
         key={offer.id}
-        className={`bg-white rounded-xl border ${statusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
+        className={`bg-white dark:bg-gray-800 rounded-xl border ${statusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
       >
         <div className="p-5">
           <div className="flex items-start gap-4">
@@ -786,8 +786,8 @@ const WorkerOffers = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-gray-900 truncate">{offer.jobTitle || 'Job Offer'}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">{offer.jobTitle || 'Job Offer'}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Building2 size={14} />
                     <span>{offer.employerName || 'Employer'}</span>
                   </div>
@@ -799,17 +799,17 @@ const WorkerOffers = () => {
               </div>
 
               {/* Details Row */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-1.5">
-                  <MapPin size={14} className="text-gray-400" />
+                  <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
                   <span>{offer.workerLocation || 'Not specified'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <DollarSign size={14} className="text-gray-400" />
-                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 text-xs">/mo</span></span>
+                  <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
+                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 dark:text-gray-500 text-xs">/mo</span></span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-gray-400" />
+                  <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                   <span>{formatDate(offer.createdAt || offer.updatedAt)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -855,7 +855,7 @@ const WorkerOffers = () => {
                     <button
                       onClick={() => handleRejectOffer(offer)}
                       disabled={processingOffer === offer.id}
-                      className="px-4 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 dark:bg-red-900/30 text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {processingOffer === offer.id ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -933,63 +933,63 @@ const WorkerOffers = () => {
 
           {/* Expanded Details */}
           {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2 text-sm">Offer Details</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Offer Details</h4>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Employer</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Employer</span>
                       <span className="font-medium">{offer.employerName || 'Not provided'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Position</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Position</span>
                       <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Monthly Salary</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Monthly Salary</span>
                       <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Hourly Rate</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Hourly Rate</span>
                       <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Location</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Location</span>
                       <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Posted</span>
+                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Posted</span>
                       <span className="font-medium">{formatDate(offer.createdAt)}</span>
                     </div>
                     {offer.workerResponseAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Responded</span>
+                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Responded</span>
                         <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
                       </div>
                     )}
                     {offer.workCompletedAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Completed</span>
+                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Completed</span>
                         <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
                       </div>
                     )}
                     {offer.paymentCompleted && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Payment Status</span>
+                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Payment Status</span>
                         <span className="font-medium text-green-600">✅ Paid</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2 text-sm">Status</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Status</h4>
                   <div className={`p-3 rounded-lg border ${statusColor}`}>
                     <div className="flex items-center gap-2">
                       {statusIcon}
                       <span className="font-medium">{statusLabel}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1.5">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1.5">
                       {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
                       {offer.status === 'accepted' && 'You accepted this offer. Waiting for employer payment.'}
                       {offer.status === 'paid' && '✅ Payment received! You can now start working.'}
@@ -1021,10 +1021,10 @@ const WorkerOffers = () => {
   // ============================================================
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -1032,10 +1032,10 @@ const WorkerOffers = () => {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Redirecting...</p>
         </div>
       </div>
     );
@@ -1045,7 +1045,7 @@ const WorkerOffers = () => {
   // Main Render
   // ============================================================
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <WorkerSidebar
         language={language}
         sidebarCollapsed={sidebarCollapsed}
@@ -1060,17 +1060,17 @@ const WorkerOffers = () => {
         sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       } ml-0`}>
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
               >
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -1091,7 +1091,7 @@ const WorkerOffers = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
                   {authUser?.fullName || 'Worker'}
                 </span>
               </div>
@@ -1100,9 +1100,9 @@ const WorkerOffers = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
                 >
-                  <Bell size={20} className="text-gray-600" />
+                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
                   {notifications && notifications.length > 0 && (
                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                   )}
@@ -1110,30 +1110,30 @@ const WorkerOffers = () => {
 
                 {/* Notification Dropdown */}
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
                       <span>{t.notifications}</span>
                       {notificationLoading && (
-                        <span className="text-xs text-gray-400">Loading...</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
                       )}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           Loading notifications...
                         </div>
                       ) : notifications && notifications.length > 0 ? (
                         notifications.map((n, index) => (
                           <div 
                             key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                           >
-                            <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                           {t.noNotifications}
                         </div>
                       )}
@@ -1144,7 +1144,7 @@ const WorkerOffers = () => {
 
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
                 {t.languageToggle}
@@ -1180,54 +1180,54 @@ const WorkerOffers = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.pending}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <Clock size={18} className="text-amber-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.pending}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.accepted}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.accepted}</p>
                 <CheckCircle size={18} className="text-blue-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.accepted}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.accepted}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.paid}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.paid}</p>
                 <Wallet size={18} className="text-green-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.paid}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.paid}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.rejected}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.rejected}</p>
                 <XCircle size={18} className="text-red-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.rejected}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.rejected}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.stats.completed}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
                 <CheckCheck size={18} className="text-purple-500" />
               </div>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.completed}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completed}</p>
             </div>
           </div>
 
           {/* Search & Tabs */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search offers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                 />
               </div>
               <button
@@ -1235,7 +1235,7 @@ const WorkerOffers = () => {
                   loadOffers(authUser);
                   setRefreshKey(prev => prev + 1);
                 }}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition flex items-center gap-2 text-sm"
+                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg transition flex items-center gap-2 text-sm"
               >
                 <RefreshCw size={16} />
                 Refresh
@@ -1243,15 +1243,15 @@ const WorkerOffers = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mt-4 border-t border-gray-100 pt-4 overflow-x-auto">
+            <div className="flex gap-1 mt-4 border-t border-gray-100 dark:border-gray-700 pt-4 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-red-50 text-red-600 border border-red-200'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-600 border border-red-200'
+                      : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:bg-gray-900 hover:text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <tab.icon size={16} />
@@ -1260,7 +1260,7 @@ const WorkerOffers = () => {
                     <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
                       activeTab === tab.id
                         ? 'bg-red-100 text-red-600'
-                        : 'bg-gray-100 text-gray-500'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 dark:text-gray-500'
                     }`}>
                       {tab.count}
                     </span>
@@ -1272,28 +1272,28 @@ const WorkerOffers = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{filteredOffers.length}</span> offers
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredOffers.length}</span> offers
             </p>
           </div>
 
           {/* Offers List */}
           {offers.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Inbox size={32} className="text-gray-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Inbox size={32} className="text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500">{t.empty.description}</p>
-              <p className="text-gray-400 text-sm mt-1">{t.empty.wait}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t.empty.wait}</p>
             </div>
           ) : filteredOffers.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Search size={24} className="text-gray-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Search size={24} className="text-gray-400 dark:text-gray-500" />
               </div>
-              <h4 className="text-lg font-medium text-gray-700">No results found</h4>
-              <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filter</p>
+              <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300">No results found</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Try adjusting your search or filter</p>
             </div>
           ) : (
             <div className="space-y-4">

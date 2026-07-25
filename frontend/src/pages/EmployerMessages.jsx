@@ -436,10 +436,10 @@ const EmployerMessages = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
         </div>
       </div>
     );
@@ -461,7 +461,7 @@ const EmployerMessages = () => {
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
             {t.refresh}
@@ -474,7 +474,7 @@ const EmployerMessages = () => {
           <div className="bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
@@ -524,19 +524,19 @@ const EmployerMessages = () => {
           </div>
 
           {/* Messages Container */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
               {/* Conversations List */}
-              <div className="border-r border-gray-200">
-                <div className="p-4 border-b border-gray-200">
+              <div className="border-r border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="relative">
-                    <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+                    <Search size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
                       placeholder={t.searchPlaceholder}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                 </div>
@@ -544,16 +544,16 @@ const EmployerMessages = () => {
                   {filteredConversations.length === 0 ? (
                     <div className="p-8 text-center">
                       <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-500">{t.noConversations}</p>
-                      <p className="text-sm text-gray-400">{t.noConversationsDesc}</p>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noConversations}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.noConversationsDesc}</p>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
                       <button
                         key={conv.id}
                         onClick={() => handleSelectConversation(conv.id)}
-                        className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition border-b border-gray-100 ${
-                          selectedConversationId === conv.id ? 'bg-teal-50' : ''
+                        className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:bg-gray-900 transition border-b border-gray-100 dark:border-gray-700 ${
+                          selectedConversationId === conv.id ? 'bg-teal-50 dark:bg-teal-900/30' : ''
                         }`}
                       >
                         <img
@@ -563,10 +563,10 @@ const EmployerMessages = () => {
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 truncate">{conv.otherUserName}</p>
-                            <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
+                            <p className="font-semibold text-gray-800 dark:text-white truncate">{conv.otherUserName}</p>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{conv.time}</span>
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-green-500">{t.online}</span>
                             {conv.unread > 0 && (
@@ -587,7 +587,7 @@ const EmployerMessages = () => {
                 {selectedConversationId ? (
                   <>
                     {/* Chat Header */}
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/30">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
@@ -596,27 +596,27 @@ const EmployerMessages = () => {
                           className="w-10 h-10 rounded-full object-cover border-2 border-teal-200"
                         />
                         <div>
-                          <p className="font-semibold text-gray-800">
+                          <p className="font-semibold text-gray-800 dark:text-white">
                             {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
                       </div>
                       <div className="flex gap-2 relative" ref={dropdownRef}>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <Phone size={18} className="text-gray-600" />
+                        <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition">
+                          <Phone size={18} className="text-gray-600 dark:text-gray-300" />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition">
-                          <Video size={18} className="text-gray-600" />
+                        <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition">
+                          <Video size={18} className="text-gray-600 dark:text-gray-300" />
                         </button>
                         <button
                           onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="p-2 rounded-lg hover:bg-gray-100 transition"
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition"
                         >
-                          <MoreVertical size={18} className="text-gray-600" />
+                          <MoreVertical size={18} className="text-gray-600 dark:text-gray-300" />
                         </button>
                         {dropdownOpen && (
-                          <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                          <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                             <button
                               onClick={async () => {
                                 setDropdownOpen(false);
@@ -634,21 +634,21 @@ const EmployerMessages = () => {
                                   }
                                 }
                               }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
+                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 dark:bg-red-900/30 flex items-center gap-2 transition"
                             >
                               <Trash2 size={16} />
                               Delete Conversation
                             </button>
                             <button
                               disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 flex items-center gap-2 cursor-not-allowed"
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <Mail size={16} />
                               Mark as unread
                             </button>
                             <button
                               disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 flex items-center gap-2 cursor-not-allowed"
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <UserIcon size={16} />
                               View Worker Profile
@@ -659,9 +659,9 @@ const EmployerMessages = () => {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/20">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/20">
                       {messages.length === 0 ? (
-                        <div className="text-center text-gray-400 py-8">
+                        <div className="text-center text-gray-400 dark:text-gray-500 py-8">
                           <p>{t.noMessages}</p>
                           <p className="text-sm">{t.startConversation}</p>
                         </div>
@@ -681,7 +681,7 @@ const EmployerMessages = () => {
                                   src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
                                     `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=teal&color=fff&size=100&bold=true`}
                                   alt={msg.senderName}
-                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
                                 />
                               )}
                               {!isEmployer && !showAvatar && (
@@ -691,7 +691,7 @@ const EmployerMessages = () => {
                                 className={`max-w-[70%] p-3 rounded-lg ${
                                   isEmployer
                                     ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-br-none'
-                                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
+                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm border border-gray-100 dark:border-gray-700'
                                 }`}
                               >
                                 {!isEmployer && (
@@ -701,7 +701,7 @@ const EmployerMessages = () => {
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                                 <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                                  isEmployer ? 'text-teal-200' : 'text-gray-400'
+                                  isEmployer ? 'text-teal-200' : 'text-gray-400 dark:text-gray-500'
                                 }`}>
                                   {msg.time}
                                   {isEmployer && (
@@ -727,14 +727,14 @@ const EmployerMessages = () => {
                     </div>
 
                     {/* Input */}
-                    <div className="p-4 border-t border-gray-200 bg-white">
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder={t.typeMessage}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         />
                         <button
                           type="submit"
@@ -751,8 +751,8 @@ const EmployerMessages = () => {
                   <div className="flex-1 flex items-center justify-center text-center p-8">
                     <div>
                       <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Select a conversation</h3>
-                      <p className="text-gray-500">Choose a conversation from the list to start messaging</p>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Select a conversation</h3>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Choose a conversation from the list to start messaging</p>
                     </div>
                   </div>
                 )}

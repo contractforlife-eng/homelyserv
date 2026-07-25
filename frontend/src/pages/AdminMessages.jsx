@@ -266,7 +266,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_hire': <Briefcase size={16} className="text-purple-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   const getTimeAgo = (dateString) => {
@@ -308,7 +308,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -345,7 +345,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -354,15 +354,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -381,10 +381,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -905,7 +905,7 @@ const AdminMessages = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -931,7 +931,7 @@ const AdminMessages = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -1004,7 +1004,7 @@ const AdminMessages = () => {
                 <div className="p-4 border-b border-yellow-500/20">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <Search size={18} className="absolute left-3 top-3 text-gray-500" />
+                      <Search size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                       <input
                         type="text"
                         placeholder={t.searchPlaceholder}
@@ -1021,7 +1021,7 @@ const AdminMessages = () => {
                       className={`px-3 py-2.5 rounded-lg transition flex items-center gap-1 ${
                         showAllUsers 
                           ? 'bg-yellow-500 text-black' 
-                          : 'bg-[#0a0a0a] border border-gray-700 text-gray-400 hover:text-yellow-500'
+                          : 'bg-[#0a0a0a] border border-gray-700 text-gray-400 dark:text-gray-500 hover:text-yellow-500'
                       }`}
                       title={t.startNewChat}
                     >
@@ -1040,14 +1040,14 @@ const AdminMessages = () => {
                       {filteredUsers.length === 0 ? (
                         <div className="p-8 text-center">
                           <div className="text-4xl mb-3">👤</div>
-                          <p className="text-gray-400">{t.noUsersFound}</p>
+                          <p className="text-gray-400 dark:text-gray-500">{t.noUsersFound}</p>
                         </div>
                       ) : (
                         filteredUsers.map((userItem) => (
                           <button
                             key={userItem.id || userItem.email}
                             onClick={() => handleStartNewChat(userItem)}
-                            className="w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 text-left"
+                            className="w-full p-4 flex items-center gap-3 hover:bg-white dark:bg-gray-800/5 transition border-b border-yellow-500/10 text-left"
                           >
                             <img
                               src={userItem.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userItem.name)}&background=yellow&color=000&size=100&bold=true`}
@@ -1059,7 +1059,7 @@ const AdminMessages = () => {
                                 <p className="font-semibold text-white truncate">{userItem.name}</p>
                                 <span className="text-xs text-yellow-500 flex-shrink-0 ml-2">{userItem.role}</span>
                               </div>
-                              <p className="text-sm text-gray-400 truncate">{userItem.email}</p>
+                              <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{userItem.email}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-green-400">● Online</span>
                               </div>
@@ -1078,8 +1078,8 @@ const AdminMessages = () => {
                       {filteredConversations.length === 0 ? (
                         <div className="p-8 text-center">
                           <div className="text-4xl mb-3">💬</div>
-                          <p className="text-gray-400">{t.noConversations}</p>
-                          <p className="text-sm text-gray-500">{t.noConversationsDesc}</p>
+                          <p className="text-gray-400 dark:text-gray-500">{t.noConversations}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noConversationsDesc}</p>
                           <button
                             onClick={() => setShowAllUsers(true)}
                             className="mt-4 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium"
@@ -1093,7 +1093,7 @@ const AdminMessages = () => {
                           <button
                             key={conv.id}
                             onClick={() => handleSelectConversation(conv.id)}
-                            className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition border-b border-yellow-500/10 ${
+                            className={`w-full p-4 flex items-center gap-3 hover:bg-white dark:bg-gray-800/5 transition border-b border-yellow-500/10 ${
                               selectedConversationId === conv.id ? 'bg-yellow-500/10 border-l-4 border-l-yellow-500' : ''
                             }`}
                           >
@@ -1105,9 +1105,9 @@ const AdminMessages = () => {
                             <div className="flex-1 min-w-0 text-left">
                               <div className="flex justify-between items-start">
                                 <p className="font-semibold text-white truncate">{conv.otherUserName}</p>
-                                <span className="text-xs text-gray-500 flex-shrink-0">{conv.time}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 flex-shrink-0">{conv.time}</span>
                               </div>
-                              <p className="text-sm text-gray-400 truncate">{conv.lastMessage}</p>
+                              <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-yellow-500">{conv.role || 'User'}</span>
                                 {conv.unread > 0 && (
@@ -1129,7 +1129,7 @@ const AdminMessages = () => {
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
-                    <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-white/5">
+                    <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-white dark:bg-gray-800/5">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
@@ -1147,14 +1147,14 @@ const AdminMessages = () => {
                       <div className="flex gap-2 relative" ref={dropdownRef}>
                         <button 
                           onClick={() => setShowAllUsers(true)}
-                          className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-white dark:bg-gray-800/5 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
                           title={t.startNewChat}
                         >
                           <UserPlus size={18} />
                         </button>
                         <button
                           onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-white dark:bg-gray-800/5 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
                         >
                           <MoreVertical size={18} />
                         </button>
@@ -1184,14 +1184,14 @@ const AdminMessages = () => {
                             </button>
                             <button
                               disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-500 flex items-center gap-2 cursor-not-allowed"
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <Mail size={16} />
                               Mark as unread
                             </button>
                             <button
                               disabled
-                              className="w-full px-4 py-2.5 text-left text-sm text-gray-500 flex items-center gap-2 cursor-not-allowed"
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <UserIcon size={16} />
                               View User Profile
@@ -1203,7 +1203,7 @@ const AdminMessages = () => {
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0a0a0a]">
                       {messages.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">
+                        <div className="text-center text-gray-500 dark:text-gray-400 dark:text-gray-500 py-8">
                           <p>{t.noMessages}</p>
                           <p className="text-sm">{t.startConversation}</p>
                         </div>
@@ -1253,7 +1253,7 @@ const AdminMessages = () => {
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                                 <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                                  isAdmin ? 'text-black/60' : 'text-gray-500'
+                                  isAdmin ? 'text-black/60' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'
                                 }`}>
                                   {msg.time}
                                   {isAdmin && (
@@ -1316,7 +1316,7 @@ const AdminMessages = () => {
                       <h3 className="text-xl font-semibold text-white mb-2">
                         {showAllUsers ? t.selectUser : 'Select a conversation'}
                       </h3>
-                      <p className="text-gray-400">
+                      <p className="text-gray-400 dark:text-gray-500">
                         {showAllUsers 
                           ? 'Choose a user from the list to start chatting' 
                           : 'Choose a conversation from the list to start messaging'}

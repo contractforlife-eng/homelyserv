@@ -22,7 +22,7 @@ function Notifications() {
       case 'hire': return <CheckCircle size={20} className="text-purple-600" />;
       case 'payment': return <DollarSign size={20} className="text-red-600" />;
       case 'review': return <Star size={20} className="text-yellow-600" />;
-      default: return <Bell size={20} className="text-gray-600" />;
+      default: return <Bell size={20} className="text-gray-600 dark:text-gray-300" />;
     }
   };
 
@@ -128,10 +128,10 @@ function Notifications() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={48} className="animate-spin text-red-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading notifications...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading notifications...</p>
         </div>
       </div>
     );
@@ -140,11 +140,11 @@ function Notifications() {
   // Show login prompt if not authenticated
   if (!isAuthenticated || !authUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center max-w-md">
           <Bell size={48} className="text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Please Sign In</h3>
-          <p className="text-gray-500 mb-4">Sign in to view your notifications</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Please Sign In</h3>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Sign in to view your notifications</p>
           <button 
             onClick={() => navigate('/login', { state: { from: '/notifications' } })}
             className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -157,12 +157,12 @@ function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-gray-600 hover:text-red-600 transition">← Back</Link>
-            <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
+            <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back</Link>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Notifications</h1>
             {unreadCount > 0 && (
               <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount} new</span>
             )}
@@ -170,7 +170,7 @@ function Notifications() {
           <div className="flex items-center gap-3">
             <button 
               onClick={fetchNotifications}
-              className="text-sm text-gray-500 hover:text-gray-700 transition flex items-center gap-1"
+              className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 transition flex items-center gap-1"
             >
               <RefreshCw size={14} /> Refresh
             </button>
@@ -183,47 +183,47 @@ function Notifications() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-600 flex items-center gap-2">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl p-4 mb-6 text-red-600 flex items-center gap-2">
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
         )}
 
         {notifications.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
             <Bell size={48} className="text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800">No notifications</h3>
-            <p className="text-gray-500 mt-2">You're all caught up!</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">No notifications</h3>
+            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">You're all caught up!</p>
           </div>
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => (
               <div 
                 key={notification.id} 
-                className={`bg-white rounded-xl shadow-sm border p-4 transition ${
-                  !notification.read ? 'border-red-200 bg-red-50' : 'border-gray-100'
+                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-4 transition ${
+                  !notification.read ? 'border-red-200 bg-red-50 dark:bg-red-900/30' : 'border-gray-100 dark:border-gray-700'
                 }`}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    !notification.read ? 'bg-red-100' : 'bg-gray-100'
+                    !notification.read ? 'bg-red-100' : 'bg-gray-100 dark:bg-gray-800'
                   }`}>
                     {getIcon(notification.type)}
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className={`font-semibold ${!notification.read ? 'text-gray-800' : 'text-gray-600'}`}>
+                        <p className={`font-semibold ${!notification.read ? 'text-gray-800 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                           {notification.title}
                         </p>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{notification.message}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{notification.time}</p>
                       </div>
                       <div className="flex gap-2">
                         {!notification.read && (
                           <button 
                             onClick={() => markAsRead(notification.id)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            className="p-1 text-blue-600 hover:bg-blue-50 dark:bg-blue-900/30 rounded-lg transition"
                             title="Mark as read"
                           >
                             <Check size={16} />
@@ -231,7 +231,7 @@ function Notifications() {
                         )}
                         <button 
                           onClick={() => deleteNotification(notification.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          className="p-1 text-red-600 hover:bg-red-50 dark:bg-red-900/30 rounded-lg transition"
                           title="Delete"
                         >
                           <Trash2 size={16} />

@@ -267,7 +267,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
       'new_hire': <Briefcase size={16} className="text-purple-400" />,
       'premium_activation': <Crown size={16} className="text-yellow-400" />
     };
-    return icons[type] || <Bell size={16} className="text-gray-400" />;
+    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
   };
 
   const getTimeAgo = (dateString) => {
@@ -309,7 +309,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 hover:text-yellow-500"
+        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
         title="Notifications"
       >
         <Bell size={20} />
@@ -346,7 +346,7 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                   checkForNewNotifications();
                   loadNotifications();
                 }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500"
+                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <RefreshCw size={14} />
               </button>
@@ -355,15 +355,15 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
           
           <div className="divide-y divide-yellow-500/10">
             {loading ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">New notifications will appear here</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
               </div>
             ) : (
               notifications.slice(0, 20).map((notification) => (
@@ -382,10 +382,10 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
                       <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         {getTimeAgo(notification.createdAt)}
                       </p>
                     </div>
@@ -618,7 +618,7 @@ const AdminReports = () => {
       case 'pending':
         return <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">Pending</span>;
       default:
-        return <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded-full text-xs">{status}</span>;
+        return <span className="px-2 py-1 bg-gray-500/20 text-gray-400 dark:text-gray-500 rounded-full text-xs">{status}</span>;
     }
   };
 
@@ -627,7 +627,7 @@ const AdminReports = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -638,7 +638,7 @@ const AdminReports = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -664,7 +664,7 @@ const AdminReports = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 hover:text-yellow-500"
+                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <Menu size={20} />
               </button>
@@ -705,7 +705,7 @@ const AdminReports = () => {
                 className={`px-4 py-2 text-sm font-medium transition capitalize ${
                   activeTab === tab 
                     ? 'text-yellow-500 border-b-2 border-yellow-500' 
-                    : 'text-gray-400 hover:text-gray-300'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-300'
                 }`}
               >
                 {t.tabs[tab] || tab}
@@ -720,7 +720,7 @@ const AdminReports = () => {
                 <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-sm border border-yellow-500/20 hover:border-yellow-500/40 transition">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">{t.stats.totalUsers}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalUsers}</p>
                       <p className="text-2xl font-bold text-white">{overviewStats.totalUsers.toLocaleString()}</p>
                     </div>
                     <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -730,14 +730,14 @@ const AdminReports = () => {
                   <div className="mt-2 flex items-center gap-1 text-xs">
                     <TrendingUp size={14} className="text-green-500" />
                     <span className="text-green-500">+{overviewStats.growthRate}%</span>
-                    <span className="text-gray-500">vs last month</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">vs last month</span>
                   </div>
                 </div>
 
                 <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-sm border border-yellow-500/20 hover:border-yellow-500/40 transition">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">{t.stats.totalWorkers}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalWorkers}</p>
                       <p className="text-2xl font-bold text-white">{overviewStats.totalWorkers.toLocaleString()}</p>
                     </div>
                     <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -747,14 +747,14 @@ const AdminReports = () => {
                   <div className="mt-2 flex items-center gap-1 text-xs">
                     <TrendingUp size={14} className="text-green-500" />
                     <span className="text-green-500">+8%</span>
-                    <span className="text-gray-500">vs last month</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">vs last month</span>
                   </div>
                 </div>
 
                 <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-sm border border-yellow-500/20 hover:border-yellow-500/40 transition">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">{t.stats.totalRevenue}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalRevenue}</p>
                       <p className="text-2xl font-bold text-white">${overviewStats.totalRevenue.toLocaleString()}</p>
                     </div>
                     <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -764,14 +764,14 @@ const AdminReports = () => {
                   <div className="mt-2 flex items-center gap-1 text-xs">
                     <TrendingUp size={14} className="text-green-500" />
                     <span className="text-green-500">+18%</span>
-                    <span className="text-gray-500">vs last month</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">vs last month</span>
                   </div>
                 </div>
 
                 <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-sm border border-yellow-500/20 hover:border-yellow-500/40 transition">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">{t.stats.completionRate}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.completionRate}</p>
                       <p className="text-2xl font-bold text-white">{overviewStats.completionRate}%</p>
                     </div>
                     <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
@@ -781,7 +781,7 @@ const AdminReports = () => {
                   <div className="mt-2 flex items-center gap-1 text-xs">
                     <TrendingUp size={14} className="text-green-500" />
                     <span className="text-green-500">+5%</span>
-                    <span className="text-gray-500">vs last month</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">vs last month</span>
                   </div>
                 </div>
               </div>
@@ -805,8 +805,8 @@ const AdminReports = () => {
                           className={`${chartType === 'bar' ? 'w-full' : 'w-1'} bg-yellow-500 rounded-t transition-all duration-500`}
                           style={{ height: `${(item.users / 2500) * 100}%` }}
                         ></div>
-                        <span className="text-xs text-gray-500 mt-2">{item.month}</span>
-                        <span className="text-xs text-gray-400">{item.users}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{item.month}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{item.users}</span>
                       </div>
                     ))}
                   </div>
@@ -818,7 +818,7 @@ const AdminReports = () => {
                     {categoryData.map((cat, i) => (
                       <div key={i}>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">{cat.name}</span>
+                          <span className="text-gray-400 dark:text-gray-500">{cat.name}</span>
                           <span className="font-medium text-white">{cat.value} ({cat.percentage}%)</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2 mt-1">
@@ -846,14 +846,14 @@ const AdminReports = () => {
                     <div key={report.id} className="flex justify-between items-center border-b border-yellow-500/10 pb-3">
                       <div>
                         <p className="font-medium text-white">{report.title}</p>
-                        <p className="text-sm text-gray-500">{report.date}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{report.date}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         {getStatusBadge(report.status)}
                         <button className="p-1.5 text-yellow-400 hover:bg-yellow-500/10 rounded transition">
                           <Eye size={16} />
                         </button>
-                        <button className="p-1.5 text-gray-400 hover:text-white transition">
+                        <button className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-white transition">
                           <Download size={16} />
                         </button>
                       </div>
@@ -869,17 +869,17 @@ const AdminReports = () => {
               <h3 className="text-xl font-bold text-white mb-4">User Analytics</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">New Users (This Month)</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">New Users (This Month)</p>
                   <p className="text-2xl font-bold text-blue-400">2,100</p>
                   <p className="text-xs text-green-400">+15% from last month</p>
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">{t.stats.activeUsers}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.activeUsers}</p>
                   <p className="text-2xl font-bold text-green-400">{overviewStats.activeUsers.toLocaleString()}</p>
                   <p className="text-xs text-green-400">+8% from last month</p>
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">User Retention Rate</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">User Retention Rate</p>
                   <p className="text-2xl font-bold text-purple-400">72%</p>
                   <p className="text-xs text-green-400">+5% from last month</p>
                 </div>
@@ -888,18 +888,18 @@ const AdminReports = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-yellow-500/20">
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Month</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">New Users</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Active Users</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Growth</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Month</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">New Users</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Active Users</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Growth</th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlyData.map((item, i) => (
                       <tr key={i} className="border-b border-yellow-500/10">
                         <td className="py-3 font-medium text-white">{item.month}</td>
-                        <td className="py-3 text-gray-400">{item.users}</td>
-                        <td className="py-3 text-gray-400">{Math.round(item.users * 0.65)}</td>
+                        <td className="py-3 text-gray-400 dark:text-gray-500">{item.users}</td>
+                        <td className="py-3 text-gray-400 dark:text-gray-500">{Math.round(item.users * 0.65)}</td>
                         <td className="py-3 text-green-400">+{Math.round((item.users / 1200 - 1) * 100)}%</td>
                       </tr>
                     ))}
@@ -914,15 +914,15 @@ const AdminReports = () => {
               <h3 className="text-xl font-bold text-white mb-4">Revenue Analytics</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">{t.stats.totalRevenue}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalRevenue}</p>
                   <p className="text-2xl font-bold text-yellow-400">${overviewStats.totalRevenue.toLocaleString()}</p>
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">Commission Earned</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Commission Earned</p>
                   <p className="text-2xl font-bold text-orange-400">${Math.round(overviewStats.totalRevenue * 0.065).toLocaleString()}</p>
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-lg border border-gray-700">
-                  <p className="text-sm text-gray-400">Average Per Hire</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Average Per Hire</p>
                   <p className="text-2xl font-bold text-blue-400">$54</p>
                 </div>
               </div>
@@ -930,18 +930,18 @@ const AdminReports = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-yellow-500/20">
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Month</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Commission</th>
-                      <th className="text-left py-3 text-xs font-medium text-gray-500 uppercase">Growth</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Month</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Revenue</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Commission</th>
+                      <th className="text-left py-3 text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Growth</th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlyData.map((item, i) => (
                       <tr key={i} className="border-b border-yellow-500/10">
                         <td className="py-3 font-medium text-white">{item.month}</td>
-                        <td className="py-3 text-gray-400">${item.revenue}</td>
-                        <td className="py-3 text-gray-400">${Math.round(item.revenue * 0.065)}</td>
+                        <td className="py-3 text-gray-400 dark:text-gray-500">${item.revenue}</td>
+                        <td className="py-3 text-gray-400 dark:text-gray-500">${Math.round(item.revenue * 0.065)}</td>
                         <td className="py-3 text-green-400">+{Math.round((item.revenue / 3200 - 1) * 100)}%</td>
                       </tr>
                     ))}
@@ -958,7 +958,7 @@ const AdminReports = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">{t.reportType}</label>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.reportType}</label>
                   <select className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white">
                     <option>Revenue Report</option>
                     <option>User Report</option>
@@ -968,7 +968,7 @@ const AdminReports = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">{t.format}</label>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.format}</label>
                   <select className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white">
                     <option>PDF</option>
                     <option>Excel</option>
@@ -976,11 +976,11 @@ const AdminReports = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">{t.startDate}</label>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.startDate}</label>
                   <input type="date" className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">{t.endDate}</label>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.endDate}</label>
                   <input type="date" className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" />
                 </div>
               </div>

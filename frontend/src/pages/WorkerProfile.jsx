@@ -446,10 +446,10 @@ const WorkerProfile = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -473,9 +473,9 @@ const WorkerProfile = () => {
               onClick={() => {
                 setIsNotificationsOpen(!isNotificationsOpen);
               }}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
             >
-              <Bell size={20} className="text-gray-600" />
+              <Bell size={20} className="text-gray-600 dark:text-gray-300" />
               {notifications && notifications.length > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
               )}
@@ -483,30 +483,30 @@ const WorkerProfile = () => {
 
             {/* Notification Dropdown */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800 flex justify-between items-center">
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
                   <span>{t.notifications}</span>
                   {notificationLoading && (
-                    <span className="text-xs text-gray-400">Loading...</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
                   )}
                 </div>
                 <div className="max-h-64 overflow-y-auto">
                   {notificationLoading ? (
-                    <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                    <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                       Loading notifications...
                     </div>
                   ) : notifications && notifications.length > 0 ? (
                     notifications.map((n, index) => (
                       <div 
                         key={n.id || index} 
-                        className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                        className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
                       >
-                        <p className="text-sm font-medium text-gray-900">{n.title || 'Notification'}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
                       </div>
                     ))
                   ) : (
-                    <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                    <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
                       {t.noNotifications}
                     </div>
                   )}
@@ -536,7 +536,7 @@ const WorkerProfile = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleEditToggle}
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
+                  className="bg-white dark:bg-gray-800/20 hover:bg-white dark:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm"
                 >
                   {isEditing ? <X size={16} /> : <Edit size={16} />}
                   {isEditing ? t.cancel : t.editProfile}
@@ -553,18 +553,18 @@ const WorkerProfile = () => {
           </div>
 
           {saveSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
               {t.saved}
             </div>
           )}
 
           {/* Profile Photo Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.profilePhoto}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.profilePhoto}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-200 bg-gray-100 relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-200 bg-gray-100 dark:bg-gray-800 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
@@ -572,7 +572,7 @@ const WorkerProfile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-red-50">
+                    <div className="w-full h-full flex items-center justify-center bg-red-50 dark:bg-red-900/30">
                       <User size={48} className="text-red-300" />
                     </div>
                   )}
@@ -595,43 +595,43 @@ const WorkerProfile = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-sm text-gray-500 mt-2">{t.changePhoto}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
               )}
               {!isEditing && imagePreview && (
-                <p className="text-xs text-gray-400 mt-2">Photo uploaded</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Photo uploaded</p>
               )}
             </div>
           </div>
 
           {/* Real Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.memberSince}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.memberSince}</p>
                 <Calendar size={20} className="text-blue-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{realStats.memberSince}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{realStats.memberSince}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.rating}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.rating}</p>
                 <Star size={20} className="text-yellow-500" />
               </div>
               <div className="flex items-center gap-1 mt-1">
-                <span className="text-lg font-bold text-gray-800">{realStats.rating.toFixed(1)}</span>
-                <span className="text-sm text-gray-400">/ 5.0</span>
+                <span className="text-lg font-bold text-gray-800 dark:text-white">{realStats.rating.toFixed(1)}</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500">/ 5.0</span>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.jobsCompleted}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.jobsCompleted}</p>
                 <CheckCircle size={20} className="text-green-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 mt-1">{realStats.jobsCompleted}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{realStats.jobsCompleted}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{t.profileComplete}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.profileComplete}</p>
                 <Award size={20} className="text-purple-500" />
               </div>
               <div className="mt-1">
@@ -641,20 +641,20 @@ const WorkerProfile = () => {
                     style={{ width: `${realStats.profileComplete}%` }}
                   ></div>
                 </div>
-                <span className="text-xs text-gray-500 mt-1">{realStats.profileComplete}%</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{realStats.profileComplete}%</span>
               </div>
             </div>
           </div>
 
           {/* Personal Information */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">{t.personalInfo}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t.personalInfo}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.fullName}</label>
                 <div className="relative">
-                  <User size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <User size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="fullName"
@@ -662,30 +662,30 @@ const WorkerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.email}</label>
                 <div className="relative">
-                  <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Mail size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-100 bg-gray-50 rounded-lg"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.phone}</label>
                 <div className="relative">
-                  <Phone size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Phone size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="tel"
                     name="phone"
@@ -693,16 +693,16 @@ const WorkerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.location}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.location}</label>
                 <div className="relative">
-                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="location"
@@ -710,16 +710,16 @@ const WorkerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.experience}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.experience}</label>
                 <div className="relative">
-                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     name="experience"
@@ -727,16 +727,16 @@ const WorkerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.hourlyRate}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.hourlyRate}</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-400">EGP</span>
+                  <span className="absolute left-3 top-3 text-gray-400 dark:text-gray-500">EGP</span>
                   <input
                     type="text"
                     name="hourlyRate"
@@ -744,7 +744,7 @@ const WorkerProfile = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
                 </div>
@@ -752,18 +752,18 @@ const WorkerProfile = () => {
 
               {/* Desired Job Dropdown Field */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t.desiredJob}
                 </label>
                 <div className="relative">
-                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 z-10" />
+                  <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500 z-10" />
                   <select
                     name="desiredJob"
                     value={formData.desiredJob}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                      isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   >
                     <option value="">{t.selectJob}</option>
@@ -773,20 +773,20 @@ const WorkerProfile = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown size={18} className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                  <ChevronDown size={18} className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 pointer-events-none" />
                 </div>
                 {!isEditing && formData.desiredJob && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                     <span className="font-medium">Selected:</span> {getJobLabel(formData.desiredJob)}
                   </p>
                 )}
                 {!isEditing && !formData.desiredJob && (
-                  <p className="text-sm text-gray-400 mt-1">No job type selected</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">No job type selected</p>
                 )}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.bio}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.bio}</label>
                 <textarea
                   name="bio"
                   value={formData.bio}
@@ -794,18 +794,18 @@ const WorkerProfile = () => {
                   disabled={!isEditing}
                   rows="3"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                    isEditing ? 'border-gray-200' : 'border-gray-100 bg-gray-50'
+                    isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                   }`}
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.skills}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.skills}</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm flex items-center gap-1"
+                      className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-full text-sm flex items-center gap-1"
                     >
                       {skill}
                       {isEditing && (
@@ -827,7 +827,7 @@ const WorkerProfile = () => {
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
                       placeholder={t.addSkill}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
                     <button
                       type="button"
@@ -858,7 +858,7 @@ const WorkerProfile = () => {
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>
