@@ -11,7 +11,7 @@ function GoogleLoginComponent() {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       // Send the credential to your backend
-      const response = await api.post('/auth/google-login', {
+      const response = await api.post('/api/oauth/social-login', {
         credential: credentialResponse.credential
       });
 

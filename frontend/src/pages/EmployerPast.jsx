@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import EmployerSidebar from '../components/employer/EmployerSidebar';
 import { 
   Home, Briefcase, User, Search, Clock, DollarSign,
   MessageCircle, Settings, LogOut, CheckCircle,
@@ -78,62 +79,23 @@ function EmployerPast() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen fixed">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-red-600">HomelyServ</h1>
-          <p className="text-xs text-gray-500 mt-1">Employer Panel</p>
-        </div>
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
-              {authUser.fullName?.charAt(0) || 'E'}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">{authUser.fullName || 'Employer'}</p>
-              <p className="text-xs text-gray-500">Employer</p>
-            </div>
-          </div>
-        </div>
-        <nav className="p-4 space-y-1">
-          <Link to="/employer-dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Home size={20} /> Dashboard
-          </Link>
-          <Link to="/employer-search" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Search size={20} /> Search
-          </Link>
-          <Link to="/employer-pending" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Clock size={20} /> Pending
-          </Link>
-          <Link to="/employer-past" className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-lg">
-            <Briefcase size={20} /> Past
-          </Link>
-          <Link to="/employer-payments" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <DollarSign size={20} /> Payments
-          </Link>
-          <Link to="/employer-profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <User size={20} /> Profile
-          </Link>
-          <Link to="/employer-complaints" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <AlertCircle size={20} /> Complaints
-          </Link>
-          <Link to="/employer-messages" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <MessageCircle size={20} /> Messages
-          </Link>
-          <Link to="/employer-settings" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition">
-            <Settings size={20} /> Settings
-          </Link>
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition">
-            <LogOut size={20} /> Logout
-          </button>
-        </div>
-      </div>
+     <div className="min-h-screen bg-gray-50 flex">
+    <EmployerSidebar
+  language={language}
+  sidebarCollapsed={sidebarCollapsed}
+  toggleSidebar={toggleSidebar}
+  mobileMenuOpen={mobileMenuOpen}
+  toggleMobileMenu={toggleMobileMenu}
+  authUser={authUser}
+  handleLogout={handleLogout}
+/>
 
       {/* Main Content */}
-      <div className="ml-64 flex-1">
+<div
+  className={`flex-1 transition-all duration-300 ${
+    sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+  }`}
+>
         <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
           <div className="flex justify-between items-center">
             <div>

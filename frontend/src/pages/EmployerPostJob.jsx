@@ -2,13 +2,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import EmployerSidebar from '../components/employer/EmployerSidebar';
 
 const EmployerPostJob = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  
+  const [language] = useState('en');
+const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+const toggleSidebar = () => {
+  setSidebarCollapsed(prev => !prev);
+};
+
+const toggleMobileMenu = () => {
+  setMobileMenuOpen(prev => !prev);
+};
+
+const handleLogout = () => {
+  localStorage.clear();
+  navigate('/login');
+};
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -139,8 +155,24 @@ const EmployerPostJob = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+  <div className="min-h-screen bg-gray-50 flex">
+    <EmployerSidebar
+      language={language}
+      sidebarCollapsed={sidebarCollapsed}
+      toggleSidebar={toggleSidebar}
+      mobileMenuOpen={mobileMenuOpen}
+      toggleMobileMenu={toggleMobileMenu}
+      authUser={authUser}
+      handleLogout={handleLogout}
+    />
+
+    <div
+      className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}
+    >
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Post a Job</h1>
         
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -394,9 +426,11 @@ const EmployerPostJob = () => {
             </button>
           </div>
         </form>
+        </div>    
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default EmployerPostJob;
