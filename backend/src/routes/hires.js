@@ -5,7 +5,9 @@ import {
   respondToOffer,
   getMyHires,
   updateHireStatus,
-  getAllHires
+  getAllHires,
+  getMyOffers,
+  updateOfferStatus
 } from '../controllers/hireController.js';
 
 import { authenticate } from '../middleware/auth.js';
@@ -36,5 +38,9 @@ router.put('/offer/:offerId/respond', authenticate, respondToOffer);
 // Get All Hires (admin only)
 // ============================================================
 router.get('/all', getAllHires);
+
+router.get('/offers', authenticate, getMyOffers);
+
+router.put('/offer/:offerId/status', authenticate, updateOfferStatus);
 
 export default router;

@@ -656,7 +656,7 @@ const Subscription = () => {
           window.open(result.approvalUrl, '_blank');
           
           // Start polling for payment completion
-          startPollingPayPalOrder(result.orderId);
+          startPollingPayPalOrder(result.paypalOrderId);
         } else {
           throw new Error(result.error || 'PayPal payment failed');
         }

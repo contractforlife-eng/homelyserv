@@ -49,8 +49,10 @@ const WorkerProfileView = () => {
   const [showContactOptions, setShowContactOptions] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contactUnlocked, setContactUnlocked] = useState(false);
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const fetchedRef = React.useRef(false);
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+   const fetchedRef = React.useRef(false);
+   const authUser = useAuthStore(state => state.user);
+   const authLoading = useAuthStore(state => state.isLoading);
 
   const translations = {
     en: {
@@ -129,43 +131,42 @@ const WorkerProfileView = () => {
 
   const t = translations[language] || translations.en;
 
-   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/login');
+  useEffect(() => {
+      if (authLoading) {
+        return;
       }
-    } else {
-      navigate('/login');
-    }
 
-    const workerData = localStorage.getItem('homelyserv_viewing_worker');
-    if (workerData) {
-      try {
-        setWorker(JSON.parse(workerData));
-      } catch (error) {
-        console.error('Error parsing worker data:', error);
+      if (!authUser) {
+        navigate('/login');
+        return;
+      }
+
+      setUser(authUser);
+
+      const savedLang = localStorage.getItem('homelyserv_language');
+      if (savedLang) {
+        setLanguage(savedLang);
+      }
+
+      const workerData = localStorage.getItem('homelyserv_viewing_worker');
+      if (workerData) {
+        try {
+          setWorker(JSON.parse(workerData));
+        } catch (error) {
+          console.error('Error parsing worker data:', error);
+          navigate('/employer-search');
+        }
+      } else {
         navigate('/employer-search');
       }
-    } else {
-      navigate('/employer-search');
-    }
 
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-    
-    setLoading(false);
-  }, [navigate]);
+      const sidebarState = localStorage.getItem('sidebar_collapsed');
+      if (sidebarState) {
+        setSidebarCollapsed(JSON.parse(sidebarState));
+      }
+      
+      setLoading(false);
+    }, [navigate, authLoading, authUser]);
 
    useEffect(() => {
     fetchedRef.current = false;
@@ -178,7 +179,7 @@ const WorkerProfileView = () => {
       fetchedRef.current = true;
       try {
         const token = localStorage.getItem('homelyserv_token');
-        const res = await fetch(`${apiBase}/api/workers/profile/${worker.id}`, {
+         const res = await fetch(`${apiBase}/api/workers/profile/${worker.id || worker._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -217,18 +218,100 @@ const WorkerProfileView = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
+const handleLogout = () => {
+     localStorage.removeItem('homelyserv_token');
+     localStorage.removeItem('homelyserv_user');
+     navigate('/login');
+   };
 
   const handleBack = () => {
     navigate('/employer-search');
   };
 
-  const handleHireNow = () => {
-    if (worker) {
+  const handleHireNow = async () => {
+    if (!worker || !user) return;
+    try {
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          employerId: user.id || user.email,
+          workerId: worker.id || worker.email,
+          workerName: worker.fullName,
+          workerEmail: worker.email,
+          workerPhone: worker.phone || '',
+          workerLocation: worker.location || 'Not specified',
+          workerRating: worker.rating || 4.5,
+          workerSkills: worker.skills || [],
+          workerImage: worker.profileImage || '',
+          employerName: user.fullName || 'Employer',
+          employerEmail: user.email,
+          jobTitle: worker.desiredJob || 'Service Provider',
+          agreedSalary: worker.hourlyRate || 30,
+          hourlyRate: worker.hourlyRate || 30,
+          amount: (worker.hourlyRate || 30) * 40 * 4,
+          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+          message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+        })
+      });
+      const response = { data: await res.json(), ok: res.ok };
+      if (response.ok && response.data.success) {
+        const offerData = {
+          id: response.data.offer?._id || response.data.offer?.id || 'offer_' + Date.now(),
+          workerId: worker.id || worker.email,
+          workerName: worker.fullName,
+          workerEmail: worker.email,
+          workerPhone: worker.phone || '',
+          workerLocation: worker.location || 'Not specified',
+          workerRating: worker.rating || 4.5,
+          workerSkills: worker.skills || [],
+          workerImage: worker.profileImage || '',
+          employerId: user.id || user.email,
+          employerName: user.fullName || 'Employer',
+          employerEmail: user.email,
+          jobTitle: worker.desiredJob || 'Service Provider',
+          hourlyRate: worker.hourlyRate || 30,
+          amount: (worker.hourlyRate || 30) * 40 * 4,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+          contactRevealed: false,
+          paymentConfirmed: false,
+          paymentVerified: false,
+          offerId: response.data.offer?._id || response.data.offer?.id
+        };
+        const existingEmployerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+        existingEmployerOffers.push(offerData);
+        localStorage.setItem('employer_offers', JSON.stringify(existingEmployerOffers));
+        const existingWorkerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
+        existingWorkerOffers.push(offerData);
+        localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(existingWorkerOffers));
+        localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
+          workerId: worker.id || worker.email,
+          workerName: worker.fullName,
+          workerEmail: worker.email,
+          hourlyRate: worker.hourlyRate,
+          desiredJob: worker.desiredJob,
+          commission: 15,
+          employerId: user.id || user.email,
+          employerName: user.fullName,
+          workerPhoto: worker.profileImage || '',
+          workerSkills: worker.skills || [],
+          workerExperience: worker.experience || '0 years',
+          workerLocation: worker.location || 'Not specified',
+          offerId: response.data.offer?._id || response.data.offer?.id
+        }));
+        navigate('/employer-payments');
+      } else {
+        throw new Error(response.data.message || 'Failed to send offer');
+      }
+    } catch (error) {
+      console.error('Error creating offer:', error);
       localStorage.setItem('homelyserv_selected_worker', JSON.stringify({
         workerId: worker.id || worker.email,
         workerName: worker.fullName,
@@ -236,13 +319,44 @@ const WorkerProfileView = () => {
         hourlyRate: worker.hourlyRate,
         desiredJob: worker.desiredJob,
         commission: 15,
-        employerId: user?.id || user?.email,
-        employerName: user?.fullName,
+        employerId: user.id || user.email,
+        employerName: user.fullName,
         workerPhoto: worker.profileImage || '',
         workerSkills: worker.skills || [],
         workerExperience: worker.experience || '0 years',
         workerLocation: worker.location || 'Not specified'
       }));
+      const fallbackOffer = {
+        id: 'offer_' + Date.now(),
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        workerPhone: worker.phone || '',
+        workerLocation: worker.location || 'Not specified',
+        workerRating: worker.rating || 4.5,
+        workerSkills: worker.skills || [],
+        workerImage: worker.profileImage || '',
+        employerId: user.id || user.email,
+        employerName: user.fullName || 'Employer',
+        employerEmail: user.email,
+        jobTitle: worker.desiredJob || 'Service Provider',
+        hourlyRate: worker.hourlyRate || 30,
+        amount: (worker.hourlyRate || 30) * 40 * 4,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+        contactRevealed: false,
+        paymentConfirmed: false,
+        paymentVerified: false
+      };
+      const existingEmployerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      existingEmployerOffers.push(fallbackOffer);
+      localStorage.setItem('employer_offers', JSON.stringify(existingEmployerOffers));
+      const existingWorkerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
+      existingWorkerOffers.push(fallbackOffer);
+      localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(existingWorkerOffers));
+      alert('Failed to send offer. Please try again.');
       navigate('/employer-payments');
     }
   };
@@ -281,12 +395,12 @@ const WorkerProfileView = () => {
       };
       localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
       
-      // Navigate to messages page
-      if (user?.role === 'EMPLOYER') {
-        navigate('/employer-messages');
-      } else {
-        navigate('/messages');
-      }
+// Navigate to messages page
+        if (user?.role === 'EMPLOYER') {
+          navigate('/employer-messages');
+        } else {
+          navigate('/messages');
+        }
     }
     setShowContactOptions(false);
   };

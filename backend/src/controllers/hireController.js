@@ -3,7 +3,25 @@ import prisma from '../lib/prisma.js';
 // SEND JOB OFFER (creates an Offer record instead of Hire)
 export const sendOffer = async (req, res) => {
   try {
-    const { workerId, agreedSalary, startDate, jobTitle, message } = req.body;
+    const {
+      workerId,
+      agreedSalary,
+      startDate,
+      jobTitle,
+      message,
+      workerName,
+      workerEmail,
+      workerPhone,
+      workerLocation,
+      workerRating,
+      workerSkills,
+      workerImage,
+      employerName,
+      employerEmail,
+      hourlyRate,
+      amount,
+      description
+    } = req.body;
 
     if (!jobTitle) {
       return res.status(400).json({ message: 'Job title is required' });
@@ -16,18 +34,45 @@ export const sendOffer = async (req, res) => {
 
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+    let effectiveWorkerId = workerId;
+    try {
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { userId: workerId }
+      });
+      if (workerProfile) {
+        effectiveWorkerId = workerProfile.id;
+      }
+    } catch (_) {
+      console.warn('⚠️ WorkerProfile lookup failed, using workerId as-is:', workerId);
+    }
+
     const offer = await prisma.offer.create({
       data: {
-        workerId,
+        workerId: effectiveWorkerId,
         employerId: req.userId,
         jobTitle,
         message: message || null,
         salary,
-        status: 'pending'
+        status: 'pending',
+        workerName: workerName || null,
+        workerEmail: workerEmail || null,
+        workerPhone: workerPhone || null,
+        workerLocation: workerLocation || null,
+        workerRating: workerRating ? parseFloat(workerRating) : null,
+        workerSkills: workerSkills || [],
+        workerImage: workerImage || null,
+        employerName: employerName || null,
+        employerEmail: employerEmail || null,
+        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
+        amount: amount ? parseFloat(amount) : null,
+        description: description || null,
+        contactRevealed: false,
+        paymentConfirmed: false,
+        paymentVerified: false
       }
     });
 
-    res.status(201).json({ message: 'Offer sent successfully', offer });
+    res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
   } catch (error) {
     console.error('Hire error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -198,6 +243,28 @@ export const getAllHires = async (req, res) => {
     res.json(hires);
   } catch (error) {
     console.error('Get all hires error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// UPDATE OFFER STATUS
+export const updateOfferStatus = async (req, res) => {
+  try {
+    const { offerId } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'accepted', 'rejected', 'paid', 'in_progress', 'completed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const updatedOffer = await prisma.offer.update({
+      where: { id: offerId },
+      data: { status }
+    });
+
+    res.json({ message: 'Offer status updated', offer: updatedOffer });
+  } catch (error) {
+    console.error('Update offer status error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

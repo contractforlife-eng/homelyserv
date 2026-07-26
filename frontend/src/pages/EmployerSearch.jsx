@@ -303,7 +303,11 @@ const EmployerSearch = () => {
       const response = { data: await res.json(), ok: res.ok };
       
       if (response.ok && response.data.success) {
-        const workers = response.data.workers || [];
+        const workers = (response.data.workers || []).map(w => ({
+          ...w,
+          id: w.id || w._id,
+          profileImage: w.profileImage || w.image || ''
+        }));
         setAllWorkers(workers);
         setSearchLimitStatus({
           count: response.data.searchCount || 0,
@@ -345,12 +349,13 @@ const EmployerSearch = () => {
       
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
-        const workerId = worker.id || worker.email;
+        const workerId = worker.id || worker._id || worker.email;
         const isPremium = isUserPremium(workerId);
         
         return {
           ...worker,
           ...profile,
+          id: workerId,
           fullName: profile.fullName || worker.fullName || worker.name || 'Worker',
           email: worker.email,
           phone: profile.phone || worker.phone || '',
@@ -456,14 +461,55 @@ const EmployerSearch = () => {
           workerId: worker.id || worker.email,
           workerName: worker.fullName,
           workerEmail: worker.email,
+          workerPhone: worker.phone || '',
+          workerLocation: worker.location || 'Not specified',
+          workerRating: worker.rating || 4.5,
+          workerSkills: worker.skills || [],
+          workerImage: worker.profileImage || '',
+          employerName: authUser.fullName || 'Employer',
+          employerEmail: authUser.email,
           jobTitle: worker.desiredJob || 'Service Provider',
+          agreedSalary: worker.hourlyRate || 30,
           hourlyRate: worker.hourlyRate || 30,
-          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+          amount: (worker.hourlyRate || 30) * 40 * 4,
+          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+          message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
         })
       });
       const response = { data: await res.json(), ok: res.ok };
 
       if (response.ok && response.data.success) {
+        const offerData = {
+          id: response.data.offer?._id || response.data.offer?.id || 'offer_' + Date.now(),
+          workerId: worker.id || worker.email,
+          workerName: worker.fullName,
+          workerEmail: worker.email,
+          workerPhone: worker.phone || '',
+          workerLocation: worker.location || 'Not specified',
+          workerRating: worker.rating || 4.5,
+          workerSkills: worker.skills || [],
+          workerImage: worker.profileImage || '',
+          employerId: authUser.id || authUser.email,
+          employerName: authUser.fullName || 'Employer',
+          employerEmail: authUser.email,
+          jobTitle: worker.desiredJob || 'Service Provider',
+          hourlyRate: worker.hourlyRate || 30,
+          amount: (worker.hourlyRate || 30) * 40 * 4,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+          contactRevealed: false,
+          paymentConfirmed: false,
+          paymentVerified: false,
+          offerId: response.data.offer?._id || response.data.offer?.id
+        };
+        const existingEmployerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+        existingEmployerOffers.push(offerData);
+        localStorage.setItem('employer_offers', JSON.stringify(existingEmployerOffers));
+        const existingWorkerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
+        existingWorkerOffers.push(offerData);
+        localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(existingWorkerOffers));
         const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
         alert(successMsg);
       } else {
@@ -532,8 +578,8 @@ const EmployerSearch = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
-      const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
-      alert(successMsg);
+      console.error('Error details:', error.message || error);
+      alert(t.hireError);
     }
   };
 
@@ -1130,10 +1176,10 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                             {t.hireNow}
                           </button>
                           <button
-                            onClick={() => {
-                              localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
-                              navigate('/worker-profile-view');
-                            }}
+onClick={() => {
+                               localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
+                               navigate('/worker-profile-view');
+                             }}
                             className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-1"
                           >
                             <Eye size={14} />

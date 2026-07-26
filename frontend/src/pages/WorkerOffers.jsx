@@ -83,7 +83,9 @@ const WorkerOffers = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
-  
+
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -321,91 +323,76 @@ const WorkerOffers = () => {
   // ============================================================
   // Load Offers - FIXED: Adds "paid" status
   // ============================================================
-  const loadOffers = (userParam) => {
+  const loadOffers = async (userParam) => {
+    setLoading(true);
     try {
       const currentUser = userParam || authUser;
       if (!currentUser?.email) {
         setOffers([]);
         return;
       }
-      
-      let allOffers = [];
-      const userEmail = currentUser.email;
-      
-      // Load from employer_offers
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      console.log(`📋 Total employer_offers: ${employerOffers.length}`);
-      
-      // Filter offers for this worker
-      const workerOffersFromEmployer = employerOffers.filter(
-        offer => offer.workerEmail === userEmail
-      );
-      console.log(`📋 Found ${workerOffersFromEmployer.length} offers for ${userEmail} from employer_offers`);
-      
-      // Load from worker-specific storage
-      const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${userEmail}`) || '[]');
-      console.log(`📋 Found ${workerSpecificOffers.length} offers from worker-specific storage`);
-      
-      // Combine and deduplicate
-      const allOfferIds = new Set();
-      
-      // Add employer offers first
-      workerOffersFromEmployer.forEach(offer => {
-        if (!allOfferIds.has(offer.id)) {
-          allOfferIds.add(offer.id);
-          allOffers.push({ ...offer });
-        }
+
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires/offers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      // Add worker-specific offers (these might have updated status)
-      workerSpecificOffers.forEach(offer => {
-        const existingIndex = allOffers.findIndex(o => o.id === offer.id);
-        if (existingIndex !== -1) {
-          // Update existing offer with newer data
-          allOffers[existingIndex] = { ...allOffers[existingIndex], ...offer };
-        } else {
-          allOffers.push({ ...offer });
-        }
-      });
-      
-      // FIXED: Check for payment completion and update status
-      allOffers = allOffers.map(offer => {
-        // If payment is completed and offer is accepted, mark as 'paid'
-        if (offer.paymentCompleted === true && offer.status === 'accepted') {
-          console.log(`💰 Offer ${offer.id} - Payment completed, changing status to paid`);
-          return { ...offer, status: 'paid' };
-        }
-        // If offer is accepted and payment is completed, mark as in_progress (for backward compatibility)
-        if (offer.status === 'accepted' && offer.paymentCompleted === true) {
-          console.log(`💰 Offer ${offer.id} - Payment completed (backward compatibility), changing status to paid`);
-          return { ...offer, status: 'paid' };
-        }
-        // If status is already in_progress but payment is completed, change to paid
-        if (offer.status === 'in_progress' && offer.paymentCompleted === true) {
-          console.log(`💰 Offer ${offer.id} - In progress with payment completed, changing to paid`);
-          return { ...offer, status: 'paid' };
-        }
-        return offer;
-      });
-      
-      // Sort by newest first
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      const allOffers = Array.isArray(data) ? data : [];
+
       allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
-      
-      // Log final status breakdown
-      const statusCount = {};
-      allOffers.forEach(o => {
-        statusCount[o.status] = (statusCount[o.status] || 0) + 1;
-      });
-      console.log('📊 Final status breakdown:', statusCount);
-      
+
       setOffers(allOffers);
-      
       return allOffers;
-      
     } catch (error) {
-      console.error('Error loading offers:', error);
-      setOffers([]);
-      return [];
+      console.error('Error loading offers from backend:', error);
+      try {
+        const currentUser = userParam || authUser;
+        if (!currentUser?.email) {
+          setOffers([]);
+          return;
+        }
+
+        const userEmail = currentUser.email;
+        const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+        const workerOffersFromEmployer = employerOffers.filter(
+          offer => offer.workerEmail === userEmail
+        );
+        const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${userEmail}`) || '[]');
+
+        const allOfferIds = new Set();
+        const allOffers = [];
+
+        workerOffersFromEmployer.forEach(offer => {
+          if (!allOfferIds.has(offer.id)) {
+            allOfferIds.add(offer.id);
+            allOffers.push({ ...offer });
+          }
+        });
+
+        workerSpecificOffers.forEach(offer => {
+          const existingIndex = allOffers.findIndex(o => o.id === offer.id);
+          if (existingIndex !== -1) {
+            allOffers[existingIndex] = { ...allOffers[existingIndex], ...offer };
+          } else {
+            allOffers.push({ ...offer });
+          }
+        });
+
+        allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
+        setOffers(allOffers);
+        return allOffers;
+      } catch (e) {
+        console.error('Error loading offers from localStorage fallback:', e);
+        setOffers([]);
+        return [];
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -436,7 +423,6 @@ const WorkerOffers = () => {
     }
 
     loadOffers(authUser);
-    setLoading(false);
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
@@ -456,29 +442,43 @@ const WorkerOffers = () => {
   // ============================================================
   // Accept Offer Handler
   // ============================================================
-  const handleAcceptOffer = (offer) => {
+  const handleAcceptOffer = async (offer) => {
     if (processingOffer) return;
     setProcessingOffer(offer.id);
 
     try {
       console.log(`📝 Accepting offer: ${offer.id} - ${offer.jobTitle}`);
       
-      const updatedOffer = {
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/respond`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'accepted' })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to accept offer');
+      }
+
+      const data = await res.json();
+      const updatedOffer = data.offer || {
         ...offer,
         status: 'accepted',
         updatedAt: new Date().toISOString(),
         workerResponseAt: new Date().toISOString()
       };
 
-      // Update in employer_offers
+      // Update localStorage for backward compatibility with other pages
       const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const updatedEmployerOffers = employerOffers.map(o => 
         o.id === offer.id ? updatedOffer : o
       );
       localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-      console.log('✅ Updated employer_offers');
 
-      // Update in worker-specific storage
       if (authUser?.email) {
         const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
         const updatedWorkerOffers = workerOffers.map(o => 
@@ -488,7 +488,6 @@ const WorkerOffers = () => {
           updatedWorkerOffers.push(updatedOffer);
         }
         localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
-        console.log('✅ Updated worker-specific storage');
       }
 
       // Create conversation
@@ -519,11 +518,8 @@ const WorkerOffers = () => {
       notifications.push(notification);
       localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
-      // Update local state immediately
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      
       alert(t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer'));
-      
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
@@ -537,7 +533,7 @@ const WorkerOffers = () => {
   // ============================================================
   // Reject Offer Handler
   // ============================================================
-  const handleRejectOffer = (offer) => {
+  const handleRejectOffer = async (offer) => {
     if (processingOffer) return;
     
     if (!confirm(`Are you sure you want to decline the offer from ${offer.employerName || 'Employer'}?`)) {
@@ -547,7 +543,23 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      const updatedOffer = {
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/respond`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'rejected' })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to reject offer');
+      }
+
+      const data = await res.json();
+      const updatedOffer = data.offer || {
         ...offer,
         status: 'rejected',
         updatedAt: new Date().toISOString(),
@@ -583,7 +595,7 @@ const WorkerOffers = () => {
   // ============================================================
   // Complete Work Handler
   // ============================================================
-  const handleCompleteWork = (offer) => {
+  const handleCompleteWork = async (offer) => {
     if (processingOffer) return;
     
     if (!confirm('Mark this job as completed? This cannot be undone.')) {
@@ -593,10 +605,25 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      const updatedOffer = {
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'completed' })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to complete work');
+      }
+
+      const data = await res.json();
+      const updatedOffer = data.offer || {
         ...offer,
         status: 'completed',
-        workCompletedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 

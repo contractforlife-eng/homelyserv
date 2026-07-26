@@ -55,7 +55,7 @@ router.get('/search', authenticate, async (req, res) => {
       filter.location = { $regex: escapedLocation, $options: 'i' };
     }
     
-    const workers = await User.find(filter).select('-password -email -phone');
+    const workers = await User.find(filter).select('-password');
     
     const isPremium = await hasActiveSubscription(employerId);
     const limitStatus = await getSearchLimitStatus(employerId);

@@ -24,11 +24,11 @@ function Login() {
   const [changePasswordError, setChangePasswordError] = useState('');
   const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
 
-  // Check if user is already logged in — redirect based on Zustand auth state
+// Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {
-    const { token, isAuthenticated } = useAuthStore.getState();
-    if (token && isAuthenticated) {
-      navigate("/messages");
+    const { token, isAuthenticated, user } = useAuthStore.getState();
+    if (token && isAuthenticated && user) {
+      redirectUser(user);
     }
   }, []);
 
@@ -48,19 +48,19 @@ function Login() {
     };
   }, []);
 
-  const redirectUser = (user) => {
-    const role = user?.role?.toUpperCase();
+const redirectUser = (user) => {
+     const role = user?.role?.toUpperCase();
 
-    if (role === 'ADMIN') {
-      navigate('/admin');
-    } else if (role === 'EMPLOYER') {
-      navigate('/employer-dashboard');
-    } else if (role === 'WORKER') {
-      navigate('/worker-dashboard');
-    } else {
-      navigate('/login');
-    }
-  };
+     if (role === 'ADMIN') {
+       navigate('/admin');
+     } else if (role === 'EMPLOYER') {
+       navigate('/employer-dashboard');
+     } else if (role === 'WORKER') {
+       navigate('/worker-dashboard');
+     } else {
+       navigate('/login');
+     }
+   };
 
   const loginUser = async (email, password) => {
     setError('');

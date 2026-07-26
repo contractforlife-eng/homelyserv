@@ -234,9 +234,22 @@ model Offer {
 
   salary Float
   status String @default("pending")
-  // pending
-  // accepted
-  // rejected
+
+  employerName   String?
+  employerEmail  String?
+  workerName     String?
+  workerEmail    String?
+  workerPhone    String?
+  workerLocation String?
+  workerRating   Float?
+  workerSkills   String[]
+  workerImage    String?
+  hourlyRate     Float?
+  amount         Float?
+  description    String?
+  contactRevealed Boolean? @default(false)
+  paymentConfirmed Boolean? @default(false)
+  paymentVerified Boolean? @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

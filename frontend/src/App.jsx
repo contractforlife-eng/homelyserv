@@ -71,16 +71,16 @@ const MessagesRedirect = () => {
     // If user is null (during checkAuth), wait for user to be populated
     if (!user) return;
     
-    const role = user.role?.toUpperCase();
-    if (role === 'WORKER') {
-      navigate('/worker-messages', { replace: true });
-    } else if (role === 'EMPLOYER') {
-      navigate('/employer-messages', { replace: true });
-    } else if (role === 'ADMIN') {
-      navigate('/admin/messages', { replace: true });
-    } else {
-      navigate('/login', { replace: true });
-    }
+const role = user.role?.toUpperCase();
+     if (role === 'WORKER') {
+       navigate('/worker-messages', { replace: true });
+     } else if (role === 'EMPLOYER') {
+       navigate('/employer-messages', { replace: true });
+     } else if (role === 'ADMIN') {
+       navigate('/admin/messages', { replace: true });
+     } else {
+       navigate('/login', { replace: true });
+     }
   }, [user, isAuthenticated, loading, navigate]);
 
   return (
@@ -108,34 +108,33 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
   
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // If user is null (during checkAuth), show loading instead of redirecting
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  const userRole = user.role?.toUpperCase();
-  
-  if (requiredRole && userRole !== requiredRole.toUpperCase()) {
-    if (userRole === 'WORKER') {
-      return <Navigate to="/worker-dashboard" replace />;
-    } else if (userRole === 'EMPLOYER') {
-      return <Navigate to="/employer-dashboard" replace />;
-    } else if (userRole === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
-    }
-    return <Navigate to="/login" replace />;
-  }
+if (!isAuthenticated) {
+     return <Navigate to="/login" replace />;
+   }
+
+   if (!user) {
+     return (
+       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+         <div className="text-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+           <p className="mt-4 text-gray-600">Loading...</p>
+         </div>
+       </div>
+     );
+   }
+
+   const userRole = user.role?.toUpperCase();
+
+   if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+     if (userRole === 'WORKER') {
+       return <Navigate to="/worker-dashboard" replace />;
+     } else if (userRole === 'EMPLOYER') {
+       return <Navigate to="/employer-dashboard" replace />;
+     } else if (userRole === 'ADMIN') {
+       return <Navigate to="/admin" replace />;
+     }
+     return <Navigate to="/login" replace />;
+   }
   
   return children;
 };
