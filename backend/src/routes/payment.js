@@ -3,6 +3,7 @@ import express from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
 import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -269,6 +270,113 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
 };
 
 // ============================================================
+// SUBSCRIPTION MANAGEMENT
+// ============================================================
+
+const ensureSubscription = async (userId, amount) => {
+  try {
+    console.log("ENTER ensureSubscription");
+    console.log("Running findFirst...");
+    const existing = await prisma.subscription.findFirst({
+      where: {
+        userId: String(userId),
+        status: 'active',
+        endDate: { gte: new Date() }
+      }
+    });
+    console.log("findFirst result:", existing);
+    if (existing) {
+      console.log("Updating existing subscription...");
+      const updated = await prisma.subscription.update({
+        where: { id: existing.id },
+        data: {
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+      });
+      console.log("Update succeeded:", updated);
+      return updated;
+    }
+    console.log("Creating subscription...");
+    const subscriptionData = {
+      userId: String(userId),
+      plan: 'premium',
+      amount: Number(amount),
+      status: 'active',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+    console.log("subscriptionData =", JSON.stringify(subscriptionData, null, 2));
+    console.log(typeof subscriptionData.userId);
+    console.log(typeof subscriptionData.amount);
+    console.log(typeof subscriptionData.plan);
+    console.log(typeof subscriptionData.status);
+    console.log("DATABASE_URL:", process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/\/\/[^\/]+@/, "//<masked>@") : "not set");
+    console.log("Authenticated userId:", userId);
+    const count = await prisma.user.count();
+    console.log("Total Prisma users:", count);
+    const firstUsers = await prisma.user.findMany({
+      take: 5
+    });
+    console.dir(firstUsers, { depth: null });
+    const byId = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    });
+    console.log("findUnique result:");
+    console.dir(byId, { depth: null });
+    const userExists = await prisma.user.findUnique({
+      where: {
+        id: subscriptionData.userId
+      }
+    });
+    console.log("USER EXISTS:");
+    console.dir(userExists, { depth: null });
+    const existingSubs = await prisma.subscription.findMany({
+      where: {
+        userId: subscriptionData.userId
+      }
+    });
+    console.log("EXISTING SUBSCRIPTIONS:");
+    console.dir(existingSubs, { depth: null });
+    try {
+      console.log("========= BEFORE CREATE =========");
+      console.log(subscriptionData);
+      const created = await prisma.subscription.create({
+        data: subscriptionData
+      });
+      console.log("========= CREATE SUCCESS =========");
+      console.dir(created, { depth: null });
+      return created;
+    } catch (e) {
+      console.log("========= CREATE FAILED =========");
+      console.log("name:");
+      console.log(e.name);
+      console.log("code:");
+      console.log(e.code);
+      console.log("message:");
+      console.log(e.message);
+      console.log("meta:");
+      console.dir(e.meta, { depth: null });
+      console.log("stack:");
+      console.log(e.stack);
+      console.log("full error:");
+      console.dir(e, { depth: null });
+      throw e;
+    }
+  } catch(err) {
+    console.error("========= PRISMA CREATE FAILED =========");
+    console.error("name:", err.name);
+    console.error("code:", err.code);
+    console.error("message:", err.message);
+    console.error("meta:", err.meta);
+    console.error("stack:", err.stack);
+    console.error(err);
+    throw err;
+  }
+};
+
+// ============================================================
 // ROUTES
 // ============================================================
 
@@ -276,24 +384,23 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
  * Create Payment Intent
  * POST /api/payments/create-payment-intent
  */
-router.post('/create-payment-intent', async (req, res) => {
-  try {
-    const {
-      amount,
-      paymentMethod,
-      userEmail,
-      workerName,
-      userId,
-      workerId,
-      jobTitle,
-      employerId,
-      employerName,
-      hireId,
-      phone,
-      offerId
-    } = req.body;
+router.post('/create-payment-intent', authenticate, async (req, res) => {
+   try {
+     const {
+       amount,
+       paymentMethod,
+       userEmail,
+       workerName,
+       workerId,
+       jobTitle,
+       employerId,
+       employerName,
+       hireId,
+       phone,
+       offerId
+} = req.body;
 
-    console.log('📤 Creating payment intent:', {
+  console.log('📤 Creating payment intent:', {
       amount,
       paymentMethod,
       userEmail,
@@ -316,7 +423,7 @@ router.post('/create-payment-intent', async (req, res) => {
       lastName: employerName?.split(' ').slice(1).join(' ') || 'User',
       email: userEmail || 'employer@example.com',
       phone: phone || '+201234567890',
-      userId,
+      userId: req.userId,
       workerId,
       workerName,
       jobTitle,
@@ -337,7 +444,7 @@ router.post('/create-payment-intent', async (req, res) => {
         paymentMethod: paymentMethod || 'paymob',
         status: 'pending',
         userEmail: userEmail || 'employer@example.com',
-        userId: userId || userEmail || null,
+        userId: req.userId || null,
         workerId: workerId || null,
         workerName: workerName || 'Worker',
         jobTitle: jobTitle || null,
@@ -552,6 +659,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
     // If already completed, return success
     if (payment.status === 'completed') {
       console.log(`✅ Payment already completed: ${orderId}`);
+      console.log("RETURN SUCCESS PATH A");
       return res.json({
         success: true,
         message: 'Payment already completed',
@@ -613,6 +721,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           // Update offer
           await updateOfferAfterPayment(payment.offerId, captureId);
 
+          // Persist subscription in MongoDB
+          console.log("CALLING ensureSubscription");
+          await ensureSubscription(payment.userId, payment.amount);
+
+          console.log("RETURN SUCCESS PATH A");
           return res.json({
             success: true,
             message: 'Payment already completed',
@@ -660,6 +773,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             // Update offer
             await updateOfferAfterPayment(payment.offerId, captureId);
 
+            // Persist subscription in MongoDB
+            console.log("CALLING ensureSubscription");
+            await ensureSubscription(payment.userId, payment.amount);
+
+            console.log("RETURN SUCCESS PATH B");
             return res.json({
               success: true,
               message: 'Payment captured successfully',
@@ -724,6 +842,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             // Update offer
             await updateOfferAfterPayment(payment.offerId, 'CAPTURED_' + Date.now());
 
+            // Persist subscription in MongoDB
+            console.log("CALLING ensureSubscription");
+            await ensureSubscription(payment.userId, payment.amount);
+
+            console.log("RETURN SUCCESS PATH A");
             return res.json({
               success: true,
               message: 'Payment was already captured',
@@ -772,7 +895,12 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               // Update offer status
               await updateOfferAfterPayment(payment.offerId, testCaptureId);
 
+              // Persist subscription in MongoDB
+              console.log("CALLING ensureSubscription");
+              await ensureSubscription(payment.userId, payment.amount);
+
               console.log('✅ Payment simulated successfully for testing');
+              console.log("RETURN SUCCESS PATH B");
 
               return res.json({
                 success: true,
