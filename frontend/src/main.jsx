@@ -7,6 +7,8 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import useThemeStore from './store/themeStore';
+// Initialize i18n (single source of truth for all languages + RTL)
+import './i18n';
 import './index.css';
 
 const GOOGLE_CLIENT_ID = '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com';

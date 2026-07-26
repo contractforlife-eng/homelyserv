@@ -6,6 +6,8 @@ import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import WorkerSidebar from '../components/worker/WorkerSidebar';
 import api from '../utils/api';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
 import {
   Home,
   User,
@@ -80,7 +82,8 @@ const WorkerSettings = () => {
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const isDark = theme === 'dark';
   
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -141,11 +144,11 @@ const WorkerSettings = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-    setSettings(prev => ({ ...prev, language: newLang }));
+  const handleLanguageChange = (langCode) => {
+    changeLanguageGlobal(langCode);
+    setLanguage(langCode);
+    setSettings(prev => ({ ...prev, language: langCode }));
+    setShowLangDropdown(false);
   };
 
   const handleLogout = () => {
@@ -375,13 +378,12 @@ const WorkerSettings = () => {
     }
   };
 
+  const { i18n } = useTranslation();
   const t = translations[language] || translations.en;
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
+    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) || i18n.language || 'en';
+    setLanguage(savedLang);
     
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
@@ -729,13 +731,31 @@ const WorkerSettings = () => {
                 )}
               </div>
 
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangDropdown(!showLangDropdown)}
+                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2"
+                >
+                  <Globe size={16} />
+                  {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
+                </button>
+                {showLangDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code)}
+                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-gray-900 transition text-sm ${
+                          language === lang.code ? 'bg-red-50 dark:bg-gray-900 font-semibold' : ''
+                        }`}
+                      >
+                        <span className="text-lg">{lang.flag}</span>
+                        <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {!userIsPremium && (
                 <Link
                   to="/subscription"
@@ -780,11 +800,12 @@ const WorkerSettings = () => {
                   </div>
                   <select
                     value={settings.language}
-                    onChange={(e) => handleSettingChange('language', e.target.value)}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
                     className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
+                    ))}
                   </select>
                 </div>
 

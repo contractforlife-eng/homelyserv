@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 import AdminSidebar from '../components/AdminSidebar.jsx';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
 import {
   Home,
   Users,
@@ -451,7 +453,8 @@ const ToggleSwitch = ({ value, onChange, disabled = false }) => {
 // ============================================================
 const AdminSettings = () => {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -689,6 +692,7 @@ const AdminSettings = () => {
     }
   };
 
+  const { i18n } = useTranslation();
   const t = translations[language] || translations.en;
 
   // Use authStore as single source of truth
@@ -697,11 +701,9 @@ const AdminSettings = () => {
   const authLoading = useAuthStore(state => state.isLoading);
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-      setSettings(prev => ({ ...prev, language: savedLang }));
-    }
+    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) || i18n.language || 'en';
+    setLanguage(savedLang);
+    setSettings(prev => ({ ...prev, language: savedLang }));
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
@@ -764,11 +766,11 @@ const AdminSettings = () => {
     }
   }, [notificationMessage]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    setSettings(prev => ({ ...prev, language: newLang }));
-    localStorage.setItem('homelyserv_language', newLang);
+  const handleLanguageChange = (langCode) => {
+    changeLanguageGlobal(langCode);
+    setLanguage(langCode);
+    setSettings(prev => ({ ...prev, language: langCode }));
+    setShowLangDropdown(false);
   };
 
   const toggleSidebar = () => {
@@ -934,13 +936,31 @@ const AdminSettings = () => {
               {/* WORKING NOTIFICATION BELL */}
               <NotificationBell userId={user?.id || user?.email} />
               
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangDropdown(!showLangDropdown)}
+                  className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
+                >
+                  <Globe size={16} />
+                  {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
+                </button>
+                {showLangDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code)}
+                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
+                          language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
+                        }`}
+                      >
+                        <span className="text-lg">{lang.flag}</span>
+                        <span>{lang.nativeName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -1094,15 +1114,12 @@ const AdminSettings = () => {
                     <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
                     <select
                       value={settings.language}
-                      onChange={(e) => {
-                        handleSettingChange('language', e.target.value);
-                        setLanguage(e.target.value);
-                        localStorage.setItem('homelyserv_language', e.target.value);
-                      }}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
                       className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
                     >
-                      <option value="en">English</option>
-                      <option value="ar">العربية</option>
+                      {SUPPORTED_LANGUAGES.map((lang) => (
+                        <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

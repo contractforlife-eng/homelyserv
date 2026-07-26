@@ -5,9 +5,12 @@ import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Spark
 import SocialLogin from '../components/SocialLogin';
 import useAuthStore from '../store/authStore';
 import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 
 function Login() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,14 +19,6 @@ function Login() {
   const [showLanguages, setShowLanguages] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
   const [isEmailValid, setIsEmailValid] = useState(false);
-
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
-  ];
 
   // Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {
@@ -79,7 +74,7 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        setError(data.message || 'Invalid email or password');
+        setError(data.message || t('invalidCredentials'));
         setLoading(false);
         return;
       }
@@ -117,7 +112,7 @@ function Login() {
       redirectUser(user);
     } catch (error) {
       console.error('Login error:', error);
-      setError('Login failed. Please try again.');
+      setError(t('loginFailed'));
       setLoading(false);
     }
   };
@@ -125,13 +120,13 @@ function Login() {
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     if (!email) {
-      setError('Please enter your email address');
+      setError(t('enterEmail'));
       return;
     }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('enterValidEmail'));
       return;
     }
     
@@ -146,7 +141,7 @@ function Login() {
     setLoading(true);
 
     if (!email || !password) {
-      setError('Please enter both email and password');
+      setError(t('enterBoth'));
       setLoading(false);
       return;
     }
@@ -184,18 +179,22 @@ function Login() {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/90 backdrop-blur-sm border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 dark:bg-red-900/30/80 transition-all text-sm shadow-md hover:shadow-red-200"
               >
                 <Globe size={15} className="text-red-600" />
-                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">EN</span>
+                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                  {SUPPORTED_LANGUAGES.find(l => l.code === i18n.language)?.nativeName || 'English'}
+                </span>
               </button>
               {showLanguages && (
                 <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border-2 border-red-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                  {languages.map((lang) => (
+                  {SUPPORTED_LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
-                      onClick={() => { setShowLanguages(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 hover:text-red-600 transition text-sm"
+                      onClick={() => { changeLanguageGlobal(lang.code); setShowLanguages(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 hover:text-red-600 transition text-sm ${
+                        i18n.language === lang.code ? 'bg-red-50 font-semibold' : ''
+                      }`}
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700 dark:text-gray-300">{lang.name}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
                     </button>
                   ))}
                 </div>
@@ -220,9 +219,9 @@ function Login() {
               
               <div className="mt-4">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 via-red-600 to-gray-800 bg-clip-text text-transparent tracking-tight drop-shadow-sm">
-                  HomelyServ
+                  {t('appName')}
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">Premium Home Services</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
               </div>
             </div>
           </div>
@@ -236,7 +235,7 @@ function Login() {
           <form onSubmit={handleSubmit}>
             {/* Email Field - Always Visible */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('email')}</label>
               <div className="relative group">
                 <Mail size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -252,7 +251,7 @@ function Login() {
                   className={`w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100 ${
                     showPasswordField ? 'opacity-50 pointer-events-none' : ''
                   }`}
-                  placeholder="Enter your email"
+                  placeholder={t('emailPlaceholder')}
                   disabled={showPasswordField}
                   required
                 />
@@ -277,7 +276,7 @@ function Login() {
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
               showPasswordField ? 'max-h-40 opacity-100 mb-2' : 'max-h-0 opacity-0'
             }`}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('password')}</label>
               <div className="relative group">
                 <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -285,7 +284,7 @@ function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-11 pr-12 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
-                  placeholder="Enter your password"
+                  placeholder={t('passwordPlaceholder')}
                   required
                   autoFocus={showPasswordField}
                 />
@@ -306,10 +305,10 @@ function Login() {
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 text-red-600 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-red-400" />
-                  Remember me
+                  {t('rememberMe')}
                 </label>
                 <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-semibold transition-colors hover:underline">
-                  Forgot password?
+                  {t('forgotPassword')}
                 </Link>
               </div>
             </div>
@@ -326,11 +325,11 @@ function Login() {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
+                    {t('loading')}
                   </div>
                 ) : (
                   <>
-                    Sign In
+                    {t('signIn')}
                     <LogIn size={20} />
                   </>
                 )}
@@ -346,7 +345,7 @@ function Login() {
                 onClick={handleBackToEmail}
                 className="w-full text-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors font-medium"
               >
-                ← Use a different email
+                {t('useDifferentEmail')}
               </button>
             </div>
           </form>
@@ -360,9 +359,9 @@ function Login() {
 
           {/* Register Link */}
           <p className="text-center text-gray-600 dark:text-gray-300 mt-6">
-            Don't have an account?{' '}
+            {t('noAccount')}{' '}
             <Link to="/register" className="text-red-600 font-bold hover:text-red-700 transition-colors hover:underline hover:underline-offset-2">
-              Create one
+              {t('createOne')}
             </Link>
           </p>
         </div>
