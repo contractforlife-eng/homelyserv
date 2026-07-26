@@ -19,6 +19,10 @@ function Login() {
   const [showLanguages, setShowLanguages] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
   const [isEmailValid, setIsEmailValid] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
 
   // Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {
@@ -109,11 +113,78 @@ function Login() {
         }
       });
 
+      if (data.mustChangePassword) {
+        setMustChangePassword(true);
+        setLoading(false);
+        setPassword('');
+        return;
+      }
+
       redirectUser(user);
     } catch (error) {
       console.error('Login error:', error);
       setError(t('loginFailed'));
       setLoading(false);
+    }
+  };
+
+  const handleForceChangePassword = async (e) => {
+    e.preventDefault();
+    setChangePasswordError('');
+    setChangePasswordSuccess(false);
+
+    const newPassword = e.target.elements.newPassword.value;
+    const confirmPassword = e.target.elements.confirmPassword.value;
+
+    if (!newPassword || newPassword.length < 6) {
+      setChangePasswordError(t('passwordTooShort'));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError(t('passwordMismatch'));
+      return;
+    }
+
+    setChangePasswordLoading(true);
+
+    try {
+      const token = localStorage.getItem('homelyserv_token');
+      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: password,
+          newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setChangePasswordError(data.message || t('error'));
+        setChangePasswordLoading(false);
+        return;
+      }
+
+      setChangePasswordSuccess(true);
+      setChangePasswordLoading(false);
+
+      setTimeout(() => {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          redirectUser(currentUser);
+        } else {
+          navigate('/login');
+        }
+      }, 1500);
+    } catch (error) {
+      console.error('Force change password error:', error);
+      setChangePasswordError(t('error'));
+      setChangePasswordLoading(false);
     }
   };
 
@@ -349,6 +420,81 @@ function Login() {
               </button>
             </div>
           </form>
+
+          {/* Force Password Change */}
+          {mustChangePassword && (
+            <div className="mt-6 p-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 rounded-2xl">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                <Lock size={20} className="text-yellow-600" />
+                Change Your Password
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Your password was reset by an administrator. Please set a new password to continue.
+              </p>
+
+              {changePasswordError && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+                  <AlertCircle size={16} className="text-red-500" /> {changePasswordError}
+                </div>
+              )}
+
+              {changePasswordSuccess && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-xl text-green-600 text-sm flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-500" /> Password changed! Redirecting...
+                </div>
+              )}
+
+              {!changePasswordSuccess && (
+                <form onSubmit={handleForceChangePassword} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+                    <div className="relative group">
+                      <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="newPassword"
+                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
+                        placeholder={t('newPassword')}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New Password</label>
+                    <div className="relative group">
+                      <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
+                        placeholder={t('confirmPassword')}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={changePasswordLoading}
+                    className="w-full bg-gradient-to-r from-red-500 via-red-600 to-gray-800 text-white py-3.5 rounded-xl hover:shadow-2xl hover:shadow-red-500/40 transition-all duration-300 font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:scale-[1.02]"
+                  >
+                    {changePasswordLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        {t('loading')}
+                      </div>
+                    ) : (
+                      <>
+                        {t('changePassword')}
+                        <CheckCircle size={20} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
 
           {/* Social Login */}
           <div className="mt-4">

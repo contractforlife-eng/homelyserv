@@ -118,6 +118,7 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       token,
+      mustChangePassword: !!user.mustChangePassword,
       user: userData
     });
 
@@ -495,7 +496,9 @@ router.put('/change-password', authenticate, async (req, res) => {
       });
     }
 
-    user.password = newPassword;
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.mustChangePassword = false;
     await user.save();
 
     res.json({
@@ -506,7 +509,8 @@ router.put('/change-password', authenticate, async (req, res) => {
     console.error('Change password error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to change password'
+      message: 'Failed to change password',
+      error: error.message
     });
   }
 });
@@ -569,7 +573,9 @@ router.post('/change-password', authenticate, async (req, res) => {
       });
     }
 
-    user.password = newPassword;
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.mustChangePassword = false;
     await user.save();
 
     res.json({
@@ -580,7 +586,8 @@ router.post('/change-password', authenticate, async (req, res) => {
     console.error('Change password error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to change password'
+      message: 'Failed to change password',
+      error: error.message
     });
   }
 });

@@ -1,5 +1,6 @@
 // backend/src/routes/admin.js
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
 import prisma from '../lib/prisma.js';
@@ -148,6 +149,54 @@ router.post('/users/:id/activate', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to activate user',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Reset User Password (Admin Only)
+// ============================================================
+router.put('/users/:id/reset-password', async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.passwordResetAt = new Date();
+    user.mustChangePassword = true;
+    await user.save();
+
+    console.log(`🔑 Password reset for user: ${user.email}`);
+
+    const userData = serializeUser(user);
+    delete userData.password;
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password',
       error: error.message
     });
   }

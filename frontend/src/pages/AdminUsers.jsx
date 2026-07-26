@@ -38,9 +38,14 @@ import {
   AlertTriangle,
   BarChart3,
   FileCheck,
+  CheckCircle,
   Crown,
   DollarSign,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 // ============================================================
@@ -440,6 +445,14 @@ const AdminUsers = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   const translations = {
     en: {
@@ -475,7 +488,17 @@ const AdminUsers = () => {
         changeRole: 'Change Role',
         suspend: 'Suspend',
         activate: 'Activate',
-        pause: 'Pause'
+        pause: 'Pause',
+        resetPassword: 'Reset Password',
+        generatePassword: 'Generate Password',
+        useCustomPassword: 'Use Custom Password',
+        password: 'Password',
+        passwordStatus: 'Password Status',
+        confirmNewPassword: 'Confirm New Password',
+        tempPassword: 'Temporary Password',
+        copyPassword: 'Copy Password',
+        passwordSet: 'Set',
+        passwordNotSet: 'Not Set'
       },
       status: {
         active: 'Active',
@@ -519,7 +542,17 @@ const AdminUsers = () => {
         changeRole: 'تغيير الدور',
         suspend: 'تعليق',
         activate: 'تفعيل',
-        pause: 'إيقاف مؤقت'
+        pause: 'إيقاف مؤقت',
+        resetPassword: 'إعادة تعيين كلمة المرور',
+        generatePassword: 'توليد كلمة مرور',
+        useCustomPassword: 'استخدام كلمة مرور مخصصة',
+        password: 'كلمة المرور',
+        passwordStatus: 'حالة كلمة المرور',
+        confirmNewPassword: 'تأكيد كلمة المرور الجديدة',
+        tempPassword: 'كلمة المرور المؤقتة',
+        copyPassword: 'نسخ كلمة المرور',
+        passwordSet: 'محددة',
+        passwordNotSet: 'غير محددة'
       },
       status: {
         active: 'نشط',
@@ -667,6 +700,91 @@ const AdminUsers = () => {
       WORKER: 'text-green-400'
     };
     return colors[role] || 'text-gray-400 dark:text-gray-500';
+  };
+
+  const generateSecurePassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const openPasswordModal = (user) => {
+    setSelectedUserForReset(user);
+    setNewPassword('');
+    setGeneratedPassword('');
+    setShowGeneratedPassword(false);
+    setPasswordError('');
+    setPasswordSuccess('');
+    setPasswordModalOpen(true);
+  };
+
+  const closePasswordModal = () => {
+    setPasswordModalOpen(false);
+    setSelectedUserForReset(null);
+    setNewPassword('');
+    setGeneratedPassword('');
+    setShowGeneratedPassword(false);
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  const handleGeneratePassword = () => {
+    const pwd = generateSecurePassword();
+    setGeneratedPassword(pwd);
+    setNewPassword(pwd);
+    setShowGeneratedPassword(true);
+    setPasswordError('');
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUserForReset) return;
+    
+    const passwordToUse = generatedPassword || newPassword;
+    
+    if (!passwordToUse || passwordToUse.length < 6) {
+      setPasswordError(t('actions.passwordNotSet') + ' - Password must be at least 6 characters');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    try {
+      const response = await api.put(`/api/admin/users/${selectedUserForReset.id}/reset-password`, {
+        newPassword: passwordToUse
+      });
+
+      if (response.data.success) {
+        setPasswordSuccess('Password reset successfully');
+        setGeneratedPassword(passwordToUse);
+        setShowGeneratedPassword(true);
+        setNewPassword('');
+        
+        const updatedUsers = users.map(u => {
+          if (u.id === selectedUserForReset.id) {
+            return { ...u, passwordResetAt: new Date(), mustChangePassword: true };
+          }
+          return u;
+        });
+        setUsers(updatedUsers);
+        setFilteredUsers(updatedUsers);
+      } else {
+        setPasswordError(response.data.message || 'Failed to reset password');
+      }
+    } catch (error) {
+      setPasswordError(error.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const stats = {
@@ -857,17 +975,18 @@ const AdminUsers = () => {
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-[#0a0a0a] border-b border-yellow-500/20">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Phone</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
+                    <thead className="bg-[#0a0a0a] border-b border-yellow-500/20">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">User</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Password</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
+                      </tr>
+                    </thead>
                   <tbody className="divide-y divide-yellow-500/10">
                     {filteredUsers.map((u) => (
                       <tr key={u._id || u.id || u.email} className="hover:bg-yellow-500/5 transition">
@@ -893,7 +1012,24 @@ const AdminUsers = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <Lock size={14} className="text-gray-400 dark:text-gray-500" />
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {u.mustChangePassword ? 'Needs reset' : 'Password: ********'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
+                            {/* Reset Password */}
+                            <button
+                              onClick={() => openPasswordModal(u)}
+                              className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs hover:bg-yellow-500/30 transition flex items-center gap-1"
+                            >
+                              <Key size={12} />
+                              {t.actions.resetPassword}
+                            </button>
+                            
                             {/* Change Role */}
                             <select
                               onChange={(e) => updateUserRole(u.id, e.target.value)}
@@ -941,6 +1077,157 @@ const AdminUsers = () => {
           )}
         </div>
       </main>
+
+      {/* Password Reset Modal */}
+      {passwordModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-yellow-500/20 w-full max-w-md">
+            <div className="p-6 border-b border-yellow-500/20 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Lock size={20} className="text-yellow-500" />
+                {t.actions.resetPassword}
+              </h3>
+              <button
+                onClick={closePasswordModal}
+                className="p-1 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {passwordSuccess ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-green-400 text-sm font-medium flex items-center gap-2">
+                      <CheckCircle size={16} />
+                      {passwordSuccess}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                      {t.actions.tempPassword}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-black/30 px-3 py-2 rounded text-yellow-400 text-sm font-mono break-all">
+                        {showGeneratedPassword ? generatedPassword : '********'}
+                      </code>
+                      <button
+                        onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
+                        className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                        title={showGeneratedPassword ? 'Hide' : 'Show'}
+                      >
+                        {showGeneratedPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(generatedPassword)}
+                        className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                        title={t.actions.copyPassword}
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
+                      Share this password with the user securely. They will be required to change it on next login.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-sm text-gray-300">
+                      Resetting password for: <span className="font-semibold text-white">{selectedUserForReset?.fullName}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{selectedUserForReset?.email}</p>
+                  </div>
+
+                  {passwordError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                      <AlertTriangle size={16} />
+                      {passwordError}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-300">
+                      {t.actions.password}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type={showGeneratedPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
+                        className="px-3 py-2.5 rounded-lg border border-gray-700 hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                        title={showGeneratedPassword ? 'Hide' : 'Show'}
+                      >
+                        {showGeneratedPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleGeneratePassword}
+                        className="flex-1 px-4 py-2.5 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <Key size={16} />
+                        {t.actions.generatePassword}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!passwordSuccess && (
+              <div className="p-6 border-t border-yellow-500/20 flex justify-end gap-3">
+                <button
+                  onClick={closePasswordModal}
+                  disabled={isResettingPassword}
+                  className="px-4 py-2.5 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition text-sm font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetPassword}
+                  disabled={isResettingPassword}
+                  className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isResettingPassword ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={16} />
+                      Reset Password
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {passwordSuccess && (
+              <div className="p-6 border-t border-yellow-500/20 flex justify-end">
+                <button
+                  onClick={closePasswordModal}
+                  className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
