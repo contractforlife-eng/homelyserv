@@ -301,7 +301,7 @@ const MyHires = () => {
   // ============================================================
   // 4. LOAD HIRES
   // ============================================================
-  const loadHires = () => {
+  const loadHires = async () => {
     setLoading(true);
     
     try {
@@ -317,57 +317,19 @@ const MyHires = () => {
 
       console.log('📂 Loading hires for employer:', { employerEmail, employerId });
 
-      const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      
-      let employerHires = allHires.filter(
-        hire => hire.employerEmail === employerEmail || 
-                hire.employerId === employerId ||
-                hire.employerId === employerEmail
-      );
-
-      console.log(`📌 Found ${employerHires.length} hires from homelyserv_hires`);
-
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const hiredOffers = employerOffers.filter(
-        offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
-                 (offer.employerEmail === employerEmail || 
-                  offer.employerId === employerId ||
-                  offer.employerId === employerEmail)
-      );
-
-      console.log(`📌 Found ${hiredOffers.length} hired offers from employer_offers`);
-
-      const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
-      
-      hiredOffers.forEach(offer => {
-        const workerId = offer.workerId || offer.workerEmail;
-        if (!existingWorkerIds.has(workerId)) {
-          const hireFromOffer = {
-            id: offer.hireId || offer.id || 'hire_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            workerId: workerId,
-            workerName: offer.workerName || 'Worker',
-            workerEmail: offer.workerEmail || '',
-            workerPhone: offer.workerPhone || '',
-            workerLocation: offer.workerLocation || 'Not specified',
-            workerImage: offer.workerImage || '',
-            workerRating: offer.workerRating || 4.5,
-            workerSkills: offer.workerSkills || [],
-            employerId: employerId,
-            employerEmail: employerEmail,
-            employerName: offer.employerName || 'Employer',
-            jobTitle: offer.jobTitle || 'Service Provider',
-            salary: offer.amount || 0,
-            startDate: offer.hiredAt || offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
-            status: offer.status === 'hired' ? 'active' : offer.status,
-            offerId: offer.id,
-            createdAt: offer.hiredAt || offer.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isPremium: offer.isPremium || false
-          };
-          employerHires.push(hireFromOffer);
-          console.log(`✅ Added hire from offer: ${hireFromOffer.workerName}`);
-        }
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires/my-hires`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const hires = await res.json();
+      const employerHires = Array.isArray(hires) ? hires : [];
+
+      console.log(`📌 Found ${employerHires.length} hires from backend`);
 
       employerHires.sort((a, b) => {
         const dateA = new Date(a.startDate || a.createdAt || 0);
@@ -517,27 +479,6 @@ const MyHires = () => {
         terminationDate: new Date().toISOString(),
         terminationReason: terminateReason || 'No reason provided'
       };
-
-      const hiresFromStorage = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      const hireIndex = hiresFromStorage.findIndex(h => 
-        h.id === terminatingHire.hireId || h.id === terminatingHire.id ||
-        h.offerId === terminatingHire.offerId
-      );
-      
-      if (hireIndex !== -1) {
-        hiresFromStorage[hireIndex] = updatedHire;
-      } else {
-        hiresFromStorage.push(updatedHire);
-      }
-      localStorage.setItem('homelyserv_hires', JSON.stringify(hiresFromStorage));
-
-      const allOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedOffers = allOffers.map(o => 
-        o.id === terminatingHire.offerId || o.id === terminatingHire.hireId
-          ? { ...o, status: 'terminated', terminationReason: terminateReason || 'No reason provided' }
-          : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
 
       setHires(prev => prev.map(h => 
         h.id === terminatingHire.id || h.offerId === terminatingHire.offerId

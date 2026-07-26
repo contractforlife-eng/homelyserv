@@ -236,25 +236,7 @@ const PaymentOptions = () => {
         isPremium: worker?.isPremium || false
       };
 
-      let hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      
-      const existingHire = hires.find(h => 
-        h.workerId === hireRecord.workerId && 
-        h.employerId === hireRecord.employerId &&
-        h.status === 'active'
-      );
-
-      if (existingHire) {
-        const updatedHires = hires.map(h => 
-          h.id === existingHire.id ? { ...h, ...hireRecord } : h
-        );
-        localStorage.setItem('homelyserv_hires', JSON.stringify(updatedHires));
-        return existingHire.id;
-      } else {
-        hires.push(hireRecord);
-        localStorage.setItem('homelyserv_hires', JSON.stringify(hires));
-        return hireRecord.id;
-      }
+      return hireRecord.id;
     } catch (error) {
       console.error('Error saving hire record:', error);
       return null;
@@ -264,20 +246,19 @@ const PaymentOptions = () => {
   // ============================================================
   // UPDATE OFFER STATUS
   // ============================================================
-  const updateOfferStatus = (offerId, status, hireId) => {
+  const updateOfferStatus = async (offerId, status, hireId) => {
     try {
       if (!offerId) return;
-      
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedOffers = employerOffers.map(o => 
-        o.id === offerId ? { 
-          ...o, 
-          status: status,
-          hireId: hireId,
-          hiredAt: new Date().toISOString()
-        } : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
+
+      const token = localStorage.getItem('homelyserv_token');
+      await fetch(`${apiBase}/api/hires/offer/${offerId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
     } catch (error) {
       console.error('Error updating offer status:', error);
     }

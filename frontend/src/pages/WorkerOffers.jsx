@@ -153,35 +153,26 @@ const WorkerOffers = () => {
 
       const userEmail = authUser?.email;
       if (userEmail) {
-        const storedNotifications = JSON.parse(
-          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
-        );
-        if (storedNotifications.length > 0) {
-          setNotifications(storedNotifications.slice(0, 10));
-          setNotificationLoading(false);
-          return;
-        }
-      }
+        const response = await fetch('http://localhost:5000/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setNotifications(data.notifications || []);
-      } else if (Array.isArray(data)) {
-        setNotifications(data);
-      } else {
-        setNotifications([]);
+
+        const data = await response.json();
+
+        if (data.success) {
+          setNotifications(data.notifications || []);
+        } else if (Array.isArray(data)) {
+          setNotifications(data);
+        } else {
+          setNotifications([]);
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching notifications:', error);
@@ -350,47 +341,8 @@ const WorkerOffers = () => {
       return allOffers;
     } catch (error) {
       console.error('Error loading offers from backend:', error);
-      try {
-        const currentUser = userParam || authUser;
-        if (!currentUser?.email) {
-          setOffers([]);
-          return;
-        }
-
-        const userEmail = currentUser.email;
-        const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-        const workerOffersFromEmployer = employerOffers.filter(
-          offer => offer.workerEmail === userEmail
-        );
-        const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${userEmail}`) || '[]');
-
-        const allOfferIds = new Set();
-        const allOffers = [];
-
-        workerOffersFromEmployer.forEach(offer => {
-          if (!allOfferIds.has(offer.id)) {
-            allOfferIds.add(offer.id);
-            allOffers.push({ ...offer });
-          }
-        });
-
-        workerSpecificOffers.forEach(offer => {
-          const existingIndex = allOffers.findIndex(o => o.id === offer.id);
-          if (existingIndex !== -1) {
-            allOffers[existingIndex] = { ...allOffers[existingIndex], ...offer };
-          } else {
-            allOffers.push({ ...offer });
-          }
-        });
-
-        allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
-        setOffers(allOffers);
-        return allOffers;
-      } catch (e) {
-        console.error('Error loading offers from localStorage fallback:', e);
-        setOffers([]);
-        return [];
-      }
+      setOffers([]);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -472,24 +424,6 @@ const WorkerOffers = () => {
         workerResponseAt: new Date().toISOString()
       };
 
-      // Update localStorage for backward compatibility with other pages
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedEmployerOffers = employerOffers.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-
-      if (authUser?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => 
-          o.id === offer.id ? updatedOffer : o
-        );
-        if (!updatedWorkerOffers.some(o => o.id === offer.id)) {
-          updatedWorkerOffers.push(updatedOffer);
-        }
-        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
-      }
-
       // Create conversation
       const workerId = authUser?.id || authUser?.email;
       const workerName = authUser?.fullName || 'Worker';
@@ -499,24 +433,6 @@ const WorkerOffers = () => {
       if (workerId && employerId) {
         createConversationAndSendWelcome(offer, workerId, workerName, employerId, employerName);
       }
-
-      // Create notification
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'offer_accepted',
-        message: `${authUser?.fullName || 'Worker'} has accepted your job offer for ${offer.jobTitle}`,
-        offerId: offer.id,
-        offerTitle: offer.jobTitle,
-        workerId: workerId,
-        workerName: workerName,
-        employerId: employerId,
-        employerEmail: offer.employerEmail,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       alert(t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer'));
@@ -566,20 +482,6 @@ const WorkerOffers = () => {
         workerResponseAt: new Date().toISOString()
       };
 
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedEmployerOffers = employerOffers.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-
-      if (authUser?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => 
-          o.id === offer.id ? updatedOffer : o
-        );
-        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
-      }
-
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       alert(t.rejectSuccess.replace('{employer}', offer.employerName || 'Employer'));
       setRefreshKey(prev => prev + 1);
@@ -626,20 +528,6 @@ const WorkerOffers = () => {
         status: 'completed',
         updatedAt: new Date().toISOString()
       };
-
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const updatedEmployerOffers = employerOffers.map(o => 
-        o.id === offer.id ? updatedOffer : o
-      );
-      localStorage.setItem('employer_offers', JSON.stringify(updatedEmployerOffers));
-
-      if (authUser?.email) {
-        const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${authUser.email}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => 
-          o.id === offer.id ? updatedOffer : o
-        );
-        localStorage.setItem(`worker_offers_${authUser.email}`, JSON.stringify(updatedWorkerOffers));
-      }
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
       alert('✅ Work completed successfully!');

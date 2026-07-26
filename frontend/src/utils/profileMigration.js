@@ -5,6 +5,8 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const isBase64Image = (str) => typeof str === 'string' && str.startsWith('data:image/');
+
 /**
  * Migrates the user's profile image from localStorage (homelyserv_profiles)
  * to MongoDB if MongoDB does not already have one.
@@ -43,6 +45,11 @@ export const migrateLegacyProfileIfNeeded = async (user, token) => {
   }
 
   if (!legacyImage) {
+    return null;
+  }
+
+  if (isBase64Image(legacyImage)) {
+    console.warn('⚠️ Migration: skipping base64 image from localStorage');
     return null;
   }
 

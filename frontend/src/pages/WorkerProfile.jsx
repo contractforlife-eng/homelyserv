@@ -110,36 +110,26 @@ const WorkerProfile = () => {
       // Check localStorage for notifications first
       const userEmail = authUser?.email;
       if (userEmail) {
-        const storedNotifications = JSON.parse(
-          localStorage.getItem(`worker_notifications_${userEmail}`) || '[]'
-        );
-        if (storedNotifications.length > 0) {
-          setNotifications(storedNotifications.slice(0, 10));
-          setNotificationLoading(false);
-          return;
-        }
-      }
+        const response = await fetch('http://localhost:5000/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      // Fallback to API if available
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setNotifications(data.notifications || []);
-      } else if (Array.isArray(data)) {
-        setNotifications(data);
-      } else {
-        setNotifications([]);
+
+        const data = await response.json();
+
+        if (data.success) {
+          setNotifications(data.notifications || []);
+        } else if (Array.isArray(data)) {
+          setNotifications(data);
+        } else {
+          setNotifications([]);
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching notifications:', error);
@@ -235,12 +225,8 @@ const WorkerProfile = () => {
 
   const loadRealStats = (userEmail, userId) => {
     try {
-      // Calculate stats from localStorage data
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      const completedJobs = appliedOffers.filter(id => {
-        return employerOffers.some(o => o.id === id && o.status === 'completed');
-      }).length;
+      const completedJobs = 0;
       
       const ratings = JSON.parse(localStorage.getItem('worker_ratings') || '[]');
       const workerRatings = ratings.filter(r => r.workerId === userId || r.workerEmail === userEmail);

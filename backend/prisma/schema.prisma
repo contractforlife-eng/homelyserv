@@ -108,8 +108,23 @@ model Notification {
   title     String
   body      String
   isRead    Boolean  @default(false)
+  data      Json?    @default("{}")
+  icon      String?  @default("🔔")
+  link      String?  @default("/")
   createdAt DateTime @default(now())
   User      User     @relation(fields: [userId], references: [id])
+}
+
+model NotificationSettings {
+  userId              String   @id @map("_id") @db.ObjectId
+  newMessage          Boolean  @default(true)
+  hireResponse        Boolean  @default(true)
+  complaintUpdate     Boolean  @default(true)
+  paymentConfirmation Boolean  @default(true)
+  systemUpdate        Boolean  @default(false)
+  promotional         Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Payment {

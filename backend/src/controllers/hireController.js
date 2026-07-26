@@ -1,5 +1,15 @@
 import prisma from '../lib/prisma.js';
 
+const createNotification = async (userId, type, title, body) => {
+  try {
+    await prisma.notification.create({
+      data: { userId, type, title, body, isRead: false }
+    });
+  } catch (error) {
+    console.error('Failed to create notification:', error);
+  }
+};
+
 // SEND JOB OFFER (creates an Offer record instead of Hire)
 export const sendOffer = async (req, res) => {
   try {
@@ -72,6 +82,16 @@ export const sendOffer = async (req, res) => {
       }
     });
 
+    const workerProfile = await prisma.workerProfile.findUnique({ where: { userId: effectiveWorkerId } });
+    if (workerProfile) {
+      await createNotification(
+        workerProfile.userId,
+        'offer',
+        'New Job Offer',
+        `${employerName || 'An employer'} sent you a job offer for ${jobTitle}`
+      );
+    }
+
     res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
   } catch (error) {
     console.error('Hire error:', error);
@@ -112,7 +132,8 @@ export const respondToOffer = async (req, res) => {
       data: { status }
     });
 
-    // If accepted, create Hire record
+    const worker = await prisma.workerProfile.findUnique({ where: { id: offer.workerId } });
+
     if (status === 'accepted') {
       const salary = offer.salary;
       const commission = salary * 0.10;
@@ -135,7 +156,25 @@ export const respondToOffer = async (req, res) => {
         }
       });
 
+      if (worker) {
+        await createNotification(
+          worker.userId,
+          'offer',
+          'Offer Accepted',
+          `You accepted the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+        );
+      }
+
       return res.json({ message: 'Offer accepted, Hire created', offer: updatedOffer, hire });
+    }
+
+    if (worker) {
+      await createNotification(
+        worker.userId,
+        'offer',
+        'Offer Rejected',
+        `You rejected the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+      );
     }
 
     res.json({ message: 'Offer rejected', offer: updatedOffer });
@@ -257,10 +296,25 @@ export const updateOfferStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    const offer = await prisma.offer.findUnique({ where: { id: offerId } });
+    if (!offer) {
+      return res.status(404).json({ message: 'Offer not found' });
+    }
+
     const updatedOffer = await prisma.offer.update({
       where: { id: offerId },
       data: { status }
     });
+
+    const worker = await prisma.workerProfile.findUnique({ where: { id: offer.workerId } });
+    if (worker && ['accepted', 'rejected', 'paid', 'in_progress', 'completed'].includes(status)) {
+      await createNotification(
+        worker.userId,
+        'offer',
+        'Offer Status Updated',
+        `Your offer for ${offer.jobTitle} has been updated to ${status}`
+      );
+    }
 
     res.json({ message: 'Offer status updated', offer: updatedOffer });
   } catch (error) {

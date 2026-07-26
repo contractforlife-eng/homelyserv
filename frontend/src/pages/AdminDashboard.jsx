@@ -189,29 +189,6 @@ const recentUsers = users.filter(u => {
     });
 
     // 4. Check for new hires
-    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-    const recentHires = hires.filter(h => {
-      const createdAt = new Date(h.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && h.status === 'active';
-    });
-
-    recentHires.forEach(hire => {
-      const notifId = `new_hire_${hire.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_hire',
-          title: 'New Hire Contract 🤝',
-          message: `${hire.employerName || 'Employer'} hired ${hire.workerName || 'a worker'} for ${hire.jobTitle || 'a position'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/hires',
-          icon: 'briefcase',
-          hireId: hire.id
-        });
-      }
-    });
 
     // 5. Check for payment failures
     const failedPayments = allPayments.filter(p => {

@@ -159,58 +159,8 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     });
 
     // 3. Check for new complaints
-    const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
-    const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
-    const allComplaints = [...employerComplaints, ...workerComplaints];
-    
-    const recentComplaints = allComplaints.filter(c => {
-      const createdAt = new Date(c.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && c.status === 'pending';
-    });
-
-    recentComplaints.forEach(complaint => {
-      const notifId = `new_complaint_${complaint.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_complaint',
-          title: 'New Complaint Received 📋',
-          message: `${complaint.userName || 'A user'} submitted a complaint: "${complaint.title || complaint.subject}"`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/complaints',
-          icon: 'alert',
-          complaintId: complaint.id,
-          complaintTitle: complaint.title || complaint.subject
-        });
-      }
-    });
 
     // 4. Check for new hires
-    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-    const recentHires = hires.filter(h => {
-      const createdAt = new Date(h.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && h.status === 'active';
-    });
-
-    recentHires.forEach(hire => {
-      const notifId = `new_hire_${hire.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_hire',
-          title: 'New Hire Contract 🤝',
-          message: `${hire.employerName || 'Employer'} hired ${hire.workerName || 'a worker'} for ${hire.jobTitle || 'a position'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/hires',
-          icon: 'briefcase',
-          hireId: hire.id
-        });
-      }
-    });
 
     // 5. Check for premium activations
     const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
@@ -843,12 +793,12 @@ const AdminSettings = () => {
     setBackupInProgress(true);
     setTimeout(() => {
       const data = {
-        users: JSON.parse(localStorage.getItem('homelyserv_users') || '[]'),
-        payments: JSON.parse(localStorage.getItem('all_payments') || '[]'),
-        offers: JSON.parse(localStorage.getItem('employer_offers') || '[]'),
+        users: [],
+        payments: [],
+        offers: [],
         complaints: {
-          employer: JSON.parse(localStorage.getItem('employer_complaints') || '[]'),
-          worker: JSON.parse(localStorage.getItem('worker_complaints') || '[]')
+          employer: [],
+          worker: []
         },
         settings: settings,
         timestamp: new Date().toISOString()

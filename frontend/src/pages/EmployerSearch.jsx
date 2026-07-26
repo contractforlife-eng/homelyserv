@@ -306,7 +306,7 @@ const EmployerSearch = () => {
         const workers = (response.data.workers || []).map(w => ({
           ...w,
           id: w.id || w._id,
-          profileImage: w.profileImage || w.image || ''
+          profileImage: isBase64Image(w.profileImage) ? '' : (w.profileImage || w.image || '')
         }));
         setAllWorkers(workers);
         setSearchLimitStatus({
@@ -337,6 +337,8 @@ const EmployerSearch = () => {
     }
   };
 
+  const isBase64Image = (str) => typeof str === 'string' && str.startsWith('data:image/');
+
   // Fallback: load workers from localStorage if backend fails
   const loadWorkersFromStorage = () => {
     try {
@@ -351,6 +353,7 @@ const EmployerSearch = () => {
         const profile = profiles[worker.email] || {};
         const workerId = worker.id || worker._id || worker.email;
         const isPremium = isUserPremium(workerId);
+        const rawProfileImage = profile.profileImage || worker.profileImage || '';
         
         return {
           ...worker,
@@ -365,7 +368,7 @@ const EmployerSearch = () => {
           experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
           hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
           desiredJob: profile.desiredJob || worker.desiredJob || '',
-          profileImage: profile.profileImage || worker.profileImage || '',
+          profileImage: isBase64Image(rawProfileImage) ? '' : rawProfileImage,
           rating: profile.rating || worker.rating || 4.5,
           jobsCompleted: profile.jobsCompleted || worker.jobsCompleted || 0,
           available: profile.available !== undefined ? profile.available : true,
@@ -465,7 +468,7 @@ const EmployerSearch = () => {
           workerLocation: worker.location || 'Not specified',
           workerRating: worker.rating || 4.5,
           workerSkills: worker.skills || [],
-          workerImage: worker.profileImage || '',
+          workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
           employerName: authUser.fullName || 'Employer',
           employerEmail: authUser.email,
           jobTitle: worker.desiredJob || 'Service Provider',
@@ -479,37 +482,6 @@ const EmployerSearch = () => {
       const response = { data: await res.json(), ok: res.ok };
 
       if (response.ok && response.data.success) {
-        const offerData = {
-          id: response.data.offer?._id || response.data.offer?.id || 'offer_' + Date.now(),
-          workerId: worker.id || worker.email,
-          workerName: worker.fullName,
-          workerEmail: worker.email,
-          workerPhone: worker.phone || '',
-          workerLocation: worker.location || 'Not specified',
-          workerRating: worker.rating || 4.5,
-          workerSkills: worker.skills || [],
-          workerImage: worker.profileImage || '',
-          employerId: authUser.id || authUser.email,
-          employerName: authUser.fullName || 'Employer',
-          employerEmail: authUser.email,
-          jobTitle: worker.desiredJob || 'Service Provider',
-          hourlyRate: worker.hourlyRate || 30,
-          amount: (worker.hourlyRate || 30) * 40 * 4,
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-          contactRevealed: false,
-          paymentConfirmed: false,
-          paymentVerified: false,
-          offerId: response.data.offer?._id || response.data.offer?.id
-        };
-        const existingEmployerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-        existingEmployerOffers.push(offerData);
-        localStorage.setItem('employer_offers', JSON.stringify(existingEmployerOffers));
-        const existingWorkerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
-        existingWorkerOffers.push(offerData);
-        localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(existingWorkerOffers));
         const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
         alert(successMsg);
       } else {
@@ -517,67 +489,6 @@ const EmployerSearch = () => {
       }
     } catch (error) {
       console.error('Error hiring worker:', error);
-      
-      // Fallback: use localStorage if backend fails
-      const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const existingOffer = existingOffers.find(
-        o => o.workerId === (worker.id || worker.email) && o.employerId === authUser.email && o.status !== 'rejected'
-      );
-
-      if (existingOffer) {
-        alert(`You already have a pending offer with ${worker.fullName}. Please wait for their response.`);
-        return;
-      }
-
-      const offer = {
-        id: 'offer_' + Date.now(),
-        workerId: worker.id || worker.email,
-        workerName: worker.fullName,
-        workerEmail: worker.email,
-        workerPhone: worker.phone || '',
-        workerLocation: worker.location || 'Not specified',
-        workerRating: worker.rating || 4.5,
-        workerSkills: worker.skills || [],
-        workerImage: worker.profileImage || '',
-        employerId: authUser.id || authUser.email,
-        employerName: authUser.fullName || 'Employer',
-        employerEmail: authUser.email,
-        jobTitle: worker.desiredJob || 'Service Provider',
-        hourlyRate: worker.hourlyRate || 30,
-        amount: (worker.hourlyRate || 30) * 40 * 4,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-        contactRevealed: false,
-        paymentConfirmed: false,
-        paymentVerified: false
-      };
-
-      const offers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      offers.push(offer);
-      localStorage.setItem('employer_offers', JSON.stringify(offers));
-
-      const workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${worker.email}`) || '[]');
-      workerOffers.push(offer);
-      localStorage.setItem(`worker_offers_${worker.email}`, JSON.stringify(workerOffers));
-
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'offer_received',
-        message: `New job offer from ${authUser.fullName || 'Employer'}`,
-        offerId: offer.id,
-        offerTitle: offer.jobTitle,
-        employerName: authUser.fullName || 'Employer',
-        workerId: worker.id || worker.email,
-        workerEmail: worker.email,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-
       console.error('Error details:', error.message || error);
       alert(t.hireError);
     }
@@ -1176,10 +1087,11 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                             {t.hireNow}
                           </button>
                           <button
-onClick={() => {
-                               localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(worker));
-                               navigate('/worker-profile-view');
-                             }}
+                            onClick={() => {
+                              const sanitizedWorker = { ...worker, profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage };
+                              localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(sanitizedWorker));
+                              navigate('/worker-profile-view');
+                            }}
                             className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-1"
                           >
                             <Eye size={14} />

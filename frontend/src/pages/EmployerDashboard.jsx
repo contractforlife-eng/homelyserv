@@ -147,14 +147,42 @@ const EmployerDashboard = () => {
       
       console.log('📊 Loading dashboard data for employer:', employerId);
 
-      // 1. Get hires from localStorage
-      const allHires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
+      // 1. Get hires from API
+      const token = localStorage.getItem('homelyserv_token');
+      let allHires = [];
+      let employerOffers = [];
+      try {
+        const hiresResponse = await fetch('http://localhost:5000/api/hires/offers', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (hiresResponse.ok) {
+          const hiresData = await hiresResponse.json();
+          allHires = hiresData.hires || hiresData.offers || hiresData || [];
+        }
+      } catch (error) {
+        console.error('Error loading hires:', error);
+      }
+      try {
+        const offersResponse = await fetch('http://localhost:5000/api/hires/offers', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (offersResponse.ok) {
+          const offersData = await offersResponse.json();
+          employerOffers = offersData.offers || offersData || [];
+        }
+      } catch (error) {
+        console.error('Error loading offers:', error);
+      }
+
       const employerHires = allHires.filter(
         hire => hire.employerId === employerId || hire.employerEmail === employerEmail
       );
-      
-      // Also check employer_offers for hired status
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
       const hiredOffers = employerOffers.filter(
         offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
                  (offer.employerId === employerId || offer.employerEmail === employerEmail)

@@ -393,115 +393,37 @@ const WorkerDashboard = () => {
   };
 
   // ============================================================
-  // CHECK FOR NEW NOTIFICATIONS FROM VARIOUS SOURCES
+  // CHECK FOR NEW NOTIFICATIONS FROM BACKEND
   // ============================================================
-  const checkForNewNotifications = () => {
+  const checkForNewNotifications = async () => {
     if (!authUser?.email) return;
 
-    const currentUserEmail = authUser.email;
-    const currentUserId = authUser.id || authUser.email;
-    const existingNotifications = JSON.parse(
-      localStorage.getItem(`worker_notifications_${currentUserEmail}`) || '[]'
-    );
-    
-    const newNotifications = [];
-    const existingIds = new Set(existingNotifications.map(n => n.id));
+    try {
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/notifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
-    // 1. Check for offer updates
-    const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-    const workerOffers = employerOffers.filter(
-      offer => offer.workerEmail === currentUserEmail
-    );
-
-    workerOffers.forEach(offer => {
-      const existingOfferNotif = existingNotifications.find(
-        n => n.type === 'offer' && n.message.includes(offer.jobTitle || 'position')
-      );
-      
-      if (!existingOfferNotif || !existingOfferNotif.message.includes(offer.status)) {
-        const notif = generateOfferNotification(
-          offer, 
-          offer.status, 
-          offer.employerName
-        );
-        newNotifications.push(notif);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-    });
 
-    // 2. Check for complaint updates
-    const complaints = JSON.parse(localStorage.getItem('homelyserv_complaints') || '[]');
-    const workerComplaints = complaints.filter(
-      c => c.workerEmail === currentUserEmail || c.workerId === currentUserId
-    );
-
-    workerComplaints.forEach(complaint => {
-      const existingComplaintNotif = existingNotifications.find(
-        n => n.type === 'complaint' && n.message.includes(complaint.subject || 'issue')
-      );
-      
-      if (complaint.status === 'resolved' || complaint.status === 'closed' || complaint.adminResponse) {
-        const action = complaint.status === 'resolved' ? 'resolved' : 
-                       complaint.status === 'closed' ? 'closed' : 'response';
-        if (!existingComplaintNotif) {
-          const notif = generateComplaintNotification(complaint, action);
-          newNotifications.push(notif);
-        }
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        const notifications = data.notifications.map(n => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.body || n.message,
+          time: n.createdAt,
+          read: n.isRead,
+          link: '/worker/offers'
+        }));
+        setNotifications(notifications);
       }
-    });
-
-    // 3. Check for payment updates
-    const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
-    const workerPayments = payments.filter(
-      p => p.workerId === currentUserId || p.workerEmail === currentUserEmail
-    );
-
-    workerPayments.forEach(payment => {
-      const existingPaymentNotif = existingNotifications.find(
-        n => n.type === 'payment' && n.message.includes(`EGP ${payment.amount || 0}`)
-      );
-      
-      if (payment.status === 'completed' || payment.status === 'paid') {
-        if (!existingPaymentNotif) {
-          const notif = generatePaymentNotification(payment, 'received');
-          newNotifications.push(notif);
-        }
-      }
-    });
-
-    // 4. Check for new messages (using backend API)
-    // Message notifications are now handled by the backend
-
-    // 5. Check for profile updates
-    const profile = JSON.parse(localStorage.getItem(`homelyserv_profile_${currentUserEmail}`) || '{}');
-    if (profile.status === 'approved' || profile.status === 'rejected') {
-      const existingProfileNotif = existingNotifications.find(
-        n => n.type === 'profile' && n.message.includes('profile')
-      );
-      if (!existingProfileNotif) {
-        const notif = generateProfileNotification(profile.status === 'approved' ? 'approved' : 'rejected');
-        newNotifications.push(notif);
-      }
-    }
-
-    // 6. Check for subscription updates
-    const subscription = JSON.parse(localStorage.getItem(`homelyserv_subscription_${currentUserId}`) || '{}');
-    if (subscription.status === 'active') {
-      const existingSubNotif = existingNotifications.find(
-        n => n.type === 'subscription' && n.message.includes('Premium')
-      );
-      if (!existingSubNotif) {
-        const notif = generateSubscriptionNotification('activated');
-        newNotifications.push(notif);
-      }
-    }
-
-    if (newNotifications.length > 0) {
-      const updatedNotifications = [...newNotifications, ...existingNotifications]
-        .sort((a, b) => new Date(b.time) - new Date(a.time))
-        .slice(0, 50);
-
-      localStorage.setItem(`worker_notifications_${currentUserEmail}`, JSON.stringify(updatedNotifications));
-      setNotifications(updatedNotifications);
+    } catch (error) {
+      console.error('Error loading notifications from backend:', error);
+      setNotifications([]);
     }
   };
 
@@ -514,39 +436,28 @@ const WorkerDashboard = () => {
 
       const currentUserEmail = authUser.email;
       const currentUserId = authUser.id || authUser.email;
-      
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const workerOffers = employerOffers.filter(
-        offer => offer.workerEmail === currentUserEmail
-      );
-      
-      const pendingOffers = workerOffers.filter(o => o.status === 'pending').length;
-      const acceptedOffers = workerOffers.filter(o => o.status === 'accepted').length;
-      const inProgressOffers = workerOffers.filter(o => o.status === 'in_progress').length;
-      const rejectedOffers = workerOffers.filter(o => o.status === 'rejected').length;
-      const completedOffers = workerOffers.filter(o => o.status === 'completed').length;
-      
-      const workerSpecificOffers = JSON.parse(localStorage.getItem(`worker_offers_${currentUserEmail}`) || '[]');
-      const allWorkerOffers = [...workerOffers];
-      workerSpecificOffers.forEach(offer => {
-        if (!allWorkerOffers.find(o => o.id === offer.id)) {
-          allWorkerOffers.push(offer);
-        }
+
+      const token = localStorage.getItem('homelyserv_token');
+      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
-      const workerAppliedOffers = appliedOffers.filter(
-        offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
-      );
-      
-      const savedOffers = JSON.parse(localStorage.getItem('worker_saved_offers') || '[]');
-      const workerSavedOffers = savedOffers.filter(
-        offer => offer.workerEmail === currentUserEmail || offer.workerId === currentUserId
-      );
-      
-      const profileViews = parseInt(localStorage.getItem(`profile_views_${currentUserEmail}`) || '0');
-      
-      // Get message count from backend
+
+      let allWorkerOffers = [];
+      if (offersRes.ok) {
+        const data = await offersRes.json();
+        allWorkerOffers = Array.isArray(data) ? data : [];
+      }
+
+      const pendingOffers = allWorkerOffers.filter(o => o.status === 'pending').length;
+      const acceptedOffers = allWorkerOffers.filter(o => o.status === 'accepted').length;
+      const inProgressOffers = allWorkerOffers.filter(o => o.status === 'in_progress').length;
+      const rejectedOffers = allWorkerOffers.filter(o => o.status === 'rejected').length;
+      const completedOffers = allWorkerOffers.filter(o => o.status === 'completed').length;
+
+      const appliedOffers = [];
+      const savedOffers = [];
+      const profileViews = 0;
+
       let messagesCount = 0;
       if (currentUserId) {
         try {
@@ -555,21 +466,16 @@ const WorkerDashboard = () => {
           console.error('Error getting message count:', error);
         }
       }
-      
-      const payments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
-      const workerPayments = payments.filter(
-        p => p.workerId === currentUserId || p.workerEmail === currentUserEmail
-      );
-      const pendingPayments = workerPayments.filter(p => p.status === 'pending').length;
-      const totalEarnings = workerPayments
-        .filter(p => p.status === 'completed' || p.status === 'paid')
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
-      
+
+      const workerPayments = [];
+      const pendingPayments = 0;
+      const totalEarnings = 0;
+
       setStats({
-        totalApplications: workerAppliedOffers.length,
+        totalApplications: appliedOffers.length,
         activeOffers: allWorkerOffers.filter(o => o.status === 'active' || o.status === 'open').length,
         interviews: allWorkerOffers.filter(o => o.status === 'interview').length,
-        savedJobs: workerSavedOffers.length,
+        savedJobs: savedOffers.length,
         profileViews: profileViews,
         messages: messagesCount,
         completedJobs: completedOffers,
@@ -581,15 +487,15 @@ const WorkerDashboard = () => {
         rejectedOffers: rejectedOffers,
         completedOffers: completedOffers
       });
-      
+
       generateRecentActivity(
         allWorkerOffers,
-        workerAppliedOffers,
-        workerSavedOffers,
+        appliedOffers,
+        savedOffers,
         workerPayments,
         currentUserEmail
       );
-      
+
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -663,18 +569,36 @@ const WorkerDashboard = () => {
   };
 
   // ============================================================
-  // LOAD NOTIFICATIONS
+  // LOAD NOTIFICATIONS FROM BACKEND
   // ============================================================
-  const loadNotifications = () => {
+  const loadNotifications = async () => {
     try {
       if (!authUser?.email) return;
       
-      const storedNotifications = JSON.parse(
-        localStorage.getItem(`worker_notifications_${authUser.email}`) || '[]'
-      );
-      setNotifications(storedNotifications);
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/notifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        const notifications = data.notifications.map(n => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.body || n.message,
+          time: n.createdAt,
+          read: n.isRead,
+          link: '/worker/offers'
+        }));
+        setNotifications(notifications);
+      }
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('Error loading notifications from backend:', error);
       setNotifications([]);
     }
   };
@@ -731,13 +655,11 @@ const WorkerDashboard = () => {
       n.id === id ? { ...n, read: true } : n
     );
     setNotifications(updated);
-    localStorage.setItem(`worker_notifications_${authUser.email}`, JSON.stringify(updated));
   };
 
   const markAllRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));
     setNotifications(updated);
-    localStorage.setItem(`worker_notifications_${authUser.email}`, JSON.stringify(updated));
   };
 
   const getNotificationIcon = (type, icon) => {

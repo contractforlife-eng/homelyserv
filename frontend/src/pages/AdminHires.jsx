@@ -171,29 +171,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     });
 
     // 4. Check for new hires
-    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-    const recentHires = hires.filter(h => {
-      const createdAt = new Date(h.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && h.status === 'active';
-    });
-
-    recentHires.forEach(hire => {
-      const notifId = `new_hire_${hire.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_hire',
-          title: 'New Hire Contract 🤝',
-          message: `${hire.employerName || 'Employer'} hired ${hire.workerName || 'a worker'} for ${hire.jobTitle || 'a position'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/hires',
-          icon: 'briefcase',
-          hireId: hire.id
-        });
-      }
-    });
 
     // 5. Check for premium activations
     const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
@@ -523,12 +500,35 @@ const AdminHires = () => {
   // ============================================================
   // Load Hires from localStorage
   // ============================================================
-  const loadHires = () => {
+  const loadHires = async () => {
     setLoading(true);
     
     try {
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+      const token = localStorage.getItem('homelyserv_token');
+      const employerOffers = [];
+      try {
+        const offersResponse = await fetch('http://localhost:5000/api/hires/offers', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (offersResponse.ok) {
+          const offersData = await offersResponse.json();
+          const allOffers = offersData.offers || offersData || [];
+          const employerId = authUser?.id || authUser?.email;
+          const employerEmail = authUser?.email;
+          const filteredOffers = allOffers.filter(
+            offer => offer.status === 'accepted' ||
+                    offer.status === 'in_progress' ||
+                    offer.status === 'completed'
+          );
+          employerOffers.push(...filteredOffers);
+        }
+      } catch (error) {
+        console.error('Error loading offers:', error);
+      }
+      const users = [];
       
       const acceptedOffers = employerOffers.filter(
         offer => offer.status === 'accepted' || 

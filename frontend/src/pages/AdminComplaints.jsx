@@ -165,29 +165,6 @@ const NotificationBell = ({ userId, onNotificationClick }) => {
     });
 
     // 4. Check for new hires
-    const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-    const recentHires = hires.filter(h => {
-      const createdAt = new Date(h.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && h.status === 'active';
-    });
-
-    recentHires.forEach(hire => {
-      const notifId = `new_hire_${hire.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_hire',
-          title: 'New Hire Contract 🤝',
-          message: `${hire.employerName || 'Employer'} hired ${hire.workerName || 'a worker'} for ${hire.jobTitle || 'a position'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/hires',
-          icon: 'briefcase',
-          hireId: hire.id
-        });
-      }
-    });
 
     // 5. Check for premium activations
     const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
@@ -735,19 +712,6 @@ const AdminComplaints = () => {
       localStorage.setItem('worker_complaints', JSON.stringify(updatedWorker));
       localStorage.setItem('admin_complaints', JSON.stringify(updatedAdmin));
       
-      // Create notification
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'complaint_updated',
-        message: `Complaint #${complaintId} has been ${newStatus}`,
-        complaintId: complaintId,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
-      
       // Reload complaints
       loadComplaints();
       
@@ -863,11 +827,6 @@ const AdminComplaints = () => {
         date: new Date().toISOString(),
         read: false
       };
-      
-      // Send notification to the appropriate user
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
       
       // Reload complaints
       loadComplaints();

@@ -268,7 +268,7 @@ const EmployerPayments = () => {
   // ============================================================
   // PAYMENT SUCCESS HANDLER
   // ============================================================
-  const handlePaymentSuccess = (paymentId, offerId) => {
+  const handlePaymentSuccess = async (paymentId, offerId) => {
     try {
       console.log('✅ Payment completed for offer:', offerId);
       
@@ -277,54 +277,23 @@ const EmployerPayments = () => {
         return false;
       }
 
-      let employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-      const offer = employerOffers.find(o => o.id === offerId);
+      const token = localStorage.getItem('homelyserv_token');
+      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      let offer = null;
+      if (offersRes.ok) {
+        const data = await offersRes.json();
+        const offers = Array.isArray(data) ? data : [];
+        offer = offers.find(o => o.id === offerId);
+      }
       
       if (!offer) {
         console.error('❌ Offer not found:', offerId);
         return false;
       }
-      
-      // Update employer offers
-      const updatedOffers = employerOffers.map(o => {
-        if (o.id === offerId) {
-          return {
-            ...o,
-            paymentCompleted: true,
-            paymentDate: new Date().toISOString(),
-            paymentId: paymentId,
-            paymentStatus: 'completed',
-            status: 'in_progress',
-            employerEmail: authUser.email,
-            employerId: authUser.id || authUser.email,
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return o;
-      });
-      localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      
-      // Update worker offers
-      if (offer.workerEmail) {
-        let workerOffers = JSON.parse(localStorage.getItem(`worker_offers_${offer.workerEmail}`) || '[]');
-        const updatedWorkerOffers = workerOffers.map(o => {
-          if (o.id === offerId) {
-            return {
-              ...o,
-              paymentCompleted: true,
-              paymentDate: new Date().toISOString(),
-              paymentId: paymentId,
-              paymentStatus: 'completed',
-              status: 'paid',
-              employerEmail: authUser.email,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return o;
-        });
-        localStorage.setItem(`worker_offers_${offer.workerEmail}`, JSON.stringify(updatedWorkerOffers));
-      }
-      
+
       // Create payment record
       const commissionRate = 0.15;
       const fullSalary = Number(offer.amount || 0);
@@ -406,7 +375,7 @@ const EmployerPayments = () => {
   // ============================================================
   // LOAD DATA
   // ============================================================
-  const loadData = () => {
+  const loadData = async () => {
     if (isLoadingRef.current || !authUser?.email) {
       setPayments([]);
       setFilteredPayments([]);
@@ -452,10 +421,15 @@ const EmployerPayments = () => {
       employerPayments = Object.values(mergedMap);
       
       // Check offers for missing payments
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      const token = localStorage.getItem('homelyserv_token');
+      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const allOffers = offersRes.ok ? await offersRes.json() : [];
+      const employerOffers = Array.isArray(allOffers) ? allOffers : [];
       const employerAcceptedOffers = employerOffers.filter((o) => {
         const isEmployer = o.employerId === employerId || o.employerEmail === employerEmail;
-        const isAccepted = o.status === 'accepted' || o.status === 'completed' || o.status === 'in_progress' || o.paymentCompleted === true;
+        const isAccepted = o.status === 'accepted' || o.status === 'completed' || o.status === 'in_progress' || o.paymentConfirmed === true;
         return isEmployer && isAccepted;
       });
 

@@ -499,7 +499,7 @@ const AdminPayments = () => {
   // ============================================================
   // loadPayments - FIXED: Loads from ALL payment sources
   // ============================================================
-  const loadPayments = () => {
+  const loadPayments = async () => {
     setLoading(true);
     
     try {
@@ -597,12 +597,17 @@ const AdminPayments = () => {
         }
       });
 
-      // 7. Generate payments from employer_offers that are completed
-      const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
+      // 7. Generate payments from offers that are completed
+      const token = localStorage.getItem('homelyserv_token');
+      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const allOffers = offersRes.ok ? await offersRes.json() : [];
+      const employerOffers = Array.isArray(allOffers) ? allOffers : [];
       const completedOffers = employerOffers.filter(o => 
         o.status === 'completed' || 
         o.status === 'in_progress' || 
-        o.paymentCompleted === true
+        o.paymentConfirmed === true
       );
       console.log('📋 Completed offers found:', completedOffers.length);
       
@@ -633,35 +638,8 @@ const AdminPayments = () => {
       });
 
       // 8. Generate payments from hires
-      const hires = JSON.parse(localStorage.getItem('homelyserv_hires') || '[]');
-      const activeHires = hires.filter(h => h.status === 'active' || h.status === 'completed');
+      const activeHires = [];
       console.log('📋 Active hires found:', activeHires.length);
-      
-      activeHires.forEach(hire => {
-        const paymentId = hire.paymentId || `HIRE-PAY-${hire.id}`;
-        if (!seenIds.has(paymentId)) {
-          seenIds.add(paymentId);
-          allPayments.push({
-            id: paymentId,
-            hireId: hire.id,
-            amount: hire.salary || hire.amount || 0,
-            currency: 'EGP',
-            status: 'completed',
-            paymentVerified: true,
-            contactRevealed: true,
-            workerName: hire.workerName || 'Worker',
-            workerEmail: hire.workerEmail || '',
-            workerPhone: hire.workerPhone || '',
-            employerName: hire.employerName || 'Employer',
-            employerEmail: hire.employerEmail || '',
-            jobTitle: hire.jobTitle || 'Service',
-            paymentMethod: hire.paymentMethod || 'Unknown',
-            description: hire.description || `Hire payment for ${hire.jobTitle || 'service'}`,
-            createdAt: hire.createdAt || new Date().toISOString(),
-            completedAt: hire.updatedAt || new Date().toISOString()
-          });
-        }
-      });
 
       // Sort by date (newest first)
       allPayments.sort((a, b) => {
@@ -723,33 +701,11 @@ const AdminPayments = () => {
       );
       localStorage.setItem('employer_payments', JSON.stringify(updatedEmployerPayments));
       
-      if (payment.offerId) {
-        const employerOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-        const updatedOffers = employerOffers.map(o => 
-          o.id === payment.offerId ? { ...o, paymentVerified: true, contactRevealed: true } : o
-        );
-        localStorage.setItem('employer_offers', JSON.stringify(updatedOffers));
-      }
-      
       const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
       const updatedRequests = verificationRequests.map(r => 
         r.id === payment.id ? { ...r, status: 'verified', verifiedAt: new Date().toISOString() } : r
       );
       localStorage.setItem('homelyserv_payment_verification_requests', JSON.stringify(updatedRequests));
-      
-      const notification = {
-        id: 'notif_' + Date.now(),
-        type: 'payment_verified',
-        message: `Your payment for ${payment.workerName || 'worker'} has been verified and confirmed!`,
-        paymentId: payment.id,
-        workerName: payment.workerName,
-        employerId: payment.employerId || payment.employerEmail,
-        date: new Date().toISOString(),
-        read: false
-      };
-      const notifications = JSON.parse(localStorage.getItem('homelyserv_notifications') || '[]');
-      notifications.push(notification);
-      localStorage.setItem('homelyserv_notifications', JSON.stringify(notifications));
       
       setPayments(prev => prev.map(p => 
         p.id === payment.id ? updatedPayment : p

@@ -456,12 +456,12 @@ const EmployerSettings = () => {
       const data = {
         user: authUser,
         settings: settings,
-        hires: JSON.parse(localStorage.getItem('homelyserv_hires') || '[]'),
+        hires: [],
         conversations: conversations,
         messages: messages,
-        offers: JSON.parse(localStorage.getItem('employer_offers') || '[]'),
-        complaints: JSON.parse(localStorage.getItem('employer_complaints') || '[]'),
-        savedWorkers: JSON.parse(localStorage.getItem('employer_saved_workers') || '[]'),
+        offers: [],
+        complaints: [],
+        savedWorkers: [],
         exportDate: new Date().toISOString()
       };
       

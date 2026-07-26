@@ -79,12 +79,7 @@ const EmployerPostJob = () => {
       }
     };
     
-    // Save to localStorage
-    const existingOffers = JSON.parse(localStorage.getItem('employer_offers') || '[]');
-    existingOffers.push(newOffer);
-    localStorage.setItem('employer_offers', JSON.stringify(existingOffers));
-    
-    // Also save to central offers
+    // Save to central offers
     const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
     centralOffers.push(newOffer);
     localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
