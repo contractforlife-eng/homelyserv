@@ -262,3 +262,12 @@ model Subscription {
 
   User User @relation(fields: [userId], references: [id])
 }
+
+model EmployerSearchTracking {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  employerId     String    @db.ObjectId
+  searchCount    Int       @default(0)
+  lastResetDate  DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

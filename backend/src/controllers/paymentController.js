@@ -1,5 +1,6 @@
 // backend/src/controllers/paymentController.js
 import prisma from '../lib/prisma.js';
+import { canContactWorker } from '../services/paymentAuthService.js';
 
 // Get worker payments
 export const getWorkerPayments = async (req, res) => {

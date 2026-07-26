@@ -3,39 +3,70 @@ import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
+import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
 
 const router = express.Router();
+
+const escapeRegExp = (string) => {
+  if (!string) return '';
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
 
 // ============================================================
 // Search Workers
 // ============================================================
-router.get('/search', async (req, res) => {
+router.get('/search', authenticate, async (req, res) => {
   try {
+    const employerId = req.userId;
+    const employerRole = req.userRole;
+
+    const searchResult = await recordSearch(employerId);
+    if (!searchResult.allowed) {
+      return res.status(403).json({
+        success: false,
+        message: 'Daily search limit reached. Upgrade to Premium for unlimited searches.',
+        searchCount: searchResult.remaining === 0 ? 3 : 0,
+        searchLimit: 3,
+        remaining: 0,
+        isPremium: false
+      });
+    }
+
     const { query, category, location, minRating } = req.query;
     
     let filter = { role: 'WORKER' };
     
     if (query) {
+      const escapedQuery = escapeRegExp(query);
       filter.$or = [
-        { fullName: { $regex: query, $options: 'i' } },
-        { bio: { $regex: query, $options: 'i' } },
-        { skills: { $in: [new RegExp(query, 'i')] } }
+        { fullName: { $regex: escapedQuery, $options: 'i' } },
+        { bio: { $regex: escapedQuery, $options: 'i' } },
+        { skills: { $in: [new RegExp(escapedQuery, 'i')] } }
       ];
     }
     
     if (category && category !== 'all') {
-      filter.skills = { $in: [new RegExp(category, 'i')] };
+      const escapedCategory = escapeRegExp(category);
+      filter.skills = { $in: [new RegExp(escapedCategory, 'i')] };
     }
     
     if (location && location !== 'all') {
-      filter.location = { $regex: location, $options: 'i' };
+      const escapedLocation = escapeRegExp(location);
+      filter.location = { $regex: escapedLocation, $options: 'i' };
     }
     
-    const workers = await User.find(filter).select('-password');
+    const workers = await User.find(filter).select('-password -email -phone');
+    
+    const isPremium = await hasActiveSubscription(employerId);
+    const limitStatus = await getSearchLimitStatus(employerId);
     
     res.json({
       success: true,
-      workers
+      workers,
+      isPremium,
+      searchCount: limitStatus.count,
+      searchLimit: limitStatus.limit,
+      remaining: limitStatus.remaining
     });
   } catch (error) {
     console.error('Search error:', error);
@@ -49,9 +80,9 @@ router.get('/search', async (req, res) => {
 // ============================================================
 // Get Worker Details
 // ============================================================
-router.get('/workers/:id', async (req, res) => {
+router.get('/workers/:id', authenticate, async (req, res) => {
   try {
-    const worker = await User.findById(req.params.id).select('-password');
+    const worker = await User.findById(req.params.id).select('-password -email -phone');
     if (!worker) {
       return res.status(404).json({
         success: false,
@@ -148,9 +179,13 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 // ============================================================
 // Get Employer Stats
 // ============================================================
-router.get('/stats/:userId', async (req, res) => {
+router.get('/stats/:userId', authenticate, async (req, res) => {
   try {
     const employerId = req.params.userId;
+
+    if (String(req.userId) !== String(employerId) && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
 
     const [totalOffers, pendingOffers, totalHires, totalPayments] = await Promise.all([
       prisma.offer.count({ where: { employerId } }),
@@ -190,10 +225,16 @@ router.get('/stats/:userId', async (req, res) => {
 // ============================================================
 // Get Employer Payments
 // ============================================================
-router.get('/payments/:userId', async (req, res) => {
+router.get('/payments/:userId', authenticate, async (req, res) => {
   try {
+    const userId = req.params.userId;
+
+    if (String(req.userId) !== String(userId) && req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const payments = await prisma.payment.findMany({
-      where: { employerId: req.params.userId },
+      where: { employerId: userId },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -213,8 +254,14 @@ router.get('/payments/:userId', async (req, res) => {
 // ============================================================
 // Get Saved Workers
 // ============================================================
-router.get('/saved/:userId', async (req, res) => {
+router.get('/saved/:userId', authenticate, async (req, res) => {
   try {
+    if (String(req.userId) !== String(req.params.userId) && req.userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
     res.json({
       success: true,
       savedWorkers: [],
@@ -232,8 +279,14 @@ router.get('/saved/:userId', async (req, res) => {
 // ============================================================
 // Save a Worker
 // ============================================================
-router.post('/saved/:userId/:workerId', async (req, res) => {
+router.post('/saved/:userId/:workerId', authenticate, async (req, res) => {
   try {
+    if (String(req.userId) !== String(req.params.userId) && req.userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
     res.json({
       success: true,
       message: 'Worker saved successfully'
@@ -250,8 +303,14 @@ router.post('/saved/:userId/:workerId', async (req, res) => {
 // ============================================================
 // Unsave a Worker
 // ============================================================
-router.delete('/saved/:userId/:workerId', async (req, res) => {
+router.delete('/saved/:userId/:workerId', authenticate, async (req, res) => {
   try {
+    if (String(req.userId) !== String(req.params.userId) && req.userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
     res.json({
       success: true,
       message: 'Worker unsaved successfully'

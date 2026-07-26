@@ -1,13 +1,53 @@
 // backend/src/routes/chat.js - ES Module Version
 import express from 'express';
 import Message from '../models/Message.js';
+import { authenticate } from '../middleware/auth.js';
+import { canContactWorker } from '../services/paymentAuthService.js';
 
 const router = express.Router();
 
-// Same deterministic-ID scheme
 const getConversationId = (user1Id, user2Id) => {
   const ids = [String(user1Id), String(user2Id)].sort();
   return `conv_${ids.join('_')}`;
+};
+
+const checkEmployerPayment = async (req, res, next) => {
+  try {
+    const employerId = req.userId;
+    const employerRole = req.userRole;
+
+    if (!employerId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (employerRole !== 'EMPLOYER') {
+      return next();
+    }
+
+    let recipientId = req.body?.recipientId || req.query?.recipientId;
+
+    if (!recipientId && req.body) {
+      if (String(req.body.user1Id) === String(employerId)) {
+        recipientId = req.body.user2Id;
+      } else if (String(req.body.user2Id) === String(employerId)) {
+        recipientId = req.body.user1Id;
+      }
+    }
+
+    if (!recipientId) {
+      return res.status(400).json({ error: 'Missing recipient' });
+    }
+
+    const canContact = await canContactWorker(employerId, recipientId);
+    if (!canContact) {
+      return res.status(403).json({ error: 'Payment required to contact this worker.' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Payment check error:', error);
+    return res.status(500).json({ error: 'Failed to verify payment status' });
+  }
 };
 
 function resolveRecipientRole(senderRole) {
@@ -40,12 +80,27 @@ function formatMessage(msg) {
   };
 }
 
-// ============================================================
-// POST /api/chat/send
-// ============================================================
-router.post('/send', async (req, res) => {
+const requireConversationParticipant = async (req, res, next) => {
   try {
-    const { senderId, senderName, senderRole, recipientId, recipientName, text } = req.body;
+    const conversationId = req.params.conversationId;
+    const userId = String(req.userId);
+
+    const parts = conversationId.replace('conv_', '').split('_');
+    if (parts.length !== 2 || (parts[0] !== userId && parts[1] !== userId)) {
+      return res.status(403).json({ error: 'Not authorized to access this conversation' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Conversation auth error:', error);
+    return res.status(500).json({ error: 'Failed to verify conversation access' });
+  }
+};
+
+router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
+  try {
+    const { senderName, senderRole, recipientId, recipientName, text } = req.body;
+    const senderId = req.userId;
 
     if (!senderId || !recipientId || !text || !text.trim()) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -74,10 +129,7 @@ router.post('/send', async (req, res) => {
   }
 });
 
-// ============================================================
-// GET /api/chat/messages/:conversationId
-// ============================================================
-router.get('/messages/:conversationId', async (req, res) => {
+router.get('/messages/:conversationId', authenticate, requireConversationParticipant, async (req, res) => {
   try {
     const messages = await Message.find({ 
       conversationId: req.params.conversationId 
@@ -90,12 +142,9 @@ router.get('/messages/:conversationId', async (req, res) => {
   }
 });
 
-// ============================================================
-// GET /api/chat/conversations/:userId
-// ============================================================
-router.get('/conversations/:userId', async (req, res) => {
+router.get('/conversations/:userId', authenticate, async (req, res) => {
   try {
-    const userId = String(req.params.userId);
+    const userId = String(req.userId);
 
     const messages = await Message.find({
       $or: [
@@ -104,7 +153,6 @@ router.get('/conversations/:userId', async (req, res) => {
       ]
     }).sort({ createdAt: 1 });
 
-    // Group messages by conversation
     const groups = new Map();
     for (const msg of messages) {
       if (!groups.has(msg.conversationId)) groups.set(msg.conversationId, []);
@@ -145,12 +193,11 @@ router.get('/conversations/:userId', async (req, res) => {
   }
 });
 
-// ============================================================
-// POST /api/chat/mark-read
-// ============================================================
-router.post('/mark-read', async (req, res) => {
+router.post('/mark-read', authenticate, async (req, res) => {
   try {
-    const { conversationId, userId } = req.body;
+    const { conversationId } = req.body;
+    const userId = String(req.userId);
+
     if (!conversationId || !userId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -158,7 +205,7 @@ router.post('/mark-read', async (req, res) => {
     await Message.updateMany(
       {
         conversationId,
-        recipientId: String(userId),
+        recipientId: userId,
         read: false
       },
       { read: true }
@@ -171,13 +218,16 @@ router.post('/mark-read', async (req, res) => {
   }
 });
 
-// ============================================================
-// GET /api/chat/unread/:userId
-// ============================================================
-router.get('/unread/:userId', async (req, res) => {
+router.get('/unread/:userId', authenticate, async (req, res) => {
   try {
+    const userId = String(req.userId);
+
+    if (userId !== String(req.params.userId)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
     const count = await Message.countDocuments({
-      recipientId: String(req.params.userId),
+      recipientId: userId,
       read: false
     });
     return res.json({ count });
@@ -187,21 +237,25 @@ router.get('/unread/:userId', async (req, res) => {
   }
 });
 
-// ============================================================
-// POST /api/chat/ensure-conversation
-// ============================================================
-router.post('/ensure-conversation', async (req, res) => {
+router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (req, res) => {
   try {
     const { 
-  user1Id, 
-  user1Name, 
-  user1Role,
-  user2Id, 
-  user2Name,
-  user2Role
-} = req.body;
+      user1Id, 
+      user1Name, 
+      user1Role,
+      user2Id, 
+      user2Name,
+      user2Role
+    } = req.body;
+
+    const authenticatedId = String(req.userId);
+
     if (!user1Id || !user2Id) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (authenticatedId !== String(user1Id) && authenticatedId !== String(user2Id)) {
+      return res.status(403).json({ error: 'Not authorized to create this conversation' });
     }
 
     const conversationId = getConversationId(user1Id, user2Id);
@@ -229,10 +283,7 @@ router.post('/ensure-conversation', async (req, res) => {
   }
 });
 
-// ============================================================
-// DELETE /api/chat/conversations/:conversationId
-// ============================================================
-router.delete('/conversations/:conversationId', async (req, res) => {
+router.delete('/conversations/:conversationId', authenticate, requireConversationParticipant, async (req, res) => {
   try {
     await Message.deleteMany({ 
       conversationId: req.params.conversationId 

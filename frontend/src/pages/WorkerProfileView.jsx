@@ -33,7 +33,8 @@ import {
   Home,
   Send,
   Copy,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 
 // Main WorkerProfileView Component
@@ -47,6 +48,9 @@ const WorkerProfileView = () => {
   const [loading, setLoading] = useState(true);
   const [showContactOptions, setShowContactOptions] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [contactUnlocked, setContactUnlocked] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const fetchedRef = React.useRef(false);
 
   const translations = {
     en: {
@@ -81,7 +85,9 @@ const WorkerProfileView = () => {
       copyEmail: 'Copy Email',
       emailCopied: 'Email copied!',
       phoneCopied: 'Phone copied!',
-      close: 'Close'
+      close: 'Close',
+      contactLocked: 'Contact information locked. Complete payment to unlock contact details and messaging.',
+      paymentRequired: 'Payment required'
     },
     ar: {
       title: 'الملف الشخصي للعامل',
@@ -115,13 +121,15 @@ const WorkerProfileView = () => {
       copyEmail: 'نسخ البريد الإلكتروني',
       emailCopied: 'تم نسخ البريد الإلكتروني!',
       phoneCopied: 'تم نسخ رقم الهاتف!',
-      close: 'إغلاق'
+      close: 'إغلاق',
+      contactLocked: 'معلومات الاتصال مقفلة. أكمل الدفع لفتح تفاصيل الاتصال والمراسلة.',
+      paymentRequired: 'مطلوب دفع'
     }
   };
 
   const t = translations[language] || translations.en;
 
-  useEffect(() => {
+   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
     if (savedLang) {
       setLanguage(savedLang);
@@ -139,7 +147,6 @@ const WorkerProfileView = () => {
       navigate('/login');
     }
 
-    // Load worker data from localStorage
     const workerData = localStorage.getItem('homelyserv_viewing_worker');
     if (workerData) {
       try {
@@ -159,6 +166,36 @@ const WorkerProfileView = () => {
     
     setLoading(false);
   }, [navigate]);
+
+   useEffect(() => {
+    fetchedRef.current = false;
+  }, [worker?.id, user?.id]);
+
+   useEffect(() => {
+    const fetchContactStatus = async () => {
+      if (!worker || !user) return;
+      if (fetchedRef.current) return;
+      fetchedRef.current = true;
+      try {
+        const token = localStorage.getItem('homelyserv_token');
+        const res = await fetch(`${apiBase}/api/workers/profile/${worker.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setContactUnlocked(data.contactUnlocked || false);
+          if (data.user) {
+            setWorker(prev => ({ ...prev, ...data.user }));
+          } else if (!data.contactUnlocked) {
+            setWorker(prev => ({ ...prev, email: '', phone: '' }));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch contact status:', e);
+      }
+    };
+    fetchContactStatus();
+  }, [worker?.id, user?.id]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -505,32 +542,15 @@ const WorkerProfileView = () => {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.contactInfo}</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex items-center gap-3">
-                      <Mail size={16} className="text-gray-400 dark:text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-300">{worker.email}</span>
-                    </div>
-                    <button
-                      onClick={handleCopyEmail}
-                      className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
-                      title={t.copyEmail}
-                    >
-                      {copied ? (
-                        <Check size={14} className="text-green-500" />
-                      ) : (
-                        <Copy size={14} className="text-gray-400 dark:text-gray-500" />
-                      )}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex items-center gap-3">
-                      <Phone size={16} className="text-gray-400 dark:text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-300">{worker.phone || 'Not provided'}</span>
-                    </div>
-                    {worker.phone && (
+                {contactUnlocked ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <div className="flex items-center gap-3">
+                        <Mail size={16} className="text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-300">{worker.email}</span>
+                      </div>
                       <button
-                        onClick={handleCopyPhone}
+                        onClick={handleCopyEmail}
                         className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
                         title={t.copyEmail}
                       >
@@ -540,9 +560,38 @@ const WorkerProfileView = () => {
                           <Copy size={14} className="text-gray-400 dark:text-gray-500" />
                         )}
                       </button>
-                    )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <div className="flex items-center gap-3">
+                        <Phone size={16} className="text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-300">{worker.phone || 'Not provided'}</span>
+                      </div>
+                      {worker.phone && (
+                        <button
+                          onClick={handleCopyPhone}
+                          className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
+                          title={t.copyEmail}
+                        >
+                          {copied ? (
+                            <Check size={14} className="text-green-500" />
+                          ) : (
+                            <Copy size={14} className="text-gray-400 dark:text-gray-500" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Lock size={20} className="text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t.paymentRequired}</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{t.contactLocked}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -563,7 +612,7 @@ const WorkerProfileView = () => {
               </button>
             </div>
             <div className="space-y-3">
-              {worker?.email && (
+              {contactUnlocked && worker?.email && (
                 <button
                   onClick={handleSendEmail}
                   className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
@@ -575,7 +624,7 @@ const WorkerProfileView = () => {
                   </div>
                 </button>
               )}
-              {worker?.phone && (
+              {contactUnlocked && worker?.phone && (
                 <button
                   onClick={handleCallPhone}
                   className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
@@ -589,12 +638,20 @@ const WorkerProfileView = () => {
               )}
               <button
                 onClick={handleStartChat}
-                className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300 transition flex items-center gap-3"
+                disabled={!contactUnlocked}
+                className={`w-full p-3 border rounded-lg transition flex items-center gap-3 ${
+                  contactUnlocked
+                    ? 'border-gray-200 dark:border-gray-700 hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300'
+                    : 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
+                }`}
+                title={contactUnlocked ? t.startChat : t.contactLocked}
               >
-                <MessageCircle size={20} className="text-teal-600" />
+                <MessageCircle size={20} className={contactUnlocked ? 'text-teal-600' : 'text-gray-400'} />
                 <div className="text-left">
-                  <p className="font-medium text-gray-800 dark:text-white">{t.startChat}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Start a conversation with {worker.fullName}</p>
+                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.startChat}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    {contactUnlocked ? `Start a conversation with ${worker.fullName}` : t.contactLocked}
+                  </p>
                 </div>
               </button>
             </div>

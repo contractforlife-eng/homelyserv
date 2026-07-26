@@ -7,7 +7,6 @@ import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import NotificationBell from '../components/NotificationBell';
-import api from '../utils/api';
 import {
   Home,
   User,
@@ -62,6 +61,8 @@ import {
   Crown
 } from 'lucide-react';
 
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 // ============================================================
 // 2. MAIN EMPLOYER SEARCH COMPONENT
 // ============================================================
@@ -92,6 +93,14 @@ const EmployerSearch = () => {
     availability: 'all',
     maxHourlyRate: 100,
     language: 'all'
+  });
+
+  const [searchLimitStatus, setSearchLimitStatus] = useState({
+    count: 0,
+    limit: 3,
+    remaining: 3,
+    isPremium: false,
+    limitReached: false
   });
 
   const [sortBy, setSortBy] = useState('relevance');
@@ -178,7 +187,11 @@ const EmployerSearch = () => {
       hireError: 'Failed to send offer. Please try again.',
       offerSent: 'Offer Sent',
       pendingResponse: 'Waiting for worker response...',
-      contactHidden: 'Contact info hidden until payment confirmed'
+      contactHidden: 'Contact info hidden until payment confirmed',
+      dailyLimitReached: 'Daily search limit reached. Upgrade to Premium for unlimited searches.',
+      searchesRemaining: 'searches remaining today',
+      unlimited: 'Unlimited',
+      upgradePremium: 'Upgrade to Premium'
     },
     ar: {
       title: 'البحث عن عمال',
@@ -233,7 +246,11 @@ const EmployerSearch = () => {
       hireError: 'فشل إرسال العرض. يرجى المحاولة مرة أخرى.',
       offerSent: 'تم إرسال العرض',
       pendingResponse: 'في انتظار رد العامل...',
-      contactHidden: 'معلومات الاتصال مخفية حتى تأكيد الدفع'
+      contactHidden: 'معلومات الاتصال مخفية حتى تأكيد الدفع',
+      dailyLimitReached: 'تم الوصول إلى الحد اليومي للبحث. قم بالترقية إلى Premium للبحث غير المحدود.',
+      searchesRemaining: 'عمليات بحث متبقية اليوم',
+      unlimited: 'غير محدود',
+      upgradePremium: 'الترقية إلى Premium'
     }
   };
 
@@ -279,18 +296,37 @@ const EmployerSearch = () => {
   const loadWorkersFromBackend = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/employers/search');
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/employers/search`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const response = { data: await res.json(), ok: res.ok };
       
-      if (response.data.success) {
+      if (response.ok && response.data.success) {
         const workers = response.data.workers || [];
         setAllWorkers(workers);
+        setSearchLimitStatus({
+          count: response.data.searchCount || 0,
+          limit: response.data.searchLimit || 3,
+          remaining: response.data.remaining ?? 3,
+          isPremium: response.data.isPremium || false,
+          limitReached: false
+        });
         console.log(`✅ Loaded ${workers.length} workers from backend`);
+      } else if (response.data.message && response.data.message.includes('Daily search limit reached')) {
+        setSearchLimitStatus({
+          count: response.data.searchCount || 3,
+          limit: response.data.searchLimit || 3,
+          remaining: 0,
+          isPremium: false,
+          limitReached: true
+        });
+        setAllWorkers([]);
       } else {
         throw new Error(response.data.message || 'Failed to load workers');
       }
     } catch (error) {
       console.error('Error loading workers from backend:', error);
-      // Fallback: try loading from localStorage as backup
       loadWorkersFromStorage();
     } finally {
       setLoading(false);
@@ -408,17 +444,26 @@ const EmployerSearch = () => {
     }
 
     try {
-      const response = await api.post('/api/hires', {
-        employerId: authUser.id,
-        workerId: worker.id || worker.email,
-        workerName: worker.fullName,
-        workerEmail: worker.email,
-        jobTitle: worker.desiredJob || 'Service Provider',
-        hourlyRate: worker.hourlyRate || 30,
-        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+      const token = localStorage.getItem('homelyserv_token');
+      const res = await fetch(`${apiBase}/api/hires`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          employerId: authUser.id,
+          workerId: worker.id || worker.email,
+          workerName: worker.fullName,
+          workerEmail: worker.email,
+          jobTitle: worker.desiredJob || 'Service Provider',
+          hourlyRate: worker.hourlyRate || 30,
+          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+        })
       });
+      const response = { data: await res.json(), ok: res.ok };
 
-      if (response.data.success) {
+      if (response.ok && response.data.success) {
         const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
         alert(successMsg);
       } else {
@@ -759,6 +804,20 @@ const EmployerSearch = () => {
               <div className="flex items-center gap-2 text-sm text-teal-100">
                 <Users size={18} />
                 <span>{allWorkers.length} workers available</span>
+                {!searchLimitStatus.isPremium && !searchLimitStatus.limitReached && (
+                  <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+                    {searchLimitStatus.remaining} {t.searchesRemaining}
+                  </span>
+                )}
+                {searchLimitStatus.limitReached && (
+                  <Link
+                    to="/subscription"
+                    className="bg-yellow-400/30 hover:bg-yellow-400/40 px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
+                  >
+                    <Crown size={12} className="text-yellow-300" />
+                    {t.upgradePremium}
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -930,7 +989,21 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
           </div>
 
           {/* Results */}
-          {showResults && (
+              {searchLimitStatus.limitReached && (
+                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <LockIcon size={24} className="text-amber-600" />
+                    <div>
+                      <p className="font-semibold text-amber-800 dark:text-amber-300">{t.dailyLimitReached}</p>
+                      <Link to="/subscription" className="text-sm text-teal-600 hover:underline mt-1 inline-block">
+                        {t.upgradePremium}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {showResults && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.results}</h3>

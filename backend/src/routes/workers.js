@@ -3,13 +3,16 @@ import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
+import { canContactWorker } from '../services/paymentAuthService.js';
+import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/jwtSecret.js';
 
 const router = express.Router();
 
 // ============================================================
 // Get Worker Profile
 // ============================================================
-router.get('/profile/:userId', async (req, res) => {
+router.get('/profile/:userId', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select('-password');
     if (!user) {
@@ -18,9 +21,28 @@ router.get('/profile/:userId', async (req, res) => {
         message: 'User not found'
       });
     }
+    
     const userObj = user.toObject ? user.toObject() : { ...user };
     userObj.id = userObj._id;
-    res.json({ success: true, user: userObj });
+    
+    let contactUnlocked = false;
+    const requesterId = req.userId;
+    const requesterRole = req.userRole;
+    
+    if (requesterRole === 'EMPLOYER') {
+      contactUnlocked = await canContactWorker(requesterId, userObj.id);
+    } else if (requesterRole === 'WORKER' || requesterRole === 'ADMIN') {
+      contactUnlocked = true;
+    } else if (String(requesterId) === String(userObj.id)) {
+      contactUnlocked = true;
+    }
+    
+    if (!contactUnlocked) {
+      userObj.email = null;
+      userObj.phone = null;
+    }
+    
+    res.json({ success: true, user: userObj, contactUnlocked });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({
@@ -80,21 +102,28 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 // ============================================================
 // Get Worker Stats
 // ============================================================
-router.get('/stats/:userId', async (req, res) => {
+router.get('/stats/:userId', authenticate, async (req, res) => {
   try {
     const userId = req.params.userId;
 
     const profile = await prisma.workerProfile.findUnique({
-      where: { userId },
-      include: {
-        user: true
-      }
+      where: { userId }
     });
 
     if (!profile) {
       return res.status(404).json({
         success: false,
         message: 'Worker profile not found'
+      });
+    }
+
+    const isOwner = String(req.userId) === String(userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
       });
     }
 
@@ -148,9 +177,19 @@ router.get('/stats/:userId', async (req, res) => {
 // ============================================================
 // Get Worker Payments
 // ============================================================
-router.get('/payments/:userId', async (req, res) => {
+router.get('/payments/:userId', authenticate, async (req, res) => {
   try {
     const userId = req.params.userId;
+
+    const isOwner = String(req.userId) === String(userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
 
     const profile = await prisma.workerProfile.findUnique({
       where: { userId }
