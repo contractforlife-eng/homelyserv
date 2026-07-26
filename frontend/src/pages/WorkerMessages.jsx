@@ -60,6 +60,7 @@ const WorkerMessages = () => {
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -421,11 +422,86 @@ const WorkerMessages = () => {
         setMessages(updatedMessages);
         await markMessagesAsRead(selectedConversationId, userId);
       }
+      
+      const updatedUsers = await loadAllUsers();
+      setAllUsers(updatedUsers);
     }
     
     setTimeout(() => {
       setIsRefreshing(false);
     }, 500);
+  };
+
+  const loadAllUsers = async () => {
+    const users = [];
+    
+    const employerUsers = JSON.parse(localStorage.getItem('employer_users') || '[]');
+    employerUsers.forEach(u => {
+      if (u.email) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: 'EMPLOYER',
+          profileImage: u.profileImage || null,
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    const workerUsers = JSON.parse(localStorage.getItem('worker_users') || '[]');
+    workerUsers.forEach(u => {
+      if (u.email) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: 'WORKER',
+          profileImage: u.profileImage || null,
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    const homelyUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
+    homelyUsers.forEach(u => {
+      if (u.email && !users.some(existing => existing.email === u.email)) {
+        users.push({
+          id: u.id || u.email,
+          name: u.fullName || u.name || 'User',
+          email: u.email,
+          role: u.role || 'USER',
+          profileImage: u.profileImage || null,
+          avatar: u.profileImage || null,
+          status: 'online'
+        });
+      }
+    });
+
+    const uniqueUsers = users.filter((user, index, self) => 
+      index === self.findIndex(u => u.email === user.email)
+    );
+
+    return uniqueUsers;
+  };
+
+  useEffect(() => {
+    loadAllUsers().then(setAllUsers);
+  }, []);
+
+  const usersMap = allUsers.reduce((map, u) => {
+    if (u.id) map[u.id] = u;
+    if (u.email) map[u.email] = u;
+    return map;
+  }, {});
+
+  const getAvatarForUser = (userId, userName) => {
+    const user = usersMap[userId];
+    if (user?.profileImage) return user.profileImage;
+    if (user?.avatar) return user.avatar;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=red&color=fff&size=100&bold=true`;
   };
 
   const userProfileImage = authUser?.profileImage || null;
@@ -654,7 +730,7 @@ const WorkerMessages = () => {
                         }`}
                       >
                         <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=red&color=fff&size=100&bold=true`}
+                          src={getAvatarForUser(conv.otherUserId, conv.otherUserName)}
                           alt={conv.otherUserName}
                           className="w-12 h-12 rounded-full object-cover border-2 border-red-200"
                         />
@@ -685,8 +761,10 @@ const WorkerMessages = () => {
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                       <div className="flex items-center gap-3">
                         <img
-                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Employer')}&background=red&color=fff&size=100&bold=true`}
+                          src={getAvatarForUser(
+                            conversations.find(c => c.id === selectedConversationId)?.otherUserId,
+                            conversations.find(c => c.id === selectedConversationId)?.otherUserName
+                          )}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover border-2 border-red-200"
                         />
@@ -772,8 +850,10 @@ const WorkerMessages = () => {
                             >
                               {!isWorker && showAvatar && (
                                 <img
-                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=red&color=fff&size=100&bold=true`}
+                                  src={getAvatarForUser(
+                                    conversations.find(c => c.id === selectedConversationId)?.otherUserId,
+                                    msg.senderName || 'User'
+                                  )}
                                   alt={msg.senderName}
                                   className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
                                 />

@@ -46,7 +46,8 @@ import {
   getConversationId,
   getAllConversations,
   debugChatData,
-  deleteConversation
+  deleteConversation,
+  ensureConversationExists
 } from '../utils/chatService';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
@@ -770,20 +771,42 @@ const AdminMessages = () => {
     if (result) {
       // Refresh conversations to get the new one
       const updatedConversations = await getUserConversations(userId);
-      setConversations(updatedConversations);
-      
-      // Find and open the new conversation
-      const newConv = updatedConversations.find(
-        c => c.otherUserId === selectedUser.id || c.otherUserId === selectedUser.email
-      );
-      
-      if (newConv) {
-        setSelectedConversationId(newConv.id);
-        setMessages([]);
-        setShowAllUsers(false);
-      }
+
+console.log("updatedConversations =", updatedConversations);
+console.log("selectedUser.id =", selectedUser.id);
+console.log("selectedUser.email =", selectedUser.email);
+
+setConversations(updatedConversations);
+
+const newConv = updatedConversations.find(c => {
+  console.log("checking conversation:", c);
+
+  return (
+    c.otherUserId === selectedUser.id ||
+    c.otherUserId === selectedUser.email
+  );
+});
+
+console.log("newConv =", newConv);
+
+if (newConv) {
+  console.log("Opening conversation:", newConv.id);
+
+  setSelectedConversationId(newConv.id);
+  await loadMessagesForConversation(newConv.id);
+  setShowAllUsers(false);
+} else {
+  console.log("Conversation NOT FOUND after refresh");
+}
     }
   };
+
+  const selectedConversation =
+  conversations.find(c => c.id === selectedConversationId);
+
+console.log("selectedConversationId =", selectedConversationId);
+console.log("selectedConversation =", selectedConversation);
+console.log("messages =", messages);
 
   const filteredConversations = conversations.filter(conv =>
     conv.otherUserName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1128,7 +1151,7 @@ const AdminMessages = () => {
               <div className="col-span-2 flex flex-col h-[600px]">
                 {selectedConversationId ? (
                   <>
-                    <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-white dark:bg-gray-800/5">
+                    <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-yellow-500">
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
@@ -1137,23 +1160,23 @@ const AdminMessages = () => {
                           className="w-10 h-10 rounded-full object-cover border-2 border-yellow-500/30"
                         />
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="font-semibold text-gray-900">
                             {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
                           </p>
-                          <p className="text-xs text-yellow-500">{conversations.find(c => c.id === selectedConversationId)?.role || 'User'}</p>
+                          <p className="text-xs text-gray-900">{conversations.find(c => c.id === selectedConversationId)?.role || 'User'}</p>
                         </div>
                       </div>
                       <div className="flex gap-2 relative" ref={dropdownRef}>
                         <button 
                           onClick={() => setShowAllUsers(true)}
-                          className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-yellow-500/20 transition text-gray-900"
                           title={t.startNewChat}
                         >
                           <UserPlus size={18} />
                         </button>
                         <button
                           onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                          className="p-2 rounded-lg hover:bg-yellow-500/20 transition text-gray-900"
                         >
                           <MoreVertical size={18} />
                         </button>

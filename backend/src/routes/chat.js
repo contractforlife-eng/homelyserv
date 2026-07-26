@@ -55,17 +55,17 @@ router.post('/send', async (req, res) => {
     const recipientRole = resolveRecipientRole(senderRole);
 
     const message = await Message.create({
-      conversationId,
-      senderId: String(senderId),
-      senderName,
-      senderRole,
-      recipientId: String(recipientId),
-      recipientName,
-      recipientRole,
-      text: text.trim(),
-      read: false,
-      delivered: true
-    });
+  conversationId,
+  senderId: String(senderId),
+  senderName,
+  senderRole,
+  recipientId: String(recipientId),
+  recipientName,
+  recipientRole,
+  text: text.trim(),
+  read: false,
+  delivered: true
+});
 
     return res.status(201).json(formatMessage(message));
   } catch (error) {
@@ -192,7 +192,14 @@ router.get('/unread/:userId', async (req, res) => {
 // ============================================================
 router.post('/ensure-conversation', async (req, res) => {
   try {
-    const { user1Id, user1Name, user2Id, user2Name } = req.body;
+    const { 
+  user1Id, 
+  user1Name, 
+  user1Role,
+  user2Id, 
+  user2Name,
+  user2Role
+} = req.body;
     if (!user1Id || !user2Id) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -202,16 +209,17 @@ router.post('/ensure-conversation', async (req, res) => {
 
     if (!existing) {
       await Message.create({
-        conversationId,
-        senderId: 'system',
-        senderName: 'System',
-        senderRole: 'SYSTEM',
-        recipientId: String(user1Id),
-        recipientName: user1Name || 'User',
-        recipientRole: 'USER',
-        text: 'Start your conversation here',
-        read: true
-      });
+  conversationId,
+  senderId: String(user1Id),
+  senderName: user1Name || 'User',
+  senderRole: user1Role || 'USER',
+  recipientId: String(user2Id),
+  recipientName: user2Name || 'User',
+  recipientRole: user2Role || 'USER',
+  text: 'Start your conversation here',
+  read: true,
+  delivered: true
+});
     }
 
     return res.json({ conversationId });
