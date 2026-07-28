@@ -44,21 +44,33 @@ export const sendOffer = async (req, res) => {
 
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    let effectiveWorkerId = workerId;
-    try {
-      const workerProfile = await prisma.workerProfile.findUnique({
-        where: { userId: workerId }
+    let workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId: workerId }
+    });
+    if (!workerProfile) {
+      workerProfile = await prisma.workerProfile.create({
+        data: {
+          userId: workerId,
+          category: '',
+          experienceYears: 0,
+          expectedSalary: 0,
+          availability: 'available',
+          workType: 'full-time',
+          bioAr: '',
+          bioEn: '',
+          skills: [],
+          profilePhotoUrl: '',
+          docStatus: 'pending',
+          ratingAvg: 0,
+          ratingCount: 0,
+          isVisible: true
+        }
       });
-      if (workerProfile) {
-        effectiveWorkerId = workerProfile.id;
-      }
-    } catch (_) {
-      console.warn('⚠️ WorkerProfile lookup failed, using workerId as-is:', workerId);
     }
 
     const offer = await prisma.offer.create({
       data: {
-        workerId: effectiveWorkerId,
+        workerId: workerProfile.id,
         employerId: req.userId,
         jobTitle,
         message: message || null,
@@ -82,15 +94,12 @@ export const sendOffer = async (req, res) => {
       }
     });
 
-    const workerProfile = await prisma.workerProfile.findUnique({ where: { userId: effectiveWorkerId } });
-    if (workerProfile) {
-      await createNotification(
-        workerProfile.userId,
-        'offer',
-        'New Job Offer',
-        `${employerName || 'An employer'} sent you a job offer for ${jobTitle}`
-      );
-    }
+    await createNotification(
+      workerProfile.userId,
+      'offer',
+      'New Job Offer',
+      `${employerName || 'An employer'} sent you a job offer for ${jobTitle}`
+    );
 
     res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
   } catch (error) {
@@ -111,11 +120,7 @@ export const respondToOffer = async (req, res) => {
     }
 
     const offer = await prisma.offer.findUnique({
-      where: { id: offerId },
-      include: {
-        employer: true,
-        worker: true
-      }
+      where: { id: offerId }
     });
 
     if (!offer) {
@@ -192,11 +197,6 @@ export const getMyHires = async (req, res) => {
     if (req.userRole === 'EMPLOYER') {
       hires = await prisma.hire.findMany({
         where: { employerId: req.userId },
-        include: {
-          worker: {
-            include: { user: { select: { fullName: true, phone: true, city: true } } }
-          }
-        },
         orderBy: { createdAt: 'desc' }
       });
     } else {
@@ -204,9 +204,6 @@ export const getMyHires = async (req, res) => {
       if (!profile) return res.json([]);
       hires = await prisma.hire.findMany({
         where: { workerId: profile.id },
-        include: {
-          employer: { select: { fullName: true, phone: true, city: true } }
-        },
         orderBy: { createdAt: 'desc' }
       });
     }
@@ -226,11 +223,6 @@ export const getMyOffers = async (req, res) => {
     if (req.userRole === 'EMPLOYER') {
       offers = await prisma.offer.findMany({
         where: { employerId: req.userId },
-        include: {
-          worker: {
-            include: { user: { select: { fullName: true, phone: true, city: true } } }
-          }
-        },
         orderBy: { createdAt: 'desc' }
       });
     } else {
@@ -238,9 +230,6 @@ export const getMyOffers = async (req, res) => {
       if (!profile) return res.json([]);
       offers = await prisma.offer.findMany({
         where: { workerId: profile.id },
-        include: {
-          employer: { select: { fullName: true, phone: true, city: true } }
-        },
         orderBy: { createdAt: 'desc' }
       });
     }
@@ -271,12 +260,6 @@ export const updateHireStatus = async (req, res) => {
 export const getAllHires = async (req, res) => {
   try {
     const hires = await prisma.hire.findMany({
-      include: {
-        worker: {
-          include: { user: { select: { fullName: true, phone: true, city: true } } }
-        },
-        employer: { select: { fullName: true, email: true } }
-      },
       orderBy: { createdAt: 'desc' }
     });
     res.json(hires);

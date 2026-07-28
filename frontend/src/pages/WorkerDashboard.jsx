@@ -43,6 +43,7 @@ import {
   Award
 } from 'lucide-react';
 
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Main WorkerDashboard Component - RED THEME
 const WorkerDashboard = () => {
   
@@ -820,26 +821,7 @@ const WorkerDashboard = () => {
         }
         rightContent={
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-              {authUser?.profileImage ? (
-                <img 
-                  src={authUser.profileImage} 
-                  alt={authUser.fullName || 'Worker'} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={16} className="text-white m-1" />
-              )}
-              {userIsPremium && (
-                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                  <Crown size={8} className="text-white" />
-                </div>
-              )}
-            </div>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                {authUser?.fullName || 'Worker'}
-              </span>
               {userIsPremium && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
                   <Crown size={10} className="text-yellow-500" />

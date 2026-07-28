@@ -571,4 +571,85 @@ router.put('/settings', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================================
+// One-Time Migration: Normalize Offer.workerId and Hire.workerId
+// from legacy User._id to WorkerProfile.id
+// Remove this endpoint after running successfully.
+// ============================================================
+router.post('/migrate/offer-worker-ids', async (req, res) => {
+  try {
+    const [offers, hires, workerProfiles] = await Promise.all([
+      prisma.offer.findMany(),
+      prisma.hire.findMany(),
+      prisma.workerProfile.findMany()
+    ]);
+
+    const profileById = new Map(workerProfiles.map(p => [p.id, p]));
+    const profileByUserId = new Map(workerProfiles.map(p => [p.userId, p]));
+
+    let scannedOffers = 0;
+    let updatedOffers = 0;
+    let skippedOffers = 0;
+
+    let scannedHires = 0;
+    let updatedHires = 0;
+    let skippedHires = 0;
+
+    for (const offer of offers) {
+      scannedOffers++;
+      if (profileById.has(offer.workerId)) {
+        skippedOffers++;
+        continue;
+      }
+      const profile = profileByUserId.get(offer.workerId);
+      if (profile) {
+        await prisma.offer.update({
+          where: { id: offer.id },
+          data: { workerId: profile.id }
+        });
+        updatedOffers++;
+      } else {
+        skippedOffers++;
+      }
+    }
+
+    for (const hire of hires) {
+      scannedHires++;
+      if (profileById.has(hire.workerId)) {
+        skippedHires++;
+        continue;
+      }
+      const profile = profileByUserId.get(hire.workerId);
+      if (profile) {
+        await prisma.hire.update({
+          where: { id: hire.id },
+          data: { workerId: profile.id }
+        });
+        updatedHires++;
+      } else {
+        skippedHires++;
+      }
+    }
+
+    console.log(
+      `Migration complete: offers scanned=${scannedOffers} updated=${updatedOffers} skipped=${skippedOffers}; ` +
+      `hires scanned=${scannedHires} updated=${updatedHires} skipped=${skippedHires}`
+    );
+
+    res.json({
+      success: true,
+      message: 'Migration completed',
+      offers: { scanned: scannedOffers, updated: updatedOffers, skipped: skippedOffers },
+      hires: { scanned: scannedHires, updated: updatedHires, skipped: skippedHires }
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  }
+});
+
 export default router;

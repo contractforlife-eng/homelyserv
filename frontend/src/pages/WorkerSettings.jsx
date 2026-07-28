@@ -577,7 +577,7 @@ const WorkerSettings = () => {
       } catch (error) {
         console.error('Error loading offers for export:', error);
       }
-      const workerOffers = offers.filter(o => o.workerEmail === authUser.email || o.workerId === authUser.id);
+      const workerOffers = offers.filter(o => o.workerEmail === authUser.email);
 
       const data = {
         user: authUser,

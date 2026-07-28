@@ -315,11 +315,14 @@ const WorkerOffers = () => {
   // Load Offers - FIXED: Adds "paid" status
   // ============================================================
   const loadOffers = async (userParam) => {
+    console.log('[loadOffers] START', { userParam: userParam?.id || userParam?.email, authUser: authUser?.id || authUser?.email });
     setLoading(true);
+    console.log('[loadOffers] setLoading(true)');
     try {
       const currentUser = userParam || authUser;
-      if (!currentUser?.email) {
-        setOffers([]);
+
+      if (!currentUser?.id) {
+        console.log('[loadOffers] EARLY RETURN: missing user id');
         return;
       }
 
@@ -338,13 +341,16 @@ const WorkerOffers = () => {
       allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
 
       setOffers(allOffers);
+      console.log('[loadOffers] setOffers', allOffers.length);
       return allOffers;
     } catch (error) {
-      console.error('Error loading offers from backend:', error);
+      console.error('[loadOffers] ERROR', error);
       setOffers([]);
+      console.log('[loadOffers] setOffers([]) due to error');
       return [];
     } finally {
       setLoading(false);
+      console.log('[loadOffers] setLoading(false)');
     }
   };
 
@@ -362,33 +368,50 @@ const WorkerOffers = () => {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
+    console.log('[Effect 1] fired', { authUser: authUser?.id, isAuthenticated, authLoading });
+    if (authLoading) {
+      console.log('[Effect 1] RETURN: authLoading');
+      return;
+    }
 
     if (!isAuthenticated || !authUser) {
+      console.log('[Effect 1] RETURN: not authenticated');
       navigate('/login');
       return;
     }
 
     if (authUser.role !== 'WORKER') {
+      console.log('[Effect 1] RETURN: not worker');
       navigate('/login');
       return;
     }
 
+    console.log('[Effect 1] CALLING loadOffers');
     loadOffers(authUser);
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
-    if (authUser) {
+    console.log('[Effect 2] fired', { userId: authUser?.id, refreshKey });
+    if (authUser?.id) {
+      console.log('[Effect 2] CALLING loadOffers');
       loadOffers(authUser);
     }
-  }, [authUser, refreshKey]);
+  }, [authUser?.id, refreshKey]);
 
   useEffect(() => {
-    if (!authUser) return;
+    console.log('[Effect 3] fired', { hasAuthUser: !!authUser });
+    if (!authUser) {
+      console.log('[Effect 3] RETURN: no authUser');
+      return;
+    }
     const interval = setInterval(() => {
+      console.log('[Effect 3] interval CALLING loadOffers');
       loadOffers(authUser);
     }, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      console.log('[Effect 3] cleanup interval');
+      clearInterval(interval);
+    };
   }, [authUser]);
 
   // ============================================================
