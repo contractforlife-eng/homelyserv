@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
+import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 
 const DashboardLayout = ({ 
@@ -94,7 +95,7 @@ const DashboardLayout = ({
   }
 
   // Determine which sidebar to render based on user role
-  const SidebarComponent = authUser.role === 'EMPLOYER' ? EmployerSidebar : WorkerSidebar;
+  const SidebarComponent = authUser.role === 'EMPLOYER' ? EmployerSidebar : authUser.role === 'ADMIN' ? AdminSidebar : WorkerSidebar;
 
   // Provide layout state to children (DashboardHeader and page content)
   const contextValue = useMemo(() => ({
@@ -110,7 +111,7 @@ const DashboardLayout = ({
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      <div className={`min-h-screen flex ${authUser.role === 'ADMIN' ? 'bg-[#0a0a0a]' : 'bg-gray-50 dark:bg-gray-900'}`}>
         <SidebarComponent
           language={language}
           sidebarCollapsed={sidebarCollapsed}
@@ -118,6 +119,7 @@ const DashboardLayout = ({
           mobileMenuOpen={mobileMenuOpen}
           toggleMobileMenu={toggleMobileMenu}
           authUser={authUser}
+          user={authUser}
           handleLogout={handleLogout}
         />
 

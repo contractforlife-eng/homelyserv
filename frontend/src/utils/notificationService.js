@@ -1,30 +1,30 @@
-const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-
-async function authHeaders() {
-  const token = localStorage.getItem('homelyserv_token');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
+import api from '../utils/api';
 
 async function handleResponse(res) {
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.error || 'Notification API error');
+  if (res.status < 200 || res.status >= 300) {
+    const err = res.data?.message || res.data?.error || 'Notification API error';
+    throw new Error(err);
   }
-  return res.json();
+  return res.data;
 }
 
 export async function getNotifications() {
-  const res = await fetch(`${apiBase}/api/notifications`, { headers: await authHeaders() });
-  const data = await handleResponse(res);
-  return (data.notifications || []).map(n => ({
-    id: n.id,
-    type: n.type,
-    title: n.title,
-    message: n.body || n.message,
-    time: n.createdAt,
-    read: n.isRead,
-    link: '/worker/offers'
-  }));
+  try {
+    const res = await api.get('/api/notifications');
+    const data = await handleResponse(res);
+    return (data.notifications || []).map(n => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      message: n.body || n.message,
+      time: n.createdAt,
+      read: n.isRead,
+      link: '/worker/offers'
+    }));
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
+  }
 }
 
 export async function getUnreadCount() {
@@ -33,49 +33,33 @@ export async function getUnreadCount() {
 }
 
 export async function addNotification(notification) {
-  const res = await fetch(`${apiBase}/api/notifications`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...await authHeaders() },
-    body: JSON.stringify(notification)
-  });
+  const res = await api.post('/api/notifications', notification);
   const data = await handleResponse(res);
   return data.notification;
 }
 
 export async function markAsRead(notificationId) {
-  const res = await fetch(`${apiBase}/api/notifications/${notificationId}/read`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...await authHeaders() }
-  });
-  return handleResponse(res);
+  const res = await api.patch(`/api/notifications/${notificationId}/read`);
+  return await handleResponse(res);
 }
 
 export async function markAllAsRead() {
-  const res = await fetch(`${apiBase}/api/notifications/read-all`, {
-    method: 'PATCH',
-    headers: await authHeaders()
-  });
-  return handleResponse(res);
+  const res = await api.patch('/api/notifications/read-all');
+  return await handleResponse(res);
 }
 
 export async function deleteNotification(notificationId) {
-  const res = await fetch(`${apiBase}/api/notifications/${notificationId}`, {
-    method: 'DELETE',
-    headers: await authHeaders()
-  });
-  return handleResponse(res);
+  const res = await api.delete(`/api/notifications/${notificationId}`);
+  return await handleResponse(res);
 }
 
 export async function clearAllNotifications() {
-  const res = await fetch(`${apiBase}/api/notifications`, {
-    method: 'DELETE',
-    headers: await authHeaders()
-  });
-  return handleResponse(res);
+  const res = await api.delete('/api/notifications');
+  return await handleResponse(res);
 }
 
 export async function getNotificationSettings() {
-  const res = await fetch(`${apiBase}/api/notifications/settings`, { headers: await authHeaders() });
+  const res = await api.get('/api/notifications/settings');
   const data = await handleResponse(res);
   return data.settings || {
     newMessage: true,
@@ -88,12 +72,8 @@ export async function getNotificationSettings() {
 }
 
 export async function updateNotificationSettings(settings) {
-  const res = await fetch(`${apiBase}/api/notifications/settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...await authHeaders() },
-    body: JSON.stringify({ settings })
-  });
-  return handleResponse(res);
+  const res = await api.put('/api/notifications/settings', { settings });
+  return await handleResponse(res);
 }
 
 export const NOTIFICATION_TYPES = {

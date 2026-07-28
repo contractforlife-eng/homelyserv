@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -68,7 +69,7 @@ const EmployerMessages = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
   
-  const [language, setLanguage] = useState('en');
+  const dashboard = useDashboard();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
@@ -137,16 +138,9 @@ const EmployerMessages = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // Load conversations
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -338,17 +332,6 @@ const EmployerMessages = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
   const handleLogout = () => {
     authLogout();
     navigate('/login');
@@ -443,8 +426,6 @@ const EmployerMessages = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
         rightContent={

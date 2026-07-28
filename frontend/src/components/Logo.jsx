@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle } from 'lucide-react';
-import axios from 'axios';
 import Logo from '../components/Logo';
 import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 
 function Login() {
   const navigate = useNavigate();
@@ -13,8 +13,6 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'import.meta.env.VITE_API_URL';
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -30,14 +28,9 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       if (response.data.success) {
-        localStorage.setItem('homelyserv_token', response.data.token);
-        useAuthStore.setState({
-          user: response.data.user,
-          token: response.data.token,
-          isAuthenticated: true
-        });
+        useAuthStore.getState().setAuth(response.data.user, response.data.token);
         const role = response.data.user.role;
         if (role === 'ADMIN') {
           navigate('/admin');

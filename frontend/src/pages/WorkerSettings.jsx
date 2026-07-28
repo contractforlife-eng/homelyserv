@@ -1,26 +1,25 @@
 // src/pages/WorkerSettings.jsx - COMPREHENSIVE SETTINGS WITH RED THEME + WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
+import hireService from '../services/hireService';
+import { getNotifications } from '../utils/notificationService';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
 import {
-  Home,
   User,
   Briefcase,
   MessageCircle,
   Settings,
   HelpCircle,
   LogOut,
-  Menu,
   Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
   X,
   AlertTriangle,
   Shield,
@@ -28,7 +27,6 @@ import {
   Save,
   RefreshCw,
   CreditCard,
-  Sparkles,
   Crown,
   CheckCircle,
   UserCog,
@@ -60,14 +58,14 @@ import {
   XCircle,
   Moon,
   Sun,
-  Bell as BellIcon,
   Database,
   Server,
   Mail,
   FileText,
   Search,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react';
 
 // Main WorkerSettings Component - COMPREHENSIVE WITH RED THEME + WORKING NOTIFICATIONS
@@ -81,19 +79,11 @@ const WorkerSettings = () => {
   const theme = useThemeStore(state => state.theme);
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const isDark = theme === 'dark';
-  
-  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  
+  const dashboard = useDashboard();
+
   // Settings state
   const [settings, setSettings] = useState({
     notifications: true,
@@ -131,30 +121,14 @@ const WorkerSettings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
+ // ============================================================
+  // TOGGLE FUNCTIONS
   // ============================================================
-  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
-  // ============================================================
-  
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLanguageChange = (langCode) => {
-    changeLanguageGlobal(langCode);
-    setLanguage(langCode);
-    setSettings(prev => ({ ...prev, language: langCode }));
-    setShowLangDropdown(false);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+   
+   const handleLanguageChange = (langCode) => {
+     changeLanguageGlobal(langCode);
+     setSettings(prev => ({ ...prev, language: langCode }));
+   };
 
   // ============================================================
   // IS PREMIUM CHECK
@@ -166,58 +140,6 @@ const WorkerSettings = () => {
   };
 
   const userIsPremium = isPremium();
-
-  // ============================================================
-  // NOTIFICATION FUNCTIONS
-  // ============================================================
-  
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      // Check localStorage for notifications first
-      const userEmail = authUser?.email;
-      if (userEmail) {
-        const response = await fetch('http://localhost:5000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications || []);
-        } else if (Array.isArray(data)) {
-          setNotifications(data);
-        } else {
-          setNotifications([]);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -369,18 +291,10 @@ const WorkerSettings = () => {
   };
 
   const { i18n } = useTranslation();
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) || i18n.language || 'en';
-    setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-
-    // Load saved settings from backend
+useEffect(() => {
+     // Load saved settings from backend
     const loadSettings = async () => {
       try {
         const response = await api.get('/api/auth/settings');
@@ -405,35 +319,28 @@ const WorkerSettings = () => {
     loadSettings();
   }, []);
 
-  useEffect(() => {
-    if (authLoading) return;
+useEffect(() => {
+     if (authLoading) return;
 
-    if (!isAuthenticated || !authUser) {
-      navigate('/login');
-      return;
-    }
+     if (!isAuthenticated || !authUser) {
+       return;
+     }
 
-    if (authUser.role !== 'WORKER') {
-      navigate('/login');
-      return;
-    }
+     if (authUser.role !== 'WORKER') {
+       return;
+     }
 
-    // Load saved settings
-    const savedSettings = localStorage.getItem('worker_settings');
-    if (savedSettings) {
-      try {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsedSettings }));
-      } catch (e) {
-        console.error('Error parsing settings:', e);
+     // Load saved settings
+     const savedSettings = localStorage.getItem('worker_settings');
+     if (savedSettings) {
+       try {
+         const parsedSettings = JSON.parse(savedSettings);
+         setSettings(prev => ({ ...prev, ...parsedSettings }));
+       } catch (e) {
+         console.error('Error parsing settings:', e);
       }
     }
-  }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
+   }, [authUser, isAuthenticated, authLoading]);
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -561,19 +468,10 @@ const WorkerSettings = () => {
         }
       }
       
-      const token = localStorage.getItem('homelyserv_token');
       let offers = [];
       try {
-        const offersResponse = await fetch('http://localhost:5000/api/hires/offers', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (offersResponse.ok) {
-          const offersData = await offersResponse.json();
-          offers = offersData.offers || offersData || [];
-        }
+        const offersData = await hireService.getOffers();
+        offers = offersData.offers || offersData || [];
       } catch (error) {
         console.error('Error loading offers for export:', error);
       }
@@ -635,599 +533,463 @@ const WorkerSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <WorkerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden text-gray-600 dark:text-gray-300"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={authUser.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                    {authUser?.fullName || 'Worker'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative text-gray-600 dark:text-gray-300"
-                >
-                  <Bell size={20} />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                  )}
-                </button>
-
-                {/* Notification Dropdown */}
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                      <span>{t.notificationsTitle}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 border-b border-gray-50 dark:border-gray-800 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <button
-                  onClick={() => setShowLangDropdown(!showLangDropdown)}
-                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2"
-                >
-                  <Globe size={16} />
-                  {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
-                </button>
-                {showLangDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-gray-900 transition text-sm ${
-                          language === lang.code ? 'bg-red-50 dark:bg-gray-900 font-semibold' : ''
-                        }`}
-                      >
-                        <span className="text-lg">{lang.flag}</span>
-                        <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {!userIsPremium && (
-                <Link
-                  to="/subscription"
-                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
-                >
-                  <Crown size={14} />
-                  <span className="hidden sm:inline">{t.getPremium}</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <div className="p-4 md:p-6">
-          {/* Page Header - RED THEME */}
-          <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-red-100 mt-1">{t.subtitle}</p>
-            </div>
-          </div>
-
-          {/* Save Success Message */}
-          {saveSuccess && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
-              <CheckCircle size={16} />
-              {t.saved}
-            </div>
-          )}
-
-          {/* Settings Container */}
-          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
-            {/* Preferences */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
-              <div className="space-y-4">
-                {/* Language */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
-                  </div>
-                  <select
-                    value={settings.language}
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Dark Mode - uses global theme store */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.darkMode}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.darkModeDesc}</p>
-                  </div>
-                  <button
-                    onClick={toggleTheme}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      isDark ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        isDark ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Auto Save */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.autoSave}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.autoSaveDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.autoSave ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.autoSave ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* General */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.general}</h3>
-              <div className="space-y-4">
-                {/* Timezone */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.timezone}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.timezoneDesc}</p>
-                  </div>
-                  <select
-                    value={settings.timezone}
-                    onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="UTC-12">UTC-12</option>
-                    <option value="UTC-11">UTC-11</option>
-                    <option value="UTC-10">UTC-10</option>
-                    <option value="UTC-9">UTC-9</option>
-                    <option value="UTC-8">UTC-8</option>
-                    <option value="UTC-7">UTC-7</option>
-                    <option value="UTC-6">UTC-6</option>
-                    <option value="UTC-5">UTC-5</option>
-                    <option value="UTC-4">UTC-4</option>
-                    <option value="UTC-3">UTC-3</option>
-                    <option value="UTC-2">UTC-2</option>
-                    <option value="UTC-1">UTC-1</option>
-                    <option value="UTC+0">UTC+0</option>
-                    <option value="UTC+1">UTC+1</option>
-                    <option value="UTC+2">UTC+2</option>
-                    <option value="UTC+3">UTC+3</option>
-                    <option value="UTC+4">UTC+4</option>
-                    <option value="UTC+5">UTC+5</option>
-                    <option value="UTC+6">UTC+6</option>
-                    <option value="UTC+7">UTC+7</option>
-                    <option value="UTC+8">UTC+8</option>
-                    <option value="UTC+9">UTC+9</option>
-                    <option value="UTC+10">UTC+10</option>
-                    <option value="UTC+11">UTC+11</option>
-                    <option value="UTC+12">UTC+12</option>
-                  </select>
-                </div>
-
-                {/* Currency */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.currency}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.currencyDesc}</p>
-                  </div>
-                  <select
-                    value={settings.currency}
-                    onChange={(e) => handleSettingChange('currency', e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="EGP">EGP - Egyptian Pound</option>
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="GBP">GBP - British Pound</option>
-                    <option value="SAR">SAR - Saudi Riyal</option>
-                    <option value="AED">AED - UAE Dirham</option>
-                  </select>
-                </div>
-
-                {/* Date Format */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.dateFormat}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.dateFormatDesc}</p>
-                  </div>
-                  <select
-                    value={settings.dateFormat}
-                    onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    <option value="DD Month YYYY">DD Month YYYY</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.notificationsTitle}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.notifications}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.notificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('notifications', !settings.notifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.notifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.notifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.emailNotifications}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.emailNotificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.emailNotifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.emailNotifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.pushNotifications}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.pushNotificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.pushNotifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.pushNotifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.smsNotifications}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.smsNotificationsDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.smsNotifications ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.smsNotifications ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Privacy */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.privacy}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.profileVisibility}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.profileVisibilityDesc}</p>
-                  </div>
-                  <select
-                    value={settings.profileVisibility}
-                    onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="public">{t.public}</option>
-                    <option value="private">{t.private}</option>
-                    <option value="contacts">{t.contacts}</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.showOnlineStatus}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.showOnlineStatusDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.showOnlineStatus ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.showOnlineStatus ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.allowMessages}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.allowMessagesDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.allowMessages ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.allowMessages ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.availableForHire}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.availableForHireDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('availableForHire', !settings.availableForHire)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.availableForHire ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.availableForHire ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Security */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.security}</h3>
-              <div className="space-y-4">
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                >
-                  <div className="flex items-center gap-3">
-                    <Lock size={20} className="text-red-600" />
-                    <div className="text-left">
-                      <p className="font-medium">{t.changePassword}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.changePasswordDesc}</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
-                </button>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.twoFactorAuth}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.twoFactorAuthDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.twoFactorAuth ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Data */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.data}</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.saveSearchHistory}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.saveSearchHistoryDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.saveSearchHistory ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.saveSearchHistory ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.showRecommended}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.showRecommendedDesc}</p>
-                  </div>
-                  <button
-                    onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
-                    className={`relative w-12 h-6 rounded-full transition ${
-                      settings.showRecommended ? 'bg-red-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
-                        settings.showRecommended ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleExportData}
-                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                >
-                  <div className="flex items-center gap-3">
-                    <Download size={20} className="text-red-600" />
-                    <div className="text-left">
-                      <p className="font-medium">{t.exportData}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.exportDataDesc}</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
-                </button>
-
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="w-full flex items-center justify-between p-4 rounded-lg transition bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400"
-                >
-                  <div className="flex items-center gap-3">
-                    <Trash2 size={20} className="text-red-500" />
-                    <div className="text-left">
-                      <p className="font-medium">{t.deleteAccount}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t.deleteAccountDesc}</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className={`px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50`}
-              >
-                {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-                {saving ? 'Saving...' : t.saveChanges}
-              </button>
-            </div>
+      <div className="p-4 md:p-6">
+        {/* Page Header - RED THEME */}
+        <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
+          <div>
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-red-100 mt-1">{t.subtitle}</p>
           </div>
         </div>
-      </main>
+
+        {/* Save Success Message */}
+        {saveSuccess && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+            <CheckCircle size={16} />
+            {t.saved}
+          </div>
+        )}
+
+        {/* Settings Container */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
+          {/* Preferences */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
+            <div className="space-y-4">
+              {/* Language */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
+                </div>
+                <select
+                  value={settings.language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dark Mode - uses global theme store */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.darkMode}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.darkModeDesc}</p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    isDark ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      isDark ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Auto Save */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.autoSave}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.autoSaveDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.autoSave ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.autoSave ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* General */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.general}</h3>
+            <div className="space-y-4">
+              {/* Timezone */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.timezone}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.timezoneDesc}</p>
+                </div>
+                <select
+                  value={settings.timezone}
+                  onChange={(e) => handleSettingChange('timezone', e.target.value)}
+                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="UTC-12">UTC-12</option>
+                  <option value="UTC-11">UTC-11</option>
+                  <option value="UTC-10">UTC-10</option>
+                  <option value="UTC-9">UTC-9</option>
+                  <option value="UTC-8">UTC-8</option>
+                  <option value="UTC-7">UTC-7</option>
+                  <option value="UTC-6">UTC-6</option>
+                  <option value="UTC-5">UTC-5</option>
+                  <option value="UTC-4">UTC-4</option>
+                  <option value="UTC-3">UTC-3</option>
+                  <option value="UTC-2">UTC-2</option>
+                  <option value="UTC-1">UTC-1</option>
+                  <option value="UTC+0">UTC+0</option>
+                  <option value="UTC+1">UTC+1</option>
+                  <option value="UTC+2">UTC+2</option>
+                  <option value="UTC+3">UTC+3</option>
+                  <option value="UTC+4">UTC+4</option>
+                  <option value="UTC+5">UTC+5</option>
+                  <option value="UTC+6">UTC+6</option>
+                  <option value="UTC+7">UTC+7</option>
+                  <option value="UTC+8">UTC+8</option>
+                  <option value="UTC+9">UTC+9</option>
+                  <option value="UTC+10">UTC+10</option>
+                  <option value="UTC+11">UTC+11</option>
+                  <option value="UTC+12">UTC+12</option>
+                </select>
+              </div>
+
+              {/* Currency */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.currency}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.currencyDesc}</p>
+                </div>
+                <select
+                  value={settings.currency}
+                  onChange={(e) => handleSettingChange('currency', e.target.value)}
+                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="EGP">EGP - Egyptian Pound</option>
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
+                  <option value="SAR">SAR - Saudi Riyal</option>
+                  <option value="AED">AED - UAE Dirham</option>
+                </select>
+              </div>
+
+              {/* Date Format */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.dateFormat}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.dateFormatDesc}</p>
+                </div>
+                <select
+                  value={settings.dateFormat}
+                  onChange={(e) => handleSettingChange('dateFormat', e.target.value)}
+                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  <option value="DD Month YYYY">DD Month YYYY</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.notificationsTitle}</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.notifications}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.notificationsDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('notifications', !settings.notifications)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.notifications ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.notifications ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.emailNotifications}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.emailNotificationsDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.emailNotifications ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.emailNotifications ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.pushNotifications}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.pushNotificationsDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.pushNotifications ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.pushNotifications ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.smsNotifications}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.smsNotificationsDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.smsNotifications ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.smsNotifications ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Privacy */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.privacy}</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.profileVisibility}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.profileVisibilityDesc}</p>
+                </div>
+                <select
+                  value={settings.profileVisibility}
+                  onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
+                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="public">{t.public}</option>
+                  <option value="private">{t.private}</option>
+                  <option value="contacts">{t.contacts}</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.showOnlineStatus}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.showOnlineStatusDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.showOnlineStatus ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.showOnlineStatus ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.allowMessages}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.allowMessagesDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.allowMessages ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.allowMessages ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.availableForHire}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.availableForHireDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('availableForHire', !settings.availableForHire)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.availableForHire ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.availableForHire ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Security */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.security}</h3>
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock size={20} className="text-red-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t.changePassword}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.changePasswordDesc}</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
+              </button>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.twoFactorAuth}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.twoFactorAuthDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.twoFactorAuth ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.twoFactorAuth ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Data */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.data}</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.saveSearchHistory}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.saveSearchHistoryDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.saveSearchHistory ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.saveSearchHistory ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.showRecommended}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.showRecommendedDesc}</p>
+                </div>
+                <button
+                  onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    settings.showRecommended ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full transition ${
+                      settings.showRecommended ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <button
+                onClick={handleExportData}
+                className="w-full flex items-center justify-between p-4 rounded-lg transition bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                <div className="flex items-center gap-3">
+                  <Download size={20} className="text-red-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t.exportData}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.exportDataDesc}</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
+              </button>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full flex items-center justify-between p-4 rounded-lg transition bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400"
+              >
+                <div className="flex items-center gap-3">
+                  <Trash2 size={20} className="text-red-500" />
+                  <div className="text-left">
+                    <p className="font-medium">{t.deleteAccount}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.deleteAccountDesc}</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50`}
+            >
+              {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+              {saving ? 'Saving...' : t.saveChanges}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Password Change Modal */}
       {showPasswordModal && (
@@ -1393,7 +1155,7 @@ const WorkerSettings = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

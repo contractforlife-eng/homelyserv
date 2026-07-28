@@ -178,18 +178,7 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
           {
             reference_id: orderId,
             description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`,
-            custom_id: JSON.stringify({
-              orderId: orderId,
-              transactionId: customerData?.transactionId,
-              userEmail: customerData?.email,
-              workerId: customerData?.workerId,
-              workerName: customerData?.workerName,
-              jobTitle: customerData?.jobTitle,
-              employerId: customerData?.employerId,
-              employerName: customerData?.employerName,
-              hireId: customerData?.hireId,
-              offerId: customerData?.offerId
-            }),
+            custom_id: customerData?.transactionId || orderId,
             amount: {
               currency_code: 'USD',
               value: finalAmount.toFixed(2)
@@ -235,36 +224,54 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
       return false;
     }
 
-    console.log(`📝 Updating offer ${offerId} after payment...`);
+    console.log(`📝 Updating Hire for Offer ${offerId} after payment...`);
+    console.log(`   Payment capture ID: ${captureId}`);
 
-    // Find the hire (offer) in Prisma
+    // Find the Hire by offerId relationship
     const hire = await prisma.hire.findFirst({
-      where: { id: offerId }
+      where: { offerId: offerId }
     });
 
     if (!hire) {
-      console.log(`⚠️ Hire/Offer ${offerId} not found in database`);
+      console.log(`⚠️ Hire not found for offer ${offerId}`);
       return false;
     }
 
-    console.log(`📋 Found hire: ${hire.status} for employer ${hire.employerId}`);
+    console.log(`📋 Found Hire: ${hire.id}`);
+    console.log(`   Status before: ${hire.status}`);
+    console.log(`   Payment status before: ${hire.paymentStatus}`);
 
     // Update the hire with payment completion
-    await prisma.hire.update({
+    const updatedHire = await prisma.hire.update({
       where: { id: hire.id },
       data: {
         paymentStatus: 'completed',
         paymentReference: captureId || ('CAPTURED_' + Date.now()),
-        status: 'paid'
+        status: 'active'
       }
     });
 
-    console.log(`✅ Hire/Offer ${offerId} updated to "paid" in Prisma`);
-    console.log('✅ Offer update completed successfully');
+    console.log(`✅ Hire updated successfully`);
+    console.log(`   Hire ID: ${updatedHire.id}`);
+    console.log(`   Status after: ${updatedHire.status}`);
+    console.log(`   Payment status after: ${updatedHire.paymentStatus}`);
+    console.log(`   Payment reference: ${updatedHire.paymentReference}`);
+
+    // Update the Offer to mark payment as confirmed and verified
+    const updatedOffer = await prisma.offer.update({
+      where: { id: offerId },
+      data: {
+        paymentConfirmed: true,
+        paymentVerified: true
+      }
+    });
+
+    console.log(`✅ Offer ${offerId} updated: paymentConfirmed=true, paymentVerified=true`);
+
     return true;
 
   } catch (error) {
-    console.error('❌ Error updating offer after payment:', error);
+    console.error('❌ Error updating hire after payment:', error);
     return false;
   }
 };

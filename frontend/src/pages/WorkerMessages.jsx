@@ -1,22 +1,13 @@
 // src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
-  Home,
   User,
-  Briefcase,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
   X,
   AlertTriangle,
   Search,
@@ -28,12 +19,12 @@ import {
   Clock,
   CreditCard,
   Shield,
-  Sparkles,
   RefreshCw,
   Crown,
   Trash2,
   Mail,
-  User as UserIcon
+  User as UserIcon,
+  Bell
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -47,14 +38,9 @@ import {
 
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerMessages = () => {
-  const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
-  const { logout: authLogout } = useAuthStore();
-  const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
@@ -68,34 +54,7 @@ const WorkerMessages = () => {
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-
-  // ============================================================
-  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
-  // ============================================================
-  
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const handleLogout = () => {
-    authLogout();
-    navigate('/login');
-  };
+  const dashboard = useDashboard();
 
   // ============================================================
   // IS PREMIUM CHECK
@@ -108,58 +67,6 @@ const WorkerMessages = () => {
   };
 
   const userIsPremium = isPremium();
-
-  // ============================================================
-  // NOTIFICATION FUNCTIONS
-  // ============================================================
-  
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      // Check localStorage for notifications first
-      const userEmail = authUser?.email;
-      if (userEmail) {
-        const response = await fetch('http://localhost:5000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications || []);
-        } else if (Array.isArray(data)) {
-          setNotifications(data);
-        } else {
-          setNotifications([]);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -210,49 +117,34 @@ const WorkerMessages = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
-
-  // Load user and conversations
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, []);
+  const t = translations[dashboard.language] || translations.en;
 
   // Auth check and loading
   useEffect(() => {
-    if (authLoading) return;
+     if (authLoading) return;
 
-    if (!isAuthenticated || !authUser) {
-      navigate('/login', { replace: true });
-      return;
-    }
+     if (!isAuthenticated || !authUser) {
+       return;
+     }
 
-    if (authUser.role !== 'WORKER') {
-      navigate('/login');
-      return;
-    }
+     if (authUser.role !== 'WORKER') {
+       return;
+     }
 
-    const userId = authUser.id || authUser.email;
+     const userId = authUser.id || authUser.email;
 
-    const loadInitialData = async () => {
-      if (!userId) {
-        return;
-      }
+     const loadInitialData = async () => {
+       if (!userId) {
+         return;
+       }
 
-      const userConversations = await getUserConversations(userId);
-      console.log('📋 Initial load - worker conversations:', userConversations);
-      setConversations(userConversations);
-    };
+       const userConversations = await getUserConversations(userId);
+       console.log('📋 Initial load - worker conversations:', userConversations);
+       setConversations(userConversations);
+     };
 
-    loadInitialData();
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+     loadInitialData();
+   }, [authUser, isAuthenticated, authLoading]);
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
@@ -346,11 +238,6 @@ const WorkerMessages = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
 
   const handleSelectConversation = (conversationId) => {
     console.log('📨 Selecting conversation:', conversationId);
@@ -496,146 +383,15 @@ const WorkerMessages = () => {
 
   const userProfileImage = authUser?.profileImage || null;
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!authUser) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <WorkerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={authUser.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                    {authUser?.fullName || 'Worker'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
-                >
-                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                  )}
-                </button>
-
-                {/* Notification Dropdown */}
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                      <span>{t.notifications}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                {t.refresh}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6">
           <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
@@ -922,9 +678,8 @@ const WorkerMessages = () => {
               </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+</div>
+    </DashboardLayout>
   );
 };
 

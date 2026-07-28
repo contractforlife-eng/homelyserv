@@ -1,10 +1,10 @@
-// src/pages/AdminProfile.jsx - ADMIN PROFILE WITH DARK THEME
+// src/pages/AdminProfile.jsx - MIGRATED TO DASHBOARD LAYOUT
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
-
-import AdminSidebar from '../components/AdminSidebar.jsx';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   Home,
   Users,
@@ -12,8 +12,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  ChevronLeft,
-  ChevronRight,
   Globe,
   X,
   Shield,
@@ -30,7 +28,6 @@ import {
   Clock,
   BarChart3
 } from 'lucide-react';
-
 
 // Main AdminProfile Component
 const AdminProfile = () => {
@@ -333,297 +330,268 @@ const AdminProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
-      <AdminSidebar
+    <DashboardLayout requiredRole="ADMIN" variant="admin">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        user={authUser}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={false}
+        variant="admin"
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-white hidden sm:block">{t.title}</h2>
+      <div className="p-4 md:p-6">
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/20 border border-black/10 rounded-full text-xs font-medium text-black">
+                  <Crown size={12} />
+                  {t.adminBadge}
+                </span>
               </div>
+              <p className="text-black/70 mt-1">{t.subtitle}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
+                onClick={handleEditToggle}
+                className="bg-black/20 hover:bg-black/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-black/10"
               >
-                <Globe size={16} />
-                {t.languageToggle}
+                {isEditing ? <X size={16} /> : <Edit size={16} />}
+                {isEditing ? t.cancel : t.editProfile}
               </button>
             </div>
           </div>
-        </header>
+        </div>
 
-        <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/20 border border-black/10 rounded-full text-xs font-medium text-black">
-                    <Crown size={12} />
-                    {t.adminBadge}
-                  </span>
-                </div>
-                <p className="text-black/70 mt-1">{t.subtitle}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleEditToggle}
-                  className="bg-black/20 hover:bg-black/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-black/10"
-                >
-                  {isEditing ? <X size={16} /> : <Edit size={16} />}
-                  {isEditing ? t.cancel : t.editProfile}
-                </button>
-              </div>
-            </div>
+        {saveSuccess && (
+          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm flex items-center gap-2">
+            <CheckCircle size={16} />
+            {t.saved}
           </div>
+        )}
 
-          {saveSuccess && (
-            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm flex items-center gap-2">
-              <CheckCircle size={16} />
-              {t.saved}
-            </div>
-          )}
-
-          {saveError && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle size={16} />
-              {saveError}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalUsers}</p>
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <Users size={20} className="text-blue-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalUsers}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalWorkers}</p>
-                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <UserIcon size={20} className="text-red-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalWorkers}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalEmployers}</p>
-                <div className="w-10 h-10 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                  <Users size={20} className="text-teal-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalEmployers}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalHires}</p>
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <BarChart3 size={20} className="text-purple-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalHires}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalPayments}</p>
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <Settings size={20} className="text-green-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalPayments}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalComplaints}</p>
-                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <AlertCircle size={20} className="text-red-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalComplaints}</p>
-            </div>
+        {saveError && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+            <AlertCircle size={16} />
+            {saveError}
           </div>
+        )}
 
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20">
-            <h3 className="text-lg font-semibold text-white mb-6">{t.personalInfo}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalUsers}</p>
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Users size={20} className="text-blue-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalUsers}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalWorkers}</p>
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <UserIcon size={20} className="text-red-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalWorkers}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalEmployers}</p>
+              <div className="w-10 h-10 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                <Users size={20} className="text-teal-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalEmployers}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalHires}</p>
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <BarChart3 size={20} className="text-purple-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalHires}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalPayments}</p>
+              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Settings size={20} className="text-green-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalPayments}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalComplaints}</p>
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <AlertCircle size={20} className="text-red-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.totalComplaints}</p>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.profilePhoto}</label>
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-500/30 bg-gray-800 relative">
-                      {imagePreview ? (
-                        <img
-                          src={imagePreview}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-yellow-500/10">
-                          <UserIcon size={48} className="text-yellow-500/50" />
-                        </div>
-                      )}
-                    </div>
-                    {isEditing && (
-                      <label className="absolute bottom-0 right-0 p-2 bg-yellow-500 rounded-full cursor-pointer hover:bg-yellow-400 transition shadow-lg">
-                        <Camera size={18} className="text-black" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </label>
+        <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20">
+          <h3 className="text-lg font-semibold text-white mb-6">{t.personalInfo}</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.profilePhoto}</label>
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-500/30 bg-gray-800 relative">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-yellow-500/10">
+                        <UserIcon size={48} className="text-yellow-500/50" />
+                      </div>
                     )}
                   </div>
                   {isEditing && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
+                    <label className="absolute bottom-0 right-0 p-2 bg-yellow-500 rounded-full cursor-pointer hover:bg-yellow-400 transition shadow-lg">
+                      <Camera size={18} className="text-black" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.fullName}</label>
-                <div className="relative">
-                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.email}</label>
-                <div className="relative">
-                  <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.phone}</label>
-                <div className="relative">
-                  <Phone size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.language}</label>
-                <div className="relative">
-                  <Globe size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <select
-                    name="language"
-                    value={formData.language}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
-                      isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
-                    }`}
-                  >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.memberSince}</label>
-                <div className="relative">
-                  <Calendar size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="text"
-                    value={formatDate(authUser.createdAt)}
-                    disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.lastLogin}</label>
-                <div className="relative">
-                  <Clock size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="text"
-                    value={formatDate(authUser.lastLogin)}
-                    disabled
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
-                  />
-                </div>
+                {isEditing && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
+                )}
               </div>
             </div>
 
-            {isEditing && (
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
-                >
-                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {saving ? 'Saving...' : t.saveChanges}
-                </button>
-                <button
-                  onClick={handleEditToggle}
-                  disabled={saving}
-                  className="px-6 py-2 border border-yellow-500/20 text-gray-300 rounded-lg hover:bg-yellow-500/10 transition disabled:opacity-50"
-                >
-                  {t.cancel}
-                </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.fullName}</label>
+              <div className="relative">
+                <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                    isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
+                  }`}
+                />
               </div>
-            )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.email}</label>
+              <div className="relative">
+                <UserIcon size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.phone}</label>
+              <div className="relative">
+                <Phone size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                    isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.language}</label>
+              <div className="relative">
+                <Globe size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <select
+                  name="language"
+                  value={formData.language}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                    isEditing ? 'border-yellow-500/20 bg-[#0a0a0a] text-white' : 'border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500'
+                  }`}
+                >
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.memberSince}</label>
+              <div className="relative">
+                <Calendar size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  value={formatDate(authUser.createdAt)}
+                  disabled
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.lastLogin}</label>
+              <div className="relative">
+                <Clock size={18} className="absolute left-3 top-3 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  value={formatDate(authUser.lastLogin)}
+                  disabled
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-700 bg-[#0a0a0a] text-gray-400 dark:text-gray-500 rounded-lg"
+                />
+              </div>
+            </div>
           </div>
+
+          {isEditing && (
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
+              >
+                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {saving ? 'Saving...' : t.saveChanges}
+              </button>
+              <button
+                onClick={handleEditToggle}
+                disabled={saving}
+                className="px-6 py-2 border border-yellow-500/20 text-gray-300 rounded-lg hover:bg-yellow-500/10 transition disabled:opacity-50"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

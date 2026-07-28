@@ -21,6 +21,7 @@ import {
   X,
   Globe
 } from 'lucide-react';
+import useAuthStore from '../store/authStore';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -33,16 +34,11 @@ const Home = () => {
 
   // Check if user is logged in
   useEffect(() => {
-    const token = localStorage.getItem('homelyserv_token');
-    const userData = localStorage.getItem('homelyserv_user');
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setIsLoggedIn(true);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
+    const storedUser = useAuthStore.getState().user;
+    const isAuth = useAuthStore.getState().isAuthenticated;
+    if (storedUser && isAuth) {
+      setUser(storedUser);
+      setIsLoggedIn(true);
     }
   }, []);
 
@@ -207,8 +203,7 @@ const Home = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     setIsLoggedIn(false);
     setUser(null);
     navigate('/login');

@@ -3,40 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import hireService from '../services/hireService';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
-  Home,
   User,
   Briefcase,
   FileCheck,
   MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  X,
-  AlertTriangle,
-  Search,
   DollarSign,
   Clock,
   Calendar,
   Star,
-  MapPin,
-  Phone,
-  Mail,
-  Users,
-  Filter,
-  FileText,
-  Search as SearchIcon,
-  UserCheck,
-  Building2,
-  MapPinned,
-  Languages,
   Star as StarIcon,
   CheckCircle,
   Eye,
@@ -62,7 +41,18 @@ import {
   Check,
   X as XIcon,
   RefreshCw,
-  Crown
+  Crown,
+  Search as SearchIcon,
+  UserCheck,
+  Building2,
+  MapPinned,
+  Languages,
+  Users,
+  AlertTriangle,
+  Mail,
+  MapPin,
+  Phone,
+  X
 } from 'lucide-react';
 import { sendMessage } from '../utils/chatService';
 
@@ -75,10 +65,9 @@ const MyHires = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  
-  const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const dashboard = useDashboard();
+
   const [loading, setLoading] = useState(true);
   const [hires, setHires] = useState([]);
   const [filteredHires, setFilteredHires] = useState([]);
@@ -115,7 +104,8 @@ const MyHires = () => {
         pending: 'Pending',
         completed: 'Completed',
         accepted: 'Accepted',
-        hired: 'Hired'
+        hired: 'Hired',
+        offer_sent: 'Pending Payment'
       },
       table: {
         worker: 'Worker',
@@ -164,7 +154,8 @@ const MyHires = () => {
         active: 'Active',
         terminated: 'Terminated',
         pending: 'Pending',
-        hired: 'Hired'
+        hired: 'Hired',
+        offerSent: 'Pending Payment'
       },
       empty: {
         title: 'No hires yet',
@@ -195,7 +186,8 @@ const MyHires = () => {
         pending: 'قيد الانتظار',
         completed: 'مكتمل',
         accepted: 'مقبول',
-        hired: 'موظف'
+        hired: 'موظف',
+        offer_sent: 'في انتظار الدفع'
       },
       table: {
         worker: 'العامل',
@@ -244,7 +236,8 @@ const MyHires = () => {
         active: 'نشط',
         terminated: 'منتهي',
         pending: 'قيد الانتظار',
-        hired: 'موظف'
+        hired: 'موظف',
+        offerSent: 'في انتظار الدفع'
       },
       empty: {
         title: 'لا توجد توظيفات',
@@ -262,21 +255,11 @@ const MyHires = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // 3. EFFECTS
   // ============================================================
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, []);
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -293,21 +276,16 @@ const MyHires = () => {
     loadHires();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   // ============================================================
   // 4. LOAD HIRES
   // ============================================================
   const loadHires = async () => {
     setLoading(true);
-    
+
     try {
       const employerEmail = authUser?.email;
       const employerId = authUser?.id || employerEmail;
-      
+
       if (!employerEmail) {
         setHires([]);
         setFilteredHires([]);
@@ -317,17 +295,8 @@ const MyHires = () => {
 
       console.log('📂 Loading hires for employer:', { employerEmail, employerId });
 
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires/my-hires`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const hires = await res.json();
-      const employerHires = Array.isArray(hires) ? hires : [];
+      const hiresData = await hireService.getMyHires();
+      const employerHires = Array.isArray(hiresData) ? hiresData : [];
 
       console.log(`📌 Found ${employerHires.length} hires from backend`);
 
@@ -340,7 +309,7 @@ const MyHires = () => {
       console.log(`✅ Total hires loaded: ${employerHires.length}`);
       setHires(employerHires);
       setFilteredHires(employerHires);
-      
+
     } catch (error) {
       console.error('Error loading hires:', error);
       setHires([]);
@@ -382,24 +351,24 @@ const MyHires = () => {
   // ============================================================
   const createConversationForHire = async (hire) => {
     if (!hire) return;
-    
+
     const workerId = hire.workerId || hire.workerEmail;
     const workerName = hire.workerName || 'Worker';
     const jobTitle = hire.jobTitle || 'the job';
-    
+
     if (!workerId) {
       console.error('No worker ID found for hire:', hire);
       return false;
     }
-    
+
     const employerId = authUser?.id || authUser?.email;
     const employerName = authUser?.fullName || 'Employer';
-    
+
     console.log('💬 Creating conversation for hire:', { workerId, workerName, jobTitle });
-    
+
     try {
       setCreatingConversation(true);
-      
+
       const result = await sendMessage(
         employerId,
         employerName,
@@ -408,7 +377,7 @@ const MyHires = () => {
         workerName,
         `Hello ${workerName}! I've hired you for ${jobTitle}. Let's discuss the next steps.`
       );
-      
+
       if (result) {
         console.log('✅ Conversation created successfully');
         return true;
@@ -427,27 +396,6 @@ const MyHires = () => {
   // ============================================================
   // 7. HANDLERS
   // ============================================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
-    navigate('/login');
-  };
-
   const handleRefresh = () => {
     loadHires();
   };
@@ -480,7 +428,7 @@ const MyHires = () => {
         terminationReason: terminateReason || 'No reason provided'
       };
 
-      setHires(prev => prev.map(h => 
+      setHires(prev => prev.map(h =>
         h.id === terminatingHire.id || h.offerId === terminatingHire.offerId
           ? updatedHire
           : h
@@ -488,9 +436,9 @@ const MyHires = () => {
 
       setShowTerminateModal(false);
       setTerminatingHire(null);
-      
+
       alert(t.terminate.success);
-      
+
     } catch (error) {
       console.error('Error terminating hire:', error);
       alert(t.terminate.error);
@@ -502,28 +450,28 @@ const MyHires = () => {
   // ============================================================
   const handleSendMessage = async (hire) => {
     if (!hire) return;
-    
+
     const workerId = hire.workerId || hire.workerEmail;
     const workerName = hire.workerName || 'Worker';
-    
+
     console.log('💬 Opening chat with worker:', { workerId, workerName });
-    
+
     if (!workerId) {
       console.error('No worker ID found for hire:', hire);
       alert('Unable to open chat: Worker ID not found');
       return;
     }
-    
+
     // First, check if conversation exists by trying to send a message
     // If the conversation doesn't exist, this will create it
     const employerId = authUser?.id || authUser?.email;
     const employerName = authUser?.fullName || 'Employer';
     const jobTitle = hire.jobTitle || 'the job';
-    
-    // Try to send a message to create/ensure conversation
+
+    // Try to send a message - this will create the conversation if it doesn't exist
     try {
       setCreatingConversation(true);
-      
+
       // Send a message - this will create the conversation if it doesn't exist
       const result = await sendMessage(
         employerId,
@@ -533,7 +481,7 @@ const MyHires = () => {
         workerName,
         `Hello ${workerName}! Let's discuss your work.`
       );
-      
+
       if (result) {
         console.log('✅ Conversation ensured');
       }
@@ -543,7 +491,7 @@ const MyHires = () => {
     } finally {
       setCreatingConversation(false);
     }
-    
+
     // Navigate to messages page with worker info as URL parameters
     navigate(`/employer-messages?workerId=${encodeURIComponent(workerId)}&workerName=${encodeURIComponent(workerName)}`);
   };
@@ -579,12 +527,12 @@ const MyHires = () => {
         desiredJob: hire.jobTitle || 'Service Provider',
         rating: hire.workerRating || 4.5,
         profileImage: hire.workerImage || '',
-        hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30 
+        hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30
       };
 
       localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-      localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData)); 
-      
+      localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
+
       navigate('/payment-options');
     }
   };
@@ -596,6 +544,7 @@ const MyHires = () => {
       accepted: 'bg-blue-100 text-blue-800 border border-blue-200',
       terminated: 'bg-red-100 text-red-800 border border-red-200',
       pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      offer_sent: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
       completed: 'bg-purple-100 text-purple-800 border border-purple-200'
     };
     return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white';
@@ -608,9 +557,15 @@ const MyHires = () => {
       case 'accepted': return <CheckCircle size={14} />;
       case 'terminated': return <XIcon size={14} />;
       case 'pending': return <Clock size={14} />;
+      case 'offer_sent': return <Clock size={14} />;
       case 'completed': return <CheckCircle size={14} />;
       default: return <AlertTriangle size={14} />;
     }
+  };
+
+  // Reuses the existing t.status translation mapping (same pattern as AdminHires.jsx)
+  const getStatusLabel = (status) => {
+    return t.status[status] || status;
   };
 
   const formatDate = (dateString) => {
@@ -631,7 +586,7 @@ const MyHires = () => {
     total: hires.length,
     active: hires.filter(h => h.status === 'active' || h.status === 'hired' || h.status === 'accepted').length,
     terminated: hires.filter(h => h.status === 'terminated').length,
-    pending: hires.filter(h => h.status === 'pending').length
+    pending: hires.filter(h => h.status === 'pending' || h.status === 'offer_sent').length
   };
 
   if (authLoading || loading) {
@@ -650,65 +605,21 @@ const MyHires = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isPremium}
+        rightContent={
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw size={16} />
+            {t.refresh}
+          </button>
+        }
       />
-
-      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button onClick={toggleMobileMenu} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden">
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
-                  {authUser?.profileImage ? (
-                    <img src={authUser.profileImage} alt={authUser.fullName || 'Employer'} className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {isPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{authUser?.fullName || 'Employer'}</span>
-              </div>
-              
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <RefreshCw size={16} />
-                {t.refresh}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {/* Welcome Banner */}
@@ -738,7 +649,7 @@ const MyHires = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.total}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.total}</p>
                 <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-teal-600" />
                 </div>
@@ -747,7 +658,7 @@ const MyHires = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.active}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.active}</p>
                 <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-600" />
                 </div>
@@ -756,7 +667,7 @@ const MyHires = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.terminated}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.terminated}</p>
                 <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                   <XIcon size={20} className="text-red-600" />
                 </div>
@@ -765,7 +676,7 @@ const MyHires = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-600" />
                 </div>
@@ -798,6 +709,7 @@ const MyHires = () => {
                   <option value="hired">{t.filters.hired || 'Hired'}</option>
                   <option value="terminated">{t.filters.terminated}</option>
                   <option value="pending">{t.filters.pending}</option>
+                  <option value="offer_sent">{t.filters.offerSent}</option>
                 </select>
               </div>
             </div>
@@ -805,7 +717,7 @@ const MyHires = () => {
 
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> hires
             </p>
           </div>
@@ -815,7 +727,7 @@ const MyHires = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">👥</div>
               <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
+              <p className="text-gray-500 dark:text-gray-400">{t.empty.description}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
@@ -858,11 +770,11 @@ const MyHires = () => {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <Briefcase size={14} />
                             <span>{hire.jobTitle || 'Service Provider'}</span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
                             <span className="flex items-center gap-1">
                               <DollarSign size={14} className="text-green-600" />
                               {formatCurrency(hire.salary)} {t.salaryPerMonth}
@@ -883,12 +795,12 @@ const MyHires = () => {
                       <div className="flex flex-col items-end gap-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${getStatusColor(hire.status)}`}>
                           {getStatusIcon(hire.status)}
-                          {t.status[hire.status] || hire.status}
+                          {getStatusLabel(hire.status)}
                         </span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleViewDetails(hire)}
-                            className="p-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition"
+                            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition"
                             title={t.actions.view}
                           >
                             <Eye size={16} />
@@ -932,7 +844,6 @@ const MyHires = () => {
             </div>
           )}
         </div>
-      </main>
 
       {/* Details Modal */}
       {showDetailsModal && selectedHire && (
@@ -968,11 +879,11 @@ const MyHires = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedHire.jobTitle}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{selectedHire.jobTitle}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(selectedHire.status)}`}>
                       {getStatusIcon(selectedHire.status)}
-                      {t.status[selectedHire.status] || selectedHire.status}
+                      {getStatusLabel(selectedHire.status)}
                     </span>
                   </div>
                 </div>
@@ -980,22 +891,22 @@ const MyHires = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.salary}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.salary}</p>
                   <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t.salaryPerMonth}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.startDate}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.startDate}</p>
                   <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.startDate)}</p>
                 </div>
                 {selectedHire.terminationDate && (
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.endDate}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.endDate}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.terminationDate)}</p>
                   </div>
                 )}
                 {selectedHire.workerRating && (
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.rating}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.rating}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-1">
                       <StarIcon size={18} className="text-yellow-500" />
                       {selectedHire.workerRating}
@@ -1007,63 +918,43 @@ const MyHires = () => {
               <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
                 <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.modal.contact}</h4>
                 <div className="space-y-2 text-sm">
-                  {selectedHire.workerEmail && (
-                    <div className="flex items-center gap-2">
-                      <Mail size={14} className="text-gray-400 dark:text-gray-500" />
-                      <span>{selectedHire.workerEmail}</span>
-                    </div>
-                  )}
-                  {selectedHire.workerPhone && (
-                    <div className="flex items-center gap-2">
-                      <Phone size={14} className="text-gray-400 dark:text-gray-500" />
-                      <span>{selectedHire.workerPhone}</span>
-                    </div>
-                  )}
-                  {selectedHire.workerLocation && selectedHire.workerLocation !== 'Not specified' && (
-                    <div className="flex items-center gap-2">
-                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
-                      <span>{selectedHire.workerLocation}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <Mail size={16} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerEmail || 'Not provided'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone size={16} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerPhone || 'Not provided'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin size={16} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerLocation || 'Not specified'}</span>
+                  </div>
                 </div>
               </div>
 
-              {selectedHire.terminationReason && (
-                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200">
-                  <p className="text-sm text-red-600">{selectedHire.terminationReason}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handleCloseModal}
-                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors text-sm"
-              >
-                {t.modal.close}
-              </button>
               {(selectedHire.status === 'active' || selectedHire.status === 'hired' || selectedHire.status === 'accepted') && (
-                <>
+                <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => handleSendMessage(selectedHire)}
                     disabled={creatingConversation}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {creatingConversation ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <MessageCircle size={16} />
+                      <MessageCircle size={18} />
                     )}
-                    {t.modal.message}
+                    {t.actions.message}
                   </button>
                   <button
                     onClick={() => handleTerminateClick(selectedHire)}
-                    className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                    className="flex-1 px-4 py-2 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 dark:bg-red-900/30 transition flex items-center justify-center gap-2"
                   >
-                    <XIcon size={16} />
-                    {t.modal.terminate}
+                    <XIcon size={18} />
+                    {t.actions.terminate}
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -1073,40 +964,39 @@ const MyHires = () => {
       {/* Terminate Modal */}
       {showTerminateModal && terminatingHire && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-red-600">{t.terminate.title}</h3>
-              <button onClick={() => setShowTerminateModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition">
-                <X size={20} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.terminate.title}</h3>
+              <button
+                onClick={() => setShowTerminateModal(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+              >
+                <X size={20} />
               </button>
             </div>
-            <div className="text-center py-4">
-              <AlertTriangle size={48} className="text-red-500 mx-auto mb-3" />
-              <p className="text-gray-700 dark:text-gray-300">{t.terminate.confirm}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
-                <strong>{terminatingHire.workerName}</strong> - {terminatingHire.jobTitle}
-              </p>
-            </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.terminate.reason}</label>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{t.terminate.confirm}</p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t.terminate.reason}
+              </label>
               <textarea
                 value={terminateReason}
                 onChange={(e) => setTerminateReason(e.target.value)}
                 placeholder={t.terminate.placeholder}
                 rows="3"
-                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
               />
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowTerminateModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
               >
                 {t.terminate.cancel}
               </button>
               <button
                 onClick={handleTerminateHire}
-                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition"
               >
                 {t.terminate.confirmButton}
               </button>
@@ -1114,7 +1004,7 @@ const MyHires = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

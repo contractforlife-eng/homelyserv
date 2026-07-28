@@ -4,8 +4,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
+import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
+import hireService from '../services/hireService';
 import {
   ArrowLeft,
   CreditCard,
@@ -249,16 +251,7 @@ const PaymentOptions = () => {
   const updateOfferStatus = async (offerId, status, hireId) => {
     try {
       if (!offerId) return;
-
-      const token = localStorage.getItem('homelyserv_token');
-      await fetch(`${apiBase}/api/hires/offer/${offerId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status })
-      });
+      await hireService.updateOfferStatus(offerId, status);
     } catch (error) {
       console.error('Error updating offer status:', error);
     }
@@ -572,8 +565,7 @@ const PaymentOptions = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    // Do not remove homelyserv_user - it's not used anymore
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 

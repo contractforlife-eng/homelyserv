@@ -6,7 +6,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
 import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -25,12 +25,7 @@ export default function Header() {
     if (isNotificationsOpen) {
       const fetchNotifications = async () => {
         try {
-          const token = localStorage.getItem('homelyserv_token');
-          if (!token) return;
-
-          const response = await axios.get('http://localhost:5000/api/notifications', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await api.get('/api/notifications');
           
           if (response.data.success) {
             setNotifications(response.data.notifications);

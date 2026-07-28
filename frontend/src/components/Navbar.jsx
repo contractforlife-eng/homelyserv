@@ -1,75 +1,27 @@
-// src/components/Navbar.jsx
-import React, { useState, useEffect } from 'react'; // Added useEffect
-import axios from 'axios'; // Ensure you have axios installed
-import { 
-  Home, 
-  Briefcase, 
-  User, 
-  LogOut, 
-  Menu, 
-  X, 
-  Bell, 
-  Settings,
-  Search,
-  MessageCircle,
-  ChevronDown,
-  Globe,
-  Clock
-} from 'lucide-react';
+import api from '../utils/api';
 
 const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false); // Added Notification State
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Mock initial notifications data (Swap with an API call later)
   const [notifications, setNotifications] = useState([]);
 
-// Fetch notifications from the backend
-const fetchNotifications = async () => {
-  try {
-    const token = localStorage.getItem('homelyserv_token');
-    if (!token) return;
-
-    const response = await axios.get('http://localhost:5000/api/notifications', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      setNotifications(response.data.notifications);
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      const fetchNotifications = async () => {
+        try {
+          const response = await api.get('/api/notifications');
+          setNotifications(response.data.notifications || []);
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+        }
+      };
+      fetchNotifications();
     }
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-  }
-};
-
-// Trigger fetch when notifications open
-// Replace your useEffect with this:
-useEffect(() => {
-  console.log("Notification dropdown state changed:", isNotificationsOpen);
-  
-  if (isNotificationsOpen) {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem('homelyserv_token');
-        console.log("Token retrieved:", token ? "Yes" : "No");
-
-        const response = await axios.get('http://localhost:5000/api/notifications', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        console.log("API Response:", response.data);
-        setNotifications(response.data.notifications);
-      } catch (error) {
-        console.error("DEBUG - Notification Fetch Error:", error.response || error.message);
-      }
-    };
-
-    fetchNotifications();
-  }
-}, [isNotificationsOpen]);
+  }, [isNotificationsOpen]);
 
   const translations = {
     en: {

@@ -1,71 +1,36 @@
 // src/pages/WorkerOffers.jsx - FIXED: Shows "Paid" status when payment is completed
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import hireService from '../services/hireService';
 import {
-  Home,
-  User,
-  Briefcase,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
   Bell,
-  ChevronLeft,
-  ChevronRight,
-  Zap,
-  Clock,
-  Users,
-  Heart,
-  TrendingUp,
-  Globe,
   X,
   CheckCircle,
-  AlertTriangle,
-  CreditCard,
   Search,
   MapPin,
   DollarSign,
   Eye,
-  Share2,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  LayoutGrid,
-  List,
   ThumbsUp,
-  BriefcaseIcon,
   Star,
-  Trash2,
-  Shield,
-  Sparkles,
-  Lock,
   MessageSquare,
   Loader2,
-  UserCheck,
-  UserX,
-  Calendar,
   Building2,
   Crown,
-  StopCircle,
   AlertCircle,
-  Check,
-  ThumbsDown,
-  History,
-  FileCheck,
   RefreshCw,
   Inbox,
   XCircle,
   CheckCheck,
-  Archive,
-  Send,
-  MoreVertical,
-  ExternalLink,
-  Wallet
+  Wallet,
+  Clock,
+  Zap,
+  User,
+  ChevronRight
 } from 'lucide-react';
 import { 
   getConversationId, 
@@ -78,53 +43,19 @@ import {
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const logout = useAuthStore(state => state.logout);
 
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOffer, setExpandedOffer] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [processingOffer, setProcessingOffer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-
-  // ============================================================
-  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
-  // ============================================================
-  
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const dashboard = useDashboard();
 
   const toggleExpand = (offerId) => {
     setExpandedOffer(expandedOffer === offerId ? null : offerId);
@@ -137,56 +68,6 @@ const WorkerOffers = () => {
   };
 
   const userIsPremium = isPremium();
-
-  // ============================================================
-  // NOTIFICATION FUNCTIONS
-  // ============================================================
-  
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      const userEmail = authUser?.email;
-      if (userEmail) {
-        const response = await fetch('http://localhost:5000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications || []);
-        } else if (Array.isArray(data)) {
-          setNotifications(data);
-        } else {
-          setNotifications([]);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -309,107 +190,70 @@ const WorkerOffers = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
-  // Load Offers - FIXED: Adds "paid" status
+  // Load Offers - FIXED: No clearing of offers before fetch
   // ============================================================
   const loadOffers = async (userParam) => {
-    console.log('[loadOffers] START', { userParam: userParam?.id || userParam?.email, authUser: authUser?.id || authUser?.email });
     setLoading(true);
-    console.log('[loadOffers] setLoading(true)');
     try {
       const currentUser = userParam || authUser;
 
       if (!currentUser?.id) {
-        console.log('[loadOffers] EARLY RETURN: missing user id');
+        setLoading(false);
         return;
       }
 
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires/offers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const allOffers = Array.isArray(data) ? data : [];
+      const data = await hireService.getOffers();
+      const allOffers = Array.isArray(data.offers || data) ? (data.offers || data) : [];
 
       allOffers.sort((a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt));
 
       setOffers(allOffers);
-      console.log('[loadOffers] setOffers', allOffers.length);
       return allOffers;
     } catch (error) {
       console.error('[loadOffers] ERROR', error);
-      setOffers([]);
-      console.log('[loadOffers] setOffers([]) due to error');
+      // Keep existing offers - do NOT setOffers([])
       return [];
     } finally {
       setLoading(false);
-      console.log('[loadOffers] setLoading(false)');
     }
   };
 
   // ============================================================
-  // useEffect
+  // USE EFFECTS
   // ============================================================
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, []);
-
-  useEffect(() => {
-    console.log('[Effect 1] fired', { authUser: authUser?.id, isAuthenticated, authLoading });
     if (authLoading) {
-      console.log('[Effect 1] RETURN: authLoading');
       return;
     }
 
     if (!isAuthenticated || !authUser) {
-      console.log('[Effect 1] RETURN: not authenticated');
-      navigate('/login');
       return;
     }
 
     if (authUser.role !== 'WORKER') {
-      console.log('[Effect 1] RETURN: not worker');
-      navigate('/login');
       return;
     }
 
-    console.log('[Effect 1] CALLING loadOffers');
     loadOffers(authUser);
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser, isAuthenticated, authLoading]);
 
   useEffect(() => {
-    console.log('[Effect 2] fired', { userId: authUser?.id, refreshKey });
     if (authUser?.id) {
-      console.log('[Effect 2] CALLING loadOffers');
       loadOffers(authUser);
     }
   }, [authUser?.id, refreshKey]);
 
   useEffect(() => {
-    console.log('[Effect 3] fired', { hasAuthUser: !!authUser });
     if (!authUser) {
-      console.log('[Effect 3] RETURN: no authUser');
       return;
     }
     const interval = setInterval(() => {
-      console.log('[Effect 3] interval CALLING loadOffers');
       loadOffers(authUser);
     }, 15000);
     return () => {
-      console.log('[Effect 3] cleanup interval');
       clearInterval(interval);
     };
   }, [authUser]);
@@ -424,22 +268,7 @@ const WorkerOffers = () => {
     try {
       console.log(`📝 Accepting offer: ${offer.id} - ${offer.jobTitle}`);
       
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/respond`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'accepted' })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to accept offer');
-      }
-
-      const data = await res.json();
+      const data = await hireService.acceptOffer(offer.id);
       const updatedOffer = data.offer || {
         ...offer,
         status: 'accepted',
@@ -482,22 +311,7 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/respond`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'rejected' })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to reject offer');
-      }
-
-      const data = await res.json();
+      const data = await hireService.rejectOffer(offer.id);
       const updatedOffer = data.offer || {
         ...offer,
         status: 'rejected',
@@ -530,22 +344,7 @@ const WorkerOffers = () => {
     setProcessingOffer(offer.id);
 
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires/offer/${offer.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'completed' })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to complete work');
-      }
-
-      const data = await res.json();
+      const data = await hireService.completeWork(offer.id);
       const updatedOffer = data.offer || {
         ...offer,
         status: 'completed',
@@ -605,7 +404,7 @@ const WorkerOffers = () => {
       case 'rejected': return <XCircle size={14} className="text-red-500" />;
       case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
       case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
-      default: return <AlertCircle size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
+      default: return <AlertCircle size={14} className="text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -683,7 +482,7 @@ const WorkerOffers = () => {
     total: offers.length
   };
 
-  const tabs = [
+  const tabItems = [
     { id: 'pending', label: t.tabs.pending, icon: Clock, count: stats.pending },
     { id: 'accepted', label: t.tabs.accepted, icon: CheckCircle, count: stats.accepted },
     { id: 'paid', label: t.tabs.paid, icon: Wallet, count: stats.paid },
@@ -725,7 +524,7 @@ const WorkerOffers = () => {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white truncate">{offer.jobTitle || 'Job Offer'}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <Building2 size={14} />
                     <span>{offer.employerName || 'Employer'}</span>
                   </div>
@@ -877,44 +676,44 @@ const WorkerOffers = () => {
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Offer Details</h4>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Employer</span>
+                      <span className="text-gray-500 dark:text-gray-400">Employer</span>
                       <span className="font-medium">{offer.employerName || 'Not provided'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Position</span>
+                      <span className="text-gray-500 dark:text-gray-400">Position</span>
                       <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Monthly Salary</span>
+                      <span className="text-gray-500 dark:text-gray-400">Monthly Salary</span>
                       <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Hourly Rate</span>
+                      <span className="text-gray-500 dark:text-gray-400">Hourly Rate</span>
                       <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Location</span>
+                      <span className="text-gray-500 dark:text-gray-400">Location</span>
                       <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Posted</span>
+                      <span className="text-gray-500 dark:text-gray-400">Posted</span>
                       <span className="font-medium">{formatDate(offer.createdAt)}</span>
                     </div>
                     {offer.workerResponseAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Responded</span>
+                        <span className="text-gray-500 dark:text-gray-400">Responded</span>
                         <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
                       </div>
                     )}
                     {offer.workCompletedAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Completed</span>
+                        <span className="text-gray-500 dark:text-gray-400">Completed</span>
                         <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
                       </div>
                     )}
                     {offer.paymentCompleted && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Payment Status</span>
+                        <span className="text-gray-500 dark:text-gray-400">Payment Status</span>
                         <span className="font-medium text-green-600">✅ Paid</span>
                       </div>
                     )}
@@ -955,292 +754,172 @@ const WorkerOffers = () => {
   };
 
   // ============================================================
-  // Loading State
-  // ============================================================
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!authUser) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================================
   // Main Render
   // ============================================================
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <WorkerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
+      <div className="p-4 md:p-6">
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-red-100 mt-1">{t.subtitle}</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {authUser?.profileImage ? (
-                    <img 
-                      src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                  {authUser?.fullName || 'Worker'}
-                </span>
-              </div>
-              
-              {/* Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
+              <span className="text-sm text-red-200">
+                {stats.total} total offers
+              </span>
+              {!userIsPremium && (
+                <Link
+                  to="/subscription"
+                  className="bg-yellow-400/20 hover:bg-yellow-400/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-yellow-400/30"
                 >
-                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                  )}
-                </button>
-
-                {/* Notification Dropdown */}
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                      <span>{t.notifications}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
+                  <Crown size={16} className="text-yellow-300" />
+                  {t.getPremium}
+                </Link>
+              )}
             </div>
           </div>
-        </header>
-
-        <div className="p-4 md:p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">{t.title}</h1>
-                <p className="text-red-100 mt-1">{t.subtitle}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-red-200">
-                  {stats.total} total offers
-                </span>
-                {!userIsPremium && (
-                  <Link
-                    to="/subscription"
-                    className="bg-yellow-400/20 hover:bg-yellow-400/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-yellow-400/30"
-                  >
-                    <Crown size={16} className="text-yellow-300" />
-                    {t.getPremium}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
-                <Clock size={18} className="text-amber-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.accepted}</p>
-                <CheckCircle size={18} className="text-blue-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.accepted}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.paid}</p>
-                <Wallet size={18} className="text-green-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.paid}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.rejected}</p>
-                <XCircle size={18} className="text-red-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.rejected}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
-                <CheckCheck size={18} className="text-purple-500" />
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completed}</p>
-            </div>
-          </div>
-
-          {/* Search & Tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search offers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                />
-              </div>
-              <button
-                onClick={() => {
-                  loadOffers(authUser);
-                  setRefreshKey(prev => prev + 1);
-                }}
-                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg transition flex items-center gap-2 text-sm"
-              >
-                <RefreshCw size={16} />
-                Refresh
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 mt-4 border-t border-gray-100 dark:border-gray-700 pt-4 overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-red-50 dark:bg-red-900/30 text-red-600 border border-red-200'
-                      : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:bg-gray-900 hover:text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  <tab.icon size={16} />
-                  {tab.label}
-                  {tab.count > 0 && (
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
-                      activeTab === tab.id
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 dark:text-gray-500'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Results Count */}
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredOffers.length}</span> offers
-            </p>
-          </div>
-
-          {/* Offers List */}
-          {offers.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Inbox size={32} className="text-gray-400 dark:text-gray-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
-              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t.empty.wait}</p>
-            </div>
-          ) : filteredOffers.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Search size={24} className="text-gray-400 dark:text-gray-500" />
-              </div>
-              <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300">No results found</h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Try adjusting your search or filter</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredOffers.map(offer => renderOfferCard(offer))}
-            </div>
-          )}
         </div>
-      </main>
-    </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
+              <Clock size={18} className="text-amber-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.accepted}</p>
+              <CheckCircle size={18} className="text-blue-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.accepted}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.paid}</p>
+              <Wallet size={18} className="text-green-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.paid}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.rejected}</p>
+              <XCircle size={18} className="text-red-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.rejected}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.completed}</p>
+              <CheckCheck size={18} className="text-purple-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completed}</p>
+          </div>
+        </div>
+
+        {/* Search & Tabs */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search offers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+            </div>
+            <button
+              onClick={() => {
+                loadOffers(authUser);
+                setRefreshKey(prev => prev + 1);
+              }}
+              className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg transition flex items-center gap-2 text-sm"
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-4 border-t border-gray-100 dark:border-gray-700 pt-4 overflow-x-auto">
+            {tabItems.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-red-50 dark:bg-red-900/30 text-red-600 border border-red-200'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-900 hover:text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <tab.icon size={16} />
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                    activeTab === tab.id
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredOffers.length}</span> offers
+          </p>
+        </div>
+
+        {/* Offers List - Only show loading spinner on initial load */}
+        {loading && offers.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col items-center justify-center">
+              <Loader2 size={40} className="animate-spin text-red-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">{t.loading}</p>
+            </div>
+          </div>
+        ) : offers.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Inbox size={32} className="text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
+            <p className="text-gray-500 dark:text-gray-400">{t.empty.description}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t.empty.wait}</p>
+          </div>
+        ) : filteredOffers.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Search size={24} className="text-gray-400 dark:text-gray-500" />
+            </div>
+            <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300">No results found</h4>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Try adjusting your search or filter</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredOffers.map(offer => renderOfferCard(offer))}
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 };
 

@@ -1,10 +1,11 @@
 // src/pages/EmployerComplaints.jsx - UPDATED TO SHOW ADMIN RESPONSES WITH NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -43,9 +44,7 @@ const EmployerComplaints = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
-  const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const dashboard = useDashboard();
   const [complaints, setComplaints] = useState([]);
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -184,22 +183,9 @@ const EmployerComplaints = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
-  // ============================================================
-  // Load complaints only for the current employer
-  // ============================================================
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-    
     setLoading(false);
   }, []);
 
@@ -230,11 +216,6 @@ const EmployerComplaints = () => {
     setFilteredComplaints(employerComplaints);
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   // Filter complaints
   useEffect(() => {
     let filtered = complaints;
@@ -255,24 +236,8 @@ const EmployerComplaints = () => {
     setFilteredComplaints(filtered);
   }, [complaints, statusFilter, searchTerm]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
@@ -426,9 +391,6 @@ const EmployerComplaints = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleMenu={toggleMobileMenu}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isUserPremium(authUser?.id || authUser?.email)}
       />

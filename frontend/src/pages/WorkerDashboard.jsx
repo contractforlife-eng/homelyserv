@@ -1,6 +1,7 @@
 // src/pages/WorkerDashboard.jsx - RED AND WHITE THEME WITH ENHANCED NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -9,6 +10,7 @@ import {
   getUserConversations,
   getTotalUnreadCount
 } from '../utils/chatService';
+import hireService from '../services/hireService';
 import {
   Home,
   User,
@@ -43,17 +45,13 @@ import {
   Award
 } from 'lucide-react';
 
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-// Main WorkerDashboard Component - RED THEME
 const WorkerDashboard = () => {
   
   const navigate = useNavigate();
-  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  
-  const [language, setLanguage] = useState('en');
+   
   const [stats, setStats] = useState({
     
     totalApplications: 0,
@@ -72,8 +70,8 @@ const WorkerDashboard = () => {
     completedOffers: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
+
+  const dashboard = useDashboard();
 
   const isPremium = () => {
     const userId = authUser?.id || authUser?.email;
@@ -156,276 +154,11 @@ const WorkerDashboard = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
-
-  // ============================================================
-  // TOGGLE FUNCTIONS - DEFINED BEFORE THEY'RE USED
-  // ============================================================
-  
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
+  const t = translations[dashboard.language] || translations.en;
 
   const handleLogout = () => {
     useAuthStore.getState().logout();
     navigate('/login');
-  };
-
-  // ============================================================
-  // NOTIFICATION GENERATION FUNCTIONS
-  // ============================================================
-
-  // Generate notification for offer status change
-  const generateOfferNotification = (offer, action, employerName) => {
-    const notification = {
-      id: `offer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'offer',
-      title: '',
-      message: '',
-      time: new Date().toISOString(),
-      read: false,
-      link: '/worker/offers',
-      icon: 'briefcase'
-    };
-
-    switch (action) {
-      case 'accepted':
-        notification.title = 'Offer Accepted ✅';
-        notification.message = `${employerName || 'Employer'} has accepted your offer for "${offer.jobTitle || 'position'}"`;
-        notification.icon = 'check';
-        break;
-      case 'rejected':
-        notification.title = 'Offer Rejected ❌';
-        notification.message = `${employerName || 'Employer'} has rejected your offer for "${offer.jobTitle || 'position'}"`;
-        notification.icon = 'x';
-        break;
-      case 'pending':
-        notification.title = 'New Offer Pending ⏳';
-        notification.message = `Your offer for "${offer.jobTitle || 'position'}" is pending review`;
-        notification.icon = 'clock';
-        break;
-      case 'in_progress':
-        notification.title = 'Offer In Progress 🔄';
-        notification.message = `${employerName || 'Employer'} has started work on "${offer.jobTitle || 'position'}"`;
-        notification.icon = 'zap';
-        break;
-      case 'completed':
-        notification.title = 'Offer Completed 🎉';
-        notification.message = `Work on "${offer.jobTitle || 'position'}" has been completed successfully!`;
-        notification.icon = 'check';
-        break;
-      case 'interview':
-        notification.title = 'Interview Scheduled 📅';
-        notification.message = `${employerName || 'Employer'} has scheduled an interview for "${offer.jobTitle || 'position'}"`;
-        notification.icon = 'calendar';
-        break;
-      default:
-        notification.title = 'Offer Updated';
-        notification.message = `Your offer for "${offer.jobTitle || 'position'}" has been updated`;
-        notification.icon = 'briefcase';
-    }
-
-    return notification;
-  };
-
-  // Generate notification for complaint update
-  const generateComplaintNotification = (complaint, action) => {
-    const notification = {
-      id: `complaint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'complaint',
-      time: new Date().toISOString(),
-      read: false,
-      link: '/worker-complaints',
-      icon: 'alert'
-    };
-
-    switch (action) {
-      case 'resolved':
-        notification.title = 'Complaint Resolved ✅';
-        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been resolved by admin`;
-        notification.icon = 'check';
-        break;
-      case 'response':
-        notification.title = 'Complaint Response 📨';
-        notification.message = `Admin has responded to your complaint "${complaint.subject || 'issue'}"`;
-        notification.icon = 'message';
-        break;
-      case 'escalated':
-        notification.title = 'Complaint Escalated ⬆️';
-        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been escalated to senior management`;
-        notification.icon = 'alert';
-        break;
-      case 'closed':
-        notification.title = 'Complaint Closed 📕';
-        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been closed`;
-        notification.icon = 'check';
-        break;
-      default:
-        notification.title = 'Complaint Update';
-        notification.message = `Your complaint "${complaint.subject || 'issue'}" has been updated`;
-        notification.icon = 'alert';
-    }
-
-    return notification;
-  };
-
-  // Generate notification for payment
-  const generatePaymentNotification = (payment, action) => {
-    const notification = {
-      id: `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'payment',
-      time: new Date().toISOString(),
-      read: false,
-      link: '/worker-payment',
-      icon: 'dollar'
-    };
-
-    switch (action) {
-      case 'received':
-        notification.title = 'Payment Received 💰';
-        notification.message = `You have received EGP ${payment.amount || 0} from ${payment.employerName || 'employer'}`;
-        notification.icon = 'dollar';
-        break;
-      case 'pending':
-        notification.title = 'Payment Pending ⏳';
-        notification.message = `Payment of EGP ${payment.amount || 0} is pending approval`;
-        notification.icon = 'clock';
-        break;
-      case 'confirmed':
-        notification.title = 'Payment Confirmed ✅';
-        notification.message = `Payment of EGP ${payment.amount || 0} has been confirmed`;
-        notification.icon = 'check';
-        break;
-      default:
-        notification.title = 'Payment Update';
-        notification.message = `Your payment of EGP ${payment.amount || 0} has been updated`;
-        notification.icon = 'dollar';
-    }
-
-    return notification;
-  };
-
-  // Generate notification for new message
-  const generateMessageNotification = (message, senderName) => {
-    return {
-      id: `message_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'message',
-      title: 'New Message 💬',
-      message: `${senderName || 'Someone'} sent you a new message: "${message.preview || message.message?.substring(0, 50) || 'New message'}"`,
-      time: new Date().toISOString(),
-      read: false,
-      link: '/worker-messages',
-      icon: 'message'
-    };
-  };
-
-  // Generate notification for profile review
-  const generateProfileNotification = (action) => {
-    const notification = {
-      id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'profile',
-      time: new Date().toISOString(),
-      read: false,
-      link: '/worker-profile',
-      icon: 'user'
-    };
-
-    switch (action) {
-      case 'approved':
-        notification.title = 'Profile Approved ✅';
-        notification.message = 'Your profile has been approved by admin. You can now apply for jobs!';
-        notification.icon = 'check';
-        break;
-      case 'rejected':
-        notification.title = 'Profile Needs Review 📝';
-        notification.message = 'Your profile needs some updates. Please check your profile for details.';
-        notification.icon = 'alert';
-        break;
-      case 'viewed':
-        notification.title = 'Profile Viewed 👀';
-        notification.message = 'An employer has viewed your profile';
-        notification.icon = 'user';
-        break;
-      default:
-        notification.title = 'Profile Update';
-        notification.message = 'Your profile has been updated';
-        notification.icon = 'user';
-    }
-
-    return notification;
-  };
-
-  // Generate notification for subscription/premium
-  const generateSubscriptionNotification = (action) => {
-    const notification = {
-      id: `subscription_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'subscription',
-      time: new Date().toISOString(),
-      read: false,
-      link: '/subscription',
-      icon: 'crown'
-    };
-
-    switch (action) {
-      case 'activated':
-        notification.title = 'Premium Activated 👑';
-        notification.message = 'Congratulations! Your Premium subscription is now active. Enjoy exclusive features!';
-        notification.icon = 'crown';
-        break;
-      case 'expiring':
-        notification.title = 'Premium Expiring Soon ⏰';
-        notification.message = 'Your Premium subscription will expire in 7 days. Renew now to keep your benefits!';
-        notification.icon = 'clock';
-        break;
-      case 'expired':
-        notification.title = 'Premium Expired ❌';
-        notification.message = 'Your Premium subscription has expired. Renew now to regain access to premium features.';
-        notification.icon = 'x';
-        break;
-      default:
-        notification.title = 'Subscription Update';
-        notification.message = 'Your subscription has been updated';
-        notification.icon = 'crown';
-    }
-
-    return notification;
-  };
-
-  // ============================================================
-  // CHECK FOR NEW NOTIFICATIONS FROM BACKEND
-  // ============================================================
-  const checkForNewNotifications = async () => {
-    if (!authUser?.email) return;
-
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/notifications`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (data.success && Array.isArray(data.notifications)) {
-        const notifications = data.notifications.map(n => ({
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.body || n.message,
-          time: n.createdAt,
-          read: n.isRead,
-          link: '/worker/offers'
-        }));
-        setNotifications(notifications);
-      }
-    } catch (error) {
-      console.error('Error loading notifications from backend:', error);
-      setNotifications([]);
-    }
   };
 
   // ============================================================
@@ -435,19 +168,16 @@ const WorkerDashboard = () => {
     try {
       if (!authUser?.email) return;
 
-      const currentUserEmail = authUser.email;
-      const currentUserId = authUser.id || authUser.email;
+       const currentUserEmail = authUser.email;
+       const currentUserId = authUser.id || authUser.email;
 
-      const token = localStorage.getItem('homelyserv_token');
-      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      let allWorkerOffers = [];
-      if (offersRes.ok) {
-        const data = await offersRes.json();
-        allWorkerOffers = Array.isArray(data) ? data : [];
-      }
+       let allWorkerOffers = [];
+       try {
+         const offersData = await hireService.getOffers();
+         allWorkerOffers = Array.isArray(offersData) ? offersData : [];
+       } catch (error) {
+         console.error('Error loading offers:', error);
+       }
 
       const pendingOffers = allWorkerOffers.filter(o => o.status === 'pending').length;
       const acceptedOffers = allWorkerOffers.filter(o => o.status === 'accepted').length;
@@ -501,6 +231,40 @@ const WorkerDashboard = () => {
       console.error('Error loading stats:', error);
     }
   };
+
+  // ============================================================
+  // USE EFFECTS
+  // ============================================================
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'WORKER') {
+      navigate('/login');
+      return;
+    }
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    if (authUser) {
+      loadRealStats();
+    }
+  }, [authUser]);
+
+  // Check for new stats periodically
+  useEffect(() => {
+    if (!authUser) return;
+    
+    const interval = setInterval(() => {
+      loadRealStats();
+    }, 15000);
+    
+    return () => clearInterval(interval);
+   }, [authUser]);
 
   // ============================================================
   // GENERATE RECENT ACTIVITY
@@ -570,50 +334,8 @@ const WorkerDashboard = () => {
   };
 
   // ============================================================
-  // LOAD NOTIFICATIONS FROM BACKEND
-  // ============================================================
-  const loadNotifications = async () => {
-    try {
-      if (!authUser?.email) return;
-      
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/notifications`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (data.success && Array.isArray(data.notifications)) {
-        const notifications = data.notifications.map(n => ({
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.body || n.message,
-          time: n.createdAt,
-          read: n.isRead,
-          link: '/worker/offers'
-        }));
-        setNotifications(notifications);
-      }
-    } catch (error) {
-      console.error('Error loading notifications from backend:', error);
-      setNotifications([]);
-    }
-  };
-
-  // ============================================================
   // USE EFFECTS
   // ============================================================
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -631,75 +353,19 @@ const WorkerDashboard = () => {
   useEffect(() => {
     if (authUser) {
       loadRealStats();
-      loadNotifications();
-      checkForNewNotifications();
     }
   }, [authUser]);
 
-  // Check for new notifications periodically
+  // Check for new stats periodically
   useEffect(() => {
     if (!authUser) return;
     
     const interval = setInterval(() => {
-      checkForNewNotifications();
       loadRealStats();
     }, 15000);
     
     return () => clearInterval(interval);
   }, [authUser]);
-
-  // ============================================================
-  // NOTIFICATION HANDLERS
-  // ============================================================
-  const markNotificationRead = (id) => {
-    const updated = notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-  };
-
-  const markAllRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-  };
-
-  const getNotificationIcon = (type, icon) => {
-    const iconMap = {
-      'offer': <Briefcase size={16} className="text-blue-600" />,
-      'complaint': <AlertTriangle size={16} className="text-red-600" />,
-      'payment': <DollarSign size={16} className="text-green-600" />,
-      'message': <MessageCircle size={16} className="text-indigo-600" />,
-      'profile': <User size={16} className="text-purple-600" />,
-      'subscription': <Crown size={16} className="text-yellow-600" />,
-      'check': <CheckCircle size={16} className="text-green-600" />,
-      'x': <X size={16} className="text-red-600" />,
-      'clock': <Clock size={16} className="text-yellow-600" />,
-      'zap': <Zap size={16} className="text-orange-600" />,
-      'calendar': <Calendar size={16} className="text-blue-600" />,
-      'alert': <AlertCircle size={16} className="text-red-600" />,
-      'dollar': <DollarSign size={16} className="text-green-600" />,
-      'crown': <Crown size={16} className="text-yellow-600" />,
-      'user': <User size={16} className="text-purple-600" />,
-      'briefcase': <Briefcase size={16} className="text-blue-600" />,
-      'star': <Star size={16} className="text-yellow-600" />,
-      'award': <Award size={16} className="text-purple-600" />,
-      'thumbsup': <ThumbsUp size={16} className="text-green-600" />,
-      'file': <FileText size={16} className="text-blue-600" />,
-    };
-    return iconMap[icon] || <Bell size={16} className="text-gray-600 dark:text-gray-300" />;
-  };
-
-  const getNotificationBgColor = (type) => {
-    const colorMap = {
-      'offer': 'bg-blue-50 dark:bg-blue-900/30',
-      'complaint': 'bg-red-50 dark:bg-red-900/30',
-      'payment': 'bg-green-50 dark:bg-green-900/30',
-      'message': 'bg-indigo-50 dark:bg-indigo-900/30',
-      'profile': 'bg-purple-50 dark:bg-purple-900/30',
-      'subscription': 'bg-yellow-50 dark:bg-yellow-900/30',
-    };
-    return colorMap[type] || 'bg-gray-50 dark:bg-gray-900';
-  };
 
   if (authLoading) {
     return (
@@ -716,109 +382,12 @@ const WorkerDashboard = () => {
     return null;
   }
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
         title={t.dashboard}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
-        customNotificationComponent={
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
-            >
-              <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold px-1">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </button>
-            
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-[500px] overflow-y-auto">
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 rounded-t-xl">
-                  <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                    <Bell size={16} />
-                    {t.notifications}
-                    {unreadCount > 0 && (
-                      <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                        {unreadCount} new
-                      </span>
-                    )}
-                  </h4>
-                  {notifications.length > 0 && (
-                    <button 
-                      onClick={markAllRead}
-                      className="text-xs text-red-600 hover:text-red-700 font-medium"
-                    >
-                      {t.markAllRead}
-                    </button>
-                  )}
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                      <div className="text-5xl mb-3">🔔</div>
-                      <p className="font-medium">{t.noNotifications}</p>
-                      <p className="text-sm mt-1">New notifications will appear here</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 10).map((notification) => (
-                      <Link
-                        key={notification.id}
-                        to={notification.link || '#'}
-                        className={`block p-3 hover:bg-gray-50 dark:bg-gray-900 transition-colors cursor-pointer ${!notification.read ? 'bg-red-50 dark:bg-red-900/30/50' : ''}`}
-                        onClick={() => {
-                          markNotificationRead(notification.id);
-                          setShowNotifications(false);
-                        }}
-                      >
-                        <div className="flex gap-3">
-                          <div className={`w-10 h-10 rounded-full ${getNotificationBgColor(notification.type)} flex items-center justify-center flex-shrink-0`}>
-                            {getNotificationIcon(notification.type, notification.icon)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {notification.title || 'Notification'}
-                              </p>
-                              {!notification.read && (
-                                <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5"></span>
-                              )}
-                            </div>
-                            <p className={`text-sm ${!notification.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'} truncate`}>
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                              {new Date(notification.time).toLocaleDateString()} at {new Date(notification.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                  {notifications.length > 10 && (
-                    <div className="p-2 text-center border-t border-gray-100 dark:border-gray-700">
-                      <Link 
-                        to="/notifications" 
-                        className="text-sm text-red-600 hover:text-red-700 font-medium"
-                        onClick={() => setShowNotifications(false)}
-                      >
-                        {t.viewAll} ({notifications.length - 10} more)
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        }
         rightContent={
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">

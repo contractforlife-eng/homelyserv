@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import { sendMessage } from '../utils/chatService';
 import {
   User,
@@ -37,14 +38,16 @@ import {
 // ============================================================
 // MAIN EMPLOYER PAYMENTS COMPONENT
 // ============================================================
+import hireService from '../services/hireService';
+
 const EmployerPayments = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  
-  const [language, setLanguage] = useState('en');
+
+  const dashboard = useDashboard();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
@@ -248,20 +251,13 @@ const EmployerPayments = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // TOGGLE FUNCTIONS
   // ============================================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('homelyserv_token');
-    localStorage.removeItem('homelyserv_user');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
@@ -277,16 +273,13 @@ const EmployerPayments = () => {
         return false;
       }
 
-      const token = localStorage.getItem('homelyserv_token');
-      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
       let offer = null;
-      if (offersRes.ok) {
-        const data = await offersRes.json();
+      try {
+        const data = await hireService.getOffers();
         const offers = Array.isArray(data) ? data : [];
         offer = offers.find(o => o.id === offerId);
+      } catch (error) {
+        console.error('Error loading offers:', error);
       }
       
       if (!offer) {
@@ -421,11 +414,13 @@ const EmployerPayments = () => {
       employerPayments = Object.values(mergedMap);
       
       // Check offers for missing payments
-      const token = localStorage.getItem('homelyserv_token');
-      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const allOffers = offersRes.ok ? await offersRes.json() : [];
+      let allOffers = [];
+      try {
+        const data = await hireService.getOffers();
+        allOffers = Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error loading offers for payments:', error);
+      }
       const employerOffers = Array.isArray(allOffers) ? allOffers : [];
       const employerAcceptedOffers = employerOffers.filter((o) => {
         const isEmployer = o.employerId === employerId || o.employerEmail === employerEmail;
@@ -530,11 +525,6 @@ const EmployerPayments = () => {
   // USE EFFECTS
   // ============================================================
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-  }, []);
-
-  useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !authUser) {
       navigate('/login');
@@ -572,11 +562,6 @@ const EmployerPayments = () => {
     
     setFilteredPayments(filtered);
   }, [payments, statusFilter, searchTerm]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
 
   // ============================================================
   // HANDLERS
@@ -761,8 +746,6 @@ const EmployerPayments = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isUserPremium(authUser?.id || authUser?.email)}
         rightContent={

@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import axios from 'axios';
-
-// API base URL - must match backend mount point /api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import api from '../utils/api';
 
 const normalizeUser = (userData) => {
   if (!userData) return null;
@@ -20,73 +17,37 @@ const normalizeUser = (userData) => {
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      // State
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: true,
       error: null,
       language: localStorage.getItem('homelyserv_language') || 'en',
-      
-      // Registration
-  register: async (userData, userType) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
-        ...userData,
-        userType
-      });
-      
-      const { user, token } = response.data;
-      const normalizedUser = normalizeUser(user);
-      
-      set({
-        user: normalizedUser,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      });
-      
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      return { success: true, user: normalizedUser };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      set({
-        isLoading: false,
-        error: errorMessage
-      });
-      return { success: false, error: errorMessage };
-    }
-  },
-  
-  // Login
-  login: async (email, password, role) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
-        email,
-        password,
-        role
-      });
-      
-      const { user, token } = response.data;
-      const normalizedUser = normalizeUser(user);
-      
-      set({
-        user: normalizedUser,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      });
-      
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      return { success: true, user: normalizedUser };
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+
+      register: async (userData, userType) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/api/auth/register', {
+            ...userData,
+            userType
+          });
+
+          const { user, token } = response.data;
+          const normalizedUser = normalizeUser(user);
+
+          set({
+            user: normalizedUser,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+
+          localStorage.setItem('homelyserv_token', token);
+
+          return { success: true, user: normalizedUser };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
           set({
             isLoading: false,
             error: errorMessage
@@ -94,12 +55,41 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Logout
+
+      login: async (email, password, role) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/api/auth/login', {
+            email,
+            password,
+            role
+          });
+
+          const { user, token } = response.data;
+          const normalizedUser = normalizeUser(user);
+
+          set({
+            user: normalizedUser,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+
+          localStorage.setItem('homelyserv_token', token);
+
+          return { success: true, user: normalizedUser };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+          set({
+            isLoading: false,
+            error: errorMessage
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+
       logout: () => {
-        // Clear axios headers
-        delete axios.defaults.headers.common['Authorization'];
-        
         set({
           user: null,
           token: null,
@@ -107,94 +97,87 @@ const useAuthStore = create(
           isLoading: false,
           error: null
         });
-        
-        // Clear persisted storage
+
         localStorage.removeItem('homelyserv_token');
-        // Clear Zustand persist storage to prevent rehydration of stale auth state
         localStorage.removeItem('auth-storage');
-        
+
         return { success: true };
       },
-      
-      // Check if user is authenticated (verify token)
+
+      setAuth: (user, token) => {
+        const normalizedUser = normalizeUser(user);
+        set({
+          user: normalizedUser,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        });
+        localStorage.setItem('homelyserv_token', token);
+        return { success: true, user: normalizedUser };
+      },
+
       checkAuth: async () => {
-  set({ isLoading: true });
+        set({ isLoading: true });
 
-  const { token } = get();
+        const { token } = get();
 
-  if (!token) {
-    set({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false
-    });
-    return { success: false };
-  }
+        if (!token) {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          });
+          return { success: false };
+        }
 
-  try {
-    console.log('🔍 Auth verify URL:', `${API_URL}/api/auth/verify`);
-    console.log('🔍 Token exists:', !!token);
+        try {
+          const response = await api.get('/api/auth/verify');
 
-    const response = await axios.get(`${API_URL}/api/auth/verify`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+          if (response.data?.success && response.data?.user) {
+            const normalizedUser = normalizeUser(response.data.user);
+            set({
+              user: normalizedUser,
+              token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null
+            });
 
-    console.log('🔍 Response status:', response.status);
+            return { success: true };
+          }
 
-    if (response.data?.success && response.data?.user) {
-      const normalizedUser = normalizeUser(response.data.user);
-      console.log('🔍 Returned user role:', normalizedUser.role);
-      console.log('🔍 Normalized user id:', normalizedUser.id);
+          get().logout();
 
-      set({
-        user: normalizedUser,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      });
+          set({
+            isLoading: false
+          });
 
-      return { success: true };
-    }
+          return { success: false };
 
-    get().logout();
+        } catch (error) {
 
-    set({
-      isLoading: false
-    });
+          get().logout();
 
-    return { success: false };
+          set({
+            isLoading: false
+          });
 
-  } catch (error) {
+          return { success: false };
+        }
+      },
 
-    get().logout();
-
-    set({
-      isLoading: false
-    });
-
-    return { success: false };
-  }
-},
-      // Update user profile
       updateProfile: async (userData) => {
         set({ isLoading: true, error: null });
         try {
-          const { token } = get();
-          const response = await axios.put(`${API_URL}/api/auth/profile`, userData, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          
+          const response = await api.put('/api/auth/profile', userData);
+
           set({
             user: response.data.user,
             isLoading: false,
             error: null
           });
-          
+
           return { success: true, user: response.data.user };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Profile update failed.';
@@ -205,21 +188,15 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Change password
+
       changePassword: async (currentPassword, newPassword) => {
         set({ isLoading: true, error: null });
         try {
-          const { token } = get();
-          await axios.post(`${API_URL}/api/auth/change-password`, {
+          await api.post('/api/auth/change-password', {
             currentPassword,
             newPassword
-          }, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
           });
-          
+
           set({ isLoading: false, error: null });
           return { success: true };
         } catch (error) {
@@ -231,12 +208,11 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Forgot password - send reset email
+
       forgotPassword: async (email) => {
         set({ isLoading: true, error: null });
         try {
-          await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
+          await api.post('/api/auth/forgot-password', { email });
           set({ isLoading: false, error: null });
           return { success: true };
         } catch (error) {
@@ -248,12 +224,11 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Reset password with token
+
       resetPassword: async (token, newPassword) => {
         set({ isLoading: true, error: null });
         try {
-          await axios.post(`${API_URL}/api/auth/reset-password`, {
+          await api.post('/api/auth/reset-password', {
             token,
             newPassword
           });
@@ -268,30 +243,23 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Upload profile photo
+
       uploadProfilePhoto: async (file) => {
         set({ isLoading: true, error: null });
         try {
-          const { token } = get();
           const formData = new FormData();
           formData.append('photo', file);
-          
-          const response = await axios.post(`${API_URL}/api/auth/upload-photo`, formData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          
+
+          const response = await api.post('/api/auth/upload-photo', formData);
+
           const normalizedUser = normalizeUser(response.data.user);
-          
+
           set({
             user: normalizedUser,
             isLoading: false,
             error: null
           });
-          
+
           return { success: true, user: normalizedUser };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Photo upload failed.';
@@ -302,74 +270,59 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Set language
+
       setLanguage: (lang) => {
         set({ language: lang });
         localStorage.setItem('homelyserv_language', lang);
         document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
         document.documentElement.lang = lang;
       },
-      
-      // Clear error
+
       clearError: () => {
         set({ error: null });
       },
-      
-      // Get user role
+
       getUserRole: () => {
         const { user } = get();
         return user?.role || null;
       },
-      
-      // Check if user is worker
+
       isWorker: () => {
         const { user } = get();
         return user?.role?.toUpperCase() === 'WORKER';
       },
-      
-      // Check if user is employer
+
       isEmployer: () => {
         const { user } = get();
         return user?.role?.toUpperCase() === 'EMPLOYER';
       },
-      
-      // Check if user is admin
+
       isAdmin: () => {
         const { user } = get();
         return user?.role?.toUpperCase() === 'ADMIN';
       },
-      
-      // Get user's full name
+
       getUserName: () => {
         const { user } = get();
         return user?.fullName || user?.name || 'User';
       },
-      
-      // Get user's email
+
       getUserEmail: () => {
         const { user } = get();
         return user?.email || '';
       },
-      
-      // Update user settings
+
       updateSettings: async (settings) => {
         set({ isLoading: true, error: null });
         try {
-          const { token } = get();
-          const response = await axios.put(`${API_URL}/api/auth/settings`, { settings }, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
+          const response = await api.put('/api/auth/settings', { settings });
+
           set({
             user: response.data.user,
             isLoading: false,
             error: null
           });
-          
+
           return { success: true, user: response.data.user };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Settings update failed.';
@@ -380,12 +333,11 @@ const useAuthStore = create(
           return { success: false, error: errorMessage };
         }
       },
-      
-      // Get user's profile completion status
+
       getProfileCompletion: () => {
         const { user } = get();
         if (!user) return 0;
-        
+
         const fields = ['fullName', 'email', 'phone', 'city'];
         if (user.role === 'worker') {
           fields.push('category', 'experienceYears', 'expectedSalary', 'skills');
@@ -393,12 +345,11 @@ const useAuthStore = create(
         if (user.role === 'employer') {
           fields.push('companyName', 'companyType');
         }
-        
+
         const filled = fields.filter(field => user[field] && user[field] !== '');
         return Math.round((filled.length / fields.length) * 100);
       },
-      
-      // Reset store (for testing)
+
       reset: () => {
         set({
           user: null,
@@ -409,7 +360,7 @@ const useAuthStore = create(
           language: 'en'
         });
         localStorage.removeItem('homelyserv_token');
-        delete axios.defaults.headers.common['Authorization'];
+        localStorage.removeItem('auth-storage');
       }
     }),
     {

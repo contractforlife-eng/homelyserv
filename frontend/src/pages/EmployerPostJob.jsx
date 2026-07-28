@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 
@@ -10,15 +11,10 @@ const EmployerPostJob = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const [language, setLanguage] = useState('en');
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
+  const dashboard = useDashboard();
 
   const handleLogout = () => {
-    localStorage.clear();
+    useAuthStore.getState().logout();
     navigate('/login');
   };
   const [formData, setFormData] = useState({
@@ -149,8 +145,6 @@ const EmployerPostJob = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title="Post a Job"
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
       />
 

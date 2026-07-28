@@ -1,9 +1,9 @@
-// src/pages/AdminSettings.jsx - COMPREHENSIVE ADMIN SETTINGS WITH WORKING NOTIFICATION BELL
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+// src/pages/AdminSettings.jsx - MIGRATED TO DASHBOARD LAYOUT
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-
-import AdminSidebar from '../components/AdminSidebar.jsx';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
 import {
@@ -13,9 +13,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
   Globe,
   X,
   CreditCard,
@@ -67,317 +64,6 @@ import {
 } from 'lucide-react';
 
 // ============================================================
-// NOTIFICATION BELL COMPONENT
-// ============================================================
-const NotificationBell = ({ userId, onNotificationClick }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const dropdownRef = useRef(null);
-
-  // Load notifications from localStorage
-  const loadNotifications = () => {
-    setLoading(true);
-    try {
-      const storedNotifications = JSON.parse(
-        localStorage.getItem('admin_notifications') || '[]'
-      );
-      
-      const sorted = storedNotifications.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      
-      setNotifications(sorted);
-      setUnreadCount(sorted.filter(n => !n.read).length);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Check for new notifications
-  const checkForNewNotifications = () => {
-    const existingNotifications = JSON.parse(
-      localStorage.getItem('admin_notifications') || '[]'
-    );
-    
-    const newNotifications = [];
-    const existingIds = new Set(existingNotifications.map(n => n.id));
-
-    // 1. Check for new user registrations
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const recentUsers = users.filter(u => {
-      const createdAt = new Date(u.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo;
-    });
-
-    recentUsers.forEach(user => {
-      const notifId = `new_user_${user.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_user',
-          title: 'New User Registration 🎉',
-          message: `${user.fullName || 'A new user'} (${user.email}) has registered as ${user.role || 'USER'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/users',
-          icon: 'user_plus',
-          userEmail: user.email,
-          userRole: user.role
-        });
-      }
-    });
-
-    // 2. Check for new payments
-    const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-    const recentPayments = allPayments.filter(p => {
-      const createdAt = new Date(p.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && p.status === 'completed';
-    });
-
-    recentPayments.forEach(payment => {
-      const notifId = `new_payment_${payment.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_payment',
-          title: 'New Payment Received 💰',
-          message: `Payment of ${payment.amount || 0} EGP from ${payment.employerName || 'Employer'} for ${payment.jobTitle || 'service'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/payments',
-          icon: 'dollar',
-          amount: payment.amount,
-          employerName: payment.employerName
-        });
-      }
-    });
-
-    // 3. Check for new complaints
-
-    // 4. Check for new hires
-
-    // 5. Check for premium activations
-    const subscriptions = JSON.parse(localStorage.getItem('homelyserv_subscriptions') || '{}');
-    Object.values(subscriptions).forEach(sub => {
-      if (sub.status === 'active' && sub.activatedAt) {
-        const activatedAt = new Date(sub.activatedAt);
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        if (activatedAt > oneDayAgo) {
-          const notifId = `premium_activation_${sub.userId}`;
-          if (!existingIds.has(notifId)) {
-            newNotifications.push({
-              id: notifId,
-              type: 'premium_activation',
-              title: 'Premium Activated 👑',
-              message: `${sub.userFullName || 'A user'} (${sub.userEmail}) activated Premium subscription`,
-              read: false,
-              createdAt: new Date().toISOString(),
-              link: '/admin/users',
-              icon: 'crown',
-              userEmail: sub.userEmail
-            });
-          }
-        }
-      }
-    });
-
-    if (newNotifications.length > 0) {
-      const updatedNotifications = [...newNotifications, ...existingNotifications];
-      localStorage.setItem('admin_notifications', JSON.stringify(updatedNotifications));
-      loadNotifications();
-    }
-  };
-
-  const markAsRead = (notificationId) => {
-    const updated = notifications.map(n => 
-      n.id === notificationId ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem('admin_notifications', JSON.stringify(updated));
-    setUnreadCount(updated.filter(n => !n.read).length);
-  };
-
-  const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem('admin_notifications', JSON.stringify(updated));
-    setUnreadCount(0);
-  };
-
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
-    setIsOpen(false);
-    if (onNotificationClick) {
-      onNotificationClick(notification);
-    }
-    if (notification.link) {
-      window.location.href = notification.link;
-    }
-  };
-
-  const getNotificationIcon = (type) => {
-    const icons = {
-      'new_user': <UserPlus size={16} className="text-blue-400" />,
-      'new_payment': <DollarSign size={16} className="text-green-400" />,
-      'new_complaint': <AlertTriangle size={16} className="text-red-400" />,
-      'new_hire': <Briefcase size={16} className="text-purple-400" />,
-      'premium_activation': <Crown size={16} className="text-yellow-400" />
-    };
-    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
-  };
-
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  useEffect(() => {
-    loadNotifications();
-    
-    const interval = setInterval(checkForNewNotifications, 10000);
-    setTimeout(checkForNewNotifications, 1000);
-    
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-        title="Notifications"
-      >
-        <Bell size={20} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold px-1 border-2 border-[#1a1a1a]">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-[#1a1a1a] border border-yellow-500/20 rounded-xl shadow-2xl shadow-yellow-500/10 z-50 max-h-[500px] overflow-y-auto">
-          <div className="p-3 border-b border-yellow-500/20 flex justify-between items-center sticky top-0 bg-[#1a1a1a] rounded-t-xl">
-            <h4 className="font-semibold text-white flex items-center gap-2">
-              <Bell size={16} className="text-yellow-500" />
-              Notifications
-              {unreadCount > 0 && (
-                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                  {unreadCount} new
-                </span>
-              )}
-            </h4>
-            <div className="flex items-center gap-2">
-              {notifications.length > 0 && (
-                <button 
-                  onClick={markAllAsRead}
-                  className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-                >
-                  Mark all read
-                </button>
-              )}
-              <button 
-                onClick={() => {
-                  checkForNewNotifications();
-                  loadNotifications();
-                }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
-          </div>
-          
-          <div className="divide-y divide-yellow-500/10">
-            {loading ? (
-              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
-                Loading notifications...
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
-                <Bell size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
-              </div>
-            ) : (
-              notifications.slice(0, 20).map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-3 hover:bg-yellow-500/5 cursor-pointer transition-colors ${
-                    !notification.read ? 'border-l-2 border-yellow-500 bg-yellow-500/5' : ''
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                        {notification.message}
-                      </p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
-                        {getTimeAgo(notification.createdAt)}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <span className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          
-          {notifications.length > 20 && (
-            <div className="p-2 text-center border-t border-yellow-500/10">
-              <Link 
-                to="/admin/notifications" 
-                className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                View all notifications ({notifications.length})
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================================
 // TOGGLE SWITCH COMPONENT
 // ============================================================
 const ToggleSwitch = ({ value, onChange, disabled = false }) => {
@@ -403,6 +89,7 @@ const ToggleSwitch = ({ value, onChange, disabled = false }) => {
 // ============================================================
 const AdminSettings = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [user, setUser] = useState(null);
@@ -642,7 +329,6 @@ const AdminSettings = () => {
     }
   };
 
-  const { i18n } = useTranslation();
   const t = translations[language] || translations.en;
 
   // Use authStore as single source of truth
@@ -855,573 +541,468 @@ const AdminSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
-      <AdminSidebar
+    <DashboardLayout requiredRole="ADMIN" variant="admin">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        user={user}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={user?.id || user?.email}
+        isPremium={false}
+        variant="admin"
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={user?.id || user?.email} />
-              
-              <div className="relative">
-                <button
-                  onClick={() => setShowLangDropdown(!showLangDropdown)}
-                  className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
-                >
-                  <Globe size={16} />
-                  {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
-                </button>
-                {showLangDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
-                          language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
-                        }`}
-                      >
-                        <span className="text-lg">{lang.flag}</span>
-                        <span>{lang.nativeName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+      <div className="p-4 md:p-6">
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+            <p className="text-black/70 mt-1">{t.subtitle}</p>
           </div>
-        </header>
+        </div>
 
-        <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-              <p className="text-black/70 mt-1">{t.subtitle}</p>
-            </div>
+        {/* Notification Messages */}
+        {notificationMessage && (
+          <div className={`mb-4 px-4 py-3 rounded-lg ${
+            notificationMessage.type === 'error' 
+              ? 'bg-red-500/20 border border-red-500 text-red-400' 
+              : 'bg-green-500/20 border border-green-500 text-green-400'
+          }`}>
+            {notificationMessage.text}
           </div>
+        )}
 
-          {/* Notification Messages */}
-          {notificationMessage && (
-            <div className={`mb-4 px-4 py-3 rounded-lg ${
-              notificationMessage.type === 'error' 
-                ? 'bg-red-500/20 border border-red-500 text-red-400' 
-                : 'bg-green-500/20 border border-green-500 text-green-400'
-            }`}>
-              {notificationMessage.text}
-            </div>
-          )}
-
-          {saveMessage && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-green-500/20 border border-green-500 text-green-400">
-              {saveMessage}
-            </div>
-          )}
-
-          {/* Tabs */}
-          <div className="flex flex-wrap gap-1 mb-6 border-b border-yellow-500/20 pb-2">
-            {['general', 'appearance', 'notifications', 'security', 'payment', 'users', 'system'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium transition rounded-lg ${
-                  activeTab === tab
-                    ? 'bg-yellow-500 text-black'
-                    : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10'
-                }`}
-              >
-                {t.tabs[tab]}
-              </button>
-            ))}
+        {saveMessage && (
+          <div className="mb-4 px-4 py-3 rounded-lg bg-green-500/20 border border-green-500 text-green-400">
+            {saveMessage}
           </div>
+        )}
 
-          {/* Settings Content */}
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-            {activeTab === 'general' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.general.title}</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteName}</label>
-                    <input
-                      type="text"
-                      value={settings.siteName}
-                      onChange={(e) => handleSettingChange('siteName', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteDescription}</label>
-                    <textarea
-                      value={settings.siteDescription}
-                      onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
-                      rows="2"
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactEmail}</label>
-                    <input
-                      type="email"
-                      value={settings.contactEmail}
-                      onChange={(e) => handleSettingChange('contactEmail', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactPhone}</label>
-                    <input
-                      type="text"
-                      value={settings.contactPhone}
-                      onChange={(e) => handleSettingChange('contactPhone', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.address}</label>
-                    <input
-                      type="text"
-                      value={settings.address}
-                      onChange={(e) => handleSettingChange('address', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-1 mb-6 border-b border-yellow-500/20 pb-2">
+          {['general', 'appearance', 'notifications', 'security', 'payment', 'users', 'system'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium transition rounded-lg ${
+                activeTab === tab
+                  ? 'bg-yellow-500 text-black'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10'
+              }`}
+            >
+              {t.tabs[tab]}
+            </button>
+          ))}
+        </div>
+
+        {/* Settings Content */}
+        <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+          {activeTab === 'general' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.general.title}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteName}</label>
+                  <input
+                    type="text"
+                    value={settings.siteName}
+                    onChange={(e) => handleSettingChange('siteName', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.siteDescription}</label>
+                  <textarea
+                    value={settings.siteDescription}
+                    onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactEmail}</label>
+                  <input
+                    type="email"
+                    value={settings.contactEmail}
+                    onChange={(e) => handleSettingChange('contactEmail', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.contactPhone}</label>
+                  <input
+                    type="text"
+                    value={settings.contactPhone}
+                    onChange={(e) => handleSettingChange('contactPhone', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.general.address}</label>
+                  <input
+                    type="text"
+                    value={settings.address}
+                    onChange={(e) => handleSettingChange('address', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'appearance' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.appearance.title}</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.appearance.darkMode}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Switch between light and dark theme</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.darkMode} 
-                      onChange={() => handleToggleChange('darkMode')} 
-                    />
-                  </div>
+          {activeTab === 'appearance' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.appearance.title}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.primaryColor}</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={settings.primaryColor}
-                        onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
-                        className="w-12 h-12 rounded-lg border border-gray-700 cursor-pointer bg-[#0a0a0a]"
-                      />
-                      <input
-                        type="text"
-                        value={settings.primaryColor}
-                        onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
-                        className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                      />
-                    </div>
+                    <p className="text-sm font-medium text-gray-300">{t.appearance.darkMode}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable dark mode theme</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.secondaryColor}</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={settings.secondaryColor}
-                        onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
-                        className="w-12 h-12 rounded-lg border border-gray-700 cursor-pointer bg-[#0a0a0a]"
-                      />
-                      <input
-                        type="text"
-                        value={settings.secondaryColor}
-                        onChange={(e) => handleSettingChange('secondaryColor', e.target.value)}
-                        className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
-                    <select
-                      value={settings.language}
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  <ToggleSwitch
+                    value={settings.darkMode}
+                    onChange={(value) => handleToggleChange('darkMode')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowLangDropdown(!showLangDropdown)}
+                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg text-left flex items-center justify-between hover:border-yellow-500/50 transition"
                     >
-                      {SUPPORTED_LANGUAGES.map((lang) => (
-                        <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
-                      ))}
-                    </select>
+                      <span className="text-white">
+                        {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
+                      </span>
+                      <Globe size={18} className="text-gray-400 dark:text-gray-500" />
+                    </button>
+                    {showLangDropdown && (
+                      <div className="absolute right-0 mt-2 w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden">
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => handleLanguageChange(lang.code)}
+                            className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
+                              language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
+                            }`}
+                          >
+                            <span className="text-lg">{lang.flag}</span>
+                            <span>{lang.nativeName}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'notifications' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.notifications.title}</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.notifications.systemNotifications}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable or disable system notifications</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.systemNotifications} 
-                      onChange={() => handleToggleChange('systemNotifications')} 
-                    />
+          {activeTab === 'notifications' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.notifications.title}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.notifications.systemNotifications}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive system notifications</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.notifications.emailNotifications}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Receive updates via email</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.emailNotifications} 
-                      onChange={() => handleToggleChange('emailNotifications')} 
-                    />
+                  <ToggleSwitch
+                    value={settings.systemNotifications}
+                    onChange={(value) => handleToggleChange('systemNotifications')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.notifications.emailNotifications}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive email notifications</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.notifications.pushNotifications}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable push notifications</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.pushNotifications} 
-                      onChange={() => handleToggleChange('pushNotifications')} 
-                    />
+                  <ToggleSwitch
+                    value={settings.emailNotifications}
+                    onChange={(value) => handleToggleChange('emailNotifications')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.notifications.pushNotifications}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive push notifications</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Get notified about new complaints</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.complaintNotifications} 
-                      onChange={() => handleToggleChange('complaintNotifications')} 
-                    />
+                  <ToggleSwitch
+                    value={settings.pushNotifications}
+                    onChange={(value) => handleToggleChange('pushNotifications')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Get notified about new complaints</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Get notified about payment activity</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.paymentNotifications} 
-                      onChange={() => handleToggleChange('paymentNotifications')} 
-                    />
+                  <ToggleSwitch
+                    value={settings.complaintNotifications}
+                    onChange={(value) => handleToggleChange('complaintNotifications')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Get notified about payments</p>
                   </div>
+                  <ToggleSwitch
+                    value={settings.paymentNotifications}
+                    onChange={(value) => handleToggleChange('paymentNotifications')}
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'security' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.security.title}</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.security.twoFactorAuth}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require two-factor authentication</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.twoFactorAuth} 
-                      onChange={() => handleToggleChange('twoFactorAuth')} 
-                    />
-                  </div>
+          {activeTab === 'security' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.security.title}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.sessionTimeout}</label>
-                    <input
-                      type="number"
-                      value={settings.sessionTimeout}
-                      onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
+                    <p className="text-sm font-medium text-gray-300">{t.security.twoFactorAuth}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable two-factor authentication</p>
                   </div>
+                  <ToggleSwitch
+                    value={settings.twoFactorAuth}
+                    onChange={(value) => handleToggleChange('twoFactorAuth')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.maxLoginAttempts}</label>
-                    <input
-                      type="number"
-                      value={settings.maxLoginAttempts}
-                      onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
+                    <p className="text-sm font-medium text-gray-300">{t.security.requireEmailVerification}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Require email verification for new users</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.security.requireEmailVerification}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require email verification for new users</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.requireEmailVerification} 
-                      onChange={() => handleToggleChange('requireEmailVerification')} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.security.requirePhoneVerification}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require phone verification for new users</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.requirePhoneVerification} 
-                      onChange={() => handleToggleChange('requirePhoneVerification')} 
-                    />
-                  </div>
+                  <ToggleSwitch
+                    value={settings.requireEmailVerification}
+                    onChange={(value) => handleToggleChange('requireEmailVerification')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.sessionTimeout}</label>
+                  <input
+                    type="number"
+                    value={settings.sessionTimeout}
+                    onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.security.maxLoginAttempts}</label>
+                  <input
+                    type="number"
+                    value={settings.maxLoginAttempts}
+                    onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div className="pt-4 border-t border-yellow-500/20">
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="w-full px-4 py-3 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 transition font-medium flex items-center justify-center gap-2"
+                    className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2"
                   >
-                    <Key size={18} />
+                    <Lock size={16} />
                     {t.actions.changePassword}
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'payment' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.payment.title}</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.currency}</label>
-                    <select
-                      value={settings.currency}
-                      onChange={(e) => handleSettingChange('currency', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    >
-                      <option value="EGP">EGP - Egyptian Pound</option>
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.commissionRate}</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={settings.commissionRate}
-                      onChange={(e) => handleSettingChange('commissionRate', parseFloat(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.minWithdrawal}</label>
-                    <input
-                      type="number"
-                      value={settings.minWithdrawal}
-                      onChange={(e) => handleSettingChange('minWithdrawal', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.maxWithdrawal}</label>
-                    <input
-                      type="number"
-                      value={settings.maxWithdrawal}
-                      onChange={(e) => handleSettingChange('maxWithdrawal', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.paymentMethods}</label>
-                    <div className="space-y-2">
-                      {['credit_card', 'bank_transfer', 'cash', 'paypal', 'stripe'].map((method) => (
-                        <label key={method} className="flex items-center gap-3 p-2 bg-[#0a0a0a] rounded-lg border border-gray-700 cursor-pointer hover:border-yellow-500/30 transition">
-                          <input
-                            type="checkbox"
-                            checked={settings.paymentMethods.includes(method)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                handleSettingChange('paymentMethods', [...settings.paymentMethods, method]);
-                              } else {
-                                handleSettingChange('paymentMethods', settings.paymentMethods.filter(m => m !== method));
-                              }
-                            }}
-                            className="w-4 h-4 accent-yellow-500"
-                          />
-                          <span className="text-gray-300">{getPaymentMethodLabel(method)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+          {activeTab === 'payment' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.payment.title}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.currency}</label>
+                  <select
+                    value={settings.currency}
+                    onChange={(e) => handleSettingChange('currency', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  >
+                    <option value="EGP">EGP - Egyptian Pound</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.commissionRate}</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={settings.commissionRate}
+                    onChange={(e) => handleSettingChange('commissionRate', parseFloat(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.minWithdrawal}</label>
+                  <input
+                    type="number"
+                    value={settings.minWithdrawal}
+                    onChange={(e) => handleSettingChange('minWithdrawal', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.maxWithdrawal}</label>
+                  <input
+                    type="number"
+                    value={settings.maxWithdrawal}
+                    onChange={(e) => handleSettingChange('maxWithdrawal', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'users' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.users.title}</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.users.allowRegistration}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Allow new user registrations</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.allowRegistration} 
-                      onChange={() => handleToggleChange('allowRegistration')} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.users.requireApproval}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Require admin approval for new users</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.requireApproval} 
-                      onChange={() => handleToggleChange('requireApproval')} 
-                    />
-                  </div>
+          {activeTab === 'users' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.users.title}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.maxUsersPerIp}</label>
-                    <input
-                      type="number"
-                      value={settings.maxUsersPerIp}
-                      onChange={(e) => handleSettingChange('maxUsersPerIp', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
+                    <p className="text-sm font-medium text-gray-300">{t.users.allowRegistration}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Allow new user registrations</p>
                   </div>
+                  <ToggleSwitch
+                    value={settings.allowRegistration}
+                    onChange={(value) => handleToggleChange('allowRegistration')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.autoSuspendAfter}</label>
-                    <input
-                      type="number"
-                      value={settings.autoSuspendAfter}
-                      onChange={(e) => handleSettingChange('autoSuspendAfter', parseInt(e.target.value))}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
+                    <p className="text-sm font-medium text-gray-300">{t.users.requireApproval}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Require admin approval for new users</p>
                   </div>
+                  <ToggleSwitch
+                    value={settings.requireApproval}
+                    onChange={(value) => handleToggleChange('requireApproval')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.maxUsersPerIp}</label>
+                  <input
+                    type="number"
+                    value={settings.maxUsersPerIp}
+                    onChange={(e) => handleSettingChange('maxUsersPerIp', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.users.autoSuspendAfter}</label>
+                  <input
+                    type="number"
+                    value={settings.autoSuspendAfter}
+                    onChange={(e) => handleSettingChange('autoSuspendAfter', parseInt(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'system' && (
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">{t.system.title}</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.system.debugMode}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable debug mode for developers</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.debugMode} 
-                      onChange={() => handleToggleChange('debugMode')} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.system.maintenanceMode}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Put the site in maintenance mode</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.maintenanceMode} 
-                      onChange={() => handleToggleChange('maintenanceMode')} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-300">{t.system.cacheEnabled}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Enable caching for better performance</p>
-                    </div>
-                    <ToggleSwitch 
-                      value={settings.cacheEnabled} 
-                      onChange={() => handleToggleChange('cacheEnabled')} 
-                    />
-                  </div>
+          {activeTab === 'system' && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">{t.system.title}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.system.backupSchedule}</label>
-                    <select
-                      value={settings.backupSchedule}
-                      onChange={(e) => handleSettingChange('backupSchedule', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="manual">Manual Only</option>
-                    </select>
+                    <p className="text-sm font-medium text-gray-300">{t.system.debugMode}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable debug mode</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 pt-2">
+                  <ToggleSwitch
+                    value={settings.debugMode}
+                    onChange={(value) => handleToggleChange('debugMode')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.system.maintenanceMode}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable maintenance mode</p>
+                  </div>
+                  <ToggleSwitch
+                    value={settings.maintenanceMode}
+                    onChange={(value) => handleToggleChange('maintenanceMode')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{t.system.cacheEnabled}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable system cache</p>
+                  </div>
+                  <ToggleSwitch
+                    value={settings.cacheEnabled}
+                    onChange={(value) => handleToggleChange('cacheEnabled')}
+                  />
+                </div>
+                <div className="pt-4 border-t border-yellow-500/20">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={handleClearCache}
-                      className="px-4 py-3 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 transition font-medium flex items-center justify-center gap-2"
+                      className="px-4 py-2 border border-yellow-500/20 text-gray-300 rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                       {t.system.clearCache}
                     </button>
                     <button
                       onClick={handleBackup}
                       disabled={backupInProgress}
-                      className="px-4 py-3 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50"
                     >
-                      {backupInProgress ? (
-                        <>
-                          <RefreshCw size={18} className="animate-spin" />
-                          Backing up...
-                        </>
-                      ) : (
-                        <>
-                          <Download size={18} />
-                          {t.system.backupData}
-                        </>
-                      )}
+                      <Download size={16} />
+                      {backupInProgress ? 'Backing up...' : t.system.backupData}
                     </button>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Save Button */}
-            <div className="p-6 bg-[#0a0a0a] border-t border-yellow-500/20">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
-              >
-                {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-                {saving ? t.actions.saving : t.actions.save}
-              </button>
             </div>
-          </div>
+          )}
         </div>
-      </main>
+
+        {/* Save Button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
+          >
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                {t.actions.saving}
+              </>
+            ) : (
+              <>
+                <Save size={18} />
+                {t.actions.save}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* Password Change Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-yellow-500/20">
-            <div className="flex items-center justify-between p-6 border-b border-yellow-500/20">
-              <h2 className="text-xl font-semibold text-white">{t.actions.changePassword}</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-yellow-500/20 w-full max-w-md">
+            <div className="p-6 border-b border-yellow-500/20 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Lock size={20} className="text-yellow-500" />
+                {t.actions.changePassword}
+              </h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
+                className="p-1 rounded-lg hover:bg-yellow-500/10 transition text-gray-400 dark:text-gray-500 hover:text-yellow-500"
               >
                 <X size={20} />
               </button>
             </div>
+            
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.currentPassword}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.currentPassword}</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
@@ -1430,7 +1011,7 @@ const AdminSettings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.newPassword}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.newPassword}</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
@@ -1439,7 +1020,7 @@ const AdminSettings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.actions.confirmPassword}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t.actions.confirmPassword}</label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
@@ -1448,24 +1029,26 @@ const AdminSettings = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-3 p-6 border-t border-yellow-500/20">
+
+            <div className="p-6 border-t border-yellow-500/20 flex justify-end gap-3">
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition"
+                className="px-4 py-2.5 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition text-sm font-medium"
               >
                 {t.actions.cancel}
               </button>
               <button
                 onClick={handlePasswordChange}
-                className="flex-1 px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition font-medium"
+                className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition text-sm font-medium flex items-center gap-2"
               >
-                {t.actions.confirm}
+                <Key size={16} />
+                {t.actions.changePassword}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

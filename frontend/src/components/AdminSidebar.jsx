@@ -27,7 +27,8 @@ const AdminSidebar = ({
   mobileMenuOpen,
   toggleMobileMenu,
   user,
-  handleLogout
+  authUser,
+  handleLogout,
 }) => {
   const location = useLocation();
 
@@ -74,13 +75,15 @@ const AdminSidebar = ({
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 
+  const activeUser = authUser || user;
+
   const isActive = (path) => {
     return location.pathname === path;
   };
 
   const getProfileImage = () => {
-    if (user?.profileImage) {
-      return user.profileImage;
+    if (activeUser?.profileImage) {
+      return activeUser.profileImage;
     }
     return null;
   };
@@ -135,17 +138,17 @@ const AdminSidebar = ({
               {getProfileImage() ? (
                 <img
                   src={getProfileImage()}
-                  alt={user?.fullName || 'Admin'}
+                  alt={activeUser?.fullName || 'Admin'}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <UserIcon size={20} className="text-black" />
               )}
             </div>
-            {!sidebarCollapsed && user && (
+            {!sidebarCollapsed && activeUser && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-white truncate">{user.fullName || 'Admin'}</p>
-                <p className="text-xs text-gray-400 truncate">{user.email || 'admin@homelyserv.com'}</p>
+                <p className="font-medium text-white truncate">{activeUser.fullName || 'Admin'}</p>
+                <p className="text-xs text-gray-400 truncate">{activeUser.email || 'admin@homelyserv.com'}</p>
               </div>
             )}
           </div>

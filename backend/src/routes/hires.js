@@ -20,8 +20,9 @@ const router = express.Router();
 router.post('/', authenticate, sendOffer);
 
 // ============================================================
-// Get Hires for a User
+// Get Hires for a User (backward compatible)
 // ============================================================
+router.get('/my-hires', authenticate, getMyHires);
 router.get('/user/:userId', authenticate, getMyHires);
 
 // ============================================================

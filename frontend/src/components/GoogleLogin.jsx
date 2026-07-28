@@ -8,6 +8,8 @@ function GoogleLoginComponent() {
   const navigate = useNavigate();
   const { setUser, setToken } = useAuthStore();
 
+      const { setUser, setToken } = useAuthStore();
+
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       // Send the credential to your backend
@@ -16,9 +18,7 @@ function GoogleLoginComponent() {
       });
 
       if (response.data.token) {
-        localStorage.setItem('homelyserv_token', response.data.token);
-        setUser(response.data.user);
-        setToken(response.data.token);
+        useAuthStore.getState().setAuth(response.data.user, response.data.token);
         toast.success(`Welcome ${response.data.user.fullName}!`);
         
         // Redirect based on role

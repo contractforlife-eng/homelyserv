@@ -6,6 +6,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -49,7 +50,7 @@ const EmployerProfile = () => {
   const uploadProfilePhoto = useAuthStore(state => state.uploadProfilePhoto);
   const { logout: authLogout } = useAuthStore();
   
-  const [language, setLanguage] = useState('en');
+  const dashboard = useDashboard();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -120,7 +121,7 @@ const EmployerProfile = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   const checkPremiumStatus = () => {
     const userId = authUser?.id || authUser?.email;
@@ -129,13 +130,6 @@ const EmployerProfile = () => {
   };
 
   const isPremium = checkPremiumStatus();
-
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -163,17 +157,6 @@ const EmployerProfile = () => {
     });
     setImagePreview(authUser.profileImage || '');
   }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
 
   const handleLogout = () => {
     authLogout();
@@ -296,8 +279,6 @@ const EmployerProfile = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
       />

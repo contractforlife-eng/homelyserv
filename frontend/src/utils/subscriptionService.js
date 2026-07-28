@@ -1,6 +1,8 @@
 // src/utils/subscriptionService.js
 // Premium subscription service for HomelyServ - FIXED
 
+import useAuthStore from '../store/authStore';
+
 const SUBSCRIPTION_KEY = 'homelyserv_subscriptions';
 const SUBSCRIPTION_PRICES = {
   EMPLOYER: 200, // EGP per month
@@ -124,12 +126,10 @@ export const cancelSubscription = (userId) => {
  */
 const updateAllUserData = (userEmail, isPremium, userId, userRole, userFullName) => {
   try {
-    // 1. Update current session user
-    const currentUser = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
+    const currentUser = useAuthStore.getState().user || {};
     if (currentUser.email === userEmail || currentUser.id === userId) {
-      currentUser.isPremium = isPremium;
-      currentUser.subscriptionActive = isPremium;
-      localStorage.setItem('homelyserv_user', JSON.stringify(currentUser));
+      const updatedUser = { ...currentUser, isPremium, subscriptionActive: isPremium };
+      useAuthStore.setState({ user: updatedUser });
       console.log('✅ Updated current session user');
     }
 

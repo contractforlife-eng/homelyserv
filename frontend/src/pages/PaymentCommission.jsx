@@ -1,6 +1,9 @@
 // src/pages/PaymentCommission.jsx - FIXED: Only commission is charged
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
   Lock,
   Shield,
@@ -23,6 +26,7 @@ import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
   const navigate = useNavigate();
+  const dashboard = useDashboard();
   const [commissionData, setCommissionData] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -296,8 +300,13 @@ const PaymentCommission = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title="Commission Payment"
+        notificationUserId={authUser?.id || authUser?.email}
+      />
+      <div className="p-4 md:p-6">
+        <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate('/worker/offers')}
           className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
@@ -450,6 +459,7 @@ const PaymentCommission = () => {
         </div>
       )}
     </div>
+  </DashboardLayout>
   );
 };
 

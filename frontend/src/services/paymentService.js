@@ -1,210 +1,43 @@
-// src/services/paymentService.js
-// Complete Payment Service with Backend Integration - FIXED TOKEN HANDLING
-
-// ============================================================
-// API BASE URL
-// ============================================================
-const API_BASE = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api/payments`
-  : 'http://localhost:5000/api/payments';
-
-console.log('📍 Payment API Base URL:', API_BASE);
-
-// ============================================================
-// HELPER: Get valid token
-// ============================================================
-const getValidToken = () => {
-  const token = localStorage.getItem('homelyserv_token');
-  
-  if (!token) {
-    return null;
-  }
-  
-  // Validate token format (JWT has 3 parts separated by dots)
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    console.warn('⚠️ Invalid token format detected, clearing...');
-    localStorage.removeItem('homelyserv_token');
-    return null;
-  }
-  
-  // Check if token is expired
-  try {
-    const payload = JSON.parse(atob(parts[1]));
-    const exp = payload.exp || payload.expiresIn;
-    if (exp && Date.now() >= exp * 1000) {
-      console.warn('⚠️ Token expired, clearing...');
-      localStorage.removeItem('homelyserv_token');
-      return null;
-    }
-  } catch (e) {
-    console.warn('⚠️ Could not parse token payload:', e);
-  }
-  
-  return token;
-};
-
-// ============================================================
-// HELPER: Clear auth data on 401
-// ============================================================
-const clearAuthData = () => {
-  localStorage.removeItem('homelyserv_token');
-  localStorage.removeItem('homelyserv_user');
-  localStorage.removeItem('auth-storage');
-  console.log('🔑 Auth data cleared');
-};
-
-// ============================================================
-// PAYMENT INTENT - Calls Backend
-// ============================================================
+import api from '../utils/api';
+import useAuthStore from '../store/authStore';
 
 export const createPaymentIntent = async (paymentData) => {
-  try {
-    console.log('📤 Creating payment intent via backend:', paymentData);
-    console.log('📍 Full URL:', `${API_BASE}/create-payment-intent`);
-
-    // Get valid token
-    const token = getValidToken();
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-      console.log('✅ Token found, adding to headers');
-    } else {
-      console.warn('⚠️ No valid token found');
-    }
-
-    console.log('📤 Headers:', { ...headers, Authorization: token ? 'Bearer ***' : 'None' });
-
-    const response = await fetch(`${API_BASE}/create-payment-intent`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(paymentData),
-      credentials: 'include'
-    });
-
-    console.log('📥 Response status:', response.status);
-
-    // Handle 401 Unauthorized
-    if (response.status === 401) {
-      console.error('❌ Authentication failed');
-      clearAuthData();
-      
-      // Check if it's a JWT error
-      try {
-        const errorData = await response.json();
-        if (errorData.error === 'JWT_MALFORMED' || errorData.error === 'JWT_EXPIRED') {
-          console.log('🔑 Token invalid, redirecting to login...');
-          // Redirect to login after a short delay
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1000);
-          throw new Error('Your session has expired. Please log in again.');
-        }
-      } catch (e) {
-        // If response is not JSON
-        throw new Error('Authentication failed. Please log in again.');
-      }
-    }
-
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorData.message || errorMessage;
-        console.error('❌ Error response:', errorData);
-      } catch (e) {
-        try {
-          const text = await response.text();
-          console.error('❌ Error response text:', text);
-          if (text) errorMessage = text;
-        } catch (textError) {
-          // Ignore
-        }
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    console.log('✅ Payment intent created:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Payment intent error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause
-    });
-    throw error;
-  }
+  const response = await api.post('/api/payments/create-payment-intent', paymentData);
+  return response.data;
 };
 
-// ============================================================
-// PAYMOB INTEGRATION - Via Backend
-// ============================================================
-
 export const createPaymobPayment = async (amount, orderId, customerData) => {
-  console.log(`🔄 Creating Paymob payment via backend for: ${amount} EGP`);
-  console.log('📦 Customer data:', customerData);
-  
-  try {
-    const result = await createPaymentIntent({
-      amount: Number(amount),
-      paymentMethod: 'paymob',
-      userEmail: customerData?.email || 'employer@example.com',
-      workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
-      userId: customerData?.userId,
-      workerId: customerData?.workerId,
-      jobTitle: customerData?.jobTitle || 'Service',
-      employerId: customerData?.employerId,
-      employerName: customerData?.employerName || 'Employer',
-      hireId: customerData?.hireId,
-      phone: customerData?.phone || '+201234567890',
-      description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
-    });
-    
-    return result;
-  } catch (error) {
-    console.error('❌ Paymob payment creation failed:', error);
-    throw error;
-  }
+  return createPaymentIntent({
+    amount: Number(amount),
+    paymentMethod: 'paymob',
+    userEmail: customerData?.email || 'employer@example.com',
+    workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
+    userId: customerData?.userId,
+    workerId: customerData?.workerId,
+    jobTitle: customerData?.jobTitle || 'Service',
+    employerId: customerData?.employerId,
+    employerName: customerData?.employerName || 'Employer',
+    hireId: customerData?.hireId,
+    phone: customerData?.phone || '+201234567890',
+    description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
+  });
 };
 
 export const verifyPaymobPayment = async (paymentData) => {
   try {
     const { paymentId } = paymentData;
-    console.log(`🔍 Verifying Paymob payment: ${paymentId}`);
-    
-    const response = await fetch(`${API_BASE}/status/${paymentId}`, {
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.success && data.payment) {
-      console.log('✅ Paymob payment verified');
+    const response = await api.get(`/api/payments/status/${paymentId}`);
+    if (response.data.success && response.data.payment) {
       return {
         success: true,
-        payment: data.payment
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Payment not found'
+        payment: response.data.payment
       };
     }
+    return {
+      success: false,
+      error: 'Payment not found'
+    };
   } catch (error) {
-    console.error('❌ Paymob verification error:', error);
     return {
       success: false,
       error: error.message || 'Failed to verify Paymob payment'
@@ -214,25 +47,9 @@ export const verifyPaymobPayment = async (paymentData) => {
 
 export const processPaymobWebhook = async (webhookData) => {
   try {
-    console.log('📨 Processing Paymob webhook via backend');
-    
-    const response = await fetch(`${API_BASE}/webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(webhookData),
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await api.post('/api/payments/webhook', webhookData);
+    return response.data;
   } catch (error) {
-    console.error('❌ Paymob webhook error:', error);
     return {
       success: false,
       error: error.message || 'Failed to process Paymob webhook'
@@ -240,137 +57,45 @@ export const processPaymobWebhook = async (webhookData) => {
   }
 };
 
-// ============================================================
-// PAYPAL INTEGRATION - Via Backend
-// ============================================================
-
 export const createPayPalOrder = async (amount, orderId, customerData) => {
-  console.log(`🔄 Creating PayPal order via backend for: ${amount} EGP`);
-  console.log('📦 Customer data:', customerData);
-  
-  try {
-    const result = await createPaymentIntent({
-      amount: Number(amount),
-      paymentMethod: 'paypal',
-      userEmail: customerData?.email || 'employer@example.com',
-      workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
-      userId: customerData?.userId,
-      workerId: customerData?.workerId,
-      jobTitle: customerData?.jobTitle || 'Service',
-      employerId: customerData?.employerId,
-      employerName: customerData?.employerName || 'Employer',
-      hireId: customerData?.hireId,
-      description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
-    });
-    
-    return result;
-  } catch (error) {
-    console.error('❌ PayPal order creation failed:', error);
-    throw error;
-  }
+  return createPaymentIntent({
+    amount: Number(amount),
+    paymentMethod: 'paypal',
+    userEmail: customerData?.email || 'employer@example.com',
+    workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
+    userId: customerData?.userId,
+    workerId: customerData?.workerId,
+    jobTitle: customerData?.jobTitle || 'Service',
+    employerId: customerData?.employerId,
+    employerName: customerData?.employerName || 'Employer',
+    hireId: customerData?.hireId,
+    description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
+  });
 };
 
 export const capturePayPalOrder = async (orderId) => {
-  try {
-    console.log(`🔍 Capturing PayPal order via backend: ${orderId}`);
-    
-    const token = getValidToken();
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`${API_BASE}/capture-paypal/${orderId}`, {
-      method: 'POST',
-      headers,
-      credentials: 'include'
-    });
-    
-    if (response.status === 401) {
-      clearAuthData();
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1000);
-      return {
-        success: false,
-        error: 'Session expired. Please log in again.'
-      };
-    }
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ PayPal capture result:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ PayPal capture error:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to capture PayPal payment'
-    };
-  }
+  const response = await api.post(`/api/payments/capture-paypal/${orderId}`);
+  return response.data;
 };
 
 export const processPayPalWebhook = async (webhookData) => {
-  try {
-    console.log('📨 Processing PayPal webhook via backend');
-    
-    const response = await fetch(`${API_BASE}/paypal-webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(webhookData),
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('❌ PayPal webhook error:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to process PayPal webhook'
-    };
-  }
+  const response = await api.post('/api/payments/paypal-webhook', webhookData);
+  return response.data;
 };
-
-// ============================================================
-// TRANSACTION MANAGEMENT
-// ============================================================
 
 export const saveTransaction = (transaction) => {
   try {
-    // Try to save via backend
-    fetch(`${API_BASE}/complete-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        orderId: transaction.orderId,
-        transactionId: transaction.id,
-        userId: transaction.userId
-      }),
-      credentials: 'include'
+    api.post('/api/payments/complete-payment', {
+      orderId: transaction.orderId,
+      transactionId: transaction.id,
+      userId: transaction.userId
     }).catch(err => {
       console.warn('Backend save failed, using localStorage:', err);
     });
 
-    // Also save locally for offline/fallback
-    const userData = localStorage.getItem('homelyserv_user');
-    if (userData) {
+    const user = useAuthStore.getState().user;
+    if (user) {
       try {
-        const user = JSON.parse(userData);
         transaction.userId = user.id || user.email;
         transaction.userEmail = user.email;
       } catch (e) {
@@ -417,10 +142,9 @@ export const saveTransaction = (transaction) => {
     
     localStorage.setItem('all_payments', JSON.stringify(payments));
     
-    console.log('✅ Transaction saved successfully:', transaction.id);
     return true;
   } catch (error) {
-    console.error('❌ Error saving transaction:', error);
+    console.error('Error saving transaction:', error);
     return false;
   }
 };
@@ -430,7 +154,7 @@ export const getTransaction = (transactionId) => {
     const transactions = JSON.parse(localStorage.getItem('homelyserv_transactions') || '[]');
     return transactions.find(t => t.id === transactionId) || null;
   } catch (error) {
-    console.error('❌ Error getting transaction:', error);
+    console.error('Error getting transaction:', error);
     return null;
   }
 };
@@ -444,7 +168,7 @@ export const getTransactionsByUser = (userId) => {
       t.metadata?.userId === userId
     );
   } catch (error) {
-    console.error('❌ Error getting user transactions:', error);
+    console.error('Error getting user transactions:', error);
     return [];
   }
 };
@@ -455,7 +179,7 @@ export const updateTransactionStatus = (transactionId, status, metadata = {}) =>
     const transaction = transactions.find(t => t.id === transactionId);
     
     if (!transaction) {
-      console.error('❌ Transaction not found:', transactionId);
+      console.error('Transaction not found:', transactionId);
       return false;
     }
     
@@ -473,10 +197,9 @@ export const updateTransactionStatus = (transactionId, status, metadata = {}) =>
       localStorage.setItem('all_payments', JSON.stringify(payments));
     }
     
-    console.log(`✅ Transaction ${transactionId} updated to ${status}`);
     return true;
   } catch (error) {
-    console.error('❌ Error updating transaction:', error);
+    console.error('Error updating transaction:', error);
     return false;
   }
 };
@@ -502,7 +225,7 @@ export const getTransactionStats = (userId) => {
       totalAmount
     };
   } catch (error) {
-    console.error('❌ Error getting transaction stats:', error);
+    console.error('Error getting transaction stats:', error);
     return {
       total: 0,
       completed: 0,
@@ -513,13 +236,9 @@ export const getTransactionStats = (userId) => {
   }
 };
 
-// ============================================================
-// HELPER FUNCTIONS
-// ============================================================
-
 export const validateWebhookSignature = (data, secret) => {
   if (!data || !secret) {
-    console.warn('⚠️ Missing webhook data or secret');
+    console.warn('Missing webhook data or secret');
     return false;
   }
   return true;
@@ -545,139 +264,27 @@ export const isPaymentPending = (transaction) => {
          transaction?.status === 'processing' || transaction?.status === 'PROCESSING';
 };
 
-// ============================================================
-// COMPLETE PAYMENT (via Backend)
-// ============================================================
-
 export const completePayment = async (orderId, userId) => {
-  try {
-    console.log('✅ Completing payment:', { orderId, userId });
-    
-    const token = getValidToken();
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`${API_BASE}/complete-payment`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ orderId, userId }),
-      credentials: 'include'
-    });
-
-    if (response.status === 401) {
-      clearAuthData();
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1000);
-      throw new Error('Session expired. Please log in again.');
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Payment completed:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Error completing payment:', error);
-    throw error;
-  }
+  const response = await api.post('/api/payments/complete-payment', { orderId, userId });
+  return response.data;
 };
 
 export const getPaymentStatus = async (paymentId) => {
-  try {
-    console.log(`🔍 Getting payment status: ${paymentId}`);
-    
-    const response = await fetch(`${API_BASE}/status/${paymentId}`, {
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ Payment status:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Error getting payment status:', error);
-    throw error;
-  }
+  const response = await api.get(`/api/payments/status/${paymentId}`);
+  return response.data;
 };
 
 export const getUserPayments = async (userId) => {
-  try {
-    console.log(`📂 Getting payments for user: ${userId}`);
-    
-    const response = await fetch(`${API_BASE}/user/${userId}`, {
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ User payments:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Error getting user payments:', error);
-    throw error;
-  }
+  const response = await api.get(`/api/payments/user/${userId}`);
+  return response.data;
 };
 
 export const verifyPayment = async (transactionId, orderId) => {
-  try {
-    console.log(`🔍 Verifying payment:`, { transactionId, orderId });
-    
-    const token = getValidToken();
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`${API_BASE}/verify`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ transactionId, orderId }),
-      credentials: 'include'
-    });
-
-    if (response.status === 401) {
-      clearAuthData();
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1000);
-      throw new Error('Session expired. Please log in again.');
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Payment verified:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Payment verification error:', error);
-    throw error;
-  }
+  const response = await api.post('/api/payments/verify', { transactionId, orderId });
+  return response.data;
 };
 
-// ============================================================
-// EXPORT ALL FUNCTIONS
-// ============================================================
-
-export default {
+const paymentService = {
   createPaymentIntent,
   completePayment,
   getPaymentStatus,
@@ -700,3 +307,5 @@ export default {
   isPaymentPending,
   validateWebhookSignature
 };
+
+export default paymentService;

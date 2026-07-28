@@ -1,23 +1,12 @@
-// src/pages/WorkerComplaints.jsx - FIXED: Shows admin responses properly
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import WorkerSidebar from '../components/worker/WorkerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
-  Home,
   User,
-  Briefcase,
-  FileCheck,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
   X,
   AlertTriangle,
   Send,
@@ -26,25 +15,18 @@ import {
   AlertCircle,
   FileText,
   Search,
-  CreditCard,
   Shield,
-  Sparkles,
   Crown,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
 
-// Main WorkerComplaints Component - FIXED: Shows admin responses
+// Main WorkerComplaints Component
 const WorkerComplaints = () => {
-  const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const logout = useAuthStore(state => state.logout);
-  
-  const [language, setLanguage] = useState('en');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [complaints, setComplaints] = useState([]);
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,34 +40,7 @@ const WorkerComplaints = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-
-  // ============================================================
-  // TOGGLE FUNCTIONS - DEFINED AT THE TOP
-  // ============================================================
-  
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const dashboard = useDashboard();
 
   // ============================================================
   // IS PREMIUM CHECK
@@ -99,55 +54,8 @@ const WorkerComplaints = () => {
   const userIsPremium = isPremium();
 
   // ============================================================
-  // NOTIFICATION FUNCTIONS
+  // IS PREMIUM CHECK
   // ============================================================
-  
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      const userEmail = authUser?.email;
-      if (userEmail) {
-        const response = await fetch('http://localhost:5000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications || []);
-        } else if (Array.isArray(data)) {
-          setNotifications(data);
-        } else {
-          setNotifications([]);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
-
   const translations = {
     en: {
       title: 'Complaints',
@@ -279,7 +187,7 @@ const WorkerComplaints = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // Load complaints - FIXED: Loads from worker_complaints
@@ -315,47 +223,14 @@ const WorkerComplaints = () => {
     }
   };
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, []);
+useEffect(() => {
+     if (authUser) {
+       loadComplaints();
+     }
+   }, [authUser]);
 
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!isAuthenticated || !authUser) {
-      navigate('/login');
-      return;
-    }
-
-    if (authUser.role !== 'WORKER') {
-      navigate('/login');
-      return;
-    }
-
-    setLoading(false);
-  }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    if (authUser) {
-      loadComplaints();
-    }
-  }, [authUser]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  useEffect(() => {
-    let filtered = complaints;
+   useEffect(() => {
+     let filtered = complaints;
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(c => c.status === statusFilter);
@@ -476,150 +351,15 @@ const WorkerComplaints = () => {
     );
   }
 
-  if (!authUser) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300 mb-6">Please login to view your complaints</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <WorkerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="WORKER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={userIsPremium}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 overflow-hidden border-2 border-red-200 relative">
-                  {userProfileImage ? (
-                    <img 
-                      src={userProfileImage} 
-                      alt={authUser.fullName || 'Worker'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                    {authUser?.fullName || 'Worker'}
-                  </span>
-                  {userIsPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
-                >
-                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                  )}
-                </button>
-
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                      <span>{t.notifications}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6">
           {/* Page Header - RED THEME */}
           <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -964,9 +704,8 @@ const WorkerComplaints = () => {
               ))}
             </div>
           )}
-        </div>
-      </main>
-    </div>
+         </div>
+    </DashboardLayout>
   );
 };
 

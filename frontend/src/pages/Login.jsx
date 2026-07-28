@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
@@ -67,17 +68,14 @@ const redirectUser = (user) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password })
+      const response = await api.post('/api/auth/login', {
+        email,
+        password
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         setError(data.message || t('invalidCredentials'));
         setLoading(false);
         return;
@@ -86,17 +84,9 @@ const redirectUser = (user) => {
       const user = data.user;
       const token = data.token;
 
-      // Normalize role to uppercase to prevent case-mismatch routing loops
       user.role = user.role?.toUpperCase();
 
-      localStorage.setItem('homelyserv_token', token);
-
-      // Update Zustand store — user lives in memory, not localStorage
-      useAuthStore.setState({
-        user,
-        token,
-        isAuthenticated: true
-      });
+      useAuthStore.getState().setAuth(user, token);
 
       console.log('✅ Login successful:', user.fullName);
       console.log('✅ User role:', user.role);
@@ -149,22 +139,14 @@ const redirectUser = (user) => {
     setChangePasswordLoading(true);
 
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword: password,
-          newPassword
-        })
+      const response = await api.put('/api/auth/change-password', {
+        currentPassword: password,
+        newPassword
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         setChangePasswordError(data.message || t('error'));
         setChangePasswordLoading(false);
         return;

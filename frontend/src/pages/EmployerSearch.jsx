@@ -1,80 +1,43 @@
-// src/pages/EmployerSearch.jsx - COMPLETE WITH PREMIUM BADGE FIX AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { isUserPremium } from '../utils/subscriptionService';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
-import NotificationBell from '../components/NotificationBell';
+import { useDashboard } from '../components/layout/DashboardContext';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import {
-  Home,
   User,
   Briefcase,
-  FileCheck,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  X,
-  AlertTriangle,
-  Search,
-  DollarSign,
-  Clock,
-  Calendar,
-  Star,
-  MapPin,
-  Phone,
-  Mail,
-  Users,
-  Filter,
-  FileText,
   Search as SearchIcon,
-  UserCheck,
-  Building2,
-  MapPinned,
-  Languages,
-  Star as StarIcon,
-  CheckCircle,
-  Eye,
-  ChevronDown,
-  Sparkles,
-  TrendingUp,
-  Shield,
-  Award,
-  Zap,
+  DollarSign,
+  MapPin,
+  Users,
+  StarIcon,
   Heart,
   UserPlus,
-  BarChart3,
+  Eye,
+  Lock as LockIcon,
+  Crown,
   SlidersHorizontal,
-  ArrowUpDown,
-  ThumbsUp,
   LayoutGrid,
   List,
-  CreditCard,
-  Lock as LockIcon,
-  Crown
+  BarChart3
 } from 'lucide-react';
 
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import employerService from '../services/employerService';
+import hireService from '../services/hireService';
 
-// ============================================================
-// 2. MAIN EMPLOYER SEARCH COMPONENT
-// ============================================================
 const EmployerSearch = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const logout = useAuthStore(state => state.logout);
-  
-  const [language, setLanguage] = useState('en');
+
+  const dashboard = useDashboard();
+
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
@@ -84,9 +47,7 @@ const EmployerSearch = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [savedWorkers, setSavedWorkers] = useState([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const [advancedFilters, setAdvancedFilters] = useState({
     minRating: 0,
     minExperience: 0,
@@ -254,20 +215,12 @@ const EmployerSearch = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // 3. EFFECTS
   // ============================================================
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-
     const saved = localStorage.getItem('employer_saved_workers');
     if (saved) {
       setSavedWorkers(JSON.parse(saved));
@@ -296,38 +249,33 @@ const EmployerSearch = () => {
   const loadWorkersFromBackend = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/employers/search`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const response = { data: await res.json(), ok: res.ok };
-      
-      if (response.ok && response.data.success) {
-        const workers = (response.data.workers || []).map(w => ({
+      const data = await employerService.searchWorkers();
+      if (data.success) {
+        const workers = (data.workers || []).map(w => ({
           ...w,
           id: w.id || w._id,
           profileImage: isBase64Image(w.profileImage) ? '' : (w.profileImage || w.image || '')
         }));
         setAllWorkers(workers);
         setSearchLimitStatus({
-          count: response.data.searchCount || 0,
-          limit: response.data.searchLimit || 3,
-          remaining: response.data.remaining ?? 3,
-          isPremium: response.data.isPremium || false,
+          count: data.searchCount || 0,
+          limit: data.searchLimit || 3,
+          remaining: data.remaining ?? 3,
+          isPremium: data.isPremium || false,
           limitReached: false
         });
         console.log(`✅ Loaded ${workers.length} workers from backend`);
-      } else if (response.data.message && response.data.message.includes('Daily search limit reached')) {
+      } else if (data.message && data.message.includes('Daily search limit reached')) {
         setSearchLimitStatus({
-          count: response.data.searchCount || 3,
-          limit: response.data.searchLimit || 3,
+          count: data.searchCount || 3,
+          limit: data.searchLimit || 3,
           remaining: 0,
           isPremium: false,
           limitReached: true
         });
         setAllWorkers([]);
       } else {
-        throw new Error(response.data.message || 'Failed to load workers');
+        throw new Error(data.message || 'Failed to load workers');
       }
     } catch (error) {
       console.error('Error loading workers from backend:', error);
@@ -343,18 +291,18 @@ const EmployerSearch = () => {
   const loadWorkersFromStorage = () => {
     try {
       console.log('📂 Loading workers from localStorage (fallback)...');
-      
+
       const allUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
       const workers = allUsers.filter(user => user.role === 'WORKER');
-      
+
       const profiles = JSON.parse(localStorage.getItem('homelyserv_profiles') || '{}');
-      
+
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
         const workerId = worker.id || worker._id || worker.email;
         const isPremium = isUserPremium(workerId);
         const rawProfileImage = profile.profileImage || worker.profileImage || '';
-        
+
         return {
           ...worker,
           ...profile,
@@ -377,44 +325,19 @@ const EmployerSearch = () => {
           isPremium: isPremium
         };
       });
-      
+
       setAllWorkers(mergedWorkers);
       console.log(`✅ Loaded ${mergedWorkers.length} workers from localStorage (fallback)`);
-      
+
     } catch (error) {
       console.error('Error loading workers from storage:', error);
       setAllWorkers([]);
     }
   };
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   // ============================================================
   // 5. HANDLERS
   // ============================================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedJob('');
@@ -452,40 +375,31 @@ const EmployerSearch = () => {
     }
 
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          employerId: authUser.id,
-          workerId: worker.id || worker.email,
-          workerName: worker.fullName,
-          workerEmail: worker.email,
-          workerPhone: worker.phone || '',
-          workerLocation: worker.location || 'Not specified',
-          workerRating: worker.rating || 4.5,
-          workerSkills: worker.skills || [],
-          workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
-          employerName: authUser.fullName || 'Employer',
-          employerEmail: authUser.email,
-          jobTitle: worker.desiredJob || 'Service Provider',
-          agreedSalary: worker.hourlyRate || 30,
-          hourlyRate: worker.hourlyRate || 30,
-          amount: (worker.hourlyRate || 30) * 40 * 4,
-          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-          message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
-        })
+      const response = await hireService.createHire({
+        employerId: authUser.id,
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        workerPhone: worker.phone || '',
+        workerLocation: worker.location || 'Not specified',
+        workerRating: worker.rating || 4.5,
+        workerSkills: worker.skills || [],
+        workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
+        employerName: authUser.fullName || 'Employer',
+        employerEmail: authUser.email,
+        jobTitle: worker.desiredJob || 'Service Provider',
+        agreedSalary: worker.hourlyRate || 30,
+        hourlyRate: worker.hourlyRate || 30,
+        amount: (worker.hourlyRate || 30) * 40 * 4,
+        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+        message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
       });
-      const response = { data: await res.json(), ok: res.ok };
 
-      if (response.ok && response.data.success) {
+      if (response.success) {
         const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
         alert(successMsg);
       } else {
-        throw new Error(response.data.message || t.hireError);
+        throw new Error(response.message || t.hireError);
       }
     } catch (error) {
       console.error('Error hiring worker:', error);
@@ -516,60 +430,60 @@ const EmployerSearch = () => {
     console.log('📌 Selected Job:', selectedJob);
     console.log('📌 Search Query:', searchQuery);
     console.log('📌 All Workers:', allWorkers.length);
-    
+
     setLoading(true);
     setShowResults(false);
 
     setTimeout(() => {
       let results = [...allWorkers];
-      
+
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         results = results.filter(worker => {
           const nameMatch = worker.fullName?.toLowerCase().includes(query);
           const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
-          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) || 
+          const jobMatch = worker.desiredJob?.toLowerCase().includes(query) ||
                           worker.jobTitle?.toLowerCase().includes(query);
           const bioMatch = worker.bio?.toLowerCase().includes(query);
           return nameMatch || skillMatch || jobMatch || bioMatch;
         });
         console.log(`📌 After text search: ${results.length} results`);
       }
-      
+
       if (selectedJob && selectedJob !== 'All Jobs') {
         console.log(`🔍 Filtering by job: "${selectedJob}"`);
-        
+
         const selectedJobValue = JOB_OPTIONS.find(
           job => job.label.toLowerCase() === selectedJob.toLowerCase()
         )?.value;
-        
+
         console.log(`  - Selected job value: "${selectedJobValue}"`);
-        
+
         results = results.filter(worker => {
           const workerValue = worker.desiredJob?.toLowerCase() || '';
           const workerLabel = JOB_OPTIONS.find(j => j.value === worker.desiredJob)?.label?.toLowerCase() || '';
           const searchLower = selectedJob.toLowerCase();
-          
+
           const matchValue = workerValue === searchLower;
           const matchValueWithJobValue = selectedJobValue && workerValue === selectedJobValue;
           const matchLabel = workerLabel === searchLower;
           const matchPartial = workerValue.includes(searchLower) || workerLabel.includes(searchLower);
-          
+
           const isMatch = matchValue || matchValueWithJobValue || matchLabel || matchPartial;
-          
+
           if (isMatch) {
             console.log(`  ✅ Worker "${worker.fullName}" matches! (value: "${workerValue}", label: "${workerLabel}")`);
           }
-          
+
           return isMatch;
         });
-        
+
         console.log(`📌 After job filter: ${results.length} results`);
       }
-      
+
       if (selectedLocation && selectedLocation !== 'All Locations') {
         const locLower = selectedLocation.toLowerCase();
-        results = results.filter(worker => 
+        results = results.filter(worker =>
           worker.location?.toLowerCase().includes(locLower)
         );
         console.log(`📌 After location filter: ${results.length} results`);
@@ -594,7 +508,7 @@ const EmployerSearch = () => {
       }
 
       if (advancedFilters.language !== 'all') {
-        results = results.filter(worker => 
+        results = results.filter(worker =>
           worker.languages?.includes(advancedFilters.language)
         );
       }
@@ -616,7 +530,7 @@ const EmployerSearch = () => {
         default:
           break;
       }
-      
+
       console.log('✅ Final results:', results.length);
       setSearchResults(results);
       setShowResults(true);
@@ -643,86 +557,22 @@ const EmployerSearch = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        rightContent={
+          <button
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'compact' : 'grid')}
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
+          >
+            {viewMode === 'grid' && <LayoutGrid size={16} />}
+            {viewMode === 'list' && <List size={16} />}
+            {viewMode === 'compact' && <BarChart3 size={16} />}
+          </button>
+        }
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 relative">
-                  {authUser?.profileImage ? (
-                    <img 
-                      src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Employer'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User size={16} className="text-white m-1" />
-                  )}
-                  {authUser?.isPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                      <Crown size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
-                    {authUser?.fullName || 'Employer'}
-                  </span>
-                  {authUser?.isPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'compact' : 'grid')}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                {viewMode === 'grid' && <LayoutGrid size={16} />}
-                {viewMode === 'list' && <List size={16} />}
-                {viewMode === 'compact' && <BarChart3 size={16} />}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {/* Welcome Banner */}
@@ -731,15 +581,15 @@ const EmployerSearch = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
                   {authUser?.profileImage ? (
-                    <img 
-                      src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Employer'} 
+                    <img
+                      src={authUser.profileImage}
+                      alt={authUser.fullName || 'Employer'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
-                  {authUser?.isPremium && (
+                  {isUserPremium(authUser?.id || authUser?.email) && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
                       <Crown size={10} className="text-white" />
                     </div>
@@ -748,7 +598,7 @@ const EmployerSearch = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
-                    {authUser?.isPremium && (
+                    {isUserPremium(authUser?.id || authUser?.email) && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
                         Premium Verified
@@ -778,7 +628,7 @@ const EmployerSearch = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Search Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
@@ -790,7 +640,7 @@ const EmployerSearch = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
               <button
@@ -959,7 +809,7 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                   </div>
                 </div>
               )}
-              
+
               {showResults && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
               <div className="flex justify-between items-center mb-4">
@@ -968,7 +818,7 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                   {searchResults.length} worker{searchResults.length !== 1 ? 's' : ''} found
                 </span>
               </div>
-              
+
               {searchResults.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🔍</div>
@@ -982,15 +832,15 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                   </button>
                 </div>
               ) : (
-                <div className={viewMode === 'grid' 
+                <div className={viewMode === 'grid'
                   ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
-                  : viewMode === 'list' 
+                  : viewMode === 'list'
                   ? 'space-y-4'
                   : 'grid grid-cols-1 md:grid-cols-3 gap-3'
                 }>
                   {searchResults.map((worker) => (
-                    <div 
-                      key={worker.id || worker.email} 
+                    <div
+                      key={worker.id || worker.email}
                       className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition ${
                         viewMode === 'compact' ? 'p-3' : ''
                       } ${worker.isPremium ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/30/10' : ''}`}
@@ -1001,9 +851,9 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                             viewMode === 'compact' ? 'w-12 h-12' : 'w-16 h-16'
                           }`}>
                             {worker.profileImage ? (
-                              <img 
-                                src={worker.profileImage} 
-                                alt={worker.fullName} 
+                              <img
+                                src={worker.profileImage}
+                                alt={worker.fullName}
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (
@@ -1032,9 +882,9 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                                 onClick={() => toggleSaveWorker(worker.id || worker.email)}
                                 className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                               >
-                                <Heart 
-                                  size={viewMode === 'compact' ? 14 : 18} 
-                                  className={savedWorkers.includes(worker.id || worker.email) ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'} 
+                                <Heart
+                                  size={viewMode === 'compact' ? 14 : 18}
+                                  className={savedWorkers.includes(worker.id || worker.email) ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}
                                 />
                               </button>
                             </div>
@@ -1080,13 +930,6 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                         </div>
                         <div className={`flex gap-2 ${viewMode === 'list' ? 'flex-wrap items-center' : ''}`}>
                           <button
-                            onClick={() => handleHireNow(worker)}
-                            className="flex-1 px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center justify-center gap-1"
-                          >
-                            <UserPlus size={14} />
-                            {t.hireNow}
-                          </button>
-                          <button
                             onClick={() => {
                               const sanitizedWorker = { ...worker, profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage };
                               localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(sanitizedWorker));
@@ -1097,6 +940,13 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
                             <Eye size={14} />
                             {viewMode === 'compact' ? '' : t.viewProfile}
                           </button>
+                          <button
+                            onClick={() => handleHireNow(worker)}
+                            className="flex-1 px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center justify-center gap-1"
+                          >
+                            <UserPlus size={14} />
+                            {t.hireNow}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1106,8 +956,7 @@ className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

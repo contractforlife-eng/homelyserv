@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import { capturePayPalOrder } from "../services/paymentService";
+import api from '../utils/api';
 import {
   Shield,
   Star,
@@ -322,29 +323,12 @@ const Subscription = () => {
   const fetchNotifications = async () => {
     setNotificationLoading(true);
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.get('/api/notifications');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setNotifications(data.notifications || []);
-      } else if (Array.isArray(data)) {
-        setNotifications(data);
+      if (response.data.success) {
+        setNotifications(response.data.notifications || []);
+      } else if (Array.isArray(response.data)) {
+        setNotifications(response.data);
       } else {
         setNotifications([]);
       }
@@ -552,10 +536,11 @@ const Subscription = () => {
         setCurrentSubscription(subscription);
         setPaymentSuccess(true);
         
-        const userData = JSON.parse(localStorage.getItem('homelyserv_user') || '{}');
-        userData.isPremium = true;
-        userData.subscriptionActive = true;
-        localStorage.setItem('homelyserv_user', JSON.stringify(userData));
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          const updatedUser = { ...currentUser, isPremium: true, subscriptionActive: true };
+          useAuthStore.setState({ user: updatedUser });
+        }
         
         const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
         const userIndex = users.findIndex(u => u.email === authUser.email);

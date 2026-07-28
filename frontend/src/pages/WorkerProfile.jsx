@@ -1,11 +1,14 @@
 // src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDashboard } from '../components/layout/DashboardContext';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import api from '../utils/api';
+
 import {
   User,
   Mail,
@@ -30,7 +33,6 @@ import {
   Shield,
   Crown
 } from 'lucide-react';
-import api from '../utils/api';
 
 
 // Main WorkerProfile Component - RED THEME WITH WORKING NOTIFICATIONS
@@ -45,14 +47,9 @@ const WorkerProfile = () => {
   const { logout: authLogout } = useAuthStore();
 
   // Local State
-  const [language, setLanguage] = useState('en');
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  
+  const dashboard = useDashboard();
+   
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -83,12 +80,6 @@ const WorkerProfile = () => {
   // TOGGLE FUNCTIONS - DEFINED AT THE TOP
   // ============================================================
   
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
   const handleLogout = () => {
     authLogout();
     navigate('/login');
@@ -98,53 +89,6 @@ const WorkerProfile = () => {
   // NOTIFICATION FUNCTIONS
   // ============================================================
   
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const token = localStorage.getItem('homelyserv_token');
-      if (!token) {
-        setNotifications([]);
-        return;
-      }
-
-      // Check localStorage for notifications first
-      const userEmail = authUser?.email;
-      if (userEmail) {
-        const response = await fetch('http://localhost:5000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications || []);
-        } else if (Array.isArray(data)) {
-          setNotifications(data);
-        } else {
-          setNotifications([]);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -213,7 +157,7 @@ const WorkerProfile = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   const checkPremiumStatus = () => {
     const userId = authUser?.id || authUser?.email;
@@ -270,13 +214,6 @@ const WorkerProfile = () => {
   };
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
-  useEffect(() => {
     if (authLoading) return;
 
     if (!isAuthenticated || !authUser) {
@@ -305,11 +242,6 @@ const WorkerProfile = () => {
     setImagePreview(authUser.profileImage || '');
     loadRealStats(authUser.email, authUser.id);
   }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -449,58 +381,8 @@ const WorkerProfile = () => {
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
-        customNotificationComponent={
-          <div className="relative">
-            <button
-              onClick={() => {
-                setIsNotificationsOpen(!isNotificationsOpen);
-              }}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
-            >
-              <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-              {notifications && notifications.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-              )}
-            </button>
-
-            {/* Notification Dropdown */}
-            {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                  <span>{t.notifications}</span>
-                  {notificationLoading && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                  )}
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {notificationLoading ? (
-                    <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                      Loading notifications...
-                    </div>
-                  ) : notifications && notifications.length > 0 ? (
-                    notifications.map((n, index) => (
-                      <div 
-                        key={n.id || index} 
-                        className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                      >
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                      {t.noNotifications}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        }
       />
 
         <div className="p-4 md:p-6">

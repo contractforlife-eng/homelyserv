@@ -1,9 +1,10 @@
-// src/pages/AdminPayments.jsx - FULLY FIXED: Loads ALL payment sources correctly
+// src/pages/AdminPayments.jsx - MIGRATED TO DASHBOARD LAYOUT
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-
-import AdminSidebar from '../components/AdminSidebar.jsx';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import hireService from '../services/hireService';
 import {
   Home,
   Users,
@@ -12,8 +13,6 @@ import {
   LogOut,
   Menu,
   Bell,
-  ChevronLeft,
-  ChevronRight,
   Globe,
   X,
   CreditCard,
@@ -44,300 +43,6 @@ import {
 } from 'lucide-react';
 
 // ============================================================
-// NOTIFICATION BELL COMPONENT
-// ============================================================
-const NotificationBell = ({ userId, onNotificationClick }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const dropdownRef = useRef(null);
-
-  const loadNotifications = () => {
-    setLoading(true);
-    try {
-      const storedNotifications = JSON.parse(
-        localStorage.getItem('admin_notifications') || '[]'
-      );
-      
-      const sorted = storedNotifications.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      
-      setNotifications(sorted);
-      setUnreadCount(sorted.filter(n => !n.read).length);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkForNewNotifications = () => {
-    const existingNotifications = JSON.parse(
-      localStorage.getItem('admin_notifications') || '[]'
-    );
-    
-    const newNotifications = [];
-    const existingIds = new Set(existingNotifications.map(n => n.id));
-
-    // Check for new user registrations
-    const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    const recentUsers = users.filter(u => {
-      const createdAt = new Date(u.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo;
-    });
-
-    recentUsers.forEach(user => {
-      const notifId = `new_user_${user.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_user',
-          title: 'New User Registration 🎉',
-          message: `${user.fullName || 'A new user'} (${user.email}) has registered as ${user.role || 'USER'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/users',
-          icon: 'user_plus'
-        });
-      }
-    });
-
-    // Check for new payments
-    const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-    const recentPayments = allPayments.filter(p => {
-      const createdAt = new Date(p.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && p.status === 'completed';
-    });
-
-    recentPayments.forEach(payment => {
-      const notifId = `new_payment_${payment.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_payment',
-          title: 'New Payment Received 💰',
-          message: `Payment of ${payment.amount || 0} EGP from ${payment.employerName || 'Employer'}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/payments',
-          icon: 'dollar'
-        });
-      }
-    });
-
-    // Check for new complaints
-    const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
-    const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
-    const allComplaints = [...employerComplaints, ...workerComplaints];
-    const recentComplaints = allComplaints.filter(c => {
-      const createdAt = new Date(c.createdAt);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return createdAt > oneDayAgo && c.status === 'pending';
-    });
-
-    recentComplaints.forEach(complaint => {
-      const notifId = `new_complaint_${complaint.id}`;
-      if (!existingIds.has(notifId)) {
-        newNotifications.push({
-          id: notifId,
-          type: 'new_complaint',
-          title: 'New Complaint Received 📋',
-          message: `${complaint.userName || 'A user'} submitted a complaint`,
-          read: false,
-          createdAt: new Date().toISOString(),
-          link: '/admin/complaints',
-          icon: 'alert'
-        });
-      }
-    });
-
-    if (newNotifications.length > 0) {
-      const updatedNotifications = [...newNotifications, ...existingNotifications];
-      localStorage.setItem('admin_notifications', JSON.stringify(updatedNotifications));
-      loadNotifications();
-    }
-  };
-
-  const markAsRead = (notificationId) => {
-    const updated = notifications.map(n => 
-      n.id === notificationId ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem('admin_notifications', JSON.stringify(updated));
-    setUnreadCount(updated.filter(n => !n.read).length);
-  };
-
-  const markAllAsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem('admin_notifications', JSON.stringify(updated));
-    setUnreadCount(0);
-  };
-
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
-    setIsOpen(false);
-    if (notification.link) {
-      window.location.href = notification.link;
-    }
-  };
-
-  const getNotificationIcon = (type) => {
-    const icons = {
-      'new_user': <UserPlus size={16} className="text-blue-400" />,
-      'new_payment': <DollarSign size={16} className="text-green-400" />,
-      'new_complaint': <AlertTriangle size={16} className="text-red-400" />,
-      'premium_activation': <Crown size={16} className="text-yellow-400" />
-    };
-    return icons[type] || <Bell size={16} className="text-gray-400 dark:text-gray-500" />;
-  };
-
-  const getTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  useEffect(() => {
-    loadNotifications();
-    const interval = setInterval(checkForNewNotifications, 10000);
-    setTimeout(checkForNewNotifications, 1000);
-    
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors relative text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-        title="Notifications"
-      >
-        <Bell size={20} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold px-1 border-2 border-[#1a1a1a]">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-[#1a1a1a] border border-yellow-500/20 rounded-xl shadow-2xl shadow-yellow-500/10 z-50 max-h-[500px] overflow-y-auto">
-          <div className="p-3 border-b border-yellow-500/20 flex justify-between items-center sticky top-0 bg-[#1a1a1a] rounded-t-xl">
-            <h4 className="font-semibold text-white flex items-center gap-2">
-              <Bell size={16} className="text-yellow-500" />
-              Notifications
-              {unreadCount > 0 && (
-                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                  {unreadCount} new
-                </span>
-              )}
-            </h4>
-            <div className="flex items-center gap-2">
-              {notifications.length > 0 && (
-                <button 
-                  onClick={markAllAsRead}
-                  className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-                >
-                  Mark all read
-                </button>
-              )}
-              <button 
-                onClick={() => {
-                  checkForNewNotifications();
-                  loadNotifications();
-                }}
-                className="p-1 rounded hover:bg-yellow-500/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
-          </div>
-          <div className="divide-y divide-yellow-500/10">
-            {loading ? (
-              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
-                Loading notifications...
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400 dark:text-gray-500">
-                <Bell size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">New notifications will appear here</p>
-              </div>
-            ) : (
-              notifications.slice(0, 20).map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-3 hover:bg-yellow-500/5 cursor-pointer transition-colors ${
-                    !notification.read ? 'border-l-2 border-yellow-500 bg-yellow-500/5' : ''
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.read ? 'text-white font-semibold' : 'text-gray-300'}`}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                        {notification.message}
-                      </p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
-                        {getTimeAgo(notification.createdAt)}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <span className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {notifications.length > 20 && (
-            <div className="p-2 text-center border-t border-yellow-500/10">
-              <Link 
-                to="/admin/notifications" 
-                className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                View all notifications ({notifications.length})
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================================
 // MAIN ADMIN PAYMENTS COMPONENT
 // ============================================================
 const AdminPayments = () => {
@@ -361,7 +66,7 @@ const AdminPayments = () => {
       subtitle: 'Manage and verify all payments and transactions',
       stats: {
         total: 'Total Payments',
-        completed: 'Completed',
+        completed: 'Verified',
         pending: 'Pending Verification',
         failed: 'Failed',
         totalAmount: 'Total Amount'
@@ -497,7 +202,7 @@ const AdminPayments = () => {
   const t = translations[language] || translations.en;
 
   // ============================================================
-  // loadPayments - FIXED: Loads from ALL payment sources
+  // loadPayments - Loads from ALL payment sources
   // ============================================================
   const loadPayments = async () => {
     setLoading(true);
@@ -508,7 +213,6 @@ const AdminPayments = () => {
 
       // 1. Load from all_payments (main payment storage)
       const allPaymentsData = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      console.log('📋 Loaded from all_payments:', allPaymentsData.length);
       
       allPaymentsData.forEach(p => {
         if (!seenIds.has(p.id)) {
@@ -522,7 +226,6 @@ const AdminPayments = () => {
 
       // 2. Load from employer_payments
       const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      console.log('📋 Loaded from employer_payments:', employerPayments.length);
       
       employerPayments.forEach(p => {
         if (!seenIds.has(p.id)) {
@@ -536,7 +239,6 @@ const AdminPayments = () => {
 
       // 3. Load from admin_payments
       const adminPayments = JSON.parse(localStorage.getItem('admin_payments') || '[]');
-      console.log('📋 Loaded from admin_payments:', adminPayments.length);
       
       adminPayments.forEach(p => {
         if (!seenIds.has(p.id)) {
@@ -550,7 +252,6 @@ const AdminPayments = () => {
 
       // 4. Load from payment verification requests
       const verificationRequests = JSON.parse(localStorage.getItem('homelyserv_payment_verification_requests') || '[]');
-      console.log('📋 Loaded from verification_requests:', verificationRequests.length);
       
       verificationRequests.forEach(req => {
         const id = req.id || req.paymentId || 'REQ-' + Date.now();
@@ -571,7 +272,6 @@ const AdminPayments = () => {
 
       // 5. Load from worker_payments
       const workerPayments = JSON.parse(localStorage.getItem('worker_payments') || '[]');
-      console.log('📋 Loaded from worker_payments:', workerPayments.length);
       
       workerPayments.forEach(p => {
         if (!seenIds.has(p.id)) {
@@ -585,7 +285,6 @@ const AdminPayments = () => {
 
       // 6. Load from homelyserv_payments
       const homelyPayments = JSON.parse(localStorage.getItem('homelyserv_payments') || '[]');
-      console.log('📋 Loaded from homelyserv_payments:', homelyPayments.length);
       
       homelyPayments.forEach(p => {
         if (!seenIds.has(p.id)) {
@@ -598,18 +297,14 @@ const AdminPayments = () => {
       });
 
       // 7. Generate payments from offers that are completed
-      const token = localStorage.getItem('homelyserv_token');
-      const offersRes = await fetch(`${apiBase}/api/hires/offers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const allOffers = offersRes.ok ? await offersRes.json() : [];
+      const allOffersData = await hireService.getOffers();
+      const allOffers = allOffersData.offers || allOffersData || [];
       const employerOffers = Array.isArray(allOffers) ? allOffers : [];
       const completedOffers = employerOffers.filter(o => 
         o.status === 'completed' || 
         o.status === 'in_progress' || 
         o.paymentConfirmed === true
       );
-      console.log('📋 Completed offers found:', completedOffers.length);
       
       completedOffers.forEach(offer => {
         const paymentId = offer.paymentId || `PAY-${offer.id}`;
@@ -636,10 +331,6 @@ const AdminPayments = () => {
           });
         }
       });
-
-      // 8. Generate payments from hires
-      const activeHires = [];
-      console.log('📋 Active hires found:', activeHires.length);
 
       // Sort by date (newest first)
       allPayments.sort((a, b) => {
@@ -945,235 +636,174 @@ const AdminPayments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
-      <AdminSidebar
+    <DashboardLayout requiredRole="ADMIN" variant="admin">
+      <DashboardHeader
+        title={t.title}
         language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        user={user}
-        handleLogout={handleLogout}
+        onToggleLanguage={toggleLanguage}
+        notificationUserId={user?.id || user?.email}
+        isPremium={false}
+        variant="admin"
       />
 
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-[#1a1a1a] border-b border-yellow-500/20 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-yellow-500/10 transition-colors lg:hidden text-gray-400 dark:text-gray-500 hover:text-yellow-500"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <NotificationBell userId={user?.id || user?.email} />
-              
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="px-3 py-1.5 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/10 transition-colors text-gray-300 hover:text-yellow-500 flex items-center gap-2"
-              >
-                <RefreshCw size={16} />
-                {t.actions.refresh}
-              </button>
-            </div>
+      <div className="p-4 md:p-6">
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-black">{t.title}</h1>
+            <p className="text-black/70 mt-1">{t.subtitle}</p>
           </div>
-        </header>
-
-        <div className="p-4 md:p-6">
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-              <p className="text-black/70 mt-1">{t.subtitle}</p>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <CreditCard size={20} className="text-blue-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <CheckCircle size={20} className="text-green-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-yellow-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.failed}</p>
-                <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                  <AlertCircle size={20} className="text-red-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.failed}</p>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.totalAmount}</p>
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <DollarSign size={20} className="text-green-400" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1">{formatCurrency(totalAmount)}</p>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder={t.table.searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="completed">{t.filters.completed}</option>
-                  <option value="pending">{t.filters.pending}</option>
-                  <option value="failed">{t.filters.failed}</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Results Count */}
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              Showing <span className="font-semibold text-white">{filteredPayments.length}</span> payments
-            </p>
-          </div>
-
-          {/* Payments Table */}
-          {filteredPayments.length === 0 ? (
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-              <div className="text-6xl mb-4">💰</div>
-              <h3 className="text-xl font-semibold text-white mb-2">{t.noPayments}</h3>
-              <p className="text-gray-400 dark:text-gray-500">No payments found. Payments will appear here once transactions are made.</p>
-            </div>
-          ) : (
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#0a0a0a] border-b border-yellow-500/20">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Method</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-yellow-500/10">
-                    {filteredPayments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-yellow-500/5 transition">
-                        <td className="px-4 py-3 text-gray-300 text-sm font-mono">{payment.id || 'N/A'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                              <UserIcon size={12} className="text-yellow-400" />
-                            </div>
-                            <span className="text-white text-sm">
-                              {payment.workerName || payment.user || payment.employerName || 'Unknown'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-white font-medium">{formatCurrency(payment.amount || 0)}</td>
-                        <td className="px-4 py-3 text-gray-300 text-sm">{formatDate(payment.date || payment.createdAt || payment.submittedAt)}</td>
-                        <td className="px-4 py-3 text-gray-300 text-sm">{payment.paymentMethod || payment.method || 'Unknown'}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status || 'pending')}`}>
-                            {getStatusIcon(payment.status || 'pending')}
-                            {getStatusLabel(payment.status || 'pending')}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleViewDetails(payment)}
-                              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition"
-                              title="View Details"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            {(payment.status === 'pending' || payment.status === 'pending_verification') && (
-                              <>
-                                <button
-                                  onClick={() => verifyPayment(payment)}
-                                  disabled={verifyingPayment === payment.id}
-                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition flex items-center gap-1 disabled:opacity-50"
-                                >
-                                  {verifyingPayment === payment.id ? (
-                                    <RefreshCw size={12} className="animate-spin" />
-                                  ) : (
-                                    <ThumbsUp size={12} />
-                                  )}
-                                  {t.actions.verify}
-                                </button>
-                                <button
-                                  onClick={() => rejectPayment(payment)}
-                                  disabled={verifyingPayment === payment.id}
-                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition flex items-center gap-1 disabled:opacity-50"
-                                >
-                                  <ThumbsDown size={12} />
-                                  {t.actions.reject}
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
-      </main>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <CreditCard size={20} className="text-blue-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
+              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <CheckCircle size={20} className="text-green-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                <Clock size={20} className="text-yellow-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.failed}</p>
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <AlertCircle size={20} className="text-red-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-1">{stats.failed}</p>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                placeholder={t.table.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+              >
+                <option value="all">{t.filters.all}</option>
+                <option value="completed">{t.filters.completed}</option>
+                <option value="pending">{t.filters.pending}</option>
+                <option value="failed">{t.filters.failed}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            Showing <span className="font-semibold text-white">{filteredPayments.length}</span> payments
+          </p>
+        </div>
+
+        {/* Payments List */}
+        {filteredPayments.length === 0 ? (
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
+            <div className="text-6xl mb-4">💳</div>
+            <h3 className="text-xl font-semibold text-white mb-2">{t.noPayments}</h3>
+            <p className="text-gray-400 dark:text-gray-500">Payments will appear here</p>
+          </div>
+        ) : (
+          <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#0a0a0a] border-b border-yellow-500/20">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Worker</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Employer</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-yellow-500/10">
+                  {filteredPayments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-yellow-500/5 transition">
+                      <td className="px-4 py-3 text-sm text-gray-300">{payment.id}</td>
+                      <td className="px-4 py-3 text-sm text-white">{payment.workerName || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-white">{payment.employerName || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-white font-medium">{formatCurrency(payment.amount)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status)}`}>
+                          {getStatusIcon(payment.status)}
+                          {getStatusLabel(payment.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">{formatDate(payment.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => handleViewDetails(payment)}
+                            className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs hover:bg-yellow-500/30 transition flex items-center gap-1"
+                          >
+                            <Eye size={12} />
+                            {t.actions.view}
+                          </button>
+                          {(payment.status === 'pending' || payment.status === 'pending_verification') && (
+                            <>
+                              <button
+                                onClick={() => verifyPayment(payment)}
+                                disabled={verifyingPayment === payment.id}
+                                className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition disabled:opacity-50"
+                              >
+                                <CheckCircle size={12} className="inline mr-1" />
+                                {t.actions.verify}
+                              </button>
+                              <button
+                                onClick={() => rejectPayment(payment)}
+                                disabled={verifyingPayment === payment.id}
+                                className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs hover:bg-red-500/30 transition disabled:opacity-50"
+                              >
+                                <X size={12} className="inline mr-1" />
+                                {t.actions.reject}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Details Modal */}
       {showDetailsModal && selectedPayment && (
@@ -1193,11 +823,11 @@ const AdminPayments = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.paymentId}</p>
-                    <p className="text-lg font-bold text-white">{selectedPayment.id || 'N/A'}</p>
+                    <p className="text-lg font-bold text-white">{selectedPayment.id}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status || 'pending')}`}>
-                    {getStatusIcon(selectedPayment.status || 'pending')}
-                    {getStatusLabel(selectedPayment.status || 'pending')}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
+                    {getStatusIcon(selectedPayment.status)}
+                    {getStatusLabel(selectedPayment.status)}
                   </span>
                 </div>
               </div>
@@ -1206,109 +836,46 @@ const AdminPayments = () => {
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-2">
                     <UserIcon size={16} className="text-yellow-500" />
-                    {t.modal.worker}
+                    {t.modal.employer}
                   </h3>
-                  <p className="font-medium text-white">{selectedPayment.workerName || 'Unknown'}</p>
-                  {selectedPayment.workerEmail && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500">{selectedPayment.workerEmail}</p>
-                  )}
-                  {selectedPayment.workerPhone && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500">{selectedPayment.workerPhone}</p>
-                  )}
-                  {selectedPayment.jobTitle && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">{t.modal.jobTitle}: {selectedPayment.jobTitle}</p>
-                  )}
+                  <p className="font-medium text-white">{selectedPayment.employerName || 'N/A'}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{selectedPayment.employerEmail || 'N/A'}</p>
                 </div>
 
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-2">
-                    <Briefcase size={16} className="text-yellow-500" />
-                    {t.modal.employer}
+                    <UserCheck size={16} className="text-yellow-500" />
+                    {t.modal.worker}
                   </h3>
-                  <p className="font-medium text-white">{selectedPayment.employerName || selectedPayment.employer || 'Unknown'}</p>
-                  {selectedPayment.employerEmail && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500">{selectedPayment.employerEmail}</p>
-                  )}
+                  <p className="font-medium text-white">{selectedPayment.workerName || 'N/A'}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{selectedPayment.workerEmail || 'N/A'}</p>
                 </div>
-              </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.amount}</p>
-                  <p className="text-2xl font-bold text-yellow-500">{formatCurrency(selectedPayment.amount || 0)}</p>
+                  <p className="text-2xl font-bold text-white">{formatCurrency(selectedPayment.amount)}</p>
                 </div>
+
                 <div className="bg-[#0a0a0a] rounded-xl p-4">
                   <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.date}</p>
-                  <p className="font-medium text-white">{formatDate(selectedPayment.date || selectedPayment.createdAt || selectedPayment.submittedAt)}</p>
-                </div>
-                <div className="bg-[#0a0a0a] rounded-xl p-4">
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.method}</p>
-                  <p className="font-medium text-white">{selectedPayment.paymentMethod || selectedPayment.method || 'Unknown'}</p>
-                </div>
-                <div className="bg-[#0a0a0a] rounded-xl p-4">
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.reference}</p>
-                  <p className="font-medium text-white">{selectedPayment.reference || '-'}</p>
+                  <p className="font-medium text-white">{formatDate(selectedPayment.createdAt)}</p>
                 </div>
               </div>
 
-              {selectedPayment.description && (
-                <div className="mt-4 bg-[#0a0a0a] rounded-xl p-4">
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{t.modal.description}</p>
-                  <p className="font-medium text-white">{selectedPayment.description}</p>
-                </div>
-              )}
-
-              {selectedPayment.status === 'completed' && selectedPayment.contactRevealed && (
-                <div className="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
-                    <Unlock size={16} />
-                    {t.modal.contactInfo} - Unlocked
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    {selectedPayment.workerEmail && (
-                      <div>
-                        <span className="text-gray-400 dark:text-gray-500">Email:</span>
-                        <span className="text-white ml-2">{selectedPayment.workerEmail}</span>
-                      </div>
-                    )}
-                    {selectedPayment.workerPhone && (
-                      <div>
-                        <span className="text-gray-400 dark:text-gray-500">Phone:</span>
-                        <span className="text-white ml-2">{selectedPayment.workerPhone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {selectedPayment.status === 'pending' && (
-                <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-center gap-3">
-                  <Lock size={20} className="text-yellow-500" />
-                  <p className="text-sm text-yellow-400">Contact info locked - Verify payment to unlock</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-yellow-500/20">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm"
-              >
-                {t.modal.close}
-              </button>
-              
               {(selectedPayment.status === 'pending' || selectedPayment.status === 'pending_verification') && (
-                <>
+                <div className="flex flex-wrap items-center gap-3 p-6 border-t border-yellow-500/20">
+                  <button
+                    onClick={() => setShowDetailsModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm"
+                  >
+                    {t.modal.close}
+                  </button>
                   <button
                     onClick={() => verifyPayment(selectedPayment)}
                     disabled={verifyingPayment === selectedPayment.id}
                     className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {verifyingPayment === selectedPayment.id ? (
-                      <RefreshCw size={16} className="animate-spin" />
-                    ) : (
-                      <ThumbsUp size={16} />
-                    )}
+                    <CheckCircle size={16} />
                     {t.modal.verify}
                   </button>
                   <button
@@ -1316,16 +883,16 @@ const AdminPayments = () => {
                     disabled={verifyingPayment === selectedPayment.id}
                     className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <ThumbsDown size={16} />
+                    <X size={16} />
                     {t.modal.reject}
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

@@ -2,7 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import { isUserPremium } from '../utils/subscriptionService';
+import api from '../utils/api';
+import hireService from '../services/hireService';
+import employerService from '../services/employerService';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   ArrowLeft,
   User,
@@ -19,13 +25,6 @@ import {
   MessageCircle,
   UserCheck,
   Globe,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  HelpCircle,
-  LogOut,
   X,
   FileCheck,
   Search,
@@ -40,21 +39,19 @@ import {
 // Main WorkerProfileView Component
 const WorkerProfileView = () => {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
   const [user, setUser] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showContactOptions, setShowContactOptions] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contactUnlocked, setContactUnlocked] = useState(false);
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-   const fetchedRef = React.useRef(false);
-   const authUser = useAuthStore(state => state.user);
-   const authLoading = useAuthStore(state => state.isLoading);
+  const fetchedRef = React.useRef(false);
+  const authUser = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.isLoading);
 
-   const isBase64Image = (str) => typeof str === 'string' && str.startsWith('data:image/');
+  const dashboard = useDashboard();
+
+  const isBase64Image = (str) => typeof str === 'string' && str.startsWith('data:image/');
 
   const translations = {
     en: {
@@ -131,71 +128,55 @@ const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   useEffect(() => {
-      if (authLoading) {
-        return;
-      }
+    if (authLoading) {
+      return;
+    }
 
-      if (!authUser) {
-        navigate('/login');
-        return;
-      }
+    if (!authUser) {
+      navigate('/login');
+      return;
+    }
 
-      setUser(authUser);
+    setUser(authUser);
 
-      const savedLang = localStorage.getItem('homelyserv_language');
-      if (savedLang) {
-        setLanguage(savedLang);
-      }
-
-      const workerData = localStorage.getItem('homelyserv_viewing_worker');
-      if (workerData) {
-        try {
-          const parsedWorker = JSON.parse(workerData);
-          setWorker({
-            ...parsedWorker,
-            profileImage: isBase64Image(parsedWorker.profileImage) ? '' : parsedWorker.profileImage
-          });
-        } catch (error) {
-          console.error('Error parsing worker data:', error);
-          navigate('/employer-search');
-        }
-      } else {
+    const workerData = localStorage.getItem('homelyserv_viewing_worker');
+    if (workerData) {
+      try {
+        const parsedWorker = JSON.parse(workerData);
+        setWorker({
+          ...parsedWorker,
+          profileImage: isBase64Image(parsedWorker.profileImage) ? '' : parsedWorker.profileImage
+        });
+      } catch (error) {
+        console.error('Error parsing worker data:', error);
         navigate('/employer-search');
       }
+    } else {
+      navigate('/employer-search');
+    }
 
-      const sidebarState = localStorage.getItem('sidebar_collapsed');
-      if (sidebarState) {
-        setSidebarCollapsed(JSON.parse(sidebarState));
-      }
-      
-      setLoading(false);
-    }, [navigate, authLoading, authUser]);
+    setLoading(false);
+  }, [navigate, authLoading, authUser]);
 
-   useEffect(() => {
+  useEffect(() => {
     fetchedRef.current = false;
   }, [worker?.id, user?.id]);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchContactStatus = async () => {
       if (!worker || !user) return;
       if (fetchedRef.current) return;
       fetchedRef.current = true;
       try {
-        const token = localStorage.getItem('homelyserv_token');
-         const res = await fetch(`${apiBase}/api/workers/profile/${worker.id || worker._id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setContactUnlocked(data.contactUnlocked || false);
-          if (data.user) {
-            setWorker(prev => ({ ...prev, ...data.user }));
-          } else if (!data.contactUnlocked) {
-            setWorker(prev => ({ ...prev, email: '', phone: '' }));
-          }
+        const profileData = await employerService.getWorkerProfile(worker.id || worker._id);
+        setContactUnlocked(profileData.contactUnlocked || false);
+        if (profileData.user) {
+          setWorker(prev => ({ ...prev, ...profileData.user }));
+        } else if (!profileData.contactUnlocked) {
+          setWorker(prev => ({ ...prev, email: '', phone: '' }));
         }
       } catch (e) {
         console.error('Failed to fetch contact status:', e);
@@ -204,32 +185,6 @@ const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     fetchContactStatus();
   }, [worker?.id, user?.id]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-const handleLogout = () => {
-     localStorage.removeItem('homelyserv_token');
-     localStorage.removeItem('homelyserv_user');
-     navigate('/login');
-   };
-
   const handleBack = () => {
     navigate('/employer-search');
   };
@@ -237,38 +192,30 @@ const handleLogout = () => {
   const handleHireNow = async () => {
     if (!worker || !user) return;
     try {
-      const token = localStorage.getItem('homelyserv_token');
-      const res = await fetch(`${apiBase}/api/hires`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          employerId: user.id || user.email,
-          workerId: worker.id || worker.email,
-          workerName: worker.fullName,
-          workerEmail: worker.email,
-          workerPhone: worker.phone || '',
-          workerLocation: worker.location || 'Not specified',
-          workerRating: worker.rating || 4.5,
-          workerSkills: worker.skills || [],
-          workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
-          employerName: user.fullName || 'Employer',
-          employerEmail: user.email,
-          jobTitle: worker.desiredJob || 'Service Provider',
-          agreedSalary: worker.hourlyRate || 30,
-          hourlyRate: worker.hourlyRate || 30,
-          amount: (worker.hourlyRate || 30) * 40 * 4,
-          description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-          message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
-        })
-      });
-      const response = { data: await res.json(), ok: res.ok };
-      if (response.ok && response.data.success) {
+      const hireData = {
+        employerId: user.id || user.email,
+        workerId: worker.id || worker.email,
+        workerName: worker.fullName,
+        workerEmail: worker.email,
+        workerPhone: worker.phone || '',
+        workerLocation: worker.location || 'Not specified',
+        workerRating: worker.rating || 4.5,
+        workerSkills: worker.skills || [],
+        workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
+        employerName: user.fullName || 'Employer',
+        employerEmail: user.email,
+        jobTitle: worker.desiredJob || 'Service Provider',
+        agreedSalary: worker.hourlyRate || 30,
+        hourlyRate: worker.hourlyRate || 30,
+        amount: (worker.hourlyRate || 30) * 40 * 4,
+        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
+        message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
+      };
+      const response = await hireService.createHire(hireData);
+      if (response.success) {
         navigate('/employer-payments');
       } else {
-        throw new Error(response.data.message || 'Failed to send offer');
+        throw new Error(response.message || 'Failed to send offer');
       }
     } catch (error) {
       console.error('Error creating offer:', error);
@@ -310,13 +257,13 @@ const handleLogout = () => {
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('homelyserv_active_conversation', JSON.stringify(conversationData));
-      
-// Navigate to messages page
-        if (user?.role === 'EMPLOYER') {
-          navigate('/employer-messages');
-        } else {
-          navigate('/messages');
-        }
+
+      // Navigate to messages page
+      if (user?.role === 'EMPLOYER') {
+        navigate('/employer-messages');
+      } else {
+        navigate('/messages');
+      }
     }
     setShowContactOptions(false);
   };
@@ -385,79 +332,34 @@ const handleLogout = () => {
 
   if (!worker) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-        <EmployerSidebar
-          language={language}
-          sidebarCollapsed={sidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-          mobileMenuOpen={mobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-          user={user}
-          handleLogout={handleLogout}
+      <DashboardLayout requiredRole="EMPLOYER">
+        <DashboardHeader
+          title={t.title}
+          notificationUserId={authUser?.id || authUser?.email}
         />
-        <main className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
-          <div className="p-4 md:p-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
-              <div className="text-6xl mb-4">👤</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
-              <button
-                onClick={handleBack}
-                className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
-              >
-                {t.back}
-              </button>
-            </div>
+        <div className="p-4 md:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
+            <div className="text-6xl mb-4">👤</div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
+            <button
+              onClick={handleBack}
+              className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+            >
+              {t.back}
+            </button>
           </div>
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        user={user}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isUserPremium(authUser?.id || authUser?.email)}
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
-                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-600 rounded-full"></span>
-              </button>
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {/* Back Button */}
@@ -474,9 +376,9 @@ const handleLogout = () => {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="w-24 h-24 rounded-full bg-white dark:bg-gray-800/20 flex items-center justify-center flex-shrink-0">
                 {worker?.profileImage ? (
-                  <img 
-                    src={worker.profileImage} 
-                    alt={worker.fullName} 
+                  <img
+                    src={worker.profileImage}
+                    alt={worker.fullName}
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
@@ -541,7 +443,7 @@ const handleLogout = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noSkills}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{t.noSkills}</p>
                 )}
               </div>
             </div>
@@ -552,19 +454,19 @@ const handleLogout = () => {
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Details</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.experience}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t.experience}</span>
                     <span className="font-medium">{worker.experience || '0 years'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.hourlyRate}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t.hourlyRate}</span>
                     <span className="font-medium text-teal-600">EGP {worker.hourlyRate}/hr</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.availability}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t.availability}</span>
                     <span className="font-medium text-green-600">{t.available}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.memberSince}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t.memberSince}</span>
                     <span className="font-medium">June 2025</span>
                   </div>
                 </div>
@@ -626,7 +528,6 @@ const handleLogout = () => {
             </div>
           </div>
         </div>
-      </main>
 
       {/* Contact Options Modal */}
       {showContactOptions && (
@@ -638,7 +539,7 @@ const handleLogout = () => {
                 onClick={() => setShowContactOptions(false)}
                 className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition"
               >
-                <X size={20} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="space-y-3">
@@ -650,7 +551,7 @@ const handleLogout = () => {
                   <Mail size={20} className="text-teal-600" />
                   <div className="text-left">
                     <p className="font-medium text-gray-800 dark:text-white">{t.sendEmail}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{worker.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{worker.email}</p>
                   </div>
                 </button>
               )}
@@ -662,7 +563,7 @@ const handleLogout = () => {
                   <Phone size={20} className="text-teal-600" />
                   <div className="text-left">
                     <p className="font-medium text-gray-800 dark:text-white">{t.callPhone}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{worker.phone}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{worker.phone}</p>
                   </div>
                 </button>
               )}
@@ -678,8 +579,8 @@ const handleLogout = () => {
               >
                 <MessageCircle size={20} className={contactUnlocked ? 'text-teal-600' : 'text-gray-400'} />
                 <div className="text-left">
-                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}`}>{t.startChat}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{t.startChat}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {contactUnlocked ? `Start a conversation with ${worker.fullName}` : t.contactLocked}
                   </p>
                 </div>
@@ -694,7 +595,7 @@ const handleLogout = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

@@ -20,6 +20,7 @@ const DashboardHeader = ({
   onToggleMenu,
   onToggleLanguage,
   showNotifications = true,
+  showLanguageToggle = true,
   rightContent,
   userProfileImage,
   isPremium: isPremiumProp,
@@ -36,7 +37,8 @@ const DashboardHeader = ({
   viewAllText = 'View All',
   markAllReadText = 'Mark All Read',
   notificationsText = 'Notifications',
-  customNotificationComponent
+  customNotificationComponent,
+  variant = 'default'
 }) => {
   // Consume layout state from DashboardLayout context
   const dashboard = useDashboard();
@@ -56,20 +58,31 @@ const DashboardHeader = ({
 
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || 'User';
+  const isAdmin = variant === 'admin';
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+    <header className={`sticky top-0 z-30 ${
+      isAdmin 
+        ? 'bg-[#1a1a1a] border-b border-yellow-500/20' 
+        : 'bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'
+    }`}>
       <div className="flex items-center justify-between px-4 py-3">
         {/* Left side - Menu button and title */}
         <div className="flex items-center gap-3">
           <button
             onClick={handleToggleMenu}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden text-gray-600 dark:text-gray-300"
+            className={`p-2 rounded-lg transition-colors lg:hidden ${
+              isAdmin 
+                ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500' 
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+            }`}
           >
             <Menu size={20} />
           </button>
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{title}</h2>
+            <h2 className={`text-lg font-semibold hidden sm:block ${
+              isAdmin ? 'text-white' : 'text-gray-800 dark:text-white'
+            }`}>{title}</h2>
           </div>
         </div>
 
@@ -77,7 +90,11 @@ const DashboardHeader = ({
         <div className="flex items-center gap-3">
           {/* User profile section */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 overflow-hidden border-2 border-teal-200 dark:border-teal-800 relative">
+            <div className={`w-8 h-8 rounded-full overflow-hidden border-2 relative ${
+              isAdmin 
+                ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-200' 
+                : 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-200 dark:border-teal-800'
+            }`}>
               {profileImage ? (
                 <img 
                   src={profileImage} 
@@ -88,18 +105,26 @@ const DashboardHeader = ({
                 <User size={16} className="text-white m-1" />
               )}
               {isPremium && (
-                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                <div className={`absolute -bottom-0.5 -right-0.5 rounded-full p-0.5 border-2 ${
+                  isAdmin ? 'bg-yellow-500 border-[#1a1a1a]' : 'bg-yellow-500 border-white'
+                }`}>
                   <Crown size={8} className="text-white" />
                 </div>
               )}
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:inline">
+              <span className={`text-sm font-medium hidden sm:inline ${
+                isAdmin ? 'text-gray-300' : 'text-gray-700 dark:text-gray-200'
+              }`}>
                 {fullName}
               </span>
               {isPremium && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap hidden sm:inline-flex">
-                  <Crown size={10} className="text-yellow-500" />
+                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap hidden sm:inline-flex ${
+                  isAdmin 
+                    ? 'bg-yellow-900/30 border border-yellow-500/30 text-yellow-400' 
+                    : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                }`}>
+                  <Crown size={10} className={isAdmin ? 'text-yellow-400' : 'text-yellow-500'} />
                   {premiumBadgeText}
                 </span>
               )}
@@ -111,14 +136,18 @@ const DashboardHeader = ({
             <NotificationBell userId={notificationUserId} />
           )}
 
-          {/* Custom notification component (for WorkerDashboard) */}
+          {/* Custom notification component */}
           {customNotificationComponent}
 
           {/* Language toggle */}
-          {handleToggleLanguage && (
+          {showLanguageToggle && handleToggleLanguage && (
             <button
               onClick={handleToggleLanguage}
-              className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+              className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                isAdmin 
+                  ? 'border-yellow-500/20 text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500' 
+                  : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
             >
               <Globe size={16} />
               {language === 'en' ? 'العربية' : 'English'}

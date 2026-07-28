@@ -4,11 +4,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import { isUserPremium } from '../utils/subscriptionService';
-import NotificationBell from '../components/NotificationBell';
-import EmployerSidebar from '../components/employer/EmployerSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
-import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
+import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -65,15 +64,14 @@ const EmployerSettings = () => {
   const theme = useThemeStore(state => state.theme);
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const isDark = theme === 'dark';
-  
-  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
+
+  const dashboard = useDashboard();
+
   const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  
+
   // Settings state
   const [settings, setSettings] = useState({
     notifications: true,
@@ -251,18 +249,9 @@ const EmployerSettings = () => {
     }
   };
 
-  const { i18n } = useTranslation();
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   useEffect(() => {
-    const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY) || i18n.language || 'en';
-    setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-    
     // Load saved settings from backend
     const loadSettings = async () => {
       try {
@@ -284,7 +273,7 @@ const EmployerSettings = () => {
         }
       }
     };
-    
+
     loadSettings();
   }, []);
 
@@ -302,25 +291,17 @@ const EmployerSettings = () => {
     }
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   const handleLanguageChange = (langCode) => {
-    changeLanguageGlobal(langCode);
-    setLanguage(langCode);
-    setSettings(prev => ({ ...prev, language: langCode }));
+    // Use the DashboardContext's toggleLanguage via the dashboard context
+    // We need to call the context's language toggle
+    const newLang = langCode;
+    localStorage.setItem('homelyserv_language', newLang);
+    setSettings(prev => ({ ...prev, language: newLang }));
     setShowLangDropdown(false);
-  };
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
+    // Trigger a re-render by updating the document language
+    document.documentElement.lang = newLang;
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   const handleLogout = () => {
@@ -336,17 +317,17 @@ const EmployerSettings = () => {
     setSaving(true);
     setSaveSuccess(false);
     setSaveError(null);
-    
+
     const settingsToSave = { ...settings };
 
     try {
       const result = await updateSettings(settingsToSave);
-      
+
       if (result.success) {
         localStorage.setItem('employer_settings', JSON.stringify(settingsToSave));
         setSaving(false);
         setSaveSuccess(true);
-        
+
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         throw new Error(result.error || t.errorSaving);
@@ -357,29 +338,29 @@ const EmployerSettings = () => {
       localStorage.setItem('employer_settings', JSON.stringify(settingsToSave));
       setSaving(false);
       setSaveSuccess(true);
-      
+
       setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
 
   const handlePasswordChange = async () => {
     setPasswordError('');
-    
+
     if (!passwordData.currentPassword) {
       setPasswordError('Please enter your current password');
       return;
     }
-    
+
     if (passwordData.newPassword.length < 6) {
       setPasswordError(t.passwordTooShort);
       return;
     }
-    
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPasswordError(t.passwordMismatch);
       return;
     }
-    
+
     try {
       const response = await api.put('/api/auth/change-password', {
         currentPassword: passwordData.currentPassword,
@@ -407,7 +388,7 @@ const EmployerSettings = () => {
       alert('Please type DELETE to confirm');
       return;
     }
-    
+
     try {
       const response = await api.delete('/api/auth/account');
 
@@ -428,7 +409,7 @@ const EmployerSettings = () => {
   const handleExportData = async () => {
     try {
       const employerId = authUser?.id || authUser?.email;
-      
+
       // Get conversations from backend
       let conversations = [];
       let messages = {};
@@ -440,7 +421,7 @@ const EmployerSettings = () => {
       } catch (error) {
         console.error('Error loading conversations for export:', error);
       }
-      
+
       // Get messages for each conversation
       for (const conv of conversations) {
         try {
@@ -452,7 +433,7 @@ const EmployerSettings = () => {
           console.error('Error loading messages for export:', error);
         }
       }
-      
+
       const data = {
         user: authUser,
         settings: settings,
@@ -464,7 +445,7 @@ const EmployerSettings = () => {
         savedWorkers: [],
         exportDate: new Date().toISOString()
       };
-      
+
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -494,65 +475,13 @@ const EmployerSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <EmployerSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
+    <DashboardLayout requiredRole="EMPLOYER">
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
+        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        showLanguageToggle={false}
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden text-gray-600 dark:text-gray-300"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* WORKING NOTIFICATION BELL */}
-              <NotificationBell userId={authUser?.id || authUser?.email} />
-              
-              <div className="relative">
-                <button
-                  onClick={() => setShowLangDropdown(!showLangDropdown)}
-                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors flex items-center gap-2"
-                >
-                  <Globe size={16} />
-                  {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
-                </button>
-                {showLangDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
-                          language === lang.code ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
-                        }`}
-                      >
-                        <span className="text-lg">{lang.flag}</span>
-                        <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
 
         <div className="p-4 md:p-6">
           {/* Page Header */}
@@ -590,15 +519,39 @@ const EmployerSettings = () => {
                     <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
                   </div>
-                  <select
-                    value={settings.language}
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                    className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowLangDropdown(!showLangDropdown)}
+                      className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 flex items-center gap-2"
+                    >
+                      <Globe size={16} />
+                      {dashboard.language === 'ar' ? 'العربية' : 'English'}
+                    </button>
+                    {showLangDropdown && (
+                      <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                        <button
+                          key="en"
+                          onClick={() => handleLanguageChange('en')}
+                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
+                            dashboard.language === 'en' ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
+                          }`}
+                        >
+                          <span className="text-lg">🇬🇧</span>
+                          <span className="text-gray-700 dark:text-gray-300">English</span>
+                        </button>
+                        <button
+                          key="ar"
+                          onClick={() => handleLanguageChange('ar')}
+                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
+                            dashboard.language === 'ar' ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
+                          }`}
+                        >
+                          <span className="text-lg">🇸🇦</span>
+                          <span className="text-gray-700 dark:text-gray-300">العربية</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Dark Mode - uses global theme store */}
@@ -988,7 +941,6 @@ const EmployerSettings = () => {
             </div>
           </div>
         </div>
-      </main>
 
       {/* Password Change Modal */}
       {showPasswordModal && (
@@ -998,7 +950,7 @@ const EmployerSettings = () => {
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.changePassword}</h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1111,7 +1063,7 @@ const EmployerSettings = () => {
               <h3 className="text-xl font-bold text-red-600">{t.deleteAccount}</h3>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
+                className="p-1 rounded-lg hover:bg-gray-100 dark:bg-gray-700 transition text-gray-500 dark:text-gray-400"
               >
                 <X size={20} />
               </button>
@@ -1154,7 +1106,7 @@ const EmployerSettings = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

@@ -1,9 +1,9 @@
-// src/components/SocialLogin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 
@@ -58,31 +58,18 @@ export default function SocialLogin({ onLoginSuccess }) {
   const handleSocialLogin = async (provider, providerData) => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/oauth/social-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider: provider,
-          providerId: providerData.id,
-          email: providerData.email,
-          fullName: providerData.name,
-          avatar: providerData.picture
-        })
+      const response = await api.post('/api/oauth/social-login', {
+        provider: provider,
+        providerId: providerData.id,
+        email: providerData.email,
+        fullName: providerData.name,
+        avatar: providerData.picture
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
-        localStorage.setItem('homelyserv_token', data.token);
-
-        // Update Zustand store — user lives in memory, not localStorage
-        useAuthStore.setState({
-          user: data.user,
-          token: data.token,
-          isAuthenticated: true
-        });
+        useAuthStore.getState().setAuth(data.user, data.token);
 
         toast.success(`Welcome ${data.user.fullName}!`);
         
@@ -116,27 +103,14 @@ export default function SocialLogin({ onLoginSuccess }) {
   const handleGoogleSuccess = async (credentialResponse) => {
     console.log('Google login success:', credentialResponse);
     try {
-      const response = await fetch('http://localhost:5000/api/oauth/social-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          credential: credentialResponse.credential
-        })
+      const response = await api.post('/api/oauth/social-login', {
+        credential: credentialResponse.credential
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
-        localStorage.setItem('homelyserv_token', data.token);
-
-        // Update Zustand store — user lives in memory, not localStorage
-        useAuthStore.setState({
-          user: data.user,
-          token: data.token,
-          isAuthenticated: true
-        });
+        useAuthStore.getState().setAuth(data.user, data.token);
 
         toast.success(`Welcome ${data.user.fullName}!`);
         

@@ -5,6 +5,8 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { useDashboard } from '../components/layout/DashboardContext';
+import hireService from '../services/hireService';
 import {
   Home,
   User,
@@ -49,7 +51,7 @@ const EmployerDashboard = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
-  const [language, setLanguage] = useState('en');
+  const dashboard = useDashboard();
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,7 @@ const EmployerDashboard = () => {
     }
   };
 
-  const t = translations[language] || translations.en;
+  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // LOAD REAL DATA
@@ -148,34 +150,17 @@ const EmployerDashboard = () => {
       console.log('📊 Loading dashboard data for employer:', employerId);
 
       // 1. Get hires from API
-      const token = localStorage.getItem('homelyserv_token');
       let allHires = [];
       let employerOffers = [];
       try {
-        const hiresResponse = await fetch('http://localhost:5000/api/hires/offers', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (hiresResponse.ok) {
-          const hiresData = await hiresResponse.json();
-          allHires = hiresData.hires || hiresData.offers || hiresData || [];
-        }
+        const data = await hireService.getOffers();
+        allHires = data.hires || data.offers || data || [];
       } catch (error) {
         console.error('Error loading hires:', error);
       }
       try {
-        const offersResponse = await fetch('http://localhost:5000/api/hires/offers', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (offersResponse.ok) {
-          const offersData = await offersResponse.json();
-          employerOffers = offersData.offers || offersData || [];
-        }
+        const data = await hireService.getOffers();
+        employerOffers = data.offers || data || [];
       } catch (error) {
         console.error('Error loading offers:', error);
       }
@@ -308,13 +293,6 @@ const EmployerDashboard = () => {
     }
   }, [location.state, navigate, t]);
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
   // Load data when user is authenticated
   useEffect(() => {
     if (authUser) {
@@ -333,20 +311,9 @@ const EmployerDashboard = () => {
     return () => clearInterval(interval);
   }, [authUser]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   // ============================================================
   // HANDLERS
   // ============================================================
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
   const handleLogout = () => {
     useAuthStore.getState().logout();
     navigate('/login');
@@ -370,8 +337,6 @@ const EmployerDashboard = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.dashboard}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
       />

@@ -151,6 +151,7 @@ export const respondToOffer = async (req, res) => {
         data: {
           workerId: offer.workerId,
           employerId: offer.employerId,
+          offerId: offer.id,
           agreedSalary: salary,
           commissionAmount: commission,
           vatAmount: vat,
@@ -160,6 +161,8 @@ export const respondToOffer = async (req, res) => {
           status: 'offer_sent'
         }
       });
+
+      console.log(`✅ Hire created: ${hire.id} for Offer: ${offer.id}`);
 
       if (worker) {
         await createNotification(
@@ -190,6 +193,8 @@ export const respondToOffer = async (req, res) => {
 };
 
 // GET MY HIRES (backward compatible - returns array)
+// Enriches hire records with related Offer, WorkerProfile, and User data
+// so the frontend receives worker name, job title, salary, etc.
 export const getMyHires = async (req, res) => {
   try {
     let hires;
@@ -197,18 +202,77 @@ export const getMyHires = async (req, res) => {
     if (req.userRole === 'EMPLOYER') {
       hires = await prisma.hire.findMany({
         where: { employerId: req.userId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          WorkerProfile: {
+            include: {
+              User: true
+            }
+          }
+        }
       });
     } else {
       const profile = await prisma.workerProfile.findUnique({ where: { userId: req.userId } });
       if (!profile) return res.json([]);
       hires = await prisma.hire.findMany({
         where: { workerId: profile.id },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          WorkerProfile: {
+            include: {
+              User: true
+            }
+          }
+        }
       });
     }
 
-    res.json(hires);
+    // Fetch related offers to enrich hire data with worker info
+    const offerIds = hires
+      .filter(h => h.offerId)
+      .map(h => h.offerId);
+
+    let offersMap = {};
+    if (offerIds.length > 0) {
+      const offers = await prisma.offer.findMany({
+        where: { id: { in: offerIds } }
+      });
+      offers.forEach(o => { offersMap[o.id] = o; });
+    }
+
+    // Merge offer and worker profile data into hire objects
+    const enrichedHires = hires.map(hire => {
+      const offer = offersMap[hire.offerId];
+      const workerProfile = hire.WorkerProfile;
+      const workerUser = workerProfile?.User;
+
+      return {
+        ...hire,
+        // Worker info: prefer Offer denormalized snapshot, fall back to WorkerProfile/User
+        workerName: offer?.workerName || workerUser?.fullName || 'Unknown Worker',
+        workerEmail: offer?.workerEmail || workerUser?.email || '',
+        workerPhone: offer?.workerPhone || workerUser?.phone || '',
+        workerLocation: offer?.workerLocation || workerUser?.city || '',
+        workerRating: offer?.workerRating || workerProfile?.ratingAvg || null,
+        workerImage: offer?.workerImage || workerUser?.image || workerProfile?.profilePhotoUrl || '',
+        // Job and salary info: prefer Offer, fall back to Hire.agreedSalary
+        jobTitle: offer?.jobTitle || '',
+        salary: offer?.salary || hire.agreedSalary || 0,
+        // Expose hireId for frontend key/prop compatibility
+        hireId: hire.id,
+        offerId: hire.offerId,
+        workerId: hire.workerId,
+        startDate: hire.startDate,
+        status: hire.status,
+        paymentStatus: hire.paymentStatus,
+        paymentMethod: hire.paymentMethod,
+        paymentReference: hire.paymentReference,
+        createdAt: hire.createdAt,
+        updatedAt: hire.updatedAt
+      };
+    });
+
+    res.json(enrichedHires);
   } catch (error) {
     console.error('Get hires error:', error);
     res.status(500).json({ message: 'Server error' });

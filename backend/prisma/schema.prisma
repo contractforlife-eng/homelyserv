@@ -53,6 +53,7 @@ model Hire {
   id               String        @id @default(auto()) @map("_id") @db.ObjectId
   workerId         String        @db.ObjectId
   employerId       String        @db.ObjectId
+  offerId          String?       @db.ObjectId
   agreedSalary     Float
   commissionAmount Float
   vatAmount        Float
