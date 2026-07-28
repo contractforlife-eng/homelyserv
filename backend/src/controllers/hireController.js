@@ -193,8 +193,10 @@ export const respondToOffer = async (req, res) => {
 };
 
 // GET MY HIRES (backward compatible - returns array)
-// Enriches hire records with related Offer, WorkerProfile, and User data
-// so the frontend receives worker name, job title, salary, etc.
+// Step 1: Fetch raw Hire records
+// Step 2: For each Hire with an offerId, fetch the corresponding Offer
+// Step 3: For each Hire, fetch the WorkerProfile and User to get worker identity
+// Step 4: Merge all data into a single enriched object per hire
 export const getMyHires = async (req, res) => {
   try {
     let hires;
@@ -202,32 +204,22 @@ export const getMyHires = async (req, res) => {
     if (req.userRole === 'EMPLOYER') {
       hires = await prisma.hire.findMany({
         where: { employerId: req.userId },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          WorkerProfile: {
-            include: {
-              User: true
-            }
-          }
-        }
+        orderBy: { createdAt: 'desc' }
       });
     } else {
       const profile = await prisma.workerProfile.findUnique({ where: { userId: req.userId } });
       if (!profile) return res.json([]);
       hires = await prisma.hire.findMany({
         where: { workerId: profile.id },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          WorkerProfile: {
-            include: {
-              User: true
-            }
-          }
-        }
+        orderBy: { createdAt: 'desc' }
       });
     }
 
-    // Fetch related offers to enrich hire data with worker info
+    if (!hires || hires.length === 0) {
+      return res.json([]);
+    }
+
+    // Step 2: Fetch related Offers for all hires that have an offerId
     const offerIds = hires
       .filter(h => h.offerId)
       .map(h => h.offerId);
@@ -240,25 +232,47 @@ export const getMyHires = async (req, res) => {
       offers.forEach(o => { offersMap[o.id] = o; });
     }
 
-    // Merge offer and worker profile data into hire objects
+    // Step 3: Fetch WorkerProfile and User for each hire's workerId
+    const workerProfileIds = [...new Set(hires.map(h => h.workerId).filter(Boolean))];
+    let workerProfilesMap = {};
+    if (workerProfileIds.length > 0) {
+      const profiles = await prisma.workerProfile.findMany({
+        where: { id: { in: workerProfileIds } }
+      });
+      // Also fetch the User records for each profile
+      const userIds = profiles.map(p => p.userId).filter(Boolean);
+      let usersMap = {};
+      if (userIds.length > 0) {
+        const users = await prisma.user.findMany({
+          where: { id: { in: userIds } }
+        });
+        users.forEach(u => { usersMap[u.id] = u; });
+      }
+      profiles.forEach(p => {
+        workerProfilesMap[p.id] = {
+          ...p,
+          User: usersMap[p.userId] || null
+        };
+      });
+    }
+
+    // Step 4: Merge all data into enriched hire objects
     const enrichedHires = hires.map(hire => {
-      const offer = offersMap[hire.offerId];
-      const workerProfile = hire.WorkerProfile;
-      const workerUser = workerProfile?.User;
+      const offer = offersMap[hire.offerId] || null;
+      const workerProfile = workerProfilesMap[hire.workerId] || null;
+      const workerUser = workerProfile?.User || null;
 
       return {
         ...hire,
-        // Worker info: prefer Offer denormalized snapshot, fall back to WorkerProfile/User
-        workerName: offer?.workerName || workerUser?.fullName || 'Unknown Worker',
-        workerEmail: offer?.workerEmail || workerUser?.email || '',
-        workerPhone: offer?.workerPhone || workerUser?.phone || '',
-        workerLocation: offer?.workerLocation || workerUser?.city || '',
+        workerName: offer?.workerName || workerUser?.fullName || null,
+        workerEmail: offer?.workerEmail || workerUser?.email || null,
+        workerPhone: offer?.workerPhone || workerUser?.phone || null,
+        workerLocation: offer?.workerLocation || workerUser?.city || null,
         workerRating: offer?.workerRating || workerProfile?.ratingAvg || null,
-        workerImage: offer?.workerImage || workerUser?.image || workerProfile?.profilePhotoUrl || '',
-        // Job and salary info: prefer Offer, fall back to Hire.agreedSalary
-        jobTitle: offer?.jobTitle || '',
-        salary: offer?.salary || hire.agreedSalary || 0,
-        // Expose hireId for frontend key/prop compatibility
+        workerImage: offer?.workerImage || workerUser?.image || workerProfile?.profilePhotoUrl || null,
+        workerSkills: offer?.workerSkills || workerProfile?.skills || [],
+        jobTitle: offer?.jobTitle || null,
+        salary: offer?.salary || hire.agreedSalary || null,
         hireId: hire.id,
         offerId: hire.offerId,
         workerId: hire.workerId,

@@ -11,7 +11,8 @@ import {
   Star,
   DollarSign,
   Calendar,
-  Briefcase
+  Briefcase,
+  FileText
 } from 'lucide-react';
 
 const StatusBadge = ({ status, className = '', size = 'sm' }) => {
@@ -24,6 +25,7 @@ const StatusBadge = ({ status, className = '', size = 'sm' }) => {
     offered: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Offered' },
     rejected: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Rejected' },
     expired: { color: 'bg-gray-100 text-gray-800', icon: AlertCircle, label: 'Expired' },
+    offer_sent: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Pending Payment' },
     
     // Payment statuses
     completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Completed' },
