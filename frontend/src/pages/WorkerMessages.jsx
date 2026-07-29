@@ -131,26 +131,26 @@ const WorkerMessages = () => {
        return;
      }
 
-     const userId = authUser.id || authUser.email;
+      const userId = authUser.id;
 
-     const loadInitialData = async () => {
-       if (!userId) {
-         return;
-       }
+      const loadInitialData = async () => {
+        if (!userId) {
+          return;
+        }
 
-       const userConversations = await getUserConversations(userId);
-       console.log('📋 Initial load - worker conversations:', userConversations);
-       setConversations(userConversations);
-     };
+        const userConversations = await getUserConversations(userId);
+        console.log('📋 Initial load - worker conversations:', userConversations);
+        setConversations(userConversations);
+      };
 
-     loadInitialData();
-   }, [authUser, isAuthenticated, authLoading]);
+      loadInitialData();
+    }, [authUser, isAuthenticated, authLoading]);
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
     if (!authUser) return;
     
-    const userId = authUser.id || authUser.email;
+    const userId = authUser.id;
     if (!userId) return;
     
     (async () => {
@@ -165,7 +165,7 @@ const WorkerMessages = () => {
   // ============================================================
   useEffect(() => {
     if (!authUser) return;
-    const userId = authUser.id || authUser.email;
+    const userId = authUser.id;
     if (!userId) return;
 
     if (intervalRef.current) {
@@ -217,7 +217,7 @@ const WorkerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    const userId = authUser?.id || authUser?.email;
+    const userId = authUser?.id;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
     }
@@ -262,11 +262,16 @@ const WorkerMessages = () => {
       return;
     }
 
-    console.log('📤 Sending message from worker to:', selectedConv.otherUserId);
-    console.log('📤 Recipient name:', selectedConv.otherUserName);
+    console.log('📤 [Worker] Sending message');
+    console.log('  senderId:', authUser.id);
+    console.log('  senderName:', authUser.fullName);
+    console.log('  recipientId:', selectedConv.otherUserId);
+    console.log('  recipientName:', selectedConv.otherUserName);
+    console.log('  conversationId:', selectedConversationId);
+    console.log('  text:', message);
 
     const result = await sendMessage(
-      authUser.id || authUser.email,
+      authUser.id,
       authUser.fullName || 'Worker',
       'WORKER',
       selectedConv.otherUserId,
@@ -274,8 +279,10 @@ const WorkerMessages = () => {
       message
     );
 
+    console.log('📥 [Worker] sendMessage response:', result);
+
     if (result) {
-      console.log('✅ Message sent successfully');
+      console.log('✅ Message sent successfully, reloading messages...');
       await loadMessagesForConversation(selectedConversationId);
       setRefreshKey(prev => prev + 1);
       setMessage('');
@@ -290,7 +297,7 @@ const WorkerMessages = () => {
     setIsRefreshing(true);
     
     if (authUser) {
-      const userId = authUser.id || authUser.email;
+      const userId = authUser.id;
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
@@ -387,7 +394,7 @@ const WorkerMessages = () => {
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
         title={t.title}
-        notificationUserId={authUser?.id || authUser?.email}
+        notificationUserId={authUser?.id}
         isPremium={userIsPremium}
       />
 

@@ -102,40 +102,73 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
     const { senderName, senderRole, recipientId, recipientName, text } = req.body;
     const senderId = req.userId;
 
+    console.log('📨 [Backend] POST /api/chat/send');
+    console.log('  senderId:', senderId);
+    console.log('  senderRole:', senderRole);
+    console.log('  recipientId:', recipientId);
+    console.log('  recipientName:', recipientName);
+    console.log('  text:', text);
+
     if (!senderId || !recipientId || !text || !text.trim()) {
+      console.log('❌ [Backend] Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const conversationId = getConversationId(senderId, recipientId);
+    console.log('  conversationId:', conversationId);
+
     const recipientRole = resolveRecipientRole(senderRole);
 
     const message = await Message.create({
-  conversationId,
-  senderId: String(senderId),
-  senderName,
-  senderRole,
-  recipientId: String(recipientId),
-  recipientName,
-  recipientRole,
-  text: text.trim(),
-  read: false,
-  delivered: true
-});
+      conversationId,
+      senderId: String(senderId),
+      senderName,
+      senderRole,
+      recipientId: String(recipientId),
+      recipientName,
+      recipientRole,
+      text: text.trim(),
+      read: false,
+      delivered: true
+    });
 
-    return res.status(201).json(formatMessage(message));
+    console.log('✅ [Backend] Message created in MongoDB:', message._id);
+    console.log('  conversationId:', message.conversationId);
+    console.log('  senderId:', message.senderId);
+    console.log('  recipientId:', message.recipientId);
+
+    const formatted = formatMessage(message);
+    console.log('📤 [Backend] Returning formatted message:', formatted);
+
+    return res.status(201).json(formatted);
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error('❌ [Backend] Error sending message:', error);
     return res.status(500).json({ error: 'Failed to send message' });
   }
 });
 
 router.get('/messages/:conversationId', authenticate, requireConversationParticipant, async (req, res) => {
   try {
+    const conversationId = req.params.conversationId;
+    const userId = String(req.userId);
+    
+    console.log('📨 [Backend] GET /api/chat/messages/:conversationId');
+    console.log('  conversationId:', conversationId);
+    console.log('  userId:', userId);
+
     const messages = await Message.find({ 
-      conversationId: req.params.conversationId 
+      conversationId: conversationId 
     }).sort({ createdAt: 1 });
 
-    return res.json(messages.map(formatMessage));
+    console.log('📋 [Backend] Found', messages.length, 'messages for conversation:', conversationId);
+    for (const msg of messages) {
+      console.log('  -', msg._id, 'sender:', msg.senderId, 'recipient:', msg.recipientId, 'text:', msg.text.substring(0, 50));
+    }
+
+    const formatted = messages.map(formatMessage);
+    console.log('📤 [Backend] Returning', formatted.length, 'formatted messages');
+    
+    return res.json(formatted);
   } catch (error) {
     console.error('Error fetching messages:', error);
     return res.status(500).json({ error: 'Failed to fetch messages' });
@@ -263,17 +296,17 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
 
     if (!existing) {
       await Message.create({
-  conversationId,
-  senderId: String(user1Id),
-  senderName: user1Name || 'User',
-  senderRole: user1Role || 'USER',
-  recipientId: String(user2Id),
-  recipientName: user2Name || 'User',
-  recipientRole: user2Role || 'USER',
-  text: 'Start your conversation here',
-  read: true,
-  delivered: true
-});
+        conversationId,
+        senderId: String(user1Id),
+        senderName: user1Name || 'User',
+        senderRole: user1Role || 'USER',
+        recipientId: String(user2Id),
+        recipientName: user2Name || 'User',
+        recipientRole: user2Role || 'USER',
+        text: 'Start your conversation here',
+        read: true,
+        delivered: true
+      });
     }
 
     return res.json({ conversationId });

@@ -283,15 +283,15 @@ const MyHires = () => {
     setLoading(true);
 
     try {
-      const employerEmail = authUser?.email;
-      const employerId = authUser?.id || employerEmail;
+    const employerEmail = authUser?.email;
+    const employerId = authUser?.id;
 
-      if (!employerEmail) {
-        setHires([]);
-        setFilteredHires([]);
-        setLoading(false);
-        return;
-      }
+    if (!employerEmail) {
+      setHires([]);
+      setFilteredHires([]);
+      setLoading(false);
+      return;
+    }
 
       console.log('📂 Loading hires for employer:', { employerEmail, employerId });
 
@@ -352,7 +352,7 @@ const MyHires = () => {
   const createConversationForHire = async (hire) => {
     if (!hire) return;
 
-    const workerId = hire.workerId || hire.workerEmail;
+    const workerId = hire.workerId;
     const workerName = hire.workerName || 'Worker';
     const jobTitle = hire.jobTitle || 'the job';
 
@@ -361,7 +361,7 @@ const MyHires = () => {
       return false;
     }
 
-    const employerId = authUser?.id || authUser?.email;
+    const employerId = authUser?.id;
     const employerName = authUser?.fullName || 'Employer';
 
     console.log('💬 Creating conversation for hire:', { workerId, workerName, jobTitle });
@@ -451,7 +451,7 @@ const MyHires = () => {
   const handleSendMessage = async (hire) => {
     if (!hire) return;
 
-    const workerId = hire.workerId || hire.workerEmail;
+    const workerId = hire.workerId;
     const workerName = hire.workerName || 'Worker';
 
     console.log('💬 Opening chat with worker:', { workerId, workerName });
@@ -464,7 +464,7 @@ const MyHires = () => {
 
     // First, check if conversation exists by trying to send a message
     // If the conversation doesn't exist, this will create it
-    const employerId = authUser?.id || authUser?.email;
+    const employerId = authUser?.id;
     const employerName = authUser?.fullName || 'Employer';
     const jobTitle = hire.jobTitle || 'the job';
 

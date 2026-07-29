@@ -386,7 +386,7 @@ const EmployerPayments = () => {
       // Get payments from all_payments
       let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       let employerPayments = allPayments.filter((p) => {
-        const isCurrentEmployer = p.employerId === employerId || p.employerEmail === employerEmail;
+        const isCurrentEmployer = p.employerId === employerId;
         const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
         return isCurrentEmployer && isSupportedPayment;
       });
@@ -394,7 +394,7 @@ const EmployerPayments = () => {
       // Get payments from employer_payments
       let empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
       const empFiltered = empPayments.filter((p) => {
-        const isCurrentEmployer = p.employerId === employerId || p.employerEmail === authUser?.email;
+        const isCurrentEmployer = p.employerId === employerId;
         const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
         return isCurrentEmployer && isSupportedPayment;
       });
@@ -632,7 +632,7 @@ const EmployerPayments = () => {
         alert('No phone number available');
       }
     } else if (method === 'message') {
-      const workerId = payment.workerId || payment.workerEmail;
+      const workerId = payment.workerId;
       const workerName = payment.workerName || 'Worker';
       
       if (!workerId) {
@@ -640,7 +640,7 @@ const EmployerPayments = () => {
         return;
       }
       
-      const employerId = authUser?.id || authUser?.email;
+      const employerId = authUser?.id;
       const employerName = authUser?.fullName || 'Employer';
       
       try {
@@ -746,8 +746,8 @@ const EmployerPayments = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        notificationUserId={authUser?.id || authUser?.email}
-        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        notificationUserId={authUser?.id}
+        isPremium={isUserPremium(authUser?.id)}
         rightContent={
           <button
             onClick={handleRefresh}

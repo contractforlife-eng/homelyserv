@@ -88,10 +88,11 @@ const PaymentCommission = () => {
   };
 
   // Process successful payment
-  const processSuccessfulPayment = (paymentData) => {
+  const processSuccessfulPayment = async (paymentData) => {
     try {
       console.log("Commission Data:", commissionData);
       
+      // Record payment in localStorage (existing behavior)
       const result = markCommissionPaid(
         commissionData.offerId,
         commissionData.workerId,
@@ -100,6 +101,28 @@ const PaymentCommission = () => {
       );
 
       if (result.success) {
+        // Persist payment to MongoDB via Prisma (new behavior)
+        try {
+          const api = (await import('../utils/api')).default;
+          
+          await api.post('/api/commission/record', {
+            offerId: commissionData.offerId,
+            workerId: commissionData.workerId,
+            employerId: authUser?.id, // Authenticated employer
+            hireId: commissionData.hireId || null,
+            commissionAmount: commissionData.commissionAmount,
+            paymentMethod: selectedMethod,
+            transactionId: paymentData.transactionId || 'TXN-' + Date.now(),
+            fullSalary: commissionData.fullSalary
+          });
+          
+          console.log('✅ Commission payment persisted to MongoDB');
+        } catch (backendError) {
+          console.error('⚠️ Failed to persist payment to MongoDB:', backendError);
+          // Don't block the UI if backend persistence fails
+          // The localStorage record still exists for verification
+        }
+
         savePaymentReceipt(commissionData, selectedMethod, paymentData.transactionId);
         localStorage.removeItem('homelyserv_commission_payment');
         

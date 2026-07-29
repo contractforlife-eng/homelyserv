@@ -277,9 +277,9 @@ const WorkerOffers = () => {
       };
 
       // Create conversation
-      const workerId = authUser?.id || authUser?.email;
+      const workerId = authUser?.id;
       const workerName = authUser?.fullName || 'Worker';
-      const employerId = offer.employerId || offer.employerEmail;
+      const employerId = offer.employerId;
       const employerName = offer.employerName || 'Employer';
 
       if (workerId && employerId) {

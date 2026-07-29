@@ -345,7 +345,7 @@ const AdminMessages = () => {
       const message = {
         id: 'msg_' + Date.now(),
         conversationId: selectedConversation.id,
-        senderId: user?.id || user?.email,
+        senderId: user?.id,
         senderName: user?.fullName || 'Admin',
         senderEmail: user?.email || '',
         senderRole: 'ADMIN',

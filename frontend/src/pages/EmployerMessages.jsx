@@ -154,7 +154,7 @@ const EmployerMessages = () => {
       return;
     }
 
-    const userId = authUser.id || authUser.email;
+    const userId = authUser.id;
 
     const loadInitialData = async () => {
       if (!userId) {
@@ -173,7 +173,7 @@ const EmployerMessages = () => {
   useEffect(() => {
     if (!authUser) return;
     
-    const userId = authUser.id || authUser.email;
+    const userId = authUser.id;
     if (!userId) return;
     
     (async () => {
@@ -188,7 +188,7 @@ const EmployerMessages = () => {
   // ============================================================
   useEffect(() => {
     if (!authUser) return;
-    const userId = authUser.id || authUser.email;
+    const userId = authUser.id;
     if (!userId) return;
 
     if (intervalRef.current) {
@@ -259,7 +259,7 @@ const EmployerMessages = () => {
       // If no conversation exists, create one
       console.log('🔄 No conversation found, creating one...');
       const createAndOpenConversation = async () => {
-        const userId = authUser.id || authUser.email;
+        const userId = authUser.id;
         const senderName = authUser.fullName || 'Employer';
         const senderRole = 'EMPLOYER';
         const recipientId = workerId;
@@ -310,7 +310,7 @@ const EmployerMessages = () => {
     console.log('📋 Messages found:', conversationMessages);
     setMessages(conversationMessages);
     
-    const userId = authUser?.id || authUser?.email;
+    const userId = authUser?.id;
     if (userId) {
       await markMessagesAsRead(conversationId, userId);
     }
@@ -361,11 +361,16 @@ const EmployerMessages = () => {
       return;
     }
 
-    console.log('📤 Sending message from employer to:', selectedConv.otherUserId);
-    console.log('📤 Recipient name:', selectedConv.otherUserName);
+    console.log('📤 [Employer] Sending message');
+    console.log('  senderId:', authUser.id);
+    console.log('  senderName:', authUser.fullName);
+    console.log('  recipientId:', selectedConv.otherUserId);
+    console.log('  recipientName:', selectedConv.otherUserName);
+    console.log('  conversationId:', selectedConversationId);
+    console.log('  text:', message);
 
     const result = await sendMessage(
-      authUser.id || authUser.email,
+      authUser.id,
       authUser.fullName || 'Employer',
       'EMPLOYER',
       selectedConv.otherUserId,
@@ -373,8 +378,10 @@ const EmployerMessages = () => {
       message
     );
 
+    console.log('📥 [Employer] sendMessage response:', result);
+
     if (result) {
-      console.log('✅ Message sent successfully');
+      console.log('✅ Message sent successfully, reloading messages...');
       await loadMessagesForConversation(selectedConversationId);
       setRefreshKey(prev => prev + 1);
       setMessage('');
@@ -389,7 +396,7 @@ const EmployerMessages = () => {
     setIsRefreshing(true);
     
     if (authUser) {
-      const userId = authUser.id || authUser.email;
+      const userId = authUser.id;
       const updatedConversations = await getUserConversations(userId);
       setConversations(updatedConversations);
       
@@ -426,7 +433,7 @@ const EmployerMessages = () => {
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
         title={t.title}
-        notificationUserId={authUser?.id || authUser?.email}
+        notificationUserId={authUser?.id}
         isPremium={userIsPremium}
         rightContent={
           <button

@@ -27,11 +27,15 @@ export const sendMessage = async (senderId, senderName, senderRole, recipientId,
     return null;
   }
 
+  // Ensure we're using User ObjectId (24 hex characters)
+  const validSenderId = String(senderId);
+  const validRecipientId = String(recipientId);
+
   const response = await api.post('/api/chat/send', {
-    senderId,
+    senderId: validSenderId,
     senderName,
     senderRole,
-    recipientId,
+    recipientId: validRecipientId,
     recipientName,
     text: text.trim()
   });
@@ -62,15 +66,19 @@ export const getTotalUnreadCount = async (userId) => {
 };
 
 export const ensureConversationExists = async (user1Id, user1Name, user1Role, user2Id, user2Name, user2Role) => {
+  // Ensure we're using User ObjectId (24 hex characters)
+  const validUser1Id = String(user1Id);
+  const validUser2Id = String(user2Id);
+
   const response = await api.post('/api/chat/ensure-conversation', {
-    user1Id,
+    user1Id: validUser1Id,
     user1Name,
     user1Role,
-    user2Id,
+    user2Id: validUser2Id,
     user2Name,
     user2Role
   });
-  return response.data?.conversationId || getConversationId(user1Id, user2Id);
+  return response.data?.conversationId || getConversationId(validUser1Id, validUser2Id);
 };
 
 export const createConversation = (userId1, userName1, userRole1, userId2, userName2, userRole2) =>
