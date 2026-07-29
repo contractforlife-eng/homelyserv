@@ -301,6 +301,7 @@ export const getMyOffers = async (req, res) => {
     if (req.userRole === 'EMPLOYER') {
       offers = await prisma.offer.findMany({
         where: { employerId: req.userId },
+        include: { Worker: true },
         orderBy: { createdAt: 'desc' }
       });
     } else {
@@ -308,11 +309,19 @@ export const getMyOffers = async (req, res) => {
       if (!profile) return res.json([]);
       offers = await prisma.offer.findMany({
         where: { workerId: profile.id },
+        include: { Worker: true },
         orderBy: { createdAt: 'desc' }
       });
     }
 
-    res.json(offers);
+    // Transform offers to use User._id as workerId while preserving WorkerProfile._id
+    const transformedOffers = offers.map(offer => ({
+      ...offer,
+      workerId: offer.Worker?.userId || offer.workerId,
+      workerProfileId: offer.workerId
+    }));
+
+    res.json(transformedOffers);
   } catch (error) {
     console.error('Get offers error:', error);
     res.status(500).json({ message: 'Server error' });

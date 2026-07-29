@@ -369,6 +369,12 @@ const EmployerMessages = () => {
     console.log('  conversationId:', selectedConversationId);
     console.log('  text:', message);
 
+    console.log('=== DEBUG ===');
+    console.log('selectedConv.otherUserId:', selectedConv.otherUserId);
+    console.log('selectedConv:', selectedConv);
+    console.log('typeof selectedConv.otherUserId:', typeof selectedConv.otherUserId);
+    console.log('=== END DEBUG ===');
+
     const result = await sendMessage(
       authUser.id,
       authUser.fullName || 'Employer',

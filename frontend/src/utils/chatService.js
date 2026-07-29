@@ -31,14 +31,20 @@ export const sendMessage = async (senderId, senderName, senderRole, recipientId,
   const validSenderId = String(senderId);
   const validRecipientId = String(recipientId);
 
-  const response = await api.post('/api/chat/send', {
+  const requestBody = {
     senderId: validSenderId,
     senderName,
     senderRole,
     recipientId: validRecipientId,
     recipientName,
     text: text.trim()
-  });
+  };
+
+  console.log('=== DEBUG chatService ===');
+  console.log('Request body:', requestBody);
+  console.log('=== END DEBUG ===');
+
+  const response = await api.post('/api/chat/send', requestBody);
 
   return response.data;
 };

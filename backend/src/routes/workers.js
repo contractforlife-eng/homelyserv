@@ -30,7 +30,12 @@ router.get('/profile/:userId', authenticate, async (req, res) => {
     const requesterRole = req.userRole;
     
     if (requesterRole === 'EMPLOYER') {
-      contactUnlocked = await canContactWorker(requesterId, userObj.id);
+      // Convert User._id to WorkerProfile._id for payment check
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { userId: String(userObj.id) }
+      });
+      const workerProfileId = workerProfile?.id || userObj.id;
+      contactUnlocked = await canContactWorker(requesterId, workerProfileId);
     } else if (requesterRole === 'WORKER' || requesterRole === 'ADMIN') {
       contactUnlocked = true;
     } else if (String(requesterId) === String(userObj.id)) {

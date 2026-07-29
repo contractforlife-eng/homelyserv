@@ -3,6 +3,7 @@ import express from 'express';
 import Message from '../models/Message.js';
 import { authenticate } from '../middleware/auth.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
+import prisma from '../lib/prisma.js';
 
 const router = express.Router();
 
@@ -38,7 +39,15 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(400).json({ error: 'Missing recipient' });
     }
 
-    const canContact = await canContactWorker(employerId, recipientId);
+    // Convert User._id to WorkerProfile._id for payment check
+    const workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId: String(recipientId) }
+    });
+
+    const workerProfileId = workerProfile?.id || recipientId;
+
+    const canContact = await canContactWorker(employerId, workerProfileId);
+
     if (!canContact) {
       return res.status(403).json({ error: 'Payment required to contact this worker.' });
     }
@@ -99,25 +108,27 @@ const requireConversationParticipant = async (req, res, next) => {
 
 router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
   try {
+    console.log('=== DEBUG POST /send START ===');
+    console.log('req.body:', req.body);
+    console.log('req.body.recipientId:', req.body.recipientId);
+    console.log('typeof req.body.recipientId:', typeof req.body.recipientId);
+    console.log('=== END DEBUG ===');
+
     const { senderName, senderRole, recipientId, recipientName, text } = req.body;
     const senderId = req.userId;
 
-    console.log('📨 [Backend] POST /api/chat/send');
-    console.log('  senderId:', senderId);
-    console.log('  senderRole:', senderRole);
-    console.log('  recipientId:', recipientId);
-    console.log('  recipientName:', recipientName);
-    console.log('  text:', text);
-
     if (!senderId || !recipientId || !text || !text.trim()) {
-      console.log('❌ [Backend] Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const conversationId = getConversationId(senderId, recipientId);
-    console.log('  conversationId:', conversationId);
 
     const recipientRole = resolveRecipientRole(senderRole);
+
+    console.log('=== DEBUG BEFORE Message.create ===');
+    console.log('recipientId:', recipientId);
+    console.log('conversationId:', conversationId);
+    console.log('=== END DEBUG ===');
 
     const message = await Message.create({
       conversationId,
@@ -132,17 +143,16 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
       delivered: true
     });
 
-    console.log('✅ [Backend] Message created in MongoDB:', message._id);
-    console.log('  conversationId:', message.conversationId);
-    console.log('  senderId:', message.senderId);
-    console.log('  recipientId:', message.recipientId);
+    console.log('=== DEBUG AFTER Message.create ===');
+    console.log('savedMessage.recipientId:', message.recipientId);
+    console.log('savedMessage.conversationId:', message.conversationId);
+    console.log('=== END DEBUG ===');
 
     const formatted = formatMessage(message);
-    console.log('📤 [Backend] Returning formatted message:', formatted);
 
     return res.status(201).json(formatted);
   } catch (error) {
-    console.error('❌ [Backend] Error sending message:', error);
+    console.error('Error sending message:', error);
     return res.status(500).json({ error: 'Failed to send message' });
   }
 });
@@ -151,23 +161,13 @@ router.get('/messages/:conversationId', authenticate, requireConversationPartici
   try {
     const conversationId = req.params.conversationId;
     const userId = String(req.userId);
-    
-    console.log('📨 [Backend] GET /api/chat/messages/:conversationId');
-    console.log('  conversationId:', conversationId);
-    console.log('  userId:', userId);
 
-    const messages = await Message.find({ 
-      conversationId: conversationId 
+    const messages = await Message.find({
+      conversationId: conversationId
     }).sort({ createdAt: 1 });
 
-    console.log('📋 [Backend] Found', messages.length, 'messages for conversation:', conversationId);
-    for (const msg of messages) {
-      console.log('  -', msg._id, 'sender:', msg.senderId, 'recipient:', msg.recipientId, 'text:', msg.text.substring(0, 50));
-    }
-
     const formatted = messages.map(formatMessage);
-    console.log('📤 [Backend] Returning', formatted.length, 'formatted messages');
-    
+
     return res.json(formatted);
   } catch (error) {
     console.error('Error fetching messages:', error);
