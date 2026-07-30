@@ -209,13 +209,15 @@ const EmployerDashboard = () => {
         console.error('Error getting unread messages:', error);
       }
 
-      // 5. Get total workers (from users)
-      const users = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-      const totalWorkers = users.filter(u => u.role === 'WORKER').length;
+      // 5. Get total workers - removed localStorage dependency
+      // Note: totalWorkers stat requires a backend endpoint to count all workers
+      // Setting to 0 until backend endpoint is available
+      const totalWorkers = 0;
 
-      // 6. Get saved workers
-      const savedWorkers = JSON.parse(localStorage.getItem('employer_saved_workers') || '[]');
-      const savedWorkerIds = savedWorkers.filter(w => w.employerId === employerId || w.employerEmail === employerEmail);
+      // 6. Get saved workers - removed localStorage dependency
+      // Note: savedWorkers stat requires a backend endpoint
+      // Setting to 0 until backend endpoint is available
+      const savedWorkerIds = [];
 
       // 7. Generate recent activity
       const activities = [];

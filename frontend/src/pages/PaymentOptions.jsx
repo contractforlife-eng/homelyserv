@@ -5,7 +5,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import hireService from '../services/hireService';
 import {
@@ -195,8 +195,7 @@ const PaymentOptions = () => {
         return Number(pendingPayment.commission);
       }
       if (Number(pendingPayment.fullSalary) > 0) {
-        const percentage = Number(pendingPayment.feePercentage) || 15;
-        return (Number(pendingPayment.fullSalary) * percentage) / 100;
+        return (Number(pendingPayment.fullSalary) * 0.15);
       }
     }
 
@@ -260,19 +259,25 @@ const PaymentOptions = () => {
   // ============================================================
   // PROCESS SUCCESSFUL PAYMENT
   // ============================================================
-  const processSuccessfulPayment = (paymentData) => {
+  const processSuccessfulPayment = async (paymentData) => {
     try {
       console.log('✅ Processing successful payment:', paymentData);
       const total = calculateTotal();
       
-      // Save hire record
-      const hireId = saveHireRecord(workerData, authUser, {
-        amount: total,
-        paymentId: paymentData?.paymentId || paymentData?.transactionId,
-        transactionId: paymentData?.transactionId || 'TXN-' + Date.now()
-      });
+      // Get hireId from pendingPayment (should be set after worker accepts)
+      const hireId = pendingPayment?.hireId;
+      
+      if (!hireId) {
+        throw new Error('Hire ID not found. Payment cannot be processed.');
+      }
 
-      // Update offer status
+      // Notify backend to update Hire & Offer payment status
+      try {
+        await completePayment(paymentData?.orderId || paymentData?.paymentId || paymentData?.transactionId, authUser?.id);
+      } catch (err) {
+        console.warn('Backend complete-payment call failed:', err);
+      }
+      
       if (pendingPayment?.offerId) {
         updateOfferStatus(pendingPayment.offerId, 'hired', hireId);
       }
@@ -487,6 +492,7 @@ const PaymentOptions = () => {
         employerId: authUser?.id || authUser?.email,
         employerName: authUser?.fullName || 'Employer',
         hireId: pendingPayment?.hireId,
+        offerId: pendingPayment?.offerId,
         description: pendingPayment?.description || `Commission for hiring ${workerData?.workerName || 'worker'}`
       };
 
@@ -609,22 +615,16 @@ const PaymentOptions = () => {
       setSidebarCollapsed(JSON.parse(sidebarState));
     }
 
-    const selectedWorker = localStorage.getItem('homelyserv_selected_worker');
-    if (selectedWorker) {
-      try {
-        setWorkerData(JSON.parse(selectedWorker));
-      } catch (error) {
-        console.error('Error parsing worker data:', error);
-      }
+    // Get worker data from location state (passed from EmployerPayments)
+    const workerFromState = location.state?.worker;
+    if (workerFromState) {
+      setWorkerData(workerFromState);
     }
     
-    const savedPendingPayment = localStorage.getItem('homelyserv_pending_payment');
-    if (savedPendingPayment) {
-      try {
-        setPendingPayment(JSON.parse(savedPendingPayment));
-      } catch (error) {
-        console.error('Error parsing pending payment data:', error);
-      }
+    // Get pending payment from location state (passed from EmployerPayments)
+    const pendingFromState = location.state?.pendingPayment;
+    if (pendingFromState) {
+      setPendingPayment(pendingFromState);
     }
 
     setLoading(false);

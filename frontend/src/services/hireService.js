@@ -10,6 +10,11 @@ export const getMyHires = async () => {
   return response.data;
 };
 
+export const getAllHires = async () => {
+  const response = await api.get('/api/hires/all');
+  return response.data;
+};
+
 export const getOffersForUser = async (userId) => {
   const response = await api.get(`/api/hires/offers?userId=${userId}`);
   return response.data;
@@ -25,10 +30,16 @@ export const updateOfferStatus = async (offerId, status) => {
   return response.data;
 };
 
-export const createHire = async (hireData) => {
-  const response = await api.post('/api/hires', hireData);
+// Note: Despite the name, this creates an OFFER (not a Hire)
+// The backend endpoint /api/hires calls sendOffer controller which creates prisma.offer
+// A Hire is only created when the worker accepts the offer via respondToOffer()
+export const sendOffer = async (offerData) => {
+  const response = await api.post('/api/hires', offerData);
   return response.data;
 };
+
+// Alias for backward compatibility
+export const createHire = sendOffer;
 
 export const updateHireStatus = async (hireId, status) => {
   const response = await api.put(`/api/hires/${hireId}/status`, { status });
@@ -66,10 +77,12 @@ export const rejectOffer = async (offerId) => {
 const hireService = {
   getOffers,
   getMyHires,
+  getAllHires,
   getOffersForUser,
   respondToOffer,
   updateOfferStatus,
-  createHire,
+  sendOffer,
+  createHire, // Alias for backward compatibility
   updateHireStatus,
   getHireById,
   cancelHire,

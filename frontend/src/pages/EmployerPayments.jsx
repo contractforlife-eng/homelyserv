@@ -7,6 +7,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { sendMessage } from '../utils/chatService';
+import hireService from '../services/hireService';
 import {
   User,
   Briefcase,
@@ -34,11 +35,6 @@ import {
   MessageSquare,
   Info
 } from 'lucide-react';
-
-// ============================================================
-// MAIN EMPLOYER PAYMENTS COMPONENT
-// ============================================================
-import hireService from '../services/hireService';
 
 const EmployerPayments = () => {
   const navigate = useNavigate();
@@ -253,17 +249,11 @@ const EmployerPayments = () => {
 
   const t = translations[dashboard.language] || translations.en;
 
-  // ============================================================
-  // TOGGLE FUNCTIONS
-  // ============================================================
   const handleLogout = () => {
     useAuthStore.getState().logout();
     navigate('/login');
   };
 
-  // ============================================================
-  // PAYMENT SUCCESS HANDLER
-  // ============================================================
   const handlePaymentSuccess = async (paymentId, offerId) => {
     try {
       console.log('✅ Payment completed for offer:', offerId);
@@ -287,10 +277,8 @@ const EmployerPayments = () => {
         return false;
       }
 
-      // Create payment record
-      const commissionRate = 0.15;
       const fullSalary = Number(offer.amount || 0);
-      const commission = Math.round(fullSalary * commissionRate * 100) / 100;
+      const commission = Math.round(fullSalary * 0.15 * 100) / 100;
       
       const paymentRecord = {
         id: paymentId || 'PAY-' + Date.now(),
@@ -321,13 +309,11 @@ const EmployerPayments = () => {
         hasReceipt: false
       };
       
-      // Save to all_payments
       let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
       const filteredPayments = allPayments.filter(p => p.offerId !== offerId);
       filteredPayments.push(paymentRecord);
       localStorage.setItem('all_payments', JSON.stringify(filteredPayments));
       
-      // Save to employer_payments
       let employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
       const empFiltered = employerPayments.filter(p => p.offerId !== offerId);
       empFiltered.push(paymentRecord);
@@ -335,7 +321,6 @@ const EmployerPayments = () => {
       
       alert(t.paymentSuccess);
       
-      // Force reload
       setLoading(true);
       setTimeout(() => {
         loadData();
@@ -353,9 +338,6 @@ const EmployerPayments = () => {
     }
   };
 
-  // ============================================================
-  // MARK PAYMENT AS COMPLETED
-  // ============================================================
   const markPaymentAsCompleted = (payment) => {
     if (!confirm(t.markPaidConfirm)) {
       return;
@@ -365,9 +347,6 @@ const EmployerPayments = () => {
     handlePaymentSuccess(paymentId, payment.offerId);
   };
 
-  // ============================================================
-  // LOAD DATA
-  // ============================================================
   const loadData = async () => {
     if (isLoadingRef.current || !authUser?.email) {
       setPayments([]);
@@ -383,122 +362,71 @@ const EmployerPayments = () => {
       const employerEmail = authUser.email;
       const employerId = authUser?.id;
       
-      // Get payments from all_payments
+      // Load real Hire data from backend
+      const allHiresData = await hireService.getMyHires();
+      const myHires = Array.isArray(allHiresData) ? allHiresData : [];
+      
+      // Filter hires for this employer
+      const employerHires = myHires.filter(h => 
+        h.employerId === employerId || h.employerEmail === employerEmail
+      );
+      
+      // Convert hires to payments format
+      const paymentsFromHires = employerHires.map(hire => ({
+        id: hire.paymentReference || `PAY-${hire.id}`,
+        hireId: hire.id,
+        offerId: hire.offerId,
+        workerId: hire.workerId,
+        workerName: hire.workerName || 'Worker',
+        workerEmail: hire.workerEmail || '',
+        workerPhone: hire.workerPhone || '',
+        workerLocation: hire.workerLocation || 'Not specified',
+        workerRating: hire.workerRating || 4.5,
+        workerImage: hire.workerImage || '',
+        employerId: employerId,
+        employerEmail: employerEmail,
+        jobTitle: hire.jobTitle || 'Service Provider',
+        commission: hire.commissionAmount || 0,
+        fullSalary: hire.agreedSalary || hire.salary || 0,
+        status: hire.paymentStatus === 'completed' ? 'completed' : 'pending',
+        paymentVerified: hire.paymentStatus === 'completed',
+        contactRevealed: hire.paymentStatus === 'completed',
+        paymentMethod: hire.paymentMethod || 'commission',
+        paymentType: 'commission',
+        type: 'commission',
+        createdAt: hire.createdAt || new Date().toISOString(),
+        updatedAt: hire.updatedAt || new Date().toISOString(),
+        completedAt: hire.paymentStatus === 'completed' ? hire.updatedAt : null,
+        description: `Commission for hiring ${hire.workerName}`,
+        reference: hire.paymentReference || `REF-${hire.id}`,
+        hasReceipt: false
+      }));
+
+      // Merge with existing localStorage payments (for backward compatibility)
       let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      let employerPayments = allPayments.filter((p) => {
-        const isCurrentEmployer = p.employerId === employerId;
-        const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
-        return isCurrentEmployer && isSupportedPayment;
-      });
+      const mergedPayments = [...paymentsFromHires];
       
-      // Get payments from employer_payments
-      let empPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      const empFiltered = empPayments.filter((p) => {
-        const isCurrentEmployer = p.employerId === employerId;
-        const isSupportedPayment = ['commission', 'commission_payment', 'recruitment'].includes(p.paymentType) || ['commission', 'recruitment'].includes(p.type);
-        return isCurrentEmployer && isSupportedPayment;
-      });
-      
-      // Merge payments
-      const mergedMap = {};
-      [...employerPayments, ...empFiltered].forEach(p => {
-        const key = p.offerId || p.id;
-        if (key && !mergedMap[key]) {
-          mergedMap[key] = p;
-        } else if (key && mergedMap[key]) {
-          if (p.status === 'completed' && mergedMap[key].status !== 'completed') {
-            mergedMap[key] = { ...mergedMap[key], ...p };
-          }
+      allPayments.forEach(p => {
+        if (p.employerId === employerId && !mergedPayments.find(mp => mp.hireId === p.hireId)) {
+          mergedPayments.push(p);
         }
       });
-      employerPayments = Object.values(mergedMap);
-      
-      // Check offers for missing payments
-      let allOffers = [];
-      try {
-        const data = await hireService.getOffers();
-        allOffers = Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error('Error loading offers for payments:', error);
-      }
-      const employerOffers = Array.isArray(allOffers) ? allOffers : [];
-      const employerAcceptedOffers = employerOffers.filter((o) => {
-        const isEmployer = o.employerId === employerId || o.employerEmail === employerEmail;
-        const isAccepted = o.status === 'accepted' || o.status === 'completed' || o.status === 'in_progress' || o.paymentConfirmed === true;
-        return isEmployer && isAccepted;
-      });
-
-      const existingPaymentOfferIds = new Set(employerPayments.map(p => p.offerId).filter(Boolean));
-      const commissionRate = 0.15;
-      let newPayments = [];
-      
-      employerAcceptedOffers.forEach(offer => {
-        if (!existingPaymentOfferIds.has(offer.id)) {
-          const fullSalary = Number(offer.amount || 0);
-          const commission = Math.round(fullSalary * commissionRate * 100) / 100;
-          const isCompleted = offer.paymentCompleted === true || offer.status === 'in_progress' || offer.status === 'completed';
-          
-          const existingPayment = allPayments.find(p => p.offerId === offer.id);
-          if (existingPayment) {
-            newPayments.push({ ...existingPayment, employerId: employerId, employerEmail: employerEmail });
-            existingPaymentOfferIds.add(offer.id);
-            return;
-          }
-          
-          const payment = {
-            id: offer.paymentId || `PAY-${offer.id}`,
-            offerId: offer.id,
-            workerId: offer.workerId || offer.workerEmail,
-            workerName: offer.workerName || 'Worker',
-            workerEmail: offer.workerEmail || '',
-            workerPhone: offer.workerPhone || '',
-            workerLocation: offer.workerLocation || 'Not specified',
-            workerRating: offer.workerRating || 4.5,
-            workerImage: offer.workerImage || '',
-            employerId: employerId,
-            employerEmail: employerEmail,
-            jobTitle: offer.jobTitle || 'Service Provider',
-            commission: commission,
-            fullSalary: fullSalary,
-            status: isCompleted ? 'completed' : 'pending',
-            paymentVerified: isCompleted || false,
-            contactRevealed: isCompleted || false,
-            paymentMethod: isCompleted ? 'commission' : null,
-            paymentType: 'commission',
-            type: 'commission',
-            createdAt: offer.workerResponseAt || offer.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            completedAt: isCompleted ? new Date().toISOString() : null,
-            description: offer.description || `Commission for hiring ${offer.workerName}`,
-            reference: 'REF-' + offer.id,
-            hasReceipt: false
-          };
-          newPayments.push(payment);
-          existingPaymentOfferIds.add(offer.id);
-        }
-      });
-
-      if (newPayments.length > 0) {
-        const updatedAllPayments = [...allPayments, ...newPayments];
-        localStorage.setItem('all_payments', JSON.stringify(updatedAllPayments));
-        employerPayments = [...employerPayments, ...newPayments];
-      }
 
       // Sort by date
-      employerPayments.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
+      mergedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      setPayments(employerPayments);
-      setFilteredPayments(employerPayments);
+      setPayments(mergedPayments);
+      setFilteredPayments(mergedPayments);
 
-      // Calculate stats
-      const completedPayments = employerPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
+      // Calculate statistics from database data
+      const completedPayments = mergedPayments.filter(p => p.status === 'completed' || p.paymentVerified === true);
       const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + (p.commission || 0), 0);
       const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
-      const pendingCount = employerPayments.filter(p => (p.status === 'pending' || p.status === 'waiting_payment') && !p.paymentVerified).length;
+      const pendingCount = mergedPayments.filter(p => p.status === 'pending' && !p.paymentVerified).length;
       const completedCount = completedPayments.length;
 
       const uniqueWorkers = new Set();
-      employerPayments.forEach(p => {
+      mergedPayments.forEach(p => {
         if (p.workerEmail || p.workerId) {
           uniqueWorkers.add(p.workerEmail || p.workerId);
         }
@@ -521,9 +449,6 @@ const EmployerPayments = () => {
     }
   };
 
-  // ============================================================
-  // USE EFFECTS
-  // ============================================================
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !authUser) {
@@ -534,7 +459,7 @@ const EmployerPayments = () => {
       navigate('/login');
       return;
     }
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser, authLoading, navigate]);
 
   useEffect(() => {
     if (authUser) {
@@ -542,7 +467,6 @@ const EmployerPayments = () => {
     }
   }, [authUser, refreshKey]);
 
-  // Filter payments
   useEffect(() => {
     let filtered = [...payments];
     
@@ -563,9 +487,6 @@ const EmployerPayments = () => {
     setFilteredPayments(filtered);
   }, [payments, statusFilter, searchTerm]);
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
   const handleViewDetails = (payment) => {
     setSelectedPayment(payment);
     setShowDetailsModal(true);
@@ -589,16 +510,14 @@ const EmployerPayments = () => {
       description: paymentData.description || `Commission for ${paymentData.workerName}`,
       paymentType: 'commission',
       offerId: paymentData.offerId,
+      hireId: paymentData.hireId,
       employerId: authUser?.id || authUser?.email,
       employerName: authUser?.fullName || 'Employer',
-      returnTo: '/employer-payments',
-      onPaymentSuccess: (paymentId) => {
-        handlePaymentSuccess(paymentId, paymentData.offerId);
-      }
+      returnTo: '/employer-payments'
+      // Note: onPaymentSuccess callback removed - cannot pass functions via Router state
+      // PaymentOptions will recreate this callback locally using the offerId
     };
 
-    localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-    
     const workerData = {
       workerId: paymentData.workerId || paymentData.id,
       workerName: paymentData.workerName,
@@ -613,12 +532,16 @@ const EmployerPayments = () => {
       offerId: paymentData.offerId
     };
 
-    localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
-
     setShowDetailsModal(false);
     setSelectedPayment(null);
 
-    navigate('/payment-options');
+    // Navigate with payment data in state instead of localStorage
+    navigate('/payment-options', { 
+      state: { 
+        pendingPayment,
+        worker: workerData
+      } 
+    });
   };
 
   const handleContact = async (payment, method) => {
@@ -713,9 +636,6 @@ const EmployerPayments = () => {
     return t.status[status] || status;
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -999,186 +919,81 @@ const EmployerPayments = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.paymentId}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white">{selectedPayment.id}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
-                    {getStatusIcon(selectedPayment.status)}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPayment.status)}`}>
                     {formatStatus(selectedPayment.status)}
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.commission}</p>
-                  <p className="text-xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Platform commission (15%)</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.worker}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.workerName || 'N/A'}</p>
+                  {selectedPayment.workerEmail && (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{selectedPayment.workerEmail}</p>
+                  )}
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.fullSalary}</p>
-                  <p className="text-xl font-bold text-orange-600">{formatCurrency(selectedPayment.fullSalary)}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Paid directly to worker</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.date}</p>
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">{formatDate(selectedPayment.createdAt)}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.job}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.jobTitle || 'N/A'}</p>
                 </div>
               </div>
 
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 rounded-xl">
-                <div className="flex items-start gap-2">
-                  <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-700">{t.modal.note}</p>
-                </div>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">{t.modal.commission}</p>
+                <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">15% of {formatCurrency(selectedPayment.fullSalary)}</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <User size={16} className="text-teal-600" />
-                    {t.modal.worker}
-                  </h3>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold overflow-hidden">
-                      {selectedPayment.workerImage ? (
-                        <img src={selectedPayment.workerImage} alt={selectedPayment.workerName} className="w-full h-full object-cover" />
-                      ) : (
-                        selectedPayment.workerName?.charAt(0) || 'W'
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.workerName || 'Unknown'}</p>
-                      {selectedPayment.workerEmail && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedPayment.workerEmail}</p>
-                      )}
-                    </div>
-                  </div>
-                  {selectedPayment.workerPhone && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                      <Phone size={14} className="text-gray-400 dark:text-gray-500" />
-                      {selectedPayment.workerPhone}
-                    </p>
-                  )}
-                  {selectedPayment.workerLocation && selectedPayment.workerLocation !== 'Not specified' && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                      <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
-                      {selectedPayment.workerLocation}
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Briefcase size={16} className="text-teal-600" />
-                    {t.modal.job}
-                  </h3>
-                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.jobTitle || '-'}</p>
-                  {selectedPayment.paymentMethod && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{t.modal.method}: {selectedPayment.paymentMethod}</p>
-                  )}
-                </div>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.fullSalary}</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatCurrency(selectedPayment.fullSalary)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t.modal.note}</p>
               </div>
 
-              <div className="mt-6 p-4 rounded-xl border">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  {selectedPayment.contactRevealed ? (
-                    <Unlock size={16} className="text-green-600" />
-                  ) : (
-                    <Lock size={16} className="text-yellow-600" />
-                  )}
-                  {t.modal.contactInfo}
-                </h3>
-                
-                {selectedPayment.contactRevealed && selectedPayment.status === 'completed' ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-green-600 flex items-center gap-2">
-                      <CheckCircle size={14} />
-                      {t.modal.contactUnlocked}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {selectedPayment.workerPhone && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                          <Phone size={16} className="text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm">{selectedPayment.workerPhone}</span>
-                          <button onClick={() => handleContact(selectedPayment, 'whatsapp')} className="ml-auto px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition flex items-center gap-1">
-                            <MessageSquare size={12} />
-                            WhatsApp
-                          </button>
-                        </div>
-                      )}
-                      {selectedPayment.workerEmail && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                          <Mail size={16} className="text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm truncate">{selectedPayment.workerEmail}</span>
-                          <button onClick={() => handleContact(selectedPayment, 'message')} className="ml-auto px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition flex items-center gap-1">
-                            <MessageCircle size={12} />
-                            Message
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <Lock size={32} className="text-yellow-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{t.modal.contactLocked}</p>
-                    {selectedPayment.status === 'pending' && (
-                      <button onClick={() => handleProcessPayment(selectedPayment)} className="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 mx-auto">
-                        <CreditCard size={14} />
-                        {t.actions.payNow}
-                      </button>
-                    )}
-                  </div>
-                )}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.date}</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">{formatDate(selectedPayment.createdAt)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.method}</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">{selectedPayment.paymentMethod || 'N/A'}</p>
+                </div>
               </div>
 
               {selectedPayment.description && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.description}</p>
-                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.description}</p>
+                <div className="mb-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.description}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selectedPayment.description}</p>
                 </div>
               )}
-              {selectedPayment.reference && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.reference}</p>
-                  <p className="font-medium text-gray-800 dark:text-white">{selectedPayment.reference}</p>
-                </div>
-              )}
-            </div>
 
-            <div className="flex flex-wrap items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors text-sm">
-                {t.modal.close}
-              </button>
-              
-              {selectedPayment && selectedPayment.status === 'pending' && !selectedPayment.paymentVerified && (
-                <>
-                  <button onClick={() => handleProcessPayment(selectedPayment)} className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
-                    <CreditCard size={16} />
-                    {t.actions.payNow}
-                  </button>
-                  <button onClick={() => markPaymentAsCompleted(selectedPayment)} className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
-                    <CheckCircle size={16} />
-                    {t.markPaid}
-                  </button>
-                </>
+              {selectedPayment.reference && (
+                <div className="mb-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.reference}</p>
+                  <p className="text-sm font-mono text-gray-800 dark:text-white">{selectedPayment.reference}</p>
+                </div>
               )}
-              
-              {selectedPayment && selectedPayment.status === 'completed' && selectedPayment.contactRevealed && (
-                <>
-                  <button onClick={() => handleContact(selectedPayment, 'whatsapp')} className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
-                    <MessageSquare size={16} />
-                    WhatsApp
-                  </button>
-                  <button onClick={() => handleContact(selectedPayment, 'message')} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2">
-                    <MessageCircle size={16} />
-                    Message
-                  </button>
-                </>
-              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors"
+                >
+                  {t.modal.close}
+                </button>
+                <button
+                  onClick={() => handleCopyId(selectedPayment.id)}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  {t.modal.copyId}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
     </DashboardLayout>
   );
 };

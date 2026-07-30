@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 
 import employerService from '../services/employerService';
-import hireService from '../services/hireService';
 
 const EmployerSearch = () => {
   const navigate = useNavigate();
@@ -366,46 +365,22 @@ const EmployerSearch = () => {
   };
 
   // ============================================================
-  // 6. HIRE NOW - Send offer to worker
+  // 6. HIRE NOW - Navigate to offer creation form
   // ============================================================
-  const handleHireNow = async (worker) => {
+  const handleHireNow = (worker) => {
     if (!isAuthenticated || !authUser) {
       alert('Please login first');
       return;
     }
 
-    try {
-      const response = await hireService.createHire({
-        employerId: authUser.id,
-        workerId: worker.id || worker.email,
-        workerName: worker.fullName,
-        workerEmail: worker.email,
-        workerPhone: worker.phone || '',
-        workerLocation: worker.location || 'Not specified',
-        workerRating: worker.rating || 4.5,
-        workerSkills: worker.skills || [],
-        workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
-        employerName: authUser.fullName || 'Employer',
-        employerEmail: authUser.email,
-        jobTitle: worker.desiredJob || 'Service Provider',
-        agreedSalary: worker.hourlyRate || 30,
-        hourlyRate: worker.hourlyRate || 30,
-        amount: (worker.hourlyRate || 30) * 40 * 4,
-        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-        message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
-      });
+    // Sanitize worker data and pass via React Router state
+    const sanitizedWorker = { 
+      ...worker, 
+      profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage 
+    };
 
-      if (response.success) {
-        const successMsg = t.hireSuccess.replace('{name}', worker.fullName);
-        alert(successMsg);
-      } else {
-        throw new Error(response.message || t.hireError);
-      }
-    } catch (error) {
-      console.error('Error hiring worker:', error);
-      console.error('Error details:', error.message || error);
-      alert(t.hireError);
-    }
+    // Navigate to the offer creation form with worker data in state
+    navigate('/employer-create-offer', { state: { worker: sanitizedWorker } });
   };
 
   const getJobLabel = (value) => {
@@ -932,8 +907,7 @@ const EmployerSearch = () => {
                           <button
                             onClick={() => {
                               const sanitizedWorker = { ...worker, profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage };
-                              localStorage.setItem('homelyserv_viewing_worker', JSON.stringify(sanitizedWorker));
-                              navigate('/worker-profile-view');
+                              navigate('/worker-profile-view', { state: { worker: sanitizedWorker } });
                             }}
                             className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-1"
                           >

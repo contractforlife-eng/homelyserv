@@ -10,6 +10,9 @@ const createNotification = async (userId, type, title, body) => {
   }
 };
 
+// Commission rate: 15% of total offer value
+const COMMISSION_RATE = 0.15;
+
 // SEND JOB OFFER (creates an Offer record instead of Hire)
 export const sendOffer = async (req, res) => {
   try {
@@ -30,7 +33,14 @@ export const sendOffer = async (req, res) => {
       employerEmail,
       hourlyRate,
       amount,
-      description
+      description,
+      workingHoursPerDay,
+      workingDaysPerWeek,
+      weeklyDaysOff,
+      workStartTime,
+      workEndTime,
+      employmentStartDate,
+      additionalNotes
     } = req.body;
 
     if (!jobTitle) {
@@ -38,9 +48,9 @@ export const sendOffer = async (req, res) => {
     }
 
     const salary = parseFloat(agreedSalary);
-    const commission = salary * 0.10;
-    const vat = commission * 0.14;
-    const total = commission + vat;
+    const commission = salary * COMMISSION_RATE;
+    const vat = 0;
+    const total = commission;
 
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -88,6 +98,13 @@ export const sendOffer = async (req, res) => {
         hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
         amount: amount ? parseFloat(amount) : null,
         description: description || null,
+        workingHoursPerDay: workingHoursPerDay ? parseFloat(workingHoursPerDay) : null,
+        workingDaysPerWeek: workingDaysPerWeek ? parseFloat(workingDaysPerWeek) : null,
+        weeklyDaysOff: weeklyDaysOff ? String(weeklyDaysOff) : null,
+        workStartTime: workStartTime || null,
+        workEndTime: workEndTime || null,
+        employmentStartDate: employmentStartDate ? new Date(employmentStartDate) : null,
+        additionalNotes: additionalNotes || null,
         contactRevealed: false,
         paymentConfirmed: false,
         paymentVerified: false
@@ -109,7 +126,7 @@ export const sendOffer = async (req, res) => {
 };
 
 // RESPOND TO OFFER (accept/reject)
-// On accept: creates corresponding Hire record
+// On accept: creates corresponding Hire record with all Offer details copied
 export const respondToOffer = async (req, res) => {
   try {
     const { offerId } = req.params;
@@ -141,12 +158,13 @@ export const respondToOffer = async (req, res) => {
 
     if (status === 'accepted') {
       const salary = offer.salary;
-      const commission = salary * 0.10;
-      const vat = commission * 0.14;
-      const total = commission + vat;
+      const commission = salary * COMMISSION_RATE;
+      const vat = 0;
+      const total = commission;
 
       const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      // Copy ALL offer details into the Hire record
       const hire = await prisma.hire.create({
         data: {
           workerId: offer.workerId,
@@ -158,7 +176,16 @@ export const respondToOffer = async (req, res) => {
           totalDue: total,
           paymentReference: reference,
           startDate: null,
-          status: 'offer_sent'
+          status: 'offer_sent',
+          // Copy work details from Offer
+          hourlyRate: offer.hourlyRate || null,
+          workingHoursPerDay: offer.workingHoursPerDay || null,
+          workingDaysPerWeek: offer.workingDaysPerWeek || null,
+          weeklyDaysOff: offer.weeklyDaysOff || null,
+          workStartTime: offer.workStartTime || null,
+          workEndTime: offer.workEndTime || null,
+          employmentStartDate: offer.employmentStartDate || null,
+          additionalNotes: offer.additionalNotes || null
         }
       });
 
@@ -275,7 +302,17 @@ export const getMyHires = async (req, res) => {
         salary: offer?.salary || hire.agreedSalary || null,
         hireId: hire.id,
         offerId: hire.offerId,
-        workerId: hire.workerId,
+        workerId: workerProfile?.userId || workerUser?.id || hire.workerId,
+        workerProfileId: hire.workerId,
+        // Work details from Hire (copied from Offer at acceptance)
+        hourlyRate: hire.hourlyRate || offer?.hourlyRate || null,
+        workingHoursPerDay: hire.workingHoursPerDay || offer?.workingHoursPerDay || null,
+        workingDaysPerWeek: hire.workingDaysPerWeek || offer?.workingDaysPerWeek || null,
+        weeklyDaysOff: hire.weeklyDaysOff || offer?.weeklyDaysOff || null,
+        workStartTime: hire.workStartTime || offer?.workStartTime || null,
+        workEndTime: hire.workEndTime || offer?.workEndTime || null,
+        employmentStartDate: hire.employmentStartDate || offer?.employmentStartDate || null,
+        additionalNotes: hire.additionalNotes || offer?.additionalNotes || null,
         startDate: hire.startDate,
         status: hire.status,
         paymentStatus: hire.paymentStatus,
@@ -343,13 +380,105 @@ export const updateHireStatus = async (req, res) => {
   }
 };
 
-// GET ALL HIRES (admin only)
+// GET ALL HIRES (admin only) - enriched with Offer, Worker, Employer data
 export const getAllHires = async (req, res) => {
   try {
     const hires = await prisma.hire.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    res.json(hires);
+
+    if (!hires || hires.length === 0) {
+      return res.json([]);
+    }
+
+    // Fetch related Offers
+    const offerIds = hires.filter(h => h.offerId).map(h => h.offerId);
+    let offersMap = {};
+    if (offerIds.length > 0) {
+      const offers = await prisma.offer.findMany({
+        where: { id: { in: offerIds } }
+      });
+      offers.forEach(o => { offersMap[o.id] = o; });
+    }
+
+    // Fetch WorkerProfiles and Users
+    const workerProfileIds = [...new Set(hires.map(h => h.workerId).filter(Boolean))];
+    let workerProfilesMap = {};
+    let employerUsersMap = {};
+
+    if (workerProfileIds.length > 0) {
+      const profiles = await prisma.workerProfile.findMany({
+        where: { id: { in: workerProfileIds } }
+      });
+      const workerUserIds = profiles.map(p => p.userId).filter(Boolean);
+      let workerUsersMap = {};
+      if (workerUserIds.length > 0) {
+        const users = await prisma.user.findMany({
+          where: { id: { in: workerUserIds } }
+        });
+        users.forEach(u => { workerUsersMap[u.id] = u; });
+      }
+      profiles.forEach(p => {
+        workerProfilesMap[p.id] = {
+          ...p,
+          User: workerUsersMap[p.userId] || null
+        };
+      });
+    }
+
+    // Fetch Employer Users
+    const employerIds = [...new Set(hires.map(h => h.employerId).filter(Boolean))];
+    if (employerIds.length > 0) {
+      const employers = await prisma.user.findMany({
+        where: { id: { in: employerIds } }
+      });
+      employers.forEach(u => { employerUsersMap[u.id] = u; });
+    }
+
+    // Enrich hires with all data
+    const enrichedHires = hires.map(hire => {
+      const offer = offersMap[hire.offerId] || null;
+      const workerProfile = workerProfilesMap[hire.workerId] || null;
+      const workerUser = workerProfile?.User || null;
+      const employerUser = employerUsersMap[hire.employerId] || null;
+
+      return {
+        ...hire,
+        workerName: offer?.workerName || workerUser?.fullName || null,
+        workerEmail: offer?.workerEmail || workerUser?.email || null,
+        workerPhone: offer?.workerPhone || workerUser?.phone || null,
+        workerLocation: offer?.workerLocation || workerUser?.city || null,
+        employerName: offer?.employerName || employerUser?.fullName || null,
+        employerEmail: offer?.employerEmail || employerUser?.email || null,
+        employerPhone: employerUser?.phone || null,
+        jobTitle: offer?.jobTitle || null,
+        salary: offer?.salary || hire.agreedSalary || null,
+        hireId: hire.id,
+        offerId: hire.offerId,
+        workerId: workerProfile?.userId || workerUser?.id || hire.workerId,
+        workerProfileId: hire.workerId,
+        // Work details from Hire (copied from Offer at acceptance)
+        hourlyRate: hire.hourlyRate || offer?.hourlyRate || null,
+        workingHoursPerDay: hire.workingHoursPerDay || offer?.workingHoursPerDay || null,
+        workingDaysPerWeek: hire.workingDaysPerWeek || offer?.workingDaysPerWeek || null,
+        weeklyDaysOff: hire.weeklyDaysOff || offer?.weeklyDaysOff || null,
+        workStartTime: hire.workStartTime || offer?.workStartTime || null,
+        workEndTime: hire.workEndTime || offer?.workEndTime || null,
+        employmentStartDate: hire.employmentStartDate || offer?.employmentStartDate || null,
+        additionalNotes: hire.additionalNotes || offer?.additionalNotes || null,
+        // Commission and payment info
+        commissionAmount: hire.commissionAmount,
+        vatAmount: hire.vatAmount,
+        totalDue: hire.totalDue,
+        paymentReference: hire.paymentReference,
+        status: hire.status,
+        paymentStatus: hire.paymentStatus,
+        createdAt: hire.createdAt,
+        updatedAt: hire.updatedAt
+      };
+    });
+
+    res.json(enrichedHires);
   } catch (error) {
     console.error('Get all hires error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -37,7 +37,7 @@ import {
 const WorkerPayment = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-const authLoading = useAuthStore(state => state.isLoading);
+  const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   const [payments, setPayments] = useState([]);
@@ -205,67 +205,45 @@ const authLoading = useAuthStore(state => state.isLoading);
     try {
       const userId = authUser.id || authUser.email;
       
-      const savedPayments = JSON.parse(localStorage.getItem(`worker_payments_${userId}`) || '[]');
+      // Load real Hire data from backend ONLY
+      const allHiresData = await hireService.getMyHires();
+      const myHires = Array.isArray(allHiresData) ? allHiresData : [];
       
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const workerPaymentsFromAll = allPayments.filter(p => 
-        p.workerId === userId || p.workerEmail === userId || p.workerEmail === authUser.email
+      // Filter completed hires (active or completed status with payment completed)
+      const completedHires = myHires.filter(h => 
+        h.status === 'active' || h.status === 'completed' || h.paymentStatus === 'completed'
       );
       
-      let mergedPayments = [...savedPayments];
+      // Convert hires to payments format directly from database
+      const paymentsFromHires = completedHires.map(hire => ({
+        id: hire.paymentReference || `PAY-${hire.id}`,
+        hireId: hire.id,
+        offerId: hire.offerId,
+        employer: {
+          name: hire.employerName || 'Unknown Employer',
+          id: hire.employerId || 'EMP-001'
+        },
+        amount: hire.agreedSalary || hire.salary || 0,
+        date: new Date(hire.createdAt || Date.now()).toLocaleDateString(
+          dashboard.language === 'ar' ? 'ar-EG' : 'en-US',
+          { year: 'numeric', month: 'short', day: 'numeric' }
+        ),
+        status: 'completed',
+        description: `Payment for ${hire.jobTitle || 'service'}`,
+        workerId: userId,
+        workerEmail: authUser.email,
+        createdAt: hire.createdAt || new Date().toISOString()
+      }));
       
-      workerPaymentsFromAll.forEach(p => {
-        if (!mergedPayments.find(mp => mp.id === p.id)) {
-          mergedPayments.push(p);
-        }
-      });
+      // Sort by date
+      paymentsFromHires.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      const allOffersData = await hireService.getOffers();
-      const employerOffers = Array.isArray(allOffersData.offers || allOffersData) ? (allOffersData.offers || allOffersData) : [];
-      const appliedOffers = [];
+      setPayments(paymentsFromHires);
+      setFilteredPayments(paymentsFromHires);
       
-      const completedOfferIds = appliedOffers.filter(id => {
-        return employerOffers.some(o => o.id === id && o.status === 'completed');
-      });
+      updateStatsFromPayments(paymentsFromHires);
       
-      completedOfferIds.forEach((offerId, index) => {
-        const offer = employerOffers.find(o => o.id === offerId);
-        if (offer) {
-          const existingPayment = mergedPayments.find(p => p.offerId === offerId);
-          if (!existingPayment) {
-            const paymentAmount = (offer.amount || 3000) * 0.85;
-            mergedPayments.push({
-              id: `PAY-${Date.now()}-${index}`,
-              offerId: offerId,
-              employer: {
-                name: offer.company || 'Unknown Employer',
-                id: offer.employerId || 'EMP-001'
-              },
-              amount: paymentAmount,
-              date: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toLocaleDateString(
-                dashboard.language === 'ar' ? 'ar-EG' : 'en-US',
-                { year: 'numeric', month: 'short', day: 'numeric' }
-              ),
-              status: 'completed',
-              description: `Payment for ${offer.title || 'service'}`,
-              workerId: userId,
-              workerEmail: authUser.email,
-              createdAt: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString()
-            });
-          }
-        }
-      });
-      
-      mergedPayments.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-      
-      setPayments(mergedPayments);
-      setFilteredPayments(mergedPayments);
-      
-      updateStatsFromPayments(mergedPayments);
-      
-      localStorage.setItem(`worker_payments_${userId}`, JSON.stringify(mergedPayments));
-      
-      console.log(`✅ Loaded ${mergedPayments.length} payments for worker`);
+      console.log(`✅ Loaded ${paymentsFromHires.length} payments from database for worker`);
       
     } catch (error) {
       console.error('Error loading payment data:', error);
@@ -293,7 +271,7 @@ const authLoading = useAuthStore(state => state.isLoading);
   // ============================================
   // 5. EFFECTS
   // ============================================
-useEffect(() => {
+  useEffect(() => {
      if (authLoading) return;
 
      if (!isAuthenticated || !authUser) {

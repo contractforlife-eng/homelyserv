@@ -215,25 +215,25 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
 };
 
 // ============================================================
-// UPDATE OFFER AFTER PAYMENT - Prisma version (replaces Mongoose localStorage and Offer model)
+// UPDATE HIRE AFTER PAYMENT - Single source of truth
 // ============================================================
-const updateOfferAfterPayment = async (offerId, captureId) => {
+const updateHireAfterPayment = async (hireId, captureId) => {
   try {
-    if (!offerId) {
-      console.log('⚠️ No offerId provided, skipping offer update');
+    if (!hireId) {
+      console.log('⚠️ No hireId provided, skipping hire update');
       return false;
     }
 
-    console.log(`📝 Updating Hire for Offer ${offerId} after payment...`);
+    console.log(`📝 Updating Hire ${hireId} after payment...`);
     console.log(`   Payment capture ID: ${captureId}`);
 
-    // Find the Hire by offerId relationship
-    const hire = await prisma.hire.findFirst({
-      where: { offerId: offerId }
+    // Find the Hire
+    const hire = await prisma.hire.findUnique({
+      where: { id: hireId }
     });
 
     if (!hire) {
-      console.log(`⚠️ Hire not found for offer ${offerId}`);
+      console.log(`⚠️ Hire not found: ${hireId}`);
       return false;
     }
 
@@ -243,7 +243,7 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
 
     // Update the hire with payment completion
     const updatedHire = await prisma.hire.update({
-      where: { id: hire.id },
+      where: { id: hireId },
       data: {
         paymentStatus: 'completed',
         paymentReference: captureId || ('CAPTURED_' + Date.now()),
@@ -258,15 +258,17 @@ const updateOfferAfterPayment = async (offerId, captureId) => {
     console.log(`   Payment reference: ${updatedHire.paymentReference}`);
 
     // Update the Offer to mark payment as confirmed and verified
-    const updatedOffer = await prisma.offer.update({
-      where: { id: offerId },
-      data: {
-        paymentConfirmed: true,
-        paymentVerified: true
-      }
-    });
+    if (hire.offerId) {
+      const updatedOffer = await prisma.offer.update({
+        where: { id: hire.offerId },
+        data: {
+          paymentConfirmed: true,
+          paymentVerified: true
+        }
+      });
 
-    console.log(`✅ Offer ${offerId} updated: paymentConfirmed=true, paymentVerified=true`);
+      console.log(`✅ Offer ${hire.offerId} updated: paymentConfirmed=true, paymentVerified=true`);
+    }
 
     return true;
 
@@ -392,26 +394,27 @@ const ensureSubscription = async (userId, amount) => {
  * POST /api/payments/create-payment-intent
  */
 router.post('/create-payment-intent', authenticate, async (req, res) => {
-   try {
-     const {
-       amount,
-       paymentMethod,
-       userEmail,
-       workerName,
-       workerId,
-       jobTitle,
-       employerId,
-       employerName,
-       hireId,
-       phone,
-       offerId
-} = req.body;
+  try {
+    const {
+      amount,
+      paymentMethod,
+      userEmail,
+      workerName,
+      workerId,
+      jobTitle,
+      employerId,
+      employerName,
+      hireId,
+      phone,
+      offerId
+    } = req.body;
 
-  console.log('📤 Creating payment intent:', {
+    console.log('📤 Creating payment intent:', {
       amount,
       paymentMethod,
       userEmail,
       jobTitle,
+      hireId,
       offerId
     });
 
@@ -419,6 +422,13 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid amount'
+      });
+    }
+
+    if (!hireId) {
+      return res.status(400).json({
+        success: false,
+        error: 'hireId is required'
       });
     }
 
@@ -442,33 +452,79 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       description: `Payment for ${jobTitle || 'service'} - ${workerName || 'worker'}`
     };
 
-    const payment = await prisma.payment.create({
-      data: {
-        orderId,
-        transactionId,
-        amount: Number(amount),
-        currency: 'EGP',
-        paymentMethod: paymentMethod || 'paymob',
-        status: 'pending',
-        userEmail: userEmail || 'employer@example.com',
-        userId: req.userId || null,
-        workerId: workerId || null,
-        workerName: workerName || 'Worker',
-        jobTitle: jobTitle || null,
-        employerId: employerId || null,
-        employerName: employerName || null,
-        hireId: hireId || null,
-        offerId: offerId || null,
-        phone: phone || null,
-        metadata: {
-          createdFrom: 'payment-intent',
-          source: 'frontend',
-          originalAmount: amount,
-          originalCurrency: 'EGP'
+    // Check if payment already exists for this hireId with pending/processing status
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
+        hireId: hireId,
+        status: {
+          in: ['pending', 'processing']
         }
       }
     });
-    console.log('✅ Payment record created:', transactionId);
+
+    let payment;
+    if (existingPayment) {
+      console.log('⚠️ Payment already exists for hire:', hireId, 'Updating:', existingPayment.id);
+      
+      // Update existing payment with new order details
+      payment = await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          orderId: orderId,
+          transactionId: transactionId,
+          amount: Number(amount),
+          paymentMethod: paymentMethod || 'paymob',
+          userEmail: userEmail || existingPayment.userEmail,
+          workerId: workerId || existingPayment.workerId,
+          workerName: workerName || existingPayment.workerName,
+          jobTitle: jobTitle || existingPayment.jobTitle,
+          employerId: employerId || existingPayment.employerId,
+          employerName: employerName || existingPayment.employerName,
+          hireId: hireId,
+          offerId: offerId || existingPayment.offerId,
+          phone: phone || existingPayment.phone,
+          metadata: {
+            ...existingPayment.metadata,
+            createdFrom: 'payment-intent',
+            source: 'frontend',
+            originalAmount: amount,
+            originalCurrency: 'EGP',
+            updatedAt: new Date().toISOString()
+          }
+        }
+      });
+      
+      console.log('✅ Payment record updated:', transactionId);
+    } else {
+      // Create new payment record
+      payment = await prisma.payment.create({
+        data: {
+          orderId,
+          transactionId,
+          amount: Number(amount),
+          currency: 'EGP',
+          paymentMethod: paymentMethod || 'paymob',
+          status: 'pending',
+          userEmail: userEmail || 'employer@example.com',
+          userId: req.userId || null,
+          workerId: workerId || null,
+          workerName: workerName || 'Worker',
+          jobTitle: jobTitle || null,
+          employerId: employerId || null,
+          employerName: employerName || null,
+          hireId: hireId,
+          offerId: offerId || null,
+          phone: phone || null,
+          metadata: {
+            createdFrom: 'payment-intent',
+            source: 'frontend',
+            originalAmount: amount,
+            originalCurrency: 'EGP'
+          }
+        }
+      });
+      console.log('✅ Payment record created:', transactionId);
+    }
 
     let result;
 
@@ -725,8 +781,10 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             }
           });
 
-          // Update offer
-          await updateOfferAfterPayment(payment.offerId, captureId);
+          // Update hire status
+          if (payment.hireId) {
+            await updateHireAfterPayment(payment.hireId, captureId);
+          }
 
           // Persist subscription in MongoDB
           console.log("CALLING ensureSubscription");
@@ -777,8 +835,10 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
             console.log(`✅ PayPal order captured successfully: ${orderId}`);
 
-            // Update offer
-            await updateOfferAfterPayment(payment.offerId, captureId);
+            // Update hire status
+            if (payment.hireId) {
+              await updateHireAfterPayment(payment.hireId, captureId);
+            }
 
             // Persist subscription in MongoDB
             console.log("CALLING ensureSubscription");
@@ -846,8 +906,10 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               }
             });
 
-            // Update offer
-            await updateOfferAfterPayment(payment.offerId, 'CAPTURED_' + Date.now());
+            // Update hire status
+            if (payment.hireId) {
+              await updateHireAfterPayment(payment.hireId, 'CAPTURED_' + Date.now());
+            }
 
             // Persist subscription in MongoDB
             console.log("CALLING ensureSubscription");
@@ -899,8 +961,10 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
                 }
               });
 
-              // Update offer status
-              await updateOfferAfterPayment(payment.offerId, testCaptureId);
+              // Update hire status
+              if (payment.hireId) {
+                await updateHireAfterPayment(payment.hireId, testCaptureId);
+              }
 
               // Persist subscription in MongoDB
               console.log("CALLING ensureSubscription");
@@ -1085,8 +1149,10 @@ router.post('/complete-payment', async (req, res) => {
       }
     });
 
-    // Update offer
-    await updateOfferAfterPayment(payment.offerId, 'MANUAL_' + Date.now());
+    // Update hire status
+    if (payment.hireId) {
+      await updateHireAfterPayment(payment.hireId, 'MANUAL_' + Date.now());
+    }
 
     res.json({
       success: true,
@@ -1251,6 +1317,11 @@ router.post('/webhook', async (req, res) => {
         data: updateData
       });
       console.log(`✅ Payment ${payment.transactionId} updated to ${newStatus}`);
+
+      // Update hire status if payment completed
+      if (newStatus === 'completed' && payment.hireId) {
+        await updateHireAfterPayment(payment.hireId, 'WEBHOOK_' + Date.now());
+      }
     }
 
     res.json({

@@ -47,9 +47,6 @@ import {
   UserPlus
 } from 'lucide-react';
 
-// ============================================================
-// MAIN ADMIN HIRES COMPONENT
-// ============================================================
 const AdminHires = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -157,76 +154,59 @@ const AdminHires = () => {
 
   const t = translations[language] || translations.en;
 
-  // ============================================================
-  // Load Hires from localStorage
-  // ============================================================
   const loadHires = async () => {
     setLoading(true);
     
     try {
-      const employerOffers = [];
-      try {
-        const offersData = await hireService.getOffers();
-        const employerId = authUser?.id || authUser?.email;
-        const employerEmail = authUser?.email;
-        const filteredOffers = (offersData.offers || offersData || []).filter(
-          offer => offer.status === 'accepted' ||
-                  offer.status === 'in_progress' ||
-                  offer.status === 'completed'
-        );
-        employerOffers.push(...filteredOffers);
-      } catch (error) {
-        console.error('Error loading offers:', error);
-      }
-      const users = [];
+      const hiresData = await hireService.getAllHires();
+      const hires = Array.isArray(hiresData) ? hiresData : [];
       
-      const acceptedOffers = employerOffers.filter(
-        offer => offer.status === 'accepted' || 
-                offer.status === 'in_progress' || 
-                offer.status === 'completed'
-      );
+      console.log(`📋 Found ${hires.length} hires from backend`);
       
-      console.log(`📋 Found ${acceptedOffers.length} accepted offers`);
-      
-      const hireData = acceptedOffers.map((offer, index) => {
-        const worker = users.find(u => u.email === offer.workerEmail);
-        const employer = users.find(u => u.email === offer.employerEmail);
-        
+      const hireData = hires.map((hire, index) => {
         let satisfaction = 'neutral';
-        if (offer.workerRating && offer.workerRating >= 4) {
+        if (hire.workerRating && hire.workerRating >= 4) {
           satisfaction = 'satisfied';
-        } else if (offer.workerRating && offer.workerRating <= 2) {
+        } else if (hire.workerRating && hire.workerRating <= 2) {
           satisfaction = 'unsatisfied';
         }
         
-        let status = offer.status;
-        if (status === 'in_progress') status = 'active';
-        if (status === 'accepted') status = 'pending';
-        
         return {
-          id: offer.id || `HIRE-${String(index + 1).padStart(4, '0')}`,
+          id: hire.id || `HIRE-${String(index + 1).padStart(4, '0')}`,
           worker: {
-            name: worker?.fullName || offer.workerName || 'Unknown Worker',
-            category: worker?.category || offer.workerCategory || 'N/A',
-            rating: offer.workerRating || 4.0,
-            location: worker?.location || offer.workerLocation || 'N/A',
-            phone: worker?.phone || offer.workerPhone || 'N/A',
-            email: worker?.email || offer.workerEmail || 'N/A'
+            name: hire.workerName || 'Unknown Worker',
+            category: hire.workerCategory || 'N/A',
+            rating: hire.workerRating || 4.0,
+            location: hire.workerLocation || 'N/A',
+            phone: hire.workerPhone || 'N/A',
+            email: hire.workerEmail || 'N/A'
           },
           employer: {
-            name: employer?.fullName || offer.employerName || 'Unknown Employer',
-            phone: employer?.phone || offer.employerPhone || 'N/A',
-            email: employer?.email || offer.employerEmail || 'N/A'
+            name: hire.employerName || 'Unknown Employer',
+            phone: hire.employerPhone || 'N/A',
+            email: hire.employerEmail || 'N/A'
           },
-          position: offer.jobTitle || 'Position',
-          salary: offer.amount || offer.salary || 0,
-          status: status,
-          startDate: offer.startDate || offer.createdAt || new Date().toISOString(),
-          createdAt: offer.createdAt || offer.updatedAt || new Date().toISOString(),
-          paymentStatus: offer.paymentStatus || 'pending',
+          position: hire.jobTitle || 'Position',
+          salary: hire.salary || hire.agreedSalary || 0,
+          status: hire.status,
+          startDate: hire.startDate || hire.employmentStartDate || hire.createdAt || new Date().toISOString(),
+          createdAt: hire.createdAt || new Date().toISOString(),
+          paymentStatus: hire.paymentStatus || 'pending',
           satisfaction: satisfaction,
-          workerRating: offer.workerRating || 4.0,
-          employerRating: offer.employerRating || 4.5
+          workerRating: hire.workerRating || 4.0,
+          employerRating: hire.employerRating || 4.5,
+          hourlyRate: hire.hourlyRate,
+          workingHoursPerDay: hire.workingHoursPerDay,
+          workingDaysPerWeek: hire.workingDaysPerWeek,
+          weeklyDaysOff: hire.weeklyDaysOff,
+          workStartTime: hire.workStartTime,
+          workEndTime: hire.workEndTime,
+          employmentStartDate: hire.employmentStartDate,
+          additionalNotes: hire.additionalNotes,
+          commissionAmount: hire.commissionAmount,
+          vatAmount: hire.vatAmount,
+          totalDue: hire.totalDue,
+          paymentReference: hire.paymentReference
         };
       });
       
@@ -246,10 +226,6 @@ const AdminHires = () => {
     }
   };
 
-  // ============================================================
-  // useEffects
-  // ============================================================
-  // Use authStore as single source of truth
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -288,7 +264,6 @@ const AdminHires = () => {
     document.documentElement.lang = language;
   }, [language]);
 
-  // Filter hires
   useEffect(() => {
     let filtered = hires;
 
@@ -310,9 +285,6 @@ const AdminHires = () => {
     setFilteredHires(filtered);
   }, [hires, statusFilter, searchTerm]);
 
-  // ============================================================
-  // UI Helpers
-  // ============================================================
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
@@ -627,7 +599,7 @@ const AdminHires = () => {
 
                 {expandedHire === hire.id && (
                   <div className="border-t border-yellow-500/20 p-4 bg-[#0a0a0a]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Worker Details</h4>
                         <p className="text-sm text-gray-300">Name: {hire.worker.name}</p>
@@ -636,10 +608,22 @@ const AdminHires = () => {
                         <p className="text-sm text-gray-300">Location: {hire.worker.location}</p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Employer Details</h4>
-                        <p className="text-sm text-gray-300">Name: {hire.employer.name}</p>
-                        <p className="text-sm text-gray-300">Email: {hire.employer.email}</p>
-                        <p className="text-sm text-gray-300">Phone: {hire.employer.phone}</p>
+                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Work Details</h4>
+                        <p className="text-sm text-gray-300">Hourly Rate: EGP {hire.hourlyRate || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">Hours/Day: {hire.workingHoursPerDay || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">Days/Week: {hire.workingDaysPerWeek || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">Days Off: {hire.weeklyDaysOff || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">Start Time: {hire.workStartTime || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">End Time: {hire.workEndTime || 'N/A'}</p>
+                        <p className="text-sm text-gray-300">Start Date: {hire.employmentStartDate ? new Date(hire.employmentStartDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Payment & Status</h4>
+                        <p className="text-sm text-gray-300">Hire Status: {hire.status}</p>
+                        <p className="text-sm text-gray-300">Payment Status: {hire.paymentStatus}</p>
+                        <p className="text-sm text-gray-300">Commission: EGP {hire.commissionAmount?.toLocaleString() || '0'}</p>
+                        <p className="text-sm text-gray-300">Salary: EGP {hire.salary?.toLocaleString() || '0'}</p>
+                        <p className="text-sm text-gray-300">Reference: {hire.paymentReference || 'N/A'}</p>
                       </div>
                     </div>
                   </div>

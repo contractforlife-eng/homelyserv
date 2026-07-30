@@ -4,7 +4,6 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
-import hireService from '../services/hireService';
 import employerService from '../services/employerService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -142,24 +141,21 @@ const WorkerProfileView = () => {
 
     setUser(authUser);
 
-    const workerData = localStorage.getItem('homelyserv_viewing_worker');
+    // Try to get worker data from location state first
+    const workerData = location.state?.worker;
+    
     if (workerData) {
-      try {
-        const parsedWorker = JSON.parse(workerData);
-        setWorker({
-          ...parsedWorker,
-          profileImage: isBase64Image(parsedWorker.profileImage) ? '' : parsedWorker.profileImage
-        });
-      } catch (error) {
-        console.error('Error parsing worker data:', error);
-        navigate('/employer-search');
-      }
+      setWorker({
+        ...workerData,
+        profileImage: isBase64Image(workerData.profileImage) ? '' : workerData.profileImage
+      });
     } else {
+      // No worker data in navigation state
       navigate('/employer-search');
     }
 
     setLoading(false);
-  }, [navigate, authLoading, authUser]);
+  }, [navigate, authLoading, authUser, location.state]);
 
   useEffect(() => {
     fetchedRef.current = false;
@@ -189,39 +185,17 @@ const WorkerProfileView = () => {
     navigate('/employer-search');
   };
 
-  const handleHireNow = async () => {
+  const handleHireNow = () => {
     if (!worker || !user) return;
-    try {
-      const hireData = {
-        employerId: user.id || user.email,
-        workerId: worker.id || worker.email,
-        workerName: worker.fullName,
-        workerEmail: worker.email,
-        workerPhone: worker.phone || '',
-        workerLocation: worker.location || 'Not specified',
-        workerRating: worker.rating || 4.5,
-        workerSkills: worker.skills || [],
-        workerImage: isBase64Image(worker.profileImage) ? '' : (worker.profileImage || ''),
-        employerName: user.fullName || 'Employer',
-        employerEmail: user.email,
-        jobTitle: worker.desiredJob || 'Service Provider',
-        agreedSalary: worker.hourlyRate || 30,
-        hourlyRate: worker.hourlyRate || 30,
-        amount: (worker.hourlyRate || 30) * 40 * 4,
-        description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
-        message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`
-      };
-      const response = await hireService.createHire(hireData);
-      if (response.success) {
-        navigate('/employer-payments');
-      } else {
-        throw new Error(response.message || 'Failed to send offer');
-      }
-    } catch (error) {
-      console.error('Error creating offer:', error);
-      alert('Failed to send offer. Please try again.');
-      navigate('/employer-payments');
-    }
+
+    // Sanitize worker data and pass via React Router state
+    const sanitizedWorker = { 
+      ...worker, 
+      profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage 
+    };
+
+    // Navigate to the offer creation form with worker data in state
+    navigate('/employer-create-offer', { state: { worker: sanitizedWorker } });
   };
 
   // Contact Worker Functionality

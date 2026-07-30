@@ -26,69 +26,118 @@ export const recordCommissionPayment = async (req, res) => {
     });
 
     // Validate required fields
-    if (!offerId || !workerId || !employerId || !commissionAmount) {
+    if (!hireId || !commissionAmount) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: offerId, workerId, employerId, commissionAmount'
+        error: 'Missing required fields: hireId, commissionAmount'
       });
     }
 
-    // Check if payment already exists
+    // Find the hire record
+    const hire = await prisma.hire.findUnique({
+      where: { id: hireId }
+    });
+
+    if (!hire) {
+      return res.status(404).json({
+        success: false,
+        error: 'Hire not found'
+      });
+    }
+
+    // Check if payment already exists for this hireId with completed status
     const existingPayment = await prisma.payment.findFirst({
       where: {
-        offerId: offerId,
-        workerId: String(workerId),
-        employerId: String(employerId),
+        hireId: hireId,
         status: 'completed'
       }
     });
 
     if (existingPayment) {
-      console.log('⚠️ Payment already exists:', existingPayment.id);
+      console.log('⚠️ Payment already exists for hire:', hireId, 'Updating:', existingPayment.id);
+      
+      // Update existing payment with commission metadata
+      const updatedPayment = await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          amount: Number(commissionAmount),
+          metadata: {
+            ...(existingPayment.metadata || {}),
+            type: 'commission',
+            fullSalary: fullSalary || 0,
+            source: 'commission_payment',
+            updatedAt: new Date().toISOString()
+          }
+        }
+      });
+
+      console.log('✅ Commission payment updated:', updatedPayment.id);
+
       return res.json({
         success: true,
-        payment: existingPayment,
-        message: 'Payment already recorded'
+        payment: updatedPayment,
+        message: 'Commission payment updated successfully'
       });
     }
 
-    // Find the hire record if hireId is not provided
-    let actualHireId = hireId;
-    if (!actualHireId && offerId) {
-      const hire = await prisma.hire.findFirst({
-        where: { offerId: offerId }
-      });
-      if (hire) {
-        actualHireId = hire.id;
-      }
-    }
-
-    // Create payment record
-    const payment = await prisma.payment.create({
-      data: {
-        orderId: 'COMM-' + Date.now(),
-        transactionId: transactionId || 'TXN-' + Date.now(),
-        amount: Number(commissionAmount),
-        currency: 'EGP',
-        paymentMethod: paymentMethod || 'paymob',
-        status: 'completed',
-        userId: String(employerId),
-        workerId: String(workerId),
-        workerName: '',
-        employerId: String(employerId),
-        employerName: '',
-        hireId: actualHireId || null,
-        offerId: offerId,
-        completedAt: new Date(),
-        metadata: {
-          type: 'commission',
-          fullSalary: fullSalary || 0,
-          source: 'commission_payment'
+    // Check if there's a pending/processing payment for this hire
+    const pendingPayment = await prisma.payment.findFirst({
+      where: {
+        hireId: hireId,
+        status: {
+          in: ['pending', 'processing']
         }
       }
     });
 
-    console.log('✅ Commission payment recorded:', payment.id);
+    let payment;
+    if (pendingPayment) {
+      // Update existing pending payment to completed
+      payment = await prisma.payment.update({
+        where: { id: pendingPayment.id },
+        data: {
+          status: 'completed',
+          amount: Number(commissionAmount),
+          completedAt: new Date(),
+          metadata: {
+            ...(pendingPayment.metadata || {}),
+            type: 'commission',
+            fullSalary: fullSalary || 0,
+            source: 'commission_payment'
+          }
+        }
+      });
+      
+      console.log('✅ Pending payment updated to completed:', payment.id);
+    } else {
+      // Create new payment record
+      const orderId = 'COMM-' + Date.now();
+      const transactionIdNew = transactionId || 'TXN-' + Date.now();
+
+      payment = await prisma.payment.create({
+        data: {
+          orderId,
+          transactionId: transactionIdNew,
+          amount: Number(commissionAmount),
+          currency: 'EGP',
+          paymentMethod: paymentMethod || 'paymob',
+          status: 'completed',
+          userId: String(employerId),
+          workerId: String(workerId),
+          employerId: String(employerId),
+          hireId: hireId,
+          offerId: offerId || null,
+          completedAt: new Date(),
+          metadata: {
+            type: 'commission',
+            fullSalary: fullSalary || 0,
+            source: 'commission_payment'
+          }
+        }
+      });
+
+      console.log('✅ Commission payment created:', payment.id);
+    }
 
     return res.json({
       success: true,

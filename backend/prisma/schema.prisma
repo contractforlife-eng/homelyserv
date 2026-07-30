@@ -64,6 +64,17 @@ model Hire {
   paymentProofUrl  String?
   startDate        DateTime?
   status           String        @default("offer_sent")
+
+  // Work details copied from Offer
+  hourlyRate         Float?
+  workingHoursPerDay Float?
+  workingDaysPerWeek Float?
+  weeklyDaysOff      String?
+  workStartTime      String?
+  workEndTime        String?
+  employmentStartDate DateTime?
+  additionalNotes    String?
+
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   User             User          @relation(fields: [employerId], references: [id])
@@ -163,6 +174,8 @@ model Payment {
   @@index([workerId])
   @@index([employerId])
   @@index([status])
+  @@index([hireId])
+  @@unique([hireId, status])
   @@map("payments")
 }
 
@@ -183,7 +196,7 @@ model User {
   id                               String           @id @default(auto()) @map("_id") @db.ObjectId
   email                            String           @unique
   password                         String
-  username                         String?          @unique
+  username                         String?          
   role                             Role             @default(WORKER)
   fullName                         String
   phone                            String?
@@ -265,6 +278,16 @@ model Offer {
   hourlyRate     Float?
   amount         Float?
   description    String?
+
+  // Work details stored at offer creation
+  workingHoursPerDay Float?
+  workingDaysPerWeek Float?
+  weeklyDaysOff      String?
+  workStartTime      String?
+  workEndTime        String?
+  employmentStartDate DateTime?
+  additionalNotes    String?
+
   contactRevealed Boolean? @default(false)
   paymentConfirmed Boolean? @default(false)
   paymentVerified Boolean? @default(false)

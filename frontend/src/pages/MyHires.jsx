@@ -513,6 +513,7 @@ const MyHires = () => {
         description: `15% application fee for ${hire.workerName || 'worker'}`,
         paymentType: 'recruitment',
         offerId: hire.offerId || hire.hireId,
+        hireId: hire.id || hire.hireId,  // ← REQUIRED for payment completion
         employerId: authUser?.id || authUser?.email,
         employerName: authUser?.fullName || 'Employer',
         returnTo: '/my-hires'
@@ -530,10 +531,13 @@ const MyHires = () => {
         hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30
       };
 
-      localStorage.setItem('homelyserv_pending_payment', JSON.stringify(pendingPayment));
-      localStorage.setItem('homelyserv_selected_worker', JSON.stringify(workerData));
-
-      navigate('/payment-options');
+      // Navigate with payment data in state instead of localStorage
+      navigate('/payment-options', { 
+        state: { 
+          pendingPayment,
+          worker: workerData
+        } 
+      });
     }
   };
 

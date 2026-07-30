@@ -38,6 +38,7 @@ import EmployerSettings from './pages/EmployerSettings';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
 import PaymentCommission from './pages/PaymentCommission';
+import EmployerCreateOffer from './pages/EmployerCreateOffer';
 
 // Subscription Page
 import Subscription from './pages/Subscription';
@@ -353,6 +354,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PaymentCommission />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/employer-create-offer" 
+        element={
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <EmployerCreateOffer />
           </ProtectedRoute>
         } 
       />

@@ -18,6 +18,7 @@ export const createPaymobPayment = async (amount, orderId, customerData) => {
     employerId: customerData?.employerId,
     employerName: customerData?.employerName || 'Employer',
     hireId: customerData?.hireId,
+    offerId: customerData?.offerId,
     phone: customerData?.phone || '+201234567890',
     description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
   });
@@ -69,6 +70,7 @@ export const createPayPalOrder = async (amount, orderId, customerData) => {
     employerId: customerData?.employerId,
     employerName: customerData?.employerName || 'Employer',
     hireId: customerData?.hireId,
+    offerId: customerData?.offerId,
     description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`
   });
 };

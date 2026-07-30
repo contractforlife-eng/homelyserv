@@ -17,6 +17,9 @@ const checkEmployerPayment = async (req, res, next) => {
     const employerId = req.userId;
     const employerRole = req.userRole;
 
+    console.log('[DEBUG checkEmployerPayment] req.userId:', req.userId);
+    console.log('[DEBUG checkEmployerPayment] req.userRole:', req.userRole);
+
     if (!employerId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -40,6 +43,9 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(400).json({ error: 'Missing recipient' });
     }
 
+    console.log('[DEBUG checkEmployerPayment] recipientId:', recipientId);
+    console.log('[DEBUG checkEmployerPayment] employerId:', employerId);
+
     // Convert User._id to WorkerProfile._id for payment check
     const workerProfile = await prisma.workerProfile.findUnique({
       where: { userId: String(recipientId) }
@@ -47,7 +53,14 @@ const checkEmployerPayment = async (req, res, next) => {
 
     const workerProfileId = workerProfile?.id || recipientId;
 
+    console.log('[DEBUG checkEmployerPayment] workerProfile:', workerProfile);
+    console.log('[DEBUG checkEmployerPayment] workerProfile.id:', workerProfile?.id);
+    console.log('[DEBUG checkEmployerPayment] workerProfile.userId:', workerProfile?.userId);
+    console.log('[DEBUG checkEmployerPayment] workerProfileId:', workerProfileId);
+
     const canContact = await canContactWorker(employerId, workerProfileId);
+
+    console.log('[DEBUG checkEmployerPayment] canContactWorker result:', canContact);
 
     // TEMPORARY: Allow employers to contact workers without payment check
     // TODO: Re-enable payment check when payment system is fully operational
@@ -55,9 +68,12 @@ const checkEmployerPayment = async (req, res, next) => {
     //   return res.status(403).json({ error: 'Payment required to contact this worker.' });
     // }
 
+    console.log('[DEBUG checkEmployerPayment] next() is reached');
     next();
   } catch (error) {
+    console.log('[DEBUG checkEmployerPayment] catch() is reached');
     console.error('Payment check error:', error);
+    console.log('[DEBUG checkEmployerPayment] error.stack:', error.stack);
     return res.status(500).json({ error: 'Failed to verify payment status' });
   }
 };
@@ -129,7 +145,10 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
     const recipientRole = resolveRecipientRole(senderRole);
 
     console.log('=== DEBUG BEFORE Message.create ===');
+    console.log('senderId:', senderId);
     console.log('recipientId:', recipientId);
+    console.log('senderRole:', senderRole);
+    console.log('recipientRole:', recipientRole);
     console.log('conversationId:', conversationId);
     console.log('=== END DEBUG ===');
 
@@ -147,6 +166,9 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
     });
 
     console.log('=== DEBUG AFTER Message.create ===');
+    console.log('success: true');
+    console.log('message._id:', message._id);
+    console.log('conversationId:', message.conversationId);
     console.log('savedMessage.recipientId:', message.recipientId);
     console.log('savedMessage.conversationId:', message.conversationId);
     console.log('=== END DEBUG ===');
