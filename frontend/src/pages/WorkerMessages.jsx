@@ -33,7 +33,8 @@ import {
   markMessagesAsRead,
   getConversationId,
   ensureConversationExists,
-  deleteConversation
+  deleteConversation,
+  formatDisplayName
 } from '../utils/chatService';
 
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
@@ -46,7 +47,6 @@ const WorkerMessages = () => {
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -118,6 +118,10 @@ const WorkerMessages = () => {
   };
 
   const t = translations[dashboard.language] || translations.en;
+
+  const formatSenderName = (senderName, senderRole) => {
+    return formatDisplayName(senderName, senderRole);
+  };
 
   // Auth check and loading
   useEffect(() => {
@@ -306,9 +310,6 @@ const WorkerMessages = () => {
         setMessages(updatedMessages);
         await markMessagesAsRead(selectedConversationId, userId);
       }
-      
-      const updatedUsers = await loadAllUsers();
-      setAllUsers(updatedUsers);
     }
     
     setTimeout(() => {
@@ -316,75 +317,7 @@ const WorkerMessages = () => {
     }, 500);
   };
 
-  const loadAllUsers = async () => {
-    const users = [];
-    
-    const employerUsers = JSON.parse(localStorage.getItem('employer_users') || '[]');
-    employerUsers.forEach(u => {
-      if (u.email) {
-        users.push({
-          id: u.id || u.email,
-          name: u.fullName || u.name || 'User',
-          email: u.email,
-          role: 'EMPLOYER',
-          profileImage: u.profileImage || null,
-          avatar: u.profileImage || null,
-          status: 'online'
-        });
-      }
-    });
-
-    const workerUsers = JSON.parse(localStorage.getItem('worker_users') || '[]');
-    workerUsers.forEach(u => {
-      if (u.email) {
-        users.push({
-          id: u.id || u.email,
-          name: u.fullName || u.name || 'User',
-          email: u.email,
-          role: 'WORKER',
-          profileImage: u.profileImage || null,
-          avatar: u.profileImage || null,
-          status: 'online'
-        });
-      }
-    });
-
-    const homelyUsers = JSON.parse(localStorage.getItem('homelyserv_users') || '[]');
-    homelyUsers.forEach(u => {
-      if (u.email && !users.some(existing => existing.email === u.email)) {
-        users.push({
-          id: u.id || u.email,
-          name: u.fullName || u.name || 'User',
-          email: u.email,
-          role: u.role || 'USER',
-          profileImage: u.profileImage || null,
-          avatar: u.profileImage || null,
-          status: 'online'
-        });
-      }
-    });
-
-    const uniqueUsers = users.filter((user, index, self) => 
-      index === self.findIndex(u => u.email === user.email)
-    );
-
-    return uniqueUsers;
-  };
-
-  useEffect(() => {
-    loadAllUsers().then(setAllUsers);
-  }, []);
-
-  const usersMap = allUsers.reduce((map, u) => {
-    if (u.id) map[u.id] = u;
-    if (u.email) map[u.email] = u;
-    return map;
-  }, {});
-
   const getAvatarForUser = (userId, userName) => {
-    const user = usersMap[userId];
-    if (user?.profileImage) return user.profileImage;
-    if (user?.avatar) return user.avatar;
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=red&color=fff&size=100&bold=true`;
   };
 
@@ -483,13 +416,13 @@ const WorkerMessages = () => {
                         }`}
                       >
                         <img
-                          src={getAvatarForUser(conv.otherUserId, conv.otherUserName)}
-                          alt={conv.otherUserName}
+                          src={getAvatarForUser(conv.otherUserId, formatDisplayName(conv.otherUserName, conv.role))}
+                          alt={formatDisplayName(conv.otherUserName, conv.role)}
                           className="w-12 h-12 rounded-full object-cover border-2 border-red-200"
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 dark:text-white truncate">{conv.otherUserName}</p>
+                            <p className="font-semibold text-gray-800 dark:text-white truncate">{formatDisplayName(conv.otherUserName, conv.role)}</p>
                             <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{conv.time}</span>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
@@ -516,14 +449,14 @@ const WorkerMessages = () => {
                         <img
                           src={getAvatarForUser(
                             conversations.find(c => c.id === selectedConversationId)?.otherUserId,
-                            conversations.find(c => c.id === selectedConversationId)?.otherUserName
+                            formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role)
                           )}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover border-2 border-red-200"
                         />
                         <div>
                           <p className="font-semibold text-gray-800 dark:text-white">
-                            {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                            {formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role)}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
@@ -623,7 +556,7 @@ const WorkerMessages = () => {
                               >
                                 {!isWorker && (
                                   <p className="text-xs font-medium text-red-600 mb-1">
-                                    {msg.senderName}
+                                    {formatSenderName(msg.senderName, msg.senderRole)}
                                   </p>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>

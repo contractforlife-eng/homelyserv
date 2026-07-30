@@ -21,16 +21,18 @@ const NotificationBell = ({ userId, className = '' }) => {
   const bellRef = useRef(null);
 
   // Load notifications
-  const loadNotifications = () => {
+  const loadNotifications = async () => {
     if (!userId) return;
     
     setIsLoading(true);
     try {
-      const all = getNotifications(userId);
+      const all = await getNotifications(userId);
       const unread = getUnreadCount(userId);
       
-      // Sort by newest first
-      all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // Sort by newest first (only if all is an array)
+      if (Array.isArray(all)) {
+        all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
       
       setNotifications(all);
       setUnreadCount(unread);

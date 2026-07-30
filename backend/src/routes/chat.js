@@ -21,6 +21,7 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Skip payment check for ADMIN and WORKER roles
     if (employerRole !== 'EMPLOYER') {
       return next();
     }
@@ -48,9 +49,11 @@ const checkEmployerPayment = async (req, res, next) => {
 
     const canContact = await canContactWorker(employerId, workerProfileId);
 
-    if (!canContact) {
-      return res.status(403).json({ error: 'Payment required to contact this worker.' });
-    }
+    // TEMPORARY: Allow employers to contact workers without payment check
+    // TODO: Re-enable payment check when payment system is fully operational
+    // if (!canContact) {
+    //   return res.status(403).json({ error: 'Payment required to contact this worker.' });
+    // }
 
     next();
   } catch (error) {

@@ -134,6 +134,26 @@ export const getAllConversations = () => {
   return [];
 };
 
+/**
+ * Shared display name formatter for all chat UI.
+ * 
+ * Rules:
+ *   ADMIN  -> "Emad (Co-Admin)"
+ *   EMPLOYER -> "Rania"
+ *   WORKER -> "Nono"
+ *   USER   -> "Name"
+ * 
+ * @param {string} name - The user's raw name
+ * @param {string} role - The user's role (ADMIN, EMPLOYER, WORKER, USER)
+ * @returns {string} The formatted display name
+ */
+export const formatDisplayName = (name, role) => {
+  if (role === 'ADMIN') {
+    return `${name || 'Admin'} (Co-Admin)`;
+  }
+  return name || 'User';
+};
+
 export default {
   getConversationId,
   getUserConversations,
@@ -151,5 +171,6 @@ export default {
   sendWelcomeMessage,
   deleteConversation,
   debugChatData,
-  getAllConversations
+  getAllConversations,
+  formatDisplayName
 };

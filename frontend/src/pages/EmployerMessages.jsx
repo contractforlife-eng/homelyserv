@@ -55,7 +55,8 @@ import {
   markMessagesAsRead,
   getConversationId,
   ensureConversationExists,
-  deleteConversation
+  deleteConversation,
+  formatDisplayName
 } from '../utils/chatService';
 
 // ============================================================
@@ -139,6 +140,10 @@ const EmployerMessages = () => {
   };
 
   const t = translations[dashboard.language] || translations.en;
+
+  const formatSenderName = (senderName, senderRole) => {
+    return formatDisplayName(senderName, senderRole);
+  };
 
   // Load conversations
   useEffect(() => {
@@ -541,13 +546,13 @@ const EmployerMessages = () => {
                         }`}
                       >
                         <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.otherUserName)}&background=teal&color=fff&size=100&bold=true`}
-                          alt={conv.otherUserName}
+                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conv.otherUserName, conv.role))}&background=teal&color=fff&size=100&bold=true`}
+                          alt={formatDisplayName(conv.otherUserName, conv.role)}
                           className="w-12 h-12 rounded-full object-cover border-2 border-teal-200"
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 dark:text-white truncate">{conv.otherUserName}</p>
+                            <p className="font-semibold text-gray-800 dark:text-white truncate">{formatDisplayName(conv.otherUserName, conv.role)}</p>
                             <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{conv.time}</span>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
@@ -575,13 +580,13 @@ const EmployerMessages = () => {
                       <div className="flex items-center gap-3">
                         <img
                           src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role) || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
                           alt="Chat"
                           className="w-10 h-10 rounded-full object-cover border-2 border-teal-200"
                         />
                         <div>
                           <p className="font-semibold text-gray-800 dark:text-white">
-                            {conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                            {formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role)}
                           </p>
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
@@ -680,7 +685,7 @@ const EmployerMessages = () => {
                               >
                                 {!isEmployer && (
                                   <p className="text-xs font-medium text-teal-600 mb-1">
-                                    {msg.senderName}
+                                    {formatSenderName(msg.senderName, msg.senderRole)}
                                   </p>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>

@@ -59,6 +59,9 @@ const DashboardHeader = ({
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || 'User';
   const isAdmin = variant === 'admin';
+  
+  // Format admin name with "Co-Admin" suffix
+  const displayName = isAdmin ? `${fullName} (Co-Admin)` : fullName;
 
   return (
     <header className={`sticky top-0 z-30 ${
@@ -116,7 +119,7 @@ const DashboardHeader = ({
               <span className={`text-sm font-medium hidden sm:inline ${
                 isAdmin ? 'text-gray-300' : 'text-gray-700 dark:text-gray-200'
               }`}>
-                {fullName}
+                {displayName}
               </span>
               {isPremium && (
                 <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap hidden sm:inline-flex ${

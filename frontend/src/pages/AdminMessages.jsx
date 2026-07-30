@@ -1,5 +1,5 @@
 // src/pages/AdminMessages.jsx - MIGRATED TO COMMON CHAT ARCHITECTURE
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -8,17 +8,14 @@ import {
   MessageCircle,
   Search,
   Send,
-  CheckCircle,
-  AlertCircle,
   RefreshCw,
   X,
   Archive,
-  Eye,
-  Shield,
   MoreVertical,
   User,
   Trash2,
-  Ban
+  Ban,
+  Plus
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -26,18 +23,142 @@ import {
   sendMessage,
   markMessagesAsRead,
   getConversationId,
-  deleteConversation
+  deleteConversation,
+  formatDisplayName
 } from '../utils/chatService';
 import api from '../utils/api';
+
+// ============================================================
+// NEW CHAT DRAWER COMPONENT
+// ============================================================
+const NewChatDrawer = ({ isOpen, onClose, onSelectUser, authUserId }) => {
+  const [allUsers, setAllUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const loadAllUsers = useCallback(async () => {
+    if (!authUserId) return;
+    setLoading(true);
+    try {
+      const response = await api.get('/api/admin/users');
+      const users = response.data.users || [];
+      const nonAdminUsers = users.filter(u => u.role !== 'ADMIN');
+      setAllUsers(nonAdminUsers);
+      setFilteredUsers(nonAdminUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setAllUsers([]);
+      setFilteredUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [authUserId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAllUsers();
+      setSearchTerm('');
+    }
+  }, [isOpen, loadAllUsers]);
+
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredUsers(allUsers);
+      return;
+    }
+    const lower = searchTerm.toLowerCase();
+    setFilteredUsers(
+      allUsers.filter(u =>
+        u.fullName?.toLowerCase().includes(lower) ||
+        u.email?.toLowerCase().includes(lower)
+      )
+    );
+  }, [searchTerm, allUsers]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      
+      {/* Drawer */}
+      <div className="relative ml-auto w-full max-w-md bg-[#1a1a1a] border-l border-yellow-500/20 shadow-2xl animate-slide-in">
+        <div className="flex items-center justify-between p-4 border-b border-yellow-500/20">
+          <h2 className="text-lg font-semibold text-white">New Chat</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-yellow-500/10 text-gray-400 hover:text-white transition"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="p-4 border-b border-yellow-500/20">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-3 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        {/* Users List */}
+        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 130px)' }}>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500" />
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-4xl mb-3">👥</div>
+              <p className="text-gray-400">No users found</p>
+            </div>
+          ) : (
+            filteredUsers.map((user) => {
+              const userId = user._id || user.id;
+              return (
+                <button
+                  key={userId}
+                  onClick={() => onSelectUser(userId, user.fullName || user.name)}
+                  className="w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left"
+                >
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'User')}&background=yellow&color=000&size=100&bold=true`}
+                    alt={user.fullName || user.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white truncate">{user.fullName || user.name}</p>
+                    <p className="text-sm text-gray-400 truncate">{user.email}</p>
+                    <span className="text-xs text-gray-500">
+                      {user.role === 'EMPLOYER' ? '(Employer)' : user.role === 'WORKER' ? '(Worker)' : '(User)'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================================
 // MAIN ADMIN MESSAGES COMPONENT
 // ============================================================
 const AdminMessages = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -45,9 +166,11 @@ const AdminMessages = () => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null);
-  const messagesEndRef = useRef(null);
-  const intervalRef = useRef(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedUserName, setSelectedUserName] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const dropdownRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   const translations = {
     en: {
@@ -61,7 +184,8 @@ const AdminMessages = () => {
       noMessages: 'No messages yet',
       loading: 'Loading messages...',
       refresh: 'Refresh',
-      viewChat: 'View Chat'
+      viewChat: 'View Chat',
+      newChat: 'New Chat'
     },
     ar: {
       title: 'الرسائل',
@@ -74,34 +198,12 @@ const AdminMessages = () => {
       noMessages: 'لا توجد رسائل بعد',
       loading: 'جاري تحميل الرسائل...',
       refresh: 'تحديث',
-      viewChat: 'عرض المحادثة'
+      viewChat: 'عرض المحادثة',
+      newChat: 'محادثة جديدة'
     }
   };
 
   const t = translations['en'];
-
-  // ============================================================
-  // loadUsers
-  // ============================================================
-  const loadUsers = async () => {
-    if (!authUser?.id) return;
-    
-    try {
-      const response = await api.get('/api/admin/users');
-      const allUsers = response.data.users || [];
-      
-      // Filter out admin users from the list
-      const nonAdminUsers = allUsers.filter(u => u.role !== 'ADMIN');
-      
-      console.log('📨 Loaded users:', nonAdminUsers.length);
-      setUsers(nonAdminUsers);
-      setFilteredUsers(nonAdminUsers);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      setUsers([]);
-      setFilteredUsers([]);
-    }
-  };
 
   // ============================================================
   // loadConversations
@@ -158,9 +260,9 @@ const AdminMessages = () => {
       return;
     }
 
-    // Initial load with loading state
+    // Initial load - only conversations, NOT all users
     setLoading(true);
-    Promise.all([loadUsers(), loadConversations()]).finally(() => {
+    loadConversations().finally(() => {
       setLoading(false);
     });
   }, [authUser, isAuthenticated, authLoading, navigate]);
@@ -189,35 +291,19 @@ const AdminMessages = () => {
     }
   }, [messages]);
 
-  // Filter users and merge with conversations
+  // Filter conversations based on search term
   useEffect(() => {
-    let filtered = users;
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(u =>
-        u.fullName?.toLowerCase().includes(searchLower) ||
-        u.email?.toLowerCase().includes(searchLower)
-      );
+    if (!searchTerm) {
+      setFilteredConversations(conversations);
+      return;
     }
-
-    // Merge users with conversations to show latest message
-    const usersWithConversations = filtered.map(user => {
-      const conversation = conversations.find(c => c.otherUserId === user._id || c.otherUserId === user.id);
-      return {
-        id: user._id || user.id,
-        name: user.fullName || user.name,
-        email: user.email,
-        role: user.role,
-        lastMessage: conversation?.lastMessage || 'No messages yet',
-        time: conversation?.time || '',
-        unread: conversation?.unread || 0,
-        conversationId: conversation?.id || null
-      };
-    });
-
-    setFilteredUsers(usersWithConversations);
-  }, [users, conversations, searchTerm]);
+    const lower = searchTerm.toLowerCase();
+    setFilteredConversations(
+      conversations.filter(c =>
+        c.otherUserName?.toLowerCase().includes(lower)
+      )
+    );
+  }, [conversations, searchTerm]);
 
   // ============================================================
   // UI Helpers
@@ -247,11 +333,11 @@ const AdminMessages = () => {
 
   const formatSenderName = (senderName, senderRole, isCurrentUser) => {
     if (isCurrentUser) {
-      // Current admin: {Admin Name} (Co-Admin)
-      return `${authUser?.fullName || authUser?.name || 'Admin'} (Co-Admin)`;
+      // Current user: {User Name} (You)
+      return `${senderName || 'User'} (You)`;
     }
-    // Other users: {User Name} ({Role})
-    return `${senderName || 'User'} (${getRoleLabel(senderRole)})`;
+    // Other users: use shared formatter
+    return formatDisplayName(senderName, senderRole);
   };
 
   // Dropdown handlers
@@ -272,16 +358,14 @@ const AdminMessages = () => {
 
   const handleViewUserProfile = (userId) => {
     handleDropdownClose();
-    const user = users.find(u => (u._id === userId || u.id === userId));
-    if (!user) return;
+    const conv = conversations.find(c => c.otherUserId === userId);
+    if (!conv) return;
 
-    // Navigate based on user role
-    if (user.role === 'WORKER') {
+    if (conv.otherUserRole === 'WORKER') {
       navigate(`/worker-profile/${userId}`);
-    } else if (user.role === 'EMPLOYER') {
+    } else if (conv.otherUserRole === 'EMPLOYER') {
       navigate(`/employer-profile/${userId}`);
     } else {
-      // Default fallback
       navigate(`/admin/users/${userId}`);
     }
   };
@@ -370,21 +454,27 @@ const AdminMessages = () => {
     };
   }, []);
 
+  const handleDrawerSelectUser = (userId, userName) => {
+    setDrawerOpen(false);
+    setSelectedUserId(userId);
+    setSelectedUserName(userName || '');
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUserId || !authUser) return;
     
     setSendingMessage(true);
     
     try {
-      const selectedUser = users.find(u => (u._id === selectedUserId || u.id === selectedUserId));
-      if (!selectedUser) return;
+      const conv = conversations.find(c => c.otherUserId === selectedUserId);
+      const recipientName = conv?.otherUserName || selectedUserName || 'User';
 
       const result = await sendMessage(
         authUser.id,
         authUser.fullName || 'Admin',
         'ADMIN',
-        selectedUser._id || selectedUser.id,
-        selectedUser.fullName || selectedUser.name,
+        selectedUserId,
+        recipientName,
         newMessage
       );
 
@@ -462,9 +552,17 @@ const AdminMessages = () => {
         {/* Split View Chat Interface */}
         <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 h-[700px]">
-            {/* LEFT PANEL - Users List */}
-            <div className="border-r border-yellow-500/20">
-              <div className="p-4 border-b border-yellow-500/20">
+            {/* LEFT PANEL - Conversations List */}
+            <div className="border-r border-yellow-500/20 flex flex-col">
+              {/* Search + New Chat Button */}
+              <div className="p-4 border-b border-yellow-500/20 space-y-3">
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="w-full px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center justify-center gap-2 font-medium"
+                >
+                  <Plus size={18} />
+                  {t.newChat}
+                </button>
                 <div className="relative">
                   <Search size={18} className="absolute left-3 top-3 text-gray-500" />
                   <input
@@ -476,96 +574,103 @@ const AdminMessages = () => {
                   />
                 </div>
               </div>
-              <div className="overflow-y-auto h-[calc(700px-73px)]">
-                {filteredUsers.length === 0 ? (
+              <div className="overflow-y-auto flex-1">
+                {filteredConversations.length === 0 ? (
                   <div className="p-8 text-center">
-                    <div className="text-4xl mb-3">👥</div>
-                    <p className="text-gray-400">No users found</p>
+                    <div className="text-4xl mb-3">💬</div>
+                    <p className="text-gray-400">{t.noConversations}</p>
+                    <p className="text-sm text-gray-500 mt-2">Click "New Chat" to start a conversation</p>
                   </div>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <div key={user.id} className="relative">
-                      <button
-                        onClick={() => handleSelectUser(user.id)}
-                        className={`w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 ${
-                          selectedUserId === user.id ? 'bg-yellow-500/10' : ''
-                        }`}
-                      >
-                        <img
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=yellow&color=000&size=100&bold=true`}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="flex justify-between items-start">
-                            <p className="font-semibold text-white truncate">{user.name}</p>
-                            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{user.time}</span>
+                  filteredConversations.map((conv) => {
+                    const userId = conv.otherUserId;
+                    return (
+                      <div key={conv.id || userId} className="relative">
+                        <div
+                          onClick={() => handleSelectUser(userId)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSelectUser(userId)}
+                          className={`w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 ${
+                            selectedUserId === userId ? 'bg-yellow-500/10' : ''
+                          }`}
+                        >
+                          <img
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conv.otherUserName, conv.otherUserRole || conv.role) || 'User')}&background=yellow&color=000&size=100&bold=true`}
+                            alt={formatDisplayName(conv.otherUserName, conv.otherUserRole || conv.role)}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="flex justify-between items-start">
+                              <p className="font-semibold text-white truncate">{formatDisplayName(conv.otherUserName, conv.otherUserRole || conv.role)}</p>
+                              <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{conv.time || ''}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-400 truncate">{conv.lastMessage || 'No messages yet'}</p>
+                              <button
+                                onClick={(e) => handleDropdownToggle(e, userId)}
+                                className="p-1 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500 ml-2 flex-shrink-0"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-500">{getRoleLabel(conv.otherUserRole)}</span>
+                              {conv.unread > 0 && (
+                                <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
+                                  {conv.unread}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-400 truncate">{user.lastMessage}</p>
+                        </div>
+
+                        {/* Dropdown Menu */}
+                        {dropdownOpen === userId && (
+                          <div
+                            ref={dropdownRef}
+                            className="absolute right-4 top-16 z-50 w-48 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-xl overflow-hidden"
+                          >
                             <button
-                              onClick={(e) => handleDropdownToggle(e, user.id)}
-                              className="p-1 rounded-lg hover:bg-yellow-500/10 transition-colors text-gray-400 hover:text-yellow-500 ml-2 flex-shrink-0"
+                              onClick={() => handleOpenChat(userId)}
+                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
                             >
-                              <MoreVertical size={16} />
+                              <MessageCircle size={16} />
+                              Open Chat
+                            </button>
+                            <button
+                              onClick={() => handleViewUserProfile(userId)}
+                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
+                            >
+                              <User size={16} />
+                              View User Profile
+                            </button>
+                            <button
+                              onClick={() => handleArchiveConversation(userId)}
+                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
+                            >
+                              <Archive size={16} />
+                              Archive Conversation
+                            </button>
+                            <button
+                              onClick={() => handleDeleteConversation(userId)}
+                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
+                            >
+                              <Trash2 size={16} />
+                              Delete Conversation
+                            </button>
+                            <button
+                              onClick={() => handleBlockUser(userId)}
+                              className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition flex items-center gap-2"
+                            >
+                              <Ban size={16} />
+                              Block User
                             </button>
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">{getRoleLabel(user.role)}</span>
-                            {user.unread > 0 && (
-                              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
-                                {user.unread}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {dropdownOpen === user.id && (
-                        <div
-                          ref={dropdownRef}
-                          className="absolute right-4 top-16 z-50 w-48 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-xl overflow-hidden"
-                        >
-                          <button
-                            onClick={() => handleOpenChat(user.id)}
-                            className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
-                          >
-                            <MessageCircle size={16} />
-                            Open Chat
-                          </button>
-                          <button
-                            onClick={() => handleViewUserProfile(user.id)}
-                            className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
-                          >
-                            <User size={16} />
-                            View User Profile
-                          </button>
-                          <button
-                            onClick={() => handleArchiveConversation(user.id)}
-                            className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
-                          >
-                            <Archive size={16} />
-                            Archive Conversation
-                          </button>
-                          <button
-                            onClick={() => handleDeleteConversation(user.id)}
-                            className="w-full px-4 py-3 text-left text-sm text-white hover:bg-yellow-500/10 transition flex items-center gap-2"
-                          >
-                            <Trash2 size={16} />
-                            Delete Conversation
-                          </button>
-                          <button
-                            onClick={() => handleBlockUser(user.id)}
-                            className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition flex items-center gap-2"
-                          >
-                            <Ban size={16} />
-                            Block User
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -578,15 +683,15 @@ const AdminMessages = () => {
                   <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-[#0a0a0a]">
                     <div className="flex items-center gap-3">
                       <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(users.find(u => (u._id === selectedUserId || u.id === selectedUserId))?.fullName || users.find(u => (u._id === selectedUserId || u.id === selectedUserId))?.name || 'User')}&background=yellow&color=000&size=100&bold=true`}
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conversations.find(c => c.otherUserId === selectedUserId)?.otherUserName, (conversations.find(c => c.otherUserId === selectedUserId)?.otherUserRole || conversations.find(c => c.otherUserId === selectedUserId)?.role)) || 'User')}&background=yellow&color=000&size=100&bold=true`}
                         alt="Chat"
                         className="w-10 h-10 rounded-full object-cover border-2 border-yellow-500/30"
                       />
                       <div>
                         <p className="font-semibold text-white">
-                          {users.find(u => (u._id === selectedUserId || u.id === selectedUserId))?.fullName || users.find(u => (u._id === selectedUserId || u.id === selectedUserId))?.name}
+                          {formatDisplayName(conversations.find(c => c.otherUserId === selectedUserId)?.otherUserName, (conversations.find(c => c.otherUserId === selectedUserId)?.otherUserRole || conversations.find(c => c.otherUserId === selectedUserId)?.role))}
                         </p>
-                        <p className="text-xs text-gray-400">{getRoleLabel(users.find(u => (u._id === selectedUserId || u.id === selectedUserId))?.role)}</p>
+                        <p className="text-xs text-gray-400">{getRoleLabel(conversations.find(c => c.otherUserId === selectedUserId)?.otherUserRole)}</p>
                       </div>
                     </div>
                   </div>
@@ -663,6 +768,14 @@ const AdminMessages = () => {
           </div>
         </div>
       </div>
+
+      {/* New Chat Drawer */}
+      <NewChatDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSelectUser={handleDrawerSelectUser}
+        authUserId={authUser?.id}
+      />
     </DashboardLayout>
   );
 };

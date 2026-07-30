@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const MONGODB_URI = process.env.DATABASE_URL || 'mongodb+srv://contractforlife_db_user:Killuemad-123@cluster0.hblbv4s.mongodb.net/homelyserv?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.DATABASE_URL || process.env.DATABASE_URL;
 
 async function main() {
   await mongoose.connect(MONGODB_URI);
