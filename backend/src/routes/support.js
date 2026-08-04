@@ -18,22 +18,28 @@ router.get('/users', async (req, res) => {
     const { search, role, page = 1, limit = 50 } = req.query;
     
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
     
-    // Build filter
-    const filter = {};
-    if (search) {
-      filter.OR = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+    // Build Prisma where clause
+    const where = {};
+    
+    // Add role filter if provided
+    if (role) {
+      where.role = role;
+    }
+    
+    // Add search filter if provided - using Prisma's contains with case-insensitive mode
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      where.OR = [
+        { fullName: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } }
       ];
     }
-    if (role) {
-      filter.role = role;
-    }
 
-    // Get users from Prisma (for WORKER, EMPLOYER, SUPPORT roles)
+    // Get users from Prisma
     const users = await prisma.user.findMany({
-      where: filter,
+      where,
       select: {
         id: true,
         fullName: true,
@@ -45,20 +51,20 @@ router.get('/users', async (req, res) => {
         isSuspended: true
       },
       skip,
-      take: parseInt(limit),
+      take,
       orderBy: {
         createdAt: 'desc'
       }
     });
 
-    const total = await prisma.user.count({ where: filter });
+    const total = await prisma.user.count({ where });
 
     return res.json({
       success: true,
       count: users.length,
       total,
       page: parseInt(page),
-      limit: parseInt(limit),
+      limit: take,
       users: users.map(user => ({
         id: user.id,
         fullName: user.fullName,
@@ -71,7 +77,6 @@ router.get('/users', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching users for support:', error);
     return res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -83,15 +88,15 @@ router.get('/stats', async (req, res) => {
     // Get total users
     const totalUsers = await prisma.user.count();
     
-    // Get total conversations (unique conversation IDs)
+    // Get total conversations (unique conversation IDs) - using Mongoose
     const totalConversations = await Message.distinct('conversationId').then(ids => ids.length);
     
-    // Get unread messages count
+    // Get unread messages count - using Mongoose
     const unreadMessages = await Message.countDocuments({
       read: false
     });
 
-    // Get users by role
+    // Get users by role - using Prisma groupBy
     const usersByRole = await prisma.user.groupBy({
       by: ['role'],
       _count: {
@@ -114,88 +119,7 @@ router.get('/stats', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching support stats:', error);
     return res.status(500).json({ error: 'Failed to fetch statistics' });
-  }
-});
-
-// GET /api/support/conversations
-// Get all conversations for support staff
-router.get('/conversations', async (req, res) => {
-  try {
-    const { page = 1, limit = 50 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Get all messages grouped by conversation
-    const messages = await Message.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    // Group by conversationId
-    const conversationsMap = new Map();
-    
-    for (const msg of messages) {
-      if (!conversationsMap.has(msg.conversationId)) {
-        conversationsMap.set(msg.conversationId, {
-          conversationId: msg.conversationId,
-          lastMessage: msg,
-          participants: new Set()
-        });
-      }
-      
-      const conv = conversationsMap.get(msg.conversationId);
-      conv.participants.add(msg.senderId);
-      conv.participants.add(msg.recipientId);
-    }
-
-    // Convert to array and get participant details
-    const conversations = await Promise.all(
-      Array.from(conversationsMap.values()).map(async (conv) => {
-        const participantIds = Array.from(conv.participants);
-        const participants = await prisma.user.findMany({
-          where: {
-            id: {
-              in: participantIds
-            }
-          },
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-            image: true
-          }
-        });
-
-        const unreadCount = await Message.countDocuments({
-          conversationId: conv.conversationId,
-          read: false
-        });
-
-        return {
-          conversationId: conv.conversationId,
-          lastMessage: {
-            text: conv.lastMessage.text,
-            senderId: conv.lastMessage.senderId,
-            senderName: conv.lastMessage.senderName,
-            senderRole: conv.lastMessage.senderRole,
-            createdAt: conv.lastMessage.createdAt
-          },
-          participants,
-          unreadCount
-        };
-      })
-    );
-
-    return res.json({
-      success: true,
-      count: conversations.length,
-      conversations
-    });
-  } catch (error) {
-    console.error('Error fetching conversations:', error);
-    return res.status(500).json({ error: 'Failed to fetch conversations' });
   }
 });
 

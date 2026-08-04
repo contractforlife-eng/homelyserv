@@ -204,13 +204,25 @@ router.get('/messages/:conversationId', authenticate, requireConversationPartici
 router.get('/conversations/:userId', authenticate, async (req, res) => {
   try {
     const userId = String(req.userId);
+    const userRole = req.userRole;
 
-    const messages = await Message.find({
-      $or: [
-        { senderId: userId },
-        { recipientId: userId }
-      ]
-    }).sort({ createdAt: 1 });
+    // ADMIN and SUPPORT see ALL conversations
+    // Other users only see conversations they're part of
+    const isAdminOrSupport = userRole === 'ADMIN' || userRole === 'SUPPORT';
+    
+    let messages;
+    if (isAdminOrSupport) {
+      // Get all messages, sorted by creation time
+      messages = await Message.find({}).sort({ createdAt: 1 });
+    } else {
+      // Get only messages where user is sender or recipient
+      messages = await Message.find({
+        $or: [
+          { senderId: userId },
+          { recipientId: userId }
+        ]
+      }).sort({ createdAt: 1 });
+    }
 
     const groups = new Map();
     for (const msg of messages) {
@@ -221,11 +233,36 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
     const conversations = [];
     for (const [conversationId, msgs] of groups) {
       const last = msgs[msgs.length - 1];
-      const isSender = String(last.senderId) === userId;
-
-      const otherUser = isSender
-        ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
-        : { id: last.senderId, name: last.senderName, role: last.senderRole };
+      
+      // For admin/support, determine the "other user" (non-admin/support participant)
+      let otherUser;
+      if (isAdminOrSupport) {
+        // Find the participant who is not ADMIN or SUPPORT
+        const nonAdminParticipant = msgs.find(m => {
+          const senderRole = m.senderRole;
+          const recipientRole = m.recipientRole;
+          return senderRole !== 'ADMIN' && senderRole !== 'SUPPORT' &&
+                 recipientRole !== 'ADMIN' && recipientRole !== 'SUPPORT';
+        });
+        
+        if (nonAdminParticipant) {
+          const isSender = String(last.senderId) === userId;
+          otherUser = isSender
+            ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
+            : { id: last.senderId, name: last.senderName, role: last.senderRole };
+        } else {
+          // Fallback to last message participants
+          const isSender = String(last.senderId) === userId;
+          otherUser = isSender
+            ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
+            : { id: last.senderId, name: last.senderName, role: last.senderRole };
+        }
+      } else {
+        const isSender = String(last.senderId) === userId;
+        otherUser = isSender
+          ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
+          : { id: last.senderId, name: last.senderName, role: last.senderRole };
+      }
 
       const unread = msgs.filter(m => String(m.recipientId) === userId && !m.read).length;
 

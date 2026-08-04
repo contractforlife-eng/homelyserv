@@ -78,7 +78,7 @@ const SupportLayout = ({
     navigate('/login');
   };
 
-  if (authLoading) {
+  if (authLoading || !authUser) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
@@ -87,10 +87,6 @@ const SupportLayout = ({
         </div>
       </div>
     );
-  }
-
-  if (!authUser) {
-    return null;
   }
 
   // Provide layout state to children

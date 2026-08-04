@@ -24,16 +24,20 @@ import {
   deleteConversation,
   formatDisplayName
 } from '../../utils/chatService';
+import api from '../../utils/api';
 
 const SupportMessages = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
   const dashboard = useDashboard();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -43,29 +47,59 @@ const SupportMessages = () => {
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Load conversations
-  useEffect(() => {
-    if (!authUser) return;
+  // ============================================================
+  // loadConversations - EXACT SAME AS ADMIN
+  // ============================================================
+  const loadConversations = async () => {
+    if (!authUser?.id) return;
     
-    const userId = authUser.id;
-    if (!userId) return;
-    
-    const loadInitialData = async () => {
-      const userConversations = await getUserConversations(userId);
+    try {
+      const userConversations = await getUserConversations(authUser.id);
       setConversations(userConversations);
-    };
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversations([]);
+    }
+  };
 
-    loadInitialData();
-  }, [authUser, refreshKey]);
+  // ============================================================
+  // useEffects - EXACT SAME AS ADMIN
+  // ============================================================
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !authUser) {
+      navigate('/login');
+      return;
+    }
+
+    if (authUser.role !== 'SUPPORT' && authUser.role !== 'ADMIN') {
+      navigate('/login');
+      return;
+    }
+
+    // Initial load - only conversations, NOT all users
+    setLoading(true);
+    loadConversations().finally(() => {
+      setLoading(false);
+    });
+  }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  // Polling for conversations (silent, no loading state)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [authUser]);
 
   // Auto-refresh
   useEffect(() => {
     if (!authUser) return;
-    const userId = authUser.id;
-    if (!userId) return;
 
     intervalRef.current = setInterval(async () => {
-      const updatedConversations = await getUserConversations(userId);
+      const updatedConversations = await getUserConversations(authUser.id);
       setConversations(prevConversations => {
         if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
           return updatedConversations;
@@ -77,7 +111,7 @@ const SupportMessages = () => {
         const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(prevMessages => {
           if (JSON.stringify(prevMessages) !== JSON.stringify(updatedMessages)) {
-            markMessagesAsRead(selectedConversationId, userId);
+            markMessagesAsRead(selectedConversationId, authUser.id);
             return updatedMessages;
           }
           return prevMessages;
