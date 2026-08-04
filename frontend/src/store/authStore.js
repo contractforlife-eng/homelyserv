@@ -302,6 +302,11 @@ const useAuthStore = create(
         return user?.role?.toUpperCase() === 'ADMIN';
       },
 
+      isSupport: () => {
+        const { user } = get();
+        return user?.role?.toUpperCase() === 'SUPPORT';
+      },
+
       getUserName: () => {
         const { user } = get();
         return user?.fullName || user?.name || 'User';

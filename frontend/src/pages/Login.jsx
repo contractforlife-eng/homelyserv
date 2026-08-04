@@ -58,6 +58,8 @@ const redirectUser = (user) => {
        navigate('/employer-dashboard');
      } else if (role === 'WORKER') {
        navigate('/worker-dashboard');
+     } else if (role === 'SUPPORT') {
+       navigate('/support-dashboard');
      } else {
        navigate('/login');
      }
@@ -93,15 +95,19 @@ const redirectUser = (user) => {
 
       // One-time migration: if profileImage is missing in MongoDB but
       // exists in legacy localStorage, copy it to MongoDB now.
-      // This is async and non-blocking — the user navigates immediately.
-      migrateLegacyProfileIfNeeded(user, token).then(migratedUser => {
+      // Wait for migration to complete before redirecting to prevent
+      // navigation before auth state is fully settled.
+      try {
+        const migratedUser = await migrateLegacyProfileIfNeeded(user, token);
         if (migratedUser) {
           console.log('✅ Profile image migrated — updating store');
           useAuthStore.setState({
             user: migratedUser
           });
         }
-      });
+      } catch (migrationError) {
+        console.warn('⚠️ Profile migration failed (non-blocking):', migrationError);
+      }
 
       if (data.mustChangePassword) {
         setMustChangePassword(true);
@@ -110,7 +116,9 @@ const redirectUser = (user) => {
         return;
       }
 
-      redirectUser(user);
+      // Get the latest user from store (in case migration updated it)
+      const latestUser = useAuthStore.getState().user || user;
+      redirectUser(latestUser);
     } catch (error) {
       console.error('Login error:', error);
       setError(t('loginFailed'));

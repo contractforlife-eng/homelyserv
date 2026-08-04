@@ -54,6 +54,11 @@ import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
 import AdminProfile from './pages/AdminProfile';
 
+// Support Pages
+import SupportDashboard from './pages/support/SupportDashboard';
+import SupportUsers from './pages/support/SupportUsers';
+import SupportMessages from './pages/support/SupportMessages';
+
 import { useAuth } from './context/AuthContext';
 
 // Messages Redirect Component
@@ -79,6 +84,8 @@ const role = user.role?.toUpperCase();
        navigate('/employer-messages', { replace: true });
      } else if (role === 'ADMIN') {
        navigate('/admin/messages', { replace: true });
+     } else if (role === 'SUPPORT') {
+       navigate('/support-dashboard', { replace: true });
      } else {
        navigate('/login', { replace: true });
      }
@@ -127,6 +134,11 @@ if (!isAuthenticated) {
    const userRole = user.role?.toUpperCase();
 
    if (requiredRole && userRole !== requiredRole.toUpperCase()) {
+     // Allow ADMIN to access SUPPORT routes
+     if (requiredRole.toUpperCase() === 'SUPPORT' && userRole === 'ADMIN') {
+       return children;
+     }
+     
      if (userRole === 'WORKER') {
        return <Navigate to="/worker-dashboard" replace />;
      } else if (userRole === 'EMPLOYER') {
@@ -448,6 +460,32 @@ function App() {
             <AdminHires />
           </ProtectedRoute>
         }
+      />
+
+      {/* ========== SUPPORT ROUTES ========== */}
+      <Route 
+        path="/support-dashboard" 
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <SupportDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/support-users" 
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <SupportUsers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/support-messages" 
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <SupportMessages />
+          </ProtectedRoute>
+        } 
       />
 
       {/* ========== FALLBACK ========== */}
