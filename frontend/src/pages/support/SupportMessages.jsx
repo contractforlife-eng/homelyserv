@@ -255,7 +255,7 @@ const SupportMessages = () => {
   };
 
   const getAvatarForUser = (userId, userName, role) => {
-    const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : 'purple';
+    const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : 'green';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=${bg}&color=fff&size=100&bold=true`;
   };
 
@@ -302,7 +302,7 @@ const SupportMessages = () => {
     <SupportLayout>
       <div className="p-6 md:p-8">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
@@ -336,7 +336,7 @@ const SupportMessages = () => {
                     placeholder={t.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -353,13 +353,13 @@ const SupportMessages = () => {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:bg-gray-700 transition border-b border-gray-100 dark:border-gray-700 ${
-                        selectedConversationId === conv.id ? 'bg-purple-50 dark:bg-purple-900/30' : ''
+                        selectedConversationId === conv.id ? 'bg-green-50 dark:bg-green-900/30' : ''
                       }`}
                     >
                       <img
                         src={getAvatarForUser(conv.otherUserId, conv.otherUserName, conv.role)}
                         alt={conv.otherUserName}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-200"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
                       />
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex justify-between items-start">
@@ -372,7 +372,7 @@ const SupportMessages = () => {
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-green-500">{t.online}</span>
                           {conv.unread > 0 && (
-                            <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
                               {conv.unread}
                             </span>
                           )}
@@ -398,7 +398,7 @@ const SupportMessages = () => {
                           conversations.find(c => c.id === selectedConversationId)?.role
                         )}
                         alt="Chat"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-purple-200"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-green-200"
                       />
                       <div>
                         <p className="font-semibold text-gray-800 dark:text-white">
@@ -482,30 +482,30 @@ const SupportMessages = () => {
                             <div
                               className={`max-w-[70%] p-3 rounded-lg ${
                                 isSupport
-                                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-br-none'
+                                  ? 'bg-gradient-to-r from-green-600 to-green-700 text-white rounded-br-none'
                                   : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm border border-gray-100 dark:border-gray-700'
                               }`}
                             >
                               {!isSupport && (
-                                <p className="text-xs font-medium text-purple-600 mb-1">
+                                <p className="text-xs font-medium text-green-600 mb-1">
                                   {formatDisplayName(msg.senderName, msg.senderRole)}
                                 </p>
                               )}
                               <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                               <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                                isSupport ? 'text-purple-200' : 'text-gray-400'
+                                isSupport ? 'text-green-200' : 'text-gray-400'
                               }`}>
                                 {msg.time}
                                 {isSupport && (
-                                  <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-purple-200'} />
+                                  <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-green-200'} />
                                 )}
                               </p>
                             </div>
                             {isSupport && showAvatar && (
                               <img
-                                src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Support')}&background=purple&color=fff&size=100&bold=true`}
+                                src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Support')}&background=green&color=fff&size=100&bold=true`}
                                 alt={authUser.fullName || 'Support'}
-                                className="w-8 h-8 rounded-full object-cover border-2 border-purple-200 flex-shrink-0"
+                                className="w-8 h-8 rounded-full object-cover border-2 border-green-200 flex-shrink-0"
                               />
                             )}
                             {isSupport && !showAvatar && (
@@ -526,11 +526,11 @@ const SupportMessages = () => {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder={t.typeMessage}
-                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                        className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                         disabled={!message.trim()}
                       >
                         <Send size={18} />
@@ -611,14 +611,14 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
             placeholder={t.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
           />
         </div>
 
         <div className="overflow-y-auto flex-1">
           {loading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
             </div>
           ) : filteredUsers.length === 0 ? (
             <p className="text-gray-500 text-center py-8">{t.noUsers}</p>
@@ -631,7 +631,7 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
                   className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition text-left"
                 >
                   <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(user.fullName, user.role))}&background=purple&color=fff&size=100&bold=true`}
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(user.fullName, user.role))}&background=green&color=fff&size=100&bold=true`}
                     alt={user.fullName}
                     className="w-10 h-10 rounded-full object-cover"
                   />

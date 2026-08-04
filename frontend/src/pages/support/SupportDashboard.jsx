@@ -100,7 +100,7 @@ const SupportDashboard = () => {
     <SupportLayout>
       <div className="p-6 md:p-8">
         {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 mb-8 text-white">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-8 text-white">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
               <Shield size={24} className="text-white" />
@@ -142,7 +142,7 @@ const SupportDashboard = () => {
         {/* Users by Role */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingUp size={20} className="text-purple-600" />
+            <TrendingUp size={20} className="text-green-600" />
             {t.usersByRole}
           </h2>
           
@@ -170,7 +170,7 @@ const SupportDashboard = () => {
               
               <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Shield size={18} className="text-purple-600" />
+                  <Shield size={18} className="text-green-600" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">{t.support}</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">

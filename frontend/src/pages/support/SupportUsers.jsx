@@ -116,7 +116,7 @@ const SupportUsers = () => {
       case 'WORKER':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       case 'SUPPORT':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
     }
@@ -177,7 +177,7 @@ const SupportUsers = () => {
                 placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -187,7 +187,7 @@ const SupportUsers = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white appearance-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white appearance-none"
               >
                 <option value="">{t.allRoles}</option>
                 <option value="WORKER">{t.workers}</option>
@@ -210,7 +210,7 @@ const SupportUsers = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
               <p className="mt-4 text-gray-600 dark:text-gray-400">{t.loading}</p>
             </div>
           ) : users.length === 0 ? (
@@ -244,7 +244,7 @@ const SupportUsers = () => {
                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {user.profileImage ? (
                               <img
                                 src={user.profileImage}
