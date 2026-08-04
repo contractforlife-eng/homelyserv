@@ -67,6 +67,8 @@ const allowedOrigins = [
   'https://gas-clapped-copper.ngrok-free.dev',
   'http://192.168.100.12:5173',
   'http://192.168.100.12:3000',
+  'https://homelyserv.com',
+  'https://www.homelyserv.com',
 ];
 
 // Dynamic origin function for CORS
