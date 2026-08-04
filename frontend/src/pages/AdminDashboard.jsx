@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import complaintsService from '../services/complaintService';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -182,26 +183,34 @@ const AdminDashboard = () => {
       console.error('Error loading message stats:', error);
     }
 
-    // Load complaints from all sources
-    const employerComplaints = JSON.parse(localStorage.getItem('employer_complaints') || '[]');
-    const workerComplaints = JSON.parse(localStorage.getItem('worker_complaints') || '[]');
-    const adminComplaints = JSON.parse(localStorage.getItem('admin_complaints') || '[]');
-    const allComplaints = [...employerComplaints, ...workerComplaints, ...adminComplaints];
-    
+    // Load complaint stats from backend
+    let totalComplaints = 0;
+    let pendingComplaints = 0;
+    try {
+      const compResponse = await complaintsService.getAdminComplaintStats();
+      if (compResponse?.success) {
+        totalComplaints = compResponse.stats.totalComplaints || 0;
+        const statusStats = compResponse.stats.statusStats || {};
+        pendingComplaints = (statusStats['NEW'] || 0) + (statusStats['OPEN'] || 0) + (statusStats['IN_PROGRESS'] || 0) + (statusStats['WAITING_FOR_USER'] || 0);
+      }
+    } catch (error) {
+      console.error('Error loading complaint stats:', error);
+    }
+
     setStats({
       totalUsers: users.length,
       totalPayments: 0,
       totalMessages: totalMessages,
       pendingActions: 0,
-      totalComplaints: allComplaints.length,
-      pendingComplaints: allComplaints.filter(c => c.status === 'pending').length
+      totalComplaints,
+      pendingComplaints
     });
 
-    // Load escalated complaints
+    // Load escalated complaints (backward-compatible)
     try {
-      const escResponse = await api.get('/api/admin/complaints/escalated');
-      if (escResponse.data.success) {
-        setEscalatedComplaints(escResponse.data.complaints || []);
+      const escResponse = await complaintsService.getEscalatedComplaints();
+      if (escResponse?.success) {
+        setEscalatedComplaints(escResponse.complaints || []);
       }
     } catch (error) {
       console.error('Error loading escalated complaints:', error);

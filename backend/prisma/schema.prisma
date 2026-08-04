@@ -1,4 +1,4 @@
-// backend/prisma/schema.prisma - FULL FIXED VERSION WITH PAYMENT MODEL
+// backend/prisma/schema.prisma - FULL FIXED VERSION WITH COMPLAINT ENHANCEMENTS
 generator client {
   provider   = "prisma-client-js"
   engineType = "library"
@@ -196,35 +196,38 @@ model User {
   id                               String           @id @default(auto()) @map("_id") @db.ObjectId
   email                            String           @unique
   password                         String
-  username                         String?          
+  username                         String?
   role                             Role             @default(WORKER)
   fullName                         String
   phone                            String?
   city                             String?
   activationCode                   String?
   isVerified                       Boolean          @default(false)
-   isSuspended                      Boolean          @default(false)
-   suspendedAt                      DateTime?
-   suspendedBy                      String?          @db.ObjectId
-   suspensionReason                 String?
-   language                         String           @default("en")
-   createdAt                        DateTime         @default(now())
-   updatedAt                        DateTime         @updatedAt
-   image                            String?          @default("")          @map("profileImage")
-   EmployerProfile                  EmployerProfile?
-   Hire                             Hire[]
-   Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
-   Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
-   Notification                     Notification[]
-   Review                           Review[]
-   WorkerProfile                    WorkerProfile?
-   Payment                          Payment[]
-   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
-   Subscription                     Subscription[]
-   Complaint                        Complaint[]
-   SupportActivity                  SupportActivity[]
+  isSuspended                      Boolean          @default(false)
+  suspendedAt                      DateTime?
+  suspendedBy                      String?          @db.ObjectId
+  suspensionReason                 String?
+  language                         String           @default("en")
+  createdAt                        DateTime         @default(now())
+  updatedAt                        DateTime         @updatedAt
+  image                            String?          @default("")          @map("profileImage")
+  EmployerProfile                  EmployerProfile?
+  Hire                             Hire[]
+  Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
+  Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
+  Notification                     Notification[]
+  Review                           Review[]
+  WorkerProfile                    WorkerProfile?
+  Payment                          Payment[]
+  OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
+  Subscription                     Subscription[]
+  Complaint                        Complaint[]
+  AssignedComplaints               Complaint[]      @relation("ComplaintAssignedSupport")
+  SupportActivity                  SupportActivity[]
+  ComplaintNote                    ComplaintNote[]
+  ComplaintTimeline                ComplaintTimeline[]
 
-   @@map("users")
+  @@map("users")
 }
 
 model WorkerProfile {
@@ -332,25 +335,78 @@ model EmployerSearchTracking {
   updatedAt      DateTime  @updatedAt
 }
 
+// ============================================================
+// ENHANCED COMPLAINT MODEL - Full lifecycle support
+// ============================================================
 model Complaint {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  ticketNumber     String?   @unique
   userId           String    @db.ObjectId
   subject          String
   description      String
   status           String    @default("NEW")
   priority         String    @default("medium")
-  category         String?
+  category         String?   @default("Other")
   assignedTo       String?   @db.ObjectId
+  assignedSupport  String?   @db.ObjectId
+  assignedAdmin    String?   @db.ObjectId
   escalatedBy      String?   @db.ObjectId
   escalatedAt      DateTime?
   escalationReason String?
   internalNotes    String?
   adminNotes       String?
+  attachments      String[]  @default([])
+  resolvedAt       DateTime?
+  closedAt         DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  User             User      @relation(fields: [userId], references: [id])
+  User             User             @relation(fields: [userId], references: [id])
+  AssignedSupport  User?            @relation("ComplaintAssignedSupport", fields: [assignedSupport], references: [id])
   SupportActivity  SupportActivity[]
+  Notes            ComplaintNote[]
+  Timeline         ComplaintTimeline[]
+}
+
+// ============================================================
+// COMPLAINT NOTES - Internal notes (invisible to users)
+// ============================================================
+model ComplaintNote {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  complaintId String    @db.ObjectId
+  authorId    String    @db.ObjectId
+  authorName  String
+  authorRole  String
+  note        String
+  isInternal  Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  Complaint   Complaint @relation(fields: [complaintId], references: [id])
+  Author      User      @relation(fields: [authorId], references: [id])
+
+  @@index([complaintId])
+}
+
+// ============================================================
+// COMPLAINT TIMELINE - Activity log for each complaint
+// ============================================================
+model ComplaintTimeline {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  complaintId String    @db.ObjectId
+  action      String
+  description String
+  authorId    String?   @db.ObjectId
+  authorName  String?
+  authorRole  String?
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime  @default(now())
+
+  Complaint   Complaint @relation(fields: [complaintId], references: [id])
+  Author      User?     @relation(fields: [authorId], references: [id])
+
+  @@index([complaintId])
+  @@index([complaintId, createdAt(sort: Desc)])
 }
 
 model SupportActivity {
@@ -364,4 +420,14 @@ model SupportActivity {
 
   User          User      @relation(fields: [supportId], references: [id])
   Complaint     Complaint? @relation(fields: [complaintId], references: [id])
+}
+
+// ============================================================
+// TICKET COUNTER - Persistent sequential ticket number generator
+// ============================================================
+model TicketCounter {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  year      Int      @unique
+  sequence  Int      @default(0)
+  updatedAt DateTime @updatedAt
 }

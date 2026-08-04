@@ -15,10 +15,12 @@ import {
   HelpCircle,
   ArrowUpRight,
   CheckCircle2,
-  LifeBuoy
+  LifeBuoy,
+  Flag,
+  Timer
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import api from '../../utils/api';
+import complaintsService from '../../services/complaintService';
 
 const SupportDashboard = () => {
   const navigate = useNavigate();
@@ -34,14 +36,14 @@ const SupportDashboard = () => {
   const fetchStats = async () => {
     try {
       console.log('📊 Fetching support stats...');
-      const response = await api.get('/api/support/stats');
-      console.log('📊 Stats response:', response.data);
+      const response = await complaintsService.getSupportStats();
+      console.log('📊 Stats response:', response);
       
-      if (response.data?.success) {
-        console.log('✅ Stats loaded:', response.data.stats);
-        setStats(response.data.stats);
+      if (response?.success) {
+        console.log('✅ Stats loaded:', response.stats);
+        setStats(response.stats);
       } else {
-        console.warn('⚠️ Stats response missing success flag:', response.data);
+        console.warn('⚠️ Stats response missing success flag:', response);
       }
     } catch (error) {
       console.error('❌ Error fetching stats:', error);
@@ -71,7 +73,11 @@ const SupportDashboard = () => {
       escalatedComplaints: 'Escalated Complaints',
       resolvedToday: 'Resolved Today',
       usersAssistedToday: 'Users Assisted Today',
-      viewComplaints: 'View Complaints'
+      viewComplaints: 'View Complaints',
+      criticalComplaints: 'Critical Complaints',
+      waitingComplaints: 'Waiting for User',
+      avgResolution: 'Avg Resolution Time',
+      hours: 'hrs'
     },
     ar: {
       title: 'لوحة تحكم الدعم',
@@ -92,7 +98,11 @@ const SupportDashboard = () => {
       escalatedComplaints: 'شكاوى مرفوعة للمشرف',
       resolvedToday: 'تم حلها اليوم',
       usersAssistedToday: 'مستخدمون تمت مساعدتهم اليوم',
-      viewComplaints: 'عرض الشكاوى'
+      viewComplaints: 'عرض الشكاوى',
+      criticalComplaints: 'شكاوى حرجة',
+      waitingComplaints: 'بانتظار المستخدم',
+      avgResolution: 'متوسط وقت الحل',
+      hours: 'ساعة'
     }
   };
 
@@ -186,6 +196,31 @@ const SupportDashboard = () => {
             value={stats?.totalConversations}
             color="text-purple-600"
             bgColor="bg-purple-100 dark:bg-purple-900/30"
+          />
+        </div>
+
+        {/* Complaint Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            icon={Flag}
+            label={t.criticalComplaints}
+            value={stats?.criticalComplaints}
+            color="text-red-600"
+            bgColor="bg-red-100 dark:bg-red-900/30"
+          />
+          <StatCard
+            icon={Clock}
+            label={t.waitingComplaints}
+            value={stats?.waitingComplaints}
+            color="text-purple-600"
+            bgColor="bg-purple-100 dark:bg-purple-900/30"
+          />
+          <StatCard
+            icon={Timer}
+            label={t.avgResolution}
+            value={stats?.avgResolutionHours ? `${stats.avgResolutionHours} ${t.hours}` : '0'}
+            color="text-orange-600"
+            bgColor="bg-orange-100 dark:bg-orange-900/30"
           />
         </div>
 

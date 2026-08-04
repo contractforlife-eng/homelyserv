@@ -23,6 +23,7 @@ import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notifications.js';
 import oauthRoutes from './routes/oauth.js';
 import supportRoutes from './routes/support.js';
+import complaintRoutes from './routes/complaints.js';
 import { requireAdmin } from './middleware/auth.js';
 import './config.js'; // Running your base configuration routines
 
@@ -325,6 +326,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
 // ============================================================
