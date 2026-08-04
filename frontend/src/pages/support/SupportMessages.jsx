@@ -134,7 +134,11 @@ const SupportMessages = () => {
   }, [messages]);
 
   const loadMessagesForConversation = async (conversationId) => {
+    console.log('🔵 selected conversation object:', conversations.find(c => c.id === selectedConversationId));
+    console.log('🔵 conversationId sent to API:', conversationId);
     const conversationMessages = await getConversationMessages(conversationId);
+    console.log('🔵 messages API response:', conversationMessages);
+    console.log('🔵 messages count:', conversationMessages.length);
     setMessages(conversationMessages);
     
     const userId = authUser?.id;
@@ -213,6 +217,7 @@ const SupportMessages = () => {
   };
 
   const handleStartNewConversation = async (userId, userName, userRole) => {
+    // Create or find the conversation between SUPPORT and selected user
     const conversationId = await ensureConversationExists(
       authUser.id,
       authUser.fullName,
@@ -221,8 +226,31 @@ const SupportMessages = () => {
       userName,
       userRole
     );
+
+    // Build the conversation object and add it to the list
+    const newConversation = {
+      id: conversationId,
+      otherUserId: String(userId),
+      otherUserName: userName || 'User',
+      lastMessage: 'Start your conversation here',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      unread: 0,
+      role: userRole || 'USER',
+      avatar: getAvatarForUser(userId, userName, userRole),
+      updatedAt: new Date()
+    };
+
+    // Add to conversations list if not already there
+    setConversations(prev => {
+      const exists = prev.some(c => c.id === conversationId);
+      if (exists) return prev;
+      return [newConversation, ...prev];
+    });
+
+    // Set as selected conversation and load messages
     setSelectedConversationId(conversationId);
-    loadMessagesForConversation(conversationId);
+    setMessages([]);
+    await loadMessagesForConversation(conversationId);
     setShowNewConversationModal(false);
   };
 

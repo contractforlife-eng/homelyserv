@@ -113,6 +113,12 @@ const requireConversationParticipant = async (req, res, next) => {
   try {
     const conversationId = req.params.conversationId;
     const userId = String(req.userId);
+    const userRole = req.userRole;
+
+    // ADMIN and SUPPORT can access any conversation
+    if (userRole === 'ADMIN' || userRole === 'SUPPORT') {
+      return next();
+    }
 
     const parts = conversationId.replace('conv_', '').split('_');
     if (parts.length !== 2 || (parts[0] !== userId && parts[1] !== userId)) {
@@ -206,12 +212,12 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
     const userId = String(req.userId);
     const userRole = req.userRole;
 
-    // ADMIN and SUPPORT see ALL conversations
-    // Other users only see conversations they're part of
-    const isAdminOrSupport = userRole === 'ADMIN' || userRole === 'SUPPORT';
+    // ADMIN sees ALL conversations
+    // SUPPORT, WORKER, EMPLOYER only see conversations they participate in
+    const isAdmin = userRole === 'ADMIN';
     
     let messages;
-    if (isAdminOrSupport) {
+    if (isAdmin) {
       // Get all messages, sorted by creation time
       messages = await Message.find({}).sort({ createdAt: 1 });
     } else {
@@ -234,15 +240,14 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
     for (const [conversationId, msgs] of groups) {
       const last = msgs[msgs.length - 1];
       
-      // For admin/support, determine the "other user" (non-admin/support participant)
+      // For admin, determine the "other user" (non-admin participant)
       let otherUser;
-      if (isAdminOrSupport) {
-        // Find the participant who is not ADMIN or SUPPORT
+      if (isAdmin) {
+        // Find the participant who is not ADMIN
         const nonAdminParticipant = msgs.find(m => {
           const senderRole = m.senderRole;
           const recipientRole = m.recipientRole;
-          return senderRole !== 'ADMIN' && senderRole !== 'SUPPORT' &&
-                 recipientRole !== 'ADMIN' && recipientRole !== 'SUPPORT';
+          return senderRole !== 'ADMIN' && recipientRole !== 'ADMIN';
         });
         
         if (nonAdminParticipant) {
