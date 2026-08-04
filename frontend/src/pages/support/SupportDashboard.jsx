@@ -10,8 +10,14 @@ import {
   AlertCircle,
   TrendingUp,
   Shield,
-  UserCheck
+  UserCheck,
+  Clock,
+  HelpCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  LifeBuoy
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
 const SupportDashboard = () => {
@@ -59,7 +65,13 @@ const SupportDashboard = () => {
       support: 'Support',
       admin: 'Admin',
       loading: 'Loading...',
-      noData: 'No data available'
+      noData: 'No data available',
+      openComplaints: 'Open Complaints',
+      inProgressComplaints: 'Complaints In Progress',
+      escalatedComplaints: 'Escalated Complaints',
+      resolvedToday: 'Resolved Today',
+      usersAssistedToday: 'Users Assisted Today',
+      viewComplaints: 'View Complaints'
     },
     ar: {
       title: 'لوحة تحكم الدعم',
@@ -74,7 +86,13 @@ const SupportDashboard = () => {
       support: 'الدعم',
       admin: 'المديرين',
       loading: 'جاري التحميل...',
-      noData: 'لا توجد بيانات'
+      noData: 'لا توجد بيانات',
+      openComplaints: 'شكاوى مفتوحة',
+      inProgressComplaints: 'شكاوى قيد المعالجة',
+      escalatedComplaints: 'شكاوى مرفوعة للمشرف',
+      resolvedToday: 'تم حلها اليوم',
+      usersAssistedToday: 'مستخدمون تمت مساعدتهم اليوم',
+      viewComplaints: 'عرض الشكاوى'
     }
   };
 
@@ -115,7 +133,7 @@ const SupportDashboard = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             icon={Users}
             label={t.totalUsers}
@@ -124,19 +142,62 @@ const SupportDashboard = () => {
             bgColor="bg-blue-100 dark:bg-blue-900/30"
           />
           <StatCard
-            icon={MessageCircle}
-            label={t.totalConversations}
-            value={stats?.totalConversations}
+            icon={HelpCircle}
+            label={t.openComplaints}
+            value={stats?.openComplaints}
+            color="text-orange-600"
+            bgColor="bg-orange-100 dark:bg-orange-900/30"
+          />
+          <StatCard
+            icon={Clock}
+            label={t.inProgressComplaints}
+            value={stats?.inProgressComplaints}
+            color="text-yellow-600"
+            bgColor="bg-yellow-100 dark:bg-yellow-900/30"
+          />
+          <StatCard
+            icon={ArrowUpRight}
+            label={t.escalatedComplaints}
+            value={stats?.escalatedComplaints}
+            color="text-red-600"
+            bgColor="bg-red-100 dark:bg-red-900/30"
+          />
+        </div>
+
+        {/* Secondary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            icon={CheckCircle2}
+            label={t.resolvedToday}
+            value={stats?.resolvedToday}
             color="text-green-600"
             bgColor="bg-green-100 dark:bg-green-900/30"
           />
           <StatCard
-            icon={AlertCircle}
-            label={t.pendingMessages}
-            value={stats?.unreadMessages}
-            color="text-orange-600"
-            bgColor="bg-orange-100 dark:bg-orange-900/30"
+            icon={LifeBuoy}
+            label={t.usersAssistedToday}
+            value={stats?.usersAssistedToday}
+            color="text-teal-600"
+            bgColor="bg-teal-100 dark:bg-teal-900/30"
           />
+          <StatCard
+            icon={MessageCircle}
+            label={t.totalConversations}
+            value={stats?.totalConversations}
+            color="text-purple-600"
+            bgColor="bg-purple-100 dark:bg-purple-900/30"
+          />
+        </div>
+
+        {/* Quick Action */}
+        <div className="mb-8">
+          <Link
+            to="/support-complaints"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition"
+          >
+            <HelpCircle size={18} />
+            {t.viewComplaints}
+          </Link>
         </div>
 
         {/* Users by Role */}

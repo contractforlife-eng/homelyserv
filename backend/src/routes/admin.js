@@ -3,6 +3,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
+import Message from '../models/Message.js';
+import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
@@ -332,18 +334,199 @@ router.get('/payments', async (req, res) => {
 // ============================================================
 router.get('/complaints', async (req, res) => {
   try {
-    // Note: No Complaint model exists in the current schema.
-    // Returning empty array with explanation for future implementation.
+    const complaints = await prisma.complaint.findMany({
+      include: {
+        User: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     res.json({
       success: true,
-      complaints: [],
-      message: 'Complaints model not yet implemented'
+      complaints,
     });
   } catch (error) {
     console.error('Get complaints error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get complaints',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Get Escalated Complaints (Admin Only)
+// ============================================================
+router.get('/complaints/escalated', async (req, res) => {
+  try {
+    const escalatedComplaints = await prisma.complaint.findMany({
+      where: {
+        status: 'ESCALATED_TO_ADMIN',
+      },
+      include: {
+        User: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      count: escalatedComplaints.length,
+      complaints: escalatedComplaints,
+    });
+  } catch (error) {
+    console.error('Get escalated complaints error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get escalated complaints',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Admin Reply to Complaint (Admin Only)
+// ============================================================
+router.post('/complaints/:id/reply', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message is required',
+      });
+    }
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      select: { id: true, adminNotes: true },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found',
+      });
+    }
+
+    const updatedNotes = complaint.adminNotes
+      ? `${complaint.adminNotes}\n\n[Admin Reply - ${new Date().toISOString()}] ${message}`
+      : `[Admin Reply - ${new Date().toISOString()}] ${message}`;
+
+    const updatedComplaint = await prisma.complaint.update({
+      where: { id },
+      data: {
+        adminNotes: updatedNotes,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin reply added successfully',
+      complaint: updatedComplaint,
+    });
+  } catch (error) {
+    console.error('Admin reply error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add admin reply',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Admin Resolve Complaint (Admin Only)
+// ============================================================
+router.put('/complaints/:id/resolve', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found',
+      });
+    }
+
+    const updatedComplaint = await prisma.complaint.update({
+      where: { id },
+      data: { status: 'RESOLVED' },
+    });
+
+    res.json({
+      success: true,
+      message: 'Complaint resolved successfully',
+      complaint: updatedComplaint,
+    });
+  } catch (error) {
+    console.error('Resolve complaint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resolve complaint',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Admin Close Complaint (Admin Only)
+// ============================================================
+router.put('/complaints/:id/close', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found',
+      });
+    }
+
+    const updatedComplaint = await prisma.complaint.update({
+      where: { id },
+      data: { status: 'CLOSED' },
+    });
+
+    res.json({
+      success: true,
+      message: 'Complaint closed successfully',
+      complaint: updatedComplaint,
+    });
+  } catch (error) {
+    console.error('Close complaint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to close complaint',
       error: error.message
     });
   }
@@ -568,6 +751,418 @@ router.put('/settings', authenticate, requireAdmin, async (req, res) => {
       success: false,
       message: 'Failed to update system settings'
     });
+  }
+});
+
+// ============================================================
+// ADMIN MESSAGING - SECURE CONVERSATION ACCESS
+// ============================================================
+// Admin does NOT have automatic access to private user chats.
+// Admin can only access:
+//   1. Escalated conversations (after support escalates)
+//   2. Support conversations (supervision)
+//   3. Internal staff messages (Support <-> Admin)
+// ============================================================
+
+const getConversationId = (user1Id, user2Id) => {
+  const ids = [String(user1Id), String(user2Id)].sort();
+  return `conv_${ids.join('_')}`;
+};
+
+const formatMessage = (msg) => {
+  return {
+    id: msg._id,
+    conversationId: msg.conversationId,
+    senderId: msg.senderId,
+    senderName: msg.senderName,
+    senderRole: msg.senderRole,
+    recipientId: msg.recipientId,
+    recipientName: msg.recipientName,
+    text: msg.text,
+    time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    timestamp: msg.createdAt,
+    read: msg.read,
+    delivered: msg.delivered
+  };
+};
+
+// POST /api/admin/start-conversation
+// Start an official HomelyServ administrative conversation with a user.
+// Conversation type is SUPPORT (for WORKER/EMPLOYER/USER) or INTERNAL (for SUPPORT).
+// Never PRIVATE. Private user chats remain completely isolated.
+router.post('/start-conversation', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const adminId = String(req.userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' });
+    }
+
+    // Look up the target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: String(userId) },
+      select: { id: true, fullName: true, email: true, role: true, image: true }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Determine conversation type:
+    //   WORKER/EMPLOYER/USER -> SUPPORT (admin acts as support agent)
+    //   SUPPORT/ADMIN        -> INTERNAL (staff-to-staff)
+    const targetRole = targetUser.role;
+    let conversationType = 'SUPPORT';
+    let supportAgentId = adminId;
+    let staffIds = [];
+
+    if (targetRole === 'SUPPORT' || targetRole === 'ADMIN') {
+      conversationType = 'INTERNAL';
+      staffIds = [adminId, String(targetUser.id)];
+      supportAgentId = null;
+    }
+
+    // Build conversation ID (deterministic, same as chat system)
+    const conversationId = getConversationId(adminId, targetUser.id);
+
+    // Check if an administrative conversation already exists
+    const existingConv = await Conversation.findOne({ conversationId });
+    if (existingConv) {
+      return res.json({
+        success: true,
+        conversationId,
+        conversation: {
+          id: existingConv.conversationId,
+          type: existingConv.type,
+          participantIds: existingConv.participantIds,
+          supportAgentId: existingConv.supportAgentId,
+          staffIds: existingConv.staffIds
+        },
+        existing: true
+      });
+    }
+
+    // Create conversation metadata
+    await Conversation.create({
+      conversationId,
+      type: conversationType,
+      participantIds: [adminId, String(targetUser.id)],
+      supportAgentId,
+      staffIds,
+      lastMessageAt: new Date(),
+      lastMessagePreview: 'Official HomelyServ administrative conversation'
+    });
+
+    // Create the initial system message
+    await Message.create({
+      conversationId,
+      senderId: adminId,
+      senderName: 'HomelyServ Admin',
+      senderRole: 'ADMIN',
+      recipientId: String(targetUser.id),
+      recipientName: targetUser.fullName || 'User',
+      recipientRole: targetRole,
+      text: 'This is an official HomelyServ administrative conversation. How can we help you?',
+      read: false,
+      delivered: true
+    });
+
+    return res.status(201).json({
+      success: true,
+      conversationId,
+      conversation: {
+        id: conversationId,
+        type: conversationType,
+        participantIds: [adminId, String(targetUser.id)],
+        supportAgentId,
+        staffIds
+      },
+      existing: false
+    });
+  } catch (error) {
+    console.error('Error starting conversation:', error);
+    return res.status(500).json({ error: 'Failed to start conversation' });
+  }
+});
+
+// GET /api/admin/escalated-conversations
+// List conversations escalated to Admin by Support.
+router.get('/escalated-conversations', async (req, res) => {
+  try {
+    const conversationsMeta = await Conversation.find({
+      type: 'ESCALATED',
+      escalatedAt: { $ne: null }
+    }).sort({ escalatedAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: String(req.userId),
+        read: false
+      });
+
+      // Get complaint info
+      let complaint = null;
+      if (conv.complaintId) {
+        try {
+          complaint = await prisma.complaint.findUnique({
+            where: { id: conv.complaintId },
+            select: {
+              id: true,
+              subject: true,
+              status: true,
+              priority: true,
+              createdAt: true
+            }
+          });
+        } catch (e) {
+          console.error('Error fetching complaint:', e.message);
+        }
+      }
+
+      // Get user participant info
+      const userParticipantId = conv.participantIds.find(
+        id => id !== conv.supportAgentId
+      );
+
+      let userInfo = null;
+      if (userParticipantId) {
+        try {
+          userInfo = await prisma.user.findUnique({
+            where: { id: userParticipantId },
+            select: { id: true, fullName: true, email: true, role: true, image: true }
+          });
+        } catch (e) {
+          console.error('Error fetching user:', e.message);
+        }
+      }
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        complaintId: conv.complaintId,
+        complaint,
+        escalatedBy: conv.escalatedBy,
+        escalatedAt: conv.escalatedAt,
+        escalationReason: conv.escalationReason,
+        participantIds: conv.participantIds,
+        supportAgentId: conv.supportAgentId,
+        user: userInfo,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json({
+      success: true,
+      count: conversations.length,
+      conversations
+    });
+  } catch (error) {
+    console.error('Error fetching escalated conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch escalated conversations' });
+  }
+});
+
+// GET /api/admin/support-conversations
+// List all support conversations (user <-> support) for supervision.
+router.get('/support-conversations', async (req, res) => {
+  try {
+    const conversationsMeta = await Conversation.find({
+      type: 'SUPPORT'
+    }).sort({ lastMessageAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: String(req.userId),
+        read: false
+      });
+
+      // Find the user participant (non-support)
+      const userParticipantId = conv.participantIds.find(
+        id => id !== conv.supportAgentId
+      );
+
+      let userInfo = null;
+      if (userParticipantId) {
+        try {
+          userInfo = await prisma.user.findUnique({
+            where: { id: userParticipantId },
+            select: { id: true, fullName: true, email: true, role: true, image: true }
+          });
+        } catch (e) {
+          console.error('Error fetching user:', e.message);
+        }
+      }
+
+      let supportInfo = null;
+      if (conv.supportAgentId) {
+        try {
+          supportInfo = await prisma.user.findUnique({
+            where: { id: conv.supportAgentId },
+            select: { id: true, fullName: true, email: true, role: true, image: true }
+          });
+        } catch (e) {
+          console.error('Error fetching support agent:', e.message);
+        }
+      }
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        userId: userParticipantId || null,
+        user: userInfo,
+        supportAgentId: conv.supportAgentId,
+        supportAgent: supportInfo,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json({
+      success: true,
+      count: conversations.length,
+      conversations
+    });
+  } catch (error) {
+    console.error('Error fetching support conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch support conversations' });
+  }
+});
+
+// GET /api/admin/internal-messages
+// List internal staff conversations (Support <-> Admin).
+router.get('/internal-messages', async (req, res) => {
+  try {
+    const userId = String(req.userId);
+
+    const conversationsMeta = await Conversation.find({
+      type: 'INTERNAL',
+      staffIds: userId
+    }).sort({ lastMessageAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      // Find the other staff member
+      const otherStaffId = conv.staffIds.find(id => id !== userId);
+
+      let otherStaffInfo = null;
+      if (otherStaffId) {
+        try {
+          otherStaffInfo = await prisma.user.findUnique({
+            where: { id: otherStaffId },
+            select: { id: true, fullName: true, email: true, role: true, image: true }
+          });
+        } catch (e) {
+          console.error('Error fetching staff member:', e.message);
+        }
+      }
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: userId,
+        read: false
+      });
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        otherStaffId: otherStaffId || null,
+        otherStaff: otherStaffInfo,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json({
+      success: true,
+      count: conversations.length,
+      conversations
+    });
+  } catch (error) {
+    console.error('Error fetching internal messages:', error);
+    return res.status(500).json({ error: 'Failed to fetch internal messages' });
+  }
+});
+
+// GET /api/admin/conversations/:conversationId/messages
+// Get messages for an admin-accessible conversation.
+// Access is verified: only ESCALATED, SUPPORT, or INTERNAL conversations
+// where the admin is a staff member.
+router.get('/conversations/:conversationId/messages', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = String(req.userId);
+
+    const conv = await Conversation.findOne({ conversationId });
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Admin access rules:
+    // - ESCALATED: admin can access after escalation
+    // - SUPPORT: admin can supervise
+    // - INTERNAL: admin must be a staff member
+    let allowed = false;
+    if (conv.type === 'ESCALATED' && conv.escalatedAt) {
+      allowed = true;
+    } else if (conv.type === 'SUPPORT') {
+      allowed = true;
+    } else if (conv.type === 'INTERNAL' && conv.staffIds.includes(userId)) {
+      allowed = true;
+    }
+
+    if (!allowed) {
+      return res.status(403).json({ error: 'Not authorized to access this conversation' });
+    }
+
+    const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
+
+    return res.json({
+      success: true,
+      conversation: {
+        id: conv.conversationId,
+        type: conv.type,
+        complaintId: conv.complaintId,
+        escalatedBy: conv.escalatedBy,
+        escalatedAt: conv.escalatedAt,
+        escalationReason: conv.escalationReason,
+        participantIds: conv.participantIds,
+        supportAgentId: conv.supportAgentId
+      },
+      messages: messages.map(formatMessage)
+    });
+  } catch (error) {
+    console.error('Error fetching conversation messages:', error);
+    return res.status(500).json({ error: 'Failed to fetch conversation messages' });
   }
 });
 

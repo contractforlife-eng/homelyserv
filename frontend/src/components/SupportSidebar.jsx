@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Globe,
   X,
-  Shield
+  Shield,
+  FileText
 } from 'lucide-react';
 
 const SupportSidebar = ({
@@ -33,6 +34,7 @@ const SupportSidebar = ({
       dashboard: 'Dashboard',
       profile: 'My Profile',
       users: 'Users',
+      complaints: 'Complaints',
       messages: 'Messages',
       settings: 'Settings',
       logout: 'Logout',
@@ -42,6 +44,7 @@ const SupportSidebar = ({
       dashboard: 'لوحة التحكم',
       profile: 'ملفي الشخصي',
       users: 'المستخدمين',
+      complaints: 'الشكاوى',
       messages: 'الرسائل',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
@@ -54,6 +57,7 @@ const SupportSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
     { id: 'users', label: t.users, icon: Users, path: '/support-users' },
+    { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/support-settings' },
   ];

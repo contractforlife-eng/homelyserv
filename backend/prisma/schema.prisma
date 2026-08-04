@@ -203,23 +203,28 @@ model User {
   city                             String?
   activationCode                   String?
   isVerified                       Boolean          @default(false)
-  isSuspended                      Boolean          @default(false)
-  language                         String           @default("en")
-  createdAt                        DateTime         @default(now())
-  updatedAt                        DateTime         @updatedAt
-  image                            String?          @default("")          @map("profileImage")
-  EmployerProfile                  EmployerProfile?
-  Hire                             Hire[]
-  Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
-  Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
-  Notification                     Notification[]
-  Review                           Review[]
-  WorkerProfile                    WorkerProfile?
-  Payment                          Payment[]
-  OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
-  Subscription                     Subscription[]
+   isSuspended                      Boolean          @default(false)
+   suspendedAt                      DateTime?
+   suspendedBy                      String?          @db.ObjectId
+   suspensionReason                 String?
+   language                         String           @default("en")
+   createdAt                        DateTime         @default(now())
+   updatedAt                        DateTime         @updatedAt
+   image                            String?          @default("")          @map("profileImage")
+   EmployerProfile                  EmployerProfile?
+   Hire                             Hire[]
+   Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")
+   Message_Message_senderIdToUser   Message[]        @relation("Message_senderIdToUser")
+   Notification                     Notification[]
+   Review                           Review[]
+   WorkerProfile                    WorkerProfile?
+   Payment                          Payment[]
+   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
+   Subscription                     Subscription[]
+   Complaint                        Complaint[]
+   SupportActivity                  SupportActivity[]
 
-  @@map("users")
+   @@map("users")
 }
 
 model WorkerProfile {
@@ -325,4 +330,38 @@ model EmployerSearchTracking {
   lastResetDate  DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model Complaint {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  subject          String
+  description      String
+  status           String    @default("NEW")
+  priority         String    @default("medium")
+  category         String?
+  assignedTo       String?   @db.ObjectId
+  escalatedBy      String?   @db.ObjectId
+  escalatedAt      DateTime?
+  escalationReason String?
+  internalNotes    String?
+  adminNotes       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  User             User      @relation(fields: [userId], references: [id])
+  SupportActivity  SupportActivity[]
+}
+
+model SupportActivity {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  supportId     String    @db.ObjectId
+  action        String
+  targetUserId  String?   @db.ObjectId
+  complaintId   String?   @db.ObjectId
+  description   String
+  createdAt     DateTime  @default(now())
+
+  User          User      @relation(fields: [supportId], references: [id])
+  Complaint     Complaint? @relation(fields: [complaintId], references: [id])
 }

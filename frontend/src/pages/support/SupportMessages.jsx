@@ -22,7 +22,10 @@ import {
   getSupportUsers,
   ensureConversationExists,
   deleteConversation,
-  formatDisplayName
+  formatDisplayName,
+  getSupportConversations,
+  getSupportConversationMessages,
+  escalateConversation
 } from '../../utils/chatService';
 import api from '../../utils/api';
 
@@ -48,14 +51,34 @@ const SupportMessages = () => {
   const dropdownRef = useRef(null);
 
   // ============================================================
-  // loadConversations - EXACT SAME AS ADMIN
+  // loadConversations - SECURE: only assigned support conversations
   // ============================================================
   const loadConversations = async () => {
     if (!authUser?.id) return;
     
     try {
-      const userConversations = await getUserConversations(authUser.id);
-      setConversations(userConversations);
+      // Use the secure support conversations endpoint.
+      // Support only sees conversations assigned to them.
+      const supportConversations = await getSupportConversations();
+      
+      // Map to the format expected by the UI
+      const mapped = supportConversations.map(conv => ({
+        id: conv.id,
+        type: conv.type,
+        otherUserId: conv.userId,
+        otherUserName: conv.user?.fullName || 'User',
+        otherUserRole: conv.user?.role || 'USER',
+        lastMessage: conv.lastMessage,
+        lastMessageTime: conv.lastMessageTime,
+        time: conv.time,
+        unread: conv.unread,
+        role: conv.user?.role || 'USER',
+        updatedAt: conv.updatedAt,
+        escalated: conv.type === 'ESCALATED',
+        complaintId: conv.complaintId || null
+      }));
+      
+      setConversations(mapped);
     } catch (error) {
       console.error('Error loading conversations:', error);
       setConversations([]);
@@ -94,15 +117,31 @@ const SupportMessages = () => {
     return () => clearInterval(interval);
   }, [authUser]);
 
-  // Auto-refresh
+  // Auto-refresh - uses secure support conversations endpoint
   useEffect(() => {
     if (!authUser) return;
 
     intervalRef.current = setInterval(async () => {
-      const updatedConversations = await getUserConversations(authUser.id);
+      const updatedConversations = await getSupportConversations();
+      const mapped = updatedConversations.map(conv => ({
+        id: conv.id,
+        type: conv.type,
+        otherUserId: conv.userId,
+        otherUserName: conv.user?.fullName || 'User',
+        otherUserRole: conv.user?.role || 'USER',
+        lastMessage: conv.lastMessage,
+        lastMessageTime: conv.lastMessageTime,
+        time: conv.time,
+        unread: conv.unread,
+        role: conv.user?.role || 'USER',
+        updatedAt: conv.updatedAt,
+        escalated: conv.type === 'ESCALATED',
+        complaintId: conv.complaintId || null
+      }));
+
       setConversations(prevConversations => {
-        if (JSON.stringify(prevConversations) !== JSON.stringify(updatedConversations)) {
-          return updatedConversations;
+        if (JSON.stringify(prevConversations) !== JSON.stringify(mapped)) {
+          return mapped;
         }
         return prevConversations;
       });
@@ -134,11 +173,7 @@ const SupportMessages = () => {
   }, [messages]);
 
   const loadMessagesForConversation = async (conversationId) => {
-    console.log('🔵 selected conversation object:', conversations.find(c => c.id === selectedConversationId));
-    console.log('🔵 conversationId sent to API:', conversationId);
     const conversationMessages = await getConversationMessages(conversationId);
-    console.log('🔵 messages API response:', conversationMessages);
-    console.log('🔵 messages count:', conversationMessages.length);
     setMessages(conversationMessages);
     
     const userId = authUser?.id;
@@ -200,14 +235,28 @@ const SupportMessages = () => {
     setIsRefreshing(true);
     
     if (authUser) {
-      const userId = authUser.id;
-      const updatedConversations = await getUserConversations(userId);
-      setConversations(updatedConversations);
+      const updatedConversations = await getSupportConversations();
+      const mapped = updatedConversations.map(conv => ({
+        id: conv.id,
+        type: conv.type,
+        otherUserId: conv.userId,
+        otherUserName: conv.user?.fullName || 'User',
+        otherUserRole: conv.user?.role || 'USER',
+        lastMessage: conv.lastMessage,
+        lastMessageTime: conv.lastMessageTime,
+        time: conv.time,
+        unread: conv.unread,
+        role: conv.user?.role || 'USER',
+        updatedAt: conv.updatedAt,
+        escalated: conv.type === 'ESCALATED',
+        complaintId: conv.complaintId || null
+      }));
+      setConversations(mapped);
       
       if (selectedConversationId) {
         const updatedMessages = await getConversationMessages(selectedConversationId);
         setMessages(updatedMessages);
-        await markMessagesAsRead(selectedConversationId, userId);
+        await markMessagesAsRead(selectedConversationId, authUser.id);
       }
     }
     

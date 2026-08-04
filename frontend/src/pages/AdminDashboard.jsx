@@ -69,6 +69,7 @@ const AdminDashboard = () => {
     totalComplaints: 0,
     pendingComplaints: 0
   });
+  const [escalatedComplaints, setEscalatedComplaints] = useState([]);
 
   const translations = {
     en: {
@@ -195,6 +196,16 @@ const AdminDashboard = () => {
       totalComplaints: allComplaints.length,
       pendingComplaints: allComplaints.filter(c => c.status === 'pending').length
     });
+
+    // Load escalated complaints
+    try {
+      const escResponse = await api.get('/api/admin/complaints/escalated');
+      if (escResponse.data.success) {
+        setEscalatedComplaints(escResponse.data.complaints || []);
+      }
+    } catch (error) {
+      console.error('Error loading escalated complaints:', error);
+    }
   };
 
   useEffect(() => {
@@ -348,6 +359,40 @@ const AdminDashboard = () => {
                 <span className="font-medium text-yellow-300">{t.settings}</span>
               </Link>
             </div>
+          </div>
+
+          {/* Escalated Complaints Widget */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-red-500/20 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <AlertTriangle size={20} className="text-red-500" />
+                Escalated Complaints
+              </h3>
+              <Link to="/admin/complaints" className="text-sm text-yellow-500 hover:text-yellow-400 transition">
+                View All →
+              </Link>
+            </div>
+            {escalatedComplaints.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-500 dark:text-gray-400">No escalated complaints</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {escalatedComplaints.map((complaint) => (
+                  <div key={complaint.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-500/20">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{complaint.subject}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {complaint.User?.fullName || 'Unknown'} • {new Date(complaint.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                      Escalated
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-yellow-500/20">

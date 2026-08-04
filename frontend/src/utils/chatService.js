@@ -123,6 +123,93 @@ export const getSupportUsers = async () => {
   return response.data?.users || [];
 };
 
+// ============================================================
+// SECURE ADMIN MESSAGING APIS
+// ============================================================
+// Admin does NOT have automatic access to private user chats.
+// These endpoints only return conversations Admin is authorized to view:
+//   1. Escalated conversations (after support escalates)
+//   2. Support conversations (supervision)
+//   3. Internal staff messages (Support <-> Admin)
+// ============================================================
+
+// GET /api/admin/escalated-conversations
+// List conversations escalated to Admin by Support.
+export const getEscalatedConversations = async () => {
+  const response = await api.get('/api/admin/escalated-conversations');
+  return response.data?.conversations || [];
+};
+
+// GET /api/admin/support-conversations
+// List all support conversations for supervision.
+export const getAdminSupportConversations = async () => {
+  const response = await api.get('/api/admin/support-conversations');
+  return response.data?.conversations || [];
+};
+
+// GET /api/admin/internal-messages
+// List internal staff conversations (Support <-> Admin).
+export const getInternalMessages = async () => {
+  const response = await api.get('/api/admin/internal-messages');
+  return response.data?.conversations || [];
+};
+
+// GET /api/admin/conversations/:conversationId/messages
+// Get messages for an admin-accessible conversation.
+// Access is verified server-side: only ESCALATED, SUPPORT, or INTERNAL.
+export const getAdminConversationMessages = async (conversationId) => {
+  if (!conversationId) return { conversation: null, messages: [] };
+  const response = await api.get(`/api/admin/conversations/${encodeURIComponent(conversationId)}/messages`);
+  return {
+    conversation: response.data?.conversation || null,
+    messages: response.data?.messages || []
+  };
+};
+
+// ============================================================
+// SECURE SUPPORT MESSAGING APIS
+// ============================================================
+
+// GET /api/support/conversations
+// List support conversations assigned to this support agent.
+export const getSupportConversations = async () => {
+  const response = await api.get('/api/support/conversations');
+  return response.data?.conversations || [];
+};
+
+// GET /api/support/conversations/:id
+// Get a single support conversation with messages.
+export const getSupportConversationMessages = async (conversationId) => {
+  if (!conversationId) return { conversation: null, messages: [] };
+  const response = await api.get(`/api/support/conversations/${encodeURIComponent(conversationId)}`);
+  return {
+    conversation: response.data?.conversation || null,
+    messages: response.data?.messages || []
+  };
+};
+
+// POST /api/support/conversations/:id/escalate
+// Escalate a support conversation to Admin.
+// Saves: complaintId, conversationId, escalatedBy, escalatedAt, reason.
+export const escalateConversation = async (conversationId, reason, complaintId = null) => {
+  if (!conversationId || !reason) return null;
+  const response = await api.post(`/api/support/conversations/${encodeURIComponent(conversationId)}/escalate`, {
+    reason,
+    complaintId
+  });
+  return response.data;
+};
+
+// POST /api/admin/start-conversation
+// Start an official HomelyServ administrative conversation with a user.
+// Conversation type is SUPPORT (for WORKER/EMPLOYER/USER) or INTERNAL (for SUPPORT).
+// Never PRIVATE. Private user chats remain completely isolated.
+export const startAdminConversation = async (userId) => {
+  if (!userId) return null;
+  const response = await api.post('/api/admin/start-conversation', { userId });
+  return response.data;
+};
+
 export const debugChatData = async (userId) => {
   console.log('=== CHAT DATA DEBUG ===');
   if (!userId) {
@@ -182,6 +269,15 @@ export default {
   getOrCreateConversation,
   sendWelcomeMessage,
   deleteConversation,
+  getSupportUsers,
+  getEscalatedConversations,
+  getAdminSupportConversations,
+  getInternalMessages,
+  getAdminConversationMessages,
+  getSupportConversations,
+  getSupportConversationMessages,
+  escalateConversation,
+  startAdminConversation,
   debugChatData,
   getAllConversations,
   formatDisplayName

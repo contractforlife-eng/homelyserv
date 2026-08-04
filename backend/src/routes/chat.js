@@ -1,6 +1,19 @@
 // backend/src/routes/chat.js - ES Module Version
+// ============================================================
+// ARCHITECTURE REFACTOR: Secure messaging permission model.
+//
+// Conversation access is based on:
+//   - conversation participants (PRIVATE chats)
+//   - support assignment (SUPPORT chats)
+//   - admin escalation (ESCALATED chats)
+//   - internal staff membership (INTERNAL chats)
+//
+// Admin NEVER automatically sees private user chats.
+// Support NEVER sees unrelated private chats.
+// ============================================================
 import express from 'express';
 import Message from '../models/Message.js';
+import Conversation from '../models/Conversation.js';
 import { authenticate } from '../middleware/auth.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
@@ -16,9 +29,6 @@ const checkEmployerPayment = async (req, res, next) => {
   try {
     const employerId = req.userId;
     const employerRole = req.userRole;
-
-    console.log('[DEBUG checkEmployerPayment] req.userId:', req.userId);
-    console.log('[DEBUG checkEmployerPayment] req.userRole:', req.userRole);
 
     if (!employerId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -43,9 +53,6 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(400).json({ error: 'Missing recipient' });
     }
 
-    console.log('[DEBUG checkEmployerPayment] recipientId:', recipientId);
-    console.log('[DEBUG checkEmployerPayment] employerId:', employerId);
-
     // Convert User._id to WorkerProfile._id for payment check
     const workerProfile = await prisma.workerProfile.findUnique({
       where: { userId: String(recipientId) }
@@ -53,14 +60,7 @@ const checkEmployerPayment = async (req, res, next) => {
 
     const workerProfileId = workerProfile?.id || recipientId;
 
-    console.log('[DEBUG checkEmployerPayment] workerProfile:', workerProfile);
-    console.log('[DEBUG checkEmployerPayment] workerProfile.id:', workerProfile?.id);
-    console.log('[DEBUG checkEmployerPayment] workerProfile.userId:', workerProfile?.userId);
-    console.log('[DEBUG checkEmployerPayment] workerProfileId:', workerProfileId);
-
     const canContact = await canContactWorker(employerId, workerProfileId);
-
-    console.log('[DEBUG checkEmployerPayment] canContactWorker result:', canContact);
 
     // TEMPORARY: Allow employers to contact workers without payment check
     // TODO: Re-enable payment check when payment system is fully operational
@@ -68,12 +68,9 @@ const checkEmployerPayment = async (req, res, next) => {
     //   return res.status(403).json({ error: 'Payment required to contact this worker.' });
     // }
 
-    console.log('[DEBUG checkEmployerPayment] next() is reached');
     next();
   } catch (error) {
-    console.log('[DEBUG checkEmployerPayment] catch() is reached');
     console.error('Payment check error:', error);
-    console.log('[DEBUG checkEmployerPayment] error.stack:', error.stack);
     return res.status(500).json({ error: 'Failed to verify payment status' });
   }
 };
@@ -109,19 +106,76 @@ function formatMessage(msg) {
   };
 }
 
-const requireConversationParticipant = async (req, res, next) => {
+// ============================================================
+// AUTHORIZATION HELPERS
+// ============================================================
+
+/**
+ * Determine if a user can access a conversation.
+ *
+ * Access rules:
+ *   PRIVATE  - only participants
+ *   SUPPORT  - user participant OR assigned support agent OR admin (supervise)
+ *   INTERNAL - only staff members (SUPPORT/ADMIN) listed in staffIds
+ *   ESCALATED - user participant OR assigned support OR admin (after escalation)
+ */
+const canAccessConversation = async (conversationId, userId, userRole) => {
+  const conversation = await Conversation.findOne({ conversationId });
+  if (!conversation) {
+    // Fallback: if no metadata exists, only allow if user is a participant
+    // derived from the conversationId pattern (conv_<id1>_<id2>).
+    const parts = conversationId.replace('conv_', '').split('_');
+    if (parts.length === 2) {
+      return parts[0] === String(userId) || parts[1] === String(userId);
+    }
+    return false;
+  }
+
+  const uid = String(userId);
+
+  switch (conversation.type) {
+    case 'PRIVATE':
+      return conversation.participantIds.includes(uid);
+
+    case 'SUPPORT':
+      // User participant, assigned support agent, or admin supervising
+      if (conversation.participantIds.includes(uid)) return true;
+      if (conversation.supportAgentId === uid) return true;
+      if (userRole === 'ADMIN') return true;
+      return false;
+
+    case 'INTERNAL':
+      // Only internal staff members
+      return conversation.staffIds.includes(uid);
+
+    case 'ESCALATED':
+      // User participant, assigned support, or admin after escalation
+      if (conversation.participantIds.includes(uid)) return true;
+      if (conversation.supportAgentId === uid) return true;
+      if (userRole === 'ADMIN' && conversation.escalatedAt) return true;
+      return false;
+
+    default:
+      return false;
+  }
+};
+
+/**
+ * Middleware: require the authenticated user to be a participant
+ * or otherwise authorized to access the conversation.
+ */
+const requireConversationAccess = async (req, res, next) => {
   try {
     const conversationId = req.params.conversationId;
     const userId = String(req.userId);
     const userRole = req.userRole;
 
-    // ADMIN and SUPPORT can access any conversation
-    if (userRole === 'ADMIN' || userRole === 'SUPPORT') {
-      return next();
+    if (!conversationId) {
+      return res.status(400).json({ error: 'Missing conversationId' });
     }
 
-    const parts = conversationId.replace('conv_', '').split('_');
-    if (parts.length !== 2 || (parts[0] !== userId && parts[1] !== userId)) {
+    const allowed = await canAccessConversation(conversationId, userId, userRole);
+    if (!allowed) {
       return res.status(403).json({ error: 'Not authorized to access this conversation' });
     }
 
@@ -132,14 +186,63 @@ const requireConversationParticipant = async (req, res, next) => {
   }
 };
 
+/**
+ * Ensure Conversation metadata exists for a conversation.
+ * Creates it if missing (backwards-compatible with existing chat history).
+ * If the conversation exists but was created as PRIVATE and is now being
+ * used by SUPPORT or ADMIN, upgrade the type accordingly.
+ */
+const ensureConversationMetadata = async (conversationId, { type = 'PRIVATE', participantIds = [], supportAgentId = null, staffIds = [] } = {}) => {
+  try {
+    const existing = await Conversation.findOne({ conversationId });
+    if (existing) {
+      // Upgrade legacy PRIVATE conversations when support/admin start using them
+      if (existing.type === 'PRIVATE' && type !== 'PRIVATE') {
+        const updates = { type };
+        if (supportAgentId) updates.supportAgentId = supportAgentId;
+        if (staffIds.length > 0) updates.staffIds = staffIds;
+        await Conversation.updateOne({ conversationId }, updates);
+        return await Conversation.findOne({ conversationId });
+      }
+      return existing;
+    }
+
+    return await Conversation.create({
+      conversationId,
+      type,
+      participantIds,
+      supportAgentId,
+      staffIds
+    });
+  } catch (error) {
+    // If two requests race, one will fail on unique index - that's fine.
+    console.error('Error ensuring conversation metadata:', error.message);
+    return null;
+  }
+};
+
+/**
+ * Update last message info on Conversation metadata.
+ */
+const touchConversation = async (conversationId, text) => {
+  try {
+    await Conversation.findOneAndUpdate(
+      { conversationId },
+      {
+        lastMessageAt: new Date(),
+        lastMessagePreview: text ? text.slice(0, 120) : ''
+      }
+    );
+  } catch (error) {
+    console.error('Error touching conversation:', error.message);
+  }
+};
+
+// ============================================================
+// SEND MESSAGE
+// ============================================================
 router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
   try {
-    console.log('=== DEBUG POST /send START ===');
-    console.log('req.body:', req.body);
-    console.log('req.body.recipientId:', req.body.recipientId);
-    console.log('typeof req.body.recipientId:', typeof req.body.recipientId);
-    console.log('=== END DEBUG ===');
-
     const { senderName, senderRole, recipientId, recipientName, text } = req.body;
     const senderId = req.userId;
 
@@ -149,15 +252,49 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
 
     const conversationId = getConversationId(senderId, recipientId);
 
-    const recipientRole = resolveRecipientRole(senderRole);
+    // Determine the actual recipient role from the database.
+    // This ensures user->support and admin->support conversations are
+    // correctly classified (resolveRecipientRole is a heuristic that
+    // cannot detect SUPPORT/ADMIN recipients).
+    let recipientRole = resolveRecipientRole(senderRole);
+    try {
+      const recipientUser = await prisma.user.findUnique({
+        where: { id: String(recipientId) },
+        select: { role: true }
+      });
+      if (recipientUser?.role) {
+        recipientRole = recipientUser.role;
+      }
+    } catch (e) {
+      console.error('Error looking up recipient role:', e.message);
+    }
 
-    console.log('=== DEBUG BEFORE Message.create ===');
-    console.log('senderId:', senderId);
-    console.log('recipientId:', recipientId);
-    console.log('senderRole:', senderRole);
-    console.log('recipientRole:', recipientRole);
-    console.log('conversationId:', conversationId);
-    console.log('=== END DEBUG ===');
+    // Determine conversation type based on roles
+    const senderRoleUpper = (senderRole || '').toUpperCase();
+    const recipientRoleUpper = (recipientRole || '').toUpperCase();
+
+    let conversationType = 'PRIVATE';
+    let supportAgentId = null;
+    let staffIds = [];
+
+    if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT') {
+      // User <-> Support conversation
+      conversationType = 'SUPPORT';
+      const supportId = senderRoleUpper === 'SUPPORT' ? String(senderId) : String(recipientId);
+      supportAgentId = supportId;
+    } else if (senderRoleUpper === 'ADMIN' || recipientRoleUpper === 'ADMIN') {
+      // Admin <-> Support internal conversation
+      conversationType = 'INTERNAL';
+      staffIds = [String(senderId), String(recipientId)];
+    }
+
+    // Ensure conversation metadata exists
+    await ensureConversationMetadata(conversationId, {
+      type: conversationType,
+      participantIds: [String(senderId), String(recipientId)],
+      supportAgentId,
+      staffIds
+    });
 
     const message = await Message.create({
       conversationId,
@@ -172,13 +309,7 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
       delivered: true
     });
 
-    console.log('=== DEBUG AFTER Message.create ===');
-    console.log('success: true');
-    console.log('message._id:', message._id);
-    console.log('conversationId:', message.conversationId);
-    console.log('savedMessage.recipientId:', message.recipientId);
-    console.log('savedMessage.conversationId:', message.conversationId);
-    console.log('=== END DEBUG ===');
+    await touchConversation(conversationId, text);
 
     const formatted = formatMessage(message);
 
@@ -189,10 +320,12 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
   }
 });
 
-router.get('/messages/:conversationId', authenticate, requireConversationParticipant, async (req, res) => {
+// ============================================================
+// GET MESSAGES FOR A CONVERSATION
+// ============================================================
+router.get('/messages/:conversationId', authenticate, requireConversationAccess, async (req, res) => {
   try {
     const conversationId = req.params.conversationId;
-    const userId = String(req.userId);
 
     const messages = await Message.find({
       conversationId: conversationId
@@ -207,81 +340,132 @@ router.get('/messages/:conversationId', authenticate, requireConversationPartici
   }
 });
 
+// ============================================================
+// GET CONVERSATIONS FOR A USER
+// ============================================================
+// Only returns conversations the authenticated user participates in.
+// Admin does NOT see all conversations.
 router.get('/conversations/:userId', authenticate, async (req, res) => {
   try {
     const userId = String(req.userId);
     const userRole = req.userRole;
 
-    // ADMIN sees ALL conversations
-    // SUPPORT, WORKER, EMPLOYER only see conversations they participate in
-    const isAdmin = userRole === 'ADMIN';
-    
-    let messages;
-    if (isAdmin) {
-      // Get all messages, sorted by creation time
-      messages = await Message.find({}).sort({ createdAt: 1 });
-    } else {
-      // Get only messages where user is sender or recipient
-      messages = await Message.find({
-        $or: [
-          { senderId: userId },
-          { recipientId: userId }
-        ]
-      }).sort({ createdAt: 1 });
+    // Security: users can only fetch their own conversations
+    if (userId !== String(req.params.userId)) {
+      return res.status(403).json({ error: 'Not authorized to view these conversations' });
     }
 
-    const groups = new Map();
-    for (const msg of messages) {
-      if (!groups.has(msg.conversationId)) groups.set(msg.conversationId, []);
-      groups.get(msg.conversationId).push(msg);
-    }
+    // ============================================================
+    // BACKWARDS COMPATIBILITY: Find conversations from Message data
+    // where this user is a participant, and ensure Conversation
+    // metadata exists for them (e.g., legacy conversations created
+    // before the Conversation model existed).
+    // ============================================================
+    const legacyConversationIds = await Message.distinct('conversationId', {
+      $or: [
+        { senderId: userId },
+        { recipientId: userId }
+      ]
+    });
 
-    const conversations = [];
-    for (const [conversationId, msgs] of groups) {
-      const last = msgs[msgs.length - 1];
-      
-      // For admin, determine the "other user" (non-admin participant)
-      let otherUser;
-      if (isAdmin) {
-        // Find the participant who is not ADMIN
-        const nonAdminParticipant = msgs.find(m => {
-          const senderRole = m.senderRole;
-          const recipientRole = m.recipientRole;
-          return senderRole !== 'ADMIN' && recipientRole !== 'ADMIN';
-        });
-        
-        if (nonAdminParticipant) {
-          const isSender = String(last.senderId) === userId;
-          otherUser = isSender
-            ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
-            : { id: last.senderId, name: last.senderName, role: last.senderRole };
-        } else {
-          // Fallback to last message participants
-          const isSender = String(last.senderId) === userId;
-          otherUser = isSender
-            ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
-            : { id: last.senderId, name: last.senderName, role: last.senderRole };
+    for (const convId of (legacyConversationIds || []).filter(Boolean)) {
+      const existing = await Conversation.findOne({ conversationId: convId });
+      if (!existing) {
+        // Determine participants from the conversationId pattern
+        const parts = convId.replace('conv_', '').split('_');
+        if (parts.length === 2) {
+          // Determine conversation type from message roles
+          const sampleMsg = await Message.findOne({ conversationId: convId })
+            .sort({ createdAt: 1 });
+
+          let convType = 'PRIVATE';
+          let supportAgentId = null;
+          let staffIds = [];
+
+          if (sampleMsg) {
+            const role1 = (sampleMsg.senderRole || '').toUpperCase();
+            const role2 = (sampleMsg.recipientRole || '').toUpperCase();
+
+            if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
+              convType = 'SUPPORT';
+              supportAgentId = role1 === 'SUPPORT' ? String(sampleMsg.senderId) : String(sampleMsg.recipientId);
+            } else if (role1 === 'ADMIN' || role2 === 'ADMIN') {
+              convType = 'INTERNAL';
+              staffIds = [String(sampleMsg.senderId), String(sampleMsg.recipientId)];
+            }
+          }
+
+          // Get the actual last message time for correct ordering
+          const lastMsg = await Message.findOne({ conversationId: convId })
+            .sort({ createdAt: -1 });
+
+          const created = await ensureConversationMetadata(convId, {
+            type: convType,
+            participantIds: [parts[0], parts[1]],
+            supportAgentId,
+            staffIds
+          });
+
+          // Set lastMessageAt to the actual last message time
+          if (created && lastMsg) {
+            await Conversation.updateOne(
+              { conversationId: convId },
+              {
+                lastMessageAt: lastMsg.createdAt,
+                lastMessagePreview: lastMsg.text ? lastMsg.text.slice(0, 120) : ''
+              }
+            );
+          }
         }
-      } else {
-        const isSender = String(last.senderId) === userId;
-        otherUser = isSender
-          ? { id: last.recipientId, name: last.recipientName, role: last.recipientRole || 'USER' }
-          : { id: last.senderId, name: last.senderName, role: last.senderRole };
       }
+    }
 
-      const unread = msgs.filter(m => String(m.recipientId) === userId && !m.read).length;
+    // Find all conversation metadata where this user is a participant,
+    // assigned support agent, or internal staff member.
+    const conversationsMeta = await Conversation.find({
+      $or: [
+        { participantIds: userId },
+        { supportAgentId: userId },
+        { staffIds: userId }
+      ]
+    }).sort({ lastMessageAt: -1 });
+
+    // For each conversation, get the last message
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      // Determine the "other user" (not the current user)
+      let otherUser;
+      const isSender = String(lastMsg.senderId) === userId;
+      otherUser = isSender
+        ? { id: lastMsg.recipientId, name: lastMsg.recipientName, role: lastMsg.recipientRole || 'USER' }
+        : { id: lastMsg.senderId, name: lastMsg.senderName, role: lastMsg.senderRole };
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: userId,
+        read: false
+      });
 
       conversations.push({
-        id: conversationId,
+        id: conv.conversationId,
+        type: conv.type,
         otherUserId: String(otherUser.id),
         otherUserName: otherUser.name,
-        lastMessage: last.text,
-        lastMessageTime: last.createdAt,
-        time: new Date(last.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        otherUserRole: otherUser.role,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         unread,
         role: otherUser.role,
         avatar: buildAvatarUrl(otherUser.name, otherUser.role),
-        updatedAt: last.createdAt
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt,
+        escalated: conv.type === 'ESCALATED',
+        complaintId: conv.complaintId || null
       });
     }
 
@@ -294,6 +478,9 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
   }
 });
 
+// ============================================================
+// MARK READ
+// ============================================================
 router.post('/mark-read', authenticate, async (req, res) => {
   try {
     const { conversationId } = req.body;
@@ -301,6 +488,12 @@ router.post('/mark-read', authenticate, async (req, res) => {
 
     if (!conversationId || !userId) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Verify access before marking read
+    const allowed = await canAccessConversation(conversationId, userId, req.userRole);
+    if (!allowed) {
+      return res.status(403).json({ error: 'Not authorized to access this conversation' });
     }
 
     await Message.updateMany(
@@ -319,6 +512,9 @@ router.post('/mark-read', authenticate, async (req, res) => {
   }
 });
 
+// ============================================================
+// UNREAD COUNT
+// ============================================================
 router.get('/unread/:userId', authenticate, async (req, res) => {
   try {
     const userId = String(req.userId);
@@ -338,6 +534,9 @@ router.get('/unread/:userId', authenticate, async (req, res) => {
   }
 });
 
+// ============================================================
+// ENSURE CONVERSATION
+// ============================================================
 router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (req, res) => {
   try {
     const { 
@@ -362,15 +561,38 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
     const conversationId = getConversationId(user1Id, user2Id);
     const existing = await Message.findOne({ conversationId });
 
+    // Determine conversation type
+    let conversationType = 'PRIVATE';
+    let supportAgentId = null;
+    let staffIds = [];
+
+    const role1 = (user1Role || 'USER').toUpperCase();
+    const role2 = (user2Role || 'USER').toUpperCase();
+
+    if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
+      conversationType = 'SUPPORT';
+      supportAgentId = role1 === 'SUPPORT' ? String(user1Id) : String(user2Id);
+    } else if (role1 === 'ADMIN' || role2 === 'ADMIN') {
+      conversationType = 'INTERNAL';
+      staffIds = [String(user1Id), String(user2Id)];
+    }
+
+    await ensureConversationMetadata(conversationId, {
+      type: conversationType,
+      participantIds: [String(user1Id), String(user2Id)],
+      supportAgentId,
+      staffIds
+    });
+
     if (!existing) {
       await Message.create({
         conversationId,
         senderId: String(user1Id),
         senderName: user1Name || 'User',
-        senderRole: user1Role || 'USER',
+        senderRole: role1,
         recipientId: String(user2Id),
         recipientName: user2Name || 'User',
-        recipientRole: user2Role || 'USER',
+        recipientRole: role2,
         text: 'Start your conversation here',
         read: true,
         delivered: true
@@ -384,10 +606,16 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
   }
 });
 
-router.delete('/conversations/:conversationId', authenticate, requireConversationParticipant, async (req, res) => {
+// ============================================================
+// DELETE CONVERSATION
+// ============================================================
+router.delete('/conversations/:conversationId', authenticate, requireConversationAccess, async (req, res) => {
   try {
     await Message.deleteMany({ 
       conversationId: req.params.conversationId 
+    });
+    await Conversation.deleteOne({
+      conversationId: req.params.conversationId
     });
     return res.json({ success: true });
   } catch (error) {
@@ -396,7 +624,9 @@ router.delete('/conversations/:conversationId', authenticate, requireConversatio
   }
 });
 
-// Get all support users
+// ============================================================
+// GET ALL SUPPORT USERS
+// ============================================================
 router.get('/support-users', authenticate, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -421,6 +651,246 @@ router.get('/support-users', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching support users:', error);
     return res.status(500).json({ error: 'Failed to fetch support users' });
+  }
+});
+
+// ============================================================
+// SUPPORT CONVERSATIONS
+// ============================================================
+
+/**
+ * GET /api/chat/support/conversations
+ * Support/Admin: list support conversations (user <-> support).
+ * Only conversations where the support agent is assigned, or
+ * admin supervising.
+ */
+router.get('/support/conversations', authenticate, async (req, res) => {
+  try {
+    const userId = String(req.userId);
+    const userRole = req.userRole;
+
+    if (userRole !== 'SUPPORT' && userRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const query = { type: 'SUPPORT' };
+    if (userRole === 'SUPPORT') {
+      query.supportAgentId = userId;
+    }
+
+    const conversationsMeta = await Conversation.find(query).sort({ lastMessageAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      // Find the user participant (non-support)
+      const userParticipantId = conv.participantIds.find(
+        id => id !== conv.supportAgentId
+      );
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: userId,
+        read: false
+      });
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        userId: userParticipantId || null,
+        supportAgentId: conv.supportAgentId,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json(conversations);
+  } catch (error) {
+    console.error('Error fetching support conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch support conversations' });
+  }
+});
+
+/**
+ * GET /api/chat/support/conversations/:id
+ * Support/Admin: get a single support conversation with messages.
+ */
+router.get('/support/conversations/:id', authenticate, async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const userId = String(req.userId);
+    const userRole = req.userRole;
+
+    if (userRole !== 'SUPPORT' && userRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const conv = await Conversation.findOne({ conversationId, type: 'SUPPORT' });
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Support can only access assigned conversations; Admin can supervise all
+    if (userRole === 'SUPPORT' && conv.supportAgentId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to access this conversation' });
+    }
+
+    const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
+
+    return res.json({
+      conversation: {
+        id: conv.conversationId,
+        type: conv.type,
+        participantIds: conv.participantIds,
+        supportAgentId: conv.supportAgentId
+      },
+      messages: messages.map(formatMessage)
+    });
+  } catch (error) {
+    console.error('Error fetching support conversation:', error);
+    return res.status(500).json({ error: 'Failed to fetch support conversation' });
+  }
+});
+
+// ============================================================
+// INTERNAL STAFF CONVERSATIONS
+// ============================================================
+
+/**
+ * GET /api/chat/internal/conversations
+ * Support/Admin: list internal staff conversations.
+ */
+router.get('/internal/conversations', authenticate, async (req, res) => {
+  try {
+    const userId = String(req.userId);
+    const userRole = req.userRole;
+
+    if (userRole !== 'SUPPORT' && userRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const conversationsMeta = await Conversation.find({
+      type: 'INTERNAL',
+      staffIds: userId
+    }).sort({ lastMessageAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      // Find the other staff member
+      const otherStaffId = conv.staffIds.find(id => id !== userId);
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: userId,
+        read: false
+      });
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        otherStaffId: otherStaffId || null,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json(conversations);
+  } catch (error) {
+    console.error('Error fetching internal conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch internal conversations' });
+  }
+});
+
+// ============================================================
+// ESCALATED CONVERSATIONS
+// ============================================================
+
+/**
+ * GET /api/chat/escalated/conversations
+ * Admin: list escalated conversations.
+ */
+router.get('/escalated/conversations', authenticate, async (req, res) => {
+  try {
+    const userRole = req.userRole;
+
+    if (userRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const conversationsMeta = await Conversation.find({
+      type: 'ESCALATED',
+      escalatedAt: { $ne: null }
+    }).sort({ escalatedAt: -1 });
+
+    const conversations = [];
+    for (const conv of conversationsMeta) {
+      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+        .sort({ createdAt: -1 });
+
+      if (!lastMsg) continue;
+
+      const unread = await Message.countDocuments({
+        conversationId: conv.conversationId,
+        recipientId: String(req.userId),
+        read: false
+      });
+
+      // Get complaint info
+      let complaint = null;
+      if (conv.complaintId) {
+        try {
+          complaint = await prisma.complaint.findUnique({
+            where: { id: conv.complaintId },
+            select: {
+              id: true,
+              subject: true,
+              status: true,
+              priority: true,
+              createdAt: true
+            }
+          });
+        } catch (e) {
+          console.error('Error fetching complaint:', e.message);
+        }
+      }
+
+      conversations.push({
+        id: conv.conversationId,
+        type: conv.type,
+        complaintId: conv.complaintId,
+        complaint,
+        escalatedBy: conv.escalatedBy,
+        escalatedAt: conv.escalatedAt,
+        escalationReason: conv.escalationReason,
+        participantIds: conv.participantIds,
+        supportAgentId: conv.supportAgentId,
+        lastMessage: lastMsg.text,
+        lastMessageTime: lastMsg.createdAt,
+        time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread,
+        updatedAt: conv.lastMessageAt || lastMsg.createdAt
+      });
+    }
+
+    return res.json(conversations);
+  } catch (error) {
+    console.error('Error fetching escalated conversations:', error);
+    return res.status(500).json({ error: 'Failed to fetch escalated conversations' });
   }
 });
 

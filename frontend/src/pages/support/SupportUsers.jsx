@@ -1,4 +1,4 @@
-// Support Users Page - View users (read-only)
+// Support Users Page - View users, suspend/reactivate, reset passwords
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
@@ -10,7 +10,13 @@ import {
   UserX,
   Mail,
   Shield,
-  Filter
+  Filter,
+  Pause,
+  Play,
+  Key,
+  Eye,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -22,6 +28,10 @@ const SupportUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [showResetModal, setShowResetModal] = useState(null);
+  const [resetReason, setResetReason] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -29,23 +39,17 @@ const SupportUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      console.log('👥 Fetching support users...');
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (roleFilter) params.append('role', roleFilter);
 
       const response = await api.get(`/api/support/users?${params.toString()}`);
-      console.log('👥 Users response:', response.data);
-      
+
       if (response.data?.success) {
-        console.log('✅ Users loaded:', response.data.users.length, 'users');
         setUsers(response.data.users);
-      } else {
-        console.warn('⚠️ Users response missing success flag:', response.data);
       }
     } catch (error) {
       console.error('❌ Error fetching users:', error);
-      console.error('❌ Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -57,6 +61,60 @@ const SupportUsers = () => {
     }, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, roleFilter]);
+
+  const handleSuspend = async (userId, suspend) => {
+    setActionLoading(userId);
+    try {
+      const response = await api.put(`/api/support/users/${userId}/suspend`, {
+        suspend,
+        reason: suspend ? 'Violation of terms of service' : 'Account reactivated by support'
+      });
+
+      if (response.data?.success) {
+        setUsers(users.map(u =>
+          u.id === userId ? { ...u, isSuspended: suspend, suspendedAt: suspend ? new Date().toISOString() : null } : u
+        ));
+        setNotification({
+          type: 'success',
+          text: suspend ? 'User suspended successfully' : 'User reactivated successfully'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error updating user:', error);
+      setNotification({
+        type: 'error',
+        text: 'Failed to update user status'
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResetPassword = async (userId) => {
+    setActionLoading(userId);
+    try {
+      const response = await api.post(`/api/support/users/${userId}/reset-password`, {
+        reason: resetReason || 'Password reset by support'
+      });
+
+      if (response.data?.success) {
+        setNotification({
+          type: 'success',
+          text: `Password reset. Temporary password: ${response.data.tempPassword}`
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error resetting password:', error);
+      setNotification({
+        type: 'error',
+        text: 'Failed to reset password'
+      });
+    } finally {
+      setActionLoading(null);
+      setShowResetModal(null);
+      setResetReason('');
+    }
+  };
 
   const translations = {
     en: {
@@ -79,7 +137,15 @@ const SupportUsers = () => {
       active: 'Active',
       loading: 'Loading...',
       noUsers: 'No users found',
-      totalUsers: 'Total Users'
+      totalUsers: 'Total Users',
+      suspend: 'Suspend',
+      reactivate: 'Reactivate',
+      resetPassword: 'Reset Password',
+      viewProfile: 'View Profile',
+      resetReason: 'Reason (optional)',
+      confirmReset: 'Reset Password',
+      cancel: 'Cancel',
+      adminOnly: 'Admin accounts cannot be modified by support'
     },
     ar: {
       title: 'المستخدمين',
@@ -101,7 +167,15 @@ const SupportUsers = () => {
       active: 'نشط',
       loading: 'جاري التحميل...',
       noUsers: 'لم يتم العثور على مستخدمين',
-      totalUsers: 'إجمالي المستخدمين'
+      totalUsers: 'إجمالي المستخدمين',
+      suspend: 'إيقاف',
+      reactivate: 'إعادة تفعيل',
+      resetPassword: 'إعادة تعيين كلمة المرور',
+      viewProfile: 'عرض الملف',
+      resetReason: 'السبب (اختياري)',
+      confirmReset: 'إعادة تعيين',
+      cancel: 'إلغاء',
+      adminOnly: 'لا يمكن تعديل حسابات المديرين بواسطة الدعم'
     }
   };
 
@@ -165,6 +239,18 @@ const SupportUsers = () => {
           </h1>
           <p className="text-gray-600 dark:text-gray-400">{t.subtitle}</p>
         </div>
+
+        {/* Notification */}
+        {notification && (
+          <div className={`mb-4 px-4 py-3 rounded-lg flex items-center gap-2 ${
+            notification.type === 'error'
+              ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+              : 'bg-green-500/10 border border-green-500/30 text-green-400'
+          }`}>
+            <AlertCircle size={18} />
+            {notification.text}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
@@ -237,6 +323,9 @@ const SupportUsers = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {t.joined}
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.actions || 'Actions'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -278,6 +367,48 @@ const SupportUsers = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {formatDate(user.createdAt)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {user.role !== 'ADMIN' && (
+                            <>
+                              {user.isSuspended ? (
+                                <button
+                                  onClick={() => handleSuspend(user.id, false)}
+                                  disabled={actionLoading === user.id}
+                                  className="p-1.5 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
+                                  title={t.reactivate}
+                                >
+                                  <Play size={16} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleSuspend(user.id, true)}
+                                  disabled={actionLoading === user.id}
+                                  className="p-1.5 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
+                                  title={t.suspend}
+                                >
+                                  <Pause size={16} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setShowResetModal(user.id)}
+                                disabled={actionLoading === user.id}
+                                className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-colors"
+                                title={t.resetPassword}
+                              >
+                                <Key size={16} />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => navigate(`/support/users/${user.id}`)}
+                            className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title={t.viewProfile}
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -286,6 +417,53 @@ const SupportUsers = () => {
           )}
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Key size={20} className="text-green-500" />
+                {t.resetPassword}
+              </h3>
+              <button
+                onClick={() => setShowResetModal(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.resetReason}</label>
+                <input
+                  type="text"
+                  value={resetReason}
+                  onChange={(e) => setResetReason(e.target.value)}
+                  placeholder="Enter reason for password reset..."
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setShowResetModal(null)}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={() => handleResetPassword(showResetModal)}
+                  disabled={actionLoading === showResetModal}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50"
+                >
+                  {t.confirmReset}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </SupportLayout>
   );
 };
