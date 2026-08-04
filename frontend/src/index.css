@@ -112,3 +112,82 @@ html {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* ============================================================
+   THEME COMPATIBILITY OVERRIDES
+   Makes legacy hardcoded dark classes theme-aware.
+   Light mode: light backgrounds, dark text.
+   Dark mode: dark backgrounds, white text.
+   ============================================================ */
+
+/* Legacy dark page backgrounds (#0a0a0a) */
+.bg-\[\#0a0a0a\] {
+  background-color: #f9fafb;
+}
+.dark .bg-\[\#0a0a0a\] {
+  background-color: #0a0a0a;
+}
+
+/* Legacy dark card backgrounds (#1a1a1a) */
+.bg-\[\#1a1a1a\] {
+  background-color: #ffffff;
+}
+.dark .bg-\[\#1a1a1a\] {
+  background-color: #1a1a1a;
+}
+
+/* Legacy dark sidebar background (#1a1a2e) */
+.bg-\[\#1a1a2e\] {
+  background-color: #ffffff;
+}
+.dark .bg-\[\#1a1a2e\] {
+  background-color: #1a1a2e;
+}
+
+/* Legacy white text on dark backgrounds */
+.text-white {
+  color: #1f2937;
+}
+.dark .text-white {
+  color: #ffffff;
+}
+
+/* Legacy gray-300 text */
+.text-gray-300 {
+  color: #4b5563;
+}
+.dark .text-gray-300 {
+  color: #d1d5db;
+}
+
+/* Legacy gray-400 text */
+.text-gray-400 {
+  color: #6b7280;
+}
+.dark .text-gray-400 {
+  color: #9ca3af;
+}
+
+/* Legacy gray-700 borders */
+.border-gray-700 {
+  border-color: #e5e7eb;
+}
+.dark .border-gray-700 {
+  border-color: #374151;
+}
+
+/* Legacy placeholder text */
+.placeholder-gray-500::placeholder {
+  color: #9ca3af;
+}
+.dark .placeholder-gray-500::placeholder {
+  color: #6b7280;
+}
+
+/* Legacy hover:bg-gray-800 */
+.hover\:bg-gray-800:hover {
+  background-color: #f3f4f6;
+}
+.dark .hover\:bg-gray-800:hover {
+  background-color: #1f2937;
+}

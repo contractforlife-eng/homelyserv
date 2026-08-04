@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import useThemeStore from '../store/themeStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
+import api from '../utils/api';
 import {
   Home,
   Users,
@@ -409,6 +411,19 @@ const AdminSettings = () => {
     setShowLangDropdown(false);
   };
 
+  const toggleLanguage = () => {
+    const newLang = language === 'en' ? 'ar' : 'en';
+    changeLanguageGlobal(newLang);
+    setLanguage(newLang);
+    setSettings(prev => ({ ...prev, language: newLang }));
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang);
+  };
+
+  // Theme store integration (same as WorkerSettings and SupportSettings)
+  const theme = useThemeStore(state => state.theme);
+  const toggleTheme = useThemeStore(state => state.toggleTheme);
+  const isDark = theme === 'dark';
+
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
     localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
@@ -654,13 +669,21 @@ const AdminSettings = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-300">{t.appearance.darkMode}</p>
+                    <p className="text-sm font-medium text-gray-300 dark:text-gray-300">{t.appearance.darkMode}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">Enable dark mode theme</p>
                   </div>
-                  <ToggleSwitch
-                    value={settings.darkMode}
-                    onChange={(value) => handleToggleChange('darkMode')}
-                  />
+                  <button
+                    onClick={toggleTheme}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                      isDark ? 'bg-yellow-500' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 flex items-center justify-center ${
+                      isDark ? 'right-1' : 'left-1'
+                    }`}>
+                      {isDark ? <Moon size={10} className="text-yellow-500" /> : <Sun size={10} className="text-yellow-500" />}
+                    </div>
+                  </button>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>

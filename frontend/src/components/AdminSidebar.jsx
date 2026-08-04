@@ -1,14 +1,10 @@
-// src/components/AdminSidebar.jsx - SHARED ADMIN SIDEBAR
+// src/components/AdminSidebar.jsx - ADMIN SIDEBAR
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
   Users,
-  Briefcase,
   MessageCircle,
-  CreditCard,
-  AlertTriangle,
-  BarChart3,
   Settings,
   User as UserIcon,
   LogOut,
@@ -17,7 +13,11 @@ import {
   ChevronRight,
   Globe,
   X,
-  Shield
+  Shield,
+  CreditCard,
+  FileText,
+  BarChart3,
+  Briefcase
 } from 'lucide-react';
 
 const AdminSidebar = ({
@@ -37,11 +37,11 @@ const AdminSidebar = ({
       dashboard: 'Dashboard',
       profile: 'My Profile',
       users: 'Users',
-      hires: 'Hires',
-      messages: 'Messages',
       payments: 'Payments',
       complaints: 'Complaints',
       reports: 'Reports',
+      messages: 'Messages',
+      hires: 'Hires',
       settings: 'Settings',
       logout: 'Logout',
       overview: 'Overview'
@@ -50,11 +50,11 @@ const AdminSidebar = ({
       dashboard: 'لوحة التحكم',
       profile: 'ملفي الشخصي',
       users: 'المستخدمين',
-      hires: 'التوظيفات',
-      messages: 'الرسائل',
       payments: 'المدفوعات',
       complaints: 'الشكاوى',
       reports: 'التقارير',
+      messages: 'الرسائل',
+      hires: 'التوظيف',
       settings: 'الإعدادات',
       logout: 'تسجيل الخروج',
       overview: 'نظرة عامة'
@@ -65,13 +65,12 @@ const AdminSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
-    { id: 'profile', label: t.profile, icon: UserIcon, path: '/admin/profile' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
-    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'complaints', label: t.complaints, icon: FileText, path: '/admin/complaints' },
     { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
+    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 
@@ -98,7 +97,7 @@ const AdminSidebar = ({
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full bg-[#1a1a1a] border-r border-yellow-500/20 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-[#1a1a1a] border-r border-yellow-500/20 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -109,7 +108,7 @@ const AdminSidebar = ({
                 <Shield size={28} className="text-yellow-500" />
                 <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
               </div>
-              <span className="font-bold text-white text-lg">HomelyServ</span>
+              <span className="font-bold text-gray-900 dark:text-white text-lg">Admin</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -147,8 +146,8 @@ const AdminSidebar = ({
             </div>
             {!sidebarCollapsed && activeUser && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-white truncate">{activeUser.fullName || 'Admin'}</p>
-                <p className="text-xs text-gray-400 truncate">{activeUser.email || 'admin@homelyserv.com'}</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || 'Admin'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activeUser.email || 'admin@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -173,7 +172,7 @@ const AdminSidebar = ({
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
                   ? 'bg-yellow-500 text-black'
-                  : 'text-gray-300 hover:bg-white/5 hover:text-yellow-500'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <item.icon size={20} className={isActive(item.path) ? 'text-black' : 'text-gray-400 group-hover:text-yellow-500'} />

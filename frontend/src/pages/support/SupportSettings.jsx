@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import useThemeStore from '../../store/themeStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../../i18n';
@@ -25,10 +26,12 @@ const SupportSettings = () => {
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
+  const theme = useThemeStore(state => state.theme);
+  const toggleTheme = useThemeStore(state => state.toggleTheme);
+  const isDark = theme === 'dark';
 
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -129,16 +132,7 @@ const SupportSettings = () => {
   };
 
   const toggleDarkMode = () => {
-    const html = document.documentElement;
-    const isDark = html.classList.contains('dark');
-    if (isDark) {
-      html.classList.remove('dark');
-      setDarkMode(false);
-    } else {
-      html.classList.add('dark');
-      setDarkMode(true);
-    }
-    localStorage.setItem('homelyserv_dark_mode', String(!isDark));
+    toggleTheme();
   };
 
   const handlePasswordChange = async () => {
@@ -299,13 +293,13 @@ const SupportSettings = () => {
                 <button
                   onClick={toggleDarkMode}
                   className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
-                    darkMode ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
+                    isDark ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 flex items-center justify-center ${
-                    darkMode ? 'right-1' : 'left-1'
+                    isDark ? 'right-1' : 'left-1'
                   }`}>
-                    {darkMode ? <Moon size={10} className="text-green-600" /> : <Sun size={10} className="text-yellow-500" />}
+                    {isDark ? <Moon size={10} className="text-green-600" /> : <Sun size={10} className="text-yellow-500" />}
                   </div>
                 </button>
               </div>

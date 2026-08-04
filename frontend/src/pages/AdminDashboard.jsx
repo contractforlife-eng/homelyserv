@@ -224,7 +224,7 @@ const AdminDashboard = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
           <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
@@ -253,64 +253,64 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.users}</p>
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Users size={20} className="text-blue-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalUsers}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalUsers}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.payments}</p>
                 <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <CreditCard size={20} className="text-green-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalPayments}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalPayments}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.messages}</p>
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <MessageCircle size={20} className="text-purple-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalMessages}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalMessages}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.complaints}</p>
                 <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                   <AlertTriangle size={20} className="text-red-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.totalComplaints}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalComplaints}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pendingComplaints}</p>
                 <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.pendingComplaints}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.pendingComplaints}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
                 <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={20} className="text-orange-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-white mt-1">{stats.pendingActions}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.pendingActions}</p>
             </div>
           </div>
 
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20 mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4">{t.quickActions}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-yellow-500/20 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.quickActions}</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Link
                 to="/admin/users"
@@ -350,8 +350,8 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-6 border border-yellow-500/20">
-            <h3 className="text-lg font-semibold text-white mb-4">{t.recentActivity}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-yellow-500/20">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t.recentActivity}</h3>
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noActivity}</p>
             </div>

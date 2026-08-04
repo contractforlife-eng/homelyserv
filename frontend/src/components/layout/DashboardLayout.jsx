@@ -111,7 +111,7 @@ const DashboardLayout = ({
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className={`min-h-screen flex ${authUser.role === 'ADMIN' ? 'bg-[#0a0a0a]' : 'bg-gray-50 dark:bg-gray-900'}`}>
+      <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
         <SidebarComponent
           language={language}
           sidebarCollapsed={sidebarCollapsed}

@@ -81,7 +81,7 @@ const SupportSidebar = ({
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full bg-[#1a1a2e] border-r border-green-500/20 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-[#1a1a2e] border-r border-green-500/20 z-50 transition-all duration-300 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -92,7 +92,7 @@ const SupportSidebar = ({
                 <Shield size={28} className="text-green-500" />
                 <Home size={14} className="text-green-300 absolute -bottom-1 -right-1" />
               </div>
-              <span className="font-bold text-white text-lg">Support</span>
+              <span className="font-bold text-gray-900 dark:text-white text-lg">Support</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -130,8 +130,8 @@ const SupportSidebar = ({
             </div>
             {!sidebarCollapsed && activeUser && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-white truncate">{activeUser.fullName || 'Support'}</p>
-                <p className="text-xs text-gray-400 truncate">{activeUser.email || 'support@homelyserv.com'}</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || 'Support'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activeUser.email || 'support@homelyserv.com'}</p>
               </div>
             )}
           </div>
@@ -156,7 +156,7 @@ const SupportSidebar = ({
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
                   ? 'bg-green-500 text-white'
-                  : 'text-gray-300 hover:bg-white/5 hover:text-green-500'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-green-500/10 hover:text-green-500'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <item.icon size={20} className={isActive(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-green-500'} />
