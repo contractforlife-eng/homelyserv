@@ -115,6 +115,11 @@ export const deleteConversation = async (conversationId) => {
   return !!response.data?.success;
 };
 
+export const getSupportUsers = async () => {
+  const response = await api.get('/api/chat/support-users');
+  return response.data?.users || [];
+};
+
 export const debugChatData = async (userId) => {
   console.log('=== CHAT DATA DEBUG ===');
   if (!userId) {
@@ -141,15 +146,19 @@ export const getAllConversations = () => {
  *   ADMIN  -> "Emad (Co-Admin)"
  *   EMPLOYER -> "Rania"
  *   WORKER -> "Nono"
+ *   SUPPORT -> "Rania (Sup-Admin)"
  *   USER   -> "Name"
  * 
  * @param {string} name - The user's raw name
- * @param {string} role - The user's role (ADMIN, EMPLOYER, WORKER, USER)
+ * @param {string} role - The user's role (ADMIN, EMPLOYER, WORKER, SUPPORT, USER)
  * @returns {string} The formatted display name
  */
 export const formatDisplayName = (name, role) => {
   if (role === 'ADMIN') {
     return `${name || 'Admin'} (Co-Admin)`;
+  }
+  if (role === 'SUPPORT') {
+    return `${name || 'Support'} (Sup-Admin)`;
   }
   return name || 'User';
 };

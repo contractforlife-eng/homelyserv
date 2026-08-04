@@ -56,7 +56,8 @@ import {
   getConversationId,
   ensureConversationExists,
   deleteConversation,
-  formatDisplayName
+  formatDisplayName,
+  getSupportUsers
 } from '../utils/chatService';
 
 // ============================================================
@@ -79,6 +80,8 @@ const EmployerMessages = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [supportUsers, setSupportUsers] = useState([]);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
@@ -337,6 +340,15 @@ const EmployerMessages = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load support users when modal opens
+  useEffect(() => {
+    if (showSupportModal) {
+      getSupportUsers().then(users => {
+        setSupportUsers(users);
+      });
+    }
+  }, [showSupportModal]);
+
   const handleLogout = () => {
     authLogout();
     navigate('/login');
@@ -499,6 +511,13 @@ const EmployerMessages = () => {
                 <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
                   {conversations.length} chats
                 </span>
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className="bg-purple-500/30 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-purple-400/30"
+                >
+                  <Shield size={12} />
+                  Contact Support
+                </button>
                 {!userIsPremium && (
                   <Link
                     to="/subscription"
@@ -748,6 +767,55 @@ const EmployerMessages = () => {
               </div>
             </div>
           </div>
+
+          {/* Support Modal */}
+          {showSupportModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Contact Support</h3>
+                  <button
+                    onClick={() => setShowSupportModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">Select a support agent to start a conversation:</p>
+                <div className="space-y-2">
+                  {supportUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={async () => {
+                        setShowSupportModal(false);
+                        const conversationId = await ensureConversationExists(
+                          authUser.id,
+                          authUser.fullName,
+                          authUser.role,
+                          user.id,
+                          user.fullName,
+                          user.role
+                        );
+                        setSelectedConversationId(conversationId);
+                        loadMessagesForConversation(conversationId);
+                      }}
+                      className="w-full p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
+                    >
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(user.fullName, user.role))}&background=purple&color=fff&size=100&bold=true`}
+                        alt={formatDisplayName(user.fullName, user.role)}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-purple-300"
+                      />
+                      <div className="text-left">
+                        <p className="font-semibold text-gray-800 dark:text-white">{formatDisplayName(user.fullName, user.role)}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
     </DashboardLayout>
   );

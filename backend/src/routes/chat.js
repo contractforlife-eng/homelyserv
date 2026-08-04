@@ -24,7 +24,7 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Skip payment check for ADMIN and WORKER roles
+    // Skip payment check for ADMIN, WORKER, and SUPPORT roles
     if (employerRole !== 'EMPLOYER') {
       return next();
     }
@@ -82,11 +82,12 @@ function resolveRecipientRole(senderRole) {
   if (senderRole === 'ADMIN') return 'USER';
   if (senderRole === 'EMPLOYER') return 'WORKER';
   if (senderRole === 'WORKER') return 'EMPLOYER';
+  if (senderRole === 'SUPPORT') return 'USER';
   return 'USER';
 }
 
 function buildAvatarUrl(name, role) {
-  const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : 'gray';
+  const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : role === 'SUPPORT' ? 'purple' : 'gray';
   const color = role === 'ADMIN' ? '000' : 'fff';
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${color}&size=100&bold=true`;
 }
@@ -350,6 +351,34 @@ router.delete('/conversations/:conversationId', authenticate, requireConversatio
   } catch (error) {
     console.error('Error deleting conversation:', error);
     return res.status(500).json({ error: 'Failed to delete conversation' });
+  }
+});
+
+// Get all support users
+router.get('/support-users', authenticate, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: 'SUPPORT'
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        image: true,
+        createdAt: true
+      }
+    });
+
+    return res.json({
+      success: true,
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    console.error('Error fetching support users:', error);
+    return res.status(500).json({ error: 'Failed to fetch support users' });
   }
 });
 
