@@ -9,7 +9,8 @@
     "dev": "nodemon src/index.js",
     "build": "npx prisma generate",
     "vercel-build": "npx prisma generate",
-    "create-support-user": "node scripts/create-support-user.js"
+    "create-support-user": "node scripts/create-support-user.js",
+    "cleanup-test-users": "node scripts/cleanup-test-users.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
