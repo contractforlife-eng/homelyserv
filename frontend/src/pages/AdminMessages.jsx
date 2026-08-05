@@ -27,7 +27,8 @@ import {
   Plus,
   Briefcase,
   Wrench,
-  Headphones
+  Headphones,
+  MessageSquare
 } from 'lucide-react';
 import {
   getEscalatedConversations,
@@ -40,6 +41,7 @@ import {
   startAdminConversation
 } from '../utils/chatService';
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
+import { UserDisplayName } from '../components/users';
 import api from '../utils/api';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
@@ -852,11 +854,20 @@ const AdminMessages = () => {
                     ? 'bg-yellow-500 text-black'
                     : 'bg-[#0a0a0a] text-white border border-yellow-500/20'
                 }`}>
-                  <p className="text-xs font-medium mb-1">
-                    {msg.senderId === authUser?.id
-                      ? `${msg.senderName || 'Admin'} (You)`
-                      : formatDisplayName(msg.senderName, msg.senderRole)}
-                  </p>
+                  <div className="mb-1">
+                    {msg.senderId === authUser?.id ? (
+                      <span className="text-xs font-medium text-black/80">
+                        {msg.senderName || 'Admin'} (You)
+                      </span>
+                    ) : (
+                      <UserDisplayName
+                        name={msg.senderName}
+                        role={msg.senderRole}
+                        size="sm"
+                        className="text-white"
+                      />
+                    )}
+                  </div>
                   <p className="text-sm">{msg.text}</p>
                   <p className={`text-xs mt-1 ${
                     msg.senderId === authUser?.id ? 'text-black/70' : 'text-gray-400'

@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { UserDisplayName } from '../components/users';
 import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
@@ -571,7 +572,14 @@ const EmployerMessages = () => {
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
-                            <p className="font-semibold text-gray-800 dark:text-white truncate">{formatDisplayName(conv.otherUserName, conv.role)}</p>
+                            <div className="truncate">
+                              <UserDisplayName
+                                name={conv.otherUserName}
+                                role={conv.role}
+                                size="sm"
+                                className="text-gray-800 dark:text-white"
+                              />
+                            </div>
                             <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{conv.time}</span>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
@@ -604,9 +612,12 @@ const EmployerMessages = () => {
                           className="w-10 h-10 rounded-full object-cover border-2 border-teal-200"
                         />
                         <div>
-                          <p className="font-semibold text-gray-800 dark:text-white">
-                            {formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role)}
-                          </p>
+                          <UserDisplayName
+                            name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                            role={conversations.find(c => c.id === selectedConversationId)?.role}
+                            size="sm"
+                            className="text-gray-800 dark:text-white"
+                          />
                           <p className="text-xs text-green-500">{t.online}</p>
                         </div>
                       </div>
@@ -703,9 +714,14 @@ const EmployerMessages = () => {
                                 }`}
                               >
                                 {!isEmployer && (
-                                  <p className="text-xs font-medium text-teal-600 mb-1">
-                                    {formatSenderName(msg.senderName, msg.senderRole)}
-                                  </p>
+                                  <div className="mb-1">
+                                    <UserDisplayName
+                                      name={msg.senderName}
+                                      role={msg.senderRole}
+                                      size="sm"
+                                      className="text-teal-600"
+                                    />
+                                  </div>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                                 <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
@@ -807,7 +823,11 @@ const EmployerMessages = () => {
                         className="w-10 h-10 rounded-full object-cover border-2 border-purple-300"
                       />
                       <div className="text-left">
-                        <p className="font-semibold text-gray-800 dark:text-white">{formatDisplayName(user.fullName, user.role)}</p>
+                        <UserDisplayName
+                          user={user}
+                          size="sm"
+                          className="text-gray-800 dark:text-white"
+                        />
                         <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                       </div>
                     </button>

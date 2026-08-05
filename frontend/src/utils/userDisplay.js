@@ -38,6 +38,11 @@ const ROLE_BADGE_CLASSES = {
 };
 
 // ============================================================
+// OFFICIAL STAFF - Admin & Support visual distinction
+// ============================================================
+const STAFF_ROLES = ['ADMIN', 'SUPPORT'];
+
+// ============================================================
 // HELPERS
 // ============================================================
 
@@ -109,9 +114,55 @@ export const getRoleBadgeClasses = (role) => {
   return ROLE_BADGE_CLASSES[normalized] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
 };
 
+/**
+ * Check if a role is an official staff role (ADMIN or SUPPORT).
+ * @param {string} role - Database role
+ * @returns {boolean}
+ */
+export const isStaffRole = (role) => {
+  const normalized = (role || '').toUpperCase();
+  return STAFF_ROLES.includes(normalized);
+};
+
+/**
+ * Get the Tailwind text color for a user's displayed name.
+ * ADMIN and SUPPORT are always red (official staff).
+ * Other roles return an empty string (use default color).
+ * @param {string} role - Database role
+ * @returns {string} Tailwind text color classes (or empty)
+ */
+export const getRoleNameColor = (role) => {
+  const normalized = (role || '').toUpperCase();
+  if (STAFF_ROLES.includes(normalized)) {
+    return 'text-red-600 dark:text-red-400';
+  }
+  return '';
+};
+
+/**
+ * Get badge styling for an official staff role (ADMIN/SUPPORT).
+ * Both use a consistent red-tinted official style.
+ * Non-staff roles fall back to the standard role badge classes.
+ * @param {string} role - Database role
+ * @returns {string} Tailwind badge classes
+ */
+export const getOfficialBadgeClass = (role) => {
+  const normalized = (role || '').toUpperCase();
+  if (STAFF_ROLES.includes(normalized)) {
+    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+  }
+  return getRoleBadgeClasses(role);
+};
+
+// ============================================================
+// DEFAULT EXPORT
+// ============================================================
 export default {
   getDisplayName,
   getRoleLabel,
   getRoleColor,
-  getRoleBadgeClasses
+  getRoleBadgeClasses,
+  isStaffRole,
+  getRoleNameColor,
+  getOfficialBadgeClass
 };

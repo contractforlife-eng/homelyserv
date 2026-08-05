@@ -2,7 +2,7 @@
 // Shared role badge component for user displays (support & admin).
 import React from 'react';
 import { Shield } from 'lucide-react';
-import { getRoleLabel, getRoleBadgeClasses } from '../../utils/userDisplay';
+import { getRoleLabel, getOfficialBadgeClass } from '../../utils/userDisplay';
 
 const UserRoleBadge = ({ role = 'USER', size = 'md' }) => {
   const sizeClasses = {
@@ -11,7 +11,7 @@ const UserRoleBadge = ({ role = 'USER', size = 'md' }) => {
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${getRoleBadgeClasses(role)} ${sizeClasses[size] || sizeClasses.md}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${getOfficialBadgeClass(role)} ${sizeClasses[size] || sizeClasses.md}`}>
       <Shield size={size === 'sm' ? 10 : 12} />
       {getRoleLabel(role)}
     </span>

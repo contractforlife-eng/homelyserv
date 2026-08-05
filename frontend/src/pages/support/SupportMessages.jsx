@@ -28,6 +28,7 @@ import {
   escalateConversation
 } from '../../utils/chatService';
 import api from '../../utils/api';
+import { UserDisplayName } from '../../components/users';
 
 const SupportMessages = () => {
   const navigate = useNavigate();
@@ -412,9 +413,14 @@ const SupportMessages = () => {
                       />
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex justify-between items-start">
-                          <p className="font-semibold text-gray-800 dark:text-white truncate">
-                            {formatDisplayName(conv.otherUserName, conv.role)}
-                          </p>
+                          <div className="truncate">
+                            <UserDisplayName
+                              name={conv.otherUserName}
+                              role={conv.role}
+                              size="sm"
+                              className="text-gray-800 dark:text-white"
+                            />
+                          </div>
                           <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage}</p>
@@ -450,12 +456,12 @@ const SupportMessages = () => {
                         className="w-10 h-10 rounded-full object-cover border-2 border-green-200"
                       />
                       <div>
-                        <p className="font-semibold text-gray-800 dark:text-white">
-                          {formatDisplayName(
-                            conversations.find(c => c.id === selectedConversationId)?.otherUserName,
-                            conversations.find(c => c.id === selectedConversationId)?.role
-                          )}
-                        </p>
+                        <UserDisplayName
+                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                          role={conversations.find(c => c.id === selectedConversationId)?.role}
+                          size="sm"
+                          className="text-gray-800 dark:text-white"
+                        />
                         <p className="text-xs text-green-500">{t.online}</p>
                       </div>
                     </div>
@@ -536,9 +542,14 @@ const SupportMessages = () => {
                               }`}
                             >
                               {!isSupport && (
-                                <p className="text-xs font-medium text-green-600 mb-1">
-                                  {formatDisplayName(msg.senderName, msg.senderRole)}
-                                </p>
+                                <div className="mb-1">
+                                  <UserDisplayName
+                                    name={msg.senderName}
+                                    role={msg.senderRole}
+                                    size="sm"
+                                    className="text-green-600"
+                                  />
+                                </div>
                               )}
                               <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                               <p className={`text-xs mt-1 flex items-center justify-end gap-1 ${
@@ -685,9 +696,11 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
                     className="w-10 h-10 rounded-full object-cover"
                   />
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDisplayName(user.fullName, user.role)}
-                    </p>
+                    <UserDisplayName
+                      user={user}
+                      size="sm"
+                      className="text-gray-900 dark:text-white"
+                    />
                     <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                   </div>
                 </button>

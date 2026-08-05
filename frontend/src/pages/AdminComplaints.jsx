@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
 import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
+import { UserDisplayName } from '../components/users';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 
@@ -556,10 +557,12 @@ const AdminComplaints = () => {
             <div key={msg.id || index} className={`flex flex-col max-w-[85%] ${isUser ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`text-xs font-semibold ${isUser ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-200'}`}>
-                    {getDisplayName({ fullName: msg.authorName, role: msg.authorRole })}
-                    {!isUser && <span className="text-gray-400 dark:text-gray-500 font-normal"> ({getRoleLabel(msg.authorRole)})</span>}
-                  </span>
+                  <UserDisplayName
+                    name={msg.authorName}
+                    role={msg.authorRole}
+                    size="sm"
+                    className={isUser ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-200'}
+                  />
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {complaintsService.formatComplaintDate(msg.createdAt)}
                   </span>

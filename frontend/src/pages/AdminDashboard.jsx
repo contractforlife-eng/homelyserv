@@ -8,7 +8,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import StatCard from '../components/admin/StatCard';
-import { UserAvatar } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import { getDisplayName, getRoleLabel, getRoleBadgeClasses } from '../utils/userDisplay';
 import complaintsService from '../services/complaintService';
 import {
@@ -346,7 +346,7 @@ const AdminDashboard = () => {
             {complaint.assignedSupport && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <UserIcon size={12} />
-                {getDisplayName(complaint.assignedSupport)}
+                <UserDisplayName user={complaint.assignedSupport} size="sm" />
               </div>
             )}
           </button>
@@ -422,12 +422,7 @@ const AdminDashboard = () => {
           <div key={user.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
             <UserAvatar name={user.fullName} image={user.image} role={user.role} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
-                {getDisplayName({ fullName: user.fullName, role: user.role })}
-              </p>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getRoleBadgeClasses(user.role)}`}>
-                {getRoleLabel(user.role)}
-              </span>
+              <UserDisplayName user={user} size="sm" />
             </div>
             <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{formatDate(user.createdAt)}</span>
           </div>
