@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
+import { getRoleLabel } from '../utils/userDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -348,7 +349,7 @@ const AdminProfile = () => {
                 <h1 className="text-2xl font-bold text-black">{t.title}</h1>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/20 border border-black/10 rounded-full text-xs font-medium text-black">
                   <Crown size={12} />
-                  {t.adminBadge}
+                  {getRoleLabel('ADMIN')}
                 </span>
               </div>
               <p className="text-black/70 mt-1">{t.subtitle}</p>

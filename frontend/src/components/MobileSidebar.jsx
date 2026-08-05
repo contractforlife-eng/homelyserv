@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 import { 
   Home, Briefcase, Search, MessageCircle, User, Settings, LogOut,
   Menu, X, Bell, Users, DollarSign, Star
@@ -60,8 +61,8 @@ function MobileSidebar({ user, onLogout }) {
               {user?.fullName?.charAt(0) || 'U'}
             </div>
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{user?.fullName || 'User'}</p>
-              <p className="text-xs text-gray-500">{user?.role || 'User'}</p>
+              <p className="font-semibold text-gray-800 text-sm">{getDisplayName(user)}</p>
+              <p className="text-xs text-gray-500">{getRoleLabel(user?.role)}</p>
             </div>
           </div>
           <button 

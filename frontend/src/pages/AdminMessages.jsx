@@ -39,6 +39,7 @@ import {
   formatDisplayName,
   startAdminConversation
 } from '../utils/chatService';
+import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import api from '../utils/api';
 
 // ============================================================
@@ -111,24 +112,16 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
     return <Users size={16} />;
   };
 
-  const getRoleLabel = (role) => {
-    const labels = {
-      'WORKER': 'Worker',
-      'EMPLOYER': 'Employer',
-      'SUPPORT': 'Support',
-      'USER': 'User'
-    };
-    return labels[role] || 'User';
-  };
-
-  const getRoleColor = (role) => {
+  const getRoleColorClass = (role) => {
+    const color = getRoleColor(role);
     const colors = {
-      'WORKER': 'bg-red-500/10 text-red-400',
-      'EMPLOYER': 'bg-teal-500/10 text-teal-400',
-      'SUPPORT': 'bg-purple-500/10 text-purple-400',
-      'USER': 'bg-gray-500/10 text-gray-400'
+      purple: 'bg-purple-500/10 text-purple-400',
+      green: 'bg-green-500/10 text-green-400',
+      blue: 'bg-blue-500/10 text-blue-400',
+      orange: 'bg-orange-500/10 text-orange-400',
+      gray: 'bg-gray-500/10 text-gray-400'
     };
-    return colors[role] || colors.USER;
+    return colors[color] || colors.gray;
   };
 
   return (
@@ -218,7 +211,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white truncate">{user.fullName || user.name}</p>
                     <p className="text-sm text-gray-400 truncate">{user.email}</p>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColor(user.role)}`}>
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColorClass(user.role)}`}>
                       {getRoleIcon(user.role)}
                       {getRoleLabel(user.role)}
                     </span>

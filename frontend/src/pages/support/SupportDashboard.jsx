@@ -25,6 +25,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
+import { getDisplayName } from '../../utils/userDisplay';
 import { UserAvatar } from '../../components/users';
 
 const SupportDashboard = () => {
@@ -488,7 +489,7 @@ const SupportDashboard = () => {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {conv.user?.fullName || 'User'}
+                              {getDisplayName(conv.user)}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {conv.lastMessage}

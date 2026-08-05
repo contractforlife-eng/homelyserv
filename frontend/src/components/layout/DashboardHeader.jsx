@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { isUserPremium } from '../../utils/subscriptionService';
+import { getDisplayName } from '../../utils/userDisplay';
 import NotificationBell from '../NotificationBell';
 import { useDashboard } from './DashboardContext';
 import {
@@ -60,8 +61,8 @@ const DashboardHeader = ({
   const fullName = authUser?.fullName || 'User';
   const isAdmin = variant === 'admin';
   
-  // Format admin name with "Co-Admin" suffix
-  const displayName = isAdmin ? `${fullName} (Co-Admin)` : fullName;
+  // Use centralized display name formatter
+  const displayName = getDisplayName(authUser);
 
   return (
     <header className={`sticky top-0 z-30 ${

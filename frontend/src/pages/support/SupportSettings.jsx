@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import api from '../../utils/api';
+import { getRoleLabel } from '../../utils/userDisplay';
 
 const SupportSettings = () => {
   const navigate = useNavigate();
@@ -236,7 +237,7 @@ const SupportSettings = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t.role}</p>
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                     <Shield size={12} />
-                    {t.supportRole}
+                    {getRoleLabel(authUser?.role)}
                   </span>
                 </div>
               </div>

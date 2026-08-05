@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../utils/subscriptionService';
+import { getRoleLabel } from '../utils/userDisplay';
 import {
   Home,
   User,
@@ -242,7 +243,7 @@ const Sidebar = ({
                 </div>
                 <p className="text-xs text-gray-500 truncate">{user.email || 'user@homelyserv.com'}</p>
                 <span className="text-xs text-red-600 font-medium">
-                  {user.role?.toLowerCase() || 'user'}
+                  {getRoleLabel(user?.role)}
                 </span>
               </div>
             )}

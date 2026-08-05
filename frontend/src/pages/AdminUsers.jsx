@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
+import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -307,13 +308,16 @@ const AdminUsers = () => {
     return colors[status] || 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
   };
 
-  const getRoleColor = (role) => {
+  const getRoleColorClass = (role) => {
+    const color = getRoleColor(role);
     const colors = {
-      ADMIN: 'text-yellow-400',
-      EMPLOYER: 'text-blue-400',
-      WORKER: 'text-green-400'
+      purple: 'text-purple-400',
+      green: 'text-green-400',
+      blue: 'text-blue-400',
+      orange: 'text-orange-400',
+      gray: 'text-gray-400 dark:text-gray-500'
     };
-    return colors[role] || 'text-gray-400 dark:text-gray-500';
+    return colors[color] || colors.gray;
   };
 
   const generateSecurePassword = () => {
@@ -582,8 +586,8 @@ const AdminUsers = () => {
                         </td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{u.email}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-sm font-medium ${getRoleColor(u.role)}`}>
-                            {u.role}
+                          <span className={`text-sm font-medium ${getRoleColorClass(u.role)}`}>
+                            {getRoleLabel(u.role)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{u.phone || 'N/A'}</td>
@@ -618,9 +622,9 @@ const AdminUsers = () => {
                               value={u.role}
                               className="px-2 py-1 bg-[#0a0a0a] border border-gray-700 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                             >
-                              <option value="WORKER">Worker</option>
-                              <option value="EMPLOYER">Employer</option>
-                              <option value="ADMIN">Admin</option>
+                              <option value="WORKER">{getRoleLabel('WORKER')}</option>
+                              <option value="EMPLOYER">{getRoleLabel('EMPLOYER')}</option>
+                              <option value="ADMIN">{getRoleLabel('ADMIN')}</option>
                             </select>
                             
                             {/* Status Buttons */}

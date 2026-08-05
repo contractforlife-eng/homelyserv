@@ -1,4 +1,5 @@
 import api from '../utils/api';
+import { getDisplayName } from './userDisplay';
 
 export const getConversationId = (user1Id, user2Id) => {
   const ids = [String(user1Id), String(user2Id)].sort();
@@ -231,26 +232,14 @@ export const getAllConversations = () => {
 
 /**
  * Shared display name formatter for all chat UI.
- * 
- * Rules:
- *   ADMIN  -> "Emad (Co-Admin)"
- *   EMPLOYER -> "Rania"
- *   WORKER -> "Nono"
- *   SUPPORT -> "Rania (Sup-Admin)"
- *   USER   -> "Name"
+ * Delegates to the centralized userDisplay utility.
  * 
  * @param {string} name - The user's raw name
  * @param {string} role - The user's role (ADMIN, EMPLOYER, WORKER, SUPPORT, USER)
  * @returns {string} The formatted display name
  */
 export const formatDisplayName = (name, role) => {
-  if (role === 'ADMIN') {
-    return `${name || 'Admin'} (Co-Admin)`;
-  }
-  if (role === 'SUPPORT') {
-    return `${name || 'Support'} (Sup-Admin)`;
-  }
-  return name || 'User';
+  return getDisplayName({ fullName: name, role });
 };
 
 export default {

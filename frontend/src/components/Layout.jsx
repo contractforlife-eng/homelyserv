@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -154,10 +155,10 @@ export default function Layout({ children, activeTab }) {
                 </div>
                 <div>
                   <div className="nav-username" style={{ fontSize: '13px', fontWeight: '500', color: '#1a3a1a' }}>
-                    {user?.fullName}
+                    {getDisplayName(user)}
                   </div>
                   <div className="nav-user-role" style={{ fontSize: '10px', color: '#8aaa8a', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {user?.role}
+                    {getRoleLabel(user?.role)}
                   </div>
                 </div>
               </div>

@@ -27,6 +27,7 @@ import {
   Undo2
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
+import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 
 const AdminComplaints = () => {
   const navigate = useNavigate();
@@ -534,8 +535,8 @@ const AdminComplaints = () => {
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className={`text-xs font-semibold ${isUser ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-200'}`}>
-                    {msg.authorName}
-                    <span className="text-gray-400 dark:text-gray-500 font-normal"> ({msg.authorRole})</span>
+                    {getDisplayName({ fullName: msg.authorName, role: msg.authorRole })}
+                    {!isUser && <span className="text-gray-400 dark:text-gray-500 font-normal"> ({getRoleLabel(msg.authorRole)})</span>}
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {complaintsService.formatComplaintDate(msg.createdAt)}
@@ -721,7 +722,7 @@ const AdminComplaints = () => {
                         <div>
                           <h3 className="font-semibold text-gray-900 dark:text-white">{complaint.subject}</h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {complaint.User?.fullName || 'Unknown'} ({complaint.User?.role || 'USER'})
+                            {getDisplayName(complaint.User)}
                           </p>
                         </div>
                       </div>
@@ -809,10 +810,10 @@ const AdminComplaints = () => {
                   {t.modal.from}
                 </h4>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {selectedComplaint.User?.fullName || 'Unknown'}
+                  {getDisplayName(selectedComplaint.User)}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {selectedComplaint.User?.email} • {selectedComplaint.User?.role || 'USER'}
+                  {selectedComplaint.User?.email} • {getRoleLabel(selectedComplaint.User?.role)}
                 </p>
               </div>
 

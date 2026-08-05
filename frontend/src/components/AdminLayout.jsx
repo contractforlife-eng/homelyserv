@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell'; // 👈 ADD THIS
@@ -190,8 +191,8 @@ export default function AdminLayout({ children }) {
           <NotificationBell position="right" />
 
           <div style={{ flex: 1 }}>
-            <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{user?.fullName}</div>
-            <div style={{ color: '#6a8bb0', fontSize: '11px' }}>{user?.role}</div>
+            <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{getDisplayName(user)}</div>
+            <div style={{ color: '#6a8bb0', fontSize: '11px' }}>{getRoleLabel(user?.role)}</div>
           </div>
           <button
             onClick={handleLogout}

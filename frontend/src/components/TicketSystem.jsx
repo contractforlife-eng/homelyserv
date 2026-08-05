@@ -33,6 +33,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
+import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
 
 // ============================================================
 // THEME CONFIG
@@ -498,7 +499,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         {messages.map((msg, index) => {
           const isMine = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
           const authorLabel = msg.authorName || (isMine ? t.you : t.support);
-          const roleLabel = msg.authorRole ? ` (${msg.authorRole})` : '';
+          const roleLabel = !isMine && msg.authorRole ? ` (${getRoleLabel(msg.authorRole)})` : '';
           const bubbleClass = isMine
             ? `ml-auto ${th.bubble} border`
             : 'mr-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
@@ -508,7 +509,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className={`text-xs font-semibold ${isMine ? th.textDark : 'text-gray-700 dark:text-gray-200'}`}>
-                    {authorLabel}
+                    {getDisplayName({ fullName: authorLabel, role: msg.authorRole })}
                     {!isMine && <span className="text-gray-400 dark:text-gray-500 font-normal">{roleLabel}</span>}
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">

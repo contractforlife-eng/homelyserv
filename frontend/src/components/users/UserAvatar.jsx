@@ -1,6 +1,7 @@
 // frontend/src/components/users/UserAvatar.jsx
 // Shared avatar component for user displays (support & admin).
 import React from 'react';
+import { getRoleColor } from '../../utils/userDisplay';
 
 const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', className = '' }) => {
   const sizeClasses = {
@@ -11,14 +12,14 @@ const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', c
   };
 
   const bgColor = {
-    ADMIN: 'from-yellow-500 to-yellow-600',
-    EMPLOYER: 'from-teal-500 to-teal-600',
-    WORKER: 'from-red-500 to-red-600',
-    SUPPORT: 'from-green-500 to-green-600',
-    USER: 'from-gray-500 to-gray-600'
+    purple: 'from-purple-500 to-purple-600',
+    green: 'from-green-500 to-green-600',
+    blue: 'from-blue-500 to-blue-600',
+    orange: 'from-orange-500 to-orange-600',
+    gray: 'from-gray-500 to-gray-600'
   };
 
-  const gradient = bgColor[role] || bgColor.USER;
+  const gradient = bgColor[getRoleColor(role)] || bgColor.gray;
 
   if (image) {
     return (
