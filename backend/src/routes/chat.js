@@ -17,6 +17,12 @@ import Conversation from '../models/Conversation.js';
 import { authenticate } from '../middleware/auth.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
+import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import {
+  getUserIdentity,
+  getUserIdentities,
+  enrichMessageIdentities,
+} from '../utils/staffIdentity.js';
 
 const router = express.Router();
 
@@ -243,7 +249,7 @@ const touchConversation = async (conversationId, text) => {
 // ============================================================
 router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
   try {
-    const { senderName, senderRole, recipientId, recipientName, text } = req.body;
+    const { recipientId, text } = req.body;
     const senderId = req.userId;
 
     if (!senderId || !recipientId || !text || !text.trim()) {
@@ -252,21 +258,35 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
 
     const conversationId = getConversationId(senderId, recipientId);
 
-    // Determine the actual recipient role from the database.
+    // ============================================================
+    // DYNAMIC STAFF IDENTITY: the sender's name/role ALWAYS come
+    // from the database (via the authenticated req.userId). Client
+    // -supplied senderName/senderRole are NEVER trusted.
+    // ============================================================
+    const senderIdentity = await getUserIdentity(senderId);
+    const senderName = senderIdentity?.name || req.body.senderName || 'User';
+    const senderRole = senderIdentity?.role || req.userRole || req.body.senderRole || 'USER';
+
+    // Determine the actual recipient name/role from the database.
     // This ensures user->support and admin->support conversations are
     // correctly classified (resolveRecipientRole is a heuristic that
-    // cannot detect SUPPORT/ADMIN recipients).
+    // cannot detect SUPPORT/ADMIN recipients) and that the recipient
+    // name shown is always the real one.
     let recipientRole = resolveRecipientRole(senderRole);
+    let recipientName = req.body.recipientName || 'User';
     try {
       const recipientUser = await prisma.user.findUnique({
         where: { id: String(recipientId) },
-        select: { role: true }
+        select: { role: true, fullName: true }
       });
       if (recipientUser?.role) {
         recipientRole = recipientUser.role;
       }
+      if (recipientUser?.fullName) {
+        recipientName = recipientUser.fullName;
+      }
     } catch (e) {
-      console.error('Error looking up recipient role:', e.message);
+      console.error('Error looking up recipient:', e.message);
     }
 
     // Determine conversation type based on roles
@@ -311,6 +331,25 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
 
     await touchConversation(conversationId, text);
 
+    // Notify the recipient about the new message.
+    // All notifications go through NotificationService (single source of
+    // truth). The service never throws - it logs and returns null on
+    // failure - so the message response is never affected.
+    const trimmedText = text.trim();
+    await createNotification(String(recipientId), {
+      type: NOTIFICATION_TYPES.NEW_MESSAGE,
+      title: `New message from ${senderName || 'User'}`,
+      message: trimmedText.length > 120 ? `${trimmedText.slice(0, 117)}...` : trimmedText,
+      entityType: 'MESSAGE',
+      entityId: conversationId,
+      link: '/messages',
+      data: {
+        conversationId,
+        senderId: String(senderId),
+        senderName: senderName || 'User',
+      },
+    });
+
     const formatted = formatMessage(message);
 
     return res.status(201).json(formatted);
@@ -333,7 +372,11 @@ router.get('/messages/:conversationId', authenticate, requireConversationAccess,
 
     const formatted = messages.map(formatMessage);
 
-    return res.json(formatted);
+    // DYNAMIC STAFF IDENTITY: refresh every sender/recipient name and
+    // role from the database so legacy messages display correctly too.
+    const enriched = await enrichMessageIdentities(formatted);
+
+    return res.json(enriched);
   } catch (error) {
     console.error('Error fetching messages:', error);
     return res.status(500).json({ error: 'Failed to fetch messages' });
@@ -469,6 +512,22 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
       });
     }
 
+    // ============================================================
+    // DYNAMIC STAFF IDENTITY: override stored snapshot names with
+    // live database identities in ONE batch query. Works for any
+    // current or future staff member with zero code changes.
+    // ============================================================
+    const identityMap = await getUserIdentities(conversations.map((c) => c.otherUserId));
+    for (const conv of conversations) {
+      const live = identityMap.get(String(conv.otherUserId));
+      if (live) {
+        conv.otherUserName = live.name;
+        conv.otherUserRole = live.role;
+        conv.role = live.role;
+        conv.avatar = buildAvatarUrl(live.name, live.role);
+      }
+    }
+
     conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
     return res.json(conversations);
@@ -585,14 +644,20 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
     });
 
     if (!existing) {
+      // DYNAMIC STAFF IDENTITY: resolve both participant names/roles
+      // from the database instead of trusting client-passed values.
+      const identityMap = await getUserIdentities([user1Id, user2Id]);
+      const user1Identity = identityMap.get(String(user1Id));
+      const user2Identity = identityMap.get(String(user2Id));
+
       await Message.create({
         conversationId,
         senderId: String(user1Id),
-        senderName: user1Name || 'User',
-        senderRole: role1,
+        senderName: user1Identity?.name || user1Name || 'User',
+        senderRole: user1Identity?.role || role1,
         recipientId: String(user2Id),
-        recipientName: user2Name || 'User',
-        recipientRole: role2,
+        recipientName: user2Identity?.name || user2Name || 'User',
+        recipientRole: user2Identity?.role || role2,
         text: 'Start your conversation here',
         read: true,
         delivered: true
@@ -711,6 +776,21 @@ router.get('/support/conversations', authenticate, async (req, res) => {
       });
     }
 
+    // DYNAMIC STAFF IDENTITY: attach live user + support agent info
+    const identityMap = await getUserIdentities(
+      conversations.flatMap((c) => [c.userId, c.supportAgentId])
+    );
+    for (const conv of conversations) {
+      const userIdentity = conv.userId ? identityMap.get(String(conv.userId)) : null;
+      const agentIdentity = conv.supportAgentId ? identityMap.get(String(conv.supportAgentId)) : null;
+      conv.user = userIdentity
+        ? { id: userIdentity.id, fullName: userIdentity.name, role: userIdentity.role, image: userIdentity.image, email: userIdentity.email }
+        : null;
+      conv.supportAgent = agentIdentity
+        ? { id: agentIdentity.id, fullName: agentIdentity.name, role: agentIdentity.role, image: agentIdentity.image, email: agentIdentity.email }
+        : null;
+    }
+
     return res.json(conversations);
   } catch (error) {
     console.error('Error fetching support conversations:', error);
@@ -744,6 +824,9 @@ router.get('/support/conversations/:id', authenticate, async (req, res) => {
 
     const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
 
+    // Refresh sender names/roles from the database
+    const enriched = await enrichMessageIdentities(messages.map(formatMessage));
+
     return res.json({
       conversation: {
         id: conv.conversationId,
@@ -751,7 +834,7 @@ router.get('/support/conversations/:id', authenticate, async (req, res) => {
         participantIds: conv.participantIds,
         supportAgentId: conv.supportAgentId
       },
-      messages: messages.map(formatMessage)
+      messages: enriched
     });
   } catch (error) {
     console.error('Error fetching support conversation:', error);
@@ -807,6 +890,15 @@ router.get('/internal/conversations', authenticate, async (req, res) => {
         unread,
         updatedAt: conv.lastMessageAt || lastMsg.createdAt
       });
+    }
+
+    // DYNAMIC STAFF IDENTITY: attach live staff info from the database
+    const identityMap = await getUserIdentities(conversations.map((c) => c.otherStaffId));
+    for (const conv of conversations) {
+      const staffIdentity = conv.otherStaffId ? identityMap.get(String(conv.otherStaffId)) : null;
+      conv.otherStaff = staffIdentity
+        ? { id: staffIdentity.id, fullName: staffIdentity.name, role: staffIdentity.role, image: staffIdentity.image, email: staffIdentity.email }
+        : null;
     }
 
     return res.json(conversations);

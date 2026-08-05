@@ -9,6 +9,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireSupport } from '../middleware/supportAuth.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { upload, uploadFromBuffer } from '../utils/cloudinary.js';
 import {
   createComplaint,
   getMyComplaints,
@@ -40,6 +41,42 @@ const router = express.Router();
 // ============================================================
 // USER COMPLAINT ROUTES (WORKER / EMPLOYER)
 // ============================================================
+
+// POST /api/complaints/upload - Upload a complaint attachment image
+router.post(
+  '/complaints/upload',
+  authenticate,
+  upload.single('attachment'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No attachment uploaded',
+        });
+      }
+
+      const uploaded = await uploadFromBuffer(req.file.buffer, {
+        folder: 'homelyserv/complaints',
+        transformation: [{ width: 1200, height: 1200, crop: 'limit' }],
+      });
+
+      return res.json({
+        success: true,
+        message: 'Attachment uploaded successfully',
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      });
+    } catch (error) {
+      console.error('❌ Error uploading complaint attachment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload attachment',
+        error: error.message,
+      });
+    }
+  }
+);
 
 // POST /api/complaints - Create a new complaint
 router.post('/complaints', authenticate, createComplaint);

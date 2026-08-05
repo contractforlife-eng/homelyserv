@@ -19,6 +19,10 @@ import {
   NOTIFICATION_TYPES,
   PRIORITIES,
 } from '../services/notificationService.js';
+import {
+  resolveRequestIdentity,
+  enrichAuthorIdentities,
+} from '../utils/staffIdentity.js';
 
 // ============================================================
 // CONSTANTS
@@ -176,12 +180,12 @@ const ensureSupportConversation = async (userId, supportId, complaintId = null) 
       lastMessagePreview: 'Complaint support conversation',
     });
 
-    // Create an initial system message
+    // Create an initial system message (identity resolved live from DB above)
     await Message.create({
       conversationId,
       senderId: String(supportId),
       senderName: support?.fullName || 'Support Agent',
-      senderRole: 'SUPPORT',
+      senderRole: support?.role || 'SUPPORT',
       recipientId: String(userId),
       recipientName: user?.fullName || 'User',
       recipientRole: user?.role || 'USER',
@@ -195,6 +199,63 @@ const ensureSupportConversation = async (userId, supportId, complaintId = null) 
     console.error('❌ Error ensuring support conversation:', error);
     return null;
   }
+};
+
+// ============================================================
+// DYNAMIC STAFF IDENTITY
+// Every complaint detail query joins the live Author record so
+// names/roles ALWAYS come from the database — even for legacy
+// records created before author data was stored correctly.
+// ============================================================
+const AUTHOR_SELECT = { id: true, fullName: true, role: true, image: true };
+
+const REPLIES_WITH_AUTHOR = {
+  orderBy: { createdAt: 'asc' },
+  include: { Author: { select: AUTHOR_SELECT } },
+};
+
+const TIMELINE_WITH_AUTHOR = {
+  orderBy: { createdAt: 'asc' },
+  include: { Author: { select: AUTHOR_SELECT } },
+};
+
+const NOTES_WITH_AUTHOR = {
+  orderBy: { createdAt: 'desc' },
+  include: { Author: { select: AUTHOR_SELECT } },
+};
+
+/**
+ * Serialize any author-stamped record (reply, note, timeline event).
+ * Prefers the live Author relation; falls back to the stored
+ * authorName/authorRole snapshot for orphaned legacy records.
+ * Always exposes a normalized `author: { id, name, role, image }`.
+ */
+const serializeAuthorRecord = (record) => {
+  if (!record) return null;
+  const { Author, ...rest } = record;
+  const liveAuthor = Author
+    ? {
+        id: Author.id,
+        name: Author.fullName,
+        role: Author.role,
+        image: Author.image || null,
+      }
+    : null;
+
+  return {
+    ...rest,
+    authorName: liveAuthor?.name || record.authorName || null,
+    authorRole: liveAuthor?.role || record.authorRole || null,
+    author:
+      liveAuthor ||
+      (record.authorId
+        ? {
+            id: record.authorId,
+            name: record.authorName || null,
+            role: record.authorRole || null,
+          }
+        : null),
+  };
 };
 
 /**
@@ -232,16 +293,20 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
     closedAt: complaint.closedAt,
     createdAt: complaint.createdAt,
     updatedAt: complaint.updatedAt,
-    replies: (complaint.Replies || []).map((reply) => ({
-      id: reply.id,
-      complaintId: reply.complaintId,
-      authorId: reply.authorId,
-      authorName: reply.authorName,
-      authorRole: reply.authorRole,
-      message: reply.message,
-      attachments: reply.attachments || [],
-      createdAt: reply.createdAt,
-    })),
+    replies: (complaint.Replies || []).map((reply) => {
+      const serialized = serializeAuthorRecord(reply);
+      return {
+        id: serialized.id,
+        complaintId: serialized.complaintId,
+        authorId: serialized.authorId,
+        authorName: serialized.authorName,
+        authorRole: serialized.authorRole,
+        author: serialized.author,
+        message: serialized.message,
+        attachments: serialized.attachments || [],
+        createdAt: serialized.createdAt,
+      };
+    }),
     User: complaint.User
       ? {
           id: complaint.User.id,
@@ -415,12 +480,8 @@ export const getComplaintById = async (req, res) => {
         AssignedSupport: {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
-        Timeline: {
-          orderBy: { createdAt: 'asc' },
-        },
-        Replies: {
-          orderBy: { createdAt: 'asc' },
-        },
+        Timeline: TIMELINE_WITH_AUTHOR,
+        Replies: REPLIES_WITH_AUTHOR,
       },
     });
 
@@ -436,7 +497,7 @@ export const getComplaintById = async (req, res) => {
     return res.json({
       success: true,
       complaint: serializeComplaint(complaint),
-      timeline: complaint.Timeline,
+      timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
   } catch (error) {
     console.error('❌ Error fetching complaint:', error);
@@ -650,15 +711,9 @@ export const supportGetComplaint = async (req, res) => {
         AssignedSupport: {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
-        Notes: {
-          orderBy: { createdAt: 'desc' },
-        },
-        Timeline: {
-          orderBy: { createdAt: 'asc' },
-        },
-        Replies: {
-          orderBy: { createdAt: 'asc' },
-        },
+        Notes: NOTES_WITH_AUTHOR,
+        Timeline: TIMELINE_WITH_AUTHOR,
+        Replies: REPLIES_WITH_AUTHOR,
       },
     });
 
@@ -670,8 +725,8 @@ export const supportGetComplaint = async (req, res) => {
     return res.json({
       success: true,
       complaint: serializeComplaint(complaint, { includeInternal: true }),
-      notes: complaint.Notes,
-      timeline: complaint.Timeline,
+      notes: (complaint.Notes || []).map(serializeAuthorRecord),
+      timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
   } catch (error) {
     console.error('❌ Error fetching complaint for support:', error);
@@ -723,13 +778,17 @@ export const supportAssignComplaint = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (never from the JWT
+    // payload or the client) so the timeline shows the actual agent name/role.
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Timeline
     await addTimeline(id, {
       action: 'ASSIGNED',
       description: 'Support agent assigned to complaint',
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
       newValue: supportId,
     });
 
@@ -824,11 +883,14 @@ export const supportReply = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Store the reply as a structured conversation message
     await addComplaintReply(id, {
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
       message: message.trim(),
     });
 
@@ -837,8 +899,8 @@ export const supportReply = async (req, res) => {
       action: 'SUPPORT_REPLIED',
       description: 'Support replied to the complaint',
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -868,8 +930,8 @@ export const supportReply = async (req, res) => {
         await Message.create({
           conversationId,
           senderId: supportId,
-          senderName: req.user?.fullName || 'Support Agent',
-          senderRole: 'SUPPORT',
+          senderName: actor.name,
+          senderRole: actor.role,
           recipientId: complaint.userId,
           recipientName: complaint.User?.fullName || 'User',
           recipientRole: complaint.User?.role || 'USER',
@@ -935,13 +997,16 @@ export const supportAddNote = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Create a structured note record
     await prisma.complaintNote.create({
       data: {
         complaintId: id,
         authorId: supportId,
-        authorName: req.user?.fullName || 'Support Agent',
-        authorRole: req.userRole || 'SUPPORT',
+        authorName: actor.name,
+        authorRole: actor.role,
         note: note.trim(),
         isInternal: true,
       },
@@ -952,8 +1017,8 @@ export const supportAddNote = async (req, res) => {
       action: 'NOTE_ADDED',
       description: 'Internal note added',
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: req.userRole || 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1027,13 +1092,16 @@ export const supportChangeStatus = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Timeline
     await addTimeline(id, {
       action: 'STATUS_CHANGED',
       description: `Status changed from ${complaint.status} to ${status}`,
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: req.userRole || 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
       oldValue: complaint.status,
       newValue: status,
     });
@@ -1117,13 +1185,16 @@ export const supportEscalate = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Timeline
     await addTimeline(id, {
       action: 'ESCALATED',
       description: `Complaint escalated to admin. Reason: ${reason.trim()}`,
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1145,7 +1216,7 @@ export const supportEscalate = async (req, res) => {
       await createUserNotification(admin.id, {
         type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
         title: 'Complaint Escalated',
-        message: `Complaint "${complaint.subject}" was escalated by ${req.user?.fullName || 'Support'}`,
+        message: `Complaint "${complaint.subject}" was escalated by ${actor.name}`,
         entityType: 'COMPLAINT',
         entityId: id,
         priority: PRIORITIES.HIGH,
@@ -1247,13 +1318,16 @@ export const supportClose = async (req, res) => {
       },
     });
 
+    // Resolve the REAL staff identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Support Agent');
+
     // Timeline
     await addTimeline(id, {
       action: 'CLOSED',
       description: 'Complaint closed',
       authorId: supportId,
-      authorName: req.user?.fullName || 'Support Agent',
-      authorRole: req.userRole || 'SUPPORT',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1380,15 +1454,9 @@ export const adminGetComplaint = async (req, res) => {
         AssignedSupport: {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
-        Notes: {
-          orderBy: { createdAt: 'desc' },
-        },
-        Timeline: {
-          orderBy: { createdAt: 'asc' },
-        },
-        Replies: {
-          orderBy: { createdAt: 'asc' },
-        },
+        Notes: NOTES_WITH_AUTHOR,
+        Timeline: TIMELINE_WITH_AUTHOR,
+        Replies: REPLIES_WITH_AUTHOR,
       },
     });
 
@@ -1399,8 +1467,8 @@ export const adminGetComplaint = async (req, res) => {
     return res.json({
       success: true,
       complaint: serializeComplaint(complaint, { includeInternal: true }),
-      notes: complaint.Notes,
-      timeline: complaint.Timeline,
+      notes: (complaint.Notes || []).map(serializeAuthorRecord),
+      timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
   } catch (error) {
     console.error('❌ Error fetching complaint for admin:', error);
@@ -1451,11 +1519,14 @@ export const adminReply = async (req, res) => {
       },
     });
 
+    // Resolve the REAL admin identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Admin');
+
     // Store the reply as a structured conversation message
     await addComplaintReply(id, {
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
       message: message.trim(),
     });
 
@@ -1464,8 +1535,8 @@ export const adminReply = async (req, res) => {
       action: 'ADMIN_REPLIED',
       description: 'Admin replied to the complaint',
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1563,13 +1634,16 @@ export const adminReassign = async (req, res) => {
       },
     });
 
+    // Resolve the REAL admin identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Admin');
+
     // Timeline
     await addTimeline(id, {
       action: 'REASSIGNED',
       description: `Complaint reassigned to ${supportUser.fullName || 'support agent'}`,
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
       oldValue: complaint.assignedSupport,
       newValue: supportId,
     });
@@ -1670,13 +1744,16 @@ export const adminResolve = async (req, res) => {
       },
     });
 
+    // Resolve the REAL admin identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Admin');
+
     // Timeline
     await addTimeline(id, {
       action: 'RESOLVED',
       description: 'Complaint resolved by admin',
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1746,13 +1823,16 @@ export const adminClose = async (req, res) => {
       },
     });
 
+    // Resolve the REAL admin identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Admin');
+
     // Timeline
     await addTimeline(id, {
       action: 'CLOSED',
       description: 'Complaint closed by admin',
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -1828,13 +1908,16 @@ export const adminReturnToSupport = async (req, res) => {
       },
     });
 
+    // Resolve the REAL admin identity from the database (single lookup).
+    const actor = await resolveRequestIdentity(req, 'Admin');
+
     // Timeline
     await addTimeline(id, {
       action: 'RETURNED_TO_SUPPORT',
       description: 'Complaint returned to support by admin',
       authorId: adminId,
-      authorName: req.user?.fullName || 'Admin',
-      authorRole: 'ADMIN',
+      authorName: actor.name,
+      authorRole: actor.role,
     });
 
     // Log support activity
@@ -2222,6 +2305,9 @@ export const supportDashboard = async (req, res) => {
       take: 15,
     });
 
+    // Enrich activity authors with live identities from the database
+    const enrichedRecentActivity = await enrichAuthorIdentities(recentActivity);
+
     // ============================================================
     // RECENT CONVERSATIONS (secure messaging architecture)
     // ============================================================
@@ -2290,7 +2376,7 @@ export const supportDashboard = async (req, res) => {
       needsAttention: needsAttention.map((c) => serializeComplaint(c)),
       myAssignedTickets: myAssignedTickets.map((c) => serializeComplaint(c)),
       waitingTickets: waitingTickets.map((c) => serializeComplaint(c)),
-      recentActivity,
+      recentActivity: enrichedRecentActivity,
       recentConversations,
     });
   } catch (error) {

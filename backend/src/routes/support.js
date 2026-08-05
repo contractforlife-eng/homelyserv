@@ -6,6 +6,7 @@ import { requireSupport as supportAuth } from '../middleware/supportAuth.js';
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 import MongooseUser from '../models/User.js';
+import { enrichMessageIdentities } from '../utils/staffIdentity.js';
 
 const router = express.Router();
 
@@ -489,15 +490,10 @@ router.get('/conversations/:id', async (req, res) => {
 
     const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
 
-    return res.json({
-      success: true,
-      conversation: {
-        id: conv.conversationId,
-        type: conv.type,
-        participantIds: conv.participantIds,
-        supportAgentId: conv.supportAgentId
-      },
-      messages: messages.map((msg) => ({
+    // DYNAMIC STAFF IDENTITY: refresh sender/recipient names and roles
+    // from the database so staff names are always current and correct.
+    const enrichedMessages = await enrichMessageIdentities(
+      messages.map((msg) => ({
         id: msg._id,
         conversationId: msg.conversationId,
         senderId: msg.senderId,
@@ -511,6 +507,17 @@ router.get('/conversations/:id', async (req, res) => {
         read: msg.read,
         delivered: msg.delivered
       }))
+    );
+
+    return res.json({
+      success: true,
+      conversation: {
+        id: conv.conversationId,
+        type: conv.type,
+        participantIds: conv.participantIds,
+        supportAgentId: conv.supportAgentId
+      },
+      messages: enrichedMessages
     });
   } catch (error) {
     console.error('❌ Error fetching support conversation:', error);

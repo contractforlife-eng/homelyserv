@@ -33,7 +33,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
-import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
+import { UserDisplayName } from './users';
 
 // ============================================================
 // THEME CONFIG
@@ -339,10 +339,33 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     setNewTicket(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAttachmentChange = (e) => {
+  const handleAttachmentChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    const urls = files.map(file => URL.createObjectURL(file));
-    setNewTicket(prev => ({ ...prev, attachments: [...prev.attachments, ...urls] }));
+    if (files.length === 0) return;
+
+    // Show local previews immediately
+    const previews = files.map(file => URL.createObjectURL(file));
+    setNewTicket(prev => ({ ...prev, attachments: [...prev.attachments, ...previews] }));
+
+    // Upload each file to the backend and replace the blob URL with the permanent URL
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const data = await complaintsService.uploadComplaintAttachment(files[i]);
+        if (data?.success && data.url) {
+          setNewTicket(prev => {
+            const updated = [...prev.attachments];
+            const previewIndex = updated.indexOf(previews[i]);
+            if (previewIndex !== -1) {
+              updated[previewIndex] = data.url;
+            }
+            return { ...prev, attachments: updated };
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error uploading attachment:', error);
+        setNotification({ type: 'error', text: 'Failed to upload attachment' });
+      }
+    }
   };
 
   const removeAttachment = (index) => {
@@ -499,7 +522,6 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         {messages.map((msg, index) => {
           const isMine = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
           const authorLabel = msg.authorName || (isMine ? t.you : t.support);
-          const roleLabel = !isMine && msg.authorRole ? ` (${getRoleLabel(msg.authorRole)})` : '';
           const bubbleClass = isMine
             ? `ml-auto ${th.bubble} border`
             : 'mr-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
@@ -508,10 +530,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
             <div key={msg.id || index} className={`flex flex-col max-w-[85%] ${isMine ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`text-xs font-semibold ${isMine ? th.textDark : 'text-gray-700 dark:text-gray-200'}`}>
-                    {getDisplayName({ fullName: authorLabel, role: msg.authorRole })}
-                    {!isMine && <span className="text-gray-400 dark:text-gray-500 font-normal">{roleLabel}</span>}
-                  </span>
+                  <UserDisplayName
+                    name={authorLabel}
+                    role={msg.authorRole}
+                    size="sm"
+                    className={isMine ? th.textDark : 'text-gray-700 dark:text-gray-200'}
+                  />
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {formatDate(msg.createdAt)}
                   </span>

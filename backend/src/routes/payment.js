@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
+import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -270,6 +271,38 @@ const updateHireAfterPayment = async (hireId, captureId) => {
       console.log(`✅ Offer ${hire.offerId} updated: paymentConfirmed=true, paymentVerified=true`);
     }
 
+    // Notify both parties that the payment completed.
+    // NotificationService never throws, so payment processing is unaffected.
+    if (hire.employerId) {
+      await createNotification(String(hire.employerId), {
+        type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+        title: 'Payment Successful',
+        message: `Your payment of ${updatedHire.totalDue ?? ''} EGP was completed successfully. Reference: ${updatedHire.paymentReference || captureId || 'N/A'}`,
+        entityType: 'PAYMENT',
+        entityId: String(hire.id),
+        link: '/employer-payments',
+      });
+    }
+
+    try {
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { id: String(hire.workerId) },
+        select: { userId: true }
+      });
+      if (workerProfile?.userId) {
+        await createNotification(String(workerProfile.userId), {
+          type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+          title: 'Payment Confirmed',
+          message: 'The employer completed the payment for your hire. The hire is now active.',
+          entityType: 'HIRE',
+          entityId: String(hire.id),
+          link: '/my-hires',
+        });
+      }
+    } catch (workerLookupError) {
+      console.error('⚠️ Could not resolve worker for payment notification:', workerLookupError.message);
+    }
+
     return true;
 
   } catch (error) {
@@ -303,6 +336,18 @@ const ensureSubscription = async (userId, amount) => {
         }
       });
       console.log("Update succeeded:", updated);
+
+      // Notify the user their premium subscription was extended.
+      await createNotification(String(userId), {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Premium Subscription Renewed',
+        message: `Your premium subscription has been extended until ${updated.endDate.toLocaleDateString()}.`,
+        entityType: 'SUBSCRIPTION',
+        entityId: String(updated.id),
+        icon: '👑',
+        link: '/subscription',
+      });
+
       return updated;
     }
     console.log("Creating subscription...");
@@ -356,6 +401,18 @@ const ensureSubscription = async (userId, amount) => {
       });
       console.log("========= CREATE SUCCESS =========");
       console.dir(created, { depth: null });
+
+      // Notify the user their premium subscription is now active.
+      await createNotification(String(userId), {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Premium Subscription Activated',
+        message: `Your premium subscription is now active until ${created.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
+        entityType: 'SUBSCRIPTION',
+        entityId: String(created.id),
+        icon: '👑',
+        link: '/subscription',
+      });
+
       return created;
     } catch (e) {
       console.log("========= CREATE FAILED =========");

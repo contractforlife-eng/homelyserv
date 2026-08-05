@@ -35,6 +35,19 @@ export const COMPLAINT_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 // ============================================================
 
 /**
+ * Upload a complaint attachment image to Cloudinary.
+ * Returns the permanent URL to store in the complaint.
+ */
+export const uploadComplaintAttachment = async (file) => {
+  const formData = new FormData();
+  formData.append('attachment', file);
+  const response = await api.post('/api/complaints/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+/**
  * Create a new complaint (WORKER or EMPLOYER).
  */
 export const createComplaint = async (data) => {
@@ -291,6 +304,7 @@ export const formatComplaintDate = (dateString) => {
 };
 
 const complaintService = {
+  uploadComplaintAttachment,
   createComplaint,
   getMyComplaints,
   getComplaintById,

@@ -9,6 +9,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
 import { getAnalytics } from '../controllers/adminController.js';
+import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 
 const router = express.Router();
 
@@ -735,12 +736,16 @@ router.post('/start-conversation', async (req, res) => {
       lastMessagePreview: 'Official HomelyServ administrative conversation'
     });
 
+    // DYNAMIC STAFF IDENTITY: resolve the REAL admin name from the
+    // database — never a hardcoded label.
+    const adminIdentity = await getUserIdentity(adminId);
+
     // Create the initial system message
     await Message.create({
       conversationId,
       senderId: adminId,
-      senderName: 'HomelyServ Admin',
-      senderRole: 'ADMIN',
+      senderName: adminIdentity?.name || 'Admin',
+      senderRole: adminIdentity?.role || 'ADMIN',
       recipientId: String(targetUser.id),
       recipientName: targetUser.fullName || 'User',
       recipientRole: targetRole,
@@ -1027,6 +1032,9 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
 
     const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
 
+    // DYNAMIC STAFF IDENTITY: refresh sender names/roles from the database
+    const enriched = await enrichMessageIdentities(messages.map(formatMessage));
+
     return res.json({
       success: true,
       conversation: {
@@ -1039,7 +1047,7 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
         participantIds: conv.participantIds,
         supportAgentId: conv.supportAgentId
       },
-      messages: messages.map(formatMessage)
+      messages: enriched
     });
   } catch (error) {
     console.error('Error fetching conversation messages:', error);

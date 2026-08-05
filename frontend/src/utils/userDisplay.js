@@ -9,10 +9,14 @@
 
 // ============================================================
 // ROLE LABELS
+// Database roles are converted into readable labels here.
+// SUP_ADMIN is supported as an alias of the support tier so any
+// future role split keeps working without code changes.
 // ============================================================
 const ROLE_LABELS = {
   ADMIN: 'Co-Admin',
   SUPPORT: 'Sup-Admin',
+  SUP_ADMIN: 'Sup-Admin',
   EMPLOYER: 'Employer',
   WORKER: 'Worker'
 };
@@ -40,7 +44,7 @@ const ROLE_BADGE_CLASSES = {
 // ============================================================
 // OFFICIAL STAFF - Admin & Support visual distinction
 // ============================================================
-const STAFF_ROLES = ['ADMIN', 'SUPPORT'];
+const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN'];
 
 // ============================================================
 // HELPERS
@@ -62,13 +66,35 @@ export const getDisplayName = (user) => {
   const name = user.fullName || user.name || 'User';
   const role = (user.role || '').toUpperCase();
 
-  if (role === 'ADMIN') {
-    return `${name} (Co-Admin)`;
-  }
-  if (role === 'SUPPORT') {
-    return `${name} (Sup-Admin)`;
+  if (STAFF_ROLES.includes(role)) {
+    return `${name} (${ROLE_LABELS[role]})`;
   }
   return name;
+};
+
+/**
+ * Format a staff identity as "{name} ({RoleLabel})".
+ * Universal renderer for any place a staff member appears:
+ * complaint replies, chat messages, support conversations, etc.
+ *
+ * Accepts either an identity object ({ name|fullName, role }) or
+ * separate (name, role) arguments. Non-staff roles return just
+ * the name. NEVER hardcode a staff name — always feed this from
+ * API data.
+ *
+ * Examples:
+ *   formatStaffIdentity('Rania', 'SUPPORT')   -> "Rania (Sup-Admin)"
+ *   formatStaffIdentity({ name: 'Sara', role: 'ADMIN' }) -> "Sara (Co-Admin)"
+ *
+ * @param {Object|string} userOrName - identity object or raw name
+ * @param {string} [roleArg] - role when first arg is a raw name
+ * @returns {string} Formatted identity
+ */
+export const formatStaffIdentity = (userOrName, roleArg = null) => {
+  if (userOrName && typeof userOrName === 'object') {
+    return getDisplayName(userOrName);
+  }
+  return getDisplayName({ fullName: userOrName, role: roleArg });
 };
 
 /**
@@ -159,6 +185,7 @@ export const getOfficialBadgeClass = (role) => {
 // ============================================================
 export default {
   getDisplayName,
+  formatStaffIdentity,
   getRoleLabel,
   getRoleColor,
   getRoleBadgeClasses,
