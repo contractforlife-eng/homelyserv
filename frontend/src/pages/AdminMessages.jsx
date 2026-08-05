@@ -41,6 +41,8 @@ import {
 } from '../utils/chatService';
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import api from '../utils/api';
+import EmptyState from '../components/common/EmptyState';
+import PageLoader from '../components/common/PageLoader';
 
 // ============================================================
 // SECTION TABS
@@ -700,10 +702,11 @@ const AdminMessages = () => {
   // RENDER EMPTY STATE
   // ============================================================
   const renderEmptyState = (message) => (
-    <div className="p-8 text-center">
-      <div className="text-4xl mb-3">💬</div>
-      <p className="text-gray-400">{message}</p>
-    </div>
+    <EmptyState
+      icon={MessageSquare}
+      title={message}
+      description="No conversations are currently available"
+    />
   );
 
   // ============================================================
@@ -896,25 +899,11 @@ const AdminMessages = () => {
   // RENDER
   // ============================================================
   if (!authUser) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader text="Loading..." fullScreen />;
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
-        </div>
-      </div>
-    );
+    return <PageLoader text={t.loading} fullScreen />;
   }
 
   return (

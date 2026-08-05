@@ -6,6 +6,8 @@ import api from '../utils/api';
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import EmptyState from '../components/common/EmptyState';
+import PageLoader from '../components/common/PageLoader';
 import {
   Home,
   Users,
@@ -60,6 +62,7 @@ const AdminUsers = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedUserForReset, setSelectedUserForReset] = useState(null);
   const [newPassword, setNewPassword] = useState('');
@@ -97,7 +100,10 @@ const AdminUsers = () => {
         all: 'All Users',
         worker: 'Workers',
         employer: 'Employers',
-        admin: 'Admins'
+        admin: 'Admins',
+        allStatus: 'All Statuses',
+        active: 'Active',
+        suspended: 'Suspended'
       },
       actions: {
         changeRole: 'Change Role',
@@ -151,7 +157,10 @@ const AdminUsers = () => {
         all: 'جميع المستخدمين',
         worker: 'عمال',
         employer: 'أصحاب عمل',
-        admin: 'مشرفين'
+        admin: 'مشرفين',
+        allStatus: 'جميع الحالات',
+        active: 'نشط',
+        suspended: 'معلق'
       },
       actions: {
         changeRole: 'تغيير الدور',
@@ -244,18 +253,25 @@ const AdminUsers = () => {
       filtered = filtered.filter(u => u.role === roleFilter.toUpperCase());
     }
 
+    if (statusFilter === 'suspended') {
+      filtered = filtered.filter(u => u.isSuspended === true || u.status === 'suspended');
+    } else if (statusFilter === 'active') {
+      filtered = filtered.filter(u => u.isSuspended !== true && u.status !== 'suspended');
+    }
+
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(u =>
         u.fullName?.toLowerCase().includes(searchLower) ||
         u.email?.toLowerCase().includes(searchLower) ||
         u.phone?.toLowerCase().includes(searchLower) ||
+        u.city?.toLowerCase().includes(searchLower) ||
         u.location?.toLowerCase().includes(searchLower)
       );
     }
 
     setFilteredUsers(filtered);
-  }, [users, roleFilter, searchTerm]);
+  }, [users, roleFilter, statusFilter, searchTerm]);
 
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
@@ -410,20 +426,13 @@ const AdminUsers = () => {
     workers: users.filter(u => u.role === 'WORKER').length,
     employers: users.filter(u => u.role === 'EMPLOYER').length,
     admins: users.filter(u => u.role === 'ADMIN').length,
-    active: users.filter(u => u.status === 'active' || !u.status).length,
-    suspended: users.filter(u => u.status === 'suspended').length,
+    active: users.filter(u => u.isSuspended !== true && u.status !== 'suspended').length,
+    suspended: users.filter(u => u.isSuspended === true || u.status === 'suspended').length,
     paused: users.filter(u => u.status === 'paused').length
   };
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
-        </div>
-      </div>
-    );
+    return <PageLoader text={t.loading} fullScreen />;
   }
 
   if (!user) {
@@ -540,6 +549,15 @@ const AdminUsers = () => {
                   <option value="employer">{t.filters.employer}</option>
                   <option value="admin">{t.filters.admin}</option>
                 </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                >
+                  <option value="all">{t.filters.allStatus}</option>
+                  <option value="active">{t.filters.active}</option>
+                  <option value="suspended">{t.filters.suspended}</option>
+                </select>
               </div>
             </div>
           </div>
@@ -553,10 +571,11 @@ const AdminUsers = () => {
 
           {/* Users Table */}
           {filteredUsers.length === 0 ? (
-            <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-              <div className="text-6xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-white mb-2">{t.table.noResults}</h3>
-            </div>
+            <EmptyState
+              icon={Users}
+              title={t.table.noResults}
+              description="No users match the current search or filters"
+            />
           ) : (
             <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
               <div className="overflow-x-auto">
@@ -593,8 +612,8 @@ const AdminUsers = () => {
                         <td className="px-4 py-3 text-gray-300 text-sm">{u.phone || 'N/A'}</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{u.location || 'N/A'}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(u.status || 'active')}`}>
-                            {u.status || 'Active'}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(u.isSuspended === true || u.status === 'suspended' ? 'suspended' : 'active')}`}>
+                            {u.isSuspended === true || u.status === 'suspended' ? 'Suspended' : 'Active'}
                           </span>
                         </td>
                         <td className="px-4 py-3">

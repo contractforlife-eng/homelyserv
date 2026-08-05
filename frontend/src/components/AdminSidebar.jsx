@@ -71,6 +71,7 @@ const AdminSidebar = ({
     { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
     { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
+    { id: 'profile', label: t.profile, icon: UserIcon, path: '/admin/profile' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
   ];
 

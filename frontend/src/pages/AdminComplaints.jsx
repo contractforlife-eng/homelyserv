@@ -1,6 +1,6 @@
 // src/pages/AdminComplaints.jsx - PRODUCTION COMPLAINT MANAGEMENT
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -28,9 +28,14 @@ import {
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
 import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
+import EmptyState from '../components/common/EmptyState';
+import PageLoader from '../components/common/PageLoader';
 
 const AdminComplaints = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const complaintIdFromUrl = searchParams.get('id');
+  const autoOpenedRef = useRef(false);
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -330,6 +335,23 @@ const AdminComplaints = () => {
       setNotes([]);
     }
   };
+
+  // ============================================================
+  // DEEP LINK - Auto-open complaint from ?id= query param
+  // (e.g. navigating from Admin Dashboard "Needs Attention" cards)
+  // ============================================================
+  useEffect(() => {
+    if (!complaintIdFromUrl || autoOpenedRef.current) return;
+    if (loading || complaints.length === 0) return;
+    const found =
+      complaints.find((c) => c.id === complaintIdFromUrl) ||
+      complaints.find((c) => c.ticketNumber === complaintIdFromUrl);
+    if (found) {
+      autoOpenedRef.current = true;
+      handleViewDetails(found);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complaints, loading, complaintIdFromUrl]);
 
   // ============================================================
   // ADMIN REPLY
@@ -698,15 +720,13 @@ const AdminComplaints = () => {
 
         {/* Complaints List */}
         {loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-            <p className="mt-4 text-gray-500 dark:text-gray-400">{t.loading}</p>
-          </div>
+          <PageLoader text={t.loading} />
         ) : filteredComplaints.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t.noComplaints}</h3>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={t.noComplaints}
+            description="No complaints are currently available"
+          />
         ) : (
           <div className="space-y-4">
             {filteredComplaints.map((complaint) => (

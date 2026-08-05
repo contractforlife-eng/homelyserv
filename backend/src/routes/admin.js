@@ -8,6 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
+import { getAnalytics } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -16,6 +17,13 @@ const serializeUser = (user) => {
   const obj = user.toObject ? user.toObject() : { ...user };
   obj.id = obj._id;
   return obj;
+};
+
+// Helper: check if a string is a valid MongoDB ObjectId (24 hex chars).
+// Legacy records may contain non-ObjectId IDs (e.g. "user_1784367005840")
+// which crash Prisma relation queries with P2023. This guard prevents that.
+const isValidObjectId = (id) => {
+  return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 };
 
 // PHASE 0 SECURITY FIX (audit §2.2): this entire router previously had
@@ -32,6 +40,12 @@ router.use(requireAdmin);
 // recent payments, and recent hires in a single response.
 // ============================================================
 router.get('/command-center', getCommandCenter);
+
+// ============================================================
+// Admin Analytics (Admin Only)
+// Real aggregated analytics from Prisma models.
+// ============================================================
+router.get('/analytics', getAnalytics);
 
 // ============================================================
 // Get All Users (Admin Only) - FIXED: Shows ALL users
@@ -309,24 +323,38 @@ router.get('/dashboard', async (req, res) => {
 
 // ============================================================
 // Get All Payments (Admin Only)
+// Safe against legacy non-ObjectId userId values (P2023).
 // ============================================================
 router.get('/payments', async (req, res) => {
   try {
+    // Fetch base payments WITHOUT relation includes to avoid P2023
+    // on records with legacy (non-ObjectId) userId values.
     const payments = await prisma.payment.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            fullName: true,
-            email: true
-          }
-        }
-      }
+      orderBy: { createdAt: 'desc' }
     });
+
+    // Collect only valid user IDs
+    const validUserIds = [...new Set(payments.map(p => p.userId).filter(isValidObjectId))];
+
+    // Batch fetch linked users (only for valid IDs)
+    let users = [];
+    if (validUserIds.length > 0) {
+      users = await prisma.user.findMany({
+        where: { id: { in: validUserIds } },
+        select: { id: true, fullName: true, email: true }
+      });
+    }
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Attach user info only when a valid linked user exists
+    const enriched = payments.map(payment => ({
+      ...payment,
+      User: userMap.get(payment.userId) || null
+    }));
 
     res.json({
       success: true,
-      payments
+      payments: enriched
     });
   } catch (error) {
     console.error('Get payments error:', error);
@@ -340,22 +368,69 @@ router.get('/payments', async (req, res) => {
 
 // ============================================================
 // Get All Hires (Admin Only)
+// Safe against legacy non-ObjectId workerId/employerId (P2023).
 // ============================================================
 router.get('/hires', async (req, res) => {
   try {
+    // Fetch base hires WITHOUT relation includes to avoid P2023
+    // on records with legacy (non-ObjectId) workerId/employerId.
     const hires = await prisma.hire.findMany({
-      include: {
-        worker: {
-          include: { user: { select: { fullName: true, phone: true, city: true } } }
-        },
-        employer: { select: { fullName: true, email: true } }
-      },
       orderBy: { createdAt: 'desc' }
+    });
+
+    // Collect valid employer IDs (Hire.employerId -> User)
+    const validEmployerIds = [...new Set(hires.map(h => h.employerId).filter(isValidObjectId))];
+
+    // Collect valid worker profile IDs (Hire.workerId -> WorkerProfile)
+    const validWorkerIds = [...new Set(hires.map(h => h.workerId).filter(isValidObjectId))];
+
+    // Batch fetch employers (User records)
+    let employers = [];
+    if (validEmployerIds.length > 0) {
+      employers = await prisma.user.findMany({
+        where: { id: { in: validEmployerIds } },
+        select: { id: true, fullName: true, email: true }
+      });
+    }
+    const employerMap = new Map(employers.map(u => [u.id, u]));
+
+    // Batch fetch worker profiles (WorkerProfile records)
+    let workerProfiles = [];
+    if (validWorkerIds.length > 0) {
+      workerProfiles = await prisma.workerProfile.findMany({
+        where: { id: { in: validWorkerIds } },
+        select: { id: true, userId: true }
+      });
+    }
+    const workerProfileMap = new Map(workerProfiles.map(w => [w.id, w]));
+
+    // Batch fetch worker user accounts (from WorkerProfile.userId -> User)
+    const validWorkerUserIds = [...new Set(workerProfiles.map(w => w.userId).filter(isValidObjectId))];
+    let workerUsers = [];
+    if (validWorkerUserIds.length > 0) {
+      workerUsers = await prisma.user.findMany({
+        where: { id: { in: validWorkerUserIds } },
+        select: { id: true, fullName: true, phone: true, city: true }
+      });
+    }
+    const workerUserMap = new Map(workerUsers.map(u => [u.id, u]));
+
+    // Build enriched hires with safe fallbacks
+    const enriched = hires.map(hire => {
+      const employer = employerMap.get(hire.employerId) || { fullName: 'Unknown Employer', email: null };
+      const workerProfile = workerProfileMap.get(hire.workerId) || null;
+      const workerUser = workerProfile ? workerUserMap.get(workerProfile.userId) || null : null;
+      const worker = workerUser || { fullName: 'Unknown Worker', phone: null, city: null };
+      return {
+        ...hire,
+        employer,
+        worker,
+      };
     });
 
     res.json({
       success: true,
-      hires
+      hires: enriched
     });
   } catch (error) {
     console.error('Get hires error:', error);

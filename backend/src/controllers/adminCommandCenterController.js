@@ -16,6 +16,13 @@
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 
+// Helper: check if a string is a valid MongoDB ObjectId (24 hex chars).
+// Legacy records may contain non-ObjectId IDs (e.g. "user_1784367005840")
+// which crash Prisma relation queries with P2023. This guard prevents that.
+const isValidObjectId = (id) => {
+  return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 // ============================================================
 // LIGHTWEIGHT COMPLAINT SERIALIZER
 // (kept local to avoid modifying the complaint system)
@@ -184,26 +191,83 @@ export const getCommandCenter = async (req, res) => {
       }),
 
       // ---- Recent payments (max 10) ----
+      // Base records only (no relation includes) to avoid P2023 on legacy IDs.
       prisma.payment.findMany({
-        include: {
-          User: { select: { fullName: true, email: true } },
-        },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
 
       // ---- Recent hires (max 10) ----
+      // Base records only (no relation includes) to avoid P2023 on legacy IDs.
       prisma.hire.findMany({
-        include: {
-          WorkerProfile: {
-            include: { User: { select: { fullName: true, phone: true, city: true } } },
-          },
-          User: { select: { fullName: true, email: true } },
-        },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
     ]);
+
+    // ============================================================
+    // ENRICH RECENT PAYMENTS (safe relation resolution)
+    // ============================================================
+    const validPaymentUserIds = [...new Set(recentPayments.map(p => p.userId).filter(isValidObjectId))];
+    let paymentUsers = [];
+    if (validPaymentUserIds.length > 0) {
+      paymentUsers = await prisma.user.findMany({
+        where: { id: { in: validPaymentUserIds } },
+        select: { id: true, fullName: true, email: true },
+      });
+    }
+    const paymentUserMap = new Map(paymentUsers.map(u => [u.id, u]));
+    const enrichedRecentPayments = recentPayments.map(payment => ({
+      ...payment,
+      User: paymentUserMap.get(payment.userId) || null,
+    }));
+
+    // ============================================================
+    // ENRICH RECENT HIRES (safe relation resolution)
+    // ============================================================
+    const validHireEmployerIds = [...new Set(recentHires.map(h => h.employerId).filter(isValidObjectId))];
+    let hireEmployers = [];
+    if (validHireEmployerIds.length > 0) {
+      hireEmployers = await prisma.user.findMany({
+        where: { id: { in: validHireEmployerIds } },
+        select: { id: true, fullName: true, email: true },
+      });
+    }
+    const hireEmployerMap = new Map(hireEmployers.map(u => [u.id, u]));
+
+    const validHireWorkerIds = [...new Set(recentHires.map(h => h.workerId).filter(isValidObjectId))];
+    let hireWorkerProfiles = [];
+    if (validHireWorkerIds.length > 0) {
+      hireWorkerProfiles = await prisma.workerProfile.findMany({
+        where: { id: { in: validHireWorkerIds } },
+        select: { id: true, userId: true },
+      });
+    }
+    const hireWorkerProfileMap = new Map(hireWorkerProfiles.map(w => [w.id, w]));
+
+    const validHireWorkerUserIds = [...new Set(hireWorkerProfiles.map(w => w.userId).filter(isValidObjectId))];
+    let hireWorkerUsers = [];
+    if (validHireWorkerUserIds.length > 0) {
+      hireWorkerUsers = await prisma.user.findMany({
+        where: { id: { in: validHireWorkerUserIds } },
+        select: { id: true, fullName: true, phone: true, city: true },
+      });
+    }
+    const hireWorkerUserMap = new Map(hireWorkerUsers.map(u => [u.id, u]));
+
+    const enrichedRecentHires = recentHires.map(hire => {
+      const employer = hireEmployerMap.get(hire.employerId) || { fullName: 'Unknown Employer', email: null };
+      const workerProfile = hireWorkerProfileMap.get(hire.workerId) || null;
+      const workerUser = workerProfile ? hireWorkerUserMap.get(workerProfile.userId) || null : null;
+      const worker = workerUser || { fullName: 'Unknown Worker', phone: null, city: null };
+      return {
+        ...hire,
+        User: employer,
+        WorkerProfile: workerProfile
+          ? { ...workerProfile, User: workerUser }
+          : null,
+      };
+    });
 
     // ============================================================
     // SORT NEEDS ATTENTION
@@ -250,8 +314,8 @@ export const getCommandCenter = async (req, res) => {
       needsAttention: needsAttention.map(serializeComplaint),
       recentActivity,
       recentUsers,
-      recentPayments,
-      recentHires,
+      recentPayments: enrichedRecentPayments,
+      recentHires: enrichedRecentHires,
     });
   } catch (error) {
     console.error('❌ Error fetching admin command center:', error);
