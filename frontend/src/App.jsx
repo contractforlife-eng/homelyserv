@@ -57,6 +57,7 @@ import AdminProfile from './pages/AdminProfile';
 // Support Pages
 import SupportDashboard from './pages/support/SupportDashboard';
 import SupportUsers from './pages/support/SupportUsers';
+import SupportUserProfile from './pages/support/SupportUserProfile';
 import SupportMessages from './pages/support/SupportMessages';
 import SupportSettings from './pages/support/SupportSettings';
 import SupportComplaints from './pages/support/SupportComplaints';
@@ -478,6 +479,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportUsers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/support/users/:id" 
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <SupportUserProfile />
           </ProtectedRoute>
         } 
       />

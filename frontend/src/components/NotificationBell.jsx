@@ -7,8 +7,11 @@ import {
   markAsRead, 
   markAllAsRead, 
   deleteNotification,
-  clearAllNotifications 
+  clearAllNotifications,
+  getEntityRoute,
+  getTypeIcon
 } from '../utils/notificationService';
+import { onSocketEvent } from '../utils/socket';
 import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = ({ userId, className = '' }) => {
@@ -26,15 +29,10 @@ const NotificationBell = ({ userId, className = '' }) => {
     
     setIsLoading(true);
     try {
-      const all = await getNotifications(userId);
-      const unread = getUnreadCount(userId);
+      const result = await getNotifications({ limit: 20 });
+      const unread = await getUnreadCount();
       
-      // Sort by newest first (only if all is an array)
-      if (Array.isArray(all)) {
-        all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      }
-      
-      setNotifications(all);
+      setNotifications(result.notifications || []);
       setUnreadCount(unread);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -77,35 +75,45 @@ const NotificationBell = ({ userId, className = '' }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-refresh every 30 seconds
+  // Realtime: listen for new notification events via Socket.IO
   useEffect(() => {
-    const interval = setInterval(loadNotifications, 30000);
+    if (!userId) return;
+    const unsubscribe = onSocketEvent(userId, 'notification:new', (payload) => {
+      console.log('🔔 Realtime notification received:', payload);
+      loadNotifications();
+    });
+    return unsubscribe;
+  }, [userId]);
+
+  // Fallback: auto-refresh every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(loadNotifications, 15000);
     return () => clearInterval(interval);
   }, [userId]);
 
   // Handle marking as read
   const handleMarkAsRead = (notificationId) => {
-    markAsRead(notificationId, userId);
+    markAsRead(notificationId);
     loadNotifications();
   };
 
   // Handle marking all as read
   const handleMarkAllAsRead = () => {
-    markAllAsRead(userId);
+    markAllAsRead();
     loadNotifications();
   };
 
   // Handle deleting a notification
   const handleDelete = (notificationId, e) => {
     e.stopPropagation();
-    deleteNotification(notificationId, userId);
+    deleteNotification(notificationId);
     loadNotifications();
   };
 
   // Handle clearing all
   const handleClearAll = () => {
     if (window.confirm('Clear all notifications?')) {
-      clearAllNotifications(userId);
+      clearAllNotifications();
       loadNotifications();
     }
   };
@@ -114,14 +122,13 @@ const NotificationBell = ({ userId, className = '' }) => {
   const handleNotificationClick = (notification) => {
     // Mark as read
     if (!notification.read) {
-      markAsRead(notification.id, userId);
+      markAsRead(notification.id);
     }
     
-    // Navigate if there's a link
-    if (notification.link) {
-      navigate(notification.link);
-      setIsOpen(false);
-    }
+    // Navigate to the related entity
+    const route = getEntityRoute(notification);
+    navigate(route);
+    setIsOpen(false);
   };
 
   // Format time
@@ -139,17 +146,7 @@ const NotificationBell = ({ userId, className = '' }) => {
 
   // Get icon for notification type
   const getNotificationIcon = (type) => {
-    const icons = {
-      new_message: '💬',
-      hire_response: '📋',
-      complaint_update: '📌',
-      payment_confirmation: '💰',
-      offer_response: '📩',
-      worker_applied: '👤',
-      system_update: '⚙️',
-      promotional: '📢'
-    };
-    return icons[type] || '🔔';
+    return getTypeIcon(type);
   };
 
   return (

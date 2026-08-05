@@ -25,6 +25,7 @@ import oauthRoutes from './routes/oauth.js';
 import supportRoutes from './routes/support.js';
 import complaintRoutes from './routes/complaints.js';
 import { requireAdmin } from './middleware/auth.js';
+import { setIo } from './lib/socket.js';
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -330,12 +331,23 @@ app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
 // ============================================================
+// Share the io instance with services (NotificationService, etc.)
+setIo(io);
+
 io.on('connection', (socket) => {
   console.log('🔌 User connected:', socket.id);
   
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
     console.log(`📥 User ${socket.id} joined room: ${roomId}`);
+  });
+
+  // Join the user's personal notification room
+  socket.on('join_user_room', (userId) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+      console.log(`🔔 User ${socket.id} joined notification room: user_${userId}`);
+    }
   });
   
   socket.on('leave_room', (roomId) => {

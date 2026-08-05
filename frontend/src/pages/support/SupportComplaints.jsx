@@ -1,6 +1,6 @@
 // Support Complaints Page - Production complaint workflow management
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
 import { useDashboard } from '../../components/layout/DashboardContext';
@@ -27,14 +27,17 @@ import complaintsService from '../../services/complaintService';
 
 const SupportComplaints = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [priorityFilter, setPriorityFilter] = useState(searchParams.get('priority') || '');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [userIdFilter, setUserIdFilter] = useState(searchParams.get('userId') || '');
+  const [assignedToFilter, setAssignedToFilter] = useState(searchParams.get('assignedTo') || '');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [timeline, setTimeline] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -54,6 +57,8 @@ const SupportComplaints = () => {
       if (statusFilter) filters.status = statusFilter;
       if (priorityFilter) filters.priority = priorityFilter;
       if (categoryFilter) filters.category = categoryFilter;
+      if (userIdFilter) filters.userId = userIdFilter;
+      if (assignedToFilter === 'me') filters.assignedTo = authUser?.id;
 
       const response = await complaintsService.getSupportComplaints(filters);
       if (response?.success) {
@@ -65,7 +70,7 @@ const SupportComplaints = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, priorityFilter, categoryFilter]);
+  }, [searchTerm, statusFilter, priorityFilter, categoryFilter, userIdFilter, assignedToFilter, authUser?.id]);
 
   useEffect(() => {
     fetchComplaints();

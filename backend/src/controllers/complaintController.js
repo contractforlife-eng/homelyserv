@@ -14,6 +14,11 @@
 import prisma from '../lib/prisma.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
+import {
+  createNotification as createUserNotification,
+  NOTIFICATION_TYPES,
+  PRIORITIES,
+} from '../services/notificationService.js';
 
 // ============================================================
 // CONSTANTS
@@ -101,28 +106,6 @@ const addTimeline = async (complaintId, { action, description, authorId = null, 
     });
   } catch (error) {
     console.error('❌ Failed to add timeline event:', error);
-  }
-};
-
-/**
- * Create a notification for a user.
- */
-const createNotification = async (userId, { type, title, body, icon = '📋', link = '/worker-complaints' }) => {
-  try {
-    await prisma.notification.create({
-      data: {
-        userId,
-        type,
-        title,
-        body,
-        icon,
-        link,
-        isRead: false,
-        data: {},
-      },
-    });
-  } catch (error) {
-    console.error('❌ Failed to create notification:', error);
   }
 };
 
@@ -349,21 +332,25 @@ export const createComplaint = async (req, res) => {
     });
 
     for (const support of supportUsers) {
-      await createNotification(support.id, {
-        type: 'complaint_created',
+      await createUserNotification(support.id, {
+        type: NOTIFICATION_TYPES.NEW_COMPLAINT,
         title: 'New Complaint',
-        body: `New complaint: ${complaint.subject}`,
-        icon: '📋',
+        message: `New complaint: ${complaint.subject}`,
+        entityType: 'COMPLAINT',
+        entityId: complaint.id,
+        priority: PRIORITIES.NORMAL,
         link: '/support-complaints',
       });
     }
 
     // Notify the user
-    await createNotification(userId, {
-      type: 'complaint_created',
+    await createUserNotification(userId, {
+      type: NOTIFICATION_TYPES.NEW_COMPLAINT,
       title: 'Complaint Submitted',
-      body: `Your complaint "${complaint.subject}" has been submitted successfully`,
-      icon: '✅',
+      message: `Your complaint "${complaint.subject}" has been submitted successfully`,
+      entityType: 'COMPLAINT',
+      entityId: complaint.id,
+      priority: PRIORITIES.NORMAL,
       link: userRole === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -536,11 +523,13 @@ export const userReply = async (req, res) => {
     // Notify assigned support
     const supportId = complaint.assignedSupport || complaint.assignedTo;
     if (supportId) {
-      await createNotification(supportId, {
-        type: 'complaint_reply',
+      await createUserNotification(supportId, {
+        type: NOTIFICATION_TYPES.COMPLAINT_REPLY,
         title: 'New User Reply',
-        body: `${complaint.User?.fullName || 'User'} replied to "${complaint.subject}"`,
-        icon: '💬',
+        message: `${complaint.User?.fullName || 'User'} replied to "${complaint.subject}"`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
         link: '/support-complaints',
       });
     }
@@ -754,11 +743,13 @@ export const supportAssignComplaint = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_assigned',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
       title: 'Complaint Assigned',
-      body: `A support agent has been assigned to your complaint "${complaint.subject}"`,
-      icon: '👤',
+      message: `A support agent has been assigned to your complaint "${complaint.subject}"`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -860,11 +851,13 @@ export const supportReply = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_reply',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_REPLY,
       title: 'Support Response',
-      body: `Support responded to your complaint "${complaint.subject}"`,
-      icon: '💬',
+      message: `Support responded to your complaint "${complaint.subject}"`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1055,11 +1048,13 @@ export const supportChangeStatus = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_status',
+    await createUserNotification(complaint.userId, {
+      type: status === 'RESOLVED' ? NOTIFICATION_TYPES.COMPLAINT_RESOLVED : NOTIFICATION_TYPES.SYSTEM,
       title: 'Complaint Status Updated',
-      body: `Your complaint "${complaint.subject}" is now ${status.replace(/_/g, ' ')}`,
-      icon: status === 'RESOLVED' ? '✅' : status === 'CLOSED' ? '🔒' : '📋',
+      message: `Your complaint "${complaint.subject}" is now ${status.replace(/_/g, ' ')}`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1147,21 +1142,25 @@ export const supportEscalate = async (req, res) => {
     });
 
     for (const admin of adminUsers) {
-      await createNotification(admin.id, {
-        type: 'complaint_escalated',
+      await createUserNotification(admin.id, {
+        type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
         title: 'Complaint Escalated',
-        body: `Complaint "${complaint.subject}" was escalated by ${req.user?.fullName || 'Support'}`,
-        icon: '🚨',
+        message: `Complaint "${complaint.subject}" was escalated by ${req.user?.fullName || 'Support'}`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.HIGH,
         link: '/admin/complaints',
       });
     }
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_escalated',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ESCALATED,
       title: 'Complaint Escalated',
-      body: `Your complaint "${complaint.subject}" has been escalated to our admin team`,
-      icon: '🚨',
+      message: `Your complaint "${complaint.subject}" has been escalated to our admin team`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.HIGH,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1267,11 +1266,13 @@ export const supportClose = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_closed',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.SYSTEM,
       title: 'Complaint Closed',
-      body: `Your complaint "${complaint.subject}" has been closed`,
-      icon: '🔒',
+      message: `Your complaint "${complaint.subject}" has been closed`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1477,21 +1478,25 @@ export const adminReply = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_reply',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_REPLY,
       title: 'Admin Response',
-      body: `Admin responded to your complaint "${complaint.subject}"`,
-      icon: '🛡️',
+      message: `Admin responded to your complaint "${complaint.subject}"`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
     // Notify assigned support
     if (complaint.assignedSupport) {
-      await createNotification(complaint.assignedSupport, {
-        type: 'complaint_admin_reply',
+      await createUserNotification(complaint.assignedSupport, {
+        type: NOTIFICATION_TYPES.COMPLAINT_REPLY,
         title: 'Admin Replied',
-        body: `Admin replied to complaint "${complaint.subject}"`,
-        icon: '🛡️',
+        message: `Admin replied to complaint "${complaint.subject}"`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
         link: '/support-complaints',
       });
     }
@@ -1579,11 +1584,13 @@ export const adminReassign = async (req, res) => {
     );
 
     // Notify the new support agent
-    await createNotification(supportId, {
-      type: 'complaint_assigned',
+    await createUserNotification(supportId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
       title: 'Complaint Assigned',
-      body: `Complaint "${complaint.subject}" has been assigned to you`,
-      icon: '👤',
+      message: `Complaint "${complaint.subject}" has been assigned to you`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: '/support-complaints',
     });
 
@@ -1682,11 +1689,13 @@ export const adminResolve = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_resolved',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.COMPLAINT_RESOLVED,
       title: 'Complaint Resolved',
-      body: `Your complaint "${complaint.subject}" has been resolved`,
-      icon: '✅',
+      message: `Your complaint "${complaint.subject}" has been resolved`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1756,11 +1765,13 @@ export const adminClose = async (req, res) => {
     );
 
     // Notify the user
-    await createNotification(complaint.userId, {
-      type: 'complaint_closed',
+    await createUserNotification(complaint.userId, {
+      type: NOTIFICATION_TYPES.SYSTEM,
       title: 'Complaint Closed',
-      body: `Your complaint "${complaint.subject}" has been closed`,
-      icon: '🔒',
+      message: `Your complaint "${complaint.subject}" has been closed`,
+      entityType: 'COMPLAINT',
+      entityId: id,
+      priority: PRIORITIES.NORMAL,
       link: complaint.User?.role === 'WORKER' ? '/worker-complaints' : '/employer-complaints',
     });
 
@@ -1837,11 +1848,13 @@ export const adminReturnToSupport = async (req, res) => {
 
     // Notify the support agent
     if (targetSupportId) {
-      await createNotification(targetSupportId, {
-        type: 'complaint_returned',
+      await createUserNotification(targetSupportId, {
+        type: NOTIFICATION_TYPES.COMPLAINT_ASSIGNED,
         title: 'Complaint Returned',
-        body: `Complaint "${complaint.subject}" was returned to you by admin`,
-        icon: '↩️',
+        message: `Complaint "${complaint.subject}" was returned to you by admin`,
+        entityType: 'COMPLAINT',
+        entityId: id,
+        priority: PRIORITIES.NORMAL,
         link: '/support-complaints',
       });
     }
@@ -2011,6 +2024,282 @@ export const supportStats = async (req, res) => {
 };
 
 /**
+ * GET /api/support/dashboard
+ * Production-ready support workspace data.
+ * Returns KPI stats, needs-attention tickets, assigned tickets,
+ * waiting-for-user tickets, recent activity, and recent conversations.
+ */
+export const supportDashboard = async (req, res) => {
+  try {
+    const supportId = String(req.userId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // ============================================================
+    // KPI COUNTS
+    // ============================================================
+
+    // Open tickets (NEW + OPEN + IN_PROGRESS + WAITING_FOR_USER)
+    const openTickets = await prisma.complaint.count({
+      where: {
+        status: { in: ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER'] },
+      },
+    });
+
+    // Assigned to me (not resolved/closed)
+    const assignedToMe = await prisma.complaint.count({
+      where: {
+        assignedSupport: supportId,
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+      },
+    });
+
+    // Waiting for user
+    const waitingForUser = await prisma.complaint.count({
+      where: { status: 'WAITING_FOR_USER' },
+    });
+
+    // Critical tickets (not resolved/closed)
+    const criticalTickets = await prisma.complaint.count({
+      where: {
+        priority: 'Critical',
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+      },
+    });
+
+    // Escalated tickets
+    const escalatedTickets = await prisma.complaint.count({
+      where: { status: 'ESCALATED' },
+    });
+
+    // Resolved today
+    const resolvedToday = await prisma.complaint.count({
+      where: {
+        status: 'RESOLVED',
+        resolvedAt: { gte: today },
+      },
+    });
+
+    // ============================================================
+    // AVERAGE FIRST RESPONSE TIME
+    // For each complaint, find the first SUPPORT_REPLIED timeline
+    // event and compute the delta from createdAt.
+    // ============================================================
+    let avgFirstResponseHours = 0;
+    try {
+      const complaintsWithReplies = await prisma.complaint.findMany({
+        where: {
+          Timeline: {
+            some: { action: 'SUPPORT_REPLIED' },
+          },
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          Timeline: {
+            where: { action: 'SUPPORT_REPLIED' },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            select: { createdAt: true },
+          },
+        },
+      });
+
+      if (complaintsWithReplies.length > 0) {
+        const totalMs = complaintsWithReplies.reduce((sum, c) => {
+          const firstReply = c.Timeline[0];
+          if (!firstReply) return sum;
+          return sum + (new Date(firstReply.createdAt) - new Date(c.createdAt));
+        }, 0);
+        avgFirstResponseHours = Math.round((totalMs / complaintsWithReplies.length) / (1000 * 60 * 60) * 10) / 10;
+      }
+    } catch (e) {
+      console.error('❌ Error computing avg first response time:', e.message);
+    }
+
+    // ============================================================
+    // AVERAGE RESOLUTION TIME
+    // ============================================================
+    const resolvedComplaints = await prisma.complaint.findMany({
+      where: {
+        status: 'RESOLVED',
+        resolvedAt: { not: null },
+      },
+      select: { createdAt: true, resolvedAt: true },
+    });
+
+    let avgResolutionHours = 0;
+    if (resolvedComplaints.length > 0) {
+      const totalMs = resolvedComplaints.reduce((sum, c) => {
+        return sum + (new Date(c.resolvedAt) - new Date(c.createdAt));
+      }, 0);
+      avgResolutionHours = Math.round((totalMs / resolvedComplaints.length) / (1000 * 60 * 60) * 10) / 10;
+    }
+
+    // ============================================================
+    // NEEDS ATTENTION
+    // Order: Critical > Escalated > Waiting > Newest
+    // ============================================================
+    const needsAttention = await prisma.complaint.findMany({
+      where: {
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { status: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      take: 10,
+    });
+
+    // Sort by priority weight: Critical > Escalated > Waiting > Newest
+    const priorityWeight = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    const statusWeight = { ESCALATED: 0, WAITING_FOR_USER: 1, NEW: 2, OPEN: 3, IN_PROGRESS: 4 };
+    needsAttention.sort((a, b) => {
+      const aW = (priorityWeight[a.priority] ?? 4) * 10 + (statusWeight[a.status] ?? 5);
+      const bW = (priorityWeight[b.priority] ?? 4) * 10 + (statusWeight[b.status] ?? 5);
+      return aW - bW;
+    });
+
+    // ============================================================
+    // MY ASSIGNED TICKETS
+    // ============================================================
+    const myAssignedTickets = await prisma.complaint.findMany({
+      where: {
+        assignedSupport: supportId,
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+      },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+
+    // ============================================================
+    // WAITING FOR USER TICKETS
+    // ============================================================
+    const waitingTickets = await prisma.complaint.findMany({
+      where: { status: 'WAITING_FOR_USER' },
+      include: {
+        User: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+        AssignedSupport: {
+          select: { id: true, fullName: true, email: true, role: true, image: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+
+    // ============================================================
+    // RECENT ACTIVITY (ComplaintTimeline)
+    // ============================================================
+    const recentActivity = await prisma.complaintTimeline.findMany({
+      where: {
+        action: { in: ['CREATED', 'ASSIGNED', 'USER_REPLIED', 'SUPPORT_REPLIED', 'ADMIN_REPLIED', 'ESCALATED', 'RESOLVED', 'CLOSED'] },
+      },
+      include: {
+        Complaint: {
+          select: { id: true, ticketNumber: true, subject: true, status: true, priority: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+    });
+
+    // ============================================================
+    // RECENT CONVERSATIONS (secure messaging architecture)
+    // ============================================================
+    let recentConversations = [];
+    try {
+      const Conversation = (await import('../models/Conversation.js')).default;
+      const query = { type: 'SUPPORT' };
+      if (req.userRole === 'SUPPORT') {
+        query.supportAgentId = supportId;
+      }
+
+      const conversationsMeta = await Conversation.find(query)
+        .sort({ lastMessageAt: -1 })
+        .limit(8);
+
+      for (const conv of conversationsMeta) {
+        const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
+          .sort({ createdAt: -1 });
+
+        if (!lastMsg) continue;
+
+        const userParticipantId = conv.participantIds.find(
+          id => id !== conv.supportAgentId
+        );
+
+        let userInfo = null;
+        if (userParticipantId) {
+          try {
+            userInfo = await prisma.user.findUnique({
+              where: { id: userParticipantId },
+              select: { id: true, fullName: true, email: true, role: true, image: true },
+            });
+          } catch (e) {
+            console.error('Error fetching user:', e.message);
+          }
+        }
+
+        recentConversations.push({
+          id: conv.conversationId,
+          type: conv.type,
+          userId: userParticipantId || null,
+          user: userInfo,
+          supportAgentId: conv.supportAgentId,
+          lastMessage: lastMsg.text,
+          lastMessageTime: lastMsg.createdAt,
+          updatedAt: conv.lastMessageAt || lastMsg.createdAt,
+          complaintId: conv.complaintId || null,
+        });
+      }
+    } catch (e) {
+      console.error('❌ Error fetching recent conversations:', e.message);
+    }
+
+    return res.json({
+      success: true,
+      stats: {
+        openTickets,
+        assignedToMe,
+        waitingForUser,
+        criticalTickets,
+        escalatedTickets,
+        resolvedToday,
+        avgFirstResponseHours,
+        avgResolutionHours,
+      },
+      needsAttention: needsAttention.map((c) => serializeComplaint(c)),
+      myAssignedTickets: myAssignedTickets.map((c) => serializeComplaint(c)),
+      waitingTickets: waitingTickets.map((c) => serializeComplaint(c)),
+      recentActivity,
+      recentConversations,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching support dashboard:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch support dashboard' });
+  }
+};
+
+/**
  * GET /api/admin/complaints/stats
  * Admin complaint statistics.
  */
@@ -2132,5 +2421,6 @@ export default {
   adminReturnToSupport,
   adminEscalatedComplaints,
   supportStats,
+  supportDashboard,
   adminComplaintStats,
 };

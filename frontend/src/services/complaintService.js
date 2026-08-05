@@ -146,6 +146,15 @@ export const getSupportStats = async () => {
   return response.data;
 };
 
+/**
+ * Get support workspace dashboard data (KPIs, needs attention,
+ * assigned tickets, waiting tickets, recent activity, conversations).
+ */
+export const getSupportDashboard = async () => {
+  const response = await api.get('/api/support/dashboard');
+  return response.data;
+};
+
 // ============================================================
 // ADMIN COMPLAINT API
 // ============================================================
@@ -295,6 +304,7 @@ const complaintService = {
   escalateComplaint,
   closeComplaint,
   getSupportStats,
+  getSupportDashboard,
   getAdminComplaints,
   getAdminComplaint,
   adminReplyToComplaint,

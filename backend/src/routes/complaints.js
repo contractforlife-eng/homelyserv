@@ -31,6 +31,7 @@ import {
   adminReturnToSupport,
   adminEscalatedComplaints,
   supportStats,
+  supportDashboard,
   adminComplaintStats,
 } from '../controllers/complaintController.js';
 
@@ -82,6 +83,9 @@ router.post('/support/complaints/:id/close', authenticate, requireSupport, suppo
 
 // GET /api/support/stats - Support dashboard statistics
 router.get('/support/stats', authenticate, requireSupport, supportStats);
+
+// GET /api/support/dashboard - Support workspace dashboard data
+router.get('/support/dashboard', authenticate, requireSupport, supportDashboard);
 
 // ============================================================
 // ADMIN COMPLAINT ROUTES

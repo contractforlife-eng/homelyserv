@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.js';
 import { requireSupport as supportAuth } from '../middleware/supportAuth.js';
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
+import MongooseUser from '../models/User.js';
 
 const router = express.Router();
 
@@ -168,13 +169,98 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
+    // Fetch lastLogin from the Mongoose User model (kept in sync by auth routes)
+    let lastLogin = null;
+    try {
+      const mongooseUser = await MongooseUser.findById(id).select('lastLogin');
+      if (mongooseUser) {
+        lastLogin = mongooseUser.lastLogin || null;
+      }
+    } catch (e) {
+      console.error('❌ Error fetching lastLogin for user:', e.message);
+    }
+
     return res.json({
       success: true,
-      user,
+      user: {
+        ...user,
+        lastLogin,
+      },
     });
   } catch (error) {
     console.error('❌ Error fetching user for support:', error);
     return res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// GET /api/support/users/:id/stats
+// Get user statistics (read-only) for the support profile page.
+// Supports viewing counts only; no payment details are exposed.
+router.get('/users/:id/stats', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Complaints count (user is the owner)
+    const complaintsCount = await prisma.complaint.count({
+      where: { userId: id },
+    });
+
+    // Hires count (as worker or employer)
+    const hiresCount = await prisma.hire.count({
+      where: {
+        OR: [{ workerId: id }, { employerId: id }],
+      },
+    });
+
+    // Offers count (as worker or employer)
+    const offersCount = await prisma.offer.count({
+      where: {
+        OR: [{ workerId: id }, { employerId: id }],
+      },
+    });
+
+    // Payments count (read only - no details exposed)
+    const paymentsCount = await prisma.payment.count({
+      where: {
+        OR: [{ userId: id }, { workerId: id }, { employerId: id }],
+      },
+    });
+
+    // Messages count (via Mongoose Message model used by the chat system)
+    let messagesCount = 0;
+    try {
+      messagesCount = await Message.countDocuments({
+        $or: [{ senderId: id }, { receiverId: id }],
+      });
+    } catch (e) {
+      console.error('❌ Error counting messages:', e.message);
+    }
+
+    return res.json({
+      success: true,
+      stats: {
+        complaintsCount,
+        messagesCount,
+        hiresCount,
+        offersCount,
+        paymentsCount,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching user stats for support:', error);
+    return res.status(500).json({ error: 'Failed to fetch user stats' });
   }
 });
 

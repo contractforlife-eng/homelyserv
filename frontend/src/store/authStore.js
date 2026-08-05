@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../utils/api';
+import { disconnectSocket } from '../utils/socket';
 
 const normalizeUser = (userData) => {
   if (!userData) return null;
@@ -90,6 +91,9 @@ const useAuthStore = create(
       },
 
       logout: () => {
+        // Disconnect the realtime socket to stop receiving notifications
+        disconnectSocket();
+
         set({
           user: null,
           token: null,
