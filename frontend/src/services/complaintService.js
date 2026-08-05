@@ -41,9 +41,10 @@ export const COMPLAINT_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 export const uploadComplaintAttachment = async (file) => {
   const formData = new FormData();
   formData.append('attachment', file);
-  const response = await api.post('/api/complaints/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  // IMPORTANT: Do NOT set Content-Type manually. Axios must generate the
+  // multipart boundary itself, otherwise multer cannot parse the body and
+  // req.file is undefined, causing the upload to fail silently.
+  const response = await api.post('/api/complaints/upload', formData);
   return response.data;
 };
 
