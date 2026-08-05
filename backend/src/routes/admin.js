@@ -7,6 +7,7 @@ import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
 
 const router = express.Router();
 
@@ -23,6 +24,14 @@ const serializeUser = (user) => {
 // delete accounts, etc. Every route below now requires a valid JWT
 // belonging to a user with role === 'ADMIN'.
 router.use(requireAdmin);
+
+// ============================================================
+// Admin Command Center (Admin Only)
+// Aggregated dashboard endpoint returning all platform KPIs,
+// needs-attention complaints, recent activity, recent users,
+// recent payments, and recent hires in a single response.
+// ============================================================
+router.get('/command-center', getCommandCenter);
 
 // ============================================================
 // Get All Users (Admin Only) - FIXED: Shows ALL users
