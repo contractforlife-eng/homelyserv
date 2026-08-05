@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import SupportSidebar from '../components/SupportSidebar';
 import DashboardContext from '../components/layout/DashboardContext';
+import DashboardHeader from '../components/layout/DashboardHeader';
 
 const SupportLayout = ({ 
   children, 
-  requiredRole = 'SUPPORT'
+  requiredRole = 'SUPPORT',
+  headerTitle = 'Support Dashboard'
 }) => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
@@ -118,6 +120,10 @@ const SupportLayout = ({
         <main className={`flex-1 transition-all duration-300 ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
+          <DashboardHeader
+            title={headerTitle}
+            notificationUserId={authUser?.id || authUser?.email}
+          />
           {children}
         </main>
       </div>

@@ -61,6 +61,7 @@ import SupportUserProfile from './pages/support/SupportUserProfile';
 import SupportMessages from './pages/support/SupportMessages';
 import SupportSettings from './pages/support/SupportSettings';
 import SupportComplaints from './pages/support/SupportComplaints';
+import SupportProfile from './pages/support/SupportProfile';
 
 import { useAuth } from './context/AuthContext';
 
@@ -471,6 +472,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="SUPPORT">
             <SupportDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/support-profile" 
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <SupportProfile />
           </ProtectedRoute>
         } 
       />

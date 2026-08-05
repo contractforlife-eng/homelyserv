@@ -59,6 +59,7 @@ const SupportSidebar = ({
     { id: 'users', label: t.users, icon: Users, path: '/support-users' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
+    { id: 'profile', label: t.profile, icon: UserIcon, path: '/support-profile' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/support-settings' },
   ];
 
