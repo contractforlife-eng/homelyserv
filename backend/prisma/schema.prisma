@@ -226,6 +226,7 @@ model User {
   SupportActivity                  SupportActivity[]
   ComplaintNote                    ComplaintNote[]
   ComplaintTimeline                ComplaintTimeline[]
+  ComplaintReply                   ComplaintReply[]
 
   @@map("users")
 }
@@ -366,6 +367,29 @@ model Complaint {
   SupportActivity  SupportActivity[]
   Notes            ComplaintNote[]
   Timeline         ComplaintTimeline[]
+  Replies          ComplaintReply[]
+}
+
+// ============================================================
+// COMPLAINT REPLIES - Public conversation thread messages
+// Visible to all authorized participants (user, support, admin).
+// Ordered by createdAt ASC for the conversation thread.
+// ============================================================
+model ComplaintReply {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  complaintId String    @db.ObjectId
+  authorId    String    @db.ObjectId
+  authorName  String
+  authorRole  String
+  message     String
+  attachments String[]  @default([])
+  createdAt   DateTime  @default(now())
+
+  Complaint   Complaint @relation(fields: [complaintId], references: [id])
+  Author      User      @relation(fields: [authorId], references: [id])
+
+  @@index([complaintId])
+  @@index([complaintId, createdAt(sort: Asc)])
 }
 
 // ============================================================

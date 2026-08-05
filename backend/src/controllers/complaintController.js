@@ -60,6 +60,29 @@ const generateTicketNumber = async () => {
 };
 
 /**
+ * Add a public reply to a complaint (conversation thread).
+ * Replies are stored as structured records and are visible to
+ * all authorized participants (user, support, admin).
+ */
+const addComplaintReply = async (complaintId, { authorId, authorName, authorRole, message, attachments = [] }) => {
+  try {
+    return await prisma.complaintReply.create({
+      data: {
+        complaintId,
+        authorId,
+        authorName,
+        authorRole,
+        message,
+        attachments: Array.isArray(attachments) ? attachments.filter(Boolean) : [],
+      },
+    });
+  } catch (error) {
+    console.error('❌ Failed to add complaint reply:', error);
+    return null;
+  }
+};
+
+/**
  * Add a timeline event to a complaint.
  */
 const addTimeline = async (complaintId, { action, description, authorId = null, authorName = null, authorRole = null, oldValue = null, newValue = null }) => {
@@ -226,6 +249,16 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
     closedAt: complaint.closedAt,
     createdAt: complaint.createdAt,
     updatedAt: complaint.updatedAt,
+    replies: (complaint.Replies || []).map((reply) => ({
+      id: reply.id,
+      complaintId: reply.complaintId,
+      authorId: reply.authorId,
+      authorName: reply.authorName,
+      authorRole: reply.authorRole,
+      message: reply.message,
+      attachments: reply.attachments || [],
+      createdAt: reply.createdAt,
+    })),
     User: complaint.User
       ? {
           id: complaint.User.id,
@@ -398,6 +431,9 @@ export const getComplaintById = async (req, res) => {
         Timeline: {
           orderBy: { createdAt: 'asc' },
         },
+        Replies: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -478,6 +514,14 @@ export const userReply = async (req, res) => {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
       },
+    });
+
+    // Store the reply as a structured conversation message
+    await addComplaintReply(id, {
+      authorId: userId,
+      authorName: complaint.User?.fullName || 'User',
+      authorRole: req.userRole || 'USER',
+      message: message.trim(),
     });
 
     // Timeline
@@ -621,6 +665,9 @@ export const supportGetComplaint = async (req, res) => {
           orderBy: { createdAt: 'desc' },
         },
         Timeline: {
+          orderBy: { createdAt: 'asc' },
+        },
+        Replies: {
           orderBy: { createdAt: 'asc' },
         },
       },
@@ -784,6 +831,14 @@ export const supportReply = async (req, res) => {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
       },
+    });
+
+    // Store the reply as a structured conversation message
+    await addComplaintReply(id, {
+      authorId: supportId,
+      authorName: req.user?.fullName || 'Support Agent',
+      authorRole: 'SUPPORT',
+      message: message.trim(),
     });
 
     // Timeline
@@ -1330,6 +1385,9 @@ export const adminGetComplaint = async (req, res) => {
         Timeline: {
           orderBy: { createdAt: 'asc' },
         },
+        Replies: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -1390,6 +1448,14 @@ export const adminReply = async (req, res) => {
           select: { id: true, fullName: true, email: true, role: true, image: true },
         },
       },
+    });
+
+    // Store the reply as a structured conversation message
+    await addComplaintReply(id, {
+      authorId: adminId,
+      authorName: req.user?.fullName || 'Admin',
+      authorRole: 'ADMIN',
+      message: message.trim(),
     });
 
     // Timeline

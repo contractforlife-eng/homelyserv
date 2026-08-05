@@ -405,7 +405,10 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         setReplyText('');
         setSelected(data.complaint);
         const detail = await complaintsService.getComplaintById(selected.id);
-        if (detail?.success) setTimeline(detail.timeline || []);
+        if (detail?.success) {
+          setSelected(detail.complaint);
+          setTimeline(detail.timeline || []);
+        }
         loadTickets();
       }
     } catch (error) {
@@ -431,7 +434,10 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         setTickets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'IN_PROGRESS' } : t));
         setNotification({ type: 'success', text: t.reopened });
         const detail = await complaintsService.getComplaintById(selected.id);
-        if (detail?.success) setTimeline(detail.timeline || []);
+        if (detail?.success) {
+          setSelected(detail.complaint);
+          setTimeline(detail.timeline || []);
+        }
       }
     } catch (error) {
       console.error('❌ Error reopening ticket:', error);
@@ -461,62 +467,116 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
 
   // ============================================================
   // RENDER: CONVERSATION THREAD
+  // Builds the threaded conversation from the original complaint
+  // description + all replies, ordered by createdAt ASC.
   // ============================================================
   const renderThread = () => {
-    if (!timeline.length) {
-      return (
-        <div className="text-center py-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400">No conversation yet</p>
-        </div>
-      );
-    }
+    // Build messages: original complaint first, then replies
+    const messages = [
+      {
+        id: 'original',
+        authorName: selected?.User?.fullName || t.you,
+        authorRole: userRole,
+        message: selected?.description || '',
+        attachments: selected?.attachments || [],
+        createdAt: selected?.createdAt,
+        isOriginal: true,
+      },
+      ...(selected?.replies || []).map((reply) => ({
+        id: reply.id,
+        authorName: reply.authorName,
+        authorRole: reply.authorRole,
+        message: reply.message,
+        attachments: reply.attachments || [],
+        createdAt: reply.createdAt,
+        isOriginal: false,
+      })),
+    ];
 
     return (
       <div className="space-y-3">
-        {timeline.map((event, index) => {
-          const action = event.action;
-          const isSystem = ['STATUS_CHANGED', 'ESCALATED', 'RESOLVED', 'CLOSED', 'NOTE_ADDED', 'REASSIGNED', 'RETURNED_TO_SUPPORT'].includes(action);
-          const isUser = action === 'USER_REPLIED' || action === 'CREATED';
-          const isSupport = action === 'SUPPORT_REPLIED' || action === 'ASSIGNED';
-          const isAdmin = action === 'ADMIN_REPLIED';
-
-          if (isSystem) {
-            return (
-              <div key={event.id || index} className="flex justify-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-300">
-                  <History size={12} />
-                  {t.eventLabels[action] || action}
-                  <span className="text-gray-400 dark:text-gray-500">•</span>
-                  <span className="text-gray-400 dark:text-gray-500">{formatShortDate(event.createdAt)}</span>
-                </div>
-              </div>
-            );
-          }
-
-          const isMine = isUser;
-          const authorLabel = isUser ? t.you : isSupport ? t.support : isAdmin ? t.admin : t.system;
+        {messages.map((msg, index) => {
+          const isMine = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
+          const authorLabel = msg.authorName || (isMine ? t.you : t.support);
+          const roleLabel = msg.authorRole ? ` (${msg.authorRole})` : '';
           const bubbleClass = isMine
             ? `ml-auto ${th.bubble} border`
             : 'mr-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
 
           return (
-            <div key={event.id || index} className={`flex flex-col max-w-[85%] ${isMine ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
+            <div key={msg.id || index} className={`flex flex-col max-w-[85%] ${isMine ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className={`text-xs font-semibold ${isMine ? th.textDark : 'text-gray-700 dark:text-gray-200'}`}>
                     {authorLabel}
+                    {!isMine && <span className="text-gray-400 dark:text-gray-500 font-normal">{roleLabel}</span>}
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                    {formatShortDate(event.createdAt)}
+                    {formatDate(msg.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-200">
-                  {event.description}
+                <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+                  {msg.message}
                 </p>
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {msg.attachments.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
+                      >
+                        <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  // ============================================================
+  // RENDER: TIMELINE (separate section)
+  // ============================================================
+  const renderTimeline = () => {
+    if (!timeline.length) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">No timeline events</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {timeline.map((event, index) => (
+          <div key={event.id || index} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 mt-1.5"></div>
+              {index < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 dark:bg-gray-600"></div>}
+            </div>
+            <div className="flex-1 pb-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {t.eventLabels[event.action] || event.action}
+                </p>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatShortDate(event.createdAt)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {event.description}
+                {event.authorName && ` — ${event.authorName}`}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -944,6 +1004,15 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                   {t.conversation}
                 </h4>
                 {renderThread()}
+              </div>
+
+              {/* Timeline (separate section) */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <History size={14} />
+                  {t.timeline}
+                </h4>
+                {renderTimeline()}
               </div>
 
               {/* Reply box */}

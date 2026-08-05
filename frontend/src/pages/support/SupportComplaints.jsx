@@ -132,6 +132,7 @@ const SupportComplaints = () => {
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
+          setSelectedComplaint(detail.complaint);
           setTimeline(detail.timeline || []);
         }
         fetchComplaints();
@@ -364,6 +365,79 @@ const SupportComplaints = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // ============================================================
+  // RENDER: CONVERSATION THREAD
+  // Builds the threaded conversation from the original complaint
+  // description + all replies, ordered by createdAt ASC.
+  // ============================================================
+  const renderThread = () => {
+    const messages = [
+      {
+        id: 'original',
+        authorName: selectedComplaint?.User?.fullName || 'User',
+        authorRole: selectedComplaint?.User?.role || 'USER',
+        message: selectedComplaint?.description || '',
+        attachments: selectedComplaint?.attachments || [],
+        createdAt: selectedComplaint?.createdAt,
+        isOriginal: true,
+      },
+      ...(selectedComplaint?.replies || []).map((reply) => ({
+        id: reply.id,
+        authorName: reply.authorName,
+        authorRole: reply.authorRole,
+        message: reply.message,
+        attachments: reply.attachments || [],
+        createdAt: reply.createdAt,
+        isOriginal: false,
+      })),
+    ];
+
+    return (
+      <div className="space-y-3">
+        {messages.map((msg, index) => {
+          const isUser = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
+          const bubbleClass = isUser
+            ? 'ml-auto bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
+            : 'mr-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
+
+          return (
+            <div key={msg.id || index} className={`flex flex-col max-w-[85%] ${isUser ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
+              <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`text-xs font-semibold ${isUser ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-200'}`}>
+                    {msg.authorName}
+                    <span className="text-gray-400 dark:text-gray-500 font-normal"> ({msg.authorRole})</span>
+                  </span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                    {formatDate(msg.createdAt)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+                  {msg.message}
+                </p>
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {msg.attachments.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
+                      >
+                        <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -652,6 +726,15 @@ const SupportComplaints = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Conversation Thread */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <MessageSquare size={14} />
+                  Conversation
+                </h4>
+                {renderThread()}
               </div>
 
               {/* Reply */}
