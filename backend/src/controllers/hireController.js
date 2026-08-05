@@ -1,9 +1,20 @@
 import prisma from '../lib/prisma.js';
+import {
+  createNotification as notificationServiceCreate,
+  NOTIFICATION_TYPES,
+} from '../services/notificationService.js';
 
-const createNotification = async (userId, type, title, body) => {
+const createNotification = async (userId, type, title, message) => {
   try {
-    await prisma.notification.create({
-      data: { userId, type, title, body, isRead: false }
+    const notificationType =
+      type === 'offer' ? NOTIFICATION_TYPES.NEW_HIRE : NOTIFICATION_TYPES.SYSTEM;
+
+    await notificationServiceCreate(userId, {
+      type: notificationType,
+      title,
+      message,
+      entityType: 'OFFER',
+      link: '/worker/offers',
     });
   } catch (error) {
     console.error('Failed to create notification:', error);

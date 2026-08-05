@@ -13,9 +13,13 @@ import {
 } from '../utils/notificationService';
 import { onSocketEvent } from '../utils/socket';
 import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
-const NotificationBell = ({ userId, className = '' }) => {
+const NotificationBell = ({ userId: userIdProp, className = '' }) => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  // Use the userId prop if provided, otherwise fall back to the authenticated user's id
+  const userId = userIdProp || user?.id;
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
