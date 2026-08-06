@@ -82,6 +82,7 @@ const WorkerSettings = () => {
    
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const dashboard = useDashboard();
 
   // Settings state
@@ -198,6 +199,7 @@ const WorkerSettings = () => {
       confirm: 'Confirm',
       saveChanges: 'Save Changes',
       saved: 'Settings saved successfully!',
+      errorSaving: 'Failed to save settings. Please try again.',
       passwordChanged: 'Password changed successfully!',
       passwordMismatch: 'New passwords do not match',
       passwordTooShort: 'Password must be at least 6 characters',
@@ -271,6 +273,7 @@ const WorkerSettings = () => {
       confirm: 'تأكيد',
       saveChanges: 'حفظ التغييرات',
       saved: 'تم حفظ الإعدادات بنجاح!',
+      errorSaving: 'فشل حفظ الإعدادات. يرجى المحاولة مرة أخرى.',
       passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
       passwordMismatch: 'كلمات المرور الجديدة غير متطابقة',
       passwordTooShort: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
@@ -349,28 +352,28 @@ useEffect(() => {
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
-    
+    setSaveError(null);
+
     const settingsToSave = { ...settings };
 
     try {
       const result = await updateSettings(settingsToSave);
-      
+
       if (result.success) {
+        // Only mirror to localStorage after a confirmed backend save
         localStorage.setItem('worker_settings', JSON.stringify(settingsToSave));
-        setSaving(false);
         setSaveSuccess(true);
-        
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(result.error || 'Failed to save settings');
+        throw new Error(result.error || t.errorSaving);
       }
     } catch (error) {
+      // Never show success here — surface the failure to the user
       console.error('Error saving settings:', error);
-      localStorage.setItem('worker_settings', JSON.stringify(settingsToSave));
+      setSaveError(error.message || t.errorSaving);
+      setTimeout(() => setSaveError(null), 5000);
+    } finally {
       setSaving(false);
-      setSaveSuccess(true);
-      
-      setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
 
@@ -554,6 +557,14 @@ useEffect(() => {
           <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
             <CheckCircle size={16} />
             {t.saved}
+          </div>
+        )}
+
+        {/* Save Error Message */}
+        {saveError && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+            <AlertCircle size={16} />
+            {saveError}
           </div>
         )}
 

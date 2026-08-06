@@ -162,9 +162,13 @@ const SupportProfile = () => {
       let profileImageUrl = formData.profileImage;
 
       if (pendingImageFile) {
-        const uploadedUrl = await uploadProfilePhoto(pendingImageFile);
-        if (uploadedUrl) {
-          profileImageUrl = uploadedUrl;
+        // uploadProfilePhoto returns { success, user } — the Cloudinary URL
+        // is at user.profileImage, NOT on the return value itself.
+        const uploadResult = await uploadProfilePhoto(pendingImageFile);
+        if (uploadResult?.success && typeof uploadResult.user?.profileImage === 'string') {
+          profileImageUrl = uploadResult.user.profileImage;
+        } else {
+          throw new Error(uploadResult?.error || t.saveError);
         }
       }
 
@@ -176,16 +180,17 @@ const SupportProfile = () => {
       });
 
       if (response.data?.success) {
+        // Sync the global auth store with the fresh user — no page reload needed
+        useAuthStore.setState({ user: response.data.user });
         setSaveSuccess(true);
         setIsEditing(false);
         setPendingImageFile(null);
-        window.location.reload();
       } else {
         setSaveError(response.data?.message || t.saveError);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      setSaveError(error.response?.data?.message || t.saveError);
+      setSaveError(error.response?.data?.message || error.message || t.saveError);
     } finally {
       setSaving(false);
     }

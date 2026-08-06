@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../utils/api';
 import { disconnectSocket } from '../utils/socket';
+import { changeLanguageGlobal } from '../i18n';
 
 const normalizeUser = (userData) => {
   if (!userData) return null;
@@ -276,10 +277,10 @@ const useAuthStore = create(
       },
 
       setLanguage: (lang) => {
+        // Delegate to the global i18n helper (updates i18n, persists to
+        // localStorage and applies RTL/LTR) so there is one source of truth.
+        changeLanguageGlobal(lang);
         set({ language: lang });
-        localStorage.setItem('homelyserv_language', lang);
-        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.lang = lang;
       },
 
       clearError: () => {

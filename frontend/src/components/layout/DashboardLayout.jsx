@@ -1,11 +1,13 @@
 // Dashboard Layout Component - Reusable layout for all dashboard pages
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
 import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
+import { changeLanguageGlobal } from '../../i18n';
 
 const DashboardLayout = ({ 
   children, 
@@ -18,17 +20,22 @@ const DashboardLayout = ({
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
 
-  const [language, setLanguage] = useState('en');
+  const { i18n } = useTranslation();
+  // Language is synced with the global i18n instance (single source of truth).
+  // i18n initializes from the same localStorage key via its language detector.
+  const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem('homelyserv_language') || 'en');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load saved language and sidebar state
+  // Keep context language in sync whenever i18n changes (from any page)
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
+    const onLanguageChanged = (lng) => setLanguage(lng);
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => i18n.off('languageChanged', onLanguageChanged);
+  }, [i18n]);
 
+  // Load saved sidebar state
+  useEffect(() => {
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -57,9 +64,8 @@ const DashboardLayout = ({
   }, [language]);
 
   const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
+    // Goes through the global i18n helper so every component updates at once
+    changeLanguageGlobal(language === 'ar' ? 'en' : 'ar');
   };
 
   const toggleSidebar = () => {

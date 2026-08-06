@@ -8,6 +8,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
 import { useDashboard } from '../components/layout/DashboardContext';
+import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import {
   Home,
   User,
@@ -292,16 +293,12 @@ const EmployerSettings = () => {
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   const handleLanguageChange = (langCode) => {
-    // Use the DashboardContext's toggleLanguage via the dashboard context
-    // We need to call the context's language toggle
-    const newLang = langCode;
-    localStorage.setItem('homelyserv_language', newLang);
-    setSettings(prev => ({ ...prev, language: newLang }));
+    // Single source of truth: updates i18n, localStorage and RTL direction.
+    // DashboardLayout syncs dashboard.language from i18n, so the UI
+    // re-renders immediately without a page reload.
+    changeLanguageGlobal(langCode);
+    setSettings(prev => ({ ...prev, language: langCode }));
     setShowLangDropdown(false);
-
-    // Trigger a re-render by updating the document language
-    document.documentElement.lang = newLang;
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   const handleLogout = () => {
@@ -324,22 +321,20 @@ const EmployerSettings = () => {
       const result = await updateSettings(settingsToSave);
 
       if (result.success) {
+        // Only mirror to localStorage after a confirmed backend save
         localStorage.setItem('employer_settings', JSON.stringify(settingsToSave));
-        setSaving(false);
         setSaveSuccess(true);
-
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         throw new Error(result.error || t.errorSaving);
       }
     } catch (error) {
+      // Never show success here — surface the failure to the user
       console.error('Error saving settings:', error);
       setSaveError(error.message || t.errorSaving);
-      localStorage.setItem('employer_settings', JSON.stringify(settingsToSave));
+      setTimeout(() => setSaveError(null), 5000);
+    } finally {
       setSaving(false);
-      setSaveSuccess(true);
-
-      setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
 
@@ -525,30 +520,22 @@ const EmployerSettings = () => {
                       className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 flex items-center gap-2"
                     >
                       <Globe size={16} />
-                      {dashboard.language === 'ar' ? 'العربية' : 'English'}
+                      {SUPPORTED_LANGUAGES.find(l => l.code === dashboard.language)?.nativeName || 'English'}
                     </button>
                     {showLangDropdown && (
                       <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                        <button
-                          key="en"
-                          onClick={() => handleLanguageChange('en')}
-                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
-                            dashboard.language === 'en' ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
-                          }`}
-                        >
-                          <span className="text-lg">🇬🇧</span>
-                          <span className="text-gray-700 dark:text-gray-300">English</span>
-                        </button>
-                        <button
-                          key="ar"
-                          onClick={() => handleLanguageChange('ar')}
-                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
-                            dashboard.language === 'ar' ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
-                          }`}
-                        >
-                          <span className="text-lg">🇸🇦</span>
-                          <span className="text-gray-700 dark:text-gray-300">العربية</span>
-                        </button>
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => handleLanguageChange(lang.code)}
+                            className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
+                              dashboard.language === lang.code ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
+                            }`}
+                          >
+                            <span className="text-lg">{lang.flag}</span>
+                            <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>

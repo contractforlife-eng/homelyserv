@@ -31,7 +31,8 @@ const SupportSettings = () => {
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const isDark = theme === 'dark';
 
-  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
+  // Language synced with the global i18n instance (single source of truth)
+  const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -112,6 +113,13 @@ const SupportSettings = () => {
     }
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
+  // Keep local language in sync whenever i18n changes (from any page)
+  useEffect(() => {
+    const onLanguageChanged = (lng) => setLanguage(lng);
+    i18n.on('languageChanged', onLanguageChanged);
+    return () => i18n.off('languageChanged', onLanguageChanged);
+  }, [i18n]);
+
   // Update document direction
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -127,8 +135,9 @@ const SupportSettings = () => {
   }, [notification]);
 
   const handleLanguageChange = (langCode) => {
+    // Global helper updates i18n (which syncs local state above),
+    // persists to localStorage and applies RTL/LTR direction.
     changeLanguageGlobal(langCode);
-    setLanguage(langCode);
     setShowLangDropdown(false);
   };
 

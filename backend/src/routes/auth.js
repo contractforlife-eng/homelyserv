@@ -229,25 +229,31 @@ router.get('/verify', async (req, res) => {
 
 // ============================================================
 // Update Profile (generic — works for any authenticated user)
-// Used by the legacy profile image migration to save profileImage
-// to MongoDB without needing role-specific endpoints.
+// Whitelisted fields only: fullName, phone, language, profileImage.
+// Only fields present in the request body are updated, so partial
+// updates (e.g. profileImage-only from the legacy migration) keep
+// working while support staff can also save name/phone/language.
 // ============================================================
 router.put('/profile', authenticate, async (req, res) => {
   try {
-    const { profileImage } = req.body;
+    const { fullName, phone, language, profileImage } = req.body;
 
-    // Only update profileImage — this endpoint is intentionally scoped
-    // to prevent accidental overwrites of other user fields.
-    if (profileImage === undefined) {
+    const updates = {};
+    if (fullName !== undefined) updates.fullName = fullName;
+    if (phone !== undefined) updates.phone = phone;
+    if (language !== undefined) updates.language = language;
+    if (profileImage !== undefined) updates.profileImage = profileImage;
+
+    if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'profileImage is required'
+        message: 'No updatable fields provided'
       });
     }
 
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { profileImage },
+      { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
 
