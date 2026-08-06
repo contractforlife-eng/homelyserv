@@ -1,5 +1,5 @@
 // src/pages/Register.jsx - RED AND WHITE THEME ONLY
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from "../utils/api";
 import useAuthStore from "../store/authStore";
@@ -15,12 +15,13 @@ import {
   CheckCircle,
   Briefcase,
   Phone,
-  MapPin,
   Shield,
   Home,
   Sparkles
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
+import CountrySelect from '../components/CountrySelect';
+import { getCountryByCode } from '../utils/countries';
 
 function Register() {
   const navigate = useNavigate();
@@ -36,11 +37,41 @@ function Register() {
     password: '',
     confirmPassword: '',
     phone: '',
-    location: '',
+    countryCode: '',
+    countryName: '',
     role: 'WORKER'
   });
   
   const [errors, setErrors] = useState({});
+
+  // Preselect the detected country from the browser locale when
+  // available (e.g. "en-EG" -> Egypt). The user can always change
+  // it. If no region can be detected, the selector stays empty.
+  useEffect(() => {
+    try {
+      const locales = Array.isArray(navigator.languages) && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language];
+
+      for (const locale of locales) {
+        if (!locale) continue;
+        const region = String(locale).split('-')[1]?.trim().toUpperCase();
+        if (!region) continue;
+        // The standardized list uses "UK" (exceptionally reserved ISO code)
+        const match = getCountryByCode(region === 'GB' ? 'UK' : region);
+        if (match) {
+          setFormData(prev => (
+            prev.countryCode
+              ? prev
+              : { ...prev, countryCode: match.code, countryName: match.name }
+          ));
+          break;
+        }
+      }
+    } catch {
+      // Detection unavailable - leave the selector empty.
+    }
+  }, []);
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -61,6 +92,21 @@ function Register() {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  // Handle country selection (standardized ISO country only)
+  const handleCountryChange = ({ countryCode, countryName }) => {
+    setFormData(prev => ({
+      ...prev,
+      countryCode,
+      countryName
+    }));
+    if (errors.country) {
+      setErrors(prev => ({
+        ...prev,
+        country: ''
       }));
     }
   };
@@ -93,6 +139,12 @@ function Register() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!formData.countryCode) {
+      newErrors.country = 'Please select your country';
+    } else if (!getCountryByCode(formData.countryCode)) {
+      newErrors.country = 'Please select a valid country';
+    }
+
     if (!formData.role) {
       newErrors.role = 'Please select a role';
     }
@@ -123,7 +175,8 @@ function Register() {
         password: formData.password,
         role: formData.role,
         phone: formData.phone || "",
-        location: formData.location || ""
+        countryCode: formData.countryCode,
+        countryName: formData.countryName
       });
 
       if (!response.data.success) {
@@ -140,7 +193,8 @@ function Register() {
         password: "",
         confirmPassword: "",
         phone: "",
-        location: "",
+        countryCode: "",
+        countryName: "",
         role: "WORKER"
       });
 
@@ -295,20 +349,19 @@ function Register() {
               </div>
             </div>
 
-            {/* Location */}
+            {/* Country */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location (Optional)</label>
-              <div className="relative group">
-                <MapPin size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500"
-                  placeholder="Enter your location"
-                />
-              </div>
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country</label>
+              <CountrySelect
+                id="country"
+                name="country"
+                value={formData.countryCode}
+                onChange={handleCountryChange}
+                error={!!errors.country}
+              />
+              {errors.country && (
+                <p className="mt-1 text-sm text-red-500">{errors.country}</p>
+              )}
             </div>
 
             {/* Role Selection */}

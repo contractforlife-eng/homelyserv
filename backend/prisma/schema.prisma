@@ -209,6 +209,8 @@ model User {
   fullName                         String
   phone                            String?
   city                             String?
+  countryCode                      String?
+  countryName                      String?
   activationCode                   String?
   isVerified                       Boolean          @default(false)
   isSuspended                      Boolean          @default(false)

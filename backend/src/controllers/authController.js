@@ -3,11 +3,52 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 
+// ============================================================
+// COUNTRY VALIDATION
+// Registration must submit a standardized country:
+//   countryCode - ISO 3166-1 alpha-2 (validated against the
+//                 runtime's built-in ICU region data, no list
+//                 duplication needed)
+//   countryName - non-empty display name (max 100 chars)
+// Flag emojis are a frontend concern and are never stored.
+// ============================================================
+const regionDisplayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+const isValidIsoCountryCode = (code) => {
+  if (typeof code !== 'string' || !/^[A-Z]{2}$/.test(code)) return false;
+  try {
+    const name = regionDisplayNames.of(code);
+    // Unknown codes echo back the code itself or "Unknown Region"
+    return Boolean(name) && name !== code && name.toLowerCase() !== 'unknown region';
+  } catch {
+    return false;
+  }
+};
+
 // REGISTER
 export const register = async (req, res) => {
   console.log('📝 Registration request received:', req.body);
   try {
-    const { email, password, fullName, phone, city, role } = req.body;
+    const { email, password, fullName, phone, city, role, countryCode, countryName } = req.body;
+
+    // Country is required for new registrations and must be a
+    // valid ISO 3166-1 alpha-2 selection (no free-text values).
+    const normalizedCountryCode = String(countryCode || '').trim().toUpperCase();
+    const normalizedCountryName = String(countryName || '').trim();
+
+    if (!normalizedCountryCode || !normalizedCountryName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Country is required'
+      });
+    }
+
+    if (!isValidIsoCountryCode(normalizedCountryCode) || normalizedCountryName.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid country selection'
+      });
+    }
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ 
@@ -38,6 +79,8 @@ export const register = async (req, res) => {
         fullName,
         phone: phone || '',
         city: city || '',
+        countryCode: normalizedCountryCode,
+        countryName: normalizedCountryName,
         role: role === 'employer' ? 'EMPLOYER' : 'WORKER',
         image: '' // Initialize with empty image
       }
@@ -59,10 +102,12 @@ export const register = async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
-        fullName: user.fullName,
+         fullName: user.fullName,
         role: user.role,
         phone: user.phone,
         city: user.city,
+        countryCode: user.countryCode || '',
+        countryName: user.countryName || '',
         image: user.image || ''
       }
     });
@@ -127,10 +172,12 @@ export const login = async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
-        fullName: user.fullName,
+         fullName: user.fullName,
         role: user.role,
         phone: user.phone,
         city: user.city,
+        countryCode: user.countryCode || '',
+        countryName: user.countryName || '',
         image: user.image || ''
       }
     });
@@ -157,6 +204,8 @@ export const getMe = async (req, res) => {
         role: true,
         phone: true,
         city: true,
+        countryCode: true,
+        countryName: true,
         image: true,
         language: true,
         createdAt: true,
