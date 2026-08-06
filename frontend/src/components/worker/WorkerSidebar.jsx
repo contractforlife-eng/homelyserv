@@ -2,6 +2,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../../utils/subscriptionService';
+import SidebarBadge from '../SidebarBadge';
+import useSidebarCounters from '../../hooks/useSidebarCounters';
 import {
   Home,
   User,
@@ -29,6 +31,16 @@ const WorkerSidebar = ({
   handleLogout 
 }) => {
   const location = useLocation();
+  // Unified sidebar activity counters (single shared request)
+  const counters = useSidebarCounters();
+
+  // Maps sidebar menu item ids to unified counter keys
+  const badgeCounterKeys = {
+    offers: 'offers',
+    messages: 'messages',
+    complaints: 'complaints',
+    payment: 'payments',
+  };
 
   const translations = {
     en: {
@@ -181,7 +193,9 @@ const WorkerSidebar = ({
             </div>
           )}
 
-          {menuItems.map((item) => (
+          {menuItems.map((item) => {
+            const badgeCount = counters[badgeCounterKeys[item.id]] || 0;
+            return (
             <Link
               key={item.id}
               to={item.path}
@@ -191,15 +205,23 @@ const WorkerSidebar = ({
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? 'text-red-600 dark:text-red-400' : ''} />
+              <span className="relative inline-flex">
+                <item.icon size={20} className={isActive(item.path) ? 'text-red-600 dark:text-red-400' : ''} />
+                {sidebarCollapsed && badgeCount > 0 && (
+                  <SidebarBadge count={badgeCount} className="absolute -top-2 -right-2.5" />
+                )}
+              </span>
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {!sidebarCollapsed && badgeCount > 0 && (
+                <SidebarBadge count={badgeCount} className="ml-auto" />
+              )}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                   {item.label}
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto w-1.5 h-8 bg-red-600 rounded-full"></div>
+                <div className={`${badgeCount > 0 ? 'ml-2' : 'ml-auto'} w-1.5 h-8 bg-red-600 rounded-full`}></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -207,7 +229,8 @@ const WorkerSidebar = ({
                 </div>
               )}
             </Link>
-          ))}
+            );
+          })}
 
           <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
