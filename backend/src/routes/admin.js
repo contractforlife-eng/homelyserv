@@ -580,7 +580,6 @@ router.get('/settings', authenticate, requireAdmin, async (req, res) => {
           requireEmailVerification: false,
           requirePhoneVerification: false,
           currency: 'EGP',
-          commissionRate: 10,
           minWithdrawal: 100,
           maxWithdrawal: 10000,
           paymentMethods: ['cash', 'bank_transfer'],

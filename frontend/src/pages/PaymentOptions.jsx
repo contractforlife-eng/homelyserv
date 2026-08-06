@@ -7,6 +7,7 @@ import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import hireService from '../services/hireService';
 import {
   ArrowLeft,
@@ -97,7 +98,7 @@ const PaymentOptions = () => {
       subtitle: 'Choose your preferred payment method',
       selectedWorker: 'Selected Worker',
       totalAmount: 'Total Amount',
-      commission: 'Commission (15%) included',
+      commission: `Commission (${RECRUITMENT_COMMISSION_RATE * 100}%) included`,
       paymentMethods: 'Payment Methods',
       selectMethod: 'Select a payment method',
       confirmPayment: 'Confirm Payment',
@@ -140,7 +141,7 @@ const PaymentOptions = () => {
       subtitle: 'اختر طريقة الدفع المفضلة لديك',
       selectedWorker: 'العامل المختار',
       totalAmount: 'المبلغ الإجمالي',
-      commission: 'العمولة (15%) مشمولة',
+      commission: `العمولة (${RECRUITMENT_COMMISSION_RATE * 100}%) مشمولة`,
       paymentMethods: 'طرق الدفع',
       selectMethod: 'اختر طريقة الدفع',
       confirmPayment: 'تأكيد الدفع',
@@ -198,14 +199,14 @@ const PaymentOptions = () => {
         return Number(pendingPayment.commission);
       }
       if (Number(pendingPayment.fullSalary) > 0) {
-        return (Number(pendingPayment.fullSalary) * 0.15);
+        return (Number(pendingPayment.fullSalary) * RECRUITMENT_COMMISSION_RATE);
       }
     }
 
     if (workerData) {
       const targetSalary = Number(workerData.fullSalary || workerData.salary);
       if (targetSalary > 0) {
-        return Math.round(targetSalary * 0.15 * 100) / 100;
+        return Math.round(targetSalary * RECRUITMENT_COMMISSION_RATE * 100) / 100;
       }
     }
 
@@ -934,7 +935,7 @@ const PaymentOptions = () => {
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {pendingPayment?.paymentType === 'quick_hire_premium'
                     ? 'Quick Hire premium service fee'
-                    : '15% recruitment commission included'}
+                    : `${RECRUITMENT_COMMISSION_RATE * 100}% recruitment commission included`}
                 </p>
               </div>
             </div>

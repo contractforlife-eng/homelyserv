@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import hireService from '../services/hireService';
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
@@ -499,18 +500,19 @@ const MyHires = () => {
   const handlePayNow = (hire) => {
     if (hire) {
       const fullSalary = hire.salary || 0;
-      const applicationFee = Math.round(fullSalary * 0.15 * 100) / 100; // 15% fee
+      // Commission uses the single source of truth (config/monetization.js = 15%)
+      const applicationFee = Math.round(fullSalary * RECRUITMENT_COMMISSION_RATE * 100) / 100;
 
       const pendingPayment = {
         paymentId: hire.hireId || hire.offerId,
         amount: applicationFee,       // ← charge 15% only
         fullSalary: fullSalary,       // ← keep for display/receipt
-        feePercentage: 15,
+        feePercentage: RECRUITMENT_COMMISSION_RATE * 100,
         workerName: hire.workerName,
         workerId: hire.workerId || hire.workerEmail,
         workerEmail: hire.workerEmail || '',
         jobTitle: hire.jobTitle || 'Service Provider',
-        description: `15% application fee for ${hire.workerName || 'worker'}`,
+        description: `${RECRUITMENT_COMMISSION_RATE * 100}% application fee for ${hire.workerName || 'worker'}`,
         paymentType: 'recruitment',
         offerId: hire.offerId || hire.hireId,
         hireId: hire.id || hire.hireId,  // ← REQUIRED for payment completion

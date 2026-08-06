@@ -140,7 +140,6 @@ const AdminSettings = () => {
     
     // Payment
     currency: 'EGP',
-    commissionRate: 6.5,
     minWithdrawal: 100,
     maxWithdrawal: 50000,
     paymentMethods: ['credit_card', 'bank_transfer', 'cash'],
@@ -206,7 +205,6 @@ const AdminSettings = () => {
       payment: {
         title: 'Payment Settings',
         currency: 'Currency',
-        commissionRate: 'Commission Rate (%)',
         minWithdrawal: 'Minimum Withdrawal',
         maxWithdrawal: 'Maximum Withdrawal',
         paymentMethods: 'Payment Methods'
@@ -291,7 +289,6 @@ const AdminSettings = () => {
       payment: {
         title: 'إعدادات الدفع',
         currency: 'العملة',
-        commissionRate: 'نسبة العمولة (%)',
         minWithdrawal: 'الحد الأدنى للسحب',
         maxWithdrawal: 'الحد الأقصى للسحب',
         paymentMethods: 'طرق الدفع'
@@ -847,16 +844,6 @@ const AdminSettings = () => {
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.commissionRate}</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={settings.commissionRate}
-                    onChange={(e) => handleSettingChange('commissionRate', parseFloat(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.payment.minWithdrawal}</label>

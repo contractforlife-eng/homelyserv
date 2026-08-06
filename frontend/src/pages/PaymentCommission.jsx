@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS } from '../config/paymentConfig';
 import useAuthStore from '../store/authStore';
@@ -370,7 +371,7 @@ const PaymentCommission = () => {
               <div>
                 <p className="text-sm text-blue-700 font-medium">How it works:</p>
                 <p className="text-xs text-blue-600 mt-1">
-                  You are paying the <strong>platform commission</strong> (15% of the worker's monthly salary). 
+                  You are paying the <strong>platform commission</strong> ({RECRUITMENT_COMMISSION_RATE * 100}% of the worker's monthly salary).
                   The worker's full salary is an agreement between you and the employer and is paid directly.
                 </p>
               </div>

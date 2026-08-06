@@ -1,7 +1,7 @@
 // src/utils/commissionManager.js
+// Commission rate: use the single source of truth (config/monetization.js).
+// The old duplicate alias `COMMISSION_RATE` was removed during consolidation.
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-
-export const COMMISSION_RATE = RECRUITMENT_COMMISSION_RATE;
 
 // ============================================================
 // ✅ التحقق الفعلي من الدفع
@@ -101,5 +101,5 @@ export const checkCommissionPaid = (offerId, workerId) => {
 };
 
 export const getCommissionAmount = (totalAmount) => {
-  return Math.round(totalAmount * COMMISSION_RATE);
+  return Math.round(totalAmount * RECRUITMENT_COMMISSION_RATE);
 };

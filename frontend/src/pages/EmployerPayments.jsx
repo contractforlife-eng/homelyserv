@@ -8,6 +8,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { sendMessage } from '../utils/chatService';
 import hireService from '../services/hireService';
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import {
   User,
   Briefcase,
@@ -839,7 +840,7 @@ const EmployerPayments = () => {
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">{t.modal.commission}</p>
                 <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">15% of {formatCurrency(selectedPayment.fullSalary)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{RECRUITMENT_COMMISSION_RATE * 100}% of {formatCurrency(selectedPayment.fullSalary)}</p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">

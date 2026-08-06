@@ -156,9 +156,9 @@ export const PAYMENT_CONFIG = {
   // FEES & COMMISSIONS
   // ============================================================
   fees: {
-    // Recruitment commission rate (15%)
-    recruitmentCommission: 0.15,
-    
+    // NOTE: The recruitment commission rate is NOT defined here.
+    // Single source of truth: RECRUITMENT_COMMISSION_RATE in ./monetization.js
+
     // Quick hire premium fee
     quickHirePremiumFee: 299,
     

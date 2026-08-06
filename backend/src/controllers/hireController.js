@@ -3,6 +3,7 @@ import {
   createNotification as notificationServiceCreate,
   NOTIFICATION_TYPES,
 } from '../services/notificationService.js';
+import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -21,8 +22,8 @@ const createNotification = async (userId, type, title, message) => {
   }
 };
 
-// Commission rate: 15% of total offer value
-const COMMISSION_RATE = 0.15;
+// Recruitment commission rate comes from the single source of truth:
+// backend/src/config/monetization.js (RECRUITMENT_COMMISSION_RATE = 15%).
 
 // SEND JOB OFFER (creates an Offer record instead of Hire)
 export const sendOffer = async (req, res) => {
@@ -59,7 +60,7 @@ export const sendOffer = async (req, res) => {
     }
 
     const salary = parseFloat(agreedSalary);
-    const commission = salary * COMMISSION_RATE;
+    const commission = salary * RECRUITMENT_COMMISSION_RATE;
     const vat = 0;
     const total = commission;
 
@@ -169,7 +170,7 @@ export const respondToOffer = async (req, res) => {
 
     if (status === 'accepted') {
       const salary = offer.salary;
-      const commission = salary * COMMISSION_RATE;
+      const commission = salary * RECRUITMENT_COMMISSION_RATE;
       const vat = 0;
       const total = commission;
 
