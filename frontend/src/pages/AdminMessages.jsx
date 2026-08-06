@@ -10,7 +10,7 @@
 //   4. System Notifications
 // ============================================================
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -244,6 +244,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
 // ============================================================
 const AdminMessages = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -264,6 +265,8 @@ const AdminMessages = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [showStartConversation, setShowStartConversation] = useState(false);
   const messagesEndRef = useRef(null);
+  const autoOpenDoneRef = useRef(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const translations = {
     en: {
@@ -416,6 +419,7 @@ const AdminMessages = () => {
     setLoading(true);
     Promise.all([loadAllData(), loadNotifications()]).finally(() => {
       setLoading(false);
+      setDataLoaded(true);
     });
   }, [authUser, isAuthenticated, authLoading, navigate, loadAllData, loadNotifications]);
 
@@ -488,6 +492,30 @@ const AdminMessages = () => {
       alert('Failed to start conversation. Please try again.');
     }
   };
+
+  // ============================================================
+  // AUTO-OPEN CONVERSATION FROM NAVIGATION (e.g. Admin Hires)
+  // Waits for initial data load, then creates/opens the correct
+  // admin conversation via the same handler used elsewhere.
+  // ============================================================
+  useEffect(() => {
+    if (!authUser || !dataLoaded || autoOpenDoneRef.current) return;
+
+    const targetUserId = location.state?.targetUserId;
+    if (!targetUserId) return;
+
+    autoOpenDoneRef.current = true;
+
+    // Show the Support section so the opened conversation is visible in context
+    setActiveSection(SECTIONS.SUPPORT);
+
+    // Reuse the existing start/open flow (creates if missing, refreshes, opens)
+    handleStartConversation(targetUserId);
+
+    // Clear the navigation state so it doesn't re-trigger on refresh/back
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, dataLoaded]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !authUser) return;

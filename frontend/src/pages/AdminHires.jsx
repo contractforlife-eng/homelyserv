@@ -1,639 +1,1076 @@
-// src/pages/AdminHires.jsx - MIGRATED TO DASHBOARD LAYOUT
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+// src/pages/AdminHires.jsx - Admin hiring management dashboard (CRM)
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
 import {
-  Home,
   Users,
-  MessageCircle,
-  Settings,
-  LogOut,
-  Menu,
-  Globe,
-  X,
-  CreditCard,
   Briefcase,
   Calendar,
-  DollarSign,
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
   Eye,
   Search,
-  Filter,
-  ChevronDown,
-  ChevronUp,
   User,
   Mail,
   Phone,
   MapPin,
   Star,
-  Shield,
-  BarChart3,
   AlertTriangle,
-  UserCheck,
   Building2,
-  ThumbsUp,
-  ThumbsDown,
-  Minus,
-  Award,
-  FileText,
   RefreshCw,
   Crown,
-  UserPlus
+  Wallet,
+  ArrowRight,
+  MessageSquare,
+  MessagesSquare,
+  UserRound,
+  ShieldX,
+  X,
+  Banknote,
+  TrendingUp,
+  Hourglass,
+  CalendarClock,
+  ArrowRightCircle
 } from 'lucide-react';
+
+// ============================================================
+// SINGLE SOURCE OF TRUTH — canonical hire statuses (Hire model)
+//   offer_sent  -> worker accepted, awaiting commission payment
+//   active      -> commission paid, employment running
+//   terminated  -> employer ended the hire
+// ============================================================
+const HIRE_STATUS = {
+  OFFER_SENT: 'offer_sent',
+  ACTIVE: 'active',
+  TERMINATED: 'terminated'
+};
+
+// Collapse legacy / alias values into canonical ones
+const normalizeStatus = (status) => {
+  switch (status) {
+    case 'hired':
+    case 'accepted':
+    case 'completed':
+      return HIRE_STATUS.ACTIVE;
+    case 'pending':
+      return HIRE_STATUS.OFFER_SENT;
+    case 'cancelled':
+    case 'canceled':
+      return HIRE_STATUS.TERMINATED;
+    case HIRE_STATUS.OFFER_SENT:
+    case HIRE_STATUS.ACTIVE:
+    case HIRE_STATUS.TERMINATED:
+      return status;
+    default:
+      return status || HIRE_STATUS.OFFER_SENT;
+  }
+};
+
+// Canonical payment buckets derived from raw paymentStatus
+const normalizePayment = (paymentStatus) => {
+  const ps = (paymentStatus || '').toLowerCase();
+  if (ps === 'completed' || ps === 'confirmed' || ps === 'paid') return 'paid';
+  if (ps === 'pending' || ps === 'processing') return 'processing';
+  if (ps === 'refunded') return 'refunded';
+  return 'unpaid';
+};
 
 const AdminHires = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
+
   const [language, setLanguage] = useState('en');
-  const [user, setUser] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hires, setHires] = useState([]);
-  const [filteredHires, setFilteredHires] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [expandedHire, setExpandedHire] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all'); // hire status
+  const [paymentFilter, setPaymentFilter] = useState('all'); // payment bucket
+  const [sortBy, setSortBy] = useState('newest');
+  const [selectedHire, setSelectedHire] = useState(null);
 
   const translations = {
     en: {
       title: 'Hire Management',
-      subtitle: 'Manage all hires across the platform',
+      subtitle: 'Every employer-to-worker hire across the platform',
       stats: {
         total: 'Total Hires',
-        active: 'Active',
-        pending: 'Pending',
-        completed: 'Completed',
-        cancelled: 'Cancelled'
+        active: 'Active Hires',
+        awaiting: 'Awaiting Payment',
+        terminated: 'Terminated',
+        totalCommission: 'Total Commission',
+        collected: 'Commission Collected',
+        outstanding: 'Outstanding Commission',
+        today: "Today's Hires"
       },
-      table: {
-        id: 'Hire ID',
-        worker: 'Worker',
-        employer: 'Employer',
-        position: 'Position',
-        salary: 'Salary',
-        status: 'Status',
-        date: 'Date',
-        satisfaction: 'Satisfaction',
-        actions: 'Actions',
-        noResults: 'No hires found',
-        searchPlaceholder: 'Search hires...'
+      filters: {
+        all: 'All Statuses',
+        allPayments: 'All Payments',
+        offer_sent: 'Awaiting Payment',
+        active: 'Active',
+        terminated: 'Terminated',
+        paid: 'Paid',
+        unpaid: 'Unpaid',
+        processing: 'Processing',
+        refunded: 'Refunded',
+        newest: 'Newest',
+        oldest: 'Oldest',
+        highestCommission: 'Highest Commission',
+        lowestCommission: 'Lowest Commission'
       },
       status: {
-        pending: 'Pending',
+        offer_sent: 'Awaiting Payment',
         active: 'Active',
-        completed: 'Completed',
-        cancelled: 'Cancelled'
+        terminated: 'Terminated'
       },
-      satisfaction: {
-        satisfied: 'Satisfied',
-        neutral: 'Neutral',
-        unsatisfied: 'Unsatisfied'
+      payment: {
+        paid: 'Paid',
+        unpaid: 'Unpaid',
+        processing: 'Processing',
+        refunded: 'Refunded'
       },
+      table: {
+        employer: 'Employer',
+        worker: 'Worker',
+        salary: 'Salary',
+        commission: 'Commission',
+        payment: 'Payment',
+        status: 'Hire Status',
+        hiredOn: 'Hire Date',
+        actions: 'Actions'
+      },
+      hired: 'HIRED',
+      searchPlaceholder: 'Search employer, worker, email, phone, or hire ID...',
+      showing: 'Showing',
+      hiresWord: 'hires',
+      noHires: 'No hires found',
+      noHiresDesc: 'No hires match your current search or filters.',
+      clearFilters: 'Clear filters',
+      refresh: 'Refresh',
+      perMonth: 'EGP/mo',
       actions: {
         view: 'View Details',
-        contact: 'Contact',
-        refresh: 'Refresh'
+        employerProfile: 'Open Employer Profile',
+        workerProfile: 'Open Worker Profile',
+        messageEmployer: 'Message Employer',
+        messageWorker: 'Message Worker',
+        terminate: 'Terminate Hire'
       },
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading hires...',
-      noHires: 'No hires yet'
+      modal: {
+        title: 'Hire Details',
+        employerInfo: 'Employer Information',
+        workerInfo: 'Worker Information',
+        financial: 'Financial Information',
+        timeline: 'Timeline',
+        notes: 'Notes',
+        currentStatus: 'Current Status',
+        salary: 'Monthly Salary',
+        commission: 'Commission',
+        vat: 'VAT',
+        totalDue: 'Total Due',
+        paymentRef: 'Payment Reference',
+        paymentStatus: 'Payment Status',
+        hireStatus: 'Hire Status',
+        hireDate: 'Hire Date',
+        lastUpdated: 'Last Updated',
+        offerSent: 'Offer Sent / Accepted',
+        paymentCompleted: 'Payment Completed',
+        hireActivated: 'Hire Activated',
+        rating: 'Rating',
+        location: 'Location',
+        category: 'Job Title',
+        close: 'Close',
+        notProvided: 'Not provided'
+      },
+      loading: 'Loading hires...'
     },
     ar: {
       title: 'إدارة التوظيفات',
-      subtitle: 'إدارة جميع التوظيفات على المنصة',
+      subtitle: 'كل عمليات التوظيف بين أصحاب العمل والعمال',
       stats: {
         total: 'إجمالي التوظيفات',
-        active: 'نشطة',
-        pending: 'قيد الانتظار',
-        completed: 'مكتملة',
-        cancelled: 'ملغية'
+        active: 'التوظيفات النشطة',
+        awaiting: 'في انتظار الدفع',
+        terminated: 'المنتهية',
+        totalCommission: 'إجمالي العمولة',
+        collected: 'العمولة المحصلة',
+        outstanding: 'العمولة المستحقة',
+        today: 'توظيفات اليوم'
       },
-      table: {
-        id: 'رقم التوظيف',
-        worker: 'العامل',
-        employer: 'صاحب العمل',
-        position: 'الوظيفة',
-        salary: 'الراتب',
-        status: 'الحالة',
-        date: 'التاريخ',
-        satisfaction: 'الرضا',
-        actions: 'الإجراءات',
-        noResults: 'لا توجد توظيفات',
-        searchPlaceholder: 'ابحث عن توظيفات...'
+      filters: {
+        all: 'كل الحالات',
+        allPayments: 'كل المدفوعات',
+        offer_sent: 'في انتظار الدفع',
+        active: 'نشط',
+        terminated: 'منتهي',
+        paid: 'مدفوع',
+        unpaid: 'غير مدفوع',
+        processing: 'قيد المعالجة',
+        refunded: 'مسترد',
+        newest: 'الأحدث',
+        oldest: 'الأقدم',
+        highestCommission: 'أعلى عمولة',
+        lowestCommission: 'أقل عمولة'
       },
       status: {
-        pending: 'قيد الانتظار',
-        active: 'نشطة',
-        completed: 'مكتملة',
-        cancelled: 'ملغية'
+        offer_sent: 'في انتظار الدفع',
+        active: 'نشط',
+        terminated: 'منتهي'
       },
-      satisfaction: {
-        satisfied: 'راض',
-        neutral: 'محايد',
-        unsatisfied: 'غير راض'
+      payment: {
+        paid: 'مدفوع',
+        unpaid: 'غير مدفوع',
+        processing: 'قيد المعالجة',
+        refunded: 'مسترد'
       },
+      table: {
+        employer: 'صاحب العمل',
+        worker: 'العامل',
+        salary: 'الراتب',
+        commission: 'العمولة',
+        payment: 'الدفع',
+        status: 'حالة التوظيف',
+        hiredOn: 'تاريخ التوظيف',
+        actions: 'الإجراءات'
+      },
+      hired: 'وظّف',
+      searchPlaceholder: 'ابحث بصاحب العمل أو العامل أو البريد أو الهاتف أو رقم التوظيف...',
+      showing: 'عرض',
+      hiresWord: 'توظيف',
+      noHires: 'لا توجد توظيفات',
+      noHiresDesc: 'لا توجد توظيفات تطابق بحثك أو عوامل التصفية الحالية.',
+      clearFilters: 'مسح التصفيات',
+      refresh: 'تحديث',
+      perMonth: 'جنيه/شهر',
       actions: {
         view: 'عرض التفاصيل',
-        contact: 'اتصال',
-        refresh: 'تحديث'
+        employerProfile: 'فتح ملف صاحب العمل',
+        workerProfile: 'فتح ملف العامل',
+        messageEmployer: 'مراسلة صاحب العمل',
+        messageWorker: 'مراسلة العامل',
+        terminate: 'إنهاء التوظيف'
       },
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل التوظيفات...',
-      noHires: 'لا توجد توظيفات حتى الآن'
+      modal: {
+        title: 'تفاصيل التوظيف',
+        employerInfo: 'معلومات صاحب العمل',
+        workerInfo: 'معلومات العامل',
+        financial: 'المعلومات المالية',
+        timeline: 'الجدول الزمني',
+        notes: 'ملاحظات',
+        currentStatus: 'الحالة الحالية',
+        salary: 'الراتب الشهري',
+        commission: 'العمولة',
+        vat: 'ضريبة القيمة المضافة',
+        totalDue: 'الإجمالي المستحق',
+        paymentRef: 'مرجع الدفع',
+        paymentStatus: 'حالة الدفع',
+        hireStatus: 'حالة التوظيف',
+        hireDate: 'تاريخ التوظيف',
+        lastUpdated: 'آخر تحديث',
+        offerSent: 'إرسال / قبول العرض',
+        paymentCompleted: 'اكتمال الدفع',
+        hireActivated: 'تفعيل التوظيف',
+        rating: 'التقييم',
+        location: 'الموقع',
+        category: 'المسمى الوظيفي',
+        close: 'إغلاق',
+        notProvided: 'غير متوفر'
+      },
+      loading: 'جاري تحميل التوظيفات...'
     }
   };
 
   const t = translations[language] || translations.en;
 
-  const loadHires = async () => {
+  // ============================================================
+  // LOAD HIRES
+  // ============================================================
+  const loadHires = useCallback(async () => {
     setLoading(true);
-    
     try {
-      const hiresData = await hireService.getAllHires();
-      const hires = Array.isArray(hiresData) ? hiresData : [];
-      
-      console.log(`📋 Found ${hires.length} hires from backend`);
-      
-      const hireData = hires.map((hire, index) => {
-        let satisfaction = 'neutral';
-        if (hire.workerRating && hire.workerRating >= 4) {
-          satisfaction = 'satisfied';
-        } else if (hire.workerRating && hire.workerRating <= 2) {
-          satisfaction = 'unsatisfied';
-        }
-        
-        return {
-          id: hire.id || `HIRE-${String(index + 1).padStart(4, '0')}`,
-          worker: {
-            name: hire.workerName || 'Unknown Worker',
-            category: hire.workerCategory || 'N/A',
-            rating: hire.workerRating || 4.0,
-            location: hire.workerLocation || 'N/A',
-            phone: hire.workerPhone || 'N/A',
-            email: hire.workerEmail || 'N/A'
-          },
-          employer: {
-            name: hire.employerName || 'Unknown Employer',
-            phone: hire.employerPhone || 'N/A',
-            email: hire.employerEmail || 'N/A'
-          },
-          position: hire.jobTitle || 'Position',
-          salary: hire.salary || hire.agreedSalary || 0,
-          status: hire.status,
-          startDate: hire.startDate || hire.employmentStartDate || hire.createdAt || new Date().toISOString(),
-          createdAt: hire.createdAt || new Date().toISOString(),
-          paymentStatus: hire.paymentStatus || 'pending',
-          satisfaction: satisfaction,
-          workerRating: hire.workerRating || 4.0,
-          employerRating: hire.employerRating || 4.5,
-          hourlyRate: hire.hourlyRate,
-          workingHoursPerDay: hire.workingHoursPerDay,
-          workingDaysPerWeek: hire.workingDaysPerWeek,
-          weeklyDaysOff: hire.weeklyDaysOff,
-          workStartTime: hire.workStartTime,
-          workEndTime: hire.workEndTime,
-          employmentStartDate: hire.employmentStartDate,
-          additionalNotes: hire.additionalNotes,
-          commissionAmount: hire.commissionAmount,
-          vatAmount: hire.vatAmount,
-          totalDue: hire.totalDue,
-          paymentReference: hire.paymentReference
-        };
-      });
-      
-      hireData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
-      setHires(hireData);
-      setFilteredHires(hireData);
-      
-      console.log(`✅ Loaded ${hireData.length} hires`);
-      
+      const data = await hireService.getAllHires();
+      const list = Array.isArray(data) ? data : [];
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setHires(list);
     } catch (error) {
       console.error('Error loading hires:', error);
       setHires([]);
-      setFilteredHires([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const authUser = useAuthStore(state => state.user);
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const authLoading = useAuthStore(state => state.isLoading);
-
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
     }
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
+    const savedLang = localStorage.getItem('homelyserv_language');
+    if (savedLang) setLanguage(savedLang);
+  }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
     if (!isAuthenticated || !authUser) {
       navigate('/login');
       return;
     }
-
     if (authUser.role !== 'ADMIN') {
       navigate('/login');
       return;
     }
-
-    setUser(authUser);
     loadHires();
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate, loadHires]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  useEffect(() => {
-    let filtered = hires;
+  // ============================================================
+  // SINGLE FILTER + SEARCH + SORT PIPELINE
+  // ============================================================
+  const filteredHires = useMemo(() => {
+    let list = [...hires];
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(h => h.status === statusFilter);
+      list = list.filter(h => normalizeStatus(h.status) === statusFilter);
     }
 
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(h =>
-        h.id?.toLowerCase().includes(searchLower) ||
-        h.worker.name.toLowerCase().includes(searchLower) ||
-        h.employer.name.toLowerCase().includes(searchLower) ||
-        h.position.toLowerCase().includes(searchLower) ||
-        h.worker.category.toLowerCase().includes(searchLower)
+    if (paymentFilter !== 'all') {
+      list = list.filter(h => normalizePayment(h.paymentStatus) === paymentFilter);
+    }
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(h =>
+        h.id?.toLowerCase().includes(q) ||
+        h.hireId?.toLowerCase().includes(q) ||
+        h.employerName?.toLowerCase().includes(q) ||
+        h.employerEmail?.toLowerCase().includes(q) ||
+        h.employerPhone?.toLowerCase().includes(q) ||
+        h.workerName?.toLowerCase().includes(q) ||
+        h.workerEmail?.toLowerCase().includes(q) ||
+        h.workerPhone?.toLowerCase().includes(q) ||
+        h.jobTitle?.toLowerCase().includes(q)
       );
     }
 
-    setFilteredHires(filtered);
-  }, [hires, statusFilter, searchTerm]);
+    const commission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
+    const date = (h) => new Date(h.createdAt || 0).getTime();
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
+    switch (sortBy) {
+      case 'oldest':
+        list.sort((a, b) => date(a) - date(b));
+        break;
+      case 'highestCommission':
+        list.sort((a, b) => commission(b) - commission(a));
+        break;
+      case 'lowestCommission':
+        list.sort((a, b) => commission(a) - commission(b));
+        break;
+      case 'newest':
+      default:
+        list.sort((a, b) => date(b) - date(a));
+        break;
+    }
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
+    return list;
+  }, [hires, statusFilter, paymentFilter, searchTerm, sortBy]);
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
+  // ============================================================
+  // STATISTICS (all from real hire data)
+  // ============================================================
+  const stats = useMemo(() => {
+    const commission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
+    const isPaid = (h) => normalizePayment(h.paymentStatus) === 'paid';
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
-  };
-
-  const handleRefresh = () => {
-    loadHires();
-  };
-
-  const toggleExpand = (hireId) => {
-    setExpandedHire(expandedHire === hireId ? null : hireId);
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-500/20 text-yellow-400',
-      active: 'bg-green-500/20 text-green-400',
-      completed: 'bg-blue-500/20 text-blue-400',
-      cancelled: 'bg-red-500/20 text-red-400'
+    return {
+      total: hires.length,
+      active: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.ACTIVE).length,
+      awaiting: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.OFFER_SENT).length,
+      terminated: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.TERMINATED).length,
+      totalCommission: hires.reduce((s, h) => s + commission(h), 0),
+      collected: hires.filter(isPaid).reduce((s, h) => s + commission(h), 0),
+      outstanding: hires.filter(h => !isPaid(h)).reduce((s, h) => s + commission(h), 0),
+      today: hires.filter(h => new Date(h.createdAt || 0) >= todayStart).length
     };
-    return colors[status] || 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
+  }, [hires]);
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const getStatusBadge = (status) => {
+    const c = normalizeStatus(status);
+    const map = {
+      [HIRE_STATUS.ACTIVE]: { cls: 'bg-green-500/15 text-green-400 border border-green-500/30', icon: <CheckCircle size={12} />, label: t.status.active },
+      [HIRE_STATUS.OFFER_SENT]: { cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30', icon: <Clock size={12} />, label: t.status.offer_sent },
+      [HIRE_STATUS.TERMINATED]: { cls: 'bg-red-500/15 text-red-400 border border-red-500/30', icon: <XCircle size={12} />, label: t.status.terminated }
+    };
+    return map[c] || { cls: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', icon: <AlertTriangle size={12} />, label: c };
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Clock size={16} className="text-yellow-400" />;
-      case 'active': return <CheckCircle size={16} className="text-green-400" />;
-      case 'completed': return <CheckCircle size={16} className="text-blue-400" />;
-      case 'cancelled': return <XCircle size={16} className="text-red-400" />;
-      default: return <AlertCircle size={16} className="text-gray-400 dark:text-gray-500" />;
-    }
+  const getPaymentBadge = (paymentStatus) => {
+    const p = normalizePayment(paymentStatus);
+    const map = {
+      paid: { cls: 'bg-green-500/15 text-green-400 border border-green-500/30', label: t.payment.paid },
+      unpaid: { cls: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', label: t.payment.unpaid },
+      processing: { cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30', label: t.payment.processing },
+      refunded: { cls: 'bg-purple-500/15 text-purple-400 border border-purple-500/30', label: t.payment.refunded }
+    };
+    return map[p];
   };
 
-  const getSatisfactionIcon = (satisfaction) => {
-    switch (satisfaction) {
-      case 'satisfied': return <ThumbsUp size={16} className="text-green-400" />;
-      case 'neutral': return <Minus size={16} className="text-yellow-400" />;
-      case 'unsatisfied': return <ThumbsDown size={16} className="text-red-400" />;
-      default: return <Minus size={16} className="text-gray-400 dark:text-gray-500" />;
-    }
+  const formatDate = (d) => {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const getSatisfactionColor = (satisfaction) => {
-    switch (satisfaction) {
-      case 'satisfied': return 'bg-green-500/20 text-green-400';
-      case 'neutral': return 'bg-yellow-500/20 text-yellow-400';
-      case 'unsatisfied': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-gray-500/20 text-gray-400 dark:text-gray-500';
-    }
+  const formatCurrency = (amount) => `EGP ${Number(amount || 0).toLocaleString()}`;
+  const getCommission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
+
+  const hasActiveFilters = statusFilter !== 'all' || paymentFilter !== 'all' || searchTerm.trim() !== '';
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setPaymentFilter('all');
+    setSearchTerm('');
   };
 
-  const getSatisfactionLabel = (satisfaction) => {
-    return t.satisfaction[satisfaction] || satisfaction;
-  };
+  const avatarFor = (name, image, color = 'teal') =>
+    image || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=${color}&color=fff&size=100&bold=true`;
 
-  const getStatusLabel = (status) => {
-    return t.status[status] || status;
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+  // Open the selected user's profile inside the ADMIN chrome.
+  // The viewed profile is isolated in UserProfileView's local state —
+  // the authenticated Admin session is never modified.
+  const openEmployer = (hire) => {
+    const id = hire.employerId;
+    if (!id) return;
+    navigate(`/admin/users/${id}`);
   };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+  const openWorker = (hire) => {
+    const id = hire.workerId || hire.workerProfileId;
+    if (!id) return;
+    navigate(`/admin/users/${id}`);
+  };
+  const messageEmployer = (hire) => {
+    navigate('/admin/messages', {
+      state: { targetUserId: hire.employerId, targetUserName: hire.employerName || 'Employer', targetUserRole: 'EMPLOYER' }
+    });
+  };
+  const messageWorker = (hire) => {
+    navigate('/admin/messages', {
+      state: { targetUserId: hire.workerId, targetUserName: hire.workerName || 'Worker', targetUserRole: 'WORKER' }
     });
   };
 
-  const formatCurrency = (amount) => {
-    return `EGP ${amount?.toLocaleString() || 0}`;
+  // Danger action: terminate the hire (uses the existing update-status API)
+  const terminateHire = async (hire) => {
+    const id = hire.id || hire.hireId;
+    if (!id) return;
+    if (!window.confirm('Terminate this hire?')) return;
+    try {
+      await hireService.updateHireStatus(id, HIRE_STATUS.TERMINATED);
+      setHires(prev => prev.map(h => (h.id === id || h.hireId === id) ? { ...h, status: HIRE_STATUS.TERMINATED } : h));
+    } catch (error) {
+      console.error('Error terminating hire:', error);
+      alert('Failed to terminate hire.');
+    }
   };
 
-  const stats = {
-    total: hires.length,
-    active: hires.filter(h => h.status === 'active').length,
-    pending: hires.filter(h => h.status === 'pending').length,
-    completed: hires.filter(h => h.status === 'completed').length,
-    cancelled: hires.filter(h => h.status === 'cancelled').length
-  };
+  const handleRefresh = () => loadHires();
 
-  if (!user) {
+  // ============================================================
+  // RENDER
+  // ============================================================
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
+          <p className="mt-4 text-gray-400">{t.loading}</p>
         </div>
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
+  if (!authUser) return null;
+
+  const statCards = [
+    { key: 'total', label: t.stats.total, value: stats.total, icon: Briefcase, color: 'text-blue-400 bg-blue-500/15' },
+    { key: 'active', label: t.stats.active, value: stats.active, icon: CheckCircle, color: 'text-green-400 bg-green-500/15' },
+    { key: 'awaiting', label: t.stats.awaiting, value: stats.awaiting, icon: Hourglass, color: 'text-amber-400 bg-amber-500/15' },
+    { key: 'terminated', label: t.stats.terminated, value: stats.terminated, icon: XCircle, color: 'text-red-400 bg-red-500/15' },
+    { key: 'totalCommission', label: t.stats.totalCommission, value: formatCurrency(stats.totalCommission), icon: Banknote, color: 'text-yellow-400 bg-yellow-500/15' },
+    { key: 'collected', label: t.stats.collected, value: formatCurrency(stats.collected), icon: TrendingUp, color: 'text-green-400 bg-green-500/15' },
+    { key: 'outstanding', label: t.stats.outstanding, value: formatCurrency(stats.outstanding), icon: Wallet, color: 'text-orange-400 bg-orange-500/15' },
+    { key: 'today', label: t.stats.today, value: stats.today, icon: CalendarClock, color: 'text-purple-400 bg-purple-500/15' }
+  ];
 
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
         title={t.title}
         language={language}
-        onToggleLanguage={toggleLanguage}
-        notificationUserId={user?.id || user?.email}
+        onToggleLanguage={() => {
+          const nl = language === 'en' ? 'ar' : 'en';
+          setLanguage(nl);
+          localStorage.setItem('homelyserv_language', nl);
+        }}
+        notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"
+        rightContent={
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 border border-yellow-500/30 rounded-lg text-sm font-medium text-yellow-400 hover:bg-yellow-500/10 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw size={16} />
+            {t.refresh}
+          </button>
+        }
       />
 
-      <div className="p-4 md:p-6">
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-            <p className="text-black/70 mt-1">{t.subtitle}</p>
-          </div>
+      <div className="p-4 md:p-6 space-y-6 bg-[#0a0a0a] min-h-screen">
+        {/* Heading */}
+        <div>
+          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{t.subtitle}</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.total}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Briefcase size={20} className="text-blue-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.active}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.active}</p>
-              </div>
-              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-green-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
-              </div>
-              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                <Clock size={20} className="text-yellow-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-blue-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t.stats.cancelled}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.cancelled}</p>
-              </div>
-              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                <XCircle size={20} className="text-red-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-              <input
-                type="text"
-                placeholder={t.table.searchPlaceholder}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-gray-500"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">{t.status.pending}</option>
-                <option value="active">{t.status.active}</option>
-                <option value="completed">{t.status.completed}</option>
-                <option value="cancelled">{t.status.cancelled}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Results Count */}
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-sm text-gray-400 dark:text-gray-500">
-            Showing <span className="font-semibold text-white">{filteredHires.length}</span> hires
-          </p>
-        </div>
-
-        {/* Hires List */}
-        {filteredHires.length === 0 ? (
-          <div className="bg-[#1a1a1a] rounded-xl shadow-sm p-12 text-center border border-yellow-500/20">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-white mb-2">{t.noHires}</h3>
-            <p className="text-gray-400 dark:text-gray-500">No hires have been made yet</p>
-            <button
-              onClick={handleRefresh}
-              className="mt-4 px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition"
-            >
-              <RefreshCw size={16} className="inline mr-2" />
-              {t.actions.refresh}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredHires.map((hire) => (
-              <div
-                key={hire.id}
-                className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition"
-              >
-                <div className="p-4 cursor-pointer" onClick={() => toggleExpand(hire.id)}>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                          <User size={20} className="text-yellow-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white">{hire.worker.name}</h3>
-                          <p className="text-sm text-gray-400 dark:text-gray-500">{hire.position}</p>
-                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} />
-                              {hire.worker.location}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                              {hire.worker.rating}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Building2 size={12} />
-                              {hire.employer.name}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign size={16} className="text-gray-400 dark:text-gray-500" />
-                        <span className="font-semibold text-white">
-                          {formatCurrency(hire.salary)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(hire.status)}`}>
-                          {getStatusIcon(hire.status)}
-                          {getStatusLabel(hire.status)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getSatisfactionColor(hire.satisfaction)}`}>
-                          {getSatisfactionIcon(hire.satisfaction)}
-                          {getSatisfactionLabel(hire.satisfaction)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                        {formatDate(hire.createdAt)}
-                      </div>
-                      {expandedHire === hire.id ? (
-                        <ChevronUp size={18} className="text-gray-400 dark:text-gray-500" />
-                      ) : (
-                        <ChevronDown size={18} className="text-gray-400 dark:text-gray-500" />
-                      )}
-                    </div>
+        {/* Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {statCards.map(card => {
+            const Icon = card.icon;
+            return (
+              <div key={card.key} className="bg-[#1a1a1a] rounded-xl border border-yellow-500/15 p-4 hover:border-yellow-500/35 transition">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{card.label}</p>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${card.color}`}>
+                    <Icon size={16} />
                   </div>
                 </div>
+                <p className="text-xl font-bold text-white mt-1.5">{card.value}</p>
+              </div>
+            );
+          })}
+        </div>
 
-                {expandedHire === hire.id && (
-                  <div className="border-t border-yellow-500/20 p-4 bg-[#0a0a0a]">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Worker Details</h4>
-                        <p className="text-sm text-gray-300">Name: {hire.worker.name}</p>
-                        <p className="text-sm text-gray-300">Category: {hire.worker.category}</p>
-                        <p className="text-sm text-gray-300">Rating: {hire.worker.rating}</p>
-                        <p className="text-sm text-gray-300">Location: {hire.worker.location}</p>
+        {/* Search + Filters */}
+        <div className="bg-[#1a1a1a] rounded-xl border border-yellow-500/15 p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="relative sm:col-span-2 lg:col-span-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+            >
+              <option value="all">{t.filters.all}</option>
+              <option value={HIRE_STATUS.OFFER_SENT}>{t.filters.offer_sent}</option>
+              <option value={HIRE_STATUS.ACTIVE}>{t.filters.active}</option>
+              <option value={HIRE_STATUS.TERMINATED}>{t.filters.terminated}</option>
+            </select>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+            >
+              <option value="all">{t.filters.allPayments}</option>
+              <option value="paid">{t.filters.paid}</option>
+              <option value="unpaid">{t.filters.unpaid}</option>
+              <option value="processing">{t.filters.processing}</option>
+              <option value="refunded">{t.filters.refunded}</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+            >
+              <option value="newest">{t.filters.newest}</option>
+              <option value="oldest">{t.filters.oldest}</option>
+              <option value="highestCommission">{t.filters.highestCommission}</option>
+              <option value="lowestCommission">{t.filters.lowestCommission}</option>
+            </select>
+          </div>
+          {hasActiveFilters && (
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={clearFilters}
+                className="text-xs text-gray-400 hover:text-yellow-400 transition-colors"
+              >
+                {t.clearFilters}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Results count */}
+        <p className="text-sm text-gray-400">
+          {t.showing} <span className="font-semibold text-white">{filteredHires.length}</span> {t.hiresWord}
+        </p>
+
+        {/* Empty state */}
+        {filteredHires.length === 0 ? (
+          <div className="bg-[#1a1a1a] rounded-xl border border-yellow-500/15 p-12 text-center">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold text-white mb-2">{t.noHires}</h3>
+            <p className="text-gray-400">{t.noHiresDesc}</p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-6 py-2 border border-yellow-500/40 text-yellow-400 rounded-lg hover:bg-yellow-500/10 transition"
+              >
+                {t.clearFilters}
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden lg:block bg-[#1a1a1a] rounded-xl border border-yellow-500/15 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#0a0a0a] border-b border-yellow-500/15">
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.employer}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3"></th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.worker}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.salary}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.commission}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.payment}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.status}</th>
+                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.hiredOn}</th>
+                      <th className="text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/60">
+                    {filteredHires.map((hire) => {
+                      const status = getStatusBadge(hire.status);
+                      const payment = getPaymentBadge(hire.paymentStatus);
+                      const key = hire.id || hire.hireId || hire.offerId;
+                      return (
+                        <tr key={key} className="hover:bg-yellow-500/5 transition-colors">
+                          {/* Employer */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-9 h-9 rounded-full object-cover border border-yellow-500/30" />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
+                                  {hire.employerName || 'Unknown'}
+                                  {hire.employerIsPremium && <Crown size={11} className="text-yellow-400" />}
+                                </p>
+                                <p className="text-[11px] text-gray-500 truncate">{hire.employerEmail || ''}</p>
+                              </div>
+                            </div>
+                          </td>
+                          {/* Relationship arrow */}
+                          <td className="px-2 py-3">
+                            <div className="flex flex-col items-center text-yellow-500/70">
+                              <ArrowRight size={16} />
+                              <span className="text-[9px] font-bold tracking-widest">{t.hired}</span>
+                            </div>
+                          </td>
+                          {/* Worker */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-9 h-9 rounded-full object-cover border border-red-500/30" />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
+                                  {hire.workerName || 'Unknown'}
+                                  {hire.workerIsPremium && <Crown size={11} className="text-yellow-400" />}
+                                </p>
+                                <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
+                                  {hire.jobTitle || 'Service Provider'}
+                                  {hire.workerRating ? (
+                                    <span className="inline-flex items-center gap-0.5 text-yellow-400">
+                                      <Star size={10} className="fill-yellow-400" />{hire.workerRating}
+                                    </span>
+                                  ) : null}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          {/* Salary */}
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-white text-sm">{formatCurrency(hire.salary || hire.agreedSalary)}</p>
+                            <p className="text-[11px] text-gray-500">{t.perMonth}</p>
+                          </td>
+                          {/* Commission */}
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-yellow-400 text-sm">{formatCurrency(getCommission(hire))}</p>
+                          </td>
+                          {/* Payment */}
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${payment.cls}`}>
+                              <Wallet size={11} />
+                              {payment.label}
+                            </span>
+                          </td>
+                          {/* Status */}
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${status.cls}`}>
+                              {status.icon}
+                              {status.label}
+                            </span>
+                          </td>
+                          {/* Date */}
+                          <td className="px-4 py-3">
+                            <p className="text-sm text-gray-300 flex items-center gap-1.5">
+                              <Calendar size={13} className="text-gray-500" />
+                              {formatDate(hire.createdAt || hire.startDate)}
+                            </p>
+                          </td>
+                          {/* Actions */}
+                          <td className="px-4 py-3">
+                            <ActionButtons
+                              hire={hire}
+                              t={t}
+                              onView={setSelectedHire}
+                              onOpenEmployer={openEmployer}
+                              onOpenWorker={openWorker}
+                              onMessageEmployer={messageEmployer}
+                              onMessageWorker={messageWorker}
+                              onTerminate={terminateHire}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile / tablet cards */}
+            <div className="lg:hidden space-y-3">
+              {filteredHires.map((hire) => {
+                const status = getStatusBadge(hire.status);
+                const payment = getPaymentBadge(hire.paymentStatus);
+                const key = hire.id || hire.hireId || hire.offerId;
+                return (
+                  <div key={key} className="bg-[#1a1a1a] rounded-xl border border-yellow-500/15 p-4">
+                    {/* Relationship */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-9 h-9 rounded-full object-cover border border-yellow-500/30" />
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500">{t.table.employer}</p>
+                          <p className="text-sm font-semibold text-white truncate">{hire.employerName || 'Unknown'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Work Details</h4>
-                        <p className="text-sm text-gray-300">Hourly Rate: EGP {hire.hourlyRate || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">Hours/Day: {hire.workingHoursPerDay || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">Days/Week: {hire.workingDaysPerWeek || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">Days Off: {hire.weeklyDaysOff || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">Start Time: {hire.workStartTime || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">End Time: {hire.workEndTime || 'N/A'}</p>
-                        <p className="text-sm text-gray-300">Start Date: {hire.employmentStartDate ? new Date(hire.employmentStartDate).toLocaleDateString() : 'N/A'}</p>
+                      <div className="flex flex-col items-center text-yellow-500/70 flex-shrink-0">
+                        <ArrowRight size={16} />
+                        <span className="text-[9px] font-bold tracking-widest">{t.hired}</span>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-2">Payment & Status</h4>
-                        <p className="text-sm text-gray-300">Hire Status: {hire.status}</p>
-                        <p className="text-sm text-gray-300">Payment Status: {hire.paymentStatus}</p>
-                        <p className="text-sm text-gray-300">Commission: EGP {hire.commissionAmount?.toLocaleString() || '0'}</p>
-                        <p className="text-sm text-gray-300">Salary: EGP {hire.salary?.toLocaleString() || '0'}</p>
-                        <p className="text-sm text-gray-300">Reference: {hire.paymentReference || 'N/A'}</p>
+                      <div className="flex items-center gap-2 min-w-0 justify-end">
+                        <div className="min-w-0 text-right">
+                          <p className="text-xs text-gray-500">{t.table.worker}</p>
+                          <p className="text-sm font-semibold text-white truncate">{hire.workerName || 'Unknown'}</p>
+                        </div>
+                        <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-9 h-9 rounded-full object-cover border border-red-500/30" />
                       </div>
                     </div>
+
+                    {/* Facts */}
+                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-800">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.salary}</p>
+                        <p className="text-sm font-semibold text-white">{formatCurrency(hire.salary || hire.agreedSalary)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.commission}</p>
+                        <p className="text-sm font-semibold text-yellow-400">{formatCurrency(getCommission(hire))}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.hiredOn}</p>
+                        <p className="text-sm font-semibold text-white">{formatDate(hire.createdAt || hire.startDate)}</p>
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${status.cls}`}>
+                        {status.icon}
+                        {status.label}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${payment.cls}`}>
+                        <Wallet size={11} />
+                        {payment.label}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-end mt-3 pt-3 border-t border-gray-800">
+                      <ActionButtons
+                        hire={hire}
+                        t={t}
+                        onView={setSelectedHire}
+                        onOpenEmployer={openEmployer}
+                        onOpenWorker={openWorker}
+                        onMessageEmployer={messageEmployer}
+                        onMessageWorker={messageWorker}
+                        onTerminate={terminateHire}
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Details Modal */}
+      {selectedHire && (
+        <HireDetailsModal
+          hire={selectedHire}
+          t={t}
+          onClose={() => setSelectedHire(null)}
+          getStatusBadge={getStatusBadge}
+          getPaymentBadge={getPaymentBadge}
+          formatDate={formatDate}
+          formatCurrency={formatCurrency}
+          getCommission={getCommission}
+          avatarFor={avatarFor}
+        />
+      )}
     </DashboardLayout>
+  );
+};
+
+// ============================================================
+// ACTION BUTTONS — grouped, distinct icons/colors, with tooltips
+// Groups: view | profile actions | communication actions | danger
+// ============================================================
+const ActionButtons = ({ hire, t, onView, onOpenEmployer, onOpenWorker, onMessageEmployer, onMessageWorker, onTerminate }) => {
+  const Btn = ({ onClick, title, className, children }) => (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`p-1.5 rounded-lg transition-colors ${className}`}
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {/* View */}
+      <Btn
+        onClick={() => onView(hire)}
+        title={t.actions.view}
+        className="text-yellow-400 hover:bg-yellow-500/15"
+      >
+        <Eye size={16} />
+      </Btn>
+
+      <span className="w-px h-4 bg-gray-700/60 mx-0.5" aria-hidden="true" />
+
+      {/* Profile actions */}
+      <Btn
+        onClick={() => onOpenEmployer(hire)}
+        title={t.actions.employerProfile}
+        className="text-blue-400 hover:bg-blue-500/15"
+      >
+        <Building2 size={16} />
+      </Btn>
+      <Btn
+        onClick={() => onOpenWorker(hire)}
+        title={t.actions.workerProfile}
+        className="text-green-400 hover:bg-green-500/15"
+      >
+        <UserRound size={16} />
+      </Btn>
+
+      <span className="w-px h-4 bg-gray-700/60 mx-0.5" aria-hidden="true" />
+
+      {/* Communication actions */}
+      <Btn
+        onClick={() => onMessageEmployer(hire)}
+        title={t.actions.messageEmployer}
+        className="text-teal-400 hover:bg-teal-500/15"
+      >
+        <MessageSquare size={16} />
+      </Btn>
+      <Btn
+        onClick={() => onMessageWorker(hire)}
+        title={t.actions.messageWorker}
+        className="text-emerald-400 hover:bg-emerald-500/15"
+      >
+        <MessagesSquare size={16} />
+      </Btn>
+
+      <span className="w-px h-4 bg-gray-700/60 mx-0.5" aria-hidden="true" />
+
+      {/* Danger action */}
+      <Btn
+        onClick={() => onTerminate(hire)}
+        title={t.actions.terminate}
+        className="text-red-400 hover:bg-red-500/15"
+      >
+        <ShieldX size={16} />
+      </Btn>
+    </div>
+  );
+};
+
+// ============================================================
+// HIRE DETAILS MODAL (CRM overview)
+// ============================================================
+const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, formatDate, formatCurrency, getCommission, avatarFor }) => {
+  const status = getStatusBadge(hire.status);
+  const payment = getPaymentBadge(hire.paymentStatus);
+  const paid = normalizePayment(hire.paymentStatus) === 'paid';
+
+  const timeline = [
+    { label: t.modal.offerSent, date: hire.createdAt, done: true },
+    { label: t.modal.paymentCompleted, date: paid ? hire.updatedAt : null, done: paid },
+    { label: t.modal.hireActivated, date: normalizeStatus(hire.status) !== HIRE_STATUS.OFFER_SENT ? hire.updatedAt : null, done: normalizeStatus(hire.status) !== HIRE_STATUS.OFFER_SENT }
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div
+        className="bg-[#141414] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500/20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-yellow-500/15 sticky top-0 bg-[#141414] z-10">
+          <h2 className="text-xl font-semibold text-white">{t.modal.title}</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Relationship */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4 bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
+            {/* Employer */}
+            <div className="flex items-center gap-3">
+              <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/40" />
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.employer}</p>
+                <p className="font-semibold text-white truncate flex items-center gap-1">
+                  {hire.employerName || 'Unknown'}
+                  {hire.employerIsPremium && <Crown size={12} className="text-yellow-400" />}
+                </p>
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Mail size={11} />{hire.employerEmail || t.modal.notProvided}</p>
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Phone size={11} />{hire.employerPhone || t.modal.notProvided}</p>
+              </div>
+            </div>
+            {/* Arrow */}
+            <div className="flex md:flex-col items-center justify-center text-yellow-500 gap-1">
+              <ArrowRightCircle size={22} className="rotate-90 md:rotate-0" />
+              <span className="text-[10px] font-bold tracking-widest">{t.hired}</span>
+            </div>
+            {/* Worker */}
+            <div className="flex items-center gap-3 md:justify-end">
+              <div className="min-w-0 md:text-right">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.worker}</p>
+                <p className="font-semibold text-white truncate flex items-center gap-1 md:justify-end">
+                  {hire.workerName || 'Unknown'}
+                  {hire.workerIsPremium && <Crown size={12} className="text-yellow-400" />}
+                </p>
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || 'Service Provider'}</p>
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end">
+                  <Star size={11} className="text-yellow-400" />{hire.workerRating ?? t.modal.notProvided}
+                </p>
+              </div>
+              <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-12 h-12 rounded-full object-cover border-2 border-red-500/40" />
+            </div>
+          </div>
+
+          {/* Current status + financial */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Status */}
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
+              <h4 className="text-sm font-semibold text-gray-300 mb-3">{t.modal.currentStatus}</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.hireStatus}</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${status.cls}`}>{status.icon}{status.label}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.paymentStatus}</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${payment.cls}`}><Wallet size={11} />{payment.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-xs text-gray-500">{t.modal.hireDate}</span>
+                  <span className="text-gray-200">{formatDate(hire.createdAt || hire.startDate)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-xs text-gray-500">{t.modal.lastUpdated}</span>
+                  <span className="text-gray-200">{formatDate(hire.updatedAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial */}
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
+              <h4 className="text-sm font-semibold text-gray-300 mb-3">{t.modal.financial}</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.salary}</span>
+                  <span className="font-semibold text-white">{formatCurrency(hire.salary || hire.agreedSalary)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.commission}</span>
+                  <span className="font-semibold text-yellow-400">{formatCurrency(getCommission(hire))}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.vat}</span>
+                  <span className="text-gray-200">{formatCurrency(hire.vatAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-800 pt-2">
+                  <span className="text-xs text-gray-500">{t.modal.totalDue}</span>
+                  <span className="font-bold text-white">{formatCurrency(hire.totalDue ?? getCommission(hire))}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{t.modal.paymentRef}</span>
+                  <span className="text-gray-400 text-xs">{hire.paymentReference || t.modal.notProvided}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
+            <h4 className="text-sm font-semibold text-gray-300 mb-4">{t.modal.timeline}</h4>
+            <div className="space-y-4">
+              {timeline.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-500'}`}>
+                    {step.done ? <CheckCircle size={14} /> : <Clock size={14} />}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${step.done ? 'text-white' : 'text-gray-500'}`}>{step.label}</p>
+                    <p className="text-xs text-gray-500">{step.date ? formatDate(step.date) : '—'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          {hire.additionalNotes && (
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
+              <h4 className="text-sm font-semibold text-gray-300 mb-2">{t.modal.notes}</h4>
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{hire.additionalNotes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

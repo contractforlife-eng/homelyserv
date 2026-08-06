@@ -55,6 +55,7 @@ import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
 import AdminProfile from './pages/AdminProfile';
+import AdminUserProfile from './pages/AdminUserProfile';
 
 // Support Pages
 import SupportDashboard from './pages/support/SupportDashboard';
@@ -415,6 +416,14 @@ function App() {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminUsers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/users/:id" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminUserProfile />
           </ProtectedRoute>
         } 
       />
