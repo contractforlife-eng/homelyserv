@@ -4,7 +4,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import hireService from '../services/hireService';
-import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
@@ -34,7 +33,6 @@ import {
   ThumbsUp,
   LayoutGrid,
   List,
-  CreditCard,
   Lock as LockIcon,
   MoreVertical,
   Trash2,
@@ -147,8 +145,7 @@ const MyHires = () => {
       actions: {
         view: 'View Details',
         terminate: 'Terminate',
-        message: 'Message Worker',
-        pay: 'Pay Now'
+        message: 'Message Worker'
       },
       filters: {
         all: 'All Hires',
@@ -229,8 +226,7 @@ const MyHires = () => {
       actions: {
         view: 'عرض التفاصيل',
         terminate: 'إنهاء',
-        message: 'مراسلة العامل',
-        pay: 'ادفع الآن'
+        message: 'مراسلة العامل'
       },
       filters: {
         all: 'جميع التوظيفات',
@@ -495,52 +491,6 @@ const MyHires = () => {
 
     // Navigate to messages page with worker info as URL parameters
     navigate(`/employer-messages?workerId=${encodeURIComponent(workerId)}&workerName=${encodeURIComponent(workerName)}`);
-  };
-
-  const handlePayNow = (hire) => {
-    if (hire) {
-      const fullSalary = hire.salary || 0;
-      // Commission uses the single source of truth (config/monetization.js = 15%)
-      const applicationFee = Math.round(fullSalary * RECRUITMENT_COMMISSION_RATE * 100) / 100;
-
-      const pendingPayment = {
-        paymentId: hire.hireId || hire.offerId,
-        amount: applicationFee,       // ← charge 15% only
-        fullSalary: fullSalary,       // ← keep for display/receipt
-        feePercentage: RECRUITMENT_COMMISSION_RATE * 100,
-        workerName: hire.workerName,
-        workerId: hire.workerId || hire.workerEmail,
-        workerEmail: hire.workerEmail || '',
-        jobTitle: hire.jobTitle || 'Service Provider',
-        description: `${RECRUITMENT_COMMISSION_RATE * 100}% application fee for ${hire.workerName || 'worker'}`,
-        paymentType: 'recruitment',
-        offerId: hire.offerId || hire.hireId,
-        hireId: hire.id || hire.hireId,  // ← REQUIRED for payment completion
-        employerId: authUser?.id || authUser?.email,
-        employerName: authUser?.fullName || 'Employer',
-        returnTo: '/my-hires'
-      };
-
-      const workerData = {
-        workerId: hire.workerId || hire.workerEmail,
-        workerName: hire.workerName,
-        workerEmail: hire.workerEmail || '',
-        workerPhone: hire.workerPhone || '',
-        workerLocation: hire.workerLocation || 'Not specified',
-        desiredJob: hire.jobTitle || 'Service Provider',
-        rating: hire.workerRating || 4.5,
-        profileImage: hire.workerImage || '',
-        hourlyRate: hire.salary ? Math.round(hire.salary / 160) : 30
-      };
-
-      // Navigate with payment data in state instead of localStorage
-      navigate('/payment-options', { 
-        state: { 
-          pendingPayment,
-          worker: workerData
-        } 
-      });
-    }
   };
 
   const getStatusColor = (status) => {
@@ -824,13 +774,6 @@ const MyHires = () => {
                                 ) : (
                                   <MessageCircle size={16} />
                                 )}
-                              </button>
-                              <button
-                                onClick={() => handlePayNow(hire)}
-                                className="p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 dark:bg-green-900/30 rounded-lg transition"
-                                title={t.actions.pay}
-                              >
-                                <CreditCard size={16} />
                               </button>
                               <button
                                 onClick={() => handleTerminateClick(hire)}
