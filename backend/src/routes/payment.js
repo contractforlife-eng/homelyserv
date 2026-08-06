@@ -20,6 +20,29 @@ const generateOrderId = () => {
 };
 
 // ============================================================
+// ENVIRONMENT-AWARE CLIENT URL RESOLUTION
+// ============================================================
+// Resolves the frontend base URL for PayPal return/cancel redirects.
+// - Production NEVER falls back to localhost, even if CLIENT_URL is misconfigured.
+// - Development uses localhost by default.
+const getClientUrl = () => {
+  const envClientUrl = process.env.CLIENT_URL;
+
+  // If explicitly configured and not localhost, use it (strip trailing slash)
+  if (envClientUrl && !envClientUrl.includes('localhost')) {
+    return envClientUrl.replace(/\/+$/, '');
+  }
+
+  // In production, never redirect to localhost
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://homelyserv.com';
+  }
+
+  // Development default
+  return 'http://localhost:5173';
+};
+
+// ============================================================
 // PAYMOB INTEGRATION
 // ============================================================
 
@@ -165,8 +188,9 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
 
-    const returnUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-success`;
-    const cancelUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment-cancel`;
+    const clientUrl = getClientUrl();
+    const returnUrl = `${clientUrl}/payment-success`;
+    const cancelUrl = `${clientUrl}/payment-cancel`;
 
     console.log(`🔗 Return URL: ${returnUrl}`);
     console.log(`🔗 Cancel URL: ${cancelUrl}`);
@@ -1172,7 +1196,17 @@ router.get('/status/:paymentId', async (req, res) => {
 });
 
 /**
- * Complete Payment (Manual completion for testing)
+ * @deprecated Manual payment completion is obsolete. Payments are now captured
+ * and verified automatically via the PayPal capture endpoint
+ * (POST /api/payments/capture-paypal/:orderId) and Paymob, which already mark
+ * the payment completed and call updateHireAfterPayment(). There is NO manual
+ * "Mark as Paid" UI anymore.
+ *
+ * This endpoint is retained temporarily for backward compatibility with the
+ * current automated frontend flow, which calls it as a redundant no-op after a
+ * successful capture. It must NOT be used to manually mark a payment as paid.
+ * TODO: remove once the redundant frontend call is cleaned up.
+ *
  * POST /api/payments/complete-payment
  */
 router.post('/complete-payment', async (req, res) => {
@@ -1228,6 +1262,55 @@ router.post('/complete-payment', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to complete payment'
+    });
+  }
+});
+
+/**
+ * Get Current User Subscription Status (READ-ONLY)
+ * GET /api/payments/subscription-status
+ * Returns the real subscription from MongoDB (single source of truth).
+ * The frontend uses this to REFLECT premium state after payment — it never
+ * creates a subscription here.
+ */
+router.get('/subscription-status', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: String(userId),
+        status: 'active',
+        endDate: { gte: new Date() }
+      },
+      orderBy: { endDate: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      isPremium: !!subscription,
+      subscription: subscription
+        ? {
+            plan: subscription.plan,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate
+          }
+        : null
+    });
+
+  } catch (error) {
+    console.error('❌ Subscription status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get subscription status'
     });
   }
 });

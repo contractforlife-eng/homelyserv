@@ -654,6 +654,21 @@ const Subscription = () => {
     }
   };
 
+  // ============================================================
+  // PAYPAL POPUP RETURN HANDLER
+  // ============================================================
+  // When PayPal redirects back to /payment-success or /payment-cancel,
+  // the popup posts a message here so we can stop polling.
+  const handlePayPalReturnMessage = (event) => {
+    if (event.data?.type === 'PAYPAL_RETURN') {
+      console.log('✅ PayPal popup returned:', event.data);
+      // The popup is closing - the polling will capture the payment
+      if (event.data.success) {
+        setPaymentError(null);
+      }
+    }
+  };
+
   const startPollingPayPalOrder = (orderId) => {
     let attempts = 0;
     const maxAttempts = 30;
@@ -709,8 +724,11 @@ const Subscription = () => {
 
   // Cleanup
   useEffect(() => {
+    // Listen for PayPal popup return messages
+    window.addEventListener('message', handlePayPalReturnMessage);
     return () => {
       window.removeEventListener('message', handlePaymobMessage);
+      window.removeEventListener('message', handlePayPalReturnMessage);
     };
   }, []);
 

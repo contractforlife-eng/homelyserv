@@ -281,6 +281,14 @@ export const getUserPayments = async (userId) => {
   return response.data;
 };
 
+// Read-only: fetch the REAL subscription status from the backend (MongoDB).
+// The backend ensureSubscription() is the single source of truth — the frontend
+// only reads/reflects it, never creates it.
+export const fetchSubscriptionStatus = async () => {
+  const response = await api.get('/api/payments/subscription-status');
+  return response.data;
+};
+
 export const verifyPayment = async (transactionId, orderId) => {
   const response = await api.post('/api/payments/verify', { transactionId, orderId });
   return response.data;

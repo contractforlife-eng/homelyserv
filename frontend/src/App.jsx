@@ -39,6 +39,8 @@ import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
 import PaymentCommission from './pages/PaymentCommission';
 import EmployerCreateOffer from './pages/EmployerCreateOffer';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
 
 // Subscription Page
 import Subscription from './pages/Subscription';
@@ -391,6 +393,13 @@ function App() {
           </ProtectedRoute>
         } 
       />
+
+      {/* ========== PAYPAL CALLBACK ROUTES ========== */}
+      {/* These are PUBLIC routes (no ProtectedRoute) because PayPal redirects here
+          after payment, and the user may or may not have an active session.
+          The pages handle auth internally. */}
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payment-cancel" element={<PaymentCancel />} />
 
       {/* ========== ADMIN ROUTES ========== */}
       <Route 

@@ -1,11 +1,11 @@
 // src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION - FIXED
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { isUserPremium } from '../utils/subscriptionService';
+import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import hireService from '../services/hireService';
 import {
@@ -60,6 +60,9 @@ const PaymentOptions = () => {
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
+
+  // Guard against double-processing (polling + popup-return can both fire).
+  const paymentProcessedRef = useRef(false);
 
   // Get authenticated user from authStore
   const authUser = useAuthStore(state => state.user);
@@ -260,16 +263,75 @@ const PaymentOptions = () => {
   // PROCESS SUCCESSFUL PAYMENT
   // ============================================================
   const processSuccessfulPayment = async (paymentData) => {
+    // Guard against double-processing (polling + popup-return can both fire).
+    if (paymentProcessedRef.current) {
+      console.log('⚠️ Payment already processed, skipping duplicate');
+      return;
+    }
+
     try {
       console.log('✅ Processing successful payment:', paymentData);
       const total = calculateTotal();
-      
-      // Get hireId from pendingPayment (should be set after worker accepts)
+
       const hireId = pendingPayment?.hireId;
-      
-      if (!hireId) {
-        throw new Error('Hire ID not found. Payment cannot be processed.');
+      const paymentType = pendingPayment?.paymentType || '';
+
+      // ============================================================
+      // ROUTE BY PAYMENT METADATA — do NOT assume every payment is a hire.
+      // The backend already captured the payment and activated Premium via
+      // ensureSubscription. This function only drives the frontend UX.
+      // ============================================================
+      const isPremiumPayment =
+        paymentType === 'quick_hire_premium' ||
+        paymentType === 'premium' ||
+        paymentType === 'subscription';
+
+      // Premium/subscription payments are NOT tied to a Hire and must NOT
+      // require a hireId. If there is no hireId and this is not a commission
+      // payment, treat it as a premium/generic success instead of throwing.
+      if (isPremiumPayment || !hireId) {
+        console.log('👑 Premium/subscription payment detected (no hire required)');
+        paymentProcessedRef.current = true;
+
+        const userId = authUser?.id || authUser?.email;
+
+        // The backend already captured the payment and activated Premium via
+        // ensureSubscription() (MongoDB = single source of truth). Here we ONLY
+        // read the real subscription status and reflect it into the UI — we do
+        // NOT create or fabricate a subscription on the frontend.
+        try {
+          const subStatus = await fetchSubscriptionStatus();
+          if (subStatus?.success && subStatus?.subscription) {
+            applyBackendSubscription(userId, authUser?.email, subStatus.subscription);
+          } else {
+            console.warn('Backend returned no active subscription yet; premium flag will reflect on next refresh.');
+          }
+        } catch (readErr) {
+          console.warn('Could not read subscription status from backend:', readErr);
+        }
+
+        // Clear pending data
+        localStorage.removeItem('homelyserv_pending_payment');
+        localStorage.removeItem('homelyserv_selected_worker');
+        localStorage.removeItem('homelyserv_paypal_order_id');
+        localStorage.removeItem('homelyserv_paypal_approval_url');
+
+        setPaymentSuccess(true);
+        setIsProcessing(false);
+        setPaymentMessage('');
+
+        // Premium payments → Subscription page
+        setTimeout(() => {
+          navigate('/subscription', { replace: true });
+        }, 2000);
+
+        return;
       }
+
+      // ============================================================
+      // HIRE / COMMISSION PAYMENT FLOW (hireId present) — unchanged
+      // ============================================================
+      paymentProcessedRef.current = true;
 
       // Notify backend to update Hire & Offer payment status
       try {
@@ -351,6 +413,8 @@ const PaymentOptions = () => {
       }, 2000);
 
     } catch (error) {
+      // Reset the guard so a genuine failure can be retried.
+      paymentProcessedRef.current = false;
       console.error('Error processing payment:', error);
       setPaymentError('Failed to process payment. Please contact support.');
       setIsProcessing(false);
@@ -366,6 +430,56 @@ const PaymentOptions = () => {
       window.removeEventListener('message', handlePaymobMessage);
       processSuccessfulPayment(event.data);
     }
+  };
+
+  // ============================================================
+  // PAYPAL POPUP RETURN HANDLER
+  // ============================================================
+  // When PayPal redirects back to /payment-success or /payment-cancel,
+  // the popup posts a message here so we can stop polling and close the modal.
+  const handlePayPalReturnMessage = async (event) => {
+    if (event.data?.type !== 'PAYPAL_RETURN') return;
+
+    console.log('✅ PayPal popup returned:', event.data);
+
+    // User cancelled inside the PayPal popup
+    if (!event.data.success) {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+      setIsProcessing(false);
+      setPaymentMessage('');
+      setPaymentError(t.paymentCancelled || 'Payment cancelled.');
+      return;
+    }
+
+    // Payment succeeded in the popup. The popup already captured/verified the
+    // payment (idempotent on the backend). Stop polling, then run ONE final
+    // capture here so the main page reaches its success state instead of
+    // remaining stuck on "Finalizing...".
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+
+    const orderId = paypalOrderId || localStorage.getItem('homelyserv_paypal_order_id');
+
+    if (orderId && !paymentProcessedRef.current) {
+      try {
+        const result = await capturePayPalOrder(orderId);
+        if (result.success) {
+          processSuccessfulPayment(result.transaction);
+          return;
+        }
+      } catch (err) {
+        console.warn('Final capture after popup return failed:', err);
+      }
+    }
+
+    // Fallback: backend already captured the payment (Premium is active),
+    // so show a completion message rather than leaving the user stuck.
+    setPaymentMessage('✅ Payment completed! Finalizing...');
   };
 
   // ============================================================
@@ -583,8 +697,11 @@ const PaymentOptions = () => {
   // CLEANUP
   // ============================================================
   useEffect(() => {
+    // Listen for PayPal popup return messages
+    window.addEventListener('message', handlePayPalReturnMessage);
     return () => {
       window.removeEventListener('message', handlePaymobMessage);
+      window.removeEventListener('message', handlePayPalReturnMessage);
       if (pollingInterval) {
         clearInterval(pollingInterval);
       }

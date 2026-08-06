@@ -149,10 +149,7 @@ const EmployerPayments = () => {
       payNowToUnlock: 'Pay commission to unlock contact information',
       contactRevealed: 'Contact information revealed',
       waitingForPayment: 'Waiting for payment confirmation',
-      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.',
-      paymentSuccess: '✅ Payment completed successfully! Worker can now start working.',
-      markPaid: 'Mark as Paid',
-      markPaidConfirm: 'Mark this payment as completed? This will unlock contact info and notify the worker.'
+      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.'
     },
     ar: {
       title: 'المدفوعات',
@@ -240,10 +237,7 @@ const EmployerPayments = () => {
       payNowToUnlock: 'ادفع العمولة لفتح معلومات الاتصال',
       contactRevealed: 'تم فتح معلومات الاتصال',
       waitingForPayment: 'في انتظار تأكيد الدفع',
-      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.',
-      paymentSuccess: '✅ تم الدفع بنجاح! يمكن للعامل البدء في العمل.',
-      markPaid: 'تحديد كمكتمل',
-      markPaidConfirm: 'تحديد هذه الدفعة كمكتملة؟ سيتم فتح معلومات الاتصال وإشعار العامل.'
+      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.'
     }
   };
 
@@ -252,99 +246,6 @@ const EmployerPayments = () => {
   const handleLogout = () => {
     useAuthStore.getState().logout();
     navigate('/login');
-  };
-
-  const handlePaymentSuccess = async (paymentId, offerId) => {
-    try {
-      console.log('✅ Payment completed for offer:', offerId);
-      
-      if (!offerId || !authUser?.email) {
-        console.error('❌ Missing required data');
-        return false;
-      }
-
-      let offer = null;
-      try {
-        const data = await hireService.getOffers();
-        const offers = Array.isArray(data) ? data : [];
-        offer = offers.find(o => o.id === offerId);
-      } catch (error) {
-        console.error('Error loading offers:', error);
-      }
-      
-      if (!offer) {
-        console.error('❌ Offer not found:', offerId);
-        return false;
-      }
-
-      const fullSalary = Number(offer.amount || 0);
-      const commission = Math.round(fullSalary * 0.15 * 100) / 100;
-      
-      const paymentRecord = {
-        id: paymentId || 'PAY-' + Date.now(),
-        offerId: offerId,
-        workerId: offer.workerId || offer.workerEmail,
-        workerName: offer.workerName || 'Worker',
-        workerEmail: offer.workerEmail || '',
-        workerPhone: offer.workerPhone || '',
-        workerLocation: offer.workerLocation || 'Not specified',
-        workerRating: offer.workerRating || 4.5,
-        workerImage: offer.workerImage || '',
-        employerId: authUser.id || authUser.email,
-        employerEmail: authUser.email,
-        jobTitle: offer.jobTitle || 'Service Provider',
-        commission: commission,
-        fullSalary: fullSalary,
-        status: 'completed',
-        paymentVerified: true,
-        contactRevealed: true,
-        paymentMethod: 'commission',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        description: offer.description || `Commission for hiring ${offer.workerName}`,
-        reference: 'REF-' + offer.id,
-        paymentType: 'commission',
-        type: 'commission',
-        hasReceipt: false
-      };
-      
-      let allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      const filteredPayments = allPayments.filter(p => p.offerId !== offerId);
-      filteredPayments.push(paymentRecord);
-      localStorage.setItem('all_payments', JSON.stringify(filteredPayments));
-      
-      let employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      const empFiltered = employerPayments.filter(p => p.offerId !== offerId);
-      empFiltered.push(paymentRecord);
-      localStorage.setItem('employer_payments', JSON.stringify(empFiltered));
-      
-      alert(t.paymentSuccess);
-      
-      setLoading(true);
-      setTimeout(() => {
-        loadData();
-        setRefreshKey(prev => prev + 1);
-        setSelectedPayment(null);
-        setShowDetailsModal(false);
-      }, 500);
-      
-      return true;
-      
-    } catch (error) {
-      console.error('❌ Error processing payment success:', error);
-      alert('Error processing payment. Please try again.');
-      return false;
-    }
-  };
-
-  const markPaymentAsCompleted = (payment) => {
-    if (!confirm(t.markPaidConfirm)) {
-      return;
-    }
-    
-    const paymentId = 'manual_' + Date.now();
-    handlePaymentSuccess(paymentId, payment.offerId);
   };
 
   const loadData = async () => {
@@ -872,10 +773,6 @@ const EmployerPayments = () => {
                                 <button onClick={() => handleProcessPayment(payment)} className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
                                   <CreditCard size={12} />
                                   {t.actions.payNow}
-                                </button>
-                                <button onClick={() => markPaymentAsCompleted(payment)} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
-                                  <CheckCircle size={12} />
-                                  {t.markPaid}
                                 </button>
                               </>
                             )}

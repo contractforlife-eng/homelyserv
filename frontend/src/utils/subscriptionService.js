@@ -97,6 +97,51 @@ export const createSubscription = (userId, userEmail, userRole, userFullName) =>
 };
 
 /**
+ * Reflect a backend-confirmed subscription into the frontend state.
+ * This is a READ/REFLECT operation: it writes the real subscription data that
+ * was fetched from the backend (MongoDB via ensureSubscription) into the local
+ * mirror so isUserPremium() and the UI show the server-side source of truth.
+ * It does NOT create or fabricate a subscription — the backend already did.
+ */
+export const applyBackendSubscription = (userId, userEmail, backendSubscription) => {
+  try {
+    if (!userId || !backendSubscription) return false;
+
+    const isActive =
+      backendSubscription.status === 'active' &&
+      backendSubscription.endDate &&
+      new Date(backendSubscription.endDate) > new Date();
+
+    const subscriptions = getSubscriptions();
+    subscriptions[userId] = {
+      userId: userId,
+      userEmail: userEmail,
+      active: isActive,
+      plan: backendSubscription.plan || 'premium',
+      startedAt: backendSubscription.startDate,
+      expiresAt: backendSubscription.endDate,
+      source: 'backend',
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+
+    // Reflect premium flag on the session user
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      useAuthStore.setState({
+        user: { ...currentUser, isPremium: isActive, subscriptionActive: isActive }
+      });
+    }
+
+    console.log(`✅ Reflected backend subscription for user ${userId}: active=${isActive}`);
+    return isActive;
+  } catch (error) {
+    console.error('Error reflecting backend subscription:', error);
+    return false;
+  }
+};
+
+/**
  * Cancel a subscription
  */
 export const cancelSubscription = (userId) => {
