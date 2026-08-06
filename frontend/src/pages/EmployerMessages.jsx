@@ -84,9 +84,11 @@ const EmployerMessages = () => {
   const [supportUsers, setSupportUsers] = useState([]);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const messagesEndRef = useRef(null);
+  const messageInputRef = useRef(null);
   const intervalRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
   const dropdownRef = useRef(null);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
 
   const isPremium = () => {
     const userId = authUser?.id || authUser?.email;
@@ -173,6 +175,7 @@ const EmployerMessages = () => {
       const userConversations = await getUserConversations(userId);
       console.log('📋 Initial load - employer conversations:', userConversations);
       setConversations(userConversations);
+      setConversationsLoaded(true);
     };
 
     loadInitialData();
@@ -238,73 +241,88 @@ const EmployerMessages = () => {
 
   // ============================================================
   // AUTO-OPEN CHAT FROM MY HIRES / PAYMENTS PAGE
+  // Waits until conversations have loaded, then finds-or-creates
+  // and selects the conversation. Latches only after data is ready.
   // ============================================================
   useEffect(() => {
-    if (!authUser || autoOpenDoneRef.current) return;
+    if (!authUser || !conversationsLoaded || autoOpenDoneRef.current) return;
 
-    // Check if we have a worker to chat with via URL params or state
     const params = new URLSearchParams(window.location.search);
-    const workerId = params.get('workerId');
-    const workerName = params.get('workerName');
-    
-    if (!workerId) return;
-    
-    console.log('💬 Auto-opening chat with worker:', { workerId, workerName });
-    
-    // Mark as done so we don't re-trigger
+    const stateConvId = location.state?.conversationId;
+    const workerId = location.state?.workerId || params.get('workerId');
+    const workerName = location.state?.workerName || params.get('workerName');
+
+    // Nothing to auto-open
+    if (!stateConvId && !workerId) return;
+
     autoOpenDoneRef.current = true;
-    
-    // Find the conversation with this worker
-    const conversation = conversations.find(
-      conv => conv.otherUserId === workerId
-    );
-    
-    if (conversation) {
-      // If conversation exists, open it
-      console.log('✅ Found existing conversation:', conversation.id);
-      setSelectedConversationId(conversation.id);
-      loadMessagesForConversation(conversation.id);
-    } else {
-      // If no conversation exists, create one
-      console.log('🔄 No conversation found, creating one...');
-      const createAndOpenConversation = async () => {
-        const userId = authUser.id;
-        const senderName = authUser.fullName || 'Employer';
-        const senderRole = 'EMPLOYER';
-        const recipientId = workerId;
-        const recipientName = workerName || 'Worker';
-        
-        // Send a welcome message to start the conversation
-        const result = await sendMessage(
+
+    const openConversation = async () => {
+      const userId = authUser.id;
+      const wid = workerId ? String(workerId).trim() : null;
+
+      // 1) Prefer direct conversation id passed via navigation state
+      let target = stateConvId
+        ? conversations.find(c => String(c.id) === String(stateConvId))
+        : null;
+
+      // 2) Fall back to matching by worker (other user) id
+      if (!target && wid) {
+        target = conversations.find(c => String(c.otherUserId).trim() === wid);
+      }
+
+      // 3) Deterministic id (same algorithm as backend) as a last-resort id
+      if (!target && wid) {
+        const deterministicId = getConversationId(userId, wid);
+        target = conversations.find(c => String(c.id) === String(deterministicId));
+      }
+
+      if (target) {
+        console.log('✅ Auto-opening existing conversation:', target.id);
+        setSelectedConversationId(target.id);
+        await loadMessagesForConversation(target.id);
+        return;
+      }
+
+      // 4) No conversation yet -> create/ensure it, then open
+      if (!wid) return;
+      console.log('🔄 No existing conversation, ensuring one exists...');
+      try {
+        const conversationId = await ensureConversationExists(
           userId,
-          senderName,
-          senderRole,
-          recipientId,
-          recipientName,
-          `Hello! I'd like to discuss the job opportunity with you.`
+          authUser.fullName || 'Employer',
+          'EMPLOYER',
+          wid,
+          workerName || 'Worker',
+          'WORKER'
         );
-        
-        if (result) {
-          console.log('✅ Welcome message sent, refreshing conversations...');
-          // Refresh conversations and open the new chat
-          const updatedConversations = await getUserConversations(userId);
-          setConversations(updatedConversations);
-          
-          const newConversation = updatedConversations.find(
-            conv => conv.otherUserId === workerId
-          );
-          
-          if (newConversation) {
-            console.log('✅ New conversation created:', newConversation.id);
-            setSelectedConversationId(newConversation.id);
-            loadMessagesForConversation(newConversation.id);
-          }
-        }
-      };
-      
-      createAndOpenConversation();
-    }
-  }, [authUser, conversations]);
+
+        if (!conversationId) return;
+
+        // Refresh list so the new conversation appears in the sidebar
+        const updated = await getUserConversations(userId);
+        setConversations(updated);
+
+        console.log('✅ Auto-opening new conversation:', conversationId);
+        setSelectedConversationId(conversationId);
+        await loadMessagesForConversation(conversationId);
+      } catch (err) {
+        console.error('Error auto-opening conversation:', err);
+      }
+    };
+
+    openConversation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, conversationsLoaded]);
+  // Focus the message input & scroll to latest once a conversation is open
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const t = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      messageInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(t);
+  }, [selectedConversationId]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -754,6 +772,7 @@ const EmployerMessages = () => {
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
+                          ref={messageInputRef}
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}

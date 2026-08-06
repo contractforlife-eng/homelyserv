@@ -1,6 +1,6 @@
-// src/pages/MyHires.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+// src/pages/MyHires.jsx - Employer hire management dashboard
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import hireService from '../services/hireService';
@@ -10,57 +10,62 @@ import { useDashboard } from '../components/layout/DashboardContext';
 import {
   User,
   Briefcase,
-  FileCheck,
   MessageCircle,
-  DollarSign,
   Clock,
   Calendar,
-  Star,
   Star as StarIcon,
   CheckCircle,
   Eye,
-  ChevronDown,
-  Sparkles,
-  TrendingUp,
-  Shield,
-  Award,
-  Zap,
-  Heart,
-  UserPlus,
-  BarChart3,
-  SlidersHorizontal,
-  ArrowUpDown,
-  ThumbsUp,
-  LayoutGrid,
-  List,
-  Lock as LockIcon,
-  MoreVertical,
-  Trash2,
-  Edit,
-  Check,
-  X as XIcon,
   RefreshCw,
   Crown,
   Search as SearchIcon,
-  UserCheck,
-  Building2,
-  MapPinned,
-  Languages,
   Users,
   AlertTriangle,
   Mail,
   MapPin,
   Phone,
+  Wallet,
+  X as XIcon,
   X
 } from 'lucide-react';
-import { sendMessage } from '../utils/chatService';
+import { sendMessage, getConversationId } from '../utils/chatService';
 
 // ============================================================
-// 2. MAIN MY HIRES COMPONENT
+// SINGLE SOURCE OF TRUTH — canonical hire statuses
+// These mirror the values actually stored by the backend Hire model:
+//   offer_sent  -> worker accepted, awaiting commission payment
+//   active      -> commission paid, employment running
+//   terminated  -> employer ended the hire
 // ============================================================
+const HIRE_STATUS = {
+  OFFER_SENT: 'offer_sent',
+  ACTIVE: 'active',
+  TERMINATED: 'terminated'
+};
+
+// Collapse legacy / alias values (from older records) into canonical ones
+const normalizeStatus = (status) => {
+  switch (status) {
+    case 'hired':
+    case 'accepted':
+    case 'completed': // legacy records: a paid/finished hire is treated as active
+      return HIRE_STATUS.ACTIVE;
+    case 'pending':
+      return HIRE_STATUS.OFFER_SENT;
+    case 'cancelled':
+    case 'canceled':
+      return HIRE_STATUS.TERMINATED;
+    case HIRE_STATUS.OFFER_SENT:
+    case HIRE_STATUS.ACTIVE:
+    case HIRE_STATUS.TERMINATED:
+      return status;
+    default:
+      return status || HIRE_STATUS.OFFER_SENT;
+  }
+};
+
 const MyHires = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -69,7 +74,6 @@ const MyHires = () => {
 
   const [loading, setLoading] = useState(true);
   const [hires, setHires] = useState([]);
-  const [filteredHires, setFilteredHires] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedHire, setSelectedHire] = useState(null);
@@ -77,15 +81,13 @@ const MyHires = () => {
   const [showTerminateModal, setShowTerminateModal] = useState(false);
   const [terminateReason, setTerminateReason] = useState('');
   const [terminatingHire, setTerminatingHire] = useState(null);
+  const [terminating, setTerminating] = useState(false);
   const [creatingConversation, setCreatingConversation] = useState(false);
 
-  const userIsPremium = () => {
+  const isPremium = useMemo(() => {
     const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
-
-  const isPremium = userIsPremium();
+    return userId ? isUserPremium(userId) : false;
+  }, [authUser]);
 
   const translations = {
     en: {
@@ -94,41 +96,38 @@ const MyHires = () => {
       stats: {
         total: 'Total Hires',
         active: 'Active',
-        terminated: 'Terminated',
-        pending: 'Pending'
+        awaitingPayment: 'Awaiting Payment',
+        terminated: 'Terminated'
       },
       status: {
+        offer_sent: 'Awaiting Payment',
         active: 'Active',
-        terminated: 'Terminated',
-        pending: 'Pending',
-        completed: 'Completed',
-        accepted: 'Accepted',
-        hired: 'Hired',
-        offer_sent: 'Pending Payment'
+        terminated: 'Terminated'
+      },
+      payment: {
+        paid: 'Paid',
+        unpaid: 'Unpaid',
+        pending: 'Processing'
       },
       table: {
         worker: 'Worker',
         job: 'Job Title',
         salary: 'Salary',
-        startDate: 'Start Date',
+        commission: 'Commission',
+        hiredOn: 'Hired On',
         status: 'Status',
+        payment: 'Payment',
         actions: 'Actions'
       },
       modal: {
         title: 'Hire Details',
-        workerName: 'Worker Name',
-        jobTitle: 'Job Title',
         salary: 'Salary',
+        commission: 'Commission',
         startDate: 'Start Date',
         endDate: 'End Date',
         status: 'Status',
         contact: 'Contact Information',
-        phone: 'Phone',
-        email: 'Email',
-        location: 'Location',
         rating: 'Rating',
-        notes: 'Notes',
-        close: 'Close',
         terminate: 'Terminate',
         message: 'Send Message'
       },
@@ -139,6 +138,7 @@ const MyHires = () => {
         placeholder: 'Enter reason...',
         cancel: 'Cancel',
         confirmButton: 'Terminate Hire',
+        processing: 'Terminating...',
         success: 'Hire terminated successfully',
         error: 'Error terminating hire'
       },
@@ -149,25 +149,23 @@ const MyHires = () => {
       },
       filters: {
         all: 'All Hires',
+        offer_sent: 'Awaiting Payment',
         active: 'Active',
-        terminated: 'Terminated',
-        pending: 'Pending',
-        hired: 'Hired',
-        offerSent: 'Pending Payment'
+        terminated: 'Terminated'
       },
       empty: {
         title: 'No hires yet',
-        description: 'You haven\'t hired any workers yet',
+        description: "You haven't hired any workers yet",
         start: 'Find workers to hire'
       },
       loading: 'Loading hires...',
-      languageToggle: 'العربية',
       searchPlaceholder: 'Search by worker name or job title...',
       noResults: 'No hires match your search',
       clearFilters: 'Clear filters',
       refresh: 'Refresh',
-      salaryPerMonth: 'EGP/month',
-      creatingConversation: 'Creating conversation...'
+      salaryPerMonth: 'EGP/mo',
+      showing: 'Showing',
+      hiresWord: 'hires'
     },
     ar: {
       title: 'توظيفاتي',
@@ -175,41 +173,38 @@ const MyHires = () => {
       stats: {
         total: 'إجمالي التوظيفات',
         active: 'نشط',
-        terminated: 'منتهي',
-        pending: 'قيد الانتظار'
+        awaitingPayment: 'في انتظار الدفع',
+        terminated: 'منتهي'
       },
       status: {
+        offer_sent: 'في انتظار الدفع',
         active: 'نشط',
-        terminated: 'منتهي',
-        pending: 'قيد الانتظار',
-        completed: 'مكتمل',
-        accepted: 'مقبول',
-        hired: 'موظف',
-        offer_sent: 'في انتظار الدفع'
+        terminated: 'منتهي'
+      },
+      payment: {
+        paid: 'مدفوع',
+        unpaid: 'غير مدفوع',
+        pending: 'قيد المعالجة'
       },
       table: {
         worker: 'العامل',
         job: 'المسمى الوظيفي',
         salary: 'الراتب',
-        startDate: 'تاريخ البدء',
+        commission: 'العمولة',
+        hiredOn: 'تاريخ التوظيف',
         status: 'الحالة',
+        payment: 'الدفع',
         actions: 'الإجراءات'
       },
       modal: {
         title: 'تفاصيل التوظيف',
-        workerName: 'اسم العامل',
-        jobTitle: 'المسمى الوظيفي',
         salary: 'الراتب',
+        commission: 'العمولة',
         startDate: 'تاريخ البدء',
         endDate: 'تاريخ الانتهاء',
         status: 'الحالة',
         contact: 'معلومات الاتصال',
-        phone: 'الهاتف',
-        email: 'البريد الإلكتروني',
-        location: 'الموقع',
         rating: 'التقييم',
-        notes: 'ملاحظات',
-        close: 'إغلاق',
         terminate: 'إنهاء',
         message: 'إرسال رسالة'
       },
@@ -220,6 +215,7 @@ const MyHires = () => {
         placeholder: 'أدخل السبب...',
         cancel: 'إلغاء',
         confirmButton: 'إنهاء التوظيف',
+        processing: 'جاري الإنهاء...',
         success: 'تم إنهاء التوظيف بنجاح',
         error: 'خطأ في إنهاء التوظيف'
       },
@@ -230,11 +226,9 @@ const MyHires = () => {
       },
       filters: {
         all: 'جميع التوظيفات',
+        offer_sent: 'في انتظار الدفع',
         active: 'نشط',
-        terminated: 'منتهي',
-        pending: 'قيد الانتظار',
-        hired: 'موظف',
-        offerSent: 'في انتظار الدفع'
+        terminated: 'منتهي'
       },
       empty: {
         title: 'لا توجد توظيفات',
@@ -242,21 +236,48 @@ const MyHires = () => {
         start: 'ابحث عن عمال للتوظيف'
       },
       loading: 'جاري تحميل التوظيفات...',
-      languageToggle: 'English',
       searchPlaceholder: 'ابحث باسم العامل أو المسمى الوظيفي...',
       noResults: 'لا توجد توظيفات تطابق بحثك',
       clearFilters: 'مسح التصفيات',
       refresh: 'تحديث',
       salaryPerMonth: 'جنيه/شهر',
-      creatingConversation: 'جاري إنشاء المحادثة...'
+      showing: 'عرض',
+      hiresWord: 'توظيف'
     }
   };
 
   const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
-  // 3. EFFECTS
+  // LOAD HIRES
   // ============================================================
+  const loadHires = useCallback(async () => {
+    if (!authUser?.email) {
+      setHires([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const hiresData = await hireService.getMyHires();
+      const employerHires = Array.isArray(hiresData) ? hiresData : [];
+
+      employerHires.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.startDate || 0);
+        const dateB = new Date(b.createdAt || b.startDate || 0);
+        return dateB - dateA;
+      });
+
+      setHires(employerHires);
+    } catch (error) {
+      console.error('Error loading hires:', error);
+      setHires([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [authUser]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -271,131 +292,44 @@ const MyHires = () => {
     }
 
     loadHires();
-  }, [authUser, isAuthenticated, authLoading, navigate]);
+  }, [authUser, isAuthenticated, authLoading, navigate, loadHires]);
 
   // ============================================================
-  // 4. LOAD HIRES
+  // SINGLE FILTERING PIPELINE (one memoized selector)
   // ============================================================
-  const loadHires = async () => {
-    setLoading(true);
-
-    try {
-    const employerEmail = authUser?.email;
-    const employerId = authUser?.id;
-
-    if (!employerEmail) {
-      setHires([]);
-      setFilteredHires([]);
-      setLoading(false);
-      return;
-    }
-
-      console.log('📂 Loading hires for employer:', { employerEmail, employerId });
-
-      const hiresData = await hireService.getMyHires();
-      const employerHires = Array.isArray(hiresData) ? hiresData : [];
-
-      console.log(`📌 Found ${employerHires.length} hires from backend`);
-
-      employerHires.sort((a, b) => {
-        const dateA = new Date(a.startDate || a.createdAt || 0);
-        const dateB = new Date(b.startDate || b.createdAt || 0);
-        return dateB - dateA;
-      });
-
-      console.log(`✅ Total hires loaded: ${employerHires.length}`);
-      setHires(employerHires);
-      setFilteredHires(employerHires);
-
-    } catch (error) {
-      console.error('Error loading hires:', error);
-      setHires([]);
-      setFilteredHires([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (authUser) {
-      loadHires();
-    }
-  }, [authUser]);
-
-  // ============================================================
-  // 5. FILTERS
-  // ============================================================
-  useEffect(() => {
-    let filtered = [...hires];
+  const filteredHires = useMemo(() => {
+    let list = hires;
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(hire => hire.status === statusFilter);
+      list = list.filter(hire => normalizeStatus(hire.status) === statusFilter);
     }
 
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(hire =>
-        hire.workerName?.toLowerCase().includes(searchLower) ||
-        hire.jobTitle?.toLowerCase().includes(searchLower)
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(hire =>
+        hire.workerName?.toLowerCase().includes(q) ||
+        hire.jobTitle?.toLowerCase().includes(q)
       );
     }
 
-    setFilteredHires(filtered);
+    return list;
   }, [hires, statusFilter, searchTerm]);
 
-  // ============================================================
-  // 6. CREATE CONVERSATION WHEN HIRING
-  // ============================================================
-  const createConversationForHire = async (hire) => {
-    if (!hire) return;
-
-    const workerId = hire.workerId;
-    const workerName = hire.workerName || 'Worker';
-    const jobTitle = hire.jobTitle || 'the job';
-
-    if (!workerId) {
-      console.error('No worker ID found for hire:', hire);
-      return false;
-    }
-
-    const employerId = authUser?.id;
-    const employerName = authUser?.fullName || 'Employer';
-
-    console.log('💬 Creating conversation for hire:', { workerId, workerName, jobTitle });
-
-    try {
-      setCreatingConversation(true);
-
-      const result = await sendMessage(
-        employerId,
-        employerName,
-        'EMPLOYER',
-        workerId,
-        workerName,
-        `Hello ${workerName}! I've hired you for ${jobTitle}. Let's discuss the next steps.`
-      );
-
-      if (result) {
-        console.log('✅ Conversation created successfully');
-        return true;
-      } else {
-        console.log('❌ Failed to create conversation');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      return false;
-    } finally {
-      setCreatingConversation(false);
-    }
-  };
+  // Stats derived from the same canonical statuses
+  const stats = useMemo(() => {
+    const normalized = hires.map(h => normalizeStatus(h.status));
+    return {
+      total: hires.length,
+      active: normalized.filter(s => s === HIRE_STATUS.ACTIVE).length,
+      awaitingPayment: normalized.filter(s => s === HIRE_STATUS.OFFER_SENT).length,
+      terminated: normalized.filter(s => s === HIRE_STATUS.TERMINATED).length
+    };
+  }, [hires]);
 
   // ============================================================
-  // 7. HANDLERS
+  // HANDLERS
   // ============================================================
-  const handleRefresh = () => {
-    loadHires();
-  };
+  const handleRefresh = () => loadHires();
 
   const handleViewDetails = (hire) => {
     setSelectedHire(hire);
@@ -414,63 +348,54 @@ const MyHires = () => {
     setShowDetailsModal(false);
   };
 
-  const handleTerminateHire = () => {
-    if (!terminatingHire) return;
+  // Persist termination to the backend so status is truthful after refresh
+  const handleTerminateHire = async () => {
+    if (!terminatingHire || terminating) return;
 
+    const hireId = terminatingHire.id || terminatingHire.hireId;
+    const terminationDate = new Date().toISOString();
+    const reason = terminateReason || 'No reason provided';
+
+    setTerminating(true);
     try {
-      const updatedHire = {
-        ...terminatingHire,
-        status: 'terminated',
-        terminationDate: new Date().toISOString(),
-        terminationReason: terminateReason || 'No reason provided'
-      };
+      if (hireId) {
+        await hireService.updateHireStatus(hireId, HIRE_STATUS.TERMINATED);
+      }
 
       setHires(prev => prev.map(h =>
-        h.id === terminatingHire.id || h.offerId === terminatingHire.offerId
-          ? updatedHire
+        (h.id === terminatingHire.id || h.hireId === terminatingHire.hireId)
+          ? { ...h, status: HIRE_STATUS.TERMINATED, terminationDate, terminationReason: reason }
           : h
       ));
 
       setShowTerminateModal(false);
       setTerminatingHire(null);
-
       alert(t.terminate.success);
-
     } catch (error) {
       console.error('Error terminating hire:', error);
       alert(t.terminate.error);
+    } finally {
+      setTerminating(false);
     }
   };
 
-  // ============================================================
-  // FIXED: handleSendMessage - Opens chat with the worker
-  // ============================================================
   const handleSendMessage = async (hire) => {
     if (!hire) return;
 
     const workerId = hire.workerId;
     const workerName = hire.workerName || 'Worker';
 
-    console.log('💬 Opening chat with worker:', { workerId, workerName });
-
     if (!workerId) {
-      console.error('No worker ID found for hire:', hire);
       alert('Unable to open chat: Worker ID not found');
       return;
     }
 
-    // First, check if conversation exists by trying to send a message
-    // If the conversation doesn't exist, this will create it
     const employerId = authUser?.id;
     const employerName = authUser?.fullName || 'Employer';
-    const jobTitle = hire.jobTitle || 'the job';
 
-    // Try to send a message - this will create the conversation if it doesn't exist
     try {
       setCreatingConversation(true);
-
-      // Send a message - this will create the conversation if it doesn't exist
-      const result = await sendMessage(
+      await sendMessage(
         employerId,
         employerName,
         'EMPLOYER',
@@ -478,73 +403,82 @@ const MyHires = () => {
         workerName,
         `Hello ${workerName}! Let's discuss your work.`
       );
-
-      if (result) {
-        console.log('✅ Conversation ensured');
-      }
     } catch (error) {
       console.error('Error ensuring conversation:', error);
-      // Continue anyway - the user will be redirected
     } finally {
       setCreatingConversation(false);
     }
 
-    // Navigate to messages page with worker info as URL parameters
-    navigate(`/employer-messages?workerId=${encodeURIComponent(workerId)}&workerName=${encodeURIComponent(workerName)}`);
+    // Deterministic conversation id (same algorithm as chat backend)
+    const conversationId = getConversationId(employerId, workerId);
+
+    navigate(
+      `/employer-messages?workerId=${encodeURIComponent(workerId)}&workerName=${encodeURIComponent(workerName)}`,
+      { state: { conversationId, workerId, workerName } }
+    );
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      active: 'bg-green-100 text-green-800 border border-green-200',
-      hired: 'bg-blue-100 text-blue-800 border border-blue-200',
-      accepted: 'bg-blue-100 text-blue-800 border border-blue-200',
-      terminated: 'bg-red-100 text-red-800 border border-red-200',
-      pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-      offer_sent: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-      completed: 'bg-purple-100 text-purple-800 border border-purple-200'
+  // ============================================================
+  // PRESENTATION HELPERS
+  // ============================================================
+  const getStatusBadge = (status) => {
+    const canonical = normalizeStatus(status);
+    const styles = {
+      [HIRE_STATUS.ACTIVE]: 'bg-green-50 text-green-700 border-green-200',
+      [HIRE_STATUS.OFFER_SENT]: 'bg-amber-50 text-amber-700 border-amber-200',
+      [HIRE_STATUS.TERMINATED]: 'bg-red-50 text-red-700 border-red-200'
     };
-    return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white';
+    const icons = {
+      [HIRE_STATUS.ACTIVE]: <CheckCircle size={13} />,
+      [HIRE_STATUS.OFFER_SENT]: <Clock size={13} />,
+      [HIRE_STATUS.TERMINATED]: <XIcon size={13} />
+    };
+    return {
+      className: styles[canonical] || 'bg-gray-100 text-gray-700 border-gray-200',
+      icon: icons[canonical] || <AlertTriangle size={13} />,
+      label: t.status[canonical] || canonical
+    };
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'active': return <CheckCircle size={14} />;
-      case 'hired': return <CheckCircle size={14} />;
-      case 'accepted': return <CheckCircle size={14} />;
-      case 'terminated': return <XIcon size={14} />;
-      case 'pending': return <Clock size={14} />;
-      case 'offer_sent': return <Clock size={14} />;
-      case 'completed': return <CheckCircle size={14} />;
-      default: return <AlertTriangle size={14} />;
+  const getPaymentBadge = (hire) => {
+    const ps = (hire.paymentStatus || '').toLowerCase();
+    if (ps === 'completed' || ps === 'confirmed' || ps === 'paid') {
+      return { className: 'bg-green-50 text-green-700 border-green-200', label: t.payment.paid };
     }
-  };
-
-  // Reuses the existing t.status translation mapping (same pattern as AdminHires.jsx)
-  const getStatusLabel = (status) => {
-    return t.status[status] || status;
+    if (ps === 'pending' || ps === 'processing') {
+      return { className: 'bg-amber-50 text-amber-700 border-amber-200', label: t.payment.pending };
+    }
+    return { className: 'bg-gray-100 text-gray-600 border-gray-200', label: t.payment.unpaid };
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
   };
 
-  const formatCurrency = (amount) => {
-    return `${amount?.toLocaleString() || 0}`;
+  const formatCurrency = (amount) => `${Number(amount || 0).toLocaleString()}`;
+
+  const getCommission = (hire) => hire.commissionAmount ?? hire.totalDue ?? null;
+
+  const canMessageOrTerminate = (hire) => {
+    const s = normalizeStatus(hire.status);
+    return s === HIRE_STATUS.ACTIVE;
   };
 
-  const stats = {
-    total: hires.length,
-    active: hires.filter(h => h.status === 'active' || h.status === 'hired' || h.status === 'accepted').length,
-    terminated: hires.filter(h => h.status === 'terminated').length,
-    pending: hires.filter(h => h.status === 'pending' || h.status === 'offer_sent').length
+  const hasActiveFilters = statusFilter !== 'all' || searchTerm.trim() !== '';
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setSearchTerm('');
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -556,9 +490,21 @@ const MyHires = () => {
     );
   }
 
-  if (!authUser) {
-    return null;
-  }
+  if (!authUser) return null;
+
+  const statCards = [
+    { key: 'total', label: t.stats.total, value: stats.total, icon: Users, color: 'teal' },
+    { key: 'active', label: t.stats.active, value: stats.active, icon: CheckCircle, color: 'green' },
+    { key: 'awaitingPayment', label: t.stats.awaitingPayment, value: stats.awaitingPayment, icon: Clock, color: 'amber' },
+    { key: 'terminated', label: t.stats.terminated, value: stats.terminated, icon: XIcon, color: 'red' }
+  ];
+
+  const statColor = {
+    teal: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600',
+    green: 'bg-green-50 dark:bg-green-900/30 text-green-600',
+    amber: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600',
+    red: 'bg-red-50 dark:bg-red-900/30 text-red-600'
+  };
 
   return (
     <DashboardLayout requiredRole="EMPLOYER">
@@ -569,7 +515,7 @@ const MyHires = () => {
         rightContent={
           <button
             onClick={handleRefresh}
-            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
           >
             <RefreshCw size={16} />
             {t.refresh}
@@ -577,222 +523,341 @@ const MyHires = () => {
         }
       />
 
-        <div className="p-4 md:p-6">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0">
-                  {authUser?.profileImage ? (
-                    <img src={authUser.profileImage} alt={authUser.fullName || 'Employer'} className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={24} className="text-white m-3" />
-                  )}
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">{t.title}</h1>
-                  <p className="text-teal-100 mt-1">{t.subtitle}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-teal-100">
-                <Users size={18} />
-                <span>{stats.total} workers hired</span>
-              </div>
-            </div>
+      <div className="p-4 md:p-6 space-y-6">
+        {/* Page heading + summary strip */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t.title}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t.subtitle}</p>
           </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
-                  <Users size={20} className="text-teal-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.total}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.active}</p>
-                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                  <CheckCircle size={20} className="text-green-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.active}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.terminated}</p>
-                <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                  <XIcon size={20} className="text-red-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.terminated}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-yellow-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <Users size={16} className="text-teal-600" />
+            <span className="font-medium text-gray-700 dark:text-gray-300">{stats.total}</span>
+            <span>{t.hiresWord}</span>
           </div>
+        </div>
 
-          {/* Search and Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
-            <div className="flex flex-col lg:flex-row gap-3">
-              <div className="flex-1 relative">
-                <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
-                >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="active">{t.filters.active}</option>
-                  <option value="hired">{t.filters.hired || 'Hired'}</option>
-                  <option value="terminated">{t.filters.terminated}</option>
-                  <option value="pending">{t.filters.pending}</option>
-                  <option value="offer_sent">{t.filters.offerSent}</option>
-                </select>
-              </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {statCards.map(card => {
+            const Icon = card.icon;
+            return (
+              <button
+                key={card.key}
+                onClick={() => setStatusFilter(card.key === 'total' ? 'all' : card.key === 'awaitingPayment' ? HIRE_STATUS.OFFER_SENT : card.key === 'terminated' ? HIRE_STATUS.TERMINATED : HIRE_STATUS.ACTIVE)}
+                className={`text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border transition-all hover:shadow-md ${
+                  (card.key === 'total' && statusFilter === 'all') ||
+                  (card.key === 'active' && statusFilter === HIRE_STATUS.ACTIVE) ||
+                  (card.key === 'awaitingPayment' && statusFilter === HIRE_STATUS.OFFER_SENT) ||
+                  (card.key === 'terminated' && statusFilter === HIRE_STATUS.TERMINATED)
+                    ? 'border-teal-400 ring-1 ring-teal-400'
+                    : 'border-gray-100 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${statColor[card.color]}`}>
+                    <Icon size={16} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{card.value}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search + Filters */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 border border-gray-100 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
+              <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+              />
             </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
+            >
+              <option value="all">{t.filters.all}</option>
+              <option value={HIRE_STATUS.ACTIVE}>{t.filters.active}</option>
+              <option value={HIRE_STATUS.OFFER_SENT}>{t.filters.offer_sent}</option>
+              <option value={HIRE_STATUS.TERMINATED}>{t.filters.terminated}</option>
+            </select>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
+              >
+                {t.clearFilters}
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Results Count */}
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> hires
-            </p>
-          </div>
+        {/* Results count */}
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {t.showing} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> {t.hiresWord}
+        </p>
 
-          {/* Hires List */}
-          {filteredHires.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
-              <div className="text-6xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500 dark:text-gray-400">{t.empty.description}</p>
+        {/* Empty state */}
+        {filteredHires.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+              {hasActiveFilters ? t.noResults : t.empty.title}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">{hasActiveFilters ? '' : t.empty.description}</p>
+            {!hasActiveFilters ? (
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
               >
                 {t.empty.start}
               </button>
+            ) : (
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                {t.clearFilters}
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Desktop table (md+) */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-700">
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.worker}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.salary}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.commission}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.hiredOn}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.status}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.payment}</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.actions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/60">
+                  {filteredHires.map((hire) => {
+                    const status = getStatusBadge(hire.status);
+                    const payment = getPaymentBadge(hire);
+                    const commission = getCommission(hire);
+                    const key = hire.id || hire.hireId || hire.offerId;
+                    return (
+                      <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
+                        {/* Worker identity */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                              {hire.workerImage ? (
+                                <img src={hire.workerImage} alt={hire.workerName} className="w-full h-full object-cover" />
+                              ) : (
+                                <User size={18} className="text-teal-600" />
+                              )}
+                              {hire.isPremium && (
+                                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                                  <Crown size={8} className="text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || 'Unknown Worker'}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
+                                <Briefcase size={11} />
+                                {hire.jobTitle || 'Service Provider'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        {/* Salary */}
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
+                          <p className="text-xs text-gray-400">{t.salaryPerMonth}</p>
+                        </td>
+                        {/* Commission */}
+                        <td className="px-4 py-3">
+                          {commission != null ? (
+                            <p className="font-medium text-teal-600">{formatCurrency(commission)} EGP</p>
+                          ) : (
+                            <p className="text-gray-400">-</p>
+                          )}
+                        </td>
+                        {/* Date */}
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+                            <Calendar size={13} className="text-gray-400" />
+                            {formatDate(hire.createdAt || hire.startDate)}
+                          </p>
+                        </td>
+                        {/* Status */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                            {status.icon}
+                            {status.label}
+                          </span>
+                        </td>
+                        {/* Payment */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${payment.className}`}>
+                            <Wallet size={12} />
+                            {payment.label}
+                          </span>
+                        </td>
+                        {/* Actions */}
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => handleViewDetails(hire)}
+                              className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
+                              title={t.actions.view}
+                            >
+                              <Eye size={16} />
+                            </button>
+                            {canMessageOrTerminate(hire) && (
+                              <>
+                                <button
+                                  onClick={() => handleSendMessage(hire)}
+                                  disabled={creatingConversation}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
+                                  title={t.actions.message}
+                                >
+                                  {creatingConversation ? (
+                                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <MessageCircle size={16} />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleTerminateClick(hire)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                                  title={t.actions.terminate}
+                                >
+                                  <XIcon size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredHires.map((hire) => (
-                <div
-                  key={hire.id || hire.hireId || hire.offerId}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition ${
-                    hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted' ? 'border-green-200' :
-                    hire.status === 'terminated' ? 'border-red-200' : 'border-yellow-200'
-                  }`}
-                >
-                  <div className="p-4">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+
+            {/* Mobile cards (< md) */}
+            <div className="md:hidden space-y-3">
+              {filteredHires.map((hire) => {
+                const status = getStatusBadge(hire.status);
+                const payment = getPaymentBadge(hire);
+                const commission = getCommission(hire);
+                const key = hire.id || hire.hireId || hire.offerId;
+                return (
+                  <div key={key} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                    {/* Top: identity + status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-11 h-11 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                           {hire.workerImage ? (
                             <img src={hire.workerImage} alt={hire.workerName} className="w-full h-full object-cover" />
                           ) : (
-                            <User size={24} className="text-teal-600" />
+                            <User size={20} className="text-teal-600" />
                           )}
                           {hire.isPremium && (
-                            <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                              <Crown size={10} className="text-white" />
+                            <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
+                              <Crown size={8} className="text-white" />
                             </div>
                           )}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-800 dark:text-white">{hire.workerName || 'Unknown Worker'}</h3>
-                            {hire.isPremium && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
-                                <Crown size={10} className="text-yellow-500" />
-                                Premium
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                            <Briefcase size={14} />
-                            <span>{hire.jobTitle || 'Service Provider'}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            <span className="flex items-center gap-1">
-                              <DollarSign size={14} className="text-green-600" />
-                              {formatCurrency(hire.salary)} {t.salaryPerMonth}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              {formatDate(hire.startDate)}
-                            </span>
-                            {hire.workerRating && (
-                              <span className="flex items-center gap-1">
-                                <StarIcon size={14} className="text-yellow-500" />
-                                {hire.workerRating}
-                              </span>
-                            )}
-                          </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || 'Unknown Worker'}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
+                            <Briefcase size={11} />
+                            {hire.jobTitle || 'Service Provider'}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${getStatusColor(hire.status)}`}>
-                          {getStatusIcon(hire.status)}
-                          {getStatusLabel(hire.status)}
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border flex-shrink-0 ${status.className}`}>
+                        {status.icon}
+                        {status.label}
+                      </span>
+                    </div>
+
+                    {/* Middle: key facts */}
+                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.salary}</p>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
+                        <p className="text-[10px] text-gray-400">{t.salaryPerMonth}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.commission}</p>
+                        <p className="text-sm font-semibold text-teal-600">{commission != null ? formatCurrency(commission) : '-'}</p>
+                        <p className="text-[10px] text-gray-400">EGP</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.payment}</p>
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border mt-0.5 ${payment.className}`}>
+                          <Wallet size={10} />
+                          {payment.label}
                         </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewDetails(hire)}
-                            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition"
-                            title={t.actions.view}
-                          >
-                            <Eye size={16} />
-                          </button>
-                          {(hire.status === 'active' || hire.status === 'hired' || hire.status === 'accepted') && (
-                            <>
-                              <button
-                                onClick={() => handleSendMessage(hire)}
-                                disabled={creatingConversation}
-                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
-                                title={t.actions.message}
-                              >
-                                {creatingConversation ? (
-                                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <MessageCircle size={16} />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleTerminateClick(hire)}
-                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:bg-red-900/30 rounded-lg transition"
-                                title={t.actions.terminate}
-                              >
-                                <XIcon size={16} />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom: actions */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-xs text-gray-400 flex items-center gap-1">
+                        <Calendar size={12} />
+                        {formatDate(hire.createdAt || hire.startDate)}
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleViewDetails(hire)}
+                          className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
+                          title={t.actions.view}
+                        >
+                          <Eye size={16} />
+                        </button>
+                        {canMessageOrTerminate(hire) && (
+                          <>
+                            <button
+                              onClick={() => handleSendMessage(hire)}
+                              disabled={creatingConversation}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
+                              title={t.actions.message}
+                            >
+                              {creatingConversation ? (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <MessageCircle size={16} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleTerminateClick(hire)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                              title={t.actions.terminate}
+                            >
+                              <XIcon size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
-        </div>
+          </>
+        )}
+      </div>
 
       {/* Details Modal */}
       {showDetailsModal && selectedHire && (
@@ -800,7 +865,7 @@ const MyHires = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t.modal.title}</h2>
-              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors">
+              <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -822,7 +887,7 @@ const MyHires = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-white">{selectedHire.workerName}</h3>
                     {selectedHire.isPremium && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                         <Crown size={10} className="text-yellow-500" />
                         Premium
                       </span>
@@ -830,10 +895,15 @@ const MyHires = () => {
                   </div>
                   <p className="text-gray-500 dark:text-gray-400">{selectedHire.jobTitle}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(selectedHire.status)}`}>
-                      {getStatusIcon(selectedHire.status)}
-                      {getStatusLabel(selectedHire.status)}
-                    </span>
+                    {(() => {
+                      const s = getStatusBadge(selectedHire.status);
+                      return (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1 border ${s.className}`}>
+                          {s.icon}
+                          {s.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -844,8 +914,12 @@ const MyHires = () => {
                   <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t.salaryPerMonth}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.commission}</p>
+                  <p className="text-lg font-bold text-teal-600">{getCommission(selectedHire) != null ? `${formatCurrency(getCommission(selectedHire))} EGP` : '-'}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.startDate}</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.startDate)}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.startDate || selectedHire.createdAt)}</p>
                 </div>
                 {selectedHire.terminationDate && (
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
@@ -868,21 +942,21 @@ const MyHires = () => {
                 <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.modal.contact}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-3">
-                    <Mail size={16} className="text-gray-400 dark:text-gray-500" />
+                    <Mail size={16} className="text-gray-400" />
                     <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerEmail || 'Not provided'}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Phone size={16} className="text-gray-400 dark:text-gray-500" />
+                    <Phone size={16} className="text-gray-400" />
                     <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerPhone || 'Not provided'}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <MapPin size={16} className="text-gray-400 dark:text-gray-500" />
+                    <MapPin size={16} className="text-gray-400" />
                     <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerLocation || 'Not specified'}</span>
                   </div>
                 </div>
               </div>
 
-              {(selectedHire.status === 'active' || selectedHire.status === 'hired' || selectedHire.status === 'accepted') && (
+              {canMessageOrTerminate(selectedHire) && (
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => handleSendMessage(selectedHire)}
@@ -898,7 +972,7 @@ const MyHires = () => {
                   </button>
                   <button
                     onClick={() => handleTerminateClick(selectedHire)}
-                    className="flex-1 px-4 py-2 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 dark:bg-red-900/30 transition flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition flex items-center justify-center gap-2"
                   >
                     <XIcon size={18} />
                     {t.actions.terminate}
@@ -918,7 +992,7 @@ const MyHires = () => {
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.terminate.title}</h3>
               <button
                 onClick={() => setShowTerminateModal(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -939,15 +1013,18 @@ const MyHires = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowTerminateModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
+                disabled={terminating}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
               >
                 {t.terminate.cancel}
               </button>
               <button
                 onClick={handleTerminateHire}
-                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition"
+                disabled={terminating}
+                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {t.terminate.confirmButton}
+                {terminating && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {terminating ? t.terminate.processing : t.terminate.confirmButton}
               </button>
             </div>
           </div>
