@@ -1,602 +1,94 @@
 // backend/src/routes/auth.js
 import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import { getJwtSecret } from '../config/jwtSecret.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { upload, uploadFromBuffer } from '../utils/cloudinary.js';
+import * as authController from '../controllers/authController.js';
 
-
-const serializeUser = (user) => {
-  if (!user) return null;
-  const obj = user.toObject ? user.toObject() : { ...user };
-  obj.id = obj._id;
-  return obj;
-};
-
-// ============================================================
-// Register
-// ============================================================
 const router = express.Router();
-router.post('/register', async (req, res) => {
-  try {
-    const { fullName, email, password, role, phone, location } = req.body;
-
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User already exists' 
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
-    const user = new User({
-      fullName,
-      email,
-      password: hashedPassword,
-      role: role || 'WORKER',
-      phone: phone || '',
-      location: location || ''
-    });
-
-    await user.save();
-
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
-
-    // Return user data (without password)
-    const userData = serializeUser(user);
-    delete userData.password;
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: userData
-    });
-
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Registration failed',
-      error: error.message 
-    });
-  }
-});
 
 // ============================================================
-// Login
+// Register - Delegates to controller
 // ============================================================
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
-
-    // Return user data (without password)
-    const userData = serializeUser(user);
-    delete userData.password;
-
-    res.json({
-      success: true,
-      token,
-      mustChangePassword: !!user.mustChangePassword,
-      user: userData
-    });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Login failed',
-      error: error.message
-    });
-  }
-});
+router.post('/register', authController.register);
 
 // ============================================================
-// GET ALL USERS (Admin only)
+// Login - Delegates to controller
+// ============================================================
+router.post('/login', authController.login);
+
+// ============================================================
+// GET ALL USERS (Admin only) - Delegates to controller
 // PHASE 0 SECURITY FIX (audit §3): this previously had no auth check
 // at all and leaked every user's PII to anonymous callers.
 // ============================================================
-router.get('/users', requireAdmin, async (req, res) => {
-  try {
-    // Get ALL users - NO filters
-    const users = await User.find({})
-      .select('-password') // Don't send passwords
-      .sort({ createdAt: -1 }); // Newest first
-
-    console.log(`✅ Auth route: Found ${users.length} users`);
-    
-    res.json({
-      success: true,
-      count: users.length,
-      users: users.map(serializeUser)
-    });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch users',
-      error: error.message
-    });
-  }
-});
+router.get('/users', requireAdmin, authController.getAllUsers);
 
 // ============================================================
-// GET USER BY ID (Admin only)
+// GET USER BY ID (Admin only) - Delegates to controller
 // PHASE 0 SECURITY FIX (audit §3): this previously had no auth check.
 // ============================================================
-router.get('/users/:id', requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      user: serializeUser(user)
-    });
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user',
-      error: error.message
-    });
-  }
-});
+router.get('/users/:id', requireAdmin, authController.getUserById);
 
 // ============================================================
-// Verify Token
+// Verify Token - Delegates to controller
 // ============================================================
-router.get('/verify', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided'
-      });
-    }
-
-    const decoded = jwt.verify(token, getJwtSecret());
-    const user = await User.findById(decoded.userId).select('-password');
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      user: serializeUser(user)
-    });
-
-  } catch (error) {
-    console.error('Verify error:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Invalid token'
-    });
-  }
-});
+router.get('/verify', authController.verifyToken);
 
 // ============================================================
 // Update Profile (generic — works for any authenticated user)
+// Delegates to controller
 // Whitelisted fields only: fullName, phone, language, profileImage.
 // Only fields present in the request body are updated, so partial
 // updates (e.g. profileImage-only from the legacy migration) keep
 // working while support staff can also save name/phone/language.
 // ============================================================
-router.put('/profile', authenticate, async (req, res) => {
-  try {
-    const { fullName, phone, language, profileImage } = req.body;
-
-    const updates = {};
-    if (fullName !== undefined) updates.fullName = fullName;
-    if (phone !== undefined) updates.phone = phone;
-    if (language !== undefined) updates.language = language;
-    if (profileImage !== undefined) updates.profileImage = profileImage;
-
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No updatable fields provided'
-      });
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      user: serializeUser(user)
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update profile',
-      error: error.message
-    });
-  }
-});
+router.put('/profile', authenticate, authController.updateProfile);
 
 // ============================================================
-// Forgot Password
+// Forgot Password - Delegates to controller
 // ============================================================
-router.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // In production, send reset email here
-    // For now, just return success
-    res.json({
-      success: true,
-      message: 'Password reset email sent'
-    });
-
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process request'
-    });
-  }
-});
+router.post('/forgot-password', authController.forgotPassword);
 
 // ============================================================
-// Reset Password
+// Reset Password - Delegates to controller
 // ============================================================
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-    
-    // Verify token
-    const decoded = jwt.verify(token, getJwtSecret());
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
-
-  } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reset password'
-    });
-  }
-});
+router.post('/reset-password', authController.resetPassword);
 
 // ============================================================
-// Upload Profile Photo
+// Upload Profile Photo - Delegates to controller
 // ============================================================
 router.post(
   '/upload-photo',
   authenticate,
   upload.single('photo'),
-  async (req, res) => {
-    try {
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No photo uploaded'
-        });
-      }
-
-      const uploaded = await uploadFromBuffer(req.file.buffer, {
-        folder: 'homelyserv',
-        transformation: [{ width: 500, height: 500, crop: 'limit' }]
-      });
-
-      const imageUrl = uploaded.secure_url;
-
-      const user = await User.findByIdAndUpdate(
-        req.userId,
-        { profileImage: imageUrl },
-        {
-          new: true
-        }
-      ).select('-password');
-
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-
-
-      res.json({
-        success: true,
-        message: 'Photo uploaded successfully',
-        user: serializeUser(user)
-      });
-
-
-    } catch (error) {
-
-      console.error(
-        'Upload photo error:',
-        error
-      );
-
-      res.status(500).json({
-        success: false,
-        message: 'Upload failed',
-        error: error.message
-      });
-
-    }
-
-  }
+  authController.uploadProfilePhoto
 );
 
 // ============================================================
-// Get User Settings
+// Get User Settings - Delegates to controller
 // ============================================================
-router.get('/settings', authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId).select('settings');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      settings: user.settings || {}
-    });
-  } catch (error) {
-    console.error('Get settings error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get settings'
-    });
-  }
-});
+router.get('/settings', authenticate, authController.getSettings);
 
 // ============================================================
-// Update User Settings
+// Update User Settings - Delegates to controller
 // ============================================================
-router.put('/settings', authenticate, async (req, res) => {
-  try {
-    const settings = req.body.settings || req.body;
-    
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: { settings: settings } },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Settings saved successfully',
-      user: serializeUser(user)
-    });
-  } catch (error) {
-    console.error('Update settings error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update settings'
-    });
-  }
-});
+router.put('/settings', authenticate, authController.updateSettings);
 
 // ============================================================
-// Change Password
+// Change Password - Delegates to controller
 // ============================================================
-router.put('/change-password', authenticate, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    user.mustChangePassword = false;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to change password',
-      error: error.message
-    });
-  }
-});
+router.put('/change-password', authenticate, authController.changePassword);
 
 // ============================================================
-// Delete Account
+// Delete Account - Delegates to controller
 // ============================================================
-router.delete('/account', authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    await User.findByIdAndDelete(req.userId);
-
-    res.json({
-      success: true,
-      message: 'Account deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete account error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete account'
-    });
-  }
-});
+router.delete('/account', authenticate, authController.deleteAccount);
 
 // ============================================================
 // Change Password (POST - legacy/via authStore)
+// Delegates to controller
 // ============================================================
-router.post('/change-password', authenticate, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    user.mustChangePassword = false;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to change password',
-      error: error.message
-    });
-  }
-});
+router.post('/change-password', authenticate, authController.changePasswordPost);
 
 // ============================================================
 // Export Router

@@ -1,217 +1,150 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma.js';
+import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
 
 // ============================================================
-// COUNTRY VALIDATION
-// Registration must submit a standardized country:
-//   countryCode - ISO 3166-1 alpha-2 (validated against the
-//                 runtime's built-in ICU region data, no list
-//                 duplication needed)
-//   countryName - non-empty display name (max 100 chars)
-// Flag emojis are a frontend concern and are never stored.
-// ============================================================
-const regionDisplayNames = new Intl.DisplayNames(['en'], { type: 'region' });
-
-const isValidIsoCountryCode = (code) => {
-  if (typeof code !== 'string' || !/^[A-Z]{2}$/.test(code)) return false;
-  try {
-    const name = regionDisplayNames.of(code);
-    // Unknown codes echo back the code itself or "Unknown Region"
-    return Boolean(name) && name !== code && name.toLowerCase() !== 'unknown region';
-  } catch {
-    return false;
-  }
-};
-
 // REGISTER
+// ============================================================
 export const register = async (req, res) => {
   console.log('📝 Registration request received:', req.body);
   try {
-    const { email, password, fullName, phone, city, role, countryCode, countryName } = req.body;
-
-    // Country is required for new registrations and must be a
-    // valid ISO 3166-1 alpha-2 selection (no free-text values).
-    const normalizedCountryCode = String(countryCode || '').trim().toUpperCase();
-    const normalizedCountryName = String(countryName || '').trim();
-
-    if (!normalizedCountryCode || !normalizedCountryName) {
-      return res.status(400).json({
-        success: false,
-        message: 'Country is required'
-      });
-    }
-
-    if (!isValidIsoCountryCode(normalizedCountryCode) || normalizedCountryName.length > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid country selection'
-      });
-    }
+    const { fullName, email, password, role, phone, location } = req.body;
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({ 
-      where: { email } 
-    });
-    
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ 
-        success: false,
-        message: 'Email already registered' 
+        success: false, 
+        message: 'User already exists' 
       });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Generate username from email (remove @ and domain)
-    const baseUsername = email.split('@')[0];
-    const randomSuffix = Math.floor(Math.random() * 10000);
-    const username = `${baseUsername}${randomSuffix}`;
-
-    // Create user with proper role handling
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        username: username,
-        fullName,
-        phone: phone || '',
-        city: city || '',
-        countryCode: normalizedCountryCode,
-        countryName: normalizedCountryName,
-        role: role === 'employer' ? 'EMPLOYER' : 'WORKER',
-        image: '' // Initialize with empty image
-      }
+    // Create user
+    const user = new User({
+      fullName,
+      email,
+      password: hashedPassword,
+      role: role || 'WORKER',
+      phone: phone || '',
+      location: location || ''
     });
 
-    // Generate JWT token
+    await user.save();
+
+    // Send welcome email (non-blocking, fire-and-forget)
+    // Email sending must never block registration or cause rollback
+    const firstName = fullName.split(' ')[0]; // Extract first name
+    sendWelcomeEmail({
+      firstName,
+      role: user.role,
+      email: user.email,
+      language: user.language
+    }).catch(error => {
+      // Log error but don't throw - registration must succeed
+      console.error('[EMAIL] Failed to send welcome email during registration:', error);
+    });
+
+    // Generate token
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user._id, role: user.role },
       getJwtSecret(),
-      { expiresIn: '30d' }
+      { expiresIn: '7d' }
     );
 
-    // Return response with image field
+    // Return user data (without password)
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData.password;
+    delete userData._id;
+
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-         fullName: user.fullName,
-        role: user.role,
-        phone: user.phone,
-        city: user.city,
-        countryCode: user.countryCode || '',
-        countryName: user.countryName || '',
-        image: user.image || ''
-      }
+      user: userData
     });
+
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ 
-      success: false,
-      message: 'Server error',
+      success: false, 
+      message: 'Registration failed',
       error: error.message 
     });
   }
 };
 
+// ============================================================
 // LOGIN
+// ============================================================
 export const login = async (req, res) => {
   console.log('📝 Login request received:', req.body.email);
   try {
     const { email, password } = req.body;
 
     // Find user
-    const user = await prisma.user.findUnique({ 
-      where: { email } 
-    });
-    
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid email or password' 
-      });
-    }
-
-    // Check if suspended
-    if (user.isSuspended) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Account suspended. Contact support.' 
+        message: 'Invalid email or password'
       });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid email or password' 
+        message: 'Invalid email or password'
       });
     }
 
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     // Generate token
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user._id, role: user.role },
       getJwtSecret(),
-      { expiresIn: '30d' }
+      { expiresIn: '7d' }
     );
 
-    // Return response with image field
+    // Return user data (without password)
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData.password;
+    delete userData._id;
+
     res.json({
       success: true,
-      message: 'Login successful',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-         fullName: user.fullName,
-        role: user.role,
-        phone: user.phone,
-        city: user.city,
-        countryCode: user.countryCode || '',
-        countryName: user.countryName || '',
-        image: user.image || ''
-      }
+      mustChangePassword: !!user.mustChangePassword,
+      user: userData
     });
+
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message 
+      message: 'Login failed',
+      error: error.message
     });
   }
 };
 
+// ============================================================
 // GET CURRENT USER
+// ============================================================
 export const getMe = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        fullName: true,
-        role: true,
-        phone: true,
-        city: true,
-        countryCode: true,
-        countryName: true,
-        image: true,
-        language: true,
-        createdAt: true,
-        isVerified: true
-      }
-    });
+    const user = await User.findById(req.userId).select('-password');
     
     if (!user) {
       return res.status(404).json({ 
@@ -220,9 +153,13 @@ export const getMe = async (req, res) => {
       });
     }
     
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
+    
     res.json({
       success: true,
-      user
+      user: userData
     });
   } catch (error) {
     console.error('GetMe error:', error);
@@ -233,60 +170,466 @@ export const getMe = async (req, res) => {
   }
 };
 
+// ============================================================
 // UPDATE PROFILE
+// ============================================================
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, phone, city, image, category, experience, salary, availability, workType, bio, skills } = req.body;
+    const { fullName, phone, language, profileImage } = req.body;
     const userId = req.userId;
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: fullName || undefined,
-        phone: phone || undefined,
-        city: city || undefined,
-        image: image || undefined
-      }
-    });
+    const updates = {};
+    if (fullName !== undefined) updates.fullName = fullName;
+    if (phone !== undefined) updates.phone = phone;
+    if (language !== undefined) updates.language = language;
+    if (profileImage !== undefined) updates.profileImage = profileImage;
 
-    // Update worker profile if exists
-    if (category || experience || salary || availability || workType || bio || skills) {
-      const workerProfile = await prisma.workerProfile.findUnique({
-        where: { userId: userId }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No updatable fields provided'
       });
-
-      if (workerProfile) {
-        await prisma.workerProfile.update({
-          where: { userId: userId },
-          data: {
-            category: category || undefined,
-            experienceYears: experience ? parseInt(experience) : undefined,
-            expectedSalary: salary ? parseFloat(salary) : undefined,
-            availability: availability || undefined,
-            workType: workType || undefined,
-            bioEn: bio || undefined,
-            skills: skills || undefined
-          }
-        });
-      }
     }
 
-    const { password: _, ...userWithoutPassword } = updatedUser;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      user: {
-        ...userWithoutPassword,
-        image: userWithoutPassword.image || ''
-      }
+      user: userData
     });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update profile',
+      error: error.message
+    });
+  }
+};
+
+// ============================================================
+// GET ALL USERS (Admin only)
+// ============================================================
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    console.log(`✅ Auth controller: Found ${users.length} users`);
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users: users.map(user => {
+        const userObj = user.toObject();
+        userObj.id = userObj._id;
+        delete userObj._id;
+        return userObj;
+      })
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+};
+
+// ============================================================
+// GET USER BY ID (Admin only)
+// ============================================================
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
+
+    res.json({
+      success: true,
+      user: userData
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user',
+      error: error.message
+    });
+  }
+};
+
+// ============================================================
+// VERIFY TOKEN
+// ============================================================
+export const verifyToken = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const decoded = jwt.verify(token, getJwtSecret());
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
+
+    res.json({
+      success: true,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Verify error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+  }
+};
+
+// ============================================================
+// FORGOT PASSWORD
+// ============================================================
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // In production, send reset email here
+    res.json({
+      success: true,
+      message: 'Password reset email sent'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process request'
+    });
+  }
+};
+
+// ============================================================
+// RESET PASSWORD
+// ============================================================
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    // Verify token
+    const decoded = jwt.verify(token, getJwtSecret());
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password'
+    });
+  }
+};
+
+// ============================================================
+// UPLOAD PROFILE PHOTO
+// ============================================================
+export const uploadProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No photo uploaded'
+      });
+    }
+
+    const uploaded = await uploadFromBuffer(req.file.buffer, {
+      folder: 'homelyserv',
+      transformation: [{ width: 500, height: 500, crop: 'limit' }]
+    });
+
+    const imageUrl = uploaded.secure_url;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { profileImage: imageUrl },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
+
+    res.json({
+      success: true,
+      message: 'Photo uploaded successfully',
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Upload photo error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Upload failed',
+      error: error.message
+    });
+  }
+};
+
+// ============================================================
+// GET USER SETTINGS
+// ============================================================
+export const getSettings = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('settings');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: user.settings || {}
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get settings'
+    });
+  }
+};
+
+// ============================================================
+// UPDATE USER SETTINGS
+// ============================================================
+export const updateSettings = async (req, res) => {
+  try {
+    const settings = req.body.settings || req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { settings: settings } },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user.toObject();
+    userData.id = userData._id;
+    delete userData._id;
+
+    res.json({
+      success: true,
+      message: 'Settings saved successfully',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update settings'
+    });
+  }
+};
+
+// ============================================================
+// CHANGE PASSWORD
+// ============================================================
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.mustChangePassword = false;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
+    });
+  }
+};
+
+// ============================================================
+// DELETE ACCOUNT
+// ============================================================
+export const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    await User.findByIdAndDelete(req.userId);
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account'
+    });
+  }
+};
+
+// ============================================================
+// CHANGE PASSWORD (POST - legacy/via authStore)
+// ============================================================
+export const changePasswordPost = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.mustChangePassword = false;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
       error: error.message
     });
   }
