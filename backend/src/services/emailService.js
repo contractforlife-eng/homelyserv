@@ -1,11 +1,40 @@
 // backend/src/services/emailService.js
 // ============================================================
-// EMAIL SERVICE - ZOHO SMTP INTEGRATION
+// EMAIL SERVICE - RESEND API INTEGRATION (Primary) / ZOHO SMTP (Fallback)
 // ============================================================
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // ============================================================
-// SMTP CONFIGURATION
+// PROVIDER SELECTION & CONFIGURATION
+// ============================================================
+
+// Determine email provider (default to Resend for production)
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || (process.env.NODE_ENV === 'production' ? 'resend' : 'smtp');
+
+// Initialize Resend client if API key is available
+let resendClient = null;
+if (process.env.RESEND_API_KEY) {
+  resendClient = new Resend(process.env.RESEND_API_KEY);
+  console.log('[EMAIL] Resend client initialized');
+} else {
+  console.warn('[EMAIL] RESEND_API_KEY not found - Resend emails will fail');
+}
+
+// Validate configuration
+const validateResendConfig = () => {
+  if (EMAIL_PROVIDER === 'resend') {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is required when EMAIL_PROVIDER=resend');
+    }
+    if (!process.env.EMAIL_FROM) {
+      throw new Error('EMAIL_FROM is required when EMAIL_PROVIDER=resend');
+    }
+  }
+};
+
+// ============================================================
+// SMTP CONFIGURATION (Fallback)
 // ============================================================
 const createTransporter = () => {
   const smtpConfig = {
@@ -49,6 +78,111 @@ const getTransporter = () => {
 // ============================================================
 // EMAIL SERVICE FUNCTIONS
 // ============================================================
+
+/**
+ * Send email via Resend API
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} options.html - HTML content
+ * @param {string} options.text - Plain text content
+ * @param {string} [options.replyTo] - Reply-to address
+ * @returns {Promise<Object>} - Result object with success status
+ */
+const sendViaResend = async ({ to, subject, html, text, replyTo }) => {
+  try {
+    console.log('[EMAIL] Sending via Resend to:', to);
+
+    const emailData = {
+      from: process.env.EMAIL_FROM,
+      to: to,
+      subject: subject,
+      html: html,
+      text: text,
+    };
+
+    if (replyTo) {
+      emailData.replyTo = replyTo;
+    }
+
+    const { data, error } = await resendClient.emails.send(emailData);
+
+    if (error) {
+      console.error('[EMAIL] Resend send failed:', error);
+      return {
+        success: false,
+        message: 'Resend send failed',
+        error: error.message,
+        code: error.name
+      };
+    }
+
+    console.log('[EMAIL] Resend accepted request');
+    console.log('[EMAIL] Message ID:', data?.id);
+
+    return {
+      success: true,
+      message: 'Email sent successfully via Resend',
+      messageId: data?.id,
+      email: to
+    };
+  } catch (error) {
+    console.error('[EMAIL] Resend send failed:', error);
+    console.error('[EMAIL] Error name/code/message:', error.name, error.code, error.message);
+    return {
+      success: false,
+      message: 'Resend send failed',
+      error: error.message,
+      code: error.name
+    };
+  }
+};
+
+/**
+ * Send email via SMTP (fallback)
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} options.html - HTML content
+ * @param {string} options.text - Plain text content
+ * @returns {Promise<Object>} - Result object with success status
+ */
+const sendViaSMTP = async ({ to, subject, html, text }) => {
+  try {
+    console.log('[EMAIL] Sending via SMTP to:', to);
+
+    const mailTransporter = getTransporter();
+
+    const mailOptions = {
+      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
+      to: to,
+      subject: subject,
+      text: text,
+      html: html,
+    };
+
+    const info = await mailTransporter.sendMail(mailOptions);
+
+    console.log('[EMAIL] SMTP send successful');
+    console.log('[EMAIL] Message ID:', info.messageId);
+
+    return {
+      success: true,
+      message: 'Email sent successfully via SMTP',
+      messageId: info.messageId,
+      email: to
+    };
+  } catch (error) {
+    console.error('[EMAIL] SMTP send failed:', error);
+    return {
+      success: false,
+      message: 'SMTP send failed',
+      error: error.message,
+      code: error.code
+    };
+  }
+};
+
 import { buildWelcomeEmail } from '../templates/welcomeEmail.js';
 import { buildVerificationEmail } from '../templates/verificationEmail.js';
 
@@ -115,10 +249,13 @@ export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text =
  */
 export const sendWelcomeEmail = async (user) => {
   try {
+    validateResendConfig();
+
+    console.log('[EMAIL] Provider:', EMAIL_PROVIDER);
     console.log('[EMAIL] Sending welcome email to:', user.email);
-    
+
     const { firstName, role, email } = user;
-    
+
     if (!firstName || !role || !email) {
       console.error('[EMAIL] Missing required user data for welcome email:', { firstName, role, email });
       return {
@@ -135,29 +272,24 @@ export const sendWelcomeEmail = async (user) => {
       language: user.language
     });
 
-    // Send email using existing transporter
-    const mailTransporter = getTransporter();
-    
-    const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: welcomeEmail.subject,
-      text: welcomeEmail.text,
-      html: welcomeEmail.html,
-    };
+    // Send via Resend (production) or SMTP (fallback)
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to: email,
+        subject: welcomeEmail.subject,
+        html: welcomeEmail.html,
+        text: welcomeEmail.text,
+        replyTo: process.env.EMAIL_REPLY_TO
+      });
+    } else {
+      return await sendViaSMTP({
+        to: email,
+        subject: welcomeEmail.subject,
+        html: welcomeEmail.html,
+        text: welcomeEmail.text
+      });
+    }
 
-    const info = await mailTransporter.sendMail(mailOptions);
-    
-    console.log('[EMAIL] Welcome email sent successfully to:', email);
-    console.log('[EMAIL] Message ID:', info.messageId);
-    
-    return {
-      success: true,
-      message: 'Welcome email sent successfully',
-      messageId: info.messageId,
-      email: email
-    };
-    
   } catch (error) {
     console.error('[EMAIL] Failed to send welcome email:', error);
     console.error('[EMAIL] Error details:', {
@@ -166,7 +298,7 @@ export const sendWelcomeEmail = async (user) => {
       userId: user.id || user._id,
       userEmail: user.email
     });
-    
+
     return {
       success: false,
       message: 'Failed to send welcome email',
@@ -187,7 +319,10 @@ export const sendWelcomeEmail = async (user) => {
  */
 export const sendVerificationEmail = async (user, rawToken) => {
   try {
+    validateResendConfig();
+
     if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[EMAIL] Provider:', EMAIL_PROVIDER);
       console.log('[VERIFY-EMAIL] Sending verification email to:', user.email);
       console.log('[VERIFY-EMAIL] User ID:', user._id || user.id);
       console.log('[VERIFY-EMAIL] Token generated:', !!rawToken);
@@ -204,7 +339,7 @@ export const sendVerificationEmail = async (user, rawToken) => {
       };
     }
 
-    // Build verification email using template (reuses buildBaseEmail)
+    // Build verification email using template
     const verificationEmail = buildVerificationEmail({
       fullName,
       email,
@@ -216,58 +351,23 @@ export const sendVerificationEmail = async (user, rawToken) => {
       console.log('[VERIFY-EMAIL] Subject:', verificationEmail.subject);
     }
 
-    // Send email using existing transporter
-    const mailTransporter = getTransporter();
-
-    const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: verificationEmail.subject,
-      text: verificationEmail.text,
-      html: verificationEmail.html,
-    };
-
-    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
-      console.log('[VERIFY-EMAIL] Attempting to send email via SMTP');
-      console.log('[VERIFY-EMAIL] SMTP Host:', process.env.EMAIL_HOST);
-      console.log('[VERIFY-EMAIL] SMTP Port:', process.env.EMAIL_PORT);
+    // Send via Resend (production) or SMTP (fallback)
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to: email,
+        subject: verificationEmail.subject,
+        html: verificationEmail.html,
+        text: verificationEmail.text,
+        replyTo: process.env.EMAIL_REPLY_TO
+      });
+    } else {
+      return await sendViaSMTP({
+        to: email,
+        subject: verificationEmail.subject,
+        html: verificationEmail.html,
+        text: verificationEmail.text
+      });
     }
-
-    // Verify SMTP connection before sending (diagnostics)
-    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
-      const verifyStart = Date.now();
-      console.log('[VERIFY-EMAIL] SMTP verify started');
-
-      try {
-        await mailTransporter.verify();
-        console.log('[VERIFY-EMAIL] SMTP verify success in', Date.now() - verifyStart, 'ms');
-      } catch (verifyError) {
-        console.error('[VERIFY-EMAIL] SMTP verify failed in', Date.now() - verifyStart, 'ms');
-        console.error('[VERIFY-EMAIL] SMTP verify error code:', verifyError.code);
-        console.error('[VERIFY-EMAIL] SMTP verify error message:', verifyError.message);
-        // Continue with send attempt even if verify fails
-      }
-    }
-
-    const sendStart = Date.now();
-    const info = await mailTransporter.sendMail(mailOptions);
-    const sendDuration = Date.now() - sendStart;
-
-    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
-      console.log('[VERIFY-EMAIL] Email sent successfully to:', email);
-      console.log('[VERIFY-EMAIL] Message ID:', info.messageId);
-      console.log('[VERIFY-EMAIL] Response:', info.response);
-      console.log('[VERIFY-EMAIL] Accepted:', info.accepted);
-      console.log('[VERIFY-EMAIL] Rejected:', info.rejected);
-      console.log('[VERIFY-EMAIL] Send completed in', sendDuration, 'ms');
-    }
-
-    return {
-      success: true,
-      message: 'Verification email sent successfully',
-      messageId: info.messageId,
-      email: email
-    };
 
   } catch (error) {
     console.error('[EMAIL] Failed to send verification email:', error);
@@ -277,11 +377,6 @@ export const sendVerificationEmail = async (user, rawToken) => {
       userId: user.id || user._id,
       userEmail: user.email
     });
-
-    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
-      console.error('[VERIFY-EMAIL] SMTP Error Code:', error.code);
-      console.error('[VERIFY-EMAIL] SMTP Error Message:', error.message);
-    }
 
     return {
       success: false,
