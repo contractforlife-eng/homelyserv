@@ -207,20 +207,52 @@ model User {
   username                         String?
   role                             Role             @default(WORKER)
   fullName                         String
-  phone                            String?
+  phone                            String           @default("")
   city                             String?
   countryCode                      String?
   countryName                      String?
-  activationCode                   String?
+  // TODO: isVerified is retained for backward compatibility.
+  // It is still referenced by workerController.js, adminCommandCenterController.js
+  // and routes/support.js. Phase 3 email verification uses emailVerified.
+  // Migrate those readers to emailVerified before removing isVerified.
   isVerified                       Boolean          @default(false)
   isSuspended                      Boolean          @default(false)
+  status                           String?
   suspendedAt                      DateTime?
   suspendedBy                      String?          @db.ObjectId
   suspensionReason                 String?
   language                         String           @default("en")
   createdAt                        DateTime         @default(now())
   updatedAt                        DateTime         @updatedAt
-  image                            String?          @default("")          @map("profileImage")
+  profileImage                     String?          @default("")
+
+  // ---- Profile fields from Mongoose User model ----
+  // location and related profile fields keep String defaults matching
+  // the existing Mongoose schema so Prisma-created documents remain
+  // compatible with Mongoose-read documents.
+  location                         String           @default("")
+  bio                              String           @default("")
+  skills                           String[]         @default([])
+  experience                       String           @default("")
+  hourlyRate                       String           @default("0")
+  companyName                      String           @default("")
+  website                          String           @default("")
+  profileComplete                  Boolean          @default(false)
+  desiredJob                       String           @default("")
+  lastLogin                        DateTime?
+  passwordResetAt                  DateTime?
+  mustChangePassword               Boolean          @default(false)
+  settings                         Json?            @default("{}")
+
+  // ---- Phase 3: Email Verification ----
+  // Mirrors the Mongoose User model fields. Raw tokens are never stored —
+  // only the SHA-256 hash in emailVerificationTokenHash.
+  emailVerified                    Boolean          @default(false)
+  emailVerifiedAt                  DateTime?
+  emailVerificationTokenHash       String?
+  emailVerificationExpiresAt       DateTime?
+  emailVerificationLastSentAt      DateTime?
+
   EmployerProfile                  EmployerProfile?
   Hire                             Hire[]
   Message_Message_receiverIdToUser Message[]        @relation("Message_receiverIdToUser")

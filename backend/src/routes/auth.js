@@ -35,6 +35,18 @@ router.get('/users/:id', requireAdmin, authController.getUserById);
 router.get('/verify', authController.verifyToken);
 
 // ============================================================
+// Verify Email - Delegates to controller
+// Public route - no auth required (user clicks link in email)
+// ============================================================
+router.get('/verify-email', authController.verifyEmail);
+
+// ============================================================
+// Resend Verification - Delegates to controller
+// Authenticated only - rate limited to 60 seconds
+// ============================================================
+router.post('/resend-verification', authenticate, authController.resendVerification);
+
+// ============================================================
 // Update Profile (generic — works for any authenticated user)
 // Delegates to controller
 // Whitelisted fields only: fullName, phone, language, profileImage.

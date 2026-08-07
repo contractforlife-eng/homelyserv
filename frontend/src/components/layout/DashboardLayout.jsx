@@ -7,6 +7,7 @@ import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
 import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
+import VerificationBanner from '../VerificationBanner';
 import { changeLanguageGlobal } from '../../i18n';
 
 const DashboardLayout = ({ 
@@ -132,6 +133,7 @@ const DashboardLayout = ({
         <main className={`flex-1 transition-all duration-300 ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
+          <VerificationBanner />
           {children}
         </main>
       </div>

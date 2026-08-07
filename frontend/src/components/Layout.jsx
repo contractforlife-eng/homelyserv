@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell'; // 👈 ADD THIS
+import VerificationBanner from './VerificationBanner';
 
 export default function Layout({ children, activeTab }) {
   const navigate = useNavigate();
@@ -77,6 +78,7 @@ export default function Layout({ children, activeTab }) {
   if (user?.role === 'ADMIN') {
     return (
       <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+        <VerificationBanner />
         <main className="page-content" style={{
           maxWidth: '1200px',
           margin: '0 auto',
@@ -90,6 +92,7 @@ export default function Layout({ children, activeTab }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f7f0' }}>
+      <VerificationBanner />
       {/* Top Navigation Bar */}
       <nav className="top-nav" style={{
         background: '#ffffff',

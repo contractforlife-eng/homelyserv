@@ -3,6 +3,11 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { sendWelcomeEmail } from '../services/emailService.js';
+import {
+  verifyEmailWithToken,
+  resendVerificationEmail,
+  sendVerificationOnRegistration
+} from '../services/verificationService.js';
 
 // ============================================================
 // REGISTER
@@ -50,6 +55,11 @@ export const register = async (req, res) => {
       console.error('[EMAIL] Failed to send welcome email during registration:', error);
     });
 
+    // Send verification email (non-blocking, fire-and-forget)
+    // Registration must NEVER fail because of email delivery.
+    // sendVerificationOnRegistration never throws - it logs errors only.
+    sendVerificationOnRegistration(user);
+
     // Generate token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
@@ -75,6 +85,110 @@ export const register = async (req, res) => {
       success: false, 
       message: 'Registration failed',
       error: error.message 
+    });
+  }
+};
+
+// ============================================================
+// VERIFY EMAIL
+// ============================================================
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required'
+      });
+    }
+
+    const result = await verifyEmailWithToken(token);
+
+    if (!result.success) {
+      // Generic failure - do not reveal whether the token existed
+      if (result.status === 'expired') {
+        return res.status(400).json({
+          success: false,
+          status: 'expired',
+          message: 'This verification link has expired. Please request a new one.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        status: 'invalid',
+        message: 'Verification failed. The link is invalid or has already been used.'
+      });
+    }
+
+    // Success (verified or already_verified)
+    const userData = result.user.toObject();
+    userData.id = userData._id;
+    delete userData.password;
+    delete userData._id;
+
+    return res.json({
+      success: true,
+      status: result.status,
+      message: result.status === 'already_verified'
+        ? 'Your email is already verified'
+        : 'Email verified successfully',
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Verify email error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Verification failed. Please try again.'
+    });
+  }
+};
+
+// ============================================================
+// RESEND VERIFICATION
+// ============================================================
+export const resendVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const result = await resendVerificationEmail(user);
+
+    if (result.status === 'already_verified') {
+      return res.json({
+        success: true,
+        status: 'already_verified',
+        message: 'Your email is already verified'
+      });
+    }
+
+    if (result.status === 'rate_limited') {
+      return res.status(429).json({
+        success: false,
+        status: 'rate_limited',
+        message: result.message,
+        retryAfterSeconds: result.retryAfterSeconds
+      });
+    }
+
+    return res.json({
+      success: true,
+      status: 'sent',
+      message: 'Verification email sent. Please check your inbox.'
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to resend verification email'
     });
   }
 };

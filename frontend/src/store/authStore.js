@@ -249,6 +249,49 @@ const useAuthStore = create(
         }
       },
 
+      verifyEmail: async (token) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+
+          if (response.data?.success && response.data?.user) {
+            const normalizedUser = normalizeUser(response.data.user);
+            set({
+              user: normalizedUser,
+              isLoading: false,
+              error: null
+            });
+            return { success: true, status: response.data.status, user: normalizedUser };
+          }
+
+          set({ isLoading: false, error: null });
+          return { success: false, status: response.data?.status, error: response.data?.message };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Verification failed.';
+          set({
+            isLoading: false,
+            error: errorMessage
+          });
+          return { success: false, status: error.response?.data?.status, error: errorMessage };
+        }
+      },
+
+      resendVerification: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/api/auth/resend-verification');
+          set({ isLoading: false, error: null });
+          return { success: true, status: response.data?.status, message: response.data?.message };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Failed to resend verification email.';
+          set({
+            isLoading: false,
+            error: errorMessage
+          });
+          return { success: false, status: error.response?.data?.status, error: errorMessage };
+        }
+      },
+
       uploadProfilePhoto: async (file) => {
         set({ isLoading: true, error: null });
         try {
@@ -371,6 +414,10 @@ const useAuthStore = create(
         });
         localStorage.removeItem('homelyserv_token');
         localStorage.removeItem('auth-storage');
+      },
+
+      setLoading: (loading) => {
+        set({ isLoading: loading });
       }
     }),
     {

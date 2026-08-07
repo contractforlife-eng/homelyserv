@@ -20,13 +20,21 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth-storage');
-      localStorage.removeItem('homelyserv_token');
-      if (
-        window.location.pathname !== '/login' &&
-        window.location.pathname !== '/register'
-      ) {
-        window.location.href = '/login';
+      // Don't redirect for public endpoints that don't require authentication
+      const publicPaths = ['/verify-email', '/forgot-password', '/reset-password'];
+      const isPublicPath = publicPaths.some(path => 
+        error.config?.url?.includes(path)
+      );
+      
+      if (!isPublicPath) {
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('homelyserv_token');
+        if (
+          window.location.pathname !== '/login' &&
+          window.location.pathname !== '/register'
+        ) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

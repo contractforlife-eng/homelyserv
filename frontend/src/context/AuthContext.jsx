@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 // AuthContext is a thin wrapper around useAuthStore (single source of truth)
 import React, { createContext, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 const AuthContext = createContext();
@@ -16,15 +16,25 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const store = useAuthStore();
 
   // On mount, verify token with backend via Zustand's checkAuth
+  // Skip for public routes that don't require authentication
   useEffect(() => {
+    const publicRoutes = ['/verify-email', '/forgot-password', '/reset-password', '/login', '/register', '/about', '/contact', '/terms'];
+    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
+
     const initAuth = async () => {
-      await store.checkAuth();
+      if (!isPublicRoute) {
+        await store.checkAuth();
+      } else {
+        // For public routes, just set loading to false without checking auth
+        store.setLoading(false);
+      }
     };
     initAuth();
-  }, []);
+  }, [location.pathname]);
 
   // AuthContext exposes authStore values directly — no duplicate state
   const value = {

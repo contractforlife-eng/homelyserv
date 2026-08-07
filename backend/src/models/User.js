@@ -79,6 +79,35 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // ============================================================
+  // EMAIL VERIFICATION FIELDS (Phase 3)
+  // ============================================================
+  // Optional fields - existing users remain fully compatible.
+  // No migration required for existing MongoDB documents.
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  // SHA-256 hash of the raw verification token. The raw token is
+  // NEVER stored in the database.
+  emailVerificationTokenHash: {
+    type: String,
+    default: null
+  },
+  emailVerificationExpiresAt: {
+    type: Date,
+    default: null
+  },
+  // Timestamp of the last verification email resend request.
+  // Used for the 60-second rate limit.
+  emailVerificationLastSentAt: {
+    type: Date,
+    default: null
+  },
   settings: {
     type: Object,
     default: {

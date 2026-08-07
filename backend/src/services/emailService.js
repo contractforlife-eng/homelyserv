@@ -46,6 +46,7 @@ const getTransporter = () => {
 // EMAIL SERVICE FUNCTIONS
 // ============================================================
 import { buildWelcomeEmail } from '../templates/welcomeEmail.js';
+import { buildVerificationEmail } from '../templates/verificationEmail.js';
 
 /**
  * Send a test email to verify SMTP configuration
@@ -158,13 +159,85 @@ export const sendWelcomeEmail = async (user) => {
     console.error('[EMAIL] Error details:', {
       message: error.message,
       code: error.code,
-      userId: user._id,
+      userId: user.id || user._id,
       userEmail: user.email
     });
     
     return {
       success: false,
       message: 'Failed to send welcome email',
+      error: error.message,
+      code: error.code,
+      email: user.email
+    };
+  }
+};
+
+/**
+ * Send email verification email to a newly registered user
+ * @param {Object} user - User object
+ * @param {string} user.fullName - User's full name
+ * @param {string} user.email - User's email address
+ * @param {string} rawToken - The raw verification token (never stored/logged)
+ * @returns {Promise<Object>} - Result object with success status
+ */
+export const sendVerificationEmail = async (user, rawToken) => {
+  try {
+    console.log('[EMAIL] Sending verification email to:', user.email);
+
+    const { fullName, email } = user;
+
+    if (!fullName || !email || !rawToken) {
+      console.error('[EMAIL] Missing required data for verification email:', { fullName, email, hasToken: !!rawToken });
+      return {
+        success: false,
+        message: 'Missing required data',
+        error: 'fullName, email, and rawToken are required'
+      };
+    }
+
+    // Build verification email using template (reuses buildBaseEmail)
+    const verificationEmail = buildVerificationEmail({
+      fullName,
+      email,
+      rawToken
+    });
+
+    // Send email using existing transporter
+    const mailTransporter = getTransporter();
+
+    const mailOptions = {
+      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: verificationEmail.subject,
+      text: verificationEmail.text,
+      html: verificationEmail.html,
+    };
+
+    const info = await mailTransporter.sendMail(mailOptions);
+
+    console.log('[EMAIL] Verification email sent successfully to:', email);
+    console.log('[EMAIL] Message ID:', info.messageId);
+
+    return {
+      success: true,
+      message: 'Verification email sent successfully',
+      messageId: info.messageId,
+      email: email
+    };
+
+  } catch (error) {
+    console.error('[EMAIL] Failed to send verification email:', error);
+    console.error('[EMAIL] Error details:', {
+      message: error.message,
+      code: error.code,
+      userId: user.id || user._id,
+      userEmail: user.email
+    });
+
+    return {
+      success: false,
+      message: 'Failed to send verification email',
       error: error.message,
       code: error.code,
       email: user.email
@@ -206,5 +279,6 @@ export const verifySMTPConnection = async () => {
 export default {
   sendTestEmail,
   sendWelcomeEmail,
+  sendVerificationEmail,
   verifySMTPConnection,
 };

@@ -6,6 +6,7 @@ import useAuthStore from '../store/authStore';
 import SupportSidebar from '../components/SupportSidebar';
 import DashboardContext from '../components/layout/DashboardContext';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import VerificationBanner from '../components/VerificationBanner';
 import { changeLanguageGlobal } from '../i18n';
 
 const SupportLayout = ({ 
@@ -126,6 +127,7 @@ const SupportLayout = ({
         <main className={`flex-1 transition-all duration-300 ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
+          <VerificationBanner />
           <DashboardHeader
             title={headerTitle}
             notificationUserId={authUser?.id || authUser?.email}
