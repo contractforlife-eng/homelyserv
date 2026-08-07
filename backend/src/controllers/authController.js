@@ -20,9 +20,9 @@ export const register = async (req, res) => {
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User already exists' 
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists'
       });
     }
 
@@ -40,7 +40,9 @@ export const register = async (req, res) => {
       location: location || ''
     });
 
+    console.log('[DEBUG-REGISTER] User creation attempt:', { email: user.email, role: user.role });
     await user.save();
+    console.log('[DEBUG-REGISTER] User created successfully:', { id: user._id, email: user.email, createdAt: user.createdAt });
 
     // Send welcome email (non-blocking, fire-and-forget)
     // Email sending must never block registration or cause rollback
@@ -81,10 +83,10 @@ export const register = async (req, res) => {
 
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Registration failed',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -151,7 +153,7 @@ export const verifyEmail = async (req, res) => {
 export const resendVerification = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -259,27 +261,27 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
-    
+
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'User not found' 
+        message: 'User not found'
       });
     }
-    
+
     const userData = user.toObject();
     userData.id = userData._id;
     delete userData._id;
-    
+
     res.json({
       success: true,
       user: userData
     });
   } catch (error) {
     console.error('GetMe error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error' 
+      message: 'Server error'
     });
   }
 };
@@ -346,7 +348,7 @@ export const getAllUsers = async (req, res) => {
       .sort({ createdAt: -1 });
 
     console.log(`✅ Auth controller: Found ${users.length} users`);
-    
+
     res.json({
       success: true,
       count: users.length,
@@ -373,7 +375,7 @@ export const getAllUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -414,7 +416,7 @@ export const verifyToken = async (req, res) => {
 
     const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.userId).select('-password');
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -447,7 +449,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -476,11 +478,11 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    
+
     // Verify token
     const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -591,7 +593,7 @@ export const getSettings = async (req, res) => {
 export const updateSettings = async (req, res) => {
   try {
     const settings = req.body.settings || req.body;
-    
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: { settings: settings } },
@@ -629,7 +631,7 @@ export const updateSettings = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    
+
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({
@@ -706,7 +708,7 @@ export const deleteAccount = async (req, res) => {
 export const changePasswordPost = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    
+
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({

@@ -18,19 +18,41 @@ import { buildBaseEmail, buildTextContent, buildHeading, escapeHtml } from './ba
 const buildVerificationUrl = (rawToken) => {
   // Use CLIENT_URL if configured (production deployment)
   const clientUrl = process.env.CLIENT_URL;
+  if (process.env.DEBUG_REGISTRATION === 'true') {
+    console.log('[VERIFICATION URL] CLIENT_URL:', clientUrl);
+    console.log('[VERIFICATION URL] NODE_ENV:', process.env.NODE_ENV);
+  }
+  
   if (clientUrl) {
-    return `${clientUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const url = `${clientUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[VERIFICATION URL] Using CLIENT_URL:', url);
+    }
+    return url;
   }
   
   // Fallback to NODE_ENV check (development)
-  // Also check for Railway/production-like environments
+  // Only use localhost for development - never hardcode production URL
   const isProduction = process.env.NODE_ENV === 'production' || 
                        process.env.RAILWAY_ENVIRONMENT === 'production' ||
                        process.env.VERCEL_ENV === 'production';
-  const baseUrl = isProduction
-    ? 'https://homelyserv.com'
-    : 'http://localhost:5173';
-  return `${baseUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+  
+  if (isProduction) {
+    // In production without CLIENT_URL, log error and use safe fallback
+    console.error('❌ CLIENT_URL not set in production environment!');
+    const url = `https://homelyserv.com/verify-email?token=${encodeURIComponent(rawToken)}`;
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[VERIFICATION URL] Using production fallback:', url);
+    }
+    return url;
+  }
+  
+  // Development: use localhost
+  const url = `http://localhost:5173/verify-email?token=${encodeURIComponent(rawToken)}`;
+  if (process.env.DEBUG_REGISTRATION === 'true') {
+    console.log('[VERIFICATION URL] Using development fallback:', url);
+  }
+  return url;
 };
 
 /**

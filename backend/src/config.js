@@ -11,6 +11,8 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Log loaded variables
 console.log('📂 .env loaded from:', path.join(__dirname, '..', '.env'));
+console.log('🔑 CLIENT_URL:', process.env.CLIENT_URL || '❌ Missing (will use fallback)');
+console.log('🔑 NODE_ENV:', process.env.NODE_ENV || '❌ Missing');
 console.log('🔑 PAYMOB_API_KEY:', process.env.PAYMOB_API_KEY ? '✅ Found' : '❌ Missing');
 console.log('🔑 PAYMOB_INTEGRATION_ID:', process.env.PAYMOB_INTEGRATION_ID ? '✅ Found' : '❌ Missing');
 console.log('🔑 PAYMOB_IFRAME_ID:', process.env.PAYMOB_IFRAME_ID ? '✅ Found' : '❌ Missing');

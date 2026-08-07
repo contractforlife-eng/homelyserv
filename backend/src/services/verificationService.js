@@ -6,7 +6,7 @@
 // Raw tokens are NEVER stored in the database - only SHA-256 hashes.
 // ============================================================
 import crypto from 'crypto';
-import prisma from '../lib/prisma.js';
+import User from '../models/User.js';
 import { sendVerificationEmail } from './emailService.js';
 
 // ============================================================
@@ -56,20 +56,21 @@ export const createTokenRecord = () => {
 
 /**
  * Store a verification token hash and expiration on a user.
- * @param {string} userId - Prisma user id
+ * @param {string} userId - Mongoose user id
  * @param {string} tokenHash - SHA-256 hash of the raw token
  * @param {Date} expiresAt - Expiration date
  * @returns {Promise<Object>} - Updated user
  */
 export const storeTokenOnUser = async (userId, tokenHash, expiresAt) => {
-  return prisma.user.update({
-    where: { id: userId },
-    data: {
+  return User.findByIdAndUpdate(
+    userId,
+    {
       emailVerificationTokenHash: tokenHash,
       emailVerificationExpiresAt: expiresAt,
       emailVerificationLastSentAt: new Date()
-    }
-  });
+    },
+    { new: true }
+  );
 };
 
 // ============================================================
@@ -90,9 +91,7 @@ export const verifyEmailWithToken = async (rawToken) => {
   const tokenHash = hashToken(rawToken);
 
   // Find user by token hash. Do NOT reveal whether a token existed.
-  const user = await prisma.user.findFirst({
-    where: { emailVerificationTokenHash: tokenHash }
-  });
+  const user = await User.findOne({ emailVerificationTokenHash: tokenHash });
 
   if (!user) {
     return { success: false, status: 'invalid' };
@@ -109,15 +108,16 @@ export const verifyEmailWithToken = async (rawToken) => {
   }
 
   // Mark as verified and clear token fields (one-time use)
-  const updatedUser = await prisma.user.update({
-    where: { id: user.id },
-    data: {
+  const updatedUser = await User.findByIdAndUpdate(
+    user._id,
+    {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       emailVerificationTokenHash: null,
       emailVerificationExpiresAt: null
-    }
-  });
+    },
+    { new: true }
+  );
 
   return { success: true, status: 'verified', user: updatedUser };
 };
@@ -160,7 +160,7 @@ export const resendVerificationEmail = async (user) => {
   const { rawToken, tokenHash, expiresAt } = createTokenRecord();
 
   // Store new token hash (previous token is automatically invalidated)
-  await storeTokenOnUser(user.id, tokenHash, expiresAt);
+  await storeTokenOnUser(user._id, tokenHash, expiresAt);
 
   // Send verification email (non-blocking - never fail the request)
   sendVerificationEmail(user, rawToken).catch(error => {
@@ -182,13 +182,25 @@ export const resendVerificationEmail = async (user) => {
  * Generate and store a verification token, then send the email.
  * Used immediately after successful registration.
  * NEVER throws - registration must never fail because of email delivery.
- * @param {Object} user - Prisma user object
+ * @param {Object} user - Mongoose user object
  */
 export const sendVerificationOnRegistration = async (user) => {
   try {
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[DEBUG-REGISTER] Starting verification email send for user:', user.email);
+    }
     const { rawToken, tokenHash, expiresAt } = createTokenRecord();
-    await storeTokenOnUser(user.id, tokenHash, expiresAt);
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[DEBUG-REGISTER] Token generated, storing on user');
+    }
+    await storeTokenOnUser(user._id, tokenHash, expiresAt);
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[DEBUG-REGISTER] Token stored, sending email');
+    }
     await sendVerificationEmail(user, rawToken);
+    if (process.env.DEBUG_REGISTRATION === 'true') {
+      console.log('[DEBUG-REGISTER] Verification email sent successfully');
+    }
   } catch (error) {
     // Log only - registration must never fail because of email delivery
     console.error('[VERIFICATION] Failed to send verification email during registration:', error);
