@@ -16,6 +16,10 @@ const createTransporter = () => {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // Explicit timeouts for diagnostics
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
     // Additional settings for better deliverability
     tls: {
       rejectUnauthorized: process.env.NODE_ENV === 'production', // Only enforce in production
@@ -229,7 +233,25 @@ export const sendVerificationEmail = async (user, rawToken) => {
       console.log('[VERIFY-EMAIL] SMTP Port:', process.env.EMAIL_PORT);
     }
 
+    // Verify SMTP connection before sending (diagnostics)
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      const verifyStart = Date.now();
+      console.log('[VERIFY-EMAIL] SMTP verify started');
+
+      try {
+        await mailTransporter.verify();
+        console.log('[VERIFY-EMAIL] SMTP verify success in', Date.now() - verifyStart, 'ms');
+      } catch (verifyError) {
+        console.error('[VERIFY-EMAIL] SMTP verify failed in', Date.now() - verifyStart, 'ms');
+        console.error('[VERIFY-EMAIL] SMTP verify error code:', verifyError.code);
+        console.error('[VERIFY-EMAIL] SMTP verify error message:', verifyError.message);
+        // Continue with send attempt even if verify fails
+      }
+    }
+
+    const sendStart = Date.now();
     const info = await mailTransporter.sendMail(mailOptions);
+    const sendDuration = Date.now() - sendStart;
 
     if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
       console.log('[VERIFY-EMAIL] Email sent successfully to:', email);
@@ -237,6 +259,7 @@ export const sendVerificationEmail = async (user, rawToken) => {
       console.log('[VERIFY-EMAIL] Response:', info.response);
       console.log('[VERIFY-EMAIL] Accepted:', info.accepted);
       console.log('[VERIFY-EMAIL] Rejected:', info.rejected);
+      console.log('[VERIFY-EMAIL] Send completed in', sendDuration, 'ms');
     }
 
     return {
