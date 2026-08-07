@@ -183,7 +183,11 @@ export const sendWelcomeEmail = async (user) => {
  */
 export const sendVerificationEmail = async (user, rawToken) => {
   try {
-    console.log('[EMAIL] Sending verification email to:', user.email);
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] Sending verification email to:', user.email);
+      console.log('[VERIFY-EMAIL] User ID:', user._id || user.id);
+      console.log('[VERIFY-EMAIL] Token generated:', !!rawToken);
+    }
 
     const { fullName, email } = user;
 
@@ -203,6 +207,11 @@ export const sendVerificationEmail = async (user, rawToken) => {
       rawToken
     });
 
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] Email built successfully');
+      console.log('[VERIFY-EMAIL] Subject:', verificationEmail.subject);
+    }
+
     // Send email using existing transporter
     const mailTransporter = getTransporter();
 
@@ -214,10 +223,21 @@ export const sendVerificationEmail = async (user, rawToken) => {
       html: verificationEmail.html,
     };
 
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] Attempting to send email via SMTP');
+      console.log('[VERIFY-EMAIL] SMTP Host:', process.env.EMAIL_HOST);
+      console.log('[VERIFY-EMAIL] SMTP Port:', process.env.EMAIL_PORT);
+    }
+
     const info = await mailTransporter.sendMail(mailOptions);
 
-    console.log('[EMAIL] Verification email sent successfully to:', email);
-    console.log('[EMAIL] Message ID:', info.messageId);
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] Email sent successfully to:', email);
+      console.log('[VERIFY-EMAIL] Message ID:', info.messageId);
+      console.log('[VERIFY-EMAIL] Response:', info.response);
+      console.log('[VERIFY-EMAIL] Accepted:', info.accepted);
+      console.log('[VERIFY-EMAIL] Rejected:', info.rejected);
+    }
 
     return {
       success: true,
@@ -234,6 +254,11 @@ export const sendVerificationEmail = async (user, rawToken) => {
       userId: user.id || user._id,
       userEmail: user.email
     });
+
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.error('[VERIFY-EMAIL] SMTP Error Code:', error.code);
+      console.error('[VERIFY-EMAIL] SMTP Error Message:', error.message);
+    }
 
     return {
       success: false,

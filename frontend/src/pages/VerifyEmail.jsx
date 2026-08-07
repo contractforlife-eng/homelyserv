@@ -1,14 +1,14 @@
 // src/pages/VerifyEmail.jsx
 // Email verification page - handles loading, success, failure, expired, and already-verified states
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  Shield, 
-  Home, 
-  Sparkles, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Shield,
+  Home,
+  Sparkles,
+  CheckCircle,
+  XCircle,
+  Clock,
   MailCheck,
   Loader2,
   ArrowRight
@@ -24,6 +24,10 @@ function VerifyEmail() {
   const [state, setState] = useState('loading'); // loading | success | failed | expired | already_verified
   const [error, setError] = useState('');
 
+  // Guard to prevent duplicate verification requests (React StrictMode safety)
+  const verificationStartedRef = useRef(false);
+  const currentTokenRef = useRef(null);
+
   useEffect(() => {
     const verify = async () => {
       if (!token) {
@@ -31,6 +35,14 @@ function VerifyEmail() {
         setError('No verification token provided.');
         return;
       }
+
+      // Prevent duplicate requests for the same token
+      if (verificationStartedRef.current && currentTokenRef.current === token) {
+        return;
+      }
+
+      verificationStartedRef.current = true;
+      currentTokenRef.current = token;
 
       try {
         const response = await api.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);

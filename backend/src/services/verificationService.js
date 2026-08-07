@@ -85,25 +85,58 @@ export const storeTokenOnUser = async (userId, tokenHash, expiresAt) => {
  */
 export const verifyEmailWithToken = async (rawToken) => {
   if (!rawToken) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] No token provided');
+    }
     return { success: false, status: 'invalid' };
+  }
+
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] Token received, length:', rawToken.length);
   }
 
   const tokenHash = hashToken(rawToken);
 
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] Computed hash prefix:', tokenHash.substring(0, 8));
+  }
+
   // Find user by token hash. Do NOT reveal whether a token existed.
   const user = await User.findOne({ emailVerificationTokenHash: tokenHash });
 
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] User found:', !!user);
+    if (user) {
+      console.log('[VERIFY-EMAIL] User ID:', user._id);
+      console.log('[VERIFY-EMAIL] User email:', user.email);
+      console.log('[VERIFY-EMAIL] emailVerified:', user.emailVerified);
+      console.log('[VERIFY-EMAIL] Stored hash prefix:', user.emailVerificationTokenHash ? user.emailVerificationTokenHash.substring(0, 8) : 'null');
+      console.log('[VERIFY-EMAIL] Token expires at:', user.emailVerificationExpiresAt);
+      console.log('[VERIFY-EMAIL] Current time:', new Date());
+      console.log('[VERIFY-EMAIL] Is expired:', user.emailVerificationExpiresAt && user.emailVerificationExpiresAt < new Date());
+    }
+  }
+
   if (!user) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] No user found with this token hash');
+    }
     return { success: false, status: 'invalid' };
   }
 
   // Already verified - return success (idempotent)
   if (user.emailVerified) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] User already verified');
+    }
     return { success: true, status: 'already_verified', user };
   }
 
   // Check expiration
   if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] Token expired or missing expiry');
+    }
     return { success: false, status: 'expired', user };
   }
 
@@ -119,6 +152,10 @@ export const verifyEmailWithToken = async (rawToken) => {
     { new: true }
   );
 
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] User verified successfully');
+  }
+
   return { success: true, status: 'verified', user: updatedUser };
 };
 
@@ -133,8 +170,18 @@ export const verifyEmailWithToken = async (rawToken) => {
  *   status: 'already_verified' | 'rate_limited' | 'sent' | 'error'
  */
 export const resendVerificationEmail = async (user) => {
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] Resend verification requested for user:', user.email);
+    console.log('[VERIFY-EMAIL] User ID:', user._id);
+    console.log('[VERIFY-EMAIL] Current emailVerified:', user.emailVerified);
+    console.log('[VERIFY-EMAIL] Current token hash prefix:', user.emailVerificationTokenHash ? user.emailVerificationTokenHash.substring(0, 8) : 'null');
+  }
+
   // Already verified
   if (user.emailVerified) {
+    if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+      console.log('[VERIFY-EMAIL] User already verified, skipping resend');
+    }
     return {
       success: true,
       status: 'already_verified',
@@ -147,6 +194,9 @@ export const resendVerificationEmail = async (user) => {
     const elapsed = Date.now() - new Date(user.emailVerificationLastSentAt).getTime();
     if (elapsed < RESEND_COOLDOWN_MS) {
       const remainingSeconds = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000);
+      if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+        console.log('[VERIFY-EMAIL] Rate limited, remaining seconds:', remainingSeconds);
+      }
       return {
         success: false,
         status: 'rate_limited',
@@ -159,8 +209,18 @@ export const resendVerificationEmail = async (user) => {
   // Generate new token (invalidates previous token by overwriting the hash)
   const { rawToken, tokenHash, expiresAt } = createTokenRecord();
 
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] New token generated');
+    console.log('[VERIFY-EMAIL] New token hash prefix:', tokenHash.substring(0, 8));
+    console.log('[VERIFY-EMAIL] New token expires at:', expiresAt);
+  }
+
   // Store new token hash (previous token is automatically invalidated)
   await storeTokenOnUser(user._id, tokenHash, expiresAt);
+
+  if (process.env.DEBUG_EMAIL_VERIFICATION === 'true') {
+    console.log('[VERIFY-EMAIL] New token stored on user');
+  }
 
   // Send verification email (non-blocking - never fail the request)
   sendVerificationEmail(user, rawToken).catch(error => {
