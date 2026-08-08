@@ -426,7 +426,8 @@ export const getAllHires = async (req, res) => {
       let workerUsersMap = {};
       if (workerUserIds.length > 0) {
         const users = await prisma.user.findMany({
-          where: { id: { in: workerUserIds } }
+          where: { id: { in: workerUserIds } },
+          select: { id: true, fullName: true, email: true, phone: true, city: true, profileImage: true }
         });
         users.forEach(u => { workerUsersMap[u.id] = u; });
       }
@@ -442,7 +443,8 @@ export const getAllHires = async (req, res) => {
     const employerIds = [...new Set(hires.map(h => h.employerId).filter(Boolean))];
     if (employerIds.length > 0) {
       const employers = await prisma.user.findMany({
-        where: { id: { in: employerIds } }
+        where: { id: { in: employerIds } },
+        select: { id: true, fullName: true, email: true, phone: true, profileImage: true }
       });
       employers.forEach(u => { employerUsersMap[u.id] = u; });
     }
@@ -460,9 +462,11 @@ export const getAllHires = async (req, res) => {
         workerEmail: offer?.workerEmail || workerUser?.email || null,
         workerPhone: offer?.workerPhone || workerUser?.phone || null,
         workerLocation: offer?.workerLocation || workerUser?.city || null,
+        workerImage: workerUser?.profileImage || null,
         employerName: offer?.employerName || employerUser?.fullName || null,
         employerEmail: offer?.employerEmail || employerUser?.email || null,
         employerPhone: employerUser?.phone || null,
+        employerImage: employerUser?.profileImage || null,
         jobTitle: offer?.jobTitle || null,
         salary: offer?.salary || hire.agreedSalary || null,
         hireId: hire.id,
