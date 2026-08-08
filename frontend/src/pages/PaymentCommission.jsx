@@ -1,6 +1,6 @@
 // src/pages/PaymentCommission.jsx - FIXED: Only commission is charged
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -450,6 +450,18 @@ const PaymentCommission = () => {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <Shield size={16} />
             Secured by HomelyServ
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
+            <Link to="/terms" className="hover:text-red-600 hover:underline transition-colors">
+              Terms &amp; Conditions
+            </Link>
+            <Link to="/refund-policy" className="hover:text-red-600 hover:underline transition-colors">
+              Refund Policy
+            </Link>
+            <Link to="/privacy" className="hover:text-red-600 hover:underline transition-colors">
+              Privacy Policy
+            </Link>
           </div>
         </div>
       </div>

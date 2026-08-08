@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
+import LegalFooter from '../components/common/LegalFooter';
 
 function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -235,7 +236,7 @@ function VerifyEmail() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
@@ -280,6 +281,8 @@ function VerifyEmail() {
           </div>
         </div>
       </div>
+
+      <LegalFooter className="relative z-10 mt-6" />
     </div>
   );
 }

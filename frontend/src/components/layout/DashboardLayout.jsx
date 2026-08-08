@@ -8,6 +8,7 @@ import WorkerSidebar from '../worker/WorkerSidebar';
 import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 import VerificationBanner from '../VerificationBanner';
+import LegalFooter from '../common/LegalFooter';
 import { changeLanguageGlobal } from '../../i18n';
 
 const DashboardLayout = ({ 
@@ -135,6 +136,7 @@ const DashboardLayout = ({
         } ml-0`}>
           <VerificationBanner />
           {children}
+          <LegalFooter className="px-4 md:px-6" />
         </main>
       </div>
     </DashboardContext.Provider>

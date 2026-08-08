@@ -20,6 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
+import LegalFooter from '../components/common/LegalFooter';
 import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
 
@@ -213,7 +214,7 @@ function Register() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
       {/* Decorative background elements - Red only */}
       <div className="absolute top-0 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
@@ -503,12 +504,23 @@ function Register() {
             <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
               By creating an account, you agree to our{' '}
               <Link to="/terms" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Terms of Service
+                Terms &amp; Conditions
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
+                Privacy Policy
               </Link>
+              {', and you acknowledge the '}
+              <Link to="/refund-policy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
+                Refund Policy
+              </Link>
+              .
             </p>
           </div>
         </div>
       </div>
+
+      <LegalFooter className="relative z-10 mt-6" />
     </div>
   );
 }

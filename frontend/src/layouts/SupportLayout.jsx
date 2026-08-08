@@ -7,6 +7,7 @@ import SupportSidebar from '../components/SupportSidebar';
 import DashboardContext from '../components/layout/DashboardContext';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import VerificationBanner from '../components/VerificationBanner';
+import LegalFooter from '../components/common/LegalFooter';
 import { changeLanguageGlobal } from '../i18n';
 
 const SupportLayout = ({ 
@@ -133,6 +134,7 @@ const SupportLayout = ({
             notificationUserId={authUser?.id || authUser?.email}
           />
           {children}
+          <LegalFooter className="px-4 md:px-6" />
         </main>
       </div>
     </DashboardContext.Provider>

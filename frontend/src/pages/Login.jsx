@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
+import LegalFooter from '../components/common/LegalFooter';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
@@ -218,7 +219,7 @@ const redirectUser = (user) => {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-100 via-white to-red-50 p-3 sm:p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-100 via-white to-red-50 p-3 sm:p-4 relative overflow-hidden">
       {/* Radiant decorative background elements */}
       <div className="absolute top-0 left-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
@@ -502,6 +503,8 @@ const redirectUser = (user) => {
           </p>
         </div>
       </div>
+
+      <LegalFooter className="relative z-10 mt-6" />
 
       <style>{`
         @keyframes shake {

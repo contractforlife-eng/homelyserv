@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Briefcase, Award, Shield, Heart, Globe, CheckCircle, TrendingUp } from 'lucide-react';
+import LegalFooter from '../components/common/LegalFooter';
 
 function About() {
   const stats = [
@@ -104,6 +105,8 @@ function About() {
           </div>
         </div>
       </div>
+
+      <LegalFooter />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import LegalFooter from '../components/common/LegalFooter';
 import api from '../utils/api';
 
 function ForgotPassword() {
@@ -46,7 +47,7 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-50 to-white px-3 sm:px-4">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-white px-3 sm:px-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md">
         <Link to="/login" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-red-600 transition mb-4 sm:mb-6 text-xs sm:text-sm">
           <ArrowLeft size={16} sm:size={18} /> Back to Login
@@ -125,6 +126,8 @@ function ForgotPassword() {
           Remember your password? <Link to="/login" className="text-red-600 font-semibold hover:underline">Sign in</Link>
         </p>
       </div>
+
+      <LegalFooter className="mt-6" />
     </div>
   );
 }

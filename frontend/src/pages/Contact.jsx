@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import LegalFooter from '../components/common/LegalFooter';
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -159,6 +160,8 @@ function Contact() {
           </div>
         </div>
       </div>
+
+      <LegalFooter />
     </div>
   );
 }

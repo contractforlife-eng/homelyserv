@@ -1031,6 +1031,18 @@ const PaymentOptions = () => {
             <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
           )}
 
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
+            <Link to="/terms" className="hover:text-red-600 hover:underline transition-colors">
+              Terms &amp; Conditions
+            </Link>
+            <Link to="/refund-policy" className="hover:text-red-600 hover:underline transition-colors">
+              Refund Policy
+            </Link>
+            <Link to="/privacy" className="hover:text-red-600 hover:underline transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
+
           {/* PayPal Processing Modal */}
           {selectedMethod === PAYMENT_METHODS.PAYPAL && isProcessing && !paymentSuccess && !paymobIframe && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

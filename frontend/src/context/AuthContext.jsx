@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   // On mount, verify token with backend via Zustand's checkAuth
   // Skip for public routes that don't require authentication
   useEffect(() => {
-    const publicRoutes = ['/verify-email', '/forgot-password', '/reset-password', '/login', '/register', '/about', '/contact', '/terms'];
+    const publicRoutes = ['/verify-email', '/forgot-password', '/reset-password', '/login', '/register', '/about', '/contact', '/terms', '/refund-policy', '/privacy'];
     const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
 
     const initAuth = async () => {
