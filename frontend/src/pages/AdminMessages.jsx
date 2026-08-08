@@ -41,7 +41,7 @@ import {
   startAdminConversation
 } from '../utils/chatService';
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
-import { UserDisplayName } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import api from '../utils/api';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
@@ -207,10 +207,12 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                   onClick={() => onSelectUser(userId)}
                   className="w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left"
                 >
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'User')}&background=yellow&color=000&size=100&bold=true`}
-                    alt={user.fullName || user.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
+                  <UserAvatar
+                    name={user.fullName || user.name || 'User'}
+                    image={user.profileImage || user.image || null}
+                    role={user.role}
+                    size="md"
+                    className="border-2 border-yellow-500/30 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white truncate">{user.fullName || user.name}</p>
@@ -478,7 +480,8 @@ const AdminMessages = () => {
         user: targetUser ? {
           id: targetUser._id || targetUser.id,
           fullName: targetUser.fullName || 'User',
-          role: targetUser.role || 'USER'
+          role: targetUser.role || 'USER',
+          image: targetUser.profileImage || targetUser.image || null
         } : null,
         lastMessage: result.existing ? 'Existing conversation' : 'Official HomelyServ administrative conversation',
         lastMessageTime: new Date().toISOString(),
@@ -606,11 +609,9 @@ const AdminMessages = () => {
     });
   };
 
-  const getAvatarUrl = (name, role) => {
-    const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : role === 'SUPPORT' ? 'purple' : 'gray';
-    const color = role === 'ADMIN' ? '000' : 'fff';
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=${bg}&color=${color}&size=100&bold=true`;
-  };
+  // Real profile image from the already-returned API payload.
+  // UserAvatar handles the initials fallback when no image exists.
+  const getUserImage = (user) => (user?.profileImage || user?.image || null);
 
   // Filter conversations based on search
   const filterConversations = (conversations) => {
@@ -683,22 +684,26 @@ const AdminMessages = () => {
     let subtitle = '';
     let avatarName = 'User';
     let avatarRole = 'USER';
+    let avatarImage = null;
 
     if (type === 'ESCALATED') {
       title = conv.user?.fullName || 'User';
       subtitle = conv.complaint?.subject || conv.escalationReason || conv.lastMessage || '';
       avatarName = conv.user?.fullName || 'User';
       avatarRole = conv.user?.role || 'USER';
+      avatarImage = getUserImage(conv.user);
     } else if (type === 'SUPPORT') {
       title = conv.user?.fullName || 'User';
       subtitle = conv.lastMessage || '';
       avatarName = conv.user?.fullName || 'User';
       avatarRole = conv.user?.role || 'USER';
+      avatarImage = getUserImage(conv.user);
     } else if (type === 'INTERNAL') {
       title = conv.otherStaff?.fullName || 'Staff';
       subtitle = conv.lastMessage || '';
       avatarName = conv.otherStaff?.fullName || 'Staff';
       avatarRole = conv.otherStaff?.role || 'SUPPORT';
+      avatarImage = getUserImage(conv.otherStaff);
     }
 
     return (
@@ -714,10 +719,12 @@ const AdminMessages = () => {
           selectedConversation?.id === conv.id ? 'bg-yellow-500/10 border-l-2 border-l-yellow-500' : ''
         }`}
       >
-        <img
-          src={getAvatarUrl(avatarName, avatarRole)}
-          alt={title}
-          className="w-10 h-10 rounded-full object-cover border border-yellow-500/30 flex-shrink-0"
+        <UserAvatar
+          name={avatarName}
+          image={avatarImage}
+          role={avatarRole}
+          size="md"
+          className="border-2 border-yellow-500/30 flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
@@ -832,12 +839,14 @@ const AdminMessages = () => {
     let chatSubtitle = '';
     let chatAvatarName = 'User';
     let chatAvatarRole = 'USER';
+    let chatAvatarImage = null;
 
     if (selectedConversation.type === 'ESCALATED') {
       chatTitle = selectedConversation.user?.fullName || 'User';
       chatSubtitle = selectedConversation.complaint?.subject || t.escalated;
       chatAvatarName = selectedConversation.user?.fullName || 'User';
       chatAvatarRole = selectedConversation.user?.role || 'USER';
+      chatAvatarImage = getUserImage(selectedConversation.user);
     } else if (selectedConversation.type === 'SUPPORT') {
       chatTitle = selectedConversation.user?.fullName || 'User';
       chatSubtitle = selectedConversation.supportAgent?.fullName
@@ -845,11 +854,13 @@ const AdminMessages = () => {
         : t.support;
       chatAvatarName = selectedConversation.user?.fullName || 'User';
       chatAvatarRole = selectedConversation.user?.role || 'USER';
+      chatAvatarImage = getUserImage(selectedConversation.user);
     } else if (selectedConversation.type === 'INTERNAL') {
       chatTitle = selectedConversation.otherStaff?.fullName || 'Staff';
       chatSubtitle = t.internal;
       chatAvatarName = selectedConversation.otherStaff?.fullName || 'Staff';
       chatAvatarRole = selectedConversation.otherStaff?.role || 'SUPPORT';
+      chatAvatarImage = getUserImage(selectedConversation.otherStaff);
     }
 
     return (
@@ -857,10 +868,12 @@ const AdminMessages = () => {
         {/* Chat Header */}
         <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between bg-[#0a0a0a]">
           <div className="flex items-center gap-3">
-            <img
-              src={getAvatarUrl(chatAvatarName, chatAvatarRole)}
-              alt={chatTitle}
-              className="w-9 h-9 rounded-full object-cover border border-yellow-500/30"
+            <UserAvatar
+              name={chatAvatarName}
+              image={chatAvatarImage}
+              role={chatAvatarRole}
+              size="md"
+              className="border-2 border-yellow-500/30 flex-shrink-0"
             />
             <div>
               <p className="font-medium text-white text-sm">{formatDisplayName(chatTitle, chatAvatarRole)}</p>
@@ -889,39 +902,74 @@ const AdminMessages = () => {
               <p className="text-sm text-gray-400">{t.noMessages}</p>
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.senderId === authUser?.id ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-[65%] rounded-2xl px-4 py-2.5 ${
-                  msg.senderId === authUser?.id
-                    ? 'bg-yellow-500 text-black'
-                    : 'bg-[#1a1a1a] text-white border border-yellow-500/20'
-                }`}>
-                  <div className="mb-1">
-                    {msg.senderId === authUser?.id ? (
-                      <span className="text-xs font-medium text-black/70">
-                        You
-                      </span>
-                    ) : (
-                      <UserDisplayName
-                        name={msg.senderName}
-                        role={msg.senderRole}
+            messages.map((msg, idx) => {
+              const isSelf = msg.senderId === authUser?.id;
+              const prev = messages[idx - 1];
+              const isFirstInGroup = idx === 0 || prev?.senderId !== msg.senderId;
+              const senderImage = msg.sender?.image || msg.sender?.profileImage || null;
+              const senderName = msg.senderName || msg.sender?.name || 'User';
+              const senderRole = msg.senderRole || msg.sender?.role || 'USER';
+
+              return (
+                <div
+                  key={msg.id || idx}
+                  className={`flex ${isSelf ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                >
+                  {!isSelf && (
+                    isFirstInGroup ? (
+                      <UserAvatar
+                        name={senderName}
+                        image={senderImage}
+                        role={senderRole}
                         size="sm"
-                        className="text-white"
+                        className="flex-shrink-0"
                       />
-                    )}
-                  </div>
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
-                  <p className={`text-xs mt-1 ${
-                    msg.senderId === authUser?.id ? 'text-black/60' : 'text-gray-500'
+                    ) : (
+                      <div className="w-8 flex-shrink-0" />
+                    )
+                  )}
+                  <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
+                    isSelf
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-[#1a1a1a] text-white border border-yellow-500/20'
                   }`}>
-                    {formatDate(msg.timestamp)}
-                  </p>
+                    <div className="mb-1">
+                      {isSelf ? (
+                        <span className="text-xs font-medium text-black/70">
+                          You
+                        </span>
+                      ) : (
+                        <UserDisplayName
+                          name={senderName}
+                          role={senderRole}
+                          size="sm"
+                          className="text-white"
+                        />
+                      )}
+                    </div>
+                    <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
+                    <p className={`text-xs mt-1 ${
+                      isSelf ? 'text-black/60' : 'text-gray-500'
+                    }`}>
+                      {formatDate(msg.timestamp)}
+                    </p>
+                  </div>
+                  {isSelf && (
+                    isFirstInGroup ? (
+                      <UserAvatar
+                        name={authUser?.fullName || 'You'}
+                        image={authUser?.profileImage || authUser?.image || null}
+                        role="ADMIN"
+                        size="sm"
+                        className="flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 flex-shrink-0" />
+                    )
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -935,12 +983,12 @@ const AdminMessages = () => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
+              className="flex-1 min-w-0 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
             />
             <button
               onClick={handleSendMessage}
               disabled={sendingMessage || !newMessage.trim()}
-              className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 flex items-center gap-2 text-sm font-medium"
+              className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 flex items-center gap-2 text-sm font-medium flex-shrink-0"
             >
               <Send size={16} />
               {t.send}

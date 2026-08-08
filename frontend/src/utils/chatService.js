@@ -14,13 +14,6 @@ export const getUserConversations = async (userId) => {
 
 export const getConversations = (userId) => getUserConversations(userId);
 
-// Helper to build avatar URL (duplicated here to avoid circular imports)
-const buildAvatarUrl = (name, role) => {
-  const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : 'purple';
-  const color = role === 'ADMIN' ? '000' : 'fff';
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=${bg}&color=${color}&size=100&bold=true`;
-};
-
 export const getConversationMessages = async (conversationId) => {
   if (!conversationId) return [];
   const response = await api.get(`/api/chat/messages/${encodeURIComponent(conversationId)}`);

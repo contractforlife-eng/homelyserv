@@ -22,13 +22,12 @@ import {
   getSupportUsers,
   ensureConversationExists,
   deleteConversation,
-  formatDisplayName,
   getSupportConversations,
   getSupportConversationMessages,
   escalateConversation
 } from '../../utils/chatService';
 import api from '../../utils/api';
-import { UserDisplayName } from '../../components/users';
+import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportMessages = () => {
   const navigate = useNavigate();
@@ -69,6 +68,7 @@ const SupportMessages = () => {
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
         otherUserRole: conv.user?.role || 'USER',
+        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
         lastMessageTime: conv.lastMessageTime,
         time: conv.time,
@@ -130,6 +130,7 @@ const SupportMessages = () => {
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
         otherUserRole: conv.user?.role || 'USER',
+        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
         lastMessageTime: conv.lastMessageTime,
         time: conv.time,
@@ -243,6 +244,7 @@ const SupportMessages = () => {
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
         otherUserRole: conv.user?.role || 'USER',
+        otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
         lastMessageTime: conv.lastMessageTime,
         time: conv.time,
@@ -286,7 +288,7 @@ const SupportMessages = () => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       unread: 0,
       role: userRole || 'USER',
-      avatar: getAvatarForUser(userId, userName, userRole),
+      otherUserImage: null,
       updatedAt: new Date()
     };
 
@@ -303,13 +305,6 @@ const SupportMessages = () => {
     await loadMessagesForConversation(conversationId);
     setShowNewConversationModal(false);
   };
-
-  const getAvatarForUser = (userId, userName, role) => {
-    const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : 'green';
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=${bg}&color=fff&size=100&bold=true`;
-  };
-
-  const userProfileImage = authUser?.profileImage || null;
 
   const translations = {
     en: {
@@ -406,10 +401,12 @@ const SupportMessages = () => {
                         selectedConversationId === conv.id ? 'bg-green-50 dark:bg-green-900/30' : ''
                       }`}
                     >
-                      <img
-                        src={getAvatarForUser(conv.otherUserId, conv.otherUserName, conv.role)}
-                        alt={conv.otherUserName}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
+                      <UserAvatar
+                        name={conv.otherUserName}
+                        image={conv.otherUserImage || null}
+                        role={conv.role}
+                        size="md"
+                        className="border-2 border-green-200"
                       />
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex justify-between items-start">
@@ -446,15 +443,13 @@ const SupportMessages = () => {
                   {/* Chat Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/30">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={getAvatarForUser(
-                          conversations.find(c => c.id === selectedConversationId)?.otherUserId,
-                          conversations.find(c => c.id === selectedConversationId)?.otherUserName,
-                          conversations.find(c => c.id === selectedConversationId)?.role
-                        )}
-                        alt="Chat"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-green-200"
-                      />
+                      <UserAvatar
+                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                          image={conversations.find(c => c.id === selectedConversationId)?.otherUserImage || null}
+                          role={conversations.find(c => c.id === selectedConversationId)?.role}
+                          size="md"
+                          className="border-2 border-green-200"
+                        />
                       <div>
                         <UserDisplayName
                           name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
@@ -521,14 +516,12 @@ const SupportMessages = () => {
                             className={`flex ${isSupport ? 'justify-end' : 'justify-start'} items-end gap-2`}
                           >
                             {!isSupport && showAvatar && (
-                              <img
-                                src={getAvatarForUser(
-                                  conversations.find(c => c.id === selectedConversationId)?.otherUserId,
-                                  msg.senderName || 'User',
-                                  msg.senderRole
-                                )}
-                                alt={msg.senderName}
-                                className="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                              <UserAvatar
+                                name={msg.senderName || 'User'}
+                                image={msg.sender?.image || msg.sender?.profileImage || conversations.find(c => c.id === selectedConversationId)?.otherUserImage || null}
+                                role={msg.senderRole}
+                                size="sm"
+                                className="border border-gray-200"
                               />
                             )}
                             {!isSupport && !showAvatar && (
@@ -562,10 +555,12 @@ const SupportMessages = () => {
                               </p>
                             </div>
                             {isSupport && showAvatar && (
-                              <img
-                                src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Support')}&background=green&color=fff&size=100&bold=true`}
-                                alt={authUser.fullName || 'Support'}
-                                className="w-8 h-8 rounded-full object-cover border-2 border-green-200 flex-shrink-0"
+                              <UserAvatar
+                                name={authUser?.fullName || 'Support'}
+                                image={authUser?.profileImage || null}
+                                role="SUPPORT"
+                                size="sm"
+                                className="border-2 border-green-200"
                               />
                             )}
                             {isSupport && !showAvatar && (
@@ -690,10 +685,11 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
                   onClick={() => onSelectUser(user.id, user.fullName, user.role)}
                   className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition text-left"
                 >
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(user.fullName, user.role))}&background=green&color=fff&size=100&bold=true`}
-                    alt={user.fullName}
-                    className="w-10 h-10 rounded-full object-cover"
+                  <UserAvatar
+                    name={user.fullName}
+                    image={user.profileImage || user.image || null}
+                    role={user.role}
+                    size="md"
                   />
                   <div>
                     <UserDisplayName

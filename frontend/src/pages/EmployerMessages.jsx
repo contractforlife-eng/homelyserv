@@ -5,7 +5,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { UserDisplayName } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
@@ -583,10 +583,12 @@ const EmployerMessages = () => {
                           selectedConversationId === conv.id ? 'bg-teal-50 dark:bg-teal-900/30' : ''
                         }`}
                       >
-                        <img
-                          src={conv.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conv.otherUserName, conv.role))}&background=teal&color=fff&size=100&bold=true`}
-                          alt={formatDisplayName(conv.otherUserName, conv.role)}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-teal-200"
+                        <UserAvatar
+                          name={conv.otherUserName}
+                          image={conv.avatar || null}
+                          role={conv.role}
+                          size="md"
+                          className="border-2 border-teal-200"
                         />
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-start">
@@ -623,11 +625,12 @@ const EmployerMessages = () => {
                     {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(conversations.find(c => c.id === selectedConversationId)?.otherUserName, conversations.find(c => c.id === selectedConversationId)?.role) || 'Worker')}&background=teal&color=fff&size=100&bold=true`}
-                          alt="Chat"
-                          className="w-10 h-10 rounded-full object-cover border-2 border-teal-200"
+                        <UserAvatar
+                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker'}
+                          image={conversations.find(c => c.id === selectedConversationId)?.avatar || null}
+                          role={conversations.find(c => c.id === selectedConversationId)?.role}
+                          size="md"
+                          className="border-2 border-teal-200"
                         />
                         <div>
                           <UserDisplayName
@@ -714,11 +717,12 @@ const EmployerMessages = () => {
                               className={`flex ${isEmployer ? 'justify-end' : 'justify-start'} items-end gap-2`}
                             >
                               {!isEmployer && showAvatar && (
-                                <img
-                                  src={conversations.find(c => c.id === selectedConversationId)?.avatar || 
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.senderName || 'User')}&background=teal&color=fff&size=100&bold=true`}
-                                  alt={msg.senderName}
-                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                <UserAvatar
+                                  name={msg.senderName || 'User'}
+                                  image={msg.sender?.image || msg.sender?.profileImage || conversations.find(c => c.id === selectedConversationId)?.avatar || null}
+                                  role={msg.senderRole}
+                                  size="sm"
+                                  className="border border-gray-200 dark:border-gray-700"
                                 />
                               )}
                               {!isEmployer && !showAvatar && (
@@ -752,10 +756,12 @@ const EmployerMessages = () => {
                                 </p>
                               </div>
                               {isEmployer && showAvatar && (
-                                <img
-                                  src={userProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.fullName || 'Employer')}&background=teal&color=fff&size=100&bold=true`}
-                                  alt={authUser.fullName || 'Employer'}
-                                  className="w-8 h-8 rounded-full object-cover border-2 border-teal-200 flex-shrink-0"
+                                <UserAvatar
+                                  name={authUser?.fullName || 'Employer'}
+                                  image={authUser?.profileImage || null}
+                                  role="EMPLOYER"
+                                  size="sm"
+                                  className="border-2 border-teal-200"
                                 />
                               )}
                               {isEmployer && !showAvatar && (
@@ -836,10 +842,12 @@ const EmployerMessages = () => {
                       }}
                       className="w-full p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
                     >
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formatDisplayName(user.fullName, user.role))}&background=purple&color=fff&size=100&bold=true`}
-                        alt={formatDisplayName(user.fullName, user.role)}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-purple-300"
+                      <UserAvatar
+                        name={user.fullName}
+                        image={user.profileImage || user.image || null}
+                        role={user.role}
+                        size="md"
+                        className="border-2 border-purple-300"
                       />
                       <div className="text-left">
                         <UserDisplayName

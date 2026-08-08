@@ -89,12 +89,6 @@ function resolveRecipientRole(senderRole) {
   return 'USER';
 }
 
-function buildAvatarUrl(name, role) {
-  const bg = role === 'EMPLOYER' ? 'teal' : role === 'WORKER' ? 'red' : role === 'ADMIN' ? 'yellow' : role === 'SUPPORT' ? 'purple' : 'gray';
-  const color = role === 'ADMIN' ? '000' : 'fff';
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${color}&size=100&bold=true`;
-}
-
 function formatMessage(msg) {
   return {
     id: msg._id,
@@ -505,7 +499,7 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
         time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         unread,
         role: otherUser.role,
-        avatar: buildAvatarUrl(otherUser.name, otherUser.role),
+        avatar: null,
         updatedAt: conv.lastMessageAt || lastMsg.createdAt,
         escalated: conv.type === 'ESCALATED',
         complaintId: conv.complaintId || null
@@ -524,7 +518,7 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
         conv.otherUserName = live.name;
         conv.otherUserRole = live.role;
         conv.role = live.role;
-        conv.avatar = buildAvatarUrl(live.name, live.role);
+        conv.avatar = live.image || null;
       }
     }
 

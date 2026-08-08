@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
+import { UserAvatar } from '../components/users';
 import {
   Users,
   Briefcase,
@@ -434,9 +435,6 @@ const AdminHires = () => {
     setSearchTerm('');
   };
 
-  const avatarFor = (name, image, color = 'teal') =>
-    image || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=${color}&color=fff&size=100&bold=true`;
-
   // ============================================================
   // ACTIONS
   // ============================================================
@@ -662,7 +660,7 @@ const AdminHires = () => {
                           {/* Employer */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
-                              <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-9 h-9 rounded-full object-cover border border-yellow-500/30" />
+                              <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
                                   {hire.employerName || 'Unknown'}
@@ -682,7 +680,7 @@ const AdminHires = () => {
                           {/* Worker */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
-                              <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-9 h-9 rounded-full object-cover border border-red-500/30" />
+                              <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
                                   {hire.workerName || 'Unknown'}
@@ -761,7 +759,7 @@ const AdminHires = () => {
                     {/* Relationship */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-9 h-9 rounded-full object-cover border border-yellow-500/30" />
+                        <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                         <div className="min-w-0">
                           <p className="text-xs text-gray-500">{t.table.employer}</p>
                           <p className="text-sm font-semibold text-white truncate">{hire.employerName || 'Unknown'}</p>
@@ -776,7 +774,7 @@ const AdminHires = () => {
                           <p className="text-xs text-gray-500">{t.table.worker}</p>
                           <p className="text-sm font-semibold text-white truncate">{hire.workerName || 'Unknown'}</p>
                         </div>
-                        <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-9 h-9 rounded-full object-cover border border-red-500/30" />
+                        <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                       </div>
                     </div>
 
@@ -840,7 +838,6 @@ const AdminHires = () => {
           formatDate={formatDate}
           formatCurrency={formatCurrency}
           getCommission={getCommission}
-          avatarFor={avatarFor}
         />
       )}
     </DashboardLayout>
@@ -927,7 +924,7 @@ const ActionButtons = ({ hire, t, onView, onOpenEmployer, onOpenWorker, onMessag
 // ============================================================
 // HIRE DETAILS MODAL (CRM overview)
 // ============================================================
-const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, formatDate, formatCurrency, getCommission, avatarFor }) => {
+const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, formatDate, formatCurrency, getCommission }) => {
   const status = getStatusBadge(hire.status);
   const payment = getPaymentBadge(hire.paymentStatus);
   const paid = normalizePayment(hire.paymentStatus) === 'paid';
@@ -957,7 +954,7 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4 bg-[#0a0a0a] rounded-xl p-4 border border-yellow-500/10">
             {/* Employer */}
             <div className="flex items-center gap-3">
-              <img src={avatarFor(hire.employerName, hire.employerImage, 'yellow')} alt={hire.employerName} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/40" />
+              <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="lg" className="border-2 border-yellow-500/40" />
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.employer}</p>
                 <p className="font-semibold text-white truncate flex items-center gap-1">
@@ -986,7 +983,7 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
                   <Star size={11} className="text-yellow-400" />{hire.workerRating ?? t.modal.notProvided}
                 </p>
               </div>
-              <img src={avatarFor(hire.workerName, hire.workerImage, 'red')} alt={hire.workerName} className="w-12 h-12 rounded-full object-cover border-2 border-red-500/40" />
+              <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="lg" className="border-2 border-red-500/40" />
             </div>
           </div>
 
