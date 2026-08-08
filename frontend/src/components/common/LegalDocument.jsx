@@ -2,7 +2,7 @@
 // Reusable public document shell for legal/policy pages (Terms, Refund Policy, Privacy Policy).
 // Supports English + Arabic with RTL/LTR, a back button, a language toggle and the shared footer.
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Globe, Loader2 } from 'lucide-react';
 import { applyDocumentDirection, LANGUAGE_STORAGE_KEY, changeLanguageGlobal } from '../../i18n';
@@ -61,6 +61,18 @@ const Block = ({ block }) => {
             </div>
           ))}
         </div>
+      );
+    case 'link':
+      return (
+        <p className="mb-4 text-gray-600 dark:text-gray-300 leading-relaxed break-words">
+          {block.text}{' '}
+          <Link
+            to={block.href}
+            className="text-red-600 hover:text-red-700 hover:underline font-medium break-all"
+          >
+            {block.label}
+          </Link>
+        </p>
       );
     case 'p':
     default:

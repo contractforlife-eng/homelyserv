@@ -1,7 +1,6 @@
 // src/pages/RefundPolicy.jsx
 // Refund & Cancellation Policy — English + Arabic, public route /refund-policy.
-// Reflects the CURRENT real platform behavior: commission is generally non-refundable.
-// Draft legal copy; review by qualified legal counsel recommended.
+// Draft legal copy; review by qualified legal counsel recommended before major commercial launch.
 import React from 'react';
 import LegalDocument from '../components/common/LegalDocument';
 
@@ -9,9 +8,9 @@ const CONTENT = {
   en: {
     title: 'Refund & Cancellation Policy',
     back: 'Back',
-    lastUpdated: 'Last updated: June 27, 2026',
+    lastUpdated: 'Last updated: August 8, 2026',
     subtitle:
-      'This policy explains when HomelyServ platform fees and commissions may or may not be refunded, and how offers and hires may be cancelled or terminated. It reflects the way the platform currently operates.',
+      'This policy explains when HomelyServ platform fees and commissions may or may not be refunded, and how offers and hires may be cancelled or terminated.',
     sections: [
       {
         id: 'scope',
@@ -19,7 +18,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'This policy covers payments made to HomelyServ, primarily the platform recruitment commission charged to Employers when they pay to connect with a Worker. It does not cover salaries or other amounts agreed directly between a Worker and an Employer, which are handled between those parties.'
+            text: 'This policy covers payments made to HomelyServ, primarily the applicable platform recruitment commission shown at checkout when an Employer pays to connect with a Worker or use associated paid platform services. It does not cover salaries or other amounts agreed directly between a Worker and an Employer, which are handled between those parties.'
           }
         ]
       },
@@ -29,7 +28,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'The platform commission is generally non-refundable once the payment succeeds and the paid platform service has been delivered, including where the relevant connection, contact-access, or hire-related service has been completed.'
+            text: 'The applicable platform commission is generally non-refundable once the payment succeeds and the paid platform service has been delivered, including where the relevant connection, contact-access, or hire-related service has been completed.'
           }
         ]
       },
@@ -63,15 +62,22 @@ const CONTENT = {
         blocks: [
           {
             type: 'callout',
-            title: 'The following do not, by themselves, create a right to a refund of the platform commission:',
+            title: 'The following do not, by themselves, create an automatic right to a refund after the paid HomelyServ platform service has been delivered:',
             items: [
+              'misconduct by a Worker or an Employer',
+              'disappearance or loss of contact',
+              'breach of a user-to-user agreement',
+              'failure to attend',
+              'refusal or failure to continue the relationship',
               'termination of the relationship between the Worker and the Employer',
-              'disagreement between the parties',
-              'dissatisfaction with the Worker or the Employer',
-              'missed attendance or performance issues',
-              'a personal dispute between the parties',
+              'disagreement about salary or work conditions',
+              'dissatisfaction with another user',
               'a change of mind'
             ]
+          },
+          {
+            type: 'p',
+            text: 'This is always subject to any mandatory rights under applicable law and to the verified platform-failure exceptions described in this policy.'
           }
         ]
       },
@@ -91,7 +97,7 @@ const CONTENT = {
       },
       {
         id: 'process',
-        heading: '6. Refund Process',
+        heading: '6. Refund Process and Original Payment Method',
         blocks: [
           {
             type: 'p',
@@ -102,8 +108,12 @@ const CONTENT = {
             items: [
               'An investigation may be required before a decision is made.',
               'Refund decisions are made within the limits allowed by the payment provider and applicable law.',
-              'If a refund is approved through a third-party provider, that provider’s processing timelines apply.'
+              'Where approved, a refund may be processed through the original payment provider, and that provider’s processing timelines apply.'
             ]
+          },
+          {
+            type: 'p',
+            text: 'Where technically and legally possible, an approved refund will be returned to the original payment method used for the transaction. HomelyServ does not promise a refund to an alternative account or card unless required or approved through the relevant provider.'
           }
         ]
       },
@@ -113,13 +123,36 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'Payments are processed by third-party providers. Their terms, verification rules, fraud checks, and processing timelines apply to any refund carried out through them. HomelyServ cannot reverse a card or wallet charge directly through its own systems.'
+            text: 'Payments are processed by third-party payment providers. Their terms, verification rules, fraud checks, and processing timelines apply to any refund carried out through them. Approved refunds, where applicable, may be processed through the original payment provider and remain subject to that provider’s procedures and processing timelines.'
+          }
+        ]
+      },
+      {
+        id: 'chargebacks',
+        heading: '8. Chargebacks and Payment Disputes',
+        blocks: [
+          {
+            type: 'p',
+            text: 'If a user disputes a payment through a card issuer, PayPal, another payment provider, or a bank, HomelyServ may:'
+          },
+          {
+            type: 'ul',
+            items: [
+              'provide available transaction records to the payment provider',
+              'request supporting information from the user',
+              'temporarily review the related transaction or service',
+              'cooperate with legitimate fraud or security investigations'
+            ]
+          },
+          {
+            type: 'p',
+            text: 'Opening a chargeback or payment dispute does not automatically result in account termination. Where a payment-provider or legal process applies, that process will govern the final outcome, along with applicable law.'
           }
         ]
       },
       {
         id: 'contact',
-        heading: '8. Contact',
+        heading: '9. Contact',
         blocks: [
           {
             type: 'p',
@@ -135,9 +168,9 @@ const CONTENT = {
   ar: {
     title: 'سياسة الاسترداد والإلغاء',
     back: 'رجوع',
-    lastUpdated: 'آخر تحديث: 27 يونيو 2026',
+    lastUpdated: 'آخر تحديث: 8 أغسطس 2026',
     subtitle:
-      'توضح هذه السياسة متى يجوز أو لا يجوز استرداد رسوم المنصة وعمولاتها، وكيف يمكن إلغاء العروض أو إنهاء التعيينات. وهي تعكس طريقة عمل المنصة الحالية.',
+      'توضح هذه السياسة متى يجوز أو لا يجوز استرداد رسوم المنصة وعمولاتها، وكيف يمكن إلغاء العروض أو إنهاء التعيينات.',
     sections: [
       {
         id: 'scope',
@@ -145,7 +178,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'تنطبق هذه السياسة على المدفوعات المقدمة إلى المنصة، وفي المقام الأول عمولة التوظيف التي يدفعها صاحب العمل عند التواصل مع أحد العمال. ولا تشمل الرواتب أو المبالغ الأخرى المتفق عليها مباشرة بين العامل وصاحب العمل، والتي تُدار وتُنفذ بين الطرفين مباشرة.'
+            text: 'تنطبق هذه السياسة على المدفوعات المقدمة إلى المنصة، وفي المقام الأول على عمولة التوظيف السارية والموضحة عند إتمام الشراء عندما يدفع صاحب العمل للتواصل مع عامل أو للاستفادة من الخدمات المدفوعة المرتبطة بالمنصة، ولا تشمل الرواتب أو المبالغ الأخرى المتفق عليها مباشرة بين العامل وصاحب العمل، والتي تُدار بين الطرفين.'
           }
         ]
       },
@@ -155,7 +188,7 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'عمولة المنصة غير قابلة للاسترداد بشكل عام بمجرد نجاح الدفع واكتمال الخدمة المدفوعة المطلوبة، بما في ذلك حالات إتمام خدمة التعيين أو الوصول إلى بيانات التواصل أو الخدمات المرتبطة بالتوظيف.'
+            text: 'عمولة المنصة السارية غير قابلة للاسترداد بشكل عام بمجرد نجاح الدفع واكتمال الخدمة المدفوعة المطلوبة، بما في ذلك حالات إتمام خدمة التعيين أو الوصول إلى بيانات التواصل أو الخدمات المرتبطة بالتوظيف.'
           }
         ]
       },
@@ -170,16 +203,16 @@ const CONTENT = {
           {
             type: 'ul',
             items: [
-              'المصروفات المكررة أو الخصم المكرر',
+              'الخصم المكرر',
               'خطأ تقني مؤكد في المعالجة المالية',
-              'خصم ناجح لم تُقدّم فيه الخدمة المدفوعة بسبب خلل مؤكد من المنصة',
+              'خصم ناجح لم تُقدَّم فيه الخدمة المدفوعة بسبب خلل مؤكد من المنصة',
               'عملية غير مصرح بها، وفق التحقيق وقواعد مزود الدفع',
               'أي استرداد يوجبه القانون المعمول به'
             ]
           },
           {
             type: 'p',
-            text: 'قد يتطلّب الاسترداد إجراء تحقيق، وقد يُطلب منك تقديم تفاصيل إضافية. لا يوجد استرداد تلقائي أو بدون شروط.'
+            text: 'قد يتطلّب الاسترداد إجراء تحقيق، وقد يُطلب منك تقديم تفاصيل إضافية، ولا يوجد استرداد تلقائي أو دون شروط.'
           }
         ]
       },
@@ -189,15 +222,22 @@ const CONTENT = {
         blocks: [
           {
             type: 'callout',
-            title: 'لا تُشكّل الحالات التالية بحد ذاتها حقًا في استرداد عمولة المنصة:',
+            title: 'لا تُشكّل الحالات التالية بحد ذاتها حقًا تلقائيًا في استرداد العمولة بعد اكتمال الخدمة المدفوعة من المنصة:',
             items: [
+              'سلوك يُعدّ سوء تصرف من العامل أو صاحب العمل',
+              'تواري الطرف أو فقدان التواصل معه',
+              'الإخلال باتفاقية بين المستخدمين',
+              'التخلف عن الحضور',
+              'رفض الاستمرار في العلاقة أو التوقف عنها',
               'إنهاء العلاقة بين العامل وصاحب العمل',
-              'الخلاف بين الطرفين',
-              'عدم الرضا عن العامل أو صاحب العمل',
-              'تخلف عن الحضور أو مشكلات الأداء',
-              'نزاع شخصي بين الطرفين',
+              'الخلاف بشأن الراتب أو ظروف العمل',
+              'عدم الرضا عن مستخدم آخر',
               'تغيير الرأي'
             ]
+          },
+          {
+            type: 'p',
+            text: 'يظل ذلك خاضعًا دائمًا لحقوق القانون الإلزامية المعمول بها، وللظروف الموثقة المرتبطة بخلل من المنصة والموصوفة في هذه السياسة.'
           }
         ]
       },
@@ -217,7 +257,7 @@ const CONTENT = {
       },
       {
         id: 'process',
-        heading: '6. إجراءات الاسترداد',
+        heading: '6. إجراءات الاسترداد وطريقة الدفع الأصلية',
         blocks: [
           {
             type: 'p',
@@ -228,8 +268,12 @@ const CONTENT = {
             items: [
               'قد يلزم إجراء تحقيق قبل إصدار القرار.',
               'تُتخذ قرارات الاسترداد وفق ما تسمح به قواعد مزود الدفع والقانون المعمول به.',
-              'إذا تمت الموافقة على الاسترداد عبر مزود دفع خارجي، تسري توقيتات معالجته.'
+              'حيثما تقرر الاسترداد، قد تتم عملية إعادته عبر مزود الدفع الأصلي، وتسري توقيتات معالجته.'
             ]
+          },
+          {
+            type: 'p',
+            text: 'عندما يكون ذلك ممكنًا من الناحية الفنية والقانونية، يُعاد الاسترداد المعتمد إلى طريقة الدفع الأصلية المستخدمة للمعاملة، ولا تَعِد المنصة بالاسترداد إلى حساب أو بطاقة بديلة إلا إذا لزم ذلك أو اعتمده المزود المعني.'
           }
         ]
       },
@@ -239,23 +283,46 @@ const CONTENT = {
         blocks: [
           {
             type: 'p',
-            text: 'تتم معالجة المدفوعات عبر مزودي دفع خارجيين، وتنطبق شروطهم وقواعدهم وفحوصاتهم وتوقيتاتهم على أي استرداد يُنفذ عبر أنظمتهم، ولا تستطيع المنصة إرجاع مبلغ بطاقة أو محفظة مباشرة عبر أنظمتها الخاصة.'
+            text: 'تتم معالجة المدفوعات عبر مزودي دفع خارجيين، وتنطبق شروطهم وقواعد التحقق وفحوصات الاحتيال وتوقيتات المعالجة على أي استرداد يتم عبرهم، وتُعالَج الاستردادات المعتمدة حيثما أمكن عبر مزود الدفع الأصلي ووفق إجراءاته وتوقيتاته.'
+          }
+        ]
+      },
+      {
+        id: 'chargebacks',
+        heading: '8. النزاعات المالية والاعتراضات على الدفع',
+        blocks: [
+          {
+            type: 'p',
+            text: 'إذا اعترض المستخدم على عملية دفع عبر مصدر البطاقة أو باي بال أو أي مزود دفع آخر أو بنك، يجوز للمنصة:'
+          },
+          {
+            type: 'ul',
+            items: [
+              'تزويد مزود الدفع بسجلات المعاملة المتاحة',
+              'طلب معلومات داعمة من المستخدم',
+              'مراجعة المعاملة أو الخدمة ذات الصلة بشكل مؤقت',
+              'التعاون مع تحقيقات الاحتيال أو الأمن المشروعة'
+            ]
+          },
+          {
+            type: 'p',
+            text: 'لا يؤدي فتح نزاع أو اعتراضي دفع تلقائيًا إلى إنهاء الحساب، وحيث تطبق إجراءات مزود الدفع أو القانون، تحكم تلك الإجراءات النتيجة النهائية.'
           }
         ]
       },
       {
         id: 'contact',
-        heading: '8. التواصل',
+        heading: '9. التواصل',
         blocks: [
           {
             type: 'p',
-            text: 'للاستفسارات المتعلقة بالاسترداد أو الفوترة، تواصل معنا على البريد الإلكتروني support@homelyserv.com أو على الهاتف +20 100 918 9851 أو عبر صفحة «اتصل بنا». تعمل المنصة من القاهرة في مصر.'
+            text: 'للاستفسارات المتعلقة بالاسترداد أو الفوترة، تواصل معنا على البريد الإلكتروني support@homelyserv.com أو عبر الهاتف +20 100 918 9851 أو عبر صفحة «اتصل بنا». تعمل المنصة من القاهرة، مصر.'
           }
         ]
       }
     ],
     notice:
-      'هذه السياسة مسودة قانونية أولية ويجب مراجعتها من مستشار قانوني مؤهل قبل الإطلاق التجاري الكبير، وهي تصف سلوك المنصة الحالي ولا تُنشئ أي استحقاق استرداد تلقائي أو غير مشروط.'
+      'هذه السياسة مسودة قانونية أولية ويجب مراجعتها من قبل مستشار قانوني مؤهل قبل الإطلاق التجاري الكبير، وهي تصف سلوك المنصة الحالي ولا تُنشئ أي استحقاق استرداد تلقائي أو دون شروط.'
   }
 };
 
