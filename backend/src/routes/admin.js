@@ -811,53 +811,70 @@ router.get('/escalated-conversations', async (req, res) => {
       escalatedAt: { $ne: null }
     }).sort({ escalatedAt: -1 });
 
+    if (!conversationsMeta.length) {
+      return res.json({ success: true, count: 0, conversations: [] });
+    }
+
+    const conversationIds = conversationsMeta.map(c => c.conversationId);
+    const userId = String(req.userId);
+
+    const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
+      .sort({ createdAt: -1 });
+    const lastMessageMap = new Map();
+    for (const msg of lastMessages) {
+      if (!lastMessageMap.has(msg.conversationId)) {
+        lastMessageMap.set(msg.conversationId, msg);
+      }
+    }
+
+    const unreadAgg = await Message.aggregate([
+      { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+    ]);
+    const unreadMap = new Map(unreadAgg.map(item => [item._id, item.count]));
+
+    const userIds = new Set();
+    const complaintIds = new Set();
+    for (const conv of conversationsMeta) {
+      const userParticipantId = conv.participantIds.find(id => id !== conv.supportAgentId);
+      if (userParticipantId) userIds.add(userParticipantId);
+      if (conv.complaintId) complaintIds.add(conv.complaintId);
+    }
+
+    const validUserIds = [...userIds].filter(isValidObjectId);
+    const users = validUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: validUserIds } },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true }
+        })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    let complaints = [];
+    try {
+      const validComplaintIds = [...complaintIds].filter(id => typeof id === 'string');
+      if (validComplaintIds.length > 0) {
+        complaints = await prisma.complaint.findMany({
+          where: { id: { in: validComplaintIds } },
+          select: { id: true, subject: true, status: true, priority: true, createdAt: true }
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching complaints batch:', e.message);
+    }
+    const complaintMap = new Map(complaints.map(c => [c.id, c]));
+
     const conversations = [];
     for (const conv of conversationsMeta) {
-      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
-        .sort({ createdAt: -1 });
-
+      const lastMsg = lastMessageMap.get(conv.conversationId);
       if (!lastMsg) continue;
 
-      const unread = await Message.countDocuments({
-        conversationId: conv.conversationId,
-        recipientId: String(req.userId),
-        read: false
-      });
+      const userParticipantId = conv.participantIds.find(id => id !== conv.supportAgentId);
+      const userInfo = userParticipantId ? userMap.get(userParticipantId) || null : null;
 
-      // Get complaint info
       let complaint = null;
       if (conv.complaintId) {
-        try {
-          complaint = await prisma.complaint.findUnique({
-            where: { id: conv.complaintId },
-            select: {
-              id: true,
-              subject: true,
-              status: true,
-              priority: true,
-              createdAt: true
-            }
-          });
-        } catch (e) {
-          console.error('Error fetching complaint:', e.message);
-        }
-      }
-
-      // Get user participant info
-      const userParticipantId = conv.participantIds.find(
-        id => id !== conv.supportAgentId
-      );
-
-      let userInfo = null;
-      if (userParticipantId) {
-        try {
-          userInfo = await prisma.user.findUnique({
-            where: { id: userParticipantId },
-            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
-          });
-        } catch (e) {
-          console.error('Error fetching user:', e.message);
-        }
+        complaint = complaintMap.get(conv.complaintId) || null;
       }
 
       conversations.push({
@@ -874,7 +891,7 @@ router.get('/escalated-conversations', async (req, res) => {
         lastMessage: lastMsg.text,
         lastMessageTime: lastMsg.createdAt,
         time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread,
+        unread: unreadMap.get(conv.conversationId) || 0,
         updatedAt: conv.lastMessageAt || lastMsg.createdAt
       });
     }
@@ -898,47 +915,54 @@ router.get('/support-conversations', async (req, res) => {
       type: 'SUPPORT'
     }).sort({ lastMessageAt: -1 });
 
+    if (!conversationsMeta.length) {
+      return res.json({ success: true, count: 0, conversations: [] });
+    }
+
+    const conversationIds = conversationsMeta.map(c => c.conversationId);
+    const userId = String(req.userId);
+
+    const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
+      .sort({ createdAt: -1 });
+    const lastMessageMap = new Map();
+    for (const msg of lastMessages) {
+      if (!lastMessageMap.has(msg.conversationId)) {
+        lastMessageMap.set(msg.conversationId, msg);
+      }
+    }
+
+    const unreadAgg = await Message.aggregate([
+      { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+    ]);
+    const unreadMap = new Map(unreadAgg.map(item => [item._id, item.count]));
+
+    const userIds = new Set();
+    const supportAgentIds = new Set();
+    for (const conv of conversationsMeta) {
+      const userParticipantId = conv.participantIds.find(id => id !== conv.supportAgentId);
+      if (userParticipantId) userIds.add(userParticipantId);
+      if (conv.supportAgentId) supportAgentIds.add(conv.supportAgentId);
+    }
+
+    const allUserIds = [...new Set([...userIds, ...supportAgentIds])];
+    const validUserIds = allUserIds.filter(isValidObjectId);
+    const users = validUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: validUserIds } },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true }
+        })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u]));
+
     const conversations = [];
     for (const conv of conversationsMeta) {
-      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
-        .sort({ createdAt: -1 });
-
+      const lastMsg = lastMessageMap.get(conv.conversationId);
       if (!lastMsg) continue;
 
-      const unread = await Message.countDocuments({
-        conversationId: conv.conversationId,
-        recipientId: String(req.userId),
-        read: false
-      });
-
-      // Find the user participant (non-support)
-      const userParticipantId = conv.participantIds.find(
-        id => id !== conv.supportAgentId
-      );
-
-      let userInfo = null;
-      if (userParticipantId) {
-        try {
-          userInfo = await prisma.user.findUnique({
-            where: { id: userParticipantId },
-            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
-          });
-        } catch (e) {
-          console.error('Error fetching user:', e.message);
-        }
-      }
-
-      let supportInfo = null;
-      if (conv.supportAgentId) {
-        try {
-          supportInfo = await prisma.user.findUnique({
-            where: { id: conv.supportAgentId },
-            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
-          });
-        } catch (e) {
-          console.error('Error fetching support agent:', e.message);
-        }
-      }
+      const userParticipantId = conv.participantIds.find(id => id !== conv.supportAgentId);
+      const userInfo = userParticipantId ? userMap.get(userParticipantId) || null : null;
+      const supportInfo = conv.supportAgentId ? userMap.get(conv.supportAgentId) || null : null;
 
       conversations.push({
         id: conv.conversationId,
@@ -950,7 +974,7 @@ router.get('/support-conversations', async (req, res) => {
         lastMessage: lastMsg.text,
         lastMessageTime: lastMsg.createdAt,
         time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread,
+        unread: unreadMap.get(conv.conversationId) || 0,
         updatedAt: conv.lastMessageAt || lastMsg.createdAt
       });
     }
@@ -977,33 +1001,47 @@ router.get('/internal-messages', async (req, res) => {
       staffIds: userId
     }).sort({ lastMessageAt: -1 });
 
+    if (!conversationsMeta.length) {
+      return res.json({ success: true, count: 0, conversations: [] });
+    }
+
+    const conversationIds = conversationsMeta.map(c => c.conversationId);
+
+    const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
+      .sort({ createdAt: -1 });
+    const lastMessageMap = new Map();
+    for (const msg of lastMessages) {
+      if (!lastMessageMap.has(msg.conversationId)) {
+        lastMessageMap.set(msg.conversationId, msg);
+      }
+    }
+
+    const unreadAgg = await Message.aggregate([
+      { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+    ]);
+    const unreadMap = new Map(unreadAgg.map(item => [item._id, item.count]));
+
+    const otherStaffIds = conversationsMeta
+      .map(conv => conv.staffIds.find(id => id !== userId))
+      .filter(id => id);
+
+    const validStaffIds = otherStaffIds.filter(isValidObjectId);
+    const staffUsers = validStaffIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: validStaffIds } },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true }
+        })
+      : [];
+    const staffMap = new Map(staffUsers.map(u => [u.id, u]));
+
     const conversations = [];
     for (const conv of conversationsMeta) {
-      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
-        .sort({ createdAt: -1 });
-
+      const lastMsg = lastMessageMap.get(conv.conversationId);
       if (!lastMsg) continue;
 
-      // Find the other staff member
       const otherStaffId = conv.staffIds.find(id => id !== userId);
-
-      let otherStaffInfo = null;
-      if (otherStaffId) {
-        try {
-          otherStaffInfo = await prisma.user.findUnique({
-            where: { id: otherStaffId },
-            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
-          });
-        } catch (e) {
-          console.error('Error fetching staff member:', e.message);
-        }
-      }
-
-      const unread = await Message.countDocuments({
-        conversationId: conv.conversationId,
-        recipientId: userId,
-        read: false
-      });
+      const otherStaffInfo = otherStaffId ? staffMap.get(otherStaffId) || null : null;
 
       conversations.push({
         id: conv.conversationId,
@@ -1013,7 +1051,7 @@ router.get('/internal-messages', async (req, res) => {
         lastMessage: lastMsg.text,
         lastMessageTime: lastMsg.createdAt,
         time: new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread,
+        unread: unreadMap.get(conv.conversationId) || 0,
         updatedAt: conv.lastMessageAt || lastMsg.createdAt
       });
     }

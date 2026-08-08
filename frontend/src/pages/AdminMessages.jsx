@@ -264,6 +264,7 @@ const AdminMessages = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [showStartConversation, setShowStartConversation] = useState(false);
+  const [showConversationList, setShowConversationList] = useState(true);
   const messagesEndRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -378,6 +379,8 @@ const AdminMessages = () => {
   // LOAD MESSAGES FOR SELECTED CONVERSATION
   // ============================================================
   const loadConversationMessages = async (conversation) => {
+    console.log('[ADMIN-MSG-AUTOOPEN] loadConversationMessages called with:', conversation);
+    console.log('[ADMIN-MSG-AUTOOPEN] conversation.id:', conversation?.id);
     if (!conversation?.id) return;
 
     setChatLoading(true);
@@ -417,17 +420,19 @@ const AdminMessages = () => {
     }
 
     setLoading(true);
-    Promise.all([loadAllData(), loadNotifications()]).finally(() => {
+    loadAllData().finally(() => {
       setLoading(false);
       setDataLoaded(true);
     });
+
+    loadNotifications();
   }, [authUser, isAuthenticated, authLoading, navigate, loadAllData, loadNotifications]);
 
   // Polling for conversations (silent)
   useEffect(() => {
     const interval = setInterval(() => {
       loadAllData();
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [loadAllData]);
@@ -460,10 +465,8 @@ const AdminMessages = () => {
         return;
       }
 
-      // Close modal
       setShowStartConversation(false);
 
-      // Build conversation object and open it
       const conv = result.conversation || {};
       const targetUser = await api.get(`/api/admin/users/${userId}`).then(r => r.data?.user).catch(() => null);
 
@@ -482,10 +485,23 @@ const AdminMessages = () => {
         updatedAt: new Date().toISOString()
       };
 
-      // Refresh data to include the new conversation
-      await loadAllData();
+      if (conversation.type === 'SUPPORT') {
+        setSupportConversations(prev => {
+          const exists = prev.some(c => c.id === conversation.id);
+          return exists ? prev : [conversation, ...prev];
+        });
+      } else if (conversation.type === 'INTERNAL') {
+        setInternalConversations(prev => {
+          const exists = prev.some(c => c.id === conversation.id);
+          return exists ? prev : [conversation, ...prev];
+        });
+      } else if (conversation.type === 'ESCALATED') {
+        setEscalatedConversations(prev => {
+          const exists = prev.some(c => c.id === conversation.id);
+          return exists ? prev : [conversation, ...prev];
+        });
+      }
 
-      // Open the conversation
       await loadConversationMessages(conversation);
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -688,42 +704,46 @@ const AdminMessages = () => {
     return (
       <button
         key={conv.id}
-        onClick={() => loadConversationMessages(conv)}
-        className={`w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left ${
-          selectedConversation?.id === conv.id ? 'bg-yellow-500/10' : ''
+        onClick={() => {
+          loadConversationMessages(conv);
+          if (window.innerWidth < 768) {
+            setShowConversationList(false);
+          }
+        }}
+        className={`w-full p-3 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left ${
+          selectedConversation?.id === conv.id ? 'bg-yellow-500/10 border-l-2 border-l-yellow-500' : ''
         }`}
       >
         <img
           src={getAvatarUrl(avatarName, avatarRole)}
           alt={title}
-          className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500/30 flex-shrink-0"
+          className="w-10 h-10 rounded-full object-cover border border-yellow-500/30 flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
-            <p className="font-semibold text-white truncate">{formatDisplayName(title, avatarRole)}</p>
-            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{formatDate(conv.lastMessageTime || conv.updatedAt)}</span>
+            <p className="font-medium text-white text-sm truncate">{formatDisplayName(title, avatarRole)}</p>
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(conv.lastMessageTime || conv.updatedAt)}</span>
           </div>
-          <p className="text-sm text-gray-400 truncate">{subtitle}</p>
+          <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
           <div className="flex items-center gap-2 mt-1">
             {type === 'ESCALATED' && (
               <span className="text-xs text-red-400 flex items-center gap-1">
-                <AlertTriangle size={12} />
-                {t.escalatedBy}: {conv.escalatedBy ? 'Support' : 'System'}
+                <AlertTriangle size={10} />
+                {t.escalated}
               </span>
             )}
             {type === 'SUPPORT' && conv.supportAgent && (
               <span className="text-xs text-gray-500">
-                {t.supportAgent}: {conv.supportAgent.fullName}
+                {conv.supportAgent.fullName}
               </span>
             )}
             {conv.unread > 0 && (
-              <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full">
+              <span className="px-1.5 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-medium">
                 {conv.unread}
               </span>
             )}
           </div>
         </div>
-        <ChevronRight size={16} className="text-gray-500 flex-shrink-0" />
       </button>
     );
   };
@@ -732,11 +752,12 @@ const AdminMessages = () => {
   // RENDER EMPTY STATE
   // ============================================================
   const renderEmptyState = (message) => (
-    <EmptyState
-      icon={MessageSquare}
-      title={message}
-      description="No conversations are currently available"
-    />
+    <div className="flex flex-col items-center justify-center py-12 px-4">
+      <div className="w-12 h-12 mb-3 rounded-full bg-yellow-500/10 flex items-center justify-center">
+        <MessageSquare size={24} className="text-yellow-500" />
+      </div>
+      <p className="text-sm text-gray-400 text-center">{message}</p>
+    </div>
   );
 
   // ============================================================
@@ -765,17 +786,17 @@ const AdminMessages = () => {
           : notifications.map((notif) => (
               <div
                 key={notif._id || notif.id}
-                className="p-4 flex items-start gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10"
+                className="p-3 flex items-start gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10"
               >
-                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                  <Bell size={18} className="text-yellow-500" />
+                <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                  <Bell size={16} className="text-yellow-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
-                    <p className="font-semibold text-white text-sm">{notif.title || 'Notification'}</p>
-                    <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{formatFullDate(notif.createdAt)}</span>
+                    <p className="font-medium text-white text-sm">{notif.title || 'Notification'}</p>
+                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatFullDate(notif.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">{notif.body || notif.message || ''}</p>
+                  <p className="text-xs text-gray-400 mt-1">{notif.body || notif.message || ''}</p>
                   {notif.type && (
                     <span className="text-xs text-gray-500 mt-1 inline-block">{notif.type}</span>
                   )}
@@ -794,11 +815,13 @@ const AdminMessages = () => {
   const renderChatPanel = () => {
     if (!selectedConversation) {
       return (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center p-8">
-            <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-xl font-semibold text-white mb-2">{t.selectConversation}</h3>
-            <p className="text-gray-400">Choose a conversation from the list to view messages</p>
+        <div className="flex-1 flex items-center justify-center bg-[#0a0a0a]">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
+              <MessageSquare size={32} className="text-yellow-500" />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">{t.selectConversation}</h3>
+            <p className="text-sm text-gray-400">Choose a conversation from the list to view messages</p>
           </div>
         </div>
       );
@@ -832,21 +855,15 @@ const AdminMessages = () => {
     return (
       <>
         {/* Chat Header */}
-        <div className="p-4 border-b border-yellow-500/20 flex items-center justify-between bg-[#0a0a0a]">
+        <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between bg-[#0a0a0a]">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSelectedConversation(null)}
-              className="p-2 rounded-lg hover:bg-yellow-500/10 text-gray-400 hover:text-white transition mr-1"
-            >
-              <X size={18} />
-            </button>
             <img
               src={getAvatarUrl(chatAvatarName, chatAvatarRole)}
               alt={chatTitle}
-              className="w-10 h-10 rounded-full object-cover border-2 border-yellow-500/30"
+              className="w-9 h-9 rounded-full object-cover border border-yellow-500/30"
             />
             <div>
-              <p className="font-semibold text-white">{formatDisplayName(chatTitle, chatAvatarRole)}</p>
+              <p className="font-medium text-white text-sm">{formatDisplayName(chatTitle, chatAvatarRole)}</p>
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
             </div>
           </div>
@@ -861,15 +878,15 @@ const AdminMessages = () => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0a0a0a]">
           {chatLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500" />
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-4xl mb-3">💬</div>
-              <p className="text-gray-400">{t.noMessages}</p>
+              <div className="text-3xl mb-2">💬</div>
+              <p className="text-sm text-gray-400">{t.noMessages}</p>
             </div>
           ) : (
             messages.map((msg, idx) => (
@@ -877,15 +894,15 @@ const AdminMessages = () => {
                 key={idx}
                 className={`flex ${msg.senderId === authUser?.id ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[70%] rounded-lg p-3 ${
+                <div className={`max-w-[65%] rounded-2xl px-4 py-2.5 ${
                   msg.senderId === authUser?.id
                     ? 'bg-yellow-500 text-black'
-                    : 'bg-[#0a0a0a] text-white border border-yellow-500/20'
+                    : 'bg-[#1a1a1a] text-white border border-yellow-500/20'
                 }`}>
                   <div className="mb-1">
                     {msg.senderId === authUser?.id ? (
-                      <span className="text-xs font-medium text-black/80">
-                        {msg.senderName || 'Admin'} (You)
+                      <span className="text-xs font-medium text-black/70">
+                        You
                       </span>
                     ) : (
                       <UserDisplayName
@@ -896,9 +913,9 @@ const AdminMessages = () => {
                       />
                     )}
                   </div>
-                  <p className="text-sm">{msg.text}</p>
+                  <p className="text-sm leading-relaxed">{msg.text}</p>
                   <p className={`text-xs mt-1 ${
-                    msg.senderId === authUser?.id ? 'text-black/70' : 'text-gray-400'
+                    msg.senderId === authUser?.id ? 'text-black/60' : 'text-gray-500'
                   }`}>
                     {formatDate(msg.timestamp)}
                   </p>
@@ -918,12 +935,12 @@ const AdminMessages = () => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+              className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
             />
             <button
               onClick={handleSendMessage}
               disabled={sendingMessage || !newMessage.trim()}
-              className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 flex items-center gap-2 text-sm font-medium"
             >
               <Send size={16} />
               {t.send}
@@ -954,24 +971,25 @@ const AdminMessages = () => {
         variant="admin"
       />
 
-      <div className="p-4 md:p-6">
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
+      <div className="h-[calc(100vh-64px)] flex flex-col">
+        {/* Compact Header */}
+        <div className="px-6 py-4 border-b border-yellow-500/20 bg-[#0a0a0a]">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-black">{t.title}</h1>
-              <p className="text-black/70 mt-1">{t.subtitle}</p>
+              <h1 className="text-xl font-semibold text-white">{t.title}</h1>
+              <p className="text-sm text-gray-400 mt-0.5">{t.subtitle}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowStartConversation(true)}
-                className="px-4 py-2 bg-black/20 text-black rounded-lg hover:bg-black/30 transition flex items-center gap-2"
+                className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 text-sm font-medium"
               >
                 <Plus size={16} />
                 Start Conversation
               </button>
               <button
                 onClick={handleRefresh}
-                className="px-4 py-2 bg-black/20 text-black rounded-lg hover:bg-black/30 transition flex items-center gap-2"
+                className="px-4 py-2 bg-[#1a1a1a] border border-yellow-500/30 text-white rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2 text-sm"
               >
                 <RefreshCw size={16} />
                 {t.refresh}
@@ -980,69 +998,75 @@ const AdminMessages = () => {
           </div>
         </div>
 
-        {/* Section Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            return (
-              <button
-                key={section.id}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setSelectedConversation(null);
-                  setMessages([]);
-                }}
-                className={`p-4 rounded-xl border transition text-left ${
-                  isActive
-                    ? 'bg-[#1a1a1a] border-yellow-500/40 shadow-lg'
-                    : 'bg-[#1a1a1a]/50 border-yellow-500/10 hover:border-yellow-500/30'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getSectionIconBg(section.color)}`}>
-                    <Icon size={20} />
-                  </div>
+        {/* Category Tabs */}
+        <div className="px-6 py-3 border-b border-yellow-500/20 bg-[#0a0a0a]">
+          <div className="flex gap-2">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(section.id);
+                    setSelectedConversation(null);
+                    setMessages([]);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm ${
+                    isActive
+                      ? 'bg-yellow-500 text-black font-medium'
+                      : 'bg-[#1a1a1a] text-gray-400 hover:text-white hover:bg-yellow-500/10'
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{section.label}</span>
                   {section.count > 0 && (
-                    <span className="px-2 py-0.5 bg-yellow-500 text-black text-xs rounded-full font-medium">
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      isActive ? 'bg-black/20' : 'bg-yellow-500/20 text-yellow-500'
+                    }`}>
                       {section.count}
                     </span>
                   )}
-                </div>
-                <p className="font-semibold text-white text-sm">{section.label}</p>
-                <p className="text-xs text-gray-400 mt-1">{section.desc}</p>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Split View Chat Interface */}
-        <div className="bg-[#1a1a1a] rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3 h-[700px]">
-            {/* LEFT PANEL - Conversation List */}
-            <div className="border-r border-yellow-500/20 flex flex-col">
-              {/* Search */}
-              <div className="p-4 border-b border-yellow-500/20">
-                <div className="relative">
-                  <Search size={18} className="absolute left-3 top-3 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder={t.searchPlaceholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
-                  />
-                </div>
-              </div>
-              <div className="overflow-y-auto flex-1">
-                {renderSectionContent()}
+        <div className="flex-1 flex overflow-hidden">
+          {/* LEFT PANEL - Conversation List */}
+          <div className={`${showConversationList ? 'w-80' : 'hidden'} md:w-80 md:flex border-r border-yellow-500/20 flex-col bg-[#0a0a0a]`}>
+            {/* Search */}
+            <div className="p-3 border-b border-yellow-500/20">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
+                />
               </div>
             </div>
+            <div className="overflow-y-auto flex-1">
+              {renderSectionContent()}
+            </div>
+          </div>
 
-            {/* RIGHT PANEL - Conversation View */}
-            <div className="col-span-2 flex flex-col h-[700px]">
-              {renderChatPanel()}
-            </div>
+          {/* RIGHT PANEL - Conversation View */}
+          <div className="flex-1 flex flex-col bg-[#0a0a0a]">
+            {selectedConversation && (
+              <button
+                onClick={() => setShowConversationList(true)}
+                className="md:hidden p-3 border-b border-yellow-500/20 flex items-center gap-2 text-gray-400 hover:text-white"
+              >
+                <ChevronRight size={16} className="rotate-180" />
+                <span className="text-sm">Back to conversations</span>
+              </button>
+            )}
+            {renderChatPanel()}
           </div>
         </div>
       </div>

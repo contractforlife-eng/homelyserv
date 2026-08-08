@@ -245,7 +245,16 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     setActionLoading(true);
     try {
       if (isAdmin) {
-        navigate('/admin/messages', { state: { targetUserId: profileUser.id } });
+        const targetUserId = profileUser?.id || profileUser?._id || userId;
+        
+        if (!targetUserId) {
+          console.error('[ADMIN-START-CONVERSATION] Missing target user ID');
+          setNotification({ type: 'error', text: 'Failed to start conversation: Missing user ID' });
+          setActionLoading(false);
+          return;
+        }
+        
+        navigate('/admin/messages', { state: { targetUserId } });
       } else {
         await ensureConversationExists(
           authUser.id,
