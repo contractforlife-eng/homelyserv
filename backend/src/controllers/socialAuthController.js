@@ -57,7 +57,7 @@ const socialLogin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id, role: user.role, tokenVersion: user.tokenVersion || 0 },
       // PHASE 0 SECURITY FIX: no hardcoded fallback secret.
       // When this file is converted to ESM, use getJwtSecret() from config/jwtSecret.js instead.
       process.env.JWT_SECRET,

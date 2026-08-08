@@ -582,6 +582,89 @@ This is an automated security notification from HomelyServ.`;
 };
 
 /**
+ * Send role-change notification email when an administrator changes a
+ * user's role. Non-blocking: email failure must never roll back the change.
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.fullName - Recipient name
+ * @param {string} options.oldRole - Previous role
+ * @param {string} options.newRole - New role
+ * @returns {Promise<Object>} - Result object with success status
+ */
+export const sendRoleChangeNotification = async ({ to, fullName = '', oldRole, newRole }) => {
+  try {
+    if (!to) {
+      console.error('[ROLE_EMAIL] Missing recipient email');
+      return { success: false, message: 'Missing recipient email' };
+    }
+
+    const subject = 'Your HomelyServ account role has changed';
+
+    const roleLabels = {
+      WORKER: 'Worker',
+      EMPLOYER: 'Employer',
+      SUPPORT: 'Support',
+      ADMIN: 'Admin'
+    };
+    const oldLabel = roleLabels[oldRole] || oldRole || 'unknown';
+    const newLabel = roleLabels[newRole] || newRole || 'unknown';
+
+    const text = `Dear ${fullName || 'HomelyServ user'},
+
+Your HomelyServ account role has been changed by an administrator.
+
+Previous role: ${oldLabel}
+New role: ${newLabel}
+
+Your account permissions now reflect this new role. For security, all of your existing sessions have been signed out. Please sign in again to continue using HomelyServ.
+
+If you did not expect this change, please contact our support team immediately at support@homelyserv.com.
+
+This is an automated notification from HomelyServ.`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <h2 style="color: #f59e0b;">Your account role has changed</h2>
+        <p>Dear ${fullName || 'HomelyServ user'},</p>
+        <p>Your HomelyServ account role has been changed by an administrator.</p>
+        <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <p style="margin: 0 0 6px 0; color: #92400e;"><strong>Previous role:</strong> ${oldLabel}</p>
+          <p style="margin: 0; color: #92400e;"><strong>New role:</strong> ${newLabel}</p>
+        </div>
+        <p style="color: #dc2626; font-weight: bold;">Your existing sessions have been signed out. Please sign in again with your new role.</p>
+        <p>If you did not expect this change, please contact our support team at <a href="mailto:support@homelyserv.com">support@homelyserv.com</a>.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 14px;">This is an automated notification from HomelyServ.</p>
+      </div>
+    `;
+
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to,
+        subject,
+        html,
+        text,
+        replyTo: process.env.EMAIL_REPLY_TO || 'support@homelyserv.com'
+      });
+    } else {
+      return await sendViaSMTP({
+        to,
+        subject,
+        html,
+        text
+      });
+    }
+  } catch (error) {
+    console.error('[ROLE_EMAIL] Failed to send role change notification:', error);
+    return {
+      success: false,
+      message: 'Failed to send role change notification',
+      error: error.message
+    };
+  }
+};
+
+/**
  * Verify SMTP connection
  * @returns {Promise<Object>} - Result object with verification status
  */
@@ -617,5 +700,7 @@ export default {
   sendWelcomeEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendSecurityNotificationEmail,
+  sendRoleChangeNotification,
   verifySMTPConnection,
 };

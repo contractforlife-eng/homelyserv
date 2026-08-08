@@ -206,6 +206,7 @@ model User {
   password                         String
   username                         String?
   role                             Role             @default(WORKER)
+  tokenVersion                     Int              @default(0)
   fullName                         String
   phone                            String           @default("")
   city                             String?

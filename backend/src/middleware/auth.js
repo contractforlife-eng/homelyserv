@@ -1,5 +1,6 @@
 // backend/src/middleware/auth.js
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 
 // PHASE 0 SECURITY FIX (audit §2.8): no hardcoded fallback secret.
@@ -7,7 +8,13 @@ import { getJwtSecret } from '../config/jwtSecret.js';
 // caught below and surfaced as a 500 rather than silently signing/
 // verifying tokens with a secret that was committed to source control.
 
-export const authenticate = (req, res, next) => {
+// Matches admin.js helper: guards against legacy non-ObjectId user IDs
+// (e.g. "user_1784367005840") which would crash a Mongoose findById.
+const isValidObjectId = (id) => {
+  return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
+export const authenticate = async (req, res, next) => {
   try {
     // Get authorization header
     const authHeader = req.headers.authorization;
@@ -58,6 +65,51 @@ export const authenticate = (req, res, next) => {
       req.userId = decoded.userId || decoded.id || decoded.email;
       req.userRole = decoded.role || decoded.userRole;
       req.user = decoded; // Full decoded token
+
+      // ============================================================
+      // SESSION VERSION CHECK
+      // A user's tokenVersion is bumped whenever their role changes,
+      // invalidating all previously issued JWTs. The token's version
+      // must match the user's CURRENT version.
+      //
+      // Backward compatibility: old JWTs have no tokenVersion claim.
+      // We treat a missing/undefined claim as 0, which matches users
+      // whose DB tokenVersion is still 0. Once a role change bumps the
+      // DB version, any old token (with missing/0 claim) is rejected.
+      // ============================================================
+      try {
+        const tokenVersion = decoded.tokenVersion ?? 0;
+
+        // Legacy non-ObjectId user IDs cannot be version-checked; pass
+        // through without breaking those sessions.
+        if (isValidObjectId(String(req.userId))) {
+          const dbUser = await User.findById(req.userId).select('tokenVersion');
+          if (!dbUser) {
+            console.error('❌ Auth middleware: token user no longer exists');
+            return res.status(401).json({
+              success: false,
+              message: 'Session invalid. Please log in again.',
+              error: 'JWT_USER_NOT_FOUND'
+            });
+          }
+
+          const currentVersion = dbUser.tokenVersion ?? 0;
+          if (currentVersion !== tokenVersion) {
+            console.log(`❌ Token version mismatch for ${req.userId}: token=${tokenVersion}, db=${currentVersion}`);
+            return res.status(401).json({
+              success: false,
+              message: 'Session expired. Please log in again.',
+              error: 'JWT_TOKEN_VERSION_MISMATCH'
+            });
+          }
+        }
+      } catch (dbError) {
+        console.error('❌ Auth middleware session version check error:', dbError.message);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Authentication error' 
+        });
+      }
       
       next();
     } catch (jwtError) {

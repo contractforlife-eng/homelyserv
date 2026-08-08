@@ -32,7 +32,8 @@ import {
   Users,
   Pause,
   Play,
-  ChevronDown
+  ChevronDown,
+  UserCog
 } from 'lucide-react';
 
 // ============================================================
@@ -109,8 +110,12 @@ const StatusBadge = ({ isSuspended, isVerified }) => {
   );
 };
 
-const UserActionsMenu = ({ user, onViewProfile, onResetPassword, onSuspend, onActivate }) => {
+const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const userId = user.id || user._id;
+  const isSelf = String(userId) === String(currentAdminId);
+  const canChangeRole = user.role !== 'ADMIN' && !isSelf;
 
   return (
     <div className="relative">
@@ -139,6 +144,18 @@ const UserActionsMenu = ({ user, onViewProfile, onResetPassword, onSuspend, onAc
               <Eye size={14} />
               View Profile
             </button>
+            {canChangeRole && (
+              <button
+                onClick={() => {
+                  onChangeRole(user);
+                  setIsOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <UserCog size={14} />
+                Change Role
+              </button>
+            )}
             <button
               onClick={() => {
                 onResetPassword(user);
@@ -202,6 +219,12 @@ const AdminUsers = () => {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
   const [resetReason, setResetReason] = useState('');
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [isChangingRole, setIsChangingRole] = useState(false);
+  const [roleChangeError, setRoleChangeError] = useState('');
+  const [roleChangeSuccess, setRoleChangeSuccess] = useState('');
 
   const translations = {
     en: {
@@ -244,7 +267,8 @@ const AdminUsers = () => {
         tempPassword: 'Temporary Password',
         copyPassword: 'Copy Password',
         resetSuccess: 'Password reset successfully',
-        resetError: 'Failed to reset password'
+        resetError: 'Failed to reset password',
+        changeRole: 'Change Role'
       },
       modal: {
         resetPassword: 'Reset Password',
@@ -256,6 +280,18 @@ const AdminUsers = () => {
         resetting: 'Resetting...',
         securityNote: 'This password is temporary. The user will receive it by email and must change it after signing in.',
         done: 'Done'
+      },
+      changeRole: {
+        title: 'Change Role',
+        changingFor: 'Changing role for',
+        currentRole: 'Current Role',
+        newRole: 'New Role',
+        confirm: 'Change Role',
+        changing: 'Changing...',
+        warning: 'Changing this user\'s role will change their account permissions and sign them out of existing sessions.',
+        workerNote: 'If selecting WORKER, the user may need to complete their Worker profile setup.',
+        error: 'Failed to change role',
+        success: 'Role updated to'
       }
     },
     ar: {
@@ -298,7 +334,8 @@ const AdminUsers = () => {
         tempPassword: 'كلمة المرور المؤقتة',
         copyPassword: 'نسخ كلمة المرور',
         resetSuccess: 'تم إعادة تعيين كلمة المرور بنجاح',
-        resetError: 'فشل إعادة تعيين كلمة المرور'
+        resetError: 'فشل إعادة تعيين كلمة المرور',
+        changeRole: 'تغيير الدور'
       },
       modal: {
         resetPassword: 'إعادة تعيين كلمة المرور',
@@ -310,6 +347,18 @@ const AdminUsers = () => {
         resetting: 'جاري الإعادة...',
         securityNote: 'كلمة المرور هذه مؤقتة. سيتم إرسالها إلى المستخدم عبر البريد الإلكتروني ويجب تغييرها بعد تسجيل الدخول.',
         done: 'تم'
+      },
+      changeRole: {
+        title: 'تغيير الدور',
+        changingFor: 'تغيير الدور لـ',
+        currentRole: 'الدور الحالي',
+        newRole: 'الدور الجديد',
+        confirm: 'تغيير الدور',
+        changing: 'جاري التغيير...',
+        warning: 'سيؤدي تغيير دور هذا المستخدم إلى تغيير صلاحيات حسابه وتسجيل خروجه من جميع الجلسات الحالية.',
+        workerNote: 'عند اختيار عامل (WORKER)، قد يحتاج المستخدم إلى إكمال إعداد ملفه الشخصي كعامل.',
+        error: 'فشل تغيير الدور',
+        success: 'تم تغيير الدور إلى'
       }
     }
   };
@@ -471,6 +520,51 @@ const AdminUsers = () => {
     setPasswordSuccess('');
   };
 
+  const openRoleChangeModal = (user) => {
+    setSelectedUserForRole(user);
+    setSelectedRole('');
+    setRoleChangeError('');
+    setRoleModalOpen(true);
+  };
+
+  const closeRoleChangeModal = () => {
+    setRoleModalOpen(false);
+    setSelectedUserForRole(null);
+    setSelectedRole('');
+    setRoleChangeError('');
+  };
+
+  const handleChangeRole = async () => {
+    if (!selectedUserForRole) return;
+
+    const userId = selectedUserForRole._id || selectedUserForRole.id;
+
+    if (!selectedRole) {
+      setRoleChangeError('Please select a new role');
+      return;
+    }
+
+    setIsChangingRole(true);
+    setRoleChangeError('');
+    try {
+      const response = await api.put(`/api/admin/users/${userId}/role`, { newRole: selectedRole });
+      if (response.data.success) {
+        const newRole = selectedRole;
+        const changedName = selectedUserForRole.fullName || 'User';
+        updateUserRole(userId, newRole);
+        closeRoleChangeModal();
+        setRoleChangeSuccess(`${t.changeRole.success} ${getRoleLabel(newRole)} (${changedName})`);
+        setTimeout(() => setRoleChangeSuccess(''), 5000);
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || t.changeRole.error;
+      setRoleChangeError(message);
+      console.error('❌ Failed to change role:', error);
+    } finally {
+      setIsChangingRole(false);
+    }
+  };
+
   const handleGeneratePassword = () => {
     const pwd = generateSecurePassword();
     setGeneratedPassword(pwd);
@@ -584,6 +678,20 @@ const AdminUsers = () => {
             {t.subtitle}
           </p>
         </div>
+
+        {/* Success Toast */}
+        {roleChangeSuccess && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
+            <CheckCircle size={16} />
+            {roleChangeSuccess}
+            <button
+              onClick={() => setRoleChangeSuccess('')}
+              className="ml-auto text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
@@ -775,7 +883,9 @@ const AdminUsers = () => {
                       <td className="px-6 py-4 text-right">
                         <UserActionsMenu
                           user={u}
+                          currentAdminId={user?.id || user?._id}
                           onViewProfile={handleViewProfile}
+                          onChangeRole={openRoleChangeModal}
                           onResetPassword={openPasswordModal}
                           onSuspend={handleSuspend}
                           onActivate={handleActivate}
@@ -945,6 +1055,144 @@ const AdminUsers = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {roleModalOpen && selectedUserForRole && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <UserCog size={20} className="text-yellow-500" />
+                {t.changeRole.title}
+              </h3>
+              <button
+                onClick={closeRoleChangeModal}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* User info */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 text-white font-semibold overflow-hidden">
+                  {selectedUserForRole.profileImage ? (
+                    <img src={selectedUserForRole.profileImage} alt={selectedUserForRole.fullName} className="w-full h-full object-cover" />
+                  ) : (
+                    selectedUserForRole.fullName?.charAt(0) || 'U'
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white truncate">
+                    {selectedUserForRole.fullName}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 break-all">
+                    <Mail size={10} />
+                    {selectedUserForRole.email}
+                  </p>
+                </div>
+              </div>
+
+              {/* Current role */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold mb-1">
+                  {t.changeRole.currentRole}
+                </p>
+                <RoleBadge role={selectedUserForRole.role} />
+              </div>
+
+              {/* New role selector */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t.changeRole.newRole}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['WORKER', 'EMPLOYER', 'SUPPORT']).map((roleOption) => {
+                    const isCurrent = roleOption === selectedUserForRole.role;
+                    const isSelected = roleOption === selectedRole;
+                    return (
+                      <button
+                        key={roleOption}
+                        type="button"
+                        disabled={isCurrent}
+                        onClick={() => {
+                          setSelectedRole(roleOption);
+                          setRoleChangeError('');
+                        }}
+                        className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                          isCurrent
+                            ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 text-yellow-700 dark:text-yellow-300'
+                              : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                        }`}
+                      >
+                        {getRoleLabel(roleOption)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                  {t.changeRole.changingFor} {selectedUserForRole.fullName}
+                </p>
+              </div>
+
+              {roleChangeError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 text-sm flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  {roleChangeError}
+                </div>
+              )}
+
+              {/* Warning */}
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                  <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                  <span>{t.changeRole.warning}</span>
+                </p>
+              </div>
+
+              {/* Worker note */}
+              {selectedRole === 'WORKER' && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                    <UserCog size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>{t.changeRole.workerNote}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={closeRoleChangeModal}
+                disabled={isChangingRole}
+                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {t.modal.cancel}
+              </button>
+              <button
+                onClick={handleChangeRole}
+                disabled={isChangingRole || !selectedRole}
+                className="px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {isChangingRole ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {t.changeRole.changing}
+                  </>
+                ) : (
+                  <>
+                    <UserCog size={16} />
+                    {t.changeRole.confirm}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@ import { getCommandCenter } from '../controllers/adminCommandCenterController.js
 import { getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
+import { sendRoleChangeNotification } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -254,6 +255,183 @@ router.put('/users/:id/reset-password', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to reset password',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Change User Role (Admin Only)
+// Admin can set a user's role to WORKER, EMPLOYER, or SUPPORT.
+// FORBIDDEN: changing any ADMIN, or the acting admin's own role.
+// On success the target user's tokenVersion is bumped, which
+// invalidates all of their existing JWTs immediately.
+// ============================================================
+const ALLOWED_ROLE_CHANGES = ['WORKER', 'EMPLOYER', 'SUPPORT'];
+
+router.put('/users/:id/role', async (req, res) => {
+  try {
+    const adminId = req.userId;
+    const { newRole } = req.body || {};
+
+    // Validate newRole presence and value
+    if (!newRole) {
+      return res.status(400).json({
+        success: false,
+        message: 'newRole is required'
+      });
+    }
+
+    const normalizedRole = String(newRole).toUpperCase();
+    if (!ALLOWED_ROLE_CHANGES.includes(normalizedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'newRole must be one of: WORKER, EMPLOYER, SUPPORT'
+      });
+    }
+
+    // An admin cannot change their own role through this endpoint
+    if (String(req.params.id) === String(adminId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot change your own role through this endpoint.'
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Authorization: Admin cannot change another Admin's role
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to change roles of admin accounts'
+      });
+    }
+
+    const oldRole = user.role;
+
+    // No-op: role already set
+    if (oldRole === normalizedRole) {
+      return res.json({
+        success: true,
+        changed: false,
+        message: `User role is already ${normalizedRole}`,
+        user: serializeUser(user)
+      });
+    }
+
+    const userId = String(user._id);
+
+    // ============================================================
+    // SUPPORT exit guard: block if active complaint assignments exist
+    // ============================================================
+    if (oldRole === 'SUPPORT') {
+      const activeAssignments = await prisma.complaint.count({
+        where: {
+          assignedSupport: userId,
+          status: { notIn: ['RESOLVED', 'CLOSED'] }
+        }
+      });
+      if (activeAssignments > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `This user has ${activeAssignments} active complaint assignment(s). Reassign them before changing the role.`
+        });
+      }
+    }
+
+    // ============================================================
+    // TRANSITION TO WORKER: ensure a WorkerProfile exists
+    // (create minimal, hidden, non-broken profile when missing)
+    // ============================================================
+    if (normalizedRole === 'WORKER') {
+      const existingProfile = await prisma.workerProfile.findUnique({
+        where: { userId },
+        select: { id: true }
+      });
+      if (!existingProfile) {
+        await prisma.workerProfile.create({
+          data: {
+            userId,
+            category: '',
+            experienceYears: 0,
+            expectedSalary: 0,
+            availability: 'available',
+            workType: 'full-time',
+            bioAr: '',
+            bioEn: '',
+            skills: [],
+            profilePhotoUrl: '',
+            docStatus: 'pending',
+            ratingAvg: 0,
+            ratingCount: 0,
+            isVisible: false
+          }
+        });
+      }
+    }
+
+    // ============================================================
+    // TRANSITION AWAY FROM WORKER: hide historical WorkerProfile
+    // ============================================================
+    if (oldRole === 'WORKER' && normalizedRole !== 'WORKER') {
+      const existingProfile = await prisma.workerProfile.findUnique({
+        where: { userId },
+        select: { id: true }
+      });
+      if (existingProfile) {
+        await prisma.workerProfile.update({
+          where: { id: existingProfile.id },
+          data: { isVisible: false }
+        });
+      }
+    }
+
+    // ============================================================
+    // APPLY ROLE CHANGE + INVALIDATE THE TARGET USER'S SESSIONS
+    // ============================================================
+    user.role = normalizedRole;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+
+    // Email notification (non-blocking - must never roll back the change)
+    sendRoleChangeNotification({
+      to: user.email,
+      fullName: user.fullName,
+      oldRole,
+      newRole: normalizedRole
+    }).catch((emailError) => {
+      console.error('[ROLE_EMAIL] Failed to send role change notification:', emailError);
+    });
+
+    // Structured audit log (no password/token data)
+    console.log('[AUDIT_ROLE_CHANGE]', JSON.stringify({
+      actorAdminId: adminId,
+      targetUserId: userId,
+      oldRole,
+      newRole: normalizedRole,
+      timestamp: new Date().toISOString()
+    }));
+
+    res.json({
+      success: true,
+      changed: true,
+      message: 'User role updated successfully',
+      oldRole,
+      newRole: normalizedRole,
+      user: serializeUser(user)
+    });
+  } catch (error) {
+    console.error('Change role error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change user role',
       error: error.message
     });
   }

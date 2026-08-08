@@ -20,6 +20,12 @@ const UserSchema = new mongoose.Schema({
     enum: ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT'],
     default: 'WORKER'
   },
+  // Session/token version. Bumped whenever an admin changes a user's role,
+  // which invalidates all previously issued JWTs for that user.
+  tokenVersion: {
+    type: Number,
+    default: 0
+  },
   phone: {
     type: String,
     default: ''
