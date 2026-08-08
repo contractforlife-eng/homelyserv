@@ -40,7 +40,6 @@ import {
   ChevronRight,
   Loader2,
   Flag,
-  User as UserIcon,
 } from 'lucide-react';
 
 // ============================================================
@@ -334,21 +333,27 @@ const AdminDashboard = () => {
                 {complaintsService.getPriorityLabel(complaint.priority)}
               </span>
             </div>
-            <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{complaint.subject}</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
-                {complaintsService.getStatusLabel(complaint.status)}
-              </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {complaintsService.formatComplaintDate(complaint.createdAt)}
-              </span>
-            </div>
-            {complaint.assignedSupport && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                <UserIcon size={12} />
-                <UserDisplayName user={complaint.assignedSupport} size="sm" />
-              </div>
-            )}
+             <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{complaint.subject}</p>
+             <div className="flex items-center justify-between mt-2">
+               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
+                 {complaintsService.getStatusLabel(complaint.status)}
+               </span>
+               <span className="text-xs text-gray-400 dark:text-gray-500">
+                 {complaintsService.formatComplaintDate(complaint.createdAt)}
+               </span>
+             </div>
+             {complaint.User && (
+               <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                 <UserAvatar name={complaint.User.fullName} image={complaint.User.image} role={complaint.User.role} size="sm" />
+                 <UserDisplayName user={complaint.User} size="sm" />
+               </div>
+             )}
+             {complaint.assignedSupport && (
+               <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                 <UserAvatar name={complaint.assignedSupport.fullName} image={complaint.assignedSupport.image} role={complaint.assignedSupport.role} size="sm" />
+                 <UserDisplayName user={complaint.assignedSupport} size="sm" />
+               </div>
+             )}
           </button>
         ))}
       </div>
@@ -392,9 +397,12 @@ const AdminDashboard = () => {
                   {event.Complaint?.subject || event.description || 'Activity'}
                   {event.Complaint?.ticketNumber && ` — ${event.Complaint.ticketNumber}`}
                 </p>
-                {event.authorName && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">by {event.authorName}</p>
-                )}
+                 {event.authorName && (
+                   <div className="flex items-center gap-1 mt-0.5">
+                     <UserAvatar name={event.authorName} image={event.Author?.image} role={event.Author?.role || 'USER'} size="sm" />
+                     <span className="text-xs text-gray-400 dark:text-gray-500">by {event.authorName}</span>
+                   </div>
+                 )}
               </div>
             </div>
           );
@@ -448,9 +456,7 @@ const AdminDashboard = () => {
       <div className="space-y-3">
         {payments.map((payment) => (
           <div key={payment.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-              <CreditCard size={18} className="text-green-400" />
-            </div>
+            <UserAvatar name={payment.User?.fullName || payment.employerName || payment.userEmail || 'Unknown'} image={payment.User?.image} role={payment.User?.role || 'USER'} size="md" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
                 {payment.User?.fullName || payment.employerName || payment.userEmail || 'Unknown'}
@@ -494,9 +500,7 @@ const AdminDashboard = () => {
       <div className="space-y-3">
         {hires.map((hire) => (
           <div key={hire.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
-            <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-              <Briefcase size={18} className="text-teal-400" />
-            </div>
+            <UserAvatar name={hire.WorkerProfile?.User?.fullName || 'Worker'} image={hire.WorkerProfile?.User?.image} role={hire.WorkerProfile?.User?.role || 'WORKER'} size="md" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
                 {hire.WorkerProfile?.User?.fullName || 'Worker'}

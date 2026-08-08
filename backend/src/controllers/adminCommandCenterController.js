@@ -44,7 +44,7 @@ const serializeComplaint = (complaint) => {
           fullName: complaint.AssignedSupport.fullName,
           email: complaint.AssignedSupport.email,
           role: complaint.AssignedSupport.role,
-          image: complaint.AssignedSupport.profileImage || complaint.AssignedSupport.image,
+          image: complaint.AssignedSupport.profileImage || null,
         }
       : null,
     escalatedAt: complaint.escalatedAt,
@@ -57,7 +57,7 @@ const serializeComplaint = (complaint) => {
           fullName: complaint.User.fullName,
           email: complaint.User.email,
           role: complaint.User.role,
-          image: complaint.User.profileImage || complaint.User.image,
+          image: complaint.User.profileImage || null,
         }
       : null,
   };
@@ -164,6 +164,7 @@ export const getCommandCenter = async (req, res) => {
       // ---- Recent activity (max 20) ----
       prisma.complaintTimeline.findMany({
         include: {
+          Author: { select: { id: true, fullName: true, role: true, profileImage: true } },
           Complaint: {
             select: { id: true, ticketNumber: true, subject: true, status: true, priority: true },
           },
@@ -213,7 +214,7 @@ export const getCommandCenter = async (req, res) => {
     if (validPaymentUserIds.length > 0) {
       paymentUsers = await prisma.user.findMany({
         where: { id: { in: validPaymentUserIds } },
-        select: { id: true, fullName: true, email: true },
+        select: { id: true, fullName: true, email: true, profileImage: true },
       });
     }
     const paymentUserMap = new Map(paymentUsers.map(u => [u.id, u]));
@@ -230,7 +231,7 @@ export const getCommandCenter = async (req, res) => {
     if (validHireEmployerIds.length > 0) {
       hireEmployers = await prisma.user.findMany({
         where: { id: { in: validHireEmployerIds } },
-        select: { id: true, fullName: true, email: true },
+        select: { id: true, fullName: true, email: true, profileImage: true },
       });
     }
     const hireEmployerMap = new Map(hireEmployers.map(u => [u.id, u]));
@@ -250,7 +251,7 @@ export const getCommandCenter = async (req, res) => {
     if (validHireWorkerUserIds.length > 0) {
       hireWorkerUsers = await prisma.user.findMany({
         where: { id: { in: validHireWorkerUserIds } },
-        select: { id: true, fullName: true, phone: true, city: true },
+        select: { id: true, fullName: true, phone: true, city: true, profileImage: true },
       });
     }
     const hireWorkerUserMap = new Map(hireWorkerUsers.map(u => [u.id, u]));
@@ -268,6 +269,21 @@ export const getCommandCenter = async (req, res) => {
           : null,
       };
     });
+
+    // Enrich recent activity with author images
+    const validAuthorIds = [...new Set(recentActivity.map(a => a.authorId).filter(isValidObjectId))];
+    let activityAuthors = [];
+    if (validAuthorIds.length > 0) {
+      activityAuthors = await prisma.user.findMany({
+        where: { id: { in: validAuthorIds } },
+        select: { id: true, fullName: true, role: true, profileImage: true },
+      });
+    }
+    const activityAuthorMap = new Map(activityAuthors.map(u => [u.id, u]));
+    const enrichedRecentActivity = recentActivity.map(activity => ({
+      ...activity,
+      Author: activityAuthorMap.get(activity.authorId) || null,
+    }));
 
     // ============================================================
     // SORT NEEDS ATTENTION
@@ -312,14 +328,26 @@ export const getCommandCenter = async (req, res) => {
         unreadSupportMessages,
       },
       needsAttention: needsAttention.map(serializeComplaint),
-      recentActivity,
+      recentActivity: enrichedRecentActivity.map(a => ({
+        ...a,
+        Author: a.Author ? { ...a.Author, image: a.Author.profileImage || null } : null,
+      })),
       // Map profileImage -> image for frontend compatibility (AdminDashboard expects user.image)
       recentUsers: recentUsers.map(u => ({
         ...u,
         image: u.profileImage || null,
       })),
-      recentPayments: enrichedRecentPayments,
-      recentHires: enrichedRecentHires,
+      recentPayments: enrichedRecentPayments.map(p => ({
+        ...p,
+        User: p.User ? { ...p.User, image: p.User.profileImage || null } : null,
+      })),
+      recentHires: enrichedRecentHires.map(h => ({
+        ...h,
+        User: h.User ? { ...h.User, image: h.User.profileImage || null } : null,
+        WorkerProfile: h.WorkerProfile && h.WorkerProfile.User
+          ? { ...h.WorkerProfile, User: { ...h.WorkerProfile.User, image: h.WorkerProfile.User.profileImage || null } }
+          : h.WorkerProfile,
+      })),
     });
   } catch (error) {
     console.error('❌ Error fetching admin command center:', error);
