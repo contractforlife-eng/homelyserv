@@ -279,8 +279,8 @@ const redirectUser = (user) => {
               </div>
               
               <div className="mt-4">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 via-red-600 to-gray-800 bg-clip-text text-transparent tracking-tight drop-shadow-sm">
-                  {t('appName')}
+                <h1 className="text-4xl font-bold tracking-tight drop-shadow-sm">
+                  <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
               </div>

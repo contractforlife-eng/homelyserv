@@ -265,8 +265,8 @@ function Register() {
               </div>
               
               <div className="mt-4">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
-                  HomelyServ
+                <h1 className="text-4xl font-bold tracking-tight">
+                  <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
                 </h1>
                 <p className="text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Create Your Account</p>
               </div>
