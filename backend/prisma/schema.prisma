@@ -183,7 +183,7 @@ model Payment {
   @@index([employerId])
   @@index([status])
   @@index([hireId])
-  @@unique([hireId, status])
+  @@index([hireId, status])
   @@map("payments")
 }
 
@@ -298,6 +298,24 @@ model WorkerProfile {
   Review          Review[]
   Offer           Offer[]      @relation("WorkerOffers")
   User            User         @relation(fields: [userId], references: [id])
+}
+
+// ============================================================
+// WORKER PAYOUT DETAILS - Private financial/payout info
+// One-to-one with User (keyed by userId). Never exposed publicly.
+// ============================================================
+model WorkerPayoutDetails {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @unique @db.ObjectId
+  walletNumber      String?
+  instapayNumber    String?
+  bankAccountNumber String?
+  bankName          String?
+  accountHolderName String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("worker_payout_details")
 }
 
 enum Role {

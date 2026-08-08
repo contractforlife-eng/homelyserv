@@ -7,6 +7,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
+import api from '../utils/api';
 import {
   User,
   Briefcase,
@@ -58,6 +59,8 @@ const WorkerPayment = () => {
   });
   const [isEditingPaymentInfo, setIsEditingPaymentInfo] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [payoutSaving, setPayoutSaving] = useState(false);
+  const [payoutError, setPayoutError] = useState('');
   const [workerStats, setWorkerStats] = useState({
     totalTasksCompleted: 0,
     totalEarned: 0,
@@ -99,7 +102,9 @@ const WorkerPayment = () => {
         edit: 'Edit Payment Info',
         save: 'Save Changes',
         cancel: 'Cancel',
-        saved: 'Payment information updated successfully!'
+        saved: 'Payment information updated successfully!',
+        saveError: 'Failed to save payment information. Please try again.',
+        loadError: 'Failed to load payment information.'
       },
       paymentHistory: {
         title: 'Payment History',
@@ -154,7 +159,9 @@ const WorkerPayment = () => {
         edit: 'تعديل معلومات الدفع',
         save: 'حفظ التغييرات',
         cancel: 'إلغاء',
-        saved: 'تم تحديث معلومات الدفع بنجاح!'
+        saved: 'تم تحديث معلومات الدفع بنجاح!',
+        saveError: 'تعذر حفظ معلومات الدفع. حاول مرة أخرى.',
+        loadError: 'تعذر تحميل معلومات الدفع.'
       },
       paymentHistory: {
         title: 'سجل المدفوعات',
@@ -268,6 +275,68 @@ const WorkerPayment = () => {
     });
   };
 
+  const PAYOUT_FIELDS = ['walletNumber', 'instapayNumber', 'bankAccountNumber', 'bankName', 'accountHolderName'];
+  const PAYOUT_KEY = (userId) => `worker_payment_info_${userId}`;
+
+  const applyPayoutDetailsToForm = (record) => {
+    if (!record) return;
+    setWorkerPaymentInfo(prev => {
+      const next = { ...prev };
+      PAYOUT_FIELDS.forEach(field => {
+        if (typeof record[field] === 'string') {
+          next[field] = record[field];
+        }
+      });
+      return next;
+    });
+  };
+
+  // Migrate a legacy localStorage payout record to the backend once.
+  // Only runs when the backend has no record, and never overwrites it.
+  const migrateLegacyPayoutDetails = async () => {
+    if (!authUser) return false;
+    try {
+      const raw = localStorage.getItem(PAYOUT_KEY(authUser.id));
+      if (!raw) return false;
+
+      const legacy = JSON.parse(raw);
+      const payload = {};
+      PAYOUT_FIELDS.forEach(field => {
+        if (legacy && typeof legacy[field] === 'string' && legacy[field].trim()) {
+          payload[field] = legacy[field].trim();
+        }
+      });
+
+      if (Object.keys(payload).length === 0) return false;
+
+      setWorkerPaymentInfo(prev => ({ ...prev, ...payload }));
+      await api.put('/api/worker/payout-details', payload);
+      localStorage.removeItem(PAYOUT_KEY(authUser.id));
+      console.log('✅ Legacy payout details migrated to backend');
+      return true;
+    } catch (error) {
+      console.warn('Legacy payout details migration skipped:', error.message);
+      return false;
+    }
+  };
+
+  const loadPayoutDetails = async () => {
+    if (!authUser) return;
+    try {
+      const response = await api.get('/api/worker/payout-details');
+      const record = response.data?.payoutDetails;
+      if (record) {
+        applyPayoutDetailsToForm(record);
+      } else {
+        await migrateLegacyPayoutDetails();
+      }
+    } catch (error) {
+      console.error('Error loading payout details:', error);
+      setPayoutError(t.paymentInfo.loadError);
+      setTimeout(() => setPayoutError(''), 4000);
+    }
+  };
+
   // ============================================
   // 5. EFFECTS
   // ============================================
@@ -286,6 +355,7 @@ const WorkerPayment = () => {
   useEffect(() => {
     if (authUser) {
       loadPaymentData();
+      loadPayoutDetails();
     }
   }, [authUser]);
 
@@ -313,12 +383,37 @@ const WorkerPayment = () => {
     setWorkerPaymentInfo(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSavePaymentInfo = () => {
-    if (authUser) {
-      localStorage.setItem(`worker_payment_info_${authUser.id}`, JSON.stringify(workerPaymentInfo));
+  const handleSavePaymentInfo = async () => {
+    if (!authUser) return;
+
+    const payload = {};
+    PAYOUT_FIELDS.forEach(field => {
+      const value = workerPaymentInfo[field];
+      if (value && typeof value === 'string' && value.trim()) {
+        payload[field] = value.trim();
+      }
+    });
+
+    if (Object.keys(payload).length === 0) {
+      setPayoutError(t.paymentInfo.saveError);
+      setTimeout(() => setPayoutError(''), 4000);
+      return;
+    }
+
+    setPayoutSaving(true);
+    setPayoutError('');
+
+    try {
+      await api.put('/api/worker/payout-details', payload);
       setIsEditingPaymentInfo(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error saving payout details:', error);
+      setPayoutError(t.paymentInfo.saveError);
+      setTimeout(() => setPayoutError(''), 4000);
+    } finally {
+      setPayoutSaving(false);
     }
   };
 
@@ -454,9 +549,10 @@ const WorkerPayment = () => {
                   </button>
                   <button
                     onClick={handleSavePaymentInfo}
-                    className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:shadow-md transition-shadow"
+                    disabled={payoutSaving}
+                    className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {t.paymentInfo.save}
+                    {payoutSaving ? '...' : t.paymentInfo.save}
                   </button>
                 </div>
               )}
@@ -466,6 +562,13 @@ const WorkerPayment = () => {
               <div className="px-6 py-3 bg-green-50 dark:bg-green-900/30/80 border-b border-green-100 text-green-700 text-sm flex items-center gap-2">
                 <CheckCircle size={16} />
                 {t.paymentInfo.saved}
+              </div>
+            )}
+
+            {payoutError && (
+              <div className="px-6 py-3 bg-red-50 dark:bg-red-900/30 border-b border-red-100 text-red-700 text-sm flex items-center gap-2">
+                <AlertCircle size={16} />
+                {payoutError}
               </div>
             )}
 

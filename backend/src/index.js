@@ -14,6 +14,7 @@ import { Server } from 'socket.io';
 // Route Imports Grouped Safely
 import authRoutes from './routes/auth.js';
 import workerRoutes from './routes/workers.js';
+import workerPayoutRoutes from './routes/workerPayout.js';
 import hireRoutes from './routes/hires.js';
 import employerRoutes from './routes/employer.js';
 import adminRoutes from './routes/admin.js';
@@ -329,6 +330,7 @@ app.get('/', (req, res) => {
 // ============================================================
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
+app.use('/api/worker', workerPayoutRoutes);
 app.use('/api/hires', hireRoutes);
 app.use('/api/employers', employerRoutes);
 app.use('/api/admin', adminRoutes);
