@@ -3,7 +3,7 @@
 // LAYOUT-INDEPENDENT USER PROFILE VIEW
 // ============================================================
 // Responsibilities:
-//   - Fetch a user's profile by id (GET /api/support/users/:id)
+//   - Fetch a user's profile by id
 //   - Display profile information
 //
 // It is NOT responsible for:
@@ -38,7 +38,10 @@ import {
   Shield,
   Loader2,
   CheckCircle2,
-  X
+  X,
+  Copy,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import api from '../../utils/api';
 import { ensureConversationExists } from '../../utils/chatService';
@@ -54,6 +57,15 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
 
+  const isAdmin = variant === 'admin';
+
+  const routes = {
+    complaints: isAdmin ? '/admin/complaints' : '/support-complaints',
+    messages: isAdmin ? '/admin/messages' : '/support-messages',
+  };
+
+  const apiBase = isAdmin ? '/api/admin' : '/api/support';
+
   // The VIEWED profile — completely separate from the authenticated session.
   const [profileUser, setProfileUser] = useState(null);
   const [stats, setStats] = useState(null);
@@ -62,6 +74,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const [notification, setNotification] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetReason, setResetReason] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
 
   // ============================================================
   // LOAD PROFILE + STATS (read-only; never mutates auth state)
@@ -71,7 +86,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     setLoading(true);
     try {
       const [userRes, statsRes] = await Promise.all([
-        api.get(`/api/support/users/${userId}`),
+        api.get(`${apiBase}/users/${userId}`),
         api.get(`/api/support/users/${userId}/stats`)
       ]);
 
@@ -82,12 +97,12 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         setStats(statsRes.data.stats);
       }
     } catch (error) {
-      console.error('❌ Error loading user profile:', error);
+      console.error('Error loading user profile:', error);
       setNotification({ type: 'error', text: 'Failed to load user profile' });
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, apiBase]);
 
   useEffect(() => {
     loadUser();
@@ -100,25 +115,45 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     if (!profileUser) return;
     setActionLoading(true);
     try {
-      const response = await api.put(`/api/support/users/${profileUser.id}/suspend`, {
-        suspend,
-        reason: suspend ? 'Violation of terms of service' : 'Account reactivated by support'
-      });
-
-      if (response.data?.success) {
-        setProfileUser(prev => ({
-          ...prev,
-          isSuspended: suspend,
-          suspendedAt: suspend ? new Date().toISOString() : null,
-          suspensionReason: suspend ? 'Violation of terms of service' : null
-        }));
-        setNotification({
-          type: 'success',
-          text: suspend ? 'User suspended successfully' : 'User activated successfully'
+      if (isAdmin) {
+        const endpoint = suspend ? '/suspend' : '/activate';
+        const response = await api.post(`${apiBase}/users/${profileUser.id}${endpoint}`, {
+          reason: suspend ? 'Violation of terms of service' : 'Account reactivated'
         });
+
+        if (response.data?.success) {
+          setProfileUser(prev => ({
+            ...prev,
+            isSuspended: suspend,
+            suspendedAt: suspend ? new Date().toISOString() : null,
+            suspensionReason: suspend ? 'Violation of terms of service' : null
+          }));
+          setNotification({
+            type: 'success',
+            text: suspend ? 'User suspended successfully' : 'User activated successfully'
+          });
+        }
+      } else {
+        const response = await api.put(`${apiBase}/users/${profileUser.id}/suspend`, {
+          suspend,
+          reason: suspend ? 'Violation of terms of service' : 'Account reactivated by support'
+        });
+
+        if (response.data?.success) {
+          setProfileUser(prev => ({
+            ...prev,
+            isSuspended: suspend,
+            suspendedAt: suspend ? new Date().toISOString() : null,
+            suspensionReason: suspend ? 'Violation of terms of service' : null
+          }));
+          setNotification({
+            type: 'success',
+            text: suspend ? 'User suspended successfully' : 'User activated successfully'
+          });
+        }
       }
     } catch (error) {
-      console.error('❌ Error updating user status:', error);
+      console.error('Error updating user status:', error);
       setNotification({ type: 'error', text: 'Failed to update user status' });
     } finally {
       setActionLoading(false);
@@ -128,45 +163,102 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   // ============================================================
   // RESET PASSWORD
   // ============================================================
+  const generateSecurePassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  const handleGenerateTempPassword = () => {
+    const pwd = generateSecurePassword();
+    setTempPassword(pwd);
+    setNewPasswordInput(pwd);
+    setShowPassword(false);
+  };
+
   const handleResetPassword = async () => {
     if (!profileUser) return;
     setActionLoading(true);
     try {
-      const response = await api.post(`/api/support/users/${profileUser.id}/reset-password`, {
-        reason: resetReason || 'Password reset requested by support'
-      });
+      if (isAdmin) {
+        const passwordToUse = tempPassword || newPasswordInput;
+        if (!passwordToUse || passwordToUse.length < 6) {
+          setNotification({ type: 'error', text: 'Please enter or generate a password (minimum 6 characters)' });
+          setActionLoading(false);
+          return;
+        }
 
-      if (response.data?.success) {
-        setNotification({ type: 'success', text: 'Password reset link sent successfully' });
-        setShowResetModal(false);
-        setResetReason('');
+        const response = await api.put(`${apiBase}/users/${profileUser.id}/reset-password`, {
+          newPassword: passwordToUse,
+          reason: resetReason || 'Password reset requested by administrator'
+        });
+
+        if (response.data?.success) {
+          setTempPassword(passwordToUse);
+          setShowPassword(false);
+          setNewPasswordInput('');
+          setResetReason('');
+          setNotification({ type: 'success', text: 'Password reset successfully' });
+        } else {
+          setNotification({ type: 'error', text: response.data?.message || 'Failed to reset password' });
+        }
+      } else {
+        const response = await api.post(`${apiBase}/users/${profileUser.id}/reset-password`, {
+          reason: resetReason || 'Password reset requested by support'
+        });
+
+        if (response.data?.success) {
+          setNotification({ type: 'success', text: 'Password reset link sent successfully' });
+          setShowResetModal(false);
+          setResetReason('');
+        }
       }
     } catch (error) {
-      console.error('❌ Error sending reset link:', error);
-      setNotification({ type: 'error', text: 'Failed to send reset link' });
+      console.error('Error resetting password:', error);
+      if (isAdmin) {
+        setNotification({ type: 'error', text: error.response?.data?.message || 'Failed to reset password' });
+      } else {
+        setNotification({ type: 'error', text: 'Failed to send reset link' });
+      }
     } finally {
       setActionLoading(false);
     }
   };
 
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setTempPassword('');
+    setNewPasswordInput('');
+    setShowPassword(false);
+    setResetReason('');
+  };
+
   // ============================================================
-  // START CONVERSATION (uses the LOGGED-IN user as sender, unchanged)
+  // START CONVERSATION
   // ============================================================
   const handleStartConversation = async () => {
     if (!profileUser || !authUser) return;
     setActionLoading(true);
     try {
-      await ensureConversationExists(
-        authUser.id,
-        authUser.fullName || 'Support',
-        authUser.role || 'SUPPORT',
-        profileUser.id,
-        profileUser.fullName,
-        profileUser.role
-      );
-      navigate(messageTarget);
+      if (isAdmin) {
+        navigate('/admin/messages', { state: { targetUserId: profileUser.id } });
+      } else {
+        await ensureConversationExists(
+          authUser.id,
+          authUser.fullName || 'Support',
+          authUser.role || 'SUPPORT',
+          profileUser.id,
+          profileUser.fullName,
+          profileUser.role
+        );
+        navigate(messageTarget);
+      }
     } catch (error) {
-      console.error('❌ Error starting conversation:', error);
+      console.error('Error starting conversation:', error);
       setNotification({ type: 'error', text: 'Failed to start conversation' });
     } finally {
       setActionLoading(false);
@@ -217,7 +309,16 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       skills: 'Skills',
       company: 'Company',
       industry: 'Industry',
-      noSkills: 'No skills listed'
+      noSkills: 'No skills listed',
+      generatePassword: 'Generate Password',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+      passwordPlaceholder: 'Enter or generate a temporary password',
+      minPasswordLength: 'Minimum 6 characters',
+      sendResetLink: 'Send Reset Link',
+      resetLinkSent: 'Password reset link sent successfully',
+      resetLinkInfo: 'A secure password reset link has been sent to',
+      userWillChoose: 'The user will choose their own new password through the reset page.'
     },
     ar: {
       back: 'رجوع',
@@ -259,7 +360,16 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       skills: 'المهارات',
       company: 'الشركة',
       industry: 'المجال',
-      noSkills: 'لا توجد مهارات'
+      noSkills: 'لا توجد مهارات',
+      generatePassword: 'توليد كلمة مرور',
+      showPassword: 'إظهار كلمة المرور',
+      hidePassword: 'إخفاء كلمة المرور',
+      passwordPlaceholder: 'أدخل أو ولّد كلمة مرور مؤقتة',
+      minPasswordLength: 'الحد الأدنى 6 أحرف',
+      sendResetLink: 'إرسال رابط إعادة التعيين',
+      resetLinkSent: 'تم إرسال رابط إعادة تعيين كلمة المرور',
+      resetLinkInfo: 'تم إرسال رابط إعادة تعيين آمن إلى',
+      userWillChoose: 'سوف يختار المستخدم كلمة المرور الجديدة بنفسه من خلال صفحة إعادة التعيين.'
     }
   };
 
@@ -290,8 +400,8 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       <button
         onClick={() => navigate(backTarget)}
         className={`mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 transition ${
-          variant === 'admin' 
-            ? 'hover:text-yellow-600 dark:hover:text-yellow-400' 
+          isAdmin
+            ? 'hover:text-yellow-600 dark:hover:text-yellow-400'
             : 'hover:text-green-600 dark:hover:text-green-400'
         }`}
       >
@@ -325,8 +435,8 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         <div className="space-y-6">
           {/* PROFILE HEADER */}
           <div className={`rounded-2xl p-6 text-white ${
-            variant === 'admin' 
-              ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' 
+            isAdmin
+              ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
               : 'bg-gradient-to-r from-green-600 to-green-700'
           }`}>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -487,7 +597,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                   </div>
                   <div className="text-left">
                     <p className="font-medium text-gray-900 dark:text-white">{t.resetPassword}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Generate a temporary password</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {isAdmin ? 'Set a temporary password' : 'Generate a temporary password'}
+                    </p>
                   </div>
                 </button>
               )}
@@ -539,7 +651,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               </button>
 
               <Link
-                to={`/support-complaints?userId=${profileUser.id}`}
+                to={`${routes.complaints}?userId=${profileUser.id}`}
                 className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-red-500/40 hover:shadow-md transition"
               >
                 <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center">
@@ -569,10 +681,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Key size={20} className="text-yellow-500" />
-                Send Password Reset Link
+                {isAdmin ? 'Set Temporary Password' : 'Send Password Reset Link'}
               </h3>
               <button
-                onClick={() => setShowResetModal(false)}
+                onClick={closeResetModal}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
               >
                 <X size={20} />
@@ -580,71 +692,202 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             </div>
 
             <div className="p-6 space-y-4">
-              {notification?.type === 'success' && notification?.text?.includes('link sent') ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
-                      <CheckCircle2 size={16} />
-                      Password reset link sent successfully
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    A secure password reset link has been sent to <span className="font-semibold">{profileUser.email}</span>.
-                  </p>
-                  <button
-                    onClick={() => setShowResetModal(false)}
-                    className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition"
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <p className="text-sm text-gray-300">
-                      This will send a secure password reset link to: <span className="font-semibold text-white">{profileUser.email}</span>
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      The user will choose their own new password through the reset page.
-                    </p>
-                  </div>
+              {isAdmin ? (
+                <>
+                  {tempPassword ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
+                          <CheckCircle2 size={16} />
+                          Password reset successfully
+                        </p>
+                      </div>
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p className="text-sm text-gray-300">
+                          Temporary password for <span className="font-semibold text-white">{profileUser.email}</span>:
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={tempPassword}
+                            readOnly
+                            className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono text-sm"
+                          />
+                          <button
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
+                            title={showPassword ? t.hidePassword : t.showPassword}
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                          <button
+                            onClick={() => copyToClipboard(tempPassword)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
+                            title={t.copyTempPassword}
+                          >
+                            <Copy size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        Share this password with the user. They will be required to change it on next login.
+                      </p>
+                      <button
+                        onClick={closeResetModal}
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:shadow-lg transition"
+                      >
+                        {t.done}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p className="text-sm text-gray-300">
+                          Set a temporary password for <span className="font-semibold text-white">{profileUser.email}</span>.
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          The user will be required to change this password on next login.
+                        </p>
+                      </div>
 
-                  {notification?.type === 'error' && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
-                      <AlertTriangle size={16} />
-                      {notification.text}
+                      {notification?.type === 'error' && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                          <AlertTriangle size={16} />
+                          {notification.text}
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t.tempPasswordLabel}
+                        </label>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={newPasswordInput}
+                          onChange={(e) => setNewPasswordInput(e.target.value)}
+                          placeholder={t.passwordPlaceholder}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t.minPasswordLength}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPassword ? t.hidePassword : t.showPassword}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleGenerateTempPassword}
+                          className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-2"
+                        >
+                          <Key size={16} />
+                          {t.generatePassword}
+                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t.resetReason}
+                        </label>
+                        <input
+                          type="text"
+                          value={resetReason}
+                          onChange={(e) => setResetReason(e.target.value)}
+                          placeholder="Enter reason for password reset..."
+                          className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={closeResetModal}
+                          className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                          {t.cancel}
+                        </button>
+                        <button
+                          onClick={handleResetPassword}
+                          disabled={actionLoading}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
+                          {t.confirmReset}
+                        </button>
+                      </div>
                     </div>
                   )}
+                </>
+              ) : (
+                <>
+                  {notification?.type === 'success' && notification?.text?.includes('link sent') ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
+                          <CheckCircle2 size={16} />
+                          {t.resetLinkSent}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {t.resetLinkInfo} <span className="font-semibold">{profileUser.email}</span>.
+                      </p>
+                      <button
+                        onClick={closeResetModal}
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition"
+                      >
+                        {t.done}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p className="text-sm text-gray-300">
+                          This will send a secure password reset link to: <span className="font-semibold text-white">{profileUser.email}</span>.
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          {t.userWillChoose}
+                        </p>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Reason (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={resetReason}
-                      onChange={(e) => setResetReason(e.target.value)}
-                      placeholder="Enter reason for password reset..."
-                      className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={() => { setShowResetModal(false); setResetReason(''); }}
-                      className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleResetPassword}
-                      disabled={actionLoading}
-                      className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                      Send Reset Link
-                    </button>
-                  </div>
-                </div>
+                      {notification?.type === 'error' && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                          <AlertTriangle size={16} />
+                          {notification.text}
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t.resetReason}
+                        </label>
+                        <input
+                          type="text"
+                          value={resetReason}
+                          onChange={(e) => setResetReason(e.target.value)}
+                          placeholder="Enter reason for password reset..."
+                          className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={closeResetModal}
+                          className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                          {t.cancel}
+                        </button>
+                        <button
+                          onClick={handleResetPassword}
+                          disabled={actionLoading}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                          {t.sendResetLink}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

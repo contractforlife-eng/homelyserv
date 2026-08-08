@@ -36,6 +36,7 @@ const AdminComplaints = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const complaintIdFromUrl = searchParams.get('id');
+  const userIdFilterParam = searchParams.get('userId');
   const autoOpenedRef = useRef(false);
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -253,6 +254,7 @@ const AdminComplaints = () => {
       if (priorityFilter !== 'all') filters.priority = priorityFilter;
       if (categoryFilter !== 'all') filters.category = categoryFilter;
       if (searchTerm) filters.search = searchTerm;
+      if (userIdFilterParam) filters.userId = userIdFilterParam;
 
       const data = await complaintsService.getAdminComplaints(filters);
       if (data?.success) {
@@ -260,13 +262,13 @@ const AdminComplaints = () => {
         setFilteredComplaints(data.complaints || []);
       }
     } catch (error) {
-      console.error('❌ Error loading complaints:', error);
+      console.error('Error loading complaints:', error);
       setComplaints([]);
       setFilteredComplaints([]);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, priorityFilter, categoryFilter, searchTerm]);
+  }, [statusFilter, priorityFilter, categoryFilter, searchTerm, userIdFilterParam]);
 
   useEffect(() => {
     loadComplaints();
@@ -718,6 +720,11 @@ const AdminComplaints = () => {
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredComplaints.length}</span> complaints
+            {userIdFilterParam && (
+              <span className="text-yellow-600 dark:text-yellow-400 ml-2">
+                (filtered by user)
+              </span>
+            )}
           </p>
         </div>
 
