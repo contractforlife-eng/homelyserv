@@ -351,7 +351,7 @@ const PaymentCommission = () => {
           </div>
 
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-5 mb-8 border border-amber-200">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Platform Commission</p>
                 <p className="text-3xl font-bold text-amber-600">EGP {commissionData.commissionAmount?.toLocaleString()}</p>

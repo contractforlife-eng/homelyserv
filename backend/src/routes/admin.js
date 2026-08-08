@@ -373,7 +373,7 @@ router.get('/payments', async (req, res) => {
     if (validUserIds.length > 0) {
       users = await prisma.user.findMany({
         where: { id: { in: validUserIds } },
-        select: { id: true, fullName: true, email: true }
+        select: { id: true, fullName: true, email: true, role: true, profileImage: true }
       });
     }
     const userMap = new Map(users.map(u => [u.id, u]));

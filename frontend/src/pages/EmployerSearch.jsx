@@ -583,8 +583,8 @@ const EmployerSearch = () => {
                   <p className="text-teal-100 mt-1">{t.subtitle}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-teal-100">
-                <Users size={18} />
+              <div className="flex flex-wrap items-center gap-2 text-sm text-teal-100">
+                <Users size={18} className="flex-shrink-0" />
                 <span>{allWorkers.length} workers available</span>
                 {!searchLimitStatus.isPremium && !searchLimitStatus.limitReached && (
                   <span className="bg-white/20 px-2 py-1 rounded-full text-xs">

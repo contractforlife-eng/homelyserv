@@ -494,11 +494,11 @@ const EmployerProfile = () => {
             </div>
 
             {isEditing && (
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto justify-center"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {saving ? 'Saving...' : t.saveChanges}
@@ -506,7 +506,7 @@ const EmployerProfile = () => {
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
-                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition disabled:opacity-50"
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition disabled:opacity-50 w-full sm:w-auto"
                 >
                   {t.cancel}
                 </button>

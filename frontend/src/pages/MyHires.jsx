@@ -987,8 +987,8 @@ const MyHires = () => {
       {/* Terminate Modal */}
       {showTerminateModal && terminatingHire && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[85dvh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.terminate.title}</h3>
               <button
                 onClick={() => setShowTerminateModal(false)}

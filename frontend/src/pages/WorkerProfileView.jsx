@@ -506,8 +506,8 @@ const WorkerProfileView = () => {
       {/* Contact Options Modal */}
       {showContactOptions && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 max-h-[85dvh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t.contactOptions}</h3>
               <button
                 onClick={() => setShowContactOptions(false)}

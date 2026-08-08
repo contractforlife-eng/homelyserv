@@ -996,8 +996,8 @@ const AdminSettings = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-yellow-500/20 w-full max-w-md">
-            <div className="p-6 border-b border-yellow-500/20 flex justify-between items-center">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-yellow-500/20 w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="p-6 border-b border-yellow-500/20 flex justify-between items-center sticky top-0 bg-[#1a1a1a] z-10">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Lock size={20} className="text-yellow-500" />
                 {t.actions.changePassword}

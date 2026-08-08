@@ -276,11 +276,11 @@ const SupportDashboard = () => {
       <div className="p-6 md:p-8">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-8 text-white">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
               <Shield size={24} className="text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold">
                 {t.welcome} {authUser?.fullName || 'Support Agent'}
               </h1>

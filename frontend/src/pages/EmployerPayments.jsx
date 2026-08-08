@@ -9,6 +9,7 @@ import { useDashboard } from '../components/layout/DashboardContext';
 import { sendMessage } from '../utils/chatService';
 import hireService from '../services/hireService';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
+import { UserAvatar } from '../components/users';
 import {
   User,
   Briefcase,
@@ -717,15 +718,15 @@ const EmployerPayments = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-semibold text-xs overflow-hidden flex-shrink-0">
-                              {payment.workerImage ? (
-                                <img src={payment.workerImage} alt={payment.workerName} className="w-full h-full object-cover" />
-                              ) : (
-                                payment.workerName?.charAt(0) || 'W'
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-800 dark:text-white">{payment.workerName || 'Unknown'}</p>
+                            <UserAvatar
+                              name={payment.workerName || 'Worker'}
+                              image={payment.workerImage || null}
+                              role="WORKER"
+                              size="sm"
+                              className="border border-teal-200"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{payment.workerName || 'Unknown'}</p>
                               {payment.workerEmail && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}

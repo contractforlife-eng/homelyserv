@@ -404,7 +404,7 @@ const EmployerDashboard = () => {
                   <p className="text-teal-100 mt-1">{t.overview}</p>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Link
                   to="/employer-search"
                   className="bg-white text-teal-700 dark:bg-gray-800/20 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"

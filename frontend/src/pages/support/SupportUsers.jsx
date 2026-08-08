@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../../utils/api';
 import { getRoleLabel, getRoleBadgeClasses } from '../../utils/userDisplay';
+import { UserAvatar } from '../../components/users';
 
 const SupportUsers = () => {
   const navigate = useNavigate();
@@ -302,7 +303,7 @@ const SupportUsers = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[720px]">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -330,17 +331,13 @@ const SupportUsers = () => {
                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {user.profileImage ? (
-                              <img
-                                src={user.profileImage}
-                                alt={user.fullName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <UserCheck size={20} className="text-white" />
-                            )}
-                          </div>
+                          <UserAvatar
+                            name={user.fullName}
+                            image={user.profileImage || null}
+                            role={user.role}
+                            size="md"
+                            className="border border-green-500/30"
+                          />
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {user.fullName}
                           </div>
@@ -418,8 +415,8 @@ const SupportUsers = () => {
       {/* Password Reset Modal */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Key size={20} className="text-green-500" />
                 {t.resetPassword}

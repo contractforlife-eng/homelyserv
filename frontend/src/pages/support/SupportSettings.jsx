@@ -185,11 +185,11 @@ const SupportSettings = () => {
       <div className="p-6 md:p-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 mb-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
               <Shield size={24} className="text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold">{t.title}</h1>
               <p className="text-white/80 mt-1">{t.subtitle}</p>
             </div>
@@ -346,8 +346,8 @@ const SupportSettings = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Lock size={20} className="text-green-600" />
                 {t.changePassword}

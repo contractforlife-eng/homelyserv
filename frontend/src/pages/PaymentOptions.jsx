@@ -913,7 +913,7 @@ const PaymentOptions = () => {
                     <Briefcase size={14} />
                     <span>{workerData?.desiredJob || 'Service Provider'}</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <span className="flex items-center gap-1">
                       <MapPin size={14} />
                       {workerData?.workerLocation || 'Location not specified'}

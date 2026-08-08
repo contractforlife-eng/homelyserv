@@ -136,21 +136,23 @@ const AdminReports = () => {
     }
     const max = Math.max(...data.map((d) => d[valueKey] || 0), 1);
     return (
-      <div className="flex items-end justify-between gap-2 h-48">
-        {data.map((item, i) => (
-          <div key={i} className="flex flex-col items-center flex-1 min-w-0">
-            <div
-              className={`w-full ${colorPalette[i % colorPalette.length]} rounded-t transition-all duration-500`}
-              style={{ height: `${Math.max(((item[valueKey] || 0) / max) * 100, 2)}%` }}
-            ></div>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate w-full text-center">
-              {String(item[labelKey] || '').replace('-', ' ')}
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-              {item[valueKey] || 0}
-            </span>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <div className="flex items-end justify-between gap-2 h-48 min-w-[480px]">
+          {data.map((item, i) => (
+            <div key={i} className="flex flex-col items-center flex-1 min-w-0">
+              <div
+                className={`w-full ${colorPalette[i % colorPalette.length]} rounded-t transition-all duration-500`}
+                style={{ height: `${Math.max(((item[valueKey] || 0) / max) * 100, 2)}%` }}
+              ></div>
+              <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate w-full text-center">
+                {String(item[labelKey] || '').replace('-', ' ')}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                {item[valueKey] || 0}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };

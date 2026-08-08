@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
 import { getDisplayName, getRoleLabel } from '../../utils/userDisplay';
-import { UserDisplayName } from '../../components/users';
+import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportComplaints = () => {
   const navigate = useNavigate();
@@ -581,11 +581,22 @@ const SupportComplaints = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {complaint.User?.fullName || 'Unknown'}
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">
-                          {complaint.User?.email || ''}
+                        <div className="flex items-center gap-2">
+                          <UserAvatar
+                            name={complaint.User?.fullName || 'Unknown'}
+                            image={complaint.User?.profileImage || complaint.User?.image || null}
+                            role={complaint.User?.role}
+                            size="sm"
+                            className="border border-green-500/30"
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                              {complaint.User?.fullName || 'Unknown'}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                              {complaint.User?.email || ''}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -626,16 +637,25 @@ const SupportComplaints = () => {
       {/* Complaint Detail Modal */}
       {selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <FileText size={20} className="text-green-500" />
-                  {selectedComplaint.subject}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {selectedComplaint.User?.fullName} ({selectedComplaint.User?.email})
-                </p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-3xl max-h-[90dvh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <UserAvatar
+                  name={selectedComplaint.User?.fullName || 'Unknown'}
+                  image={selectedComplaint.User?.profileImage || selectedComplaint.User?.image || null}
+                  role={selectedComplaint.User?.role}
+                  size="md"
+                  className="border border-green-500/30 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FileText size={20} className="text-green-500 flex-shrink-0" />
+                    <span className="truncate">{selectedComplaint.subject}</span>
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {selectedComplaint.User?.fullName} ({selectedComplaint.User?.email})
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(selectedComplaint.status)}`}>
@@ -652,7 +672,7 @@ const SupportComplaints = () => {
 
             <div className="p-6 space-y-6">
               {/* Complaint Info */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.priority}</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selectedComplaint.priority)}`}>
@@ -751,14 +771,14 @@ const SupportComplaints = () => {
               {/* Reply */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.reply}</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
                     placeholder="Type your reply..."
-                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   />
                   <button
                     onClick={handleReply}
@@ -774,13 +794,13 @@ const SupportComplaints = () => {
               {/* Internal Note */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.addNote}</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Add internal note..."
-                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   />
                   <button
                     onClick={handleAddNote}

@@ -689,7 +689,7 @@ const WorkerProfile = () => {
                   ))}
                 </div>
                 {isEditing && (
-                  <div className="flex gap-2">
+<div className="flex flex-wrap gap-2">
                     <input
                       type="text"
                       value={newSkill}
@@ -710,11 +710,11 @@ const WorkerProfile = () => {
             </div>
 
             {isEditing && (
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2 w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                 >
                   {saving ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -726,7 +726,7 @@ const WorkerProfile = () => {
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
-                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition disabled:opacity-50"
+                  className="px-6 py-2 w-full sm:w-auto border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>

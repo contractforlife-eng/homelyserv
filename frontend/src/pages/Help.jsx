@@ -157,14 +157,14 @@ const HelpSidebar = ({
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && (
             <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
-              <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-lg flex items-center justify-center`}>
+              <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-lg flex items-center justify-center mx-auto`}>
+            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center mx-auto`}>
               <span className="text-white font-bold text-sm">H</span>
             </Link>
           )}
@@ -185,7 +185,7 @@ const HelpSidebar = ({
         {/* Profile section with image AND PREMIUM BADGE */}
         <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-amber-100'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
+            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-red-100'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
               {getProfileImage() ? (
                 <img 
                   src={getProfileImage()} 
@@ -193,7 +193,7 @@ const HelpSidebar = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} className={isTeal ? 'text-teal-600' : 'text-amber-600'} />
+                <User size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               )}
               {isPremium && (
                 <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
@@ -238,11 +238,11 @@ const HelpSidebar = ({
                 isActive(item.path)
                   ? isTeal 
                     ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600'
-                    : 'bg-amber-50 text-amber-600'
+                    : 'bg-red-50 text-red-600'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
-              <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-amber-600') : ''} />
+              <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-red-600') : ''} />
               {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -250,7 +250,7 @@ const HelpSidebar = ({
                 </div>
               )}
               {isActive(item.path) && !sidebarCollapsed && (
-                <div className={`ml-auto w-1.5 h-8 ${isTeal ? 'bg-teal-600' : 'bg-amber-600'} rounded-full`}></div>
+                <div className={`ml-auto w-1.5 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-full`}></div>
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
@@ -292,7 +292,7 @@ const HelpSidebar = ({
           </Link>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-amber-600 hover:bg-amber-50'} group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-red-600 hover:bg-red-50'} group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >

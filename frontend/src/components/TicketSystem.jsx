@@ -737,9 +737,9 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                         <button
                           type="button"
                           onClick={() => removeAttachment(index)}
-                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
                         >
-                          <X size={12} />
+                          <X size={14} />
                         </button>
                       </div>
                     ))}
@@ -913,7 +913,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
           ============================================================ */}
       {showDetails && selected && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[92dvh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
@@ -1044,7 +1044,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               {!['RESOLVED', 'CLOSED'].includes(selected.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.reply}</h4>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={replyText}
@@ -1056,7 +1056,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                         }
                       }}
                       placeholder={t.replyPlaceholder}
-                      className={`flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 ${th.ring} text-gray-900 dark:text-white`}
+                      className={`flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 ${th.ring} text-gray-900 dark:text-white`}
                     />
                     <button
                       onClick={handleSendReply}

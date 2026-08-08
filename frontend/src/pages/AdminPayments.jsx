@@ -9,6 +9,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
+import { UserAvatar } from '../components/users';
 import {
   CreditCard,
   Search,
@@ -334,10 +335,14 @@ const AdminPayments = () => {
                     <tr key={payment.id} className="hover:bg-yellow-500/5 transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                            <UserIcon size={14} className="text-yellow-500" />
-                          </div>
-                          <span className="text-sm text-gray-900 dark:text-white font-medium">{getPayerName(payment)}</span>
+                          <UserAvatar
+                            name={getPayerName(payment)}
+                            image={payment.User?.profileImage || null}
+                            role={payment.User?.role}
+                            size="sm"
+                            className="border border-yellow-500/30"
+                          />
+                          <span className="text-sm text-gray-900 dark:text-white font-medium truncate">{getPayerName(payment)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{formatCurrency(payment.amount)}</td>
@@ -382,12 +387,12 @@ const AdminPayments = () => {
             </div>
             <div className="p-6">
               <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
-                <div className="flex justify-between items-center">
-                  <div>
+                <div className="flex justify-between items-center gap-2 flex-wrap">
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Transaction ID</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedPayment.transactionId || selectedPayment.id}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white break-all">{selectedPayment.transactionId || selectedPayment.id}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.status)}`}>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 flex-shrink-0 ${getStatusColor(selectedPayment.status)}`}>
                     {getStatusIcon(selectedPayment.status)}
                     {getStatusLabel(selectedPayment.status)}
                   </span>

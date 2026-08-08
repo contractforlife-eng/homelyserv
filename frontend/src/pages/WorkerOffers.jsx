@@ -29,7 +29,6 @@ import {
   Wallet,
   Clock,
   Zap,
-  User,
   ChevronRight
 } from 'lucide-react';
 import { 
@@ -37,6 +36,7 @@ import {
   sendMessage, 
   getUserConversations,
 } from '../utils/chatService';
+import { UserAvatar } from '../components/users';
 
 // ============================================================
 // MAIN WORKER OFFERS COMPONENT - FIXED PAYMENT STATUS
@@ -507,17 +507,13 @@ const WorkerOffers = () => {
         <div className="p-5">
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center flex-shrink-0">
-              {offer.workerImage ? (
-                <img 
-                  src={offer.workerImage} 
-                  alt={offer.workerName} 
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                <User size={24} className="text-red-600" />
-              )}
-            </div>
+            <UserAvatar
+              name={offer.workerName}
+              image={offer.workerImage}
+              role="WORKER"
+              size="sm"
+              className="w-12 h-12"
+            />
 
             {/* Content */}
             <div className="flex-1 min-w-0">
@@ -529,7 +525,7 @@ const WorkerOffers = () => {
                     <span>{offer.employerName || 'Employer'}</span>
                   </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusColor} whitespace-nowrap`}>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusColor} whitespace-nowrap flex-shrink-0`}>
                   {statusIcon}
                   {statusLabel}
                 </span>
@@ -772,7 +768,7 @@ const WorkerOffers = () => {
               <h1 className="text-2xl font-bold">{t.title}</h1>
               <p className="text-red-100 mt-1">{t.subtitle}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm text-red-200">
                 {stats.total} total offers
               </span>

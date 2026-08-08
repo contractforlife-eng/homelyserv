@@ -607,12 +607,12 @@ const WorkerDashboard = () => {
                       {activity.icon === 'x' && <X size={16} className="text-red-600" />}
                       {activity.icon === 'payment' && <CreditCard size={16} className="text-purple-600" />}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0 pr-2">
                       <p className="font-medium text-gray-800 dark:text-white">{activity.message}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time}</p>
                     </div>
                     {activity.status && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${
+                      <span className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ${
                         activity.status === 'Completed' || activity.status === 'Accepted' ? 'bg-green-100 text-green-700' :
                         activity.status === 'Pending' || activity.status === 'Pending Review' ? 'bg-yellow-100 text-yellow-700' :
                         activity.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
