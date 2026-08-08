@@ -44,7 +44,7 @@ const serializeComplaint = (complaint) => {
           fullName: complaint.AssignedSupport.fullName,
           email: complaint.AssignedSupport.email,
           role: complaint.AssignedSupport.role,
-          image: complaint.AssignedSupport.image,
+          image: complaint.AssignedSupport.profileImage || complaint.AssignedSupport.image,
         }
       : null,
     escalatedAt: complaint.escalatedAt,
@@ -57,7 +57,7 @@ const serializeComplaint = (complaint) => {
           fullName: complaint.User.fullName,
           email: complaint.User.email,
           role: complaint.User.role,
-          image: complaint.User.image,
+          image: complaint.User.profileImage || complaint.User.image,
         }
       : null,
   };
@@ -154,8 +154,8 @@ export const getCommandCenter = async (req, res) => {
       prisma.complaint.findMany({
         where: { status: { notIn: ['RESOLVED', 'CLOSED'] } },
         include: {
-          User: { select: { id: true, fullName: true, email: true, role: true, image: true } },
-          AssignedSupport: { select: { id: true, fullName: true, email: true, role: true, image: true } },
+          User: { select: { id: true, fullName: true, email: true, role: true, profileImage: true } },
+          AssignedSupport: { select: { id: true, fullName: true, email: true, role: true, profileImage: true } },
         },
         orderBy: [{ priority: 'desc' }, { status: 'asc' }, { createdAt: 'desc' }],
         take: 10,
@@ -181,7 +181,7 @@ export const getCommandCenter = async (req, res) => {
           role: true,
           phone: true,
           city: true,
-          image: true,
+          profileImage: true,
           isVerified: true,
           isSuspended: true,
           createdAt: true,
@@ -313,7 +313,11 @@ export const getCommandCenter = async (req, res) => {
       },
       needsAttention: needsAttention.map(serializeComplaint),
       recentActivity,
-      recentUsers,
+      // Map profileImage -> image for frontend compatibility (AdminDashboard expects user.image)
+      recentUsers: recentUsers.map(u => ({
+        ...u,
+        image: u.profileImage || null,
+      })),
       recentPayments: enrichedRecentPayments,
       recentHires: enrichedRecentHires,
     });
