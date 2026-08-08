@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
 import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
-import { UserDisplayName } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 
@@ -90,10 +90,12 @@ const AdminComplaints = () => {
       table: {
         title: 'Title',
         from: 'From',
-        category: 'Category',
+        assignedSupport: 'Assigned Support',
         status: 'Status',
         priority: 'Priority',
         date: 'Date',
+        updated: 'Updated',
+        unassigned: 'Unassigned',
         actions: 'Actions',
         noResults: 'No complaints found',
         searchPlaceholder: 'Search complaints...'
@@ -130,6 +132,7 @@ const AdminComplaints = () => {
         reassignBtn: 'Reassign',
         returnToSupport: 'Return to Support',
         returnNote: 'Note for support (optional)',
+        assigned: 'Assigned Support',
         confirmResolve: 'Are you sure you want to resolve this complaint?',
         confirmClose: 'Are you sure you want to close this complaint?',
         confirmReturn: 'Are you sure you want to return this complaint to support?',
@@ -170,10 +173,12 @@ const AdminComplaints = () => {
       table: {
         title: 'العنوان',
         from: 'من',
-        category: 'الفئة',
+        assignedSupport: 'مسؤول الدعم المعين',
         status: 'الحالة',
         priority: 'الأولوية',
         date: 'التاريخ',
+        updated: 'آخر تحديث',
+        unassigned: 'غير معين',
         actions: 'الإجراءات',
         noResults: 'لا توجد شكاوى',
         searchPlaceholder: 'ابحث عن شكاوى...'
@@ -210,6 +215,7 @@ const AdminComplaints = () => {
         reassignBtn: 'إعادة تعيين',
         returnToSupport: 'إعادة للدعم',
         returnNote: 'ملاحظة للدعم (اختياري)',
+        assigned: 'مسؤول الدعم المعين',
         confirmResolve: 'هل أنت متأكد من حل هذه الشكوى؟',
         confirmClose: 'هل أنت متأكد من إغلاق هذه الشكوى؟',
         confirmReturn: 'هل أنت متأكد من إعادة هذه الشكوى للدعم؟',
@@ -314,6 +320,17 @@ const AdminComplaints = () => {
   useEffect(() => {
     loadSupportUsers();
   }, [loadSupportUsers]);
+
+  // ============================================================
+  // CLEAR USER FILTER
+  // Removes ?userId= from the URL while preserving ?id= deep-links.
+  // ============================================================
+  const handleClearUserFilter = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('userId');
+    const qs = params.toString();
+    navigate(`/admin/complaints${qs ? `?${qs}` : ''}`, { replace: true });
+  };
 
   // ============================================================
   // VIEW COMPLAINT DETAILS
@@ -531,6 +548,7 @@ const AdminComplaints = () => {
         id: 'original',
         authorName: selectedComplaint?.User?.fullName || 'User',
         authorRole: selectedComplaint?.User?.role || 'USER',
+        authorImage: selectedComplaint?.User?.image || null,
         message: selectedComplaint?.description || '',
         attachments: selectedComplaint?.attachments || [],
         createdAt: selectedComplaint?.createdAt,
@@ -538,8 +556,9 @@ const AdminComplaints = () => {
       },
       ...(selectedComplaint?.replies || []).map((reply) => ({
         id: reply.id,
-        authorName: reply.authorName,
-        authorRole: reply.authorRole,
+        authorName: reply.authorName || reply.author?.name,
+        authorRole: reply.authorRole || reply.author?.role,
+        authorImage: reply.author?.image || null,
         message: reply.message,
         attachments: reply.attachments || [],
         createdAt: reply.createdAt,
@@ -559,6 +578,13 @@ const AdminComplaints = () => {
             <div key={msg.id || index} className={`flex flex-col max-w-[85%] ${isUser ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
               <div className={`px-4 py-2.5 rounded-2xl ${bubbleClass}`}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <UserAvatar
+                    name={msg.authorName}
+                    image={msg.authorImage}
+                    role={msg.authorRole}
+                    size="sm"
+                    className="flex-shrink-0"
+                  />
                   <UserDisplayName
                     name={msg.authorName}
                     role={msg.authorRole}
@@ -717,12 +743,20 @@ const AdminComplaints = () => {
         </div>
 
         {/* Results Count */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredComplaints.length}</span> complaints
             {userIdFilterParam && (
-              <span className="text-yellow-600 dark:text-yellow-400 ml-2">
-                (filtered by user)
+              <span className="inline-flex items-center gap-2 ml-2">
+                <span className="text-yellow-600 dark:text-yellow-400">
+                  (filtered by user)
+                </span>
+                <button
+                  onClick={handleClearUserFilter}
+                  className="px-2.5 py-1 rounded-lg bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/25 transition text-xs font-medium"
+                >
+                  View all complaints
+                </button>
               </span>
             )}
           </p>
@@ -738,52 +772,120 @@ const AdminComplaints = () => {
             description="No complaints are currently available"
           />
         ) : (
-          <div className="space-y-4">
-            {filteredComplaints.map((complaint) => (
-              <div
-                key={complaint.id}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition"
-              >
-                <div className="p-4">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle size={20} className="text-yellow-500" />
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{complaint.subject}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {getDisplayName(complaint.User)}
-                          </p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px]">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.title}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.from}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.assignedSupport}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.status}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.priority}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.updated}
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.table.actions}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredComplaints.map((complaint) => (
+                    <tr
+                      key={complaint.id}
+                      className="hover:bg-yellow-50/50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <AlertTriangle size={15} className="text-yellow-500 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[220px]">
+                              {complaint.subject}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[220px]">
+                              {complaint.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{complaint.description}</p>
-                      <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">{complaint.category}</span>
-                        <span className="text-gray-300 dark:text-gray-600">|</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(complaint.priority)}`}>
-                          <Flag size={12} className="inline mr-1" />
-                          {complaintsService.getPriorityLabel(complaint.priority)}
-                        </span>
-                        <span className="text-gray-300 dark:text-gray-600">|</span>
-                        <span className="text-gray-500 dark:text-gray-400">{complaintsService.formatComplaintDate(complaint.createdAt)}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <UserAvatar
+                            name={complaint.User?.fullName}
+                            image={complaint.User?.image}
+                            role={complaint.User?.role}
+                            size="sm"
+                            className="flex-shrink-0"
+                          />
+                          <div>
+                            <div className="text-sm text-gray-700 dark:text-gray-200">
+                              {getDisplayName(complaint.User)}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              {complaint.User?.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {complaint.assignedSupport?.fullName ? (
+                          <div className="flex items-center gap-2">
+                            <UserAvatar
+                              name={complaint.assignedSupport.fullName}
+                              image={complaint.assignedSupport.image}
+                              role="SUPPORT"
+                              size="sm"
+                              className="flex-shrink-0"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
+                              {complaint.assignedSupport.fullName}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t.table.unassigned}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
                           {complaintsService.getStatusLabel(complaint.status)}
                         </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => handleViewDetails(complaint)}
-                        className="px-3 py-1.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition flex items-center gap-1"
-                      >
-                        <Eye size={14} />
-                        {t.actions.view}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(complaint.priority)}`}>
+                          <Flag size={12} />
+                          {complaintsService.getPriorityLabel(complaint.priority)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {complaintsService.formatComplaintDate(complaint.updatedAt || complaint.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <button
+                          onClick={() => handleViewDetails(complaint)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition"
+                        >
+                          <Eye size={14} />
+                          {t.actions.view}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
@@ -839,12 +941,52 @@ const AdminComplaints = () => {
                   <UserIcon size={14} />
                   {t.modal.from}
                 </h4>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {getDisplayName(selectedComplaint.User)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {selectedComplaint.User?.email} • {getRoleLabel(selectedComplaint.User?.role)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <UserAvatar
+                    name={selectedComplaint.User?.fullName}
+                    image={selectedComplaint.User?.image}
+                    role={selectedComplaint.User?.role}
+                    size="md"
+                    className="flex-shrink-0"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {getDisplayName(selectedComplaint.User)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {selectedComplaint.User?.email} • {getRoleLabel(selectedComplaint.User?.role)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Support Info */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <ArrowLeftRight size={14} />
+                  {t.modal.assigned}
+                </h4>
+                {selectedComplaint.assignedSupport?.fullName ? (
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      name={selectedComplaint.assignedSupport.fullName}
+                      image={selectedComplaint.assignedSupport.image}
+                      role="SUPPORT"
+                      size="md"
+                      className="flex-shrink-0"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {selectedComplaint.assignedSupport.fullName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {selectedComplaint.assignedSupport.email}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.table.unassigned}</p>
+                )}
               </div>
 
               {/* Description */}
@@ -915,11 +1057,24 @@ const AdminComplaints = () => {
                           {index < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 dark:bg-gray-600"></div>}
                         </div>
                         <div className="flex-1 pb-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {complaintsService.getStatusLabel(event.action) || event.action}
-                            </p>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {event.author ? (
+                                <UserAvatar
+                                  name={event.author.name || event.authorName}
+                                  image={event.author.image}
+                                  role={event.author.role || event.authorRole}
+                                  size="sm"
+                                  className="flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-2 flex-shrink-0" />
+                              )}
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {complaintsService.getStatusLabel(event.action) || event.action}
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                               {complaintsService.formatComplaintDate(event.createdAt)}
                             </span>
                           </div>
@@ -947,9 +1102,20 @@ const AdminComplaints = () => {
                     {notes.map((note) => (
                       <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{note.note}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {note.authorName} • {complaintsService.formatComplaintDate(note.createdAt)}
-                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {note.author ? (
+                            <UserAvatar
+                              name={note.author.name || note.authorName}
+                              image={note.author.image}
+                              role={note.author.role || note.authorRole}
+                              size="sm"
+                              className="flex-shrink-0"
+                            />
+                          ) : null}
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {note.authorName || note.author?.name || 'Staff'} • {complaintsService.formatComplaintDate(note.createdAt)}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
