@@ -207,7 +207,7 @@ const ensureSupportConversation = async (userId, supportId, complaintId = null) 
 // names/roles ALWAYS come from the database — even for legacy
 // records created before author data was stored correctly.
 // ============================================================
-const AUTHOR_SELECT = { id: true, fullName: true, role: true, image: true };
+const AUTHOR_SELECT = { id: true, fullName: true, role: true, profileImage: true };
 
 const REPLIES_WITH_AUTHOR = {
   orderBy: { createdAt: 'asc' },
@@ -238,7 +238,7 @@ const serializeAuthorRecord = (record) => {
         id: Author.id,
         name: Author.fullName,
         role: Author.role,
-        image: Author.image || null,
+        image: Author.profileImage || Author.image || null,
       }
     : null;
 
@@ -275,15 +275,15 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
     priority: complaint.priority,
     category: complaint.category || 'Other',
     assignedTo: complaint.assignedTo,
-    assignedSupport: complaint.AssignedSupport
-      ? {
-          id: complaint.AssignedSupport.id,
-          fullName: complaint.AssignedSupport.fullName,
-          email: complaint.AssignedSupport.email,
-          role: complaint.AssignedSupport.role,
-          image: complaint.AssignedSupport.image,
-        }
-      : null,
+        assignedSupport: complaint.AssignedSupport
+          ? {
+              id: complaint.AssignedSupport.id,
+              fullName: complaint.AssignedSupport.fullName,
+              email: complaint.AssignedSupport.email,
+              role: complaint.AssignedSupport.role,
+              image: complaint.AssignedSupport.profileImage || complaint.AssignedSupport.image || null,
+            }
+          : null,
     assignedAdmin: complaint.assignedAdmin,
     escalatedBy: complaint.escalatedBy,
     escalatedAt: complaint.escalatedAt,
@@ -307,15 +307,15 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
         createdAt: serialized.createdAt,
       };
     }),
-    User: complaint.User
-      ? {
-          id: complaint.User.id,
-          fullName: complaint.User.fullName,
-          email: complaint.User.email,
-          role: complaint.User.role,
-          image: complaint.User.image,
-        }
-      : null,
+        User: complaint.User
+          ? {
+              id: complaint.User.id,
+              fullName: complaint.User.fullName,
+              email: complaint.User.email,
+              role: complaint.User.role,
+              image: complaint.User.profileImage || complaint.User.image || null,
+            }
+          : null,
   };
 
   if (includeInternal) {
@@ -667,10 +667,10 @@ export const supportListComplaints = async (req, res) => {
       where,
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       skip,
@@ -706,10 +706,10 @@ export const supportGetComplaint = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         Notes: NOTES_WITH_AUTHOR,
         Timeline: TIMELINE_WITH_AUTHOR,
@@ -1410,10 +1410,10 @@ export const adminListComplaints = async (req, res) => {
       where,
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       skip,
@@ -1449,10 +1449,10 @@ export const adminGetComplaint = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         Notes: NOTES_WITH_AUTHOR,
         Timeline: TIMELINE_WITH_AUTHOR,

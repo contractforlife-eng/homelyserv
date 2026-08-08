@@ -703,7 +703,7 @@ router.get('/support-users', authenticate, async (req, res) => {
         email: true,
         fullName: true,
         role: true,
-        image: true,
+        profileImage: true,
         createdAt: true
       }
     });
