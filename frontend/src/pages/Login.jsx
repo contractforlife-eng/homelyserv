@@ -272,7 +272,7 @@ const redirectUser = (user) => {
                 <div className="relative">
                   <Shield size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
-                    <Home size={36} className="text-white drop-shadow-lg" strokeWidth={2} />
+                    <Home size={36} fill="none" stroke="#ffffff" color="#ffffff" strokeWidth={2} className="drop-shadow-lg" />
                     <Sparkles size={16} className="text-red-200 absolute -top-1 -right-1 animate-pulse" />
                   </div>
                 </div>
@@ -309,7 +309,7 @@ const redirectUser = (user) => {
                       handleEmailSubmit(e);
                     }
                   }}
-                  className={`w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100 ${
+                  className={`w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-gray-400 focus:ring-0 focus:outline-none focus:shadow-[0_0_0_3px_rgba(15,23,42,0.06)] transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-md ${
                     showPasswordField ? 'opacity-50 pointer-events-none' : ''
                   }`}
                   placeholder={t('emailPlaceholder')}
@@ -344,7 +344,7 @@ const redirectUser = (user) => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
+                  className="w-full pl-11 pr-12 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-gray-400 focus:ring-0 focus:outline-none focus:shadow-[0_0_0_3px_rgba(15,23,42,0.06)] transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-md"
                   placeholder={t('passwordPlaceholder')}
                   required
                   autoFocus={showPasswordField}
