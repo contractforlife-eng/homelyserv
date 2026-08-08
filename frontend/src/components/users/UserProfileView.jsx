@@ -451,7 +451,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <UserAvatar
                 name={profileUser.fullName}
-                image={profileUser.image || null}
+                image={profileUser.profileImage || null}
                 role={profileUser.role}
                 size="xl"
                 className="border-4 border-white/30"

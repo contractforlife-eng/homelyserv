@@ -737,8 +737,12 @@ const AdminUsers = () => {
                     <tr key={u._id || u.id || u.email} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 text-white font-semibold">
-                            {u.fullName?.charAt(0) || 'U'}
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0 text-white font-semibold overflow-hidden">
+                            {u.profileImage ? (
+                              <img src={u.profileImage} alt={u.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              u.fullName?.charAt(0) || 'U'
+                            )}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 dark:text-white">
