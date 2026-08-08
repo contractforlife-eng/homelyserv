@@ -2,11 +2,26 @@ import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import { Readable } from 'stream';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dyvtslk6u',
-  api_key: process.env.CLOUDINARY_API_KEY || '128863751431449',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'JLHqJ8jlx2uOCxDqF6L4aS35ukE'
-});
+const REQUIRED_ENV_VARS = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+
+const getMissingEnvVars = () => REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+
+if (getMissingEnvVars().length === 0) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+} else {
+  console.warn(`[CLOUDINARY] Not configured. Missing env vars: ${getMissingEnvVars().join(', ')}`);
+}
+
+const assertCloudinaryConfigured = () => {
+  const missing = getMissingEnvVars();
+  if (missing.length > 0) {
+    throw new Error(`Cloudinary is not configured. Missing environment variables: ${missing.join(', ')}`);
+  }
+};
 
 const storage = multer.memoryStorage();
 
@@ -27,6 +42,7 @@ const upload = multer({
 });
 
 const uploadFromBuffer = (fileBuffer, options = {}) => {
+  assertCloudinaryConfigured();
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -57,6 +73,7 @@ const uploadImage = async (fileBuffer, options = {}) => {
 
 const deleteImage = async (publicId) => {
   try {
+    assertCloudinaryConfigured();
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
   } catch (error) {

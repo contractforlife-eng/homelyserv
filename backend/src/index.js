@@ -153,6 +153,16 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
+// Framing Protection (Clickjacking)
+// Response headers only - do not affect CORS/API behavior.
+// ============================================================
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  next();
+});
+
+// ============================================================
 // Body Parser - After CORS
 // ============================================================
 app.use(express.json({ limit: '10mb' }));
