@@ -130,7 +130,7 @@ const DashboardLayout = ({
           handleLogout={handleLogout}
         />
 
-        <main className={`flex-1 transition-all duration-300 overflow-x-hidden ${
+        <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
           <VerificationBanner />

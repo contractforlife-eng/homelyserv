@@ -258,6 +258,9 @@ export default function AdminLayout({ children }) {
       {/* Main Content */}
       <main style={{
         flex: 1,
+        minWidth: 0,
+        width: '100%',
+        overflowX: 'clip',
         padding: isMobile ? '16px' : '24px 32px',
         minHeight: '100vh',
         background: '#f0f7f0',

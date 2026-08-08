@@ -345,14 +345,14 @@ const EmployerDashboard = () => {
 
         <div className="p-4 md:p-6">
           {showSuccessBanner && (
-            <div className="mb-6 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-xl p-4 flex items-center justify-between animate-slideDown">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+            <div className="mb-6 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-2 animate-slideDown">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center flex-shrink-0">
                   <CheckCircle size={24} className="text-green-600 dark:text-green-400" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-green-800 dark:text-green-300">{t.paymentSuccess}</p>
-                  <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
+                  <p className="text-sm text-green-700 dark:text-green-400 break-words">{successMessage}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -391,7 +391,7 @@ const EmployerDashboard = () => {
                     </div>
                   )}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold">{t.welcome}, {authUser.fullName || 'Employer'}!</h1>
                     {isPremium && (

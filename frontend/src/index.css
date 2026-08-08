@@ -55,6 +55,16 @@
   }
 }
 
+/* Safe area: never allow a wide child to stretch the page past the viewport.
+   `clip` (unlike `hidden`) does not create a scroll container, so it does not
+   break position:sticky headers or inner scroll areas. */
+html,
+body,
+#root {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
