@@ -80,6 +80,19 @@ const UserSchema = new mongoose.Schema({
     default: false
   },
   // ============================================================
+  // PASSWORD RESET FIELDS
+  // ============================================================
+  // SHA-256 hash of the raw reset token. The raw token is NEVER
+  // stored in the database.
+  passwordResetTokenHash: {
+    type: String,
+    default: null
+  },
+  passwordResetExpiresAt: {
+    type: Date,
+    default: null
+  },
+  // ============================================================
   // EMAIL VERIFICATION FIELDS (Phase 3)
   // ============================================================
   // Optional fields - existing users remain fully compatible.

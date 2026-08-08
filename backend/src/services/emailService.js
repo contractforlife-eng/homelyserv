@@ -94,7 +94,7 @@ const sendViaResend = async ({ to, subject, html, text, replyTo }) => {
     console.log('[EMAIL] Sending via Resend to:', to);
 
     const emailData = {
-      from: process.env.EMAIL_FROM,
+      from: buildSenderIdentity(),
       to: to,
       subject: subject,
       html: html,
@@ -185,6 +185,17 @@ const sendViaSMTP = async ({ to, subject, html, text }) => {
 
 import { buildWelcomeEmail } from '../templates/welcomeEmail.js';
 import { buildVerificationEmail } from '../templates/verificationEmail.js';
+import { buildPasswordResetEmail } from '../templates/passwordResetEmail.js';
+
+// ============================================================
+// SENDER IDENTITY
+// ============================================================
+// Construct the sender safely as: HomelyServ Security <noreply@homelyserv.com>
+// EMAIL_FROM contains the bare address (e.g. noreply@homelyserv.com).
+const buildSenderIdentity = () => {
+  const fromAddress = process.env.EMAIL_FROM || 'noreply@homelyserv.com';
+  return `HomelyServ Security <${fromAddress}>`;
+};
 
 /**
  * Send a test email to verify SMTP configuration
@@ -389,6 +400,72 @@ export const sendVerificationEmail = async (user, rawToken) => {
 };
 
 /**
+ * Send password reset email to a user
+ * @param {Object} user - User object
+ * @param {string} user.fullName - User's full name
+ * @param {string} user.email - User's email address
+ * @param {string} rawToken - The raw reset token (never stored/logged)
+ * @returns {Promise<Object>} - Result object with success status
+ */
+export const sendPasswordResetEmail = async (user, rawToken) => {
+  try {
+    validateResendConfig();
+
+    console.log('[EMAIL] Provider: resend');
+    console.log('[EMAIL] Sending password reset email');
+    console.log('[EMAIL] Recipient:', user.email);
+
+    const { fullName, email } = user;
+
+    if (!fullName || !email || !rawToken) {
+      console.error('[EMAIL] Missing required data for password reset email:', { fullName, email, hasToken: !!rawToken });
+      return {
+        success: false,
+        message: 'Missing required data',
+        error: 'fullName, email, and rawToken are required'
+      };
+    }
+
+    // Build password reset email using template
+    const passwordResetEmail = buildPasswordResetEmail({
+      fullName,
+      email,
+      rawToken
+    });
+
+    // Send via Resend (production) or SMTP (fallback)
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to: email,
+        subject: passwordResetEmail.subject,
+        html: passwordResetEmail.html,
+        text: passwordResetEmail.text,
+        replyTo: process.env.EMAIL_REPLY_TO
+      });
+    } else {
+      return await sendViaSMTP({
+        to: email,
+        subject: passwordResetEmail.subject,
+        html: passwordResetEmail.html,
+        text: passwordResetEmail.text
+      });
+    }
+
+  } catch (error) {
+    console.error('[EMAIL] Password reset send failed');
+    console.error('[EMAIL] Error name/code/message:', error.name, error.code, error.message);
+
+    return {
+      success: false,
+      message: 'Failed to send password reset email',
+      error: error.message,
+      code: error.code,
+      email: user.email
+    };
+  }
+};
+
+/**
  * Verify SMTP connection
  * @returns {Promise<Object>} - Result object with verification status
  */
@@ -423,5 +500,6 @@ export default {
   sendTestEmail,
   sendWelcomeEmail,
   sendVerificationEmail,
+  sendPasswordResetEmail,
   verifySMTPConnection,
 };

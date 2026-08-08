@@ -1,13 +1,75 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
-import { sendWelcomeEmail } from '../services/emailService.js';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
   resendVerificationEmail,
   sendVerificationOnRegistration
 } from '../services/verificationService.js';
+
+// ============================================================
+// PASSWORD RESET CONSTANTS
+// ============================================================
+const PASSWORD_RESET_TOKEN_BYTES = 32; // 256 bits
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PASSWORD_RESET_MIN_PASSWORD_LENGTH = 6;
+
+// ============================================================
+// PASSWORD RESET RATE LIMITING (in-memory)
+// ============================================================
+// Simple in-memory rate limiter for the forgot-password endpoint.
+// Limits each IP to 5 requests per 15 minutes to prevent abuse.
+const forgotPasswordAttempts = new Map();
+
+const FORGOT_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
+
+const isForgotPasswordRateLimited = (ip) => {
+  const now = Date.now();
+  const record = forgotPasswordAttempts.get(ip);
+
+  if (!record) {
+    forgotPasswordAttempts.set(ip, { count: 1, firstAttemptAt: now });
+    return false;
+  }
+
+  // Reset window if expired
+  if (now - record.firstAttemptAt > FORGOT_PASSWORD_WINDOW_MS) {
+    forgotPasswordAttempts.set(ip, { count: 1, firstAttemptAt: now });
+    return false;
+  }
+
+  record.count += 1;
+  if (record.count > FORGOT_PASSWORD_MAX_ATTEMPTS) {
+    return true;
+  }
+
+  return false;
+};
+
+// ============================================================
+// PASSWORD RESET TOKEN HELPERS
+// ============================================================
+
+/**
+ * Generate a cryptographically secure random raw token.
+ * @returns {string} - URL-safe base64 token
+ */
+const generatePasswordResetToken = () => {
+  return crypto.randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('base64url');
+};
+
+/**
+ * Hash a raw token using SHA-256.
+ * @param {string} rawToken - The raw token to hash
+ * @returns {string} - Hex-encoded SHA-256 hash
+ */
+const hashPasswordResetToken = (rawToken) => {
+  return crypto.createHash('sha256').update(rawToken).digest('hex');
+};
 
 // ============================================================
 // REGISTER
@@ -448,19 +510,71 @@ export const verifyToken = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({
+    // Rate limiting: prevent abuse
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (isForgotPasswordRateLimited(clientIp)) {
+      return res.status(429).json({
         success: false,
-        message: 'User not found'
+        message: 'Too many requests. Please try again later.'
       });
     }
 
-    // In production, send reset email here
+    // Generic response for both existing and non-existing emails
+    // to prevent account enumeration.
+    const genericMessage = 'If an account exists for this email, a password reset link has been sent.';
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // Always return the same generic response whether or not the user exists
+    if (!user) {
+      console.log('[FORGOT-PASSWORD] No user found for email lookup');
+      return res.json({
+        success: true,
+        message: genericMessage
+      });
+    }
+
+    console.log('[FORGOT-PASSWORD] User found:', user.email);
+
+    // Generate secure reset token
+    const rawToken = generatePasswordResetToken();
+    const tokenHash = hashPasswordResetToken(rawToken);
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+
+    // Store token hash and expiry on the user
+    user.passwordResetTokenHash = tokenHash;
+    user.passwordResetExpiresAt = expiresAt;
+    await user.save();
+
+    console.log('[FORGOT-PASSWORD] Reset token hash stored');
+    console.log('[FORGOT-PASSWORD] Reset expiry stored:', expiresAt.toISOString());
+
+    // Send password reset email via Resend
+    const emailResult = await sendPasswordResetEmail(user, rawToken);
+
+    if (!emailResult.success) {
+      console.error('[FORGOT-PASSWORD] Email send failed:', emailResult.error);
+      // Still return success to prevent account enumeration
+      return res.json({
+        success: true,
+        message: genericMessage
+      });
+    }
+
+    console.log('[FORGOT-PASSWORD] Password reset email sent successfully');
+    console.log('[FORGOT-PASSWORD] Message ID:', emailResult.messageId);
+
     res.json({
       success: true,
-      message: 'Password reset email sent'
+      message: genericMessage
     });
 
   } catch (error) {
@@ -479,25 +593,58 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    // Verify token
-    const decoded = jwt.verify(token, getJwtSecret());
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return res.status(404).json({
+    if (!token) {
+      return res.status(400).json({
         success: false,
-        message: 'User not found'
+        message: 'Reset token is required'
       });
     }
 
-    // Hash new password
+    if (!newPassword || newPassword.length < PASSWORD_RESET_MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        message: `New password must be at least ${PASSWORD_RESET_MIN_PASSWORD_LENGTH} characters`
+      });
+    }
+
+    // Hash the incoming raw token using the same algorithm used during creation
+    const tokenHash = hashPasswordResetToken(token);
+
+    // Find user by reset token hash
+    const user = await User.findOne({ passwordResetTokenHash: tokenHash });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'This password reset link is invalid or has already been used.'
+      });
+    }
+
+    // Check token expiration
+    if (!user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'This password reset link has expired. Please request a new one.'
+      });
+    }
+
+    // Hash new password using existing bcrypt policy (10 rounds)
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear reset token fields (single-use token)
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpiresAt = null;
+    user.passwordResetAt = new Date();
+    user.mustChangePassword = false;
+
     await user.save();
+
+    console.log('[RESET-PASSWORD] Password reset successful for user:', user.email);
 
     res.json({
       success: true,
-      message: 'Password reset successfully'
+      message: 'Password reset successfully. You can now log in with your new password.'
     });
 
   } catch (error) {
