@@ -1,5 +1,5 @@
 // src/pages/AdminUsers.jsx - MODERNIZED ADMIN USER MANAGEMENT
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
@@ -8,6 +8,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
+import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import {
   Search,
   Shield,
@@ -112,87 +113,83 @@ const StatusBadge = ({ isSuspended, isVerified }) => {
 
 const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef(null);
 
   const userId = user.id || user._id;
   const isSelf = String(userId) === String(currentAdminId);
   const canChangeRole = user.role !== 'ADMIN' && !isSelf;
 
+  const closeMenu = () => setIsOpen(false);
+
   return (
-    <div className="relative">
+    <>
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         title="Actions"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
       >
         <MoreVertical size={16} className="text-gray-600 dark:text-gray-400" />
       </button>
 
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 py-1">
-            <button
-              onClick={() => {
-                onViewProfile(user);
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-            >
-              <Eye size={14} />
-              View Profile
-            </button>
-            {canChangeRole && (
-              <button
-                onClick={() => {
-                  onChangeRole(user);
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-              >
-                <UserCog size={14} />
-                Change Role
-              </button>
-            )}
-            <button
-              onClick={() => {
-                onResetPassword(user);
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-            >
-              <Key size={14} />
-              Reset Password
-            </button>
-            {user.isSuspended ? (
-              <button
-                onClick={() => {
-                  onActivate(user.id);
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-              >
-                <Play size={14} />
-                Activate Account
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onSuspend(user.id, true);
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-              >
-                <Pause size={14} />
-                Suspend Account
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+      {/* Rendered via portal so it can never be clipped by the table's
+          overflow-x-auto / cards / sticky headers, and stays in viewport. */}
+      <ActionMenuPortal
+        triggerRef={triggerRef}
+        isOpen={isOpen}
+        onClose={closeMenu}
+        align="end"
+        className="w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
+      >
+        <button
+          onClick={() => { onViewProfile(user); closeMenu(); }}
+          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+          role="menuitem"
+        >
+          <Eye size={14} />
+          View Profile
+        </button>
+        {canChangeRole && (
+          <button
+            onClick={() => { onChangeRole(user); closeMenu(); }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            role="menuitem"
+          >
+            <UserCog size={14} />
+            Change Role
+          </button>
+        )}
+        <button
+          onClick={() => { onResetPassword(user); closeMenu(); }}
+          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+          role="menuitem"
+        >
+          <Key size={14} />
+          Reset Password
+        </button>
+        {user.isSuspended ? (
+          <button
+            onClick={() => { onActivate(user.id); closeMenu(); }}
+            className="w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            role="menuitem"
+          >
+            <Play size={14} />
+            Activate Account
+          </button>
+        ) : (
+          <button
+            onClick={() => { onSuspend(user.id, true); closeMenu(); }}
+            className="w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            role="menuitem"
+          >
+            <Pause size={14} />
+            Suspend Account
+          </button>
+        )}
+      </ActionMenuPortal>
+    </>
   );
 };
 

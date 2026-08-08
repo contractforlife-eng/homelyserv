@@ -1,10 +1,11 @@
 // src/pages/AdminSettings.jsx - MIGRATED TO DASHBOARD LAYOUT
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import ActionMenuPortal from '../components/common/ActionMenuPortal';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguageGlobal, LANGUAGE_STORAGE_KEY } from '../i18n';
 import api from '../utils/api';
@@ -94,6 +95,7 @@ const AdminSettings = () => {
   const { i18n } = useTranslation();
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const langTriggerRef = useRef(null);
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -686,30 +688,37 @@ const AdminSettings = () => {
                   <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
                   <div className="relative">
                     <button
+                      ref={langTriggerRef}
                       onClick={() => setShowLangDropdown(!showLangDropdown)}
                       className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg text-left flex items-center justify-between hover:border-yellow-500/50 transition"
+                      aria-haspopup="menu"
+                      aria-expanded={showLangDropdown}
                     >
                       <span className="text-white">
                         {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
                       </span>
                       <Globe size={18} className="text-gray-400 dark:text-gray-500" />
                     </button>
-                    {showLangDropdown && (
-                      <div className="absolute right-0 mt-2 w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden">
-                        {SUPPORTED_LANGUAGES.map((lang) => (
-                          <button
-                            key={lang.code}
-                            onClick={() => handleLanguageChange(lang.code)}
-                            className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
-                              language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
-                            }`}
-                          >
-                            <span className="text-lg">{lang.flag}</span>
-                            <span>{lang.nativeName}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <ActionMenuPortal
+                      triggerRef={langTriggerRef}
+                      isOpen={showLangDropdown}
+                      onClose={() => setShowLangDropdown(false)}
+                      align="end"
+                      className="w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden"
+                    >
+                      {SUPPORTED_LANGUAGES.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => handleLanguageChange(lang.code)}
+                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
+                            language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
+                          }`}
+                        >
+                          <span className="text-lg">{lang.flag}</span>
+                          <span>{lang.nativeName}</span>
+                        </button>
+                      ))}
+                    </ActionMenuPortal>
                   </div>
                 </div>
               </div>
