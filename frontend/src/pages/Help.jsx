@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import LegalFooter from '../components/common/LegalFooter';
 import { isUserPremium } from '../utils/subscriptionService';
+import { getMessagesRoute, getComplaintsRoute } from '../utils/supportRoutes';
 import {
   Home,
   User,
@@ -94,7 +96,23 @@ const HelpSidebar = ({
 
   let menuItems = [];
 
-  if (isEmployer) {
+  const roleKey = (userRole || '').toUpperCase();
+  const homePath = roleKey === 'EMPLOYER'
+    ? '/employer-dashboard'
+    : roleKey === 'ADMIN'
+      ? '/admin'
+      : roleKey === 'SUPPORT'
+        ? '/support-dashboard'
+        : '/worker-dashboard';
+  const settingsPath = roleKey === 'EMPLOYER'
+    ? '/employer-settings'
+    : roleKey === 'ADMIN'
+      ? '/admin/settings'
+      : roleKey === 'SUPPORT'
+        ? '/support-settings'
+        : '/worker-settings';
+
+  if (roleKey === 'EMPLOYER') {
     menuItems = [
       { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
       { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
@@ -104,6 +122,19 @@ const HelpSidebar = ({
       { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
       { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
       { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
+    ];
+  } else if (roleKey === 'ADMIN') {
+    menuItems = [
+      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
+      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
+      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
+      { id: 'payment', label: t.payment, icon: CreditCard, path: '/admin/payments' },
+    ];
+  } else if (roleKey === 'SUPPORT') {
+    menuItems = [
+      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
+      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
+      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/support-complaints' },
     ];
   } else {
     menuItems = [
@@ -156,7 +187,7 @@ const HelpSidebar = ({
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
+            <Link to={homePath} className="flex items-center gap-2">
               <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold text-sm">H</span>
               </div>
@@ -164,7 +195,7 @@ const HelpSidebar = ({
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center mx-auto`}>
+            <Link to={homePath} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center mx-auto`}>
               <span className="text-white font-bold text-sm">H</span>
             </Link>
           )}
@@ -263,7 +294,7 @@ const HelpSidebar = ({
           <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
 
           <Link
-            to={isEmployer ? '/employer-settings' : '/worker-settings'}
+            to={settingsPath}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
@@ -318,7 +349,7 @@ const Help = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
   const [language, setLanguage] = useState('en');
-  const [userRole, setUserRole] = useState('WORKER');
+  const [userRole, setUserRole] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -375,7 +406,16 @@ const Help = () => {
       hiring: 'Hiring & Jobs',
       payments: 'Payments & Billing',
       security: 'Security & Privacy',
-      troubleshooting: 'Troubleshooting'
+      troubleshooting: 'Troubleshooting',
+      supportCenter: 'Your Support Center',
+      connectLegal: 'Contact & Legal',
+      signInRequired: 'Sign in to access Messages & Complaints',
+      signIn: 'Sign in',
+      back: 'Back',
+      terms: 'Terms & Conditions',
+      privacy: 'Privacy Policy',
+      refund: 'Refund Policy',
+      contactUs: 'Contact Us'
     },
     ar: {
       title: 'المساعدة والدعم',
@@ -425,7 +465,16 @@ const Help = () => {
       hiring: 'التوظيف والوظائف',
       payments: 'المدفوعات والفواتير',
       security: 'الأمان والخصوصية',
-      troubleshooting: 'استكشاف الأخطاء'
+      troubleshooting: 'استكشاف الأخطاء',
+      supportCenter: 'مركز الدعم الخاص بك',
+      connectLegal: 'التواصل والقوانين',
+      signInRequired: 'سجل الدخول للوصول إلى الرسائل والشكاوى',
+      signIn: 'تسجيل الدخول',
+      back: 'رجوع',
+      terms: 'الشروط والأحكام',
+      privacy: 'سياسة الخصوصية',
+      refund: 'سياسة الاسترداد',
+      contactUs: 'اتصل بنا'
     }
   };
 
@@ -439,7 +488,7 @@ const Help = () => {
     
     // Get user role from authStore
     if (authUser) {
-      setUserRole(authUser.role || 'WORKER');
+      setUserRole(authUser.role || null);
     }
 
     const sidebarState = localStorage.getItem('sidebar_collapsed');
@@ -491,6 +540,30 @@ const Help = () => {
     }
   };
 
+  const handleSupportNavigate = (type) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (type === 'messages') {
+      navigate(getMessagesRoute(userRole));
+    } else if (type === 'complaints') {
+      navigate(getComplaintsRoute(userRole));
+    }
+  };
+
+  const scrollToFaq = () => {
+    document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/login');
+    }
+  };
+
   const isEmployer = userRole === 'EMPLOYER';
 
   // Filter FAQ based on search
@@ -520,6 +593,145 @@ const Help = () => {
   ];
 
   const isTeal = isEmployer;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+        {/* Public header */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-red-600 transition text-sm"
+            >
+              <ChevronLeft size={16} /> {t.back}
+            </button>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H</span>
+              </div>
+              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
+            </Link>
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
+            >
+              <Globe size={16} />
+              {t.languageToggle}
+            </button>
+          </div>
+        </header>
+
+        {/* Public content */}
+        <div className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8">
+          {/* Hero */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-red-100 mt-1">{t.subtitle}</p>
+          </div>
+
+          {/* Search */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+          </div>
+
+          {/* Contact channels */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <a href="mailto:support@homelyserv.com" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition no-underline">
+              <Mail size={22} className="text-red-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-800 dark:text-white text-sm">{t.email}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-words">support@homelyserv.com</p>
+            </a>
+            <a href="tel:+201029189851" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition no-underline">
+              <Phone size={22} className="text-red-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-800 dark:text-white text-sm">{t.phone}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">+20 100 918 9851</p>
+            </a>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center">
+              <Clock size={22} className="text-red-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-800 dark:text-white text-sm">{t.supportHours}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t.supportHoursDesc}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center">
+              <Headphones size={22} className="text-red-600 mx-auto mb-2" />
+              <p className="font-medium text-gray-800 dark:text-white text-sm">{t.responseTime}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t.responseTimeDesc}</p>
+            </div>
+          </div>
+
+          {/* Sign in CTA + legal links */}
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+            <button
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-3 px-4 py-3 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition text-left"
+            >
+              <Lock size={20} className="text-gray-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-800 dark:text-white flex-1">{t.signInRequired}</span>
+              <span className="text-sm font-semibold text-red-600 whitespace-nowrap">{t.signIn}</span>
+            </button>
+            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2">{t.connectLegal}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-red-600 hover:underline">{t.contactUs}</Link>
+                <Link to="/terms" className="text-gray-600 dark:text-gray-300 hover:text-red-600 hover:underline">{t.terms}</Link>
+                <Link to="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-red-600 hover:underline">{t.privacy}</Link>
+                <Link to="/refund-policy" className="text-gray-600 dark:text-gray-300 hover:text-red-600 hover:underline">{t.refund}</Link>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div id="faq-section" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.faq}</h3>
+            {filteredFaqs.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-gray-500 dark:text-gray-400">{t.noResults}</p>
+                <p className="text-sm text-gray-400">{t.tryDifferent}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredFaqs.map((faq, index) => (
+                  <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleFaq(index)}
+                      className="w-full flex items-center justify-between gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition bg-white dark:bg-gray-800 text-left"
+                    >
+                      <div className="flex items-start gap-3">
+                        <FileQuestion size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+                        <span className="font-medium text-gray-800 dark:text-white">{faq.question}</span>
+                      </div>
+                      {expandedFaq === index ? (
+                        <ChevronUp size={18} className="text-gray-400 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />
+                      )}
+                    </button>
+                    {expandedFaq === index && (
+                      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{faq.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <LegalFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
@@ -626,33 +838,86 @@ const Help = () => {
 
           {/* Quick Support Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+            <a href="mailto:support@homelyserv.com" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group cursor-pointer no-underline">
               <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Mail size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800 dark:text-white">{t.email}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">support@homelyserv.com</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+            </a>
+            <a href="tel:+2010091789851" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group cursor-pointer no-underline">
               <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <Phone size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800 dark:text-white">{t.phone}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">+20 123 456 789</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">+20 100 918 9851</p>
+            </a>
+            <button
+              onClick={() => handleSupportNavigate('messages')}
+              className="w-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group cursor-pointer"
+            >
               <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <MessageSquare size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800 dark:text-white">{t.chat}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Available 24/7</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group">
+            </button>
+            <button
+              onClick={scrollToFaq}
+              className="w-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 text-center hover:shadow-md transition group cursor-pointer"
+            >
               <div className={`w-12 h-12 ${isTeal ? 'bg-teal-50 dark:bg-teal-900/30 group-hover:bg-teal-100' : 'bg-red-50 dark:bg-red-900/30 group-hover:bg-red-100'} rounded-xl flex items-center justify-center mx-auto mb-3 transition`}>
                 <BookOpen size={24} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
               </div>
               <p className="font-medium text-gray-800 dark:text-white">{t.documentation}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">User Guide</p>
+            </button>
+          </div>
+
+          {/* Role-aware Support Center + Legal links */}
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              {isAuthenticated ? t.supportCenter : t.connectLegal}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => handleSupportNavigate('messages')}
+                    className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition text-left"
+                  >
+                    <MessageSquare size={20} className={`${isTeal ? 'text-teal-600' : 'text-red-600'} flex-shrink-0`} />
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">{t.messages}</span>
+                  </button>
+                  <button
+                    onClick={() => handleSupportNavigate('complaints')}
+                    className="flex items-center gap-3 px-3 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition text-left"
+                  >
+                    <AlertTriangle size={20} className={`${isTeal ? 'text-teal-600' : 'text-red-600'} flex-shrink-0`} />
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">{t.complaints}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => navigate('/login')}
+                  className="md:col-span-3 flex items-center gap-3 px-3 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition text-left"
+                >
+                  <Lock size={20} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-white flex-1">{t.signInRequired}</span>
+                  <span className={`text-sm font-semibold ${isTeal ? 'text-teal-600' : 'text-red-600'}`}>
+                    {t.signIn}
+                  </span>
+                </button>
+              )}
+            </div>
+            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-2">{t.connectLegal}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 hover:underline">{t.contactUs}</Link>
+                <Link to="/terms" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 hover:underline">{t.terms}</Link>
+                <Link to="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 hover:underline">{t.privacy}</Link>
+                <Link to="/refund-policy" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 hover:underline">{t.refund}</Link>
+              </div>
             </div>
           </div>
 
@@ -683,7 +948,7 @@ const Help = () => {
           </div>
 
           {/* FAQ Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+          <div id="faq-section" className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.faq}</h3>
             
             {filteredFaqs.length === 0 ? (

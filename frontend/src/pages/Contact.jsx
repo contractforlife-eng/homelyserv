@@ -1,9 +1,25 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import LegalFooter from '../components/common/LegalFooter';
+import useAuthStore from '../store/authStore';
+import { getMessagesRoute } from '../utils/supportRoutes';
 
 function Contact() {
+  const navigate = useNavigate();
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const handleStartChat = () => {
+    if (isAuthenticated && authUser?.role) {
+      navigate(getMessagesRoute(authUser.role));
+    } else if (isAuthenticated) {
+      navigate('/messages');
+    } else {
+      navigate('/login');
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -34,7 +50,7 @@ function Contact() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back</Link>
+            <Link to="/help" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back to Help</Link>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Contact Support</h1>
           </div>
         </div>
@@ -65,8 +81,15 @@ function Contact() {
 
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="font-semibold text-gray-800 dark:text-white mb-2">Live Chat</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Available 24/7 for immediate assistance</p>
-                <button className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  Available 24/7 for immediate assistance
+                  {!isAuthenticated && ' — sign in to continue to your support inbox'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleStartChat}
+                  className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                >
                   <MessageCircle size={18} /> Start Chat
                 </button>
               </div>

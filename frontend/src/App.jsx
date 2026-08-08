@@ -214,11 +214,7 @@ function App() {
       />
       <Route 
         path="/help" 
-        element={
-          <ProtectedRoute>
-            <Help />
-          </ProtectedRoute>
-        } 
+        element={<Help />} 
       />
 
       {/* ========== WORKER ROUTES ========== */}

@@ -23,7 +23,7 @@ function About() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back</Link>
+            <Link to="/help" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">← Back to Help</Link>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">About HomelyServ</h1>
           </div>
         </div>
