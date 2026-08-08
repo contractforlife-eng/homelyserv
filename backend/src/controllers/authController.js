@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
+import { uploadFromBuffer } from '../utils/cloudinary.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
