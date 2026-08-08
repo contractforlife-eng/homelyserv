@@ -181,7 +181,7 @@ const WorkerSidebar = ({
           </div>
         </div>
 
-        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100dvh-180px)]">
           {!sidebarCollapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
               {t.overview}
@@ -199,6 +199,9 @@ const WorkerSidebar = ({
             <Link
               key={item.id}
               to={item.path}
+              onClick={() => {
+                if (mobileMenuOpen) toggleMobileMenu();
+              }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive(item.path)
                   ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'

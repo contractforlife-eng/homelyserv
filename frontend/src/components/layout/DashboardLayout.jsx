@@ -88,7 +88,7 @@ const DashboardLayout = ({
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
@@ -118,7 +118,7 @@ const DashboardLayout = ({
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-dvh flex bg-gray-50 dark:bg-gray-900">
         <SidebarComponent
           language={language}
           sidebarCollapsed={sidebarCollapsed}
@@ -130,7 +130,7 @@ const DashboardLayout = ({
           handleLogout={handleLogout}
         />
 
-        <main className={`flex-1 transition-all duration-300 ${
+        <main className={`flex-1 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         } ml-0`}>
           <VerificationBanner />

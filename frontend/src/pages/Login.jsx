@@ -218,19 +218,19 @@ const redirectUser = (user) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-100 via-white to-red-50 p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-100 via-white to-red-50 p-3 sm:p-4 relative overflow-hidden">
       {/* Radiant decorative background elements */}
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-r from-red-300/10 via-white to-red-400/10 rounded-full blur-3xl"></div>
-      
+      <div className="absolute top-0 left-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] bg-gradient-to-r from-red-300/10 via-white to-red-400/10 rounded-full blur-3xl"></div>
+
       {/* Floating sparkle elements */}
-      <div className="absolute top-10 right-20 w-3 h-3 bg-red-500 rounded-full blur-sm animate-ping"></div>
-      <div className="absolute bottom-20 left-10 w-2 h-2 bg-red-400 rounded-full blur-sm animate-ping delay-300"></div>
+      <div className="absolute top-10 right-10 sm:right-20 w-3 h-3 bg-red-500 rounded-full blur-sm animate-ping"></div>
+      <div className="absolute bottom-20 left-5 sm:left-10 w-2 h-2 bg-red-400 rounded-full blur-sm animate-ping delay-300"></div>
       <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
-      
+
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
+        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-6 sm:p-8 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
           
           {/* Language Selector */}
           <div className="absolute top-4 right-4">
@@ -264,25 +264,25 @@ const redirectUser = (user) => {
           </div>
 
           {/* Logo & Brand - Radiant Red, White, Black */}
-          <div className="text-center mb-8 pt-2">
+          <div className="text-center mb-6 sm:mb-8 pt-2">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-gray-800 rounded-full blur-2xl opacity-70 scale-110 animate-pulse"></div>
-              
-              <div className="relative w-28 h-28 mx-auto bg-gradient-to-br from-red-500 via-red-600 to-gray-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/40 transform transition-transform hover:scale-105 duration-300 hover:shadow-red-500/60">
+
+              <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto bg-gradient-to-br from-red-500 via-red-600 to-gray-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/40 transform transition-transform hover:scale-105 duration-300 hover:shadow-red-500/60">
                 <div className="relative">
-                  <Shield size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
+                  <Shield size={48} sm:size={64} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
-                    <Home size={36} fill="none" stroke="#ffffff" color="#ffffff" strokeWidth={2} className="drop-shadow-lg" />
-                    <Sparkles size={16} className="text-red-200 absolute -top-1 -right-1 animate-pulse" />
+                    <Home size={28} sm:size={36} fill="none" stroke="#ffffff" color="#ffffff" strokeWidth={2} className="drop-shadow-lg" />
+                    <Sparkles size={12} sm:size={16} className="text-red-200 absolute -top-1 -right-1 animate-pulse" />
                   </div>
                 </div>
               </div>
-              
-              <div className="mt-4">
-                <h1 className="text-4xl font-bold tracking-tight drop-shadow-sm">
+
+              <div className="mt-3 sm:mt-4">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight drop-shadow-sm">
                   <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-medium">{t('premiumServices')}</p>
               </div>
             </div>
           </div>
@@ -361,14 +361,14 @@ const redirectUser = (user) => {
 
             {/* Forgot Password - Appears After Email */}
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showPasswordField ? 'max-h-20 opacity-100 mb-6' : 'max-h-0 opacity-0'
+              showPasswordField ? 'max-h-20 opacity-100 mb-4 sm:mb-6' : 'max-h-0 opacity-0'
             }`}>
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 text-red-600 border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-red-400" />
                   {t('rememberMe')}
                 </label>
-                <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-semibold transition-colors hover:underline">
+                <Link to="/forgot-password" className="text-xs sm:text-sm text-red-600 hover:text-red-700 font-semibold transition-colors hover:underline">
                   {t('forgotPassword')}
                 </Link>
               </div>
@@ -381,7 +381,7 @@ const redirectUser = (user) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-red-500 via-red-600 to-gray-800 text-white py-3.5 rounded-xl hover:shadow-2xl hover:shadow-red-500/40 transition-all duration-300 font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:scale-[1.02]"
+                className="w-full bg-gradient-to-r from-red-500 via-red-600 to-gray-800 text-white py-3 sm:py-3.5 rounded-xl hover:shadow-2xl hover:shadow-red-500/40 transition-all duration-300 font-bold text-base sm:text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:scale-[1.02]"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
@@ -391,7 +391,7 @@ const redirectUser = (user) => {
                 ) : (
                   <>
                     {t('signIn')}
-                    <LogIn size={20} />
+                    <LogIn size={18} sm:size={20} />
                   </>
                 )}
               </button>
@@ -404,7 +404,7 @@ const redirectUser = (user) => {
               <button
                 type="button"
                 onClick={handleBackToEmail}
-                className="w-full text-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors font-medium"
+                className="w-full text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors font-medium"
               >
                 {t('useDifferentEmail')}
               </button>
@@ -413,37 +413,37 @@ const redirectUser = (user) => {
 
           {/* Force Password Change */}
           {mustChangePassword && (
-            <div className="mt-6 p-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 rounded-2xl">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-                <Lock size={20} className="text-yellow-600" />
+            <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 rounded-2xl">
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                <Lock size={18} sm:size={20} className="text-yellow-600" />
                 Change Your Password
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Your password was reset by an administrator. Please set a new password to continue.
               </p>
 
               {changePasswordError && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
-                  <AlertCircle size={16} className="text-red-500" /> {changePasswordError}
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl text-red-600 text-xs sm:text-sm flex items-center gap-2">
+                  <AlertCircle size={14} sm:size={16} className="text-red-500" /> {changePasswordError}
                 </div>
               )}
 
               {changePasswordSuccess && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-xl text-green-600 text-sm flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-500" /> Password changed! Redirecting...
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-xl text-green-600 text-xs sm:text-sm flex items-center gap-2">
+                  <CheckCircle size={14} sm:size={16} className="text-green-500" /> Password changed! Redirecting...
                 </div>
               )}
 
               {!changePasswordSuccess && (
-                <form onSubmit={handleForceChangePassword} className="space-y-4">
+                <form onSubmit={handleForceChangePassword} className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
                     <div className="relative group">
-                      <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                      <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         name="newPassword"
-                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
+                        className="w-full pl-11 pr-4 py-3 sm:py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
                         placeholder={t('newPassword')}
                         required
                         minLength={6}
@@ -451,13 +451,13 @@ const redirectUser = (user) => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New Password</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New Password</label>
                     <div className="relative group">
-                      <Lock size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                      <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         name="confirmPassword"
-                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
+                        className="w-full pl-11 pr-4 py-3 sm:py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-red-100"
                         placeholder={t('confirmPassword')}
                         required
                         minLength={6}
@@ -467,7 +467,7 @@ const redirectUser = (user) => {
                   <button
                     type="submit"
                     disabled={changePasswordLoading}
-                    className="w-full bg-gradient-to-r from-red-500 via-red-600 to-gray-800 text-white py-3.5 rounded-xl hover:shadow-2xl hover:shadow-red-500/40 transition-all duration-300 font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:scale-[1.02]"
+                    className="w-full bg-gradient-to-r from-red-500 via-red-600 to-gray-800 text-white py-3 sm:py-3.5 rounded-xl hover:shadow-2xl hover:shadow-red-500/40 transition-all duration-300 font-bold text-base sm:text-lg disabled:opacity-50 flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:scale-[1.02]"
                   >
                     {changePasswordLoading ? (
                       <div className="flex items-center gap-2">
@@ -477,7 +477,7 @@ const redirectUser = (user) => {
                     ) : (
                       <>
                         {t('changePassword')}
-                        <CheckCircle size={20} />
+                        <CheckCircle size={18} sm:size={20} />
                       </>
                     )}
                   </button>
@@ -494,7 +494,7 @@ const redirectUser = (user) => {
           </div>
 
           {/* Register Link */}
-          <p className="text-center text-gray-600 dark:text-gray-300 mt-6">
+          <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
             {t('noAccount')}{' '}
             <Link to="/register" className="text-red-600 font-bold hover:text-red-700 transition-colors hover:underline hover:underline-offset-2">
               {t('createOne')}

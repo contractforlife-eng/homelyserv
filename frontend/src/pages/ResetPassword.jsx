@@ -204,10 +204,10 @@ function ResetPassword() {
       default:
         return (
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">NEW PASSWORD</label>
+            <div className="mb-3 sm:mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">NEW PASSWORD</label>
               <div className="relative">
-                <KeyRound size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
+                <KeyRound size={16} sm:size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={newPassword}
@@ -228,15 +228,15 @@ function ResetPassword() {
                   className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} sm:size={18} /> : <Eye size={16} sm:size={18} />}
                 </button>
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">CONFIRM NEW PASSWORD</label>
+            <div className="mb-3 sm:mb-4">
+              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">CONFIRM NEW PASSWORD</label>
               <div className="relative">
-                <KeyRound size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
+                <KeyRound size={16} sm:size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
@@ -257,25 +257,25 @@ function ResetPassword() {
                   className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   tabIndex={-1}
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? <EyeOff size={16} sm:size={18} /> : <Eye size={16} sm:size={18} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <p className="mb-4 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle size={14} /> {error}
+              <p className="mb-4 text-xs sm:text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle size={12} sm:size={14} /> {error}
               </p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition font-semibold text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={18} sm:size={20} className="animate-spin" />
                   Resetting...
                 </>
               ) : (
@@ -288,33 +288,33 @@ function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50/30 p-3 sm:p-4 relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-100/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-0 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+      <div className="absolute bottom-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-red-200/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-red-100/10 rounded-full blur-3xl"></div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-8 border border-red-100/50 transition-all duration-300">
+        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/10 p-6 sm:p-8 border border-red-100/50 transition-all duration-300">
 
           {/* Logo & Brand */}
-          <div className="text-center mb-8 pt-2">
+          <div className="text-center mb-6 sm:mb-8 pt-2">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-red-500/30 rounded-full blur-xl opacity-60 scale-110"></div>
-              <div className="relative w-24 h-24 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-500/30">
                 <div className="relative">
-                  <Shield size={48} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
+                  <Shield size={40} sm:size={48} className="text-white/20 absolute -inset-1" strokeWidth={1.5} />
                   <div className="relative z-10 flex items-center justify-center">
-                    <Home size={28} className="text-white" strokeWidth={2} />
-                    <Sparkles size={14} className="text-red-200 absolute -top-1 -right-1" />
+                    <Home size={24} sm:size={28} className="text-white" strokeWidth={2} />
+                    <Sparkles size={12} sm:size={14} className="text-red-200 absolute -top-1 -right-1" />
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
+              <div className="mt-3 sm:mt-4">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
-                <p className="text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Reset Password</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Reset Password</p>
               </div>
             </div>
           </div>
@@ -323,8 +323,8 @@ function ResetPassword() {
           {renderContent()}
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+            <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
               Need help?{' '}
               <Link to="/contact" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
                 Contact Support

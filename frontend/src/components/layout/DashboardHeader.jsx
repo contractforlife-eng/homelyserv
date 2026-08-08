@@ -66,43 +66,44 @@ const DashboardHeader = ({
 
   return (
     <header className={`sticky top-0 z-30 ${
-      isAdmin 
-        ? 'bg-[#1a1a1a] border-b border-yellow-500/20' 
+      isAdmin
+        ? 'bg-[#1a1a1a] border-b border-yellow-500/20'
         : 'bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'
     }`}>
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-3">
         {/* Left side - Menu button and title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={handleToggleMenu}
-            className={`p-2 rounded-lg transition-colors lg:hidden ${
-              isAdmin 
-                ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500' 
+            aria-label="Toggle menu"
+            className={`p-2 rounded-lg transition-colors lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              isAdmin
+                ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
           >
             <Menu size={20} />
           </button>
           <div>
-            <h2 className={`text-lg font-semibold hidden sm:block ${
+            <h2 className={`text-base sm:text-lg font-semibold ${
               isAdmin ? 'text-white' : 'text-gray-800 dark:text-white'
             }`}>{title}</h2>
           </div>
         </div>
 
         {/* Right side - User info, notifications, language, and custom content */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* User profile section */}
           <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full overflow-hidden border-2 relative ${
-              isAdmin 
-                ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-200' 
+            <div className={`w-8 h-8 rounded-full overflow-hidden border-2 relative flex-shrink-0 ${
+              isAdmin
+                ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-200'
                 : 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-200 dark:border-teal-800'
             }`}>
               {profileImage ? (
-                <img 
-                  src={profileImage} 
-                  alt={fullName} 
+                <img
+                  src={profileImage}
+                  alt={fullName}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -116,16 +117,16 @@ const DashboardHeader = ({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1">
-              <span className={`text-sm font-medium hidden sm:inline ${
+            <div className="flex items-center gap-1 hidden sm:flex">
+              <span className={`text-sm font-medium ${
                 isAdmin ? 'text-gray-300' : 'text-gray-700 dark:text-gray-200'
               }`}>
                 {displayName}
               </span>
               {isPremium && (
-                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap hidden sm:inline-flex ${
-                  isAdmin 
-                    ? 'bg-yellow-900/30 border border-yellow-500/30 text-yellow-400' 
+                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
+                  isAdmin
+                    ? 'bg-yellow-900/30 border border-yellow-500/30 text-yellow-400'
                     : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
                 }`}>
                   <Crown size={10} className={isAdmin ? 'text-yellow-400' : 'text-yellow-500'} />
@@ -147,14 +148,14 @@ const DashboardHeader = ({
           {showLanguageToggle && handleToggleLanguage && (
             <button
               onClick={handleToggleLanguage}
-              className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                isAdmin 
-                  ? 'border-yellow-500/20 text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500' 
+              className={`px-2 sm:px-3 py-1.5 border rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center gap-2 min-h-[40px] ${
+                isAdmin
+                  ? 'border-yellow-500/20 text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500'
                   : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <Globe size={16} />
-              {language === 'en' ? 'العربية' : 'English'}
+              <span className="hidden sm:inline">{language === 'en' ? 'العربية' : 'English'}</span>
             </button>
           )}
 
