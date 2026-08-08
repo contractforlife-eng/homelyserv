@@ -91,29 +91,38 @@ const SupportUsers = () => {
     }
   };
 
+  const generateTempPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let password = 'Temp@';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const handleResetPassword = async (userId) => {
     setActionLoading(userId);
     try {
       const response = await api.post(`/api/support/users/${userId}/reset-password`, {
-        reason: resetReason || 'Password reset by support'
+        reason: resetReason || 'Password reset requested by support'
       });
 
       if (response.data?.success) {
         setNotification({
           type: 'success',
-          text: `Password reset. Temporary password: ${response.data.tempPassword}`
+          text: 'Password reset link sent successfully'
         });
+        setShowResetModal(null);
+        setResetReason('');
       }
     } catch (error) {
-      console.error('❌ Error resetting password:', error);
+      console.error('❌ Error sending reset link:', error);
       setNotification({
         type: 'error',
-        text: 'Failed to reset password'
+        text: 'Failed to send reset link'
       });
     } finally {
       setActionLoading(null);
-      setShowResetModal(null);
-      setResetReason('');
     }
   };
 

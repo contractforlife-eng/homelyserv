@@ -49,7 +49,7 @@ import {
   UserStatsCard
 } from './index';
 
-const UserProfileView = ({ userId, backTarget, messageTarget = '/support-messages' }) => {
+const UserProfileView = ({ userId, backTarget, messageTarget = '/support-messages', variant = 'support' }) => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
@@ -62,7 +62,6 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const [notification, setNotification] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetReason, setResetReason] = useState('');
-  const [tempPassword, setTempPassword] = useState(null);
 
   // ============================================================
   // LOAD PROFILE + STATS (read-only; never mutates auth state)
@@ -134,16 +133,17 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     setActionLoading(true);
     try {
       const response = await api.post(`/api/support/users/${profileUser.id}/reset-password`, {
-        reason: resetReason || 'Password reset by support'
+        reason: resetReason || 'Password reset requested by support'
       });
 
       if (response.data?.success) {
-        setTempPassword(response.data.tempPassword);
-        setNotification({ type: 'success', text: 'Password reset successfully' });
+        setNotification({ type: 'success', text: 'Password reset link sent successfully' });
+        setShowResetModal(false);
+        setResetReason('');
       }
     } catch (error) {
-      console.error('❌ Error resetting password:', error);
-      setNotification({ type: 'error', text: 'Failed to reset password' });
+      console.error('❌ Error sending reset link:', error);
+      setNotification({ type: 'error', text: 'Failed to send reset link' });
     } finally {
       setActionLoading(false);
     }
@@ -289,7 +289,11 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       {/* Back button */}
       <button
         onClick={() => navigate(backTarget)}
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition"
+        className={`mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 transition ${
+          variant === 'admin' 
+            ? 'hover:text-yellow-600 dark:hover:text-yellow-400' 
+            : 'hover:text-green-600 dark:hover:text-green-400'
+        }`}
       >
         <ArrowLeft size={16} />
         {t.back}
@@ -320,7 +324,11 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       ) : (
         <div className="space-y-6">
           {/* PROFILE HEADER */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 text-white">
+          <div className={`rounded-2xl p-6 text-white ${
+            variant === 'admin' 
+              ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' 
+              : 'bg-gradient-to-r from-green-600 to-green-700'
+          }`}>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <UserAvatar
                 name={profileUser.fullName}
@@ -561,10 +569,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Key size={20} className="text-yellow-500" />
-                {t.resetPassword}
+                Send Password Reset Link
               </h3>
               <button
-                onClick={() => { setShowResetModal(false); setTempPassword(null); setResetReason(''); }}
+                onClick={() => setShowResetModal(false)}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
               >
                 <X size={20} />
@@ -572,48 +580,46 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             </div>
 
             <div className="p-6 space-y-4">
-              {tempPassword ? (
+              {notification?.type === 'success' && notification?.text?.includes('link sent') ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                     <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
                       <CheckCircle2 size={16} />
-                      {t.tempPasswordLabel}
+                      Password reset link sent successfully
                     </p>
                   </div>
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-black/5 dark:bg-black/30 px-3 py-2 rounded text-yellow-600 dark:text-yellow-400 text-sm font-mono break-all">
-                        {tempPassword}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(tempPassword)}
-                        className="p-2 rounded-lg hover:bg-yellow-500/10 transition text-gray-500 dark:text-gray-400 hover:text-yellow-600"
-                        title={t.copyTempPassword}
-                      >
-                        <Key size={16} />
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Share this password with the user securely. They will be required to change it on next login.
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-300">
+                    A secure password reset link has been sent to <span className="font-semibold">{profileUser.email}</span>.
+                  </p>
                   <button
-                    onClick={() => { setShowResetModal(false); setTempPassword(null); setResetReason(''); }}
+                    onClick={() => setShowResetModal(false)}
                     className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition"
                   >
-                    {t.done}
+                    Done
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Resetting password for: <span className="font-semibold text-gray-900 dark:text-white">{profileUser.fullName}</span>
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-sm text-gray-300">
+                      This will send a secure password reset link to: <span className="font-semibold text-white">{profileUser.email}</span>
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{profileUser.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      The user will choose their own new password through the reset page.
+                    </p>
                   </div>
+
+                  {notification?.type === 'error' && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+                      <AlertTriangle size={16} />
+                      {notification.text}
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.resetReason}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Reason (optional)
+                    </label>
                     <input
                       type="text"
                       value={resetReason}
@@ -624,18 +630,18 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                   </div>
                   <div className="flex gap-2 pt-2">
                     <button
-                      onClick={() => { setShowResetModal(false); setTempPassword(null); setResetReason(''); }}
+                      onClick={() => { setShowResetModal(false); setResetReason(''); }}
                       className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     >
-                      {t.cancel}
+                      Cancel
                     </button>
                     <button
                       onClick={handleResetPassword}
                       disabled={actionLoading}
                       className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
-                      {t.confirmReset}
+                      {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                      Send Reset Link
                     </button>
                   </div>
                 </div>

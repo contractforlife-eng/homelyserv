@@ -466,6 +466,122 @@ export const sendPasswordResetEmail = async (user, rawToken) => {
 };
 
 /**
+ * Send security notification email when staff resets a user's password
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.actorRole - Role of staff who reset password (ADMIN/SUPPORT)
+ * @param {string} options.reason - Reason for password reset
+ * @param {string} [options.tempPassword] - Temporary password (only for ADMIN resets)
+ * @returns {Promise<Object>} - Result object with success status
+ */
+export const sendSecurityNotificationEmail = async ({ to, actorRole, reason, tempPassword }) => {
+  try {
+    if (!to) {
+      console.error('[SECURITY_EMAIL] Missing recipient email');
+      return { success: false, message: 'Missing recipient email' };
+    }
+
+    const isAdminReset = actorRole === 'ADMIN';
+    const actorLabel = isAdminReset ? 'an administrator' : 'a support agent';
+    
+    let subject, text, html;
+
+    if (isAdminReset && tempPassword) {
+      // ADMIN reset: email includes temporary password
+      subject = 'Your temporary HomelyServ password';
+      
+      text = `Your HomelyServ account password was reset by ${actorLabel}.
+
+${reason ? `Reason: ${reason}\n` : ''}
+TEMPORARY PASSWORD: ${tempPassword}
+
+Please sign in and change this password immediately.
+
+If you did not expect this change, please contact our support team immediately at support@homelyserv.com.
+
+This is an automated security notification from HomelyServ.`;
+
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h2 style="color: #f59e0b;">Password Reset Notification</h2>
+          <p>Your HomelyServ account password was reset by <strong>${actorLabel}</strong>.</p>
+          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          
+          <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: #92400e;">TEMPORARY PASSWORD:</p>
+            <p style="margin: 0; font-size: 18px; font-family: monospace; background: #fff; padding: 8px; border-radius: 4px; word-break: break-all;">${tempPassword}</p>
+          </div>
+          
+          <p style="color: #dc2626; font-weight: bold;">Please sign in and change this password immediately.</p>
+          
+          <p>If you did not expect this change, please contact our support team immediately at <a href="mailto:support@homelyserv.com">support@homelyserv.com</a>.</p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 14px;">This is an automated security notification from HomelyServ.</p>
+        </div>
+      `;
+    } else {
+      // SUPPORT reset: email includes reset link
+      subject = 'Reset your HomelyServ password';
+      
+      text = `HomelyServ Support requested a password reset for your account.
+
+${reason ? `Reason: ${reason}\n` : ''}
+Click the link below to choose a new password:
+
+${tempPassword ? `Reset Link: ${tempPassword}\n\n` : ''}
+If you did not expect this change, please contact our support team at support@homelyserv.com.
+
+This is an automated security notification from HomelyServ.`;
+
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h2 style="color: #f59e0b;">Password Reset Request</h2>
+          <p>HomelyServ Support requested a password reset for your account.</p>
+          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          
+          <div style="background: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0 0 12px 0; font-weight: bold; color: #1e40af;">Click the button below to reset your password:</p>
+            <a href="${tempPassword}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Reset Password</a>
+            <p style="margin: 12px 0 0 0; font-size: 12px; color: #6b7280;">Or copy this link: ${tempPassword}</p>
+          </div>
+          
+          <p>If you did not expect this change, please contact our support team at <a href="mailto:support@homelyserv.com">support@homelyserv.com</a>.</p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 14px;">This is an automated security notification from HomelyServ.</p>
+        </div>
+      `;
+    }
+
+    // Send via configured provider
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to,
+        subject,
+        html,
+        text,
+        replyTo: process.env.EMAIL_REPLY_TO || 'support@homelyserv.com'
+      });
+    } else {
+      return await sendViaSMTP({
+        to,
+        subject,
+        html,
+        text
+      });
+    }
+  } catch (error) {
+    console.error('[SECURITY_EMAIL] Failed to send security notification:', error);
+    return {
+      success: false,
+      message: 'Failed to send security notification',
+      error: error.message
+    };
+  }
+};
+
+/**
  * Verify SMTP connection
  * @returns {Promise<Object>} - Result object with verification status
  */

@@ -28,8 +28,9 @@ const AdminUserProfile = () => {
       />
       <UserProfileView
         userId={id}
-        backTarget="/admin/hires"
+        backTarget="/admin/users"
         messageTarget="/admin/messages"
+        variant="admin"
       />
     </DashboardLayout>
   );

@@ -7,6 +7,7 @@ import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 import MongooseUser from '../models/User.js';
 import { enrichMessageIdentities } from '../utils/staffIdentity.js';
+import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 
 const router = express.Router();
 
@@ -340,53 +341,82 @@ router.put('/users/:id/suspend', async (req, res) => {
 });
 
 // POST /api/support/users/:id/reset-password
-// Reset a user's password with a temporary password
+// Send a secure password reset link to the user
 router.post('/users/:id/reset-password', async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
     const supportId = req.userId;
+    const supportRole = req.userRole;
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, fullName: true },
-    });
+    // Prevent self-password reset through staff endpoint
+    if (id === supportId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot reset your own password through this endpoint. Use account settings.',
+      });
+    }
 
-    if (!user) {
+    // Use Mongoose User model (same as authentication)
+    const targetUser = await MongooseUser.findById(id).select('email fullName role');
+    
+    if (!targetUser) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Generate a temporary password
-    const tempPassword = 'Temp@' + Math.random().toString(36).slice(2, 10) + Math.floor(1000, 9999);
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    // Authorization: Support cannot reset ADMIN or SUPPORT passwords
+    const targetRole = targetUser.role;
+    if (targetRole === 'ADMIN' || targetRole === 'SUPPORT') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to reset passwords for this user role',
+      });
+    }
 
-    await prisma.user.update({
-      where: { id },
-      data: {
-        password: hashedPassword,
-        mustChangePassword: true,
-      },
+    // Create secure reset token and send email
+    const result = await createAndSendPasswordReset({
+      user: targetUser,
+      actorRole: supportRole,
+      reason: reason || 'Password reset requested by support',
     });
 
-    // Log the activity
+    if (!result.success) {
+      console.error('❌ Failed to send password reset email:', result.error);
+      return res.status(500).json({
+        success: false,
+        message: result.message || 'Failed to send password reset email',
+      });
+    }
+
+    // Send security notification email with reset link
+    // Note: Using tempPassword parameter to pass the reset URL for SUPPORT resets
+    sendSecurityNotificationEmail({
+      to: targetUser.email,
+      actorRole: supportRole,
+      reason: reason || 'Password reset requested by support',
+      tempPassword: result.resetUrl,
+    }).catch((emailError) => {
+      console.error('[SECURITY_EMAIL] Failed to send password reset notification:', emailError);
+    });
+
+    // Log the activity (no password or token data)
     await logActivity(
       supportId,
-      'PASSWORD_RESET',
-      `Reset password for user ${user.email}. Reason: ${reason || 'No reason provided'}`,
+      'PASSWORD_RESET_LINK_SENT',
+      `Password reset link sent to ${targetUser.email} (Role: ${targetRole}). Reason: ${reason || 'No reason provided'}`,
       id
     );
 
     return res.json({
       success: true,
-      message: 'Password reset successfully',
-      tempPassword,
+      message: 'Password reset link sent successfully',
     });
   } catch (error) {
-    console.error('❌ Error resetting password:', error);
-    return res.status(500).json({ error: 'Failed to reset password' });
+    console.error('❌ Error sending password reset link:', error);
+    return res.status(500).json({ error: 'Failed to send password reset link' });
   }
 });
 

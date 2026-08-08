@@ -10,6 +10,7 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
 import { getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
+import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 
 const router = express.Router();
 
@@ -181,11 +182,21 @@ router.post('/users/:id/activate', async (req, res) => {
 });
 
 // ============================================================
-// Reset User Password (Admin Only)
+// Reset User Password (Admin Only) - Direct Temporary Password
 // ============================================================
 router.put('/users/:id/reset-password', async (req, res) => {
   try {
     const { newPassword } = req.body;
+    const adminId = req.userId;
+    const adminRole = req.userRole;
+
+    // Prevent self-password reset through staff endpoint
+    if (req.params.id === adminId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot reset your own password through this endpoint. Use account settings.',
+      });
+    }
 
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({
@@ -194,7 +205,7 @@ router.put('/users/:id/reset-password', async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('email fullName role');
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -202,21 +213,41 @@ router.put('/users/:id/reset-password', async (req, res) => {
       });
     }
 
+    // Authorization: Admin cannot reset another Admin's password
+    const targetRole = user.role;
+    if (targetRole === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to reset passwords for admin accounts',
+      });
+    }
+
+    // Hash the temporary password
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    user.password = hashedPassword;
     user.passwordResetAt = new Date();
     user.mustChangePassword = true;
     await user.save();
 
-    console.log(`🔑 Password reset for user: ${user.email}`);
+    // Send security notification email with temporary password
+    sendSecurityNotificationEmail({
+      to: user.email,
+      actorRole: adminRole,
+      reason: 'Password reset by administrator',
+      tempPassword: newPassword,
+    }).catch((emailError) => {
+      console.error('[SECURITY_EMAIL] Failed to send password reset notification:', emailError);
+    });
 
-    const userData = serializeUser(user);
-    delete userData.password;
+    // Audit log (no password data)
+    console.log(`🔑 Password reset by admin ${adminId} for user: ${user.email} (Role: ${targetRole})`);
 
     res.json({
       success: true,
       message: 'Password reset successfully',
-      user: userData
     });
   } catch (error) {
     console.error('Reset password error:', error);
