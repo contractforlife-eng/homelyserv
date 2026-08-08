@@ -36,7 +36,7 @@ export const toIdentityObject = (user) => {
     name: user.fullName || 'User',
     fullName: user.fullName || 'User',
     role: user.role || 'USER',
-    image: user.image || null,
+    image: user.profileImage || user.image || null,
     email: user.email || null,
   };
 };
@@ -51,7 +51,7 @@ export const getUserIdentity = async (userId) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: String(userId) },
-      select: { id: true, fullName: true, role: true, image: true, email: true },
+      select: { id: true, fullName: true, role: true, profileImage: true, email: true },
     });
     return toIdentityObject(user);
   } catch (error) {
@@ -73,7 +73,7 @@ export const getUserIdentities = async (userIds = []) => {
   try {
     const users = await prisma.user.findMany({
       where: { id: { in: uniqueIds } },
-      select: { id: true, fullName: true, role: true, image: true, email: true },
+      select: { id: true, fullName: true, role: true, profileImage: true, email: true },
     });
     for (const user of users) {
       map.set(String(user.id), toIdentityObject(user));

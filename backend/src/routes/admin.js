@@ -683,7 +683,7 @@ router.post('/start-conversation', async (req, res) => {
     // Look up the target user
     const targetUser = await prisma.user.findUnique({
       where: { id: String(userId) },
-      select: { id: true, fullName: true, email: true, role: true, image: true }
+      select: { id: true, fullName: true, email: true, role: true, profileImage: true }
     });
 
     if (!targetUser) {
@@ -822,7 +822,7 @@ router.get('/escalated-conversations', async (req, res) => {
         try {
           userInfo = await prisma.user.findUnique({
             where: { id: userParticipantId },
-            select: { id: true, fullName: true, email: true, role: true, image: true }
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
           });
         } catch (e) {
           console.error('Error fetching user:', e.message);
@@ -890,7 +890,7 @@ router.get('/support-conversations', async (req, res) => {
         try {
           userInfo = await prisma.user.findUnique({
             where: { id: userParticipantId },
-            select: { id: true, fullName: true, email: true, role: true, image: true }
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
           });
         } catch (e) {
           console.error('Error fetching user:', e.message);
@@ -902,7 +902,7 @@ router.get('/support-conversations', async (req, res) => {
         try {
           supportInfo = await prisma.user.findUnique({
             where: { id: conv.supportAgentId },
-            select: { id: true, fullName: true, email: true, role: true, image: true }
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
           });
         } catch (e) {
           console.error('Error fetching support agent:', e.message);
@@ -961,7 +961,7 @@ router.get('/internal-messages', async (req, res) => {
         try {
           otherStaffInfo = await prisma.user.findUnique({
             where: { id: otherStaffId },
-            select: { id: true, fullName: true, email: true, role: true, image: true }
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
           });
         } catch (e) {
           console.error('Error fetching staff member:', e.message);

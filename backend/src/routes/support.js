@@ -67,7 +67,7 @@ router.get('/users', async (req, res) => {
         fullName: true,
         email: true,
         role: true,
-        image: true,
+        profileImage: true,
         createdAt: true,
         isVerified: true,
         isSuspended: true,
@@ -97,7 +97,7 @@ router.get('/users', async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        profileImage: user.image || null,
+        profileImage: user.profileImage || null,
         createdAt: user.createdAt,
         isVerified: user.isVerified,
         isSuspended: user.isSuspended,
@@ -127,7 +127,7 @@ router.get('/users/:id', async (req, res) => {
         fullName: true,
         email: true,
         role: true,
-        image: true,
+        profileImage: true,
         createdAt: true,
         updatedAt: true,
         isVerified: true,
@@ -429,7 +429,7 @@ router.get('/conversations', async (req, res) => {
         try {
           userInfo = await prisma.user.findUnique({
             where: { id: userParticipantId },
-            select: { id: true, fullName: true, email: true, role: true, image: true }
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true }
           });
         } catch (e) {
           console.error('Error fetching user:', e.message);

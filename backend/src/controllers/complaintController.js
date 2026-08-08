@@ -373,10 +373,10 @@ export const createComplaint = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -442,10 +442,10 @@ export const getMyComplaints = async (req, res) => {
       where: { userId },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -475,10 +475,10 @@ export const getComplaintById = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         Timeline: TIMELINE_WITH_AUTHOR,
         Replies: REPLIES_WITH_AUTHOR,
@@ -523,10 +523,10 @@ export const userReply = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -556,10 +556,10 @@ export const userReply = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -747,7 +747,7 @@ export const supportAssignComplaint = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -878,7 +878,7 @@ export const supportReply = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -992,7 +992,7 @@ export const supportAddNote = async (req, res) => {
       data: { internalNotes: updatedNotes },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1062,7 +1062,7 @@ export const supportChangeStatus = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1087,7 +1087,7 @@ export const supportChangeStatus = async (req, res) => {
       data,
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1160,7 +1160,7 @@ export const supportEscalate = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1180,7 +1180,7 @@ export const supportEscalate = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1295,7 +1295,7 @@ export const supportClose = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1313,7 +1313,7 @@ export const supportClose = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1494,7 +1494,7 @@ export const adminReply = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1514,7 +1514,7 @@ export const adminReply = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1601,7 +1601,7 @@ export const adminReassign = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1629,7 +1629,7 @@ export const adminReassign = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1691,7 +1691,7 @@ export const adminEscalatedComplaints = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       orderBy: { escalatedAt: 'desc' },
@@ -1721,7 +1721,7 @@ export const adminResolve = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1739,7 +1739,7 @@ export const adminResolve = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1800,7 +1800,7 @@ export const adminClose = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1818,7 +1818,7 @@ export const adminClose = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1880,7 +1880,7 @@ export const adminReturnToSupport = async (req, res) => {
       where: { id },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -1903,7 +1903,7 @@ export const adminReturnToSupport = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
     });
@@ -2229,10 +2229,10 @@ export const supportDashboard = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       orderBy: [
@@ -2262,10 +2262,10 @@ export const supportDashboard = async (req, res) => {
       },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -2279,10 +2279,10 @@ export const supportDashboard = async (req, res) => {
       where: { status: 'WAITING_FOR_USER' },
       include: {
         User: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
         AssignedSupport: {
-          select: { id: true, fullName: true, email: true, role: true, image: true },
+          select: { id: true, fullName: true, email: true, role: true, profileImage: true },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -2336,10 +2336,10 @@ export const supportDashboard = async (req, res) => {
         let userInfo = null;
         if (userParticipantId) {
           try {
-            userInfo = await prisma.user.findUnique({
-              where: { id: userParticipantId },
-              select: { id: true, fullName: true, email: true, role: true, image: true },
-            });
+          userInfo = await prisma.user.findUnique({
+            where: { id: userParticipantId },
+            select: { id: true, fullName: true, email: true, role: true, profileImage: true },
+          });
           } catch (e) {
             console.error('Error fetching user:', e.message);
           }
