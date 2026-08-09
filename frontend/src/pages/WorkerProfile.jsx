@@ -185,7 +185,6 @@ const WorkerProfile = () => {
 
   const loadRealStats = (userEmail, userId) => {
     try {
-      const appliedOffers = JSON.parse(localStorage.getItem('worker_applied_offers') || '[]');
       const completedJobs = 0;
       
       const ratings = JSON.parse(localStorage.getItem('worker_ratings') || '[]');

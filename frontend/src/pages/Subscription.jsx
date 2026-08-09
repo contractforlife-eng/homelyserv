@@ -1,305 +1,44 @@
 // src/pages/Subscription.jsx - UPDATED WITH PAYMOB & PAYPAL + PREMIUM DESIGN + WORKING NOTIFICATIONS
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
+import { applyBackendSubscription } from '../utils/subscriptionService';
 import { capturePayPalOrder, fetchSubscriptionStatus } from "../services/paymentService";
-import api from '../utils/api';
 import {
-  Shield,
-  Star,
-  CheckCircle,
-  Crown,
   Sparkles,
-  ArrowLeft,
-  CreditCard,
-  Wallet,
-  Building,
-  Smartphone,
   AlertCircle,
   Loader2,
-  User,
-  Home,
-  Briefcase,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  X,
-  FileCheck,
-  Search,
-  AlertTriangle,
-  TrendingUp,
-  Zap,
-  Award,
-  Lock,
-  Unlock,
-  Calendar,
-  Clock,
-  Users,
-  BarChart3,
-  Shield as ShieldIcon,
-  Zap as ZapIcon,
-  Gift,
-  Rocket,
-  Infinity
+  CheckCircle,
+  Crown,
+  CreditCard,
+  Wallet,
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import {
-  getSubscriptionPrice,
   createSubscription,
   getUserSubscription,
-  isUserPremium as checkUserPremium,
   getSubscriptionStatus
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
-import { PAYMENT_METHODS, PAYMENT_CONFIG } from '../config/paymentConfig';
-
-// Sidebar Component (kept the same for brevity)
-const SubscriptionSidebar = ({ 
-  language, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  mobileMenuOpen, 
-  toggleMobileMenu, 
-  authUser, 
-  handleLogout,
-  isEmployer 
-}) => {
-  const location = useLocation();
-
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      myProfile: 'My Profile',
-      myHires: 'My Hires',
-      search: 'Search Workers',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      payment: 'Payment',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview',
-      premium: 'Premium'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      myProfile: 'ملفي الشخصي',
-      myHires: 'توظيفاتي',
-      search: 'البحث عن عمال',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      payment: 'الدفع',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة',
-      premium: 'مميز'
-    }
-  };
-
-  const t = translations[language] || translations.en;
-
-  const menuItems = isEmployer ? [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
-    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-    { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
-    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
-  ] : [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-    { id: 'offers', label: 'My Offers', icon: Briefcase, path: '/worker/offers' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
-    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
-  ];
-
-  const isActive = (path) => location.pathname === path;
-  const getProfileImage = () => authUser?.profileImage || null;
-
-  const isPremiumUser = () => {
-    const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return checkUserPremium(userId);
-  };
-
-  const premiumUser = isPremiumUser();
-
-  return (
-    <>
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileMenu} />
-      )}
-
-      <aside className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
-        sidebarCollapsed ? 'w-20' : 'w-64'
-      } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          {!sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="flex items-center gap-2">
-              <div className="relative">
-                <Shield size={28} className={isEmployer ? 'text-teal-500' : 'text-amber-500'} />
-                <Home size={14} className={isEmployer ? 'text-teal-300' : 'text-amber-300'} />
-              </div>
-              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
-            </Link>
-          )}
-          {sidebarCollapsed && (
-            <Link to={isEmployer ? '/employer-dashboard' : '/worker-dashboard'} className="relative mx-auto">
-              <Shield size={28} className={isEmployer ? 'text-teal-500' : 'text-amber-500'} />
-              <Home size={14} className={isEmployer ? 'text-teal-300' : 'text-amber-300'} />
-            </Link>
-          )}
-          <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors hidden lg:block">
-            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-          <button onClick={toggleMobileMenu} className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isEmployer ? 'from-teal-500 to-teal-600' : 'from-amber-500 to-rose-500'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
-              {getProfileImage() ? (
-                <img src={getProfileImage()} alt={authUser?.fullName || (isEmployer ? 'Employer' : 'Worker')} className="w-full h-full object-cover" />
-              ) : (
-                <User size={20} className="text-white" />
-              )}
-              {premiumUser && (
-                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                  <Crown size={10} className="text-white" />
-                </div>
-              )}
-            </div>
-            {!sidebarCollapsed && authUser && (
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || (isEmployer ? 'Employer' : 'Worker')}</p>
-                  {premiumUser && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
-          {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              {t.overview}
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">
-              •
-            </div>
-          )}
-
-          {menuItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                isActive(item.path)
-                  ? isEmployer ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600' : 'bg-amber-50 text-amber-600'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
-            >
-              <item.icon size={20} className={isActive(item.path) ? (isEmployer ? 'text-teal-600' : 'text-amber-600') : ''} />
-              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  {item.label}
-                </div>
-              )}
-              {isActive(item.path) && !sidebarCollapsed && (
-                <div className={`ml-auto w-1.5 h-8 ${isEmployer ? 'bg-teal-600' : 'bg-amber-600'} rounded-full`}></div>
-              )}
-              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto">
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
-                </div>
-              )}
-            </Link>
-          ))}
-
-          <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
-
-          <Link
-            to={isEmployer ? '/employer-settings' : '/worker-settings'}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <Settings size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.settings}
-              </div>
-            )}
-          </Link>
-          <Link
-            to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <HelpCircle size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.help}
-              </div>
-            )}
-          </Link>
-          <button
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isEmployer ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-amber-600 hover:bg-amber-50'} group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
-              </div>
-            )}
-          </button>
-        </nav>
-      </aside>
-    </>
-  );
-};
+import { PAYMENT_METHODS } from '../config/paymentConfig';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import RolePageHeader from '../components/common/RolePageHeader';
 
 // ============================================================
 // MAIN SUBSCRIPTION COMPONENT - WITH WORKING NOTIFICATIONS
 // ============================================================
 const Subscription = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  
-  const [language, setLanguage] = useState('en');
+
+  const { i18n } = useTranslation();
+  const language = i18n.language === 'ar' ? 'ar' : 'en';
+
   const [isEmployer, setIsEmployer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -309,48 +48,13 @@ const Subscription = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [paymobIframe, setPaymobIframe] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [retryableStatus, setRetryableStatus] = useState(false);
-  
+
   // Guard against duplicate PayPal capture responses triggering duplicate
   // UI refresh/purchase cycles (polling + popup-return can both fire).
   const subscriptionProcessedRef = useRef(false);
-  
-  // Notification state
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  
+
   const price = isEmployer ? 200 : 100;
-
-  // Fetch notifications function
-  const fetchNotifications = async () => {
-    setNotificationLoading(true);
-    try {
-      const response = await api.get('/api/notifications');
-      
-      if (response.data.success) {
-        setNotifications(response.data.notifications || []);
-      } else if (Array.isArray(response.data)) {
-        setNotifications(response.data);
-      } else {
-        setNotifications([]);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
-
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isNotificationsOpen) {
-      fetchNotifications();
-    }
-  }, [isNotificationsOpen]);
 
   const translations = {
     en: {
@@ -486,16 +190,6 @@ const Subscription = () => {
   ];
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-    
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
-  }, []);
-
-  useEffect(() => {
     if (authLoading) return;
 
     if (!isAuthenticated || !authUser) {
@@ -532,11 +226,6 @@ const Subscription = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser, isAuthenticated, authLoading, navigate]);
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
 
   // Handle Paymob iframe message
   const handlePaymobMessage = (event) => {
@@ -834,26 +523,6 @@ const Subscription = () => {
     }
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
-  };
-
   const handleGoBack = () => {
     navigate(isEmployer ? '/employer-dashboard' : '/worker-dashboard');
   };
@@ -868,14 +537,21 @@ const Subscription = () => {
     };
   }, []);
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+      <DashboardLayout>
+        <DashboardHeader
+          title={t.title}
+          notificationUserId={authUser?.id || authUser?.email}
+        />
+        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <div className="p-4 md:p-6 flex items-center justify-center py-24">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -884,101 +560,21 @@ const Subscription = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex">
-      <SubscriptionSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
-        isEmployer={isEmployer}
+    <DashboardLayout>
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
       />
-
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        <header className="bg-white dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Working Notification Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative"
-                >
-                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                  {notifications && notifications.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white"></span>
-                  )}
-                </button>
-
-                {/* Notification Dropdown */}
-                {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 font-semibold text-sm text-gray-800 dark:text-white flex justify-between items-center">
-                      <span>{t.notifications}</span>
-                      {notificationLoading && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notificationLoading ? (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          Loading notifications...
-                        </div>
-                      ) : notifications && notifications.length > 0 ? (
-                        notifications.map((n, index) => (
-                          <div 
-                            key={n.id || index} 
-                            className="px-4 py-3 hover:bg-gray-50 dark:bg-gray-900 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                          >
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title || 'Notification'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{n.message || n.body || 'No message'}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-                          {t.noNotifications}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="p-4 md:p-6">
-          {/* Back Button */}
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
-          >
-            <ArrowLeft size={18} />
-            {t.back}
-          </button>
+      <RolePageHeader title={t.title} subtitle={t.subtitle} />
+      <div className="p-4 md:p-6">
+        {/* Back Button */}
+        <button
+          onClick={handleGoBack}
+          className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          {t.back}
+        </button>
 
           {paymentSuccess ? (
             // Success State
@@ -1179,7 +775,6 @@ const Subscription = () => {
             </div>
           )}
         </div>
-      </main>
 
       {/* Paymob Iframe Modal */}
       {paymobIframe && (
@@ -1209,7 +804,7 @@ const Subscription = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

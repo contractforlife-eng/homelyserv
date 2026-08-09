@@ -1,11 +1,15 @@
 // src/pages/Help.jsx
 // src/pages/Help.jsx - WITH PREMIUM BADGE FIX
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import LegalFooter from '../components/common/LegalFooter';
-import { isUserPremium } from '../utils/subscriptionService';
 import { getMessagesRoute, getComplaintsRoute } from '../utils/supportRoutes';
+import { changeLanguageGlobal } from '../i18n';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardHeader from '../components/layout/DashboardHeader';
+import RolePageHeader from '../components/common/RolePageHeader';
 import {
   Home,
   User,
@@ -47,311 +51,16 @@ import {
   Crown
 } from 'lucide-react';
 
-// Sidebar Component - WITH PREMIUM BADGE FIX
-const HelpSidebar = ({ 
-  language, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  mobileMenuOpen, 
-  toggleMobileMenu, 
-  authUser, 
-  handleLogout,
-  userRole 
-}) => {
-  const location = useLocation();
-  const isEmployer = userRole === 'EMPLOYER';
-
-  const translations = {
-    en: {
-      dashboard: isEmployer ? 'Dashboard' : 'Dashboard',
-      myProfile: isEmployer ? 'My Profile' : 'My Profile',
-      myHires: isEmployer ? 'My Hires' : 'My Offers',
-      search: isEmployer ? 'Search Workers' : 'My Offers',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      payment: 'Payment',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview',
-      premium: 'Premium'
-    },
-    ar: {
-      dashboard: isEmployer ? 'لوحة التحكم' : 'لوحة التحكم',
-      myProfile: isEmployer ? 'ملفي الشخصي' : 'ملفي الشخصي',
-      myHires: isEmployer ? 'توظيفاتي' : 'عروضي',
-      search: isEmployer ? 'البحث عن عمال' : 'عروضي',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      payment: 'الدفع',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة',
-      premium: 'مميز'
-    }
-  };
-
-  const t = translations[language] || translations.en;
-
-  let menuItems = [];
-
-  const roleKey = (userRole || '').toUpperCase();
-  const homePath = roleKey === 'EMPLOYER'
-    ? '/employer-dashboard'
-    : roleKey === 'ADMIN'
-      ? '/admin'
-      : roleKey === 'SUPPORT'
-        ? '/support-dashboard'
-        : '/worker-dashboard';
-  const settingsPath = roleKey === 'EMPLOYER'
-    ? '/employer-settings'
-    : roleKey === 'ADMIN'
-      ? '/admin/settings'
-      : roleKey === 'SUPPORT'
-        ? '/support-settings'
-        : '/worker-settings';
-
-  if (roleKey === 'EMPLOYER') {
-    menuItems = [
-      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-      { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
-      { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-      { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
-      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-      { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
-      { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
-    ];
-  } else if (roleKey === 'ADMIN') {
-    menuItems = [
-      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
-      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
-      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
-      { id: 'payment', label: t.payment, icon: CreditCard, path: '/admin/payments' },
-    ];
-  } else if (roleKey === 'SUPPORT') {
-    menuItems = [
-      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
-      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
-      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/support-complaints' },
-    ];
-  } else {
-    menuItems = [
-      { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-      { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-      { id: 'offers', label: t.search, icon: Briefcase, path: '/worker/offers' },
-      { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-      { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-      { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
-      { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
-    ];
-  }
-
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  const isTeal = isEmployer;
-
-  // Get profile image from authUser
-  const getProfileImage = () => {
-    if (authUser?.profileImage) {
-      return authUser.profileImage;
-    }
-    return null;
-  };
-
-  // ✅ FIX: Check premium status directly using the user ID
-  const userIsPremium = () => {
-    const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
-
-  const isPremium = userIsPremium();
-
-  return (
-    <>
-      {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={toggleMobileMenu}
-        />
-      )}
-
-      <aside 
-        className={`fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          {!sidebarCollapsed && (
-            <Link to={homePath} className="flex items-center gap-2">
-              <div className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center`}>
-                <span className="text-white font-bold text-sm">H</span>
-              </div>
-              <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
-            </Link>
-          )}
-          {sidebarCollapsed && (
-            <Link to={homePath} className={`w-8 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-lg flex items-center justify-center mx-auto`}>
-              <span className="text-white font-bold text-sm">H</span>
-            </Link>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors hidden lg:block"
-          >
-            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-          <button
-            onClick={toggleMobileMenu}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Profile section with image AND PREMIUM BADGE */}
-        <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full ${isTeal ? 'bg-teal-100' : 'bg-red-100'} flex items-center justify-center flex-shrink-0 overflow-hidden relative`}>
-              {getProfileImage() ? (
-                <img 
-                  src={getProfileImage()} 
-                  alt={authUser?.fullName || 'User'} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={20} className={isTeal ? 'text-teal-600' : 'text-red-600'} />
-              )}
-              {isPremium && (
-                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                  <Crown size={10} className="text-white" />
-                </div>
-              )}
-            </div>
-            {!sidebarCollapsed && authUser && (
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || 'User'}</p>
-                  {isPremium && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                      <Crown size={10} className="text-yellow-500" />
-                      Premium
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{authUser.email || 'user@homelyserv.com'}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
-          {!sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              {t.overview}
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">
-              •
-            </div>
-          )}
-
-          {menuItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                isActive(item.path)
-                  ? isTeal 
-                    ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600'
-                    : 'bg-red-50 text-red-600'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white'
-              } ${sidebarCollapsed ? 'justify-center' : ''}`}
-            >
-              <item.icon size={20} className={isActive(item.path) ? (isTeal ? 'text-teal-600' : 'text-red-600') : ''} />
-              {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  {item.label}
-                </div>
-              )}
-              {isActive(item.path) && !sidebarCollapsed && (
-                <div className={`ml-auto w-1.5 h-8 ${isTeal ? 'bg-teal-600' : 'bg-red-600'} rounded-full`}></div>
-              )}
-              {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
-                <div className="ml-auto">
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
-                </div>
-              )}
-            </Link>
-          ))}
-
-          <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
-
-          <Link
-            to={settingsPath}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <Settings size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.settings}
-              </div>
-            )}
-          </Link>
-          <Link
-            to="/help"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-800 dark:text-white group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <HelpCircle size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.help}
-              </div>
-            )}
-          </Link>
-          <button
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isTeal ? 'text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30' : 'text-red-600 hover:bg-red-50'} group ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
-            {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
-              </div>
-            )}
-          </button>
-        </nav>
-      </aside>
-    </>
-  );
-};
-
-
 // Main Help Component - ENHANCED
 const Help = () => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
-  const [language, setLanguage] = useState('en');
+  const { i18n } = useTranslation();
+  const language = i18n.language === 'ar' ? 'ar' : 'en';
+
   const [userRole, setUserRole] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -411,6 +120,8 @@ const Help = () => {
       connectLegal: 'Contact & Legal',
       signInRequired: 'Sign in to access Messages & Complaints',
       signIn: 'Sign in',
+      messages: 'Messages',
+      complaints: 'Complaints',
       back: 'Back',
       terms: 'Terms & Conditions',
       privacy: 'Privacy Policy',
@@ -470,6 +181,8 @@ const Help = () => {
       connectLegal: 'التواصل والقوانين',
       signInRequired: 'سجل الدخول للوصول إلى الرسائل والشكاوى',
       signIn: 'تسجيل الدخول',
+      messages: 'الرسائل',
+      complaints: 'الشكاوى',
       back: 'رجوع',
       terms: 'الشروط والأحكام',
       privacy: 'سياسة الخصوصية',
@@ -481,45 +194,14 @@ const Help = () => {
   const t = translations[language] || translations.en;
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    
     // Get user role from authStore
     if (authUser) {
       setUserRole(authUser.role || null);
     }
-
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState) {
-      setSidebarCollapsed(JSON.parse(sidebarState));
-    }
   }, [authUser]);
 
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-    localStorage.setItem('sidebar_collapsed', JSON.stringify(!sidebarCollapsed));
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
+    changeLanguageGlobal(language === 'en' ? 'ar' : 'en');
   };
 
   const toggleFaq = (index) => {
@@ -734,62 +416,14 @@ const Help = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      {/* Sidebar */}
-      <HelpSidebar
-        language={language}
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        authUser={authUser}
-        handleLogout={handleLogout}
-        userRole={userRole}
+    <DashboardLayout>
+      <DashboardHeader
+        title={t.title}
+        notificationUserId={authUser?.id || authUser?.email}
       />
 
-      {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } ml-0`}>
-        {/* Top Header Bar */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors lg:hidden"
-              >
-                <Menu size={20} />
-              </button>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors relative">
-                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
-              </button>
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Globe size={16} />
-                {t.languageToggle}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <div className="p-4 md:p-6">
-          {/* Page Header */}
-          <div className={`bg-gradient-to-r ${isTeal ? 'from-teal-600 to-teal-700' : 'from-red-600 to-red-700'} rounded-2xl p-6 mb-6 text-white`}>
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className={`${isTeal ? 'text-teal-100' : 'text-red-100'} mt-1`}>{t.subtitle}</p>
-            </div>
-          </div>
+      <div className="p-4 md:p-6">
+        <RolePageHeader title={t.title} subtitle={t.subtitle} />
 
           {/* Search */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 mb-6">
@@ -1042,8 +676,7 @@ const Help = () => {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

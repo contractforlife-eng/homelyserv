@@ -59,7 +59,19 @@ const DashboardHeader = ({
 
   const profileImage = userProfileImage || authUser?.profileImage;
   const fullName = authUser?.fullName || 'User';
-  const isAdmin = variant === 'admin';
+  // Role-aware variant: 'admin' is explicit (dark), otherwise derive from the
+  // authenticated role so Worker gets the red identity and Employer the teal one.
+  const effectiveVariant =
+    variant === 'admin'
+      ? 'admin'
+      : authUser?.role === 'EMPLOYER'
+        ? 'employer'
+        : authUser?.role === 'ADMIN'
+          ? 'admin'
+          : 'worker';
+  const isAdmin = effectiveVariant === 'admin';
+  const isEmployer = effectiveVariant === 'employer';
+  const isWorker = effectiveVariant === 'worker';
   
   // Use centralized display name formatter
   const displayName = getDisplayName(authUser);
@@ -79,7 +91,9 @@ const DashboardHeader = ({
             className={`p-2 rounded-lg transition-colors lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center ${
               isAdmin
                 ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                : isWorker
+                  ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300'
+                  : 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-600 dark:text-gray-300'
             }`}
           >
             <Menu size={20} />
@@ -98,7 +112,9 @@ const DashboardHeader = ({
             <div className={`w-8 h-8 rounded-full overflow-hidden border-2 relative flex-shrink-0 ${
               isAdmin
                 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-200'
-                : 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-200 dark:border-teal-800'
+                : isWorker
+                  ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-200 dark:border-red-800'
+                  : 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-200 dark:border-teal-800'
             }`}>
               {profileImage ? (
                 <img
@@ -151,7 +167,9 @@ const DashboardHeader = ({
               className={`px-2 sm:px-3 py-1.5 border rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center gap-2 min-h-[40px] ${
                 isAdmin
                   ? 'border-yellow-500/20 text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  : isWorker
+                    ? 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600'
               }`}
             >
               <Globe size={16} />

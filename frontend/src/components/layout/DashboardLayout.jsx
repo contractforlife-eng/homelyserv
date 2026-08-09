@@ -87,6 +87,23 @@ const DashboardLayout = ({
     navigate('/login');
   };
 
+  // Determine which sidebar to render based on user role
+  const SidebarComponent = authUser?.role === 'EMPLOYER' ? EmployerSidebar : authUser?.role === 'ADMIN' ? AdminSidebar : WorkerSidebar;
+
+  // Provide layout state to children (DashboardHeader and page content).
+  // All hooks must be called unconditionally BEFORE any conditional return so
+  // the hook order stays identical across loading/auth render transitions.
+  const contextValue = useMemo(() => ({
+    language,
+    toggleLanguage,
+    toggleMobileMenu,
+    toggleSidebar,
+    sidebarCollapsed,
+    mobileMenuOpen,
+    authUser,
+    handleLogout,
+  }), [language, sidebarCollapsed, mobileMenuOpen, authUser]);
+
   if (authLoading) {
     return (
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -101,21 +118,6 @@ const DashboardLayout = ({
   if (!authUser) {
     return null;
   }
-
-  // Determine which sidebar to render based on user role
-  const SidebarComponent = authUser.role === 'EMPLOYER' ? EmployerSidebar : authUser.role === 'ADMIN' ? AdminSidebar : WorkerSidebar;
-
-  // Provide layout state to children (DashboardHeader and page content)
-  const contextValue = useMemo(() => ({
-    language,
-    toggleLanguage,
-    toggleMobileMenu,
-    toggleSidebar,
-    sidebarCollapsed,
-    mobileMenuOpen,
-    authUser,
-    handleLogout,
-  }), [language, sidebarCollapsed, mobileMenuOpen, authUser]);
 
   return (
     <DashboardContext.Provider value={contextValue}>

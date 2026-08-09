@@ -448,6 +448,52 @@ model Offer {
   Worker   WorkerProfile @relation("WorkerOffers", fields: [workerId], references: [id])
 }
 
+// ============================================================
+// JOB POST — Phase 1 Job Marketplace (no applications yet).
+// employerId is always the authenticated Employer User.id (set
+// server-side, never trusted from the request body).
+// Status values: open | paused | closed. Workers only ever see
+// `open` posts; the owning employer can see/manage their own in
+// any status. isUrgent/isFeatured are informational flags only in
+// Phase 1 (no paid/boosted behavior).
+// ============================================================
+model JobPost {
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  employerId         String    @db.ObjectId
+
+  jobTitle           String
+  description        String?
+  location           String?
+
+  salaryMin          Float?
+  salaryMax          Float?
+  employmentType     String    @default("full-time")
+  contractType       String?
+
+  workingHoursPerDay Float?
+  workingDaysPerWeek Float?
+  weeklyDaysOff      String?
+  workStartTime      String?
+  workEndTime        String?
+  employmentStartDate DateTime?
+  deadline           DateTime?
+
+  requirements       String[]
+  benefits           String[]
+
+  isUrgent           Boolean   @default(false)
+  isFeatured         Boolean   @default(false)
+  status             String    @default("open")
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([employerId, status])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("job_posts")
+}
+
 model Subscription {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 

@@ -9,6 +9,73 @@ const SUBSCRIPTION_PRICES = {
   WORKER: 100   // EGP per month
 };
 
+// Max number of records kept in the localStorage mirror (excluding the current user).
+const MAX_MIRROR_ENTRIES = 40;
+// Drop non-active records whose expiry/update is older than this window.
+const PRUNE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Keep only the small fields needed to mirror premium status locally. Never
+// store full payment objects, receipts, transaction ids or history here.
+const compactRecord = (record) => {
+  if (!record || typeof record !== 'object') return record;
+  const clean = {};
+  ['userId', 'userEmail', 'userRole', 'active', 'plan', 'startedAt', 'expiresAt', 'price', 'paymentMethod', 'source', 'updatedAt'].forEach((k) => {
+    if (record[k] !== undefined && record[k] !== null) clean[k] = record[k];
+  });
+  return clean;
+};
+
+// Safely persist the mirror: compact every record, deduplicate by userId,
+// prune old inactive/expired entries and cap the total size. If the write
+// fails (e.g. QuotaExceededError) it degrades to a single current-user record
+// or silently drops the mirror — the backend stays the source of truth.
+const persistSubscriptions = (subscriptions) => {
+  const currentUserId = useAuthStore.getState().user?.id || useAuthStore.getState().user?.email || null;
+  try {
+    const compacted = {};
+    Object.keys(subscriptions || {}).forEach((uid) => {
+      compacted[uid] = compactRecord(subscriptions[uid]);
+    });
+
+    const order = Object.keys(compacted).sort((a, b) => {
+      const ta = compacted[a]?.updatedAt || compacted[a]?.startedAt || '';
+      const tb = compacted[b]?.updatedAt || compacted[b]?.startedAt || '';
+      return String(tb).localeCompare(String(ta));
+    });
+
+    const cutoff = Date.now() - PRUNE_WINDOW_MS;
+    const pruned = {};
+    let kept = 0;
+    order.forEach((uid) => {
+      const rec = compacted[uid];
+      if (uid === currentUserId) {
+        pruned[uid] = rec;
+        return;
+      }
+      if (kept >= MAX_MIRROR_ENTRIES) return;
+      const expires = rec?.expiresAt ? new Date(rec.expiresAt).getTime() : 0;
+      const updated = rec?.updatedAt ? new Date(rec.updatedAt).getTime() : 0;
+      if (!rec?.active && ((expires && expires < cutoff) || (updated && updated < cutoff))) return;
+      pruned[uid] = rec;
+      kept += 1;
+    });
+
+    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(pruned));
+    return true;
+  } catch (error) {
+    try {
+      if (currentUserId && subscriptions && subscriptions[currentUserId]) {
+        localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify({ [currentUserId]: compactRecord(subscriptions[currentUserId]) }));
+      } else {
+        localStorage.removeItem(SUBSCRIPTION_KEY);
+      }
+    } catch (fallbackError) {
+      console.warn('[subscription] localStorage mirror unavailable; backend remains source of truth', fallbackError);
+    }
+    return false;
+  }
+};
+
 /**
  * Get all subscriptions
  */
@@ -83,7 +150,7 @@ export const createSubscription = (userId, userEmail, userRole, userFullName) =>
     };
     
     subscriptions[userId] = subscription;
-    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+    persistSubscriptions(subscriptions);
     
     // Update all storage locations with premium status
     updateAllUserData(userEmail, true, userId, userRole, userFullName);
@@ -123,7 +190,7 @@ export const applyBackendSubscription = (userId, userEmail, backendSubscription)
       source: 'backend',
       updatedAt: new Date().toISOString()
     };
-    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+    persistSubscriptions(subscriptions);
 
     // Reflect premium flag on the session user
     const currentUser = useAuthStore.getState().user;
@@ -150,7 +217,7 @@ export const cancelSubscription = (userId) => {
     if (subscriptions[userId]) {
       subscriptions[userId].active = false;
       subscriptions[userId].updatedAt = new Date().toISOString();
-      localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+      persistSubscriptions(subscriptions);
       
       // Update user profile
       const user = subscriptions[userId];
@@ -459,7 +526,7 @@ export const extendSubscription = (userId, days) => {
     subscriptions[userId].active = true;
     subscriptions[userId].updatedAt = now.toISOString();
     
-    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+    persistSubscriptions(subscriptions);
     
     // Sync premium status
     const user = subscriptions[userId];
@@ -487,7 +554,7 @@ export const updateSubscriptionPaymentMethod = (userId, paymentMethod) => {
     subscriptions[userId].paymentMethod = paymentMethod;
     subscriptions[userId].updatedAt = new Date().toISOString();
     
-    localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscriptions));
+    persistSubscriptions(subscriptions);
     console.log(`✅ Updated payment method for user: ${userId}`);
     return true;
   } catch (error) {

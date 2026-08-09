@@ -28,6 +28,7 @@ import WorkerComplaints from './pages/WorkerComplaints';
 import WorkerMessages from './pages/WorkerMessages';
 import WorkerSettings from './pages/WorkerSettings';
 import WorkerPayment from './pages/WorkerPayment';
+import WorkerJobs from './pages/WorkerJobs';
 
 // Employer Pages
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -39,6 +40,8 @@ import EmployerProfile from './pages/EmployerProfile';
 import EmployerComplaints from './pages/EmployerComplaints';
 import EmployerMessages from './pages/EmployerMessages';
 import EmployerSettings from './pages/EmployerSettings';
+import EmployerJobs from './pages/EmployerJobs';
+import EmployerPostJob from './pages/EmployerPostJob';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
 import PaymentCommission from './pages/PaymentCommission';
@@ -282,6 +285,14 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/worker-jobs" 
+        element={
+          <ProtectedRoute requiredRole="WORKER">
+            <WorkerJobs />
+          </ProtectedRoute>
+        } 
+      />
 
       {/* ========== EMPLOYER ROUTES ========== */}
       <Route 
@@ -385,6 +396,22 @@ function App() {
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <EmployerCreateOffer />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/employer-post-job" 
+        element={
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <EmployerPostJob />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/employer-jobs" 
+        element={
+          <ProtectedRoute requiredRole="EMPLOYER">
+            <EmployerJobs />
           </ProtectedRoute>
         } 
       />

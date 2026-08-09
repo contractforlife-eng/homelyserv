@@ -7,6 +7,7 @@ import hireService from '../services/hireService';
 import employerEarningService from '../services/employerEarningService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import RolePageHeader from '../components/common/RolePageHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
 import {
   User,
@@ -670,18 +671,17 @@ const MyHires = () => {
       />
 
       <div className="p-4 md:p-6 space-y-6">
-        {/* Page heading + summary strip */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t.title}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t.subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <Users size={16} className="text-teal-600" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">{stats.total}</span>
-            <span>{t.hiresWord}</span>
-          </div>
-        </div>
+        <RolePageHeader
+          title={t.title}
+          subtitle={t.subtitle}
+          actions={
+            <div className="flex items-center gap-2 text-sm text-teal-100">
+              <Users size={16} className="flex-shrink-0" />
+              <span className="font-medium text-white">{stats.total}</span>
+              <span>{t.hiresWord}</span>
+            </div>
+          }
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

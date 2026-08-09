@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
-  X
+  X,
+  PlusCircle,
+  ClipboardList
 } from 'lucide-react';
 const EmployerSidebar = ({
   language,
@@ -47,6 +49,8 @@ const EmployerSidebar = ({
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       myHires: 'My Hires',
+      postJob: 'Post a Job',
+      myJobs: 'My Job Posts',
       search: 'Search Workers',
       messages: 'Messages',
       complaints: 'Complaints',
@@ -61,6 +65,8 @@ const EmployerSidebar = ({
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي الشخصي',
       myHires: 'توظيفاتي',
+      postJob: 'نشر وظيفة',
+      myJobs: 'وظائفي',
       search: 'البحث عن عمال',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
@@ -77,6 +83,8 @@ const EmployerSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
+    { id: 'postJob', label: t.postJob, icon: PlusCircle, path: '/employer-post-job' },
+    { id: 'myJobs', label: t.myJobs, icon: ClipboardList, path: '/employer-jobs' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
     { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
     { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
@@ -87,6 +95,10 @@ const EmployerSidebar = ({
   ];
 
   const isActive = (path) => {
+    // Keep "My Job Posts" highlighted while viewing an owned job's detail page
+    if (path === '/employer-jobs' && location.pathname.startsWith('/job/')) {
+      return true;
+    }
     return location.pathname === path;
   };
 

@@ -1,29 +1,116 @@
 // src/pages/EmployerPostJob.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import RolePageHeader from '../components/common/RolePageHeader';
+import jobService from '../services/jobService';
+
+const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance'];
+
+const translations = {
+  en: {
+    title: 'Post a Job',
+    editTitle: 'Edit Job',
+    subtitle: 'Post a job and reach the right workers',
+    jobTitle: 'Job Title',
+    jobTitlePlaceholder: 'e.g., Senior Nanny',
+    location: 'Location',
+    locationPlaceholder: 'e.g., Cairo, Egypt',
+    employmentType: 'Employment Type',
+    salaryMin: 'Min Salary (EGP)',
+    salaryMinPlaceholder: 'e.g., 3000',
+    salaryMax: 'Max Salary (EGP)',
+    salaryMaxPlaceholder: 'e.g., 4500',
+    jobDescription: 'Job Description',
+    descriptionPlaceholder: 'Describe the job responsibilities and requirements...',
+    requirements: 'Requirements',
+    addRequirementPlaceholder: 'Add a requirement...',
+    add: 'Add',
+    benefits: 'Benefits',
+    addBenefitPlaceholder: 'Add a benefit...',
+    contractType: 'Contract Type',
+    workSchedule: 'Work Schedule',
+    workSchedulePlaceholder: 'e.g., Sunday - Thursday, 9AM - 5PM',
+    startDate: 'Start Date',
+    deadline: 'Application Deadline',
+    isUrgent: 'Mark as Urgent',
+    isFeatured: 'Feature this job',
+    postJob: 'Post Job',
+    saveChanges: 'Save Changes',
+    cancel: 'Cancel',
+    posting: 'Posting...',
+    saving: 'Saving...',
+    success: 'Job posted successfully!',
+    editSuccess: 'Job updated successfully!',
+    error: 'Failed to post job. Please try again.',
+    editError: 'Failed to update job. Please try again.',
+    validateMinSalary: 'Min salary must be 0 or more',
+    validateMaxSalary: 'Max salary must be 0 or more',
+    validateSalaryRange: 'Max salary must be greater than or equal to min salary',
+  },
+  ar: {
+    title: 'نشر وظيفة',
+    editTitle: 'تعديل الوظيفة',
+    subtitle: 'انشر وظيفة واعثر على العمال المناسبين',
+    jobTitle: 'المسمى الوظيفي',
+    jobTitlePlaceholder: 'مثال: مربية أطفال أول',
+    location: 'الموقع',
+    locationPlaceholder: 'مثال: القاهرة، مصر',
+    employmentType: 'نوع التوظيف',
+    salaryMin: 'الحد الأدنى للراتب (جنيه)',
+    salaryMinPlaceholder: 'مثال: 3000',
+    salaryMax: 'الحد الأقصى للراتب (جنيه)',
+    salaryMaxPlaceholder: 'مثال: 4500',
+    jobDescription: 'وصف الوظيفة',
+    descriptionPlaceholder: 'صف مسؤوليات ومتطلبات الوظيفة...',
+    requirements: 'المتطلبات',
+    addRequirementPlaceholder: 'أضف متطلباً...',
+    add: 'إضافة',
+    benefits: 'المزايا',
+    addBenefitPlaceholder: 'أضف ميزة...',
+    contractType: 'نوع العقد',
+    workSchedule: 'جدول العمل',
+    workSchedulePlaceholder: 'مثال: الأحد - الخميس، 9ص - 5م',
+    startDate: 'تاريخ البدء',
+    deadline: 'الموعد النهائي للتقديم',
+    isUrgent: 'وضع علامة عاجل',
+    isFeatured: 'تمييز هذه الوظيفة',
+    postJob: 'نشر الوظيفة',
+    saveChanges: 'حفظ التغييرات',
+    cancel: 'إلغاء',
+    posting: 'جارٍ النشر...',
+    saving: 'جارٍ الحفظ...',
+    success: 'تم نشر الوظيفة بنجاح!',
+    editSuccess: 'تم تحديث الوظيفة بنجاح!',
+    error: 'فشل نشر الوظيفة. حاول مرة أخرى.',
+    editError: 'فشل تحديث الوظيفة. حاول مرة أخرى.',
+    validateMinSalary: 'الحد الأدنى للراتب يجب أن يكون 0 أو أكثر',
+    validateMaxSalary: 'الحد الأقصى للراتب يجب أن يكون 0 أو أكثر',
+    validateSalaryRange: 'الحد الأقصى للراتب يجب أن يكون أكبر من أو يساوي الحد الأدنى',
+  },
+};
 
 const EmployerPostJob = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const dashboard = useDashboard();
+  const t = translations[dashboard.language] || translations.en;
+  const isArabic = dashboard.language === 'ar';
 
-  const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/login');
-  };
+  const editJob = location.state?.editJob || null;
+
   const [formData, setFormData] = useState({
     title: '',
-    company: '',
     location: '',
     salaryMin: '',
     salaryMax: '',
-    type: 'Full Time',
+    type: 'full-time',
     description: '',
     requirements: [],
     benefits: [],
@@ -36,6 +123,35 @@ const EmployerPostJob = () => {
   });
   const [requirement, setRequirement] = useState('');
   const [benefit, setBenefit] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogout = () => {
+    useAuthStore.getState().logout();
+    navigate('/login');
+  };
+
+  // Prefill form when editing an existing job
+  useEffect(() => {
+    if (editJob) {
+      setFormData({
+        title: editJob.jobTitle || '',
+        location: editJob.location || '',
+        salaryMin: editJob.salaryMin !== null && editJob.salaryMin !== undefined ? String(editJob.salaryMin) : '',
+        salaryMax: editJob.salaryMax !== null && editJob.salaryMax !== undefined ? String(editJob.salaryMax) : '',
+        type: editJob.employmentType || 'full-time',
+        description: editJob.description || '',
+        requirements: editJob.requirements || [],
+        benefits: editJob.benefits || [],
+        contractType: editJob.contractType || 'Permanent',
+        workSchedule: editJob.weeklyDaysOff || '',
+        startDate: editJob.employmentStartDate ? String(editJob.employmentStartDate).slice(0, 10) : '',
+        deadline: editJob.deadline ? String(editJob.deadline).slice(0, 10) : '',
+        isUrgent: Boolean(editJob.isUrgent),
+        isFeatured: Boolean(editJob.isFeatured)
+      });
+    }
+  }, [editJob]);
 
   // Check authentication and redirect if needed
   useEffect(() => {
@@ -52,36 +168,67 @@ const EmployerPostJob = () => {
     }
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const newOffer = {
-      id: `OFF-${Date.now()}`,
-      ...formData,
-      salary: { min: parseInt(formData.salaryMin), max: parseInt(formData.salaryMax) },
-      postedAt: new Date().toISOString(),
-      applicants: 0,
-      matchScore: 0,
-      status: 'new',
-      isSaved: false,
-      isApplied: false,
-      employerId: authUser?.id || authUser?.email,
-      employerEmail: authUser?.email,
-      employerName: authUser?.fullName || 'Employer',
-      companyInfo: {
-        industry: 'Home Services',
-        size: '10-50 employees',
-        description: 'A trusted home services provider'
-      }
+  const buildPayload = () => {
+    const payload = {
+      jobTitle: formData.title,
+      location: formData.location || null,
+      salaryMin: formData.salaryMin !== '' ? parseFloat(formData.salaryMin) : null,
+      salaryMax: formData.salaryMax !== '' ? parseFloat(formData.salaryMax) : null,
+      employmentType: EMPLOYMENT_TYPES.includes(formData.type) ? formData.type : 'full-time',
+      contractType: formData.contractType || null,
+      description: formData.description || null,
+      requirements: formData.requirements,
+      benefits: formData.benefits,
+      weeklyDaysOff: formData.workSchedule || null,
+      employmentStartDate: formData.startDate || null,
+      deadline: formData.deadline || null,
+      isUrgent: Boolean(formData.isUrgent),
+      isFeatured: Boolean(formData.isFeatured)
     };
-    
-    // Save to central offers
-    const centralOffers = JSON.parse(localStorage.getItem('homelyserv_offers') || '[]');
-    centralOffers.push(newOffer);
-    localStorage.setItem('homelyserv_offers', JSON.stringify(centralOffers));
-    
-    alert('Job posted successfully!');
-    navigate('/employer-dashboard');
+    return payload;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const salaryMin = formData.salaryMin !== '' ? parseFloat(formData.salaryMin) : null;
+    const salaryMax = formData.salaryMax !== '' ? parseFloat(formData.salaryMax) : null;
+
+    if (salaryMin !== null && salaryMin < 0) {
+      setError(t.validateMinSalary);
+      return;
+    }
+    if (salaryMax !== null && salaryMax < 0) {
+      setError(t.validateMaxSalary);
+      return;
+    }
+    if (salaryMin !== null && salaryMax !== null && salaryMax < salaryMin) {
+      setError(t.validateSalaryRange);
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const payload = buildPayload();
+
+      if (editJob) {
+        await jobService.updateJob(editJob.id, payload);
+        alert(t.editSuccess);
+      } else {
+        await jobService.createJob(payload);
+        alert(t.success);
+      }
+
+      navigate('/employer-jobs');
+    } catch (submitError) {
+      console.error('Job submit error:', submitError);
+      const serverMessage = submitError.response?.data?.message;
+      setError(serverMessage || (editJob ? t.editError : t.error));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -144,125 +291,119 @@ const EmployerPostJob = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title="Post a Job"
+        title={editJob ? t.editTitle : t.title}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Post a Job</h1>
-        
+        <RolePageHeader title={editJob ? t.editTitle : t.title} subtitle={t.subtitle} />
+
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Title</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.jobTitle}</label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
                 required
+                maxLength={120}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., Senior Nanny"
+                placeholder={t.jobTitlePlaceholder}
               />
             </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., Elite Family Services"
-              />
-            </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.location}</label>
               <input
                 type="text"
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
-                required
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., Cairo, Egypt"
+                placeholder={t.locationPlaceholder}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employment Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.employmentType}</label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               >
-                <option value="Full Time">Full Time</option>
-                <option value="Part Time">Part Time</option>
-                <option value="Contract">Contract</option>
-                <option value="Freelance">Freelance</option>
+                <option value="full-time">{isArabic ? 'دوام كامل' : 'Full Time'}</option>
+                <option value="part-time">{isArabic ? 'دوام جزئي' : 'Part Time'}</option>
+                <option value="contract">{isArabic ? 'عقد' : 'Contract'}</option>
+                <option value="freelance">{isArabic ? 'حر' : 'Freelance'}</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Salary (EGP)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.salaryMin}</label>
               <input
                 type="number"
                 name="salaryMin"
                 value={formData.salaryMin}
                 onChange={handleChange}
-                required
+                min="0"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., 3000"
+                placeholder={t.salaryMinPlaceholder}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Salary (EGP)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.salaryMax}</label>
               <input
                 type="number"
                 name="salaryMax"
                 value={formData.salaryMax}
                 onChange={handleChange}
-                required
+                min="0"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., 4500"
+                placeholder={t.salaryMaxPlaceholder}
               />
             </div>
-            
+
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.jobDescription}</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                required
                 rows="4"
+                maxLength={5000}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Describe the job responsibilities and requirements..."
+                placeholder={t.descriptionPlaceholder}
               />
             </div>
-            
+
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requirements</label>
-              <div className="flex gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.requirements}</label>
+              <div className="flex gap-2 mb-2 flex-wrap">
                 <input
                   type="text"
                   value={requirement}
                   onChange={(e) => setRequirement(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder="Add a requirement..."
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRequirement(); } }}
+                  className="flex-1 min-w-[160px] px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder={t.addRequirementPlaceholder}
                 />
                 <button
                   type="button"
                   onClick={addRequirement}
                   className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
                 >
-                  Add
+                  {t.add}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -280,23 +421,24 @@ const EmployerPostJob = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Benefits</label>
-              <div className="flex gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.benefits}</label>
+              <div className="flex gap-2 mb-2 flex-wrap">
                 <input
                   type="text"
                   value={benefit}
                   onChange={(e) => setBenefit(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder="Add a benefit..."
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBenefit(); } }}
+                  className="flex-1 min-w-[160px] px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder={t.addBenefitPlaceholder}
                 />
                 <button
                   type="button"
                   onClick={addBenefit}
                   className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
                 >
-                  Add
+                  {t.add}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -314,9 +456,9 @@ const EmployerPostJob = () => {
                 ))}
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contract Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.contractType}</label>
               <select
                 name="contractType"
                 value={formData.contractType}
@@ -328,21 +470,22 @@ const EmployerPostJob = () => {
                 <option value="Temporary">Temporary</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Work Schedule</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.workSchedule}</label>
               <input
                 type="text"
                 name="workSchedule"
                 value={formData.workSchedule}
                 onChange={handleChange}
+                maxLength={100}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., Sunday - Thursday, 9AM - 5PM"
+                placeholder={t.workSchedulePlaceholder}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.startDate}</label>
               <input
                 type="date"
                 name="startDate"
@@ -351,9 +494,9 @@ const EmployerPostJob = () => {
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application Deadline</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.deadline}</label>
               <input
                 type="date"
                 name="deadline"
@@ -362,8 +505,8 @@ const EmployerPostJob = () => {
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               />
             </div>
-            
-            <div className="md:col-span-2 flex gap-6">
+
+            <div className="md:col-span-2 flex gap-6 flex-wrap">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -372,7 +515,7 @@ const EmployerPostJob = () => {
                   onChange={handleChange}
                   className="w-4 h-4 text-teal-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Mark as Urgent</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t.isUrgent}</span>
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -382,28 +525,29 @@ const EmployerPostJob = () => {
                   onChange={handleChange}
                   className="w-4 h-4 text-teal-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Feature this job</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t.isFeatured}</span>
               </label>
             </div>
           </div>
-          
-          <div className="mt-6 flex gap-3">
+
+          <div className="mt-6 flex gap-3 flex-wrap">
             <button
               type="submit"
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+              disabled={submitting}
+              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Post Job
+              {submitting ? (editJob ? t.saving : t.posting) : (editJob ? t.saveChanges : t.postJob)}
             </button>
             <button
               type="button"
-              onClick={() => navigate('/employer-dashboard')}
+              onClick={() => navigate('/employer-jobs')}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
             >
-              Cancel
+              {t.cancel}
             </button>
           </div>
         </form>
-        </div>    
+        </div>
       </div>
     </DashboardLayout>
   );

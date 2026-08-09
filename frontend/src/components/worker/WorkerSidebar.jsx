@@ -8,6 +8,7 @@ import {
   Home,
   User,
   Briefcase,
+  Search,
   MessageCircle,
   Settings,
   HelpCircle,
@@ -47,6 +48,7 @@ const WorkerSidebar = ({
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       myOffers: 'My Offers',
+      findJobs: 'Find Jobs',
       messages: 'Messages',
       complaints: 'Complaints',
       payment: 'Payment',
@@ -60,6 +62,7 @@ const WorkerSidebar = ({
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي الشخصي',
       myOffers: 'عروضي',
+      findJobs: 'البحث عن وظائف',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
       payment: 'الدفع',
@@ -75,6 +78,7 @@ const WorkerSidebar = ({
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
+    { id: 'findJobs', label: t.findJobs, icon: Search, path: '/worker-jobs' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
@@ -84,6 +88,10 @@ const WorkerSidebar = ({
   ];
 
   const isActive = (path) => {
+    // Keep "Find Jobs" highlighted while viewing a job's detail page
+    if (path === '/worker-jobs' && location.pathname.startsWith('/job/')) {
+      return true;
+    }
     return location.pathname === path;
   };
 
