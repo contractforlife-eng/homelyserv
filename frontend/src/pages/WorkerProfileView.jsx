@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { isUserPremium } from '../utils/subscriptionService';
 import api from '../utils/api';
 import employerService from '../services/employerService';
+import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
@@ -69,6 +69,8 @@ const WorkerProfileView = () => {
       availability: 'Availability',
       available: 'Available',
       notAvailable: 'Not Available',
+      premiumLabel: 'Premium',
+      activelyLooking: 'Actively Looking',
       contactInfo: 'Contact Information',
       email: 'Email',
       phone: 'Phone',
@@ -105,6 +107,8 @@ const WorkerProfileView = () => {
       availability: 'التوفر',
       available: 'متاح',
       notAvailable: 'غير متاح',
+      premiumLabel: 'مميز',
+      activelyLooking: 'أبحث بنشاط',
       contactInfo: 'معلومات الاتصال',
       email: 'البريد الإلكتروني',
       phone: 'الهاتف',
@@ -332,7 +336,7 @@ const WorkerProfileView = () => {
       <DashboardHeader
         title={t.title}
         notificationUserId={authUser?.id || authUser?.email}
-        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        isPremium={false}
       />
 
         <div className="p-4 md:p-6">
@@ -361,6 +365,10 @@ const WorkerProfileView = () => {
               </div>
               <div className="flex-1 text-center md:text-left">
                 <h1 className="text-2xl font-bold">{worker.fullName}</h1>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-1">
+                  {worker.isPremium && <PremiumBadge label={t.premiumLabel} size="md" />}
+                  {worker.activelyLooking && <ActivelyLookingBadge label={t.activelyLooking} size="md" />}
+                </div>
                 <p className="text-teal-100">{getJobLabel(worker.desiredJob)}</p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-teal-100">
                   <span className="flex items-center gap-1">
@@ -437,7 +445,9 @@ const WorkerProfileView = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t.availability}</span>
-                    <span className="font-medium text-green-600">{t.available}</span>
+                    <span className={`font-medium ${worker.availability === 'available' ? 'text-green-600' : 'text-gray-500'}`}>
+                      {worker.availability === 'available' ? t.available : t.notAvailable}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t.memberSince}</span>

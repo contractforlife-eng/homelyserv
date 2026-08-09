@@ -3,8 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS, getJobLabel as getJobLabelFromConstants } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
-import { isUserPremium } from '../utils/subscriptionService';
 import { useDashboard } from '../components/layout/DashboardContext';
+import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -127,6 +127,7 @@ const EmployerSearch = () => {
       availability: 'Availability',
       available: 'Available',
       unavailable: 'Unavailable',
+      activelyLooking: 'Actively Looking',
       maxHourlyRate: 'Max Hourly Rate (EGP)',
       language: 'Language',
       sortBy: 'Sort By',
@@ -186,6 +187,7 @@ const EmployerSearch = () => {
       availability: 'التوفر',
       available: 'متاح',
       unavailable: 'غير متاح',
+      activelyLooking: 'أبحث بنشاط',
       maxHourlyRate: 'الحد الأقصى للسعر (جنيه)',
       language: 'اللغة',
       sortBy: 'ترتيب حسب',
@@ -299,7 +301,6 @@ const EmployerSearch = () => {
       const mergedWorkers = workers.map(worker => {
         const profile = profiles[worker.email] || {};
         const workerId = worker.id || worker._id || worker.email;
-        const isPremium = isUserPremium(workerId);
         const rawProfileImage = profile.profileImage || worker.profileImage || '';
 
         return {
@@ -321,7 +322,10 @@ const EmployerSearch = () => {
           available: profile.available !== undefined ? profile.available : true,
           role: 'WORKER',
           languages: profile.languages || worker.languages || ['english'],
-          isPremium: isPremium
+          // Fallback data is NOT a premium authority: never derive premium
+          // entitlement from localStorage.
+          isPremium: false,
+          activelyLooking: false
         };
       });
 
@@ -411,6 +415,13 @@ const EmployerSearch = () => {
 
     setTimeout(() => {
       let results = [...allWorkers];
+
+      // AVAILABILITY HARD FILTER (defense-in-depth): the backend already
+      // excludes Not Available workers from search results. This unconditional
+      // filter guarantees no Not Available worker can ever render — including
+      // via the localStorage fallback path — regardless of the availability
+      // advanced filter or sort mode.
+      results = results.filter(worker => worker.available !== false);
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
@@ -536,7 +547,7 @@ const EmployerSearch = () => {
       <DashboardHeader
         title={t.title}
         notificationUserId={authUser?.id || authUser?.email}
-        isPremium={isUserPremium(authUser?.id || authUser?.email)}
+        isPremium={searchLimitStatus.isPremium}
         rightContent={
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'compact' : 'grid')}
@@ -564,7 +575,7 @@ const EmployerSearch = () => {
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
-                  {isUserPremium(authUser?.id || authUser?.email) && (
+                  {searchLimitStatus.isPremium && (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
                       <Crown size={10} className="text-white" />
                     </div>
@@ -573,11 +584,11 @@ const EmployerSearch = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
-                    {isUserPremium(authUser?.id || authUser?.email) && (
+                    {searchLimitStatus.isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
-                        <Crown size={12} className="text-yellow-300" />
-                        Premium Verified
-                      </span>
+                      <Crown size={12} className="text-yellow-300" />
+                      Premium
+                    </span>
                     )}
                   </div>
                   <p className="text-teal-100 mt-1">{t.subtitle}</p>
@@ -846,12 +857,10 @@ const EmployerSearch = () => {
                                 <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
                                   {worker.fullName}
                                 </h4>
-                                {worker.isPremium && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
-                                    <Crown size={10} className="text-yellow-500" />
-                                    Premium
-                                  </span>
-                                )}
+                                <div className="flex flex-wrap items-center gap-1">
+                                {worker.isPremium && <PremiumBadge label="Premium" size="sm" />}
+                                {worker.activelyLooking && <ActivelyLookingBadge label={t.activelyLooking} size="sm" />}
+                              </div>
                               </div>
                               <button
                                 onClick={() => toggleSaveWorker(worker.id || worker.email)}

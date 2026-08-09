@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { isUserPremium } from '../utils/subscriptionService';
+import { fetchSubscriptionStatus } from '../services/paymentService';
+import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -70,16 +71,32 @@ const WorkerDashboard = () => {
     completedOffers: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
 
   const dashboard = useDashboard();
 
-  const isPremium = () => {
-    const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
+  const userIsPremium = subscriptionStatus.isPremium;
 
-  const userIsPremium = isPremium();
+  // Backend subscription = the ONLY source of truth for premium entitlement.
+  useEffect(() => {
+    let cancelled = false;
+    const loadPremium = async () => {
+      try {
+        const data = await fetchSubscriptionStatus();
+        if (!cancelled && data?.success) {
+          setSubscriptionStatus({
+            isPremium: data.isPremium === true,
+            subscription: data.subscription || null
+          });
+        }
+      } catch (error) {
+        // Non-fatal: premium defaults to false when the check fails.
+        console.error('Failed to load subscription status:', error);
+      }
+    };
+    if (authUser) loadPremium();
+    return () => { cancelled = true; };
+  }, [authUser]);
 
   const translations = {
     en: {
@@ -114,7 +131,7 @@ const WorkerDashboard = () => {
       noNotifications: 'No notifications',
       viewAll: 'View All',
       markAllRead: 'Mark All Read',
-      premiumBadge: 'Premium Verified',
+      premiumBadge: 'Premium',
       getPremium: 'Get Premium'
     },
     ar: {
@@ -149,7 +166,7 @@ const WorkerDashboard = () => {
       noNotifications: 'لا توجد إشعارات',
       viewAll: 'عرض الكل',
       markAllRead: 'تعيين الكل كمقروء',
-      premiumBadge: 'مميز معتمد',
+      premiumBadge: 'مميز',
       getPremium: 'اشتراك مميز'
     }
   };
@@ -542,6 +559,11 @@ const WorkerDashboard = () => {
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.messages}</p>
             </div>
+          </div>
+
+          {/* Premium & Availability — backend-enforced */}
+          <div className="mb-6">
+            <WorkerPremiumCard />
           </div>
 
           {/* Quick Actions - RED THEME */}

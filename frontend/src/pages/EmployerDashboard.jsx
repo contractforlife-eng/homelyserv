@@ -100,7 +100,7 @@ const EmployerDashboard = () => {
       paymentSuccess: '🎉 Payment Successful!',
       hiredSuccess: 'Successfully hired {worker}!',
       viewHireDetails: 'View Hire Details',
-      premiumBadge: 'Premium Verified',
+      premiumBadge: 'Premium',
       getPremium: 'Get Premium'
     },
     ar: {
@@ -128,7 +128,7 @@ const EmployerDashboard = () => {
       paymentSuccess: '🎉 تم الدفع بنجاح!',
       hiredSuccess: 'تم توظيف {worker} بنجاح!',
       viewHireDetails: 'عرض تفاصيل التوظيف',
-      premiumBadge: 'مميز معتمد',
+      premiumBadge: 'مميز',
       getPremium: 'اشتراك مميز'
     }
   };

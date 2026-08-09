@@ -294,6 +294,10 @@ model WorkerProfile {
   experienceYears Int          @default(0)
   expectedSalary  Float        @default(0)
   availability    String       @default("available")
+  // Premium-only "Actively Looking" signal. When the Worker's Premium
+  // subscription is NOT active, every consumer MUST treat this as FALSE —
+  // ranking/badge presentation are always gated on subscription state.
+  activelyLooking Boolean      @default(false)
   workType        String       @default("full-time")
   bioAr           String?
   bioEn           String?

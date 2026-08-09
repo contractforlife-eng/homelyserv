@@ -118,7 +118,7 @@ const EmployerMessages = () => {
       newMessage: 'New message from {name}',
       acceptedOffer: 'You accepted an offer from {name}',
       typing: 'Typing...',
-      premiumBadge: 'Premium Verified',
+      premiumBadge: 'Premium',
       getPremium: 'Get Premium'
     },
     ar: {
@@ -140,7 +140,7 @@ const EmployerMessages = () => {
       newMessage: 'رسالة جديدة من {name}',
       acceptedOffer: 'لقد قبلت عرضاً من {name}',
       typing: 'جاري الكتابة...',
-      premiumBadge: 'مميز معتمد',
+      premiumBadge: 'مميز',
       getPremium: 'اشتراك مميز'
     }
   };

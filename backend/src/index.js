@@ -15,6 +15,7 @@ import { Server } from 'socket.io';
 import authRoutes from './routes/auth.js';
 import workerRoutes from './routes/workers.js';
 import workerPayoutRoutes from './routes/workerPayout.js';
+import workerPremiumRoutes from './routes/workerPremium.js';
 import workerEarningsRoutes from './routes/workerEarnings.js';
 import employerEarningsRoutes from './routes/employerEarnings.js';
 import hireRoutes from './routes/hires.js';
@@ -333,6 +334,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/worker', workerPayoutRoutes);
+app.use('/api/worker', workerPremiumRoutes);
 app.use('/api/worker', workerEarningsRoutes);
 app.use('/api/employer', employerEarningsRoutes);
 app.use('/api/hires', hireRoutes);

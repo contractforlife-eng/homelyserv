@@ -4,7 +4,8 @@ import { useDashboard } from '../components/layout/DashboardContext';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
-import { isUserPremium } from '../utils/subscriptionService';
+import { fetchSubscriptionStatus } from '../services/paymentService';
+import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
@@ -73,6 +74,7 @@ const WorkerProfile = () => {
     jobsCompleted: 0,
     profileComplete: 0
   });
+  const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
 
   const jobOptions = JOB_OPTIONS;
 
@@ -119,7 +121,7 @@ const WorkerProfile = () => {
       saved: '✅ Profile updated successfully!',
       profilePhoto: 'Profile Photo',
       changePhoto: 'Click to change photo',
-      premiumBadge: 'Premium Verified',
+      premiumBadge: 'Premium',
       getPremium: 'Get Premium',
       noNotifications: 'No new notifications'
     },
@@ -151,7 +153,7 @@ const WorkerProfile = () => {
       saved: '✅ تم تحديث الملف الشخصي بنجاح!',
       profilePhoto: 'الصورة الشخصية',
       changePhoto: 'انقر لتغيير الصورة',
-      premiumBadge: 'مميز معتمد',
+      premiumBadge: 'مميز',
       getPremium: 'اشتراك مميز',
       noNotifications: 'لا توجد إشعارات جديدة'
     }
@@ -159,13 +161,27 @@ const WorkerProfile = () => {
 
   const t = translations[dashboard.language] || translations.en;
 
-  const checkPremiumStatus = () => {
-    const userId = authUser?.id || authUser?.email;
-    if (!userId) return false;
-    return isUserPremium(userId);
-  };
+  const isPremium = subscriptionStatus.isPremium;
 
-  const isPremium = checkPremiumStatus();
+  // Backend subscription is the ONLY source of truth for premium entitlement.
+  useEffect(() => {
+    let cancelled = false;
+    const loadPremium = async () => {
+      try {
+        const data = await fetchSubscriptionStatus();
+        if (!cancelled && data?.success) {
+          setSubscriptionStatus({
+            isPremium: data.isPremium === true,
+            subscription: data.subscription || null
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load subscription status:', error);
+      }
+    };
+    loadPremium();
+    return () => { cancelled = true; };
+  }, []);
 
   const loadRealStats = (userEmail, userId) => {
     try {
@@ -514,10 +530,14 @@ const WorkerProfile = () => {
             </div>
           </div>
 
+          {/* Premium & Availability — backend-enforced */}
+          <div className="mb-6">
+            <WorkerPremiumCard />
+          </div>
+
           {/* Personal Information */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t.personalInfo}</h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.fullName}</label>

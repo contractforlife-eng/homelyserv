@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const router = express.Router();
 
@@ -78,15 +79,22 @@ router.get('/search', requireEmployer, async (req, res) => {
     // ============================================================
     let profileIdByUserId = new Map();
     let unlockedProfileIds = new Set();
+    const profileInfoByUserId = new Map();
 
     const userIds = workers.map(w => String(w._id));
     if (userIds.length > 0) {
       const workerProfiles = await prisma.workerProfile.findMany({
         where: { userId: { in: userIds } },
-        select: { id: true, userId: true }
+        select: { id: true, userId: true, availability: true, activelyLooking: true }
       });
 
-      workerProfiles.forEach(p => profileIdByUserId.set(String(p.userId), String(p.id)));
+      workerProfiles.forEach(p => {
+        profileIdByUserId.set(String(p.userId), String(p.id));
+        profileInfoByUserId.set(String(p.userId), {
+          availability: p.availability || 'available',
+          activelyLooking: p.activelyLooking === true
+        });
+      });
 
       const profileIds = workerProfiles.map(p => String(p.id));
       if (profileIds.length > 0) {
@@ -103,6 +111,12 @@ router.get('/search', requireEmployer, async (req, res) => {
       }
     }
 
+    // ============================================================
+    // BATCHED PREMIUM ENTITLEMENT (no N+1, no localStorage authority)
+    // One query resolves active subscriptions for ALL result workers.
+    // ============================================================
+    const premiumUserIds = await getActivePremiumUserIds(userIds);
+
     const result = workers.map(w => {
       const workerObj = w.toObject ? w.toObject() : { ...w };
       workerObj.id = String(workerObj._id || workerObj.id || '');
@@ -118,7 +132,57 @@ router.get('/search', requireEmployer, async (req, res) => {
       delete workerObj.password;
       delete workerObj.__v;
 
+      // Premium + availability (computed server-side, never client-supplied).
+      const workerIsPremium = premiumUserIds.has(String(workerObj._id));
+      const profileInfo = profileInfoByUserId.get(String(workerObj._id)) || {
+        availability: 'available',
+        activelyLooking: false
+      };
+
+      workerObj.isPremium = workerIsPremium;
+      const isAvailable = profileInfo.availability === 'available';
+      workerObj.availability = profileInfo.availability;
+      workerObj.available = isAvailable;
+      // Effective "Actively Looking": ONLY when the worker is AVAILABLE AND
+      // Premium AND a stored true value. A stored true has NO effect when the
+      // subscription is inactive or the worker is marked Not Available.
+      workerObj.activelyLooking = isAvailable && workerIsPremium && profileInfo.activelyLooking;
+
       return workerObj;
+    });
+
+    // ============================================================
+    // AVAILABILITY IS A HARD SEARCH FILTER — never waived by Premium/ranking.
+    // Unavailable workers (Premium included) are EXCLUDED here, BEFORE sorting,
+    // using the canonical WorkerProfile.availability (workers without a profile
+    // row default to 'available'). Premium ranking can NEVER override the
+    // availability gate; it only reorders the already-available set.
+    // ============================================================
+    const availableWorkers = result.filter(w => w.availability === 'available');
+
+    // ============================================================
+    // PREMIUM RANKING — applies only AFTER hard-filters have run.
+    // Hard filters (query/category/location/minRating) are untouched above
+    // and ALWAYS win; ranking only reorders the already-matching set.
+    //
+    // Tier 1: Premium + Actively Looking
+    // Tier 2: Premium
+    // Tier 3: Free / non-premium
+    // Within a tier the order is deterministic and stable: newest first
+    // (createdAt desc) with the worker id as an absolute tiebreaker.
+    // Ratings are NOT touched; relevance is NOT fabricated.
+    // ============================================================
+    const getTier = (w) => (w.isPremium && w.activelyLooking ? 0 : w.isPremium ? 1 : 2);
+
+    availableWorkers.sort((a, b) => {
+      const tierDiff = getTier(a) - getTier(b);
+      if (tierDiff !== 0) return tierDiff;
+
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+
+      return String(a.id).localeCompare(String(b.id));
     });
 
     const isPremium = await hasActiveSubscription(employerId);
@@ -126,7 +190,7 @@ router.get('/search', requireEmployer, async (req, res) => {
     
     res.json({
       success: true,
-      workers: result,
+      workers: availableWorkers,
       isPremium,
       searchCount: limitStatus.count,
       searchLimit: limitStatus.limit,

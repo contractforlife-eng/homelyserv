@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
+import { isUserPremium } from '../services/premiumService.js';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/jwtSecret.js';
 
@@ -24,6 +25,26 @@ router.get('/profile/:userId', authenticate, async (req, res) => {
     
     const userObj = user.toObject ? user.toObject() : { ...user };
     userObj.id = userObj._id;
+
+    // Premium entitlement + availability (computed server-side, batched for
+    // the single user; NEVER accepted from the request body).
+    const [workerProfile, userIsPremium] = await Promise.all([
+      prisma.workerProfile.findUnique({
+        where: { userId: String(userObj.id) },
+        select: { availability: true, activelyLooking: true }
+      }),
+      isUserPremium(String(userObj.id))
+    ]);
+
+    userObj.isPremium = userIsPremium;
+    userObj.availability = workerProfile?.availability || 'available';
+    userObj.available = (workerProfile?.availability || 'available') === 'available';
+    // Effective "Actively Looking": only while the worker is AVAILABLE, an
+    // active Premium subscription exists, AND the stored flag is true. A true
+    // stored value has NO effect while Not Available or once the subscription
+    // is inactive.
+    userObj.activelyLooking =
+      userObj.available && userIsPremium && workerProfile?.activelyLooking === true;
     
     let contactUnlocked = false;
     const requesterId = req.userId;

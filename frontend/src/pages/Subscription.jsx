@@ -1,9 +1,9 @@
 // src/pages/Subscription.jsx - UPDATED WITH PAYMOB & PAYPAL + PREMIUM DESIGN + WORKING NOTIFICATIONS
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { isUserPremium } from '../utils/subscriptionService';
-import { capturePayPalOrder } from "../services/paymentService";
+import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
+import { capturePayPalOrder, fetchSubscriptionStatus } from "../services/paymentService";
 import api from '../utils/api';
 import {
   Shield,
@@ -311,6 +311,11 @@ const Subscription = () => {
   const [paymobIframe, setPaymobIframe] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [retryableStatus, setRetryableStatus] = useState(false);
+  
+  // Guard against duplicate PayPal capture responses triggering duplicate
+  // UI refresh/purchase cycles (polling + popup-return can both fire).
+  const subscriptionProcessedRef = useRef(false);
   
   // Notification state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -350,17 +355,20 @@ const Subscription = () => {
   const translations = {
     en: {
       title: 'Premium Subscription',
-      subtitle: 'Get verified and unlock premium features',
+      subtitle: 'Unlock Premium features',
+      heroSubtitle: 'Choose the benefits that match how you use HomelyServ today.',
       pricing: {
         title: 'Premium Plan',
-        description: 'Get verified badge and premium features',
+        description: 'Every benefit below is delivered now',
         price: 'EGP {price}/month',
-        features: [
-          '⭐ Verification badge on your profile',
-          '⭐ Priority in search results',
-          '⭐ Access to premium offers',
-          '⭐ Priority support',
-          '⭐ Advanced analytics'
+        workerFeatures: [
+          '⭐ Premium badge on your profile',
+          '⭐ Higher visibility in matching employer searches',
+          '⭐ "Actively Looking" status to signal you are open to work'
+        ],
+        employerFeatures: [
+          '⭐ Unlimited searches — the free plan is limited to 3 per day',
+          '⭐ Premium badge on your profile'
         ]
       },
       payment: {
@@ -372,7 +380,11 @@ const Subscription = () => {
         successMessage: 'Your premium subscription is now active.',
         error: 'Payment failed. Please try again.',
         verifyPending: 'Your payment is being verified...',
-        alreadySubscribed: 'You already have an active subscription!'
+        alreadySubscribed: 'You already have an active subscription!',
+        activationRetry: 'Payment received — we could not confirm Premium activation yet. Re-check your status below or refresh the page.',
+        verificationTimeout: 'Payment verification timed out. Please check your PayPal account and retry.',
+        verificationFailed: 'Payment verification failed. Please try again.',
+        checkStatusAgain: 'Check Status Again'
       },
       methods: {
         paymob: 'Paymob',
@@ -396,17 +408,20 @@ const Subscription = () => {
     },
     ar: {
       title: 'الاشتراك المميز',
-      subtitle: 'احصل على التحقق وافتح الميزات المميزة',
+      subtitle: 'افتح ميزات Premium',
+      heroSubtitle: 'اختر الميزات التي تناسب طريقة استخدامك لـ HomelyServ اليوم.',
       pricing: {
         title: 'الخطة المميزة',
-        description: 'احصل على شارة التحقق والميزات المميزة',
+        description: 'كل ميزة أدناه مفعّلة بالفعل',
         price: '{price} جنيه/شهر',
-        features: [
-          '⭐ شارة التحقق على ملفك الشخصي',
-          '⭐ أولوية في نتائج البحث',
-          '⭐ الوصول إلى العروض المميزة',
-          '⭐ دعم ذو أولوية',
-          '⭐ تحليلات متقدمة'
+        workerFeatures: [
+          '⭐ شارة Premium على ملفك الشخصي',
+          '⭐ ظهور أعلى في نتائج بحث أصحاب العمل المطابقين',
+          '⭐ حالة «أبحث بنشاط عن عمل» للإشارة إلى توفرك للعمل'
+        ],
+        employerFeatures: [
+          '⭐ بحث غير محدود — الخطة المجانية محدودة بـ 3 عمليات بحث يومياً',
+          '⭐ شارة Premium على ملفك الشخصي'
         ]
       },
       payment: {
@@ -418,7 +433,11 @@ const Subscription = () => {
         successMessage: 'اشتراكك المميز نشط الآن.',
         error: 'فشل الدفع. يرجى المحاولة مرة أخرى.',
         verifyPending: 'دفعتك قيد التحقق...',
-        alreadySubscribed: 'لديك اشتراك نشط بالفعل!'
+        alreadySubscribed: 'لديك اشتراك نشط بالفعل!',
+        activationRetry: 'تم استلام الدفع — لم نتمكن من تأكيد تفعيل Premium بعد. أعد التحقق من الحالة أدناه أو حدّث الصفحة.',
+        verificationTimeout: 'انتهت مهلة التحقق من الدفع. يرجى التحقق من حساب PayPal الخاص بك والمحاولة مرة أخرى.',
+        verificationFailed: 'فشل التحقق من الدفع. يرجى المحاولة مرة أخرى.',
+        checkStatusAgain: 'إعادة التحقق من الحالة'
       },
       methods: {
         paymob: 'Paymob',
@@ -486,20 +505,32 @@ const Subscription = () => {
 
     const isEmployerRole = authUser.role === 'EMPLOYER';
     setIsEmployer(isEmployerRole);
-    
+
+    // Fast first paint from the localStorage mirror, then ALWAYS reconcile
+    // against the authoritative backend row (MongoDB via ensureSubscription).
+    // Backend status wins — localStorage must never override it.
     const userId = authUser.id || authUser.email;
-    const isPremium = checkUserPremium(userId);
-    const subscription = getUserSubscription(userId);
-    const status = getSubscriptionStatus(userId);
-    
-    setCurrentSubscription(subscription);
-    setSubscriptionStatus(status);
-    
-    if (isPremium) {
+    const localStatus = getSubscriptionStatus(userId);
+    if (localStatus.active) {
+      setCurrentSubscription(getUserSubscription(userId));
+      setSubscriptionStatus(localStatus);
       setPaymentSuccess(true);
     }
-    
-    setLoading(false);
+
+    (async () => {
+      try {
+        const res = await fetchSubscriptionStatus();
+        if (res && res.success) {
+          applyBackendSubscriptionState(res);
+        }
+      } catch (statusError) {
+        console.warn('Could not refresh subscription status on mount:', statusError);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
@@ -589,6 +620,68 @@ const Subscription = () => {
     }
   };
 
+  const computeDaysLeft = (endDate) => {
+    if (!endDate) return null;
+    const diff = new Date(endDate) - new Date();
+    return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  // Apply a BACKEND-refreshed subscription state to the UI + localStorage
+  // mirror. The backend (MongoDB via ensureSubscription) is authoritative;
+  // localStorage only mirrors it and never overrides it.
+  const applyBackendSubscriptionState = (backendStatus) => {
+    const userId = authUser?.id || authUser?.email;
+    const subscription = backendStatus?.subscription;
+    const isActive =
+      !!subscription &&
+      subscription.status === 'active' &&
+      subscription.endDate &&
+      new Date(subscription.endDate) > new Date();
+
+    if (userId && subscription) {
+      applyBackendSubscription(userId, authUser?.email, subscription);
+    }
+
+    setCurrentSubscription(subscription ? { ...subscription, expiresAt: subscription.endDate } : null);
+
+    if (isActive) {
+      setSubscriptionStatus({
+        active: true,
+        status: 'active',
+        message: 'Active',
+        daysLeft: computeDaysLeft(subscription.endDate),
+        expiresAt: subscription.endDate
+      });
+      setProcessing(false);
+      setRetryableStatus(false);
+      setPaymentSuccess(true);
+    } else {
+      setSubscriptionStatus({ active: false, status: 'inactive', message: 'No active subscription' });
+      setPaymentSuccess(false);
+    }
+  };
+
+  // Bounded backend subscription-status poll — NEVER infinite.
+  // Used after a successful capture (backend may still be committing the
+  // fulfillment) and by the manual "check again" retry.
+  const refreshSubscriptionStatus = async ({ attempts = 4, intervalMs = 1500 } = {}) => {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      try {
+        const res = await fetchSubscriptionStatus();
+        if (res && res.success && res.isPremium && res.subscription) {
+          applyBackendSubscriptionState(res);
+          return true;
+        }
+      } catch (refreshError) {
+        console.warn(`Subscription status refresh attempt ${attempt + 1} failed:`, refreshError);
+      }
+      if (attempt < attempts - 1) {
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+    }
+    return false;
+  };
+
   const handleSubscribe = async () => {
     if (!selectedMethod) {
       setPaymentError('Please select a payment method');
@@ -602,6 +695,8 @@ const Subscription = () => {
 
     setProcessing(true);
     setPaymentError(null);
+    setRetryableStatus(false);
+    subscriptionProcessedRef.current = false;
 
     try {
       const orderId = 'SUB-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
@@ -672,30 +767,71 @@ const Subscription = () => {
   const startPollingPayPalOrder = (orderId) => {
     let attempts = 0;
     const maxAttempts = 30;
-    
-    const interval = setInterval(async () => {
+    let interval;
+
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+    };
+
+    interval = setInterval(async () => {
       attempts++;
-      
+
+      // A duplicate capture response after this order was already processed
+      // must NOT trigger a second UI purchase / refresh cycle.
+      if (subscriptionProcessedRef.current) {
+        stopPolling();
+        return;
+      }
+
       try {
         const result = await capturePayPalOrder(orderId);
-        
+
         if (result.success) {
-          clearInterval(interval);
-          processSuccessfulSubscription(result.transaction);
+          stopPolling();
+
+          // Backend already captured AND fulfilled (SUBSCRIPTION -> Premium
+          // activated via ensureSubscription). Do NOT wait for the PayPal order
+          // to reach COMPLETED — read our authoritative backend status instead.
+          subscriptionProcessedRef.current = true;
+
+          // Brief bounded refresh (4 tries x 1.5s — never infinite) so the
+          // backend commit is fully visible before declaring success.
+          const active = await refreshSubscriptionStatus({ attempts: 4, intervalMs: 1500 });
+
+          if (!active) {
+            // Capture succeeded but the entitlement row is not visible yet.
+            // Show a retryable message — never auto-create/capture a new payment.
+            setProcessing(false);
+            setPaymentError(t.payment.activationRetry);
+            setRetryableStatus(true);
+          }
         } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPaymentError('Payment verification timed out. Please check your PayPal account.');
+          stopPolling();
+          setPaymentError(t.payment.verificationTimeout);
           setProcessing(false);
         }
       } catch (error) {
         console.error('PayPal polling error:', error);
         if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPaymentError('Payment verification failed. Please try again.');
+          stopPolling();
+          setPaymentError(t.payment.verificationFailed);
           setProcessing(false);
         }
       }
     }, 3000);
+  };
+
+  // Manual, read-only retry shown if activation needs a re-check after a
+  // successful capture. It never creates or captures a new payment.
+  const checkStatusManually = async () => {
+    setProcessing(true);
+    setPaymentError(null);
+    const active = await refreshSubscriptionStatus({ attempts: 4, intervalMs: 1200 });
+    if (!active) {
+      setProcessing(false);
+      setPaymentError(t.payment.activationRetry);
+      setRetryableStatus(true);
+    }
   };
 
   const toggleLanguage = () => {
@@ -895,7 +1031,7 @@ const Subscription = () => {
                   Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">Premium</span> Features
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                  Get verified and access exclusive benefits to boost your profile
+                  {t.heroSubtitle}
                 </p>
               </div>
 
@@ -916,7 +1052,7 @@ const Subscription = () => {
                     </div>
 
                     <div className="space-y-4">
-                      {t.pricing.features.map((feature, index) => (
+                      {(isEmployer ? t.pricing.employerFeatures : t.pricing.workerFeatures).map((feature, index) => (
                         <div key={index} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                           <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                             <CheckCircle size={14} className="text-white" />
@@ -953,7 +1089,19 @@ const Subscription = () => {
                     {paymentError && (
                       <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-2xl text-red-600 flex items-start gap-3">
                         <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
-                        <span>{paymentError}</span>
+                        <div className="flex-1">
+                          <span>{paymentError}</span>
+                          {retryableStatus && (
+                            <button
+                              onClick={checkStatusManually}
+                              disabled={processing}
+                              className="mt-3 flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
+                            >
+                              {processing && <Loader2 size={16} className="animate-spin" />}
+                              {t.payment.checkStatusAgain}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
 
