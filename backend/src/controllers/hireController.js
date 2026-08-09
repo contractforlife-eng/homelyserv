@@ -4,6 +4,7 @@ import {
   NOTIFICATION_TYPES,
 } from '../services/notificationService.js';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
+import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -545,6 +546,15 @@ export const confirmPayment = async (req, res) => {
       where: { id: req.params.id },
       data: { paymentStatus: 'confirmed', status: 'active' }
     });
+
+    // Worker Earnings Ledger — Phase 1. Idempotently ensure one PENDING
+    // contractual record for the now-active hire.
+    try {
+      await ensureInitialWorkerEarning(hire);
+    } catch (earningError) {
+      console.error(`⚠️ Could not ensure worker earning for hire ${hire.id}:`, earningError.message);
+    }
+
     res.json({ message: 'Payment confirmed', hire });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

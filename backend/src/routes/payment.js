@@ -5,6 +5,7 @@ import axios from 'axios';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 
 const router = express.Router();
 
@@ -281,6 +282,20 @@ const updateHireAfterPayment = async (hireId, captureId) => {
     console.log(`   Status after: ${updatedHire.status}`);
     console.log(`   Payment status after: ${updatedHire.paymentStatus}`);
     console.log(`   Payment reference: ${updatedHire.paymentReference}`);
+
+    // Worker Earnings Ledger — Phase 1.
+    // Create one PENDING contractual ledger record for this hire if none
+    // exists (idempotent). PENDING means "contractual monthly amount for an
+    // active hire" — it never implies the worker was paid.
+    try {
+      const earning = await ensureInitialWorkerEarning(hire);
+      if (earning) {
+        console.log(`✅ Worker earning ledger entry ensured for hire ${hire.id}: ${earning.id}`);
+      }
+    } catch (earningError) {
+      // Ledger failures must never break the payment/hire completion flow.
+      console.error(`⚠️ Could not ensure worker earning for hire ${hire.id}:`, earningError.message);
+    }
 
     // Update the Offer to mark payment as confirmed and verified
     if (hire.offerId) {

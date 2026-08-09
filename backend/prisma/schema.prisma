@@ -318,6 +318,53 @@ model WorkerPayoutDetails {
   @@map("worker_payout_details")
 }
 
+// ============================================================
+// WORKER EARNING LEDGER - Contractual/pending earning periods
+// A WorkerEarning record represents a CONTRACTUAL/PENDING earning
+// period associated with an active hire. It is NOT proof that the
+// worker received any salary — HomelyServ does not process worker
+// salary payments (those are arranged directly between employer and
+// worker, off-platform).
+//
+// Phase 1 only ever creates records with status PENDING. Automatic
+// transitions to EARNED / PAID are intentionally NOT implemented
+// because no trustworthy work-completion or salary-payment event
+// exists yet.
+//
+// workerId        -> User.id (authenticated worker identity)
+// workerProfileId -> WorkerProfile.id (Hire.workerId)
+// idempotencyKey  -> deterministic unique key (unique index) that
+//                    prevents duplicate ledger entries.
+// ============================================================
+model WorkerEarning {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  workerId        String    @db.ObjectId
+  workerProfileId String    @db.ObjectId
+  employerId      String    @db.ObjectId
+  hireId          String    @db.ObjectId
+  offerId         String?   @db.ObjectId
+  amount          Float
+  currency        String    @default("EGP") @map("currency")
+  earningType     String
+  status          String    @default("PENDING") @map("status")
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  earnedAt        DateTime? @map("earnedAt")
+  dueAt           DateTime? @map("dueAt")
+  paidAt          DateTime? @map("paidAt")
+  idempotencyKey  String    @unique
+  metadata        Json?     @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workerId])
+  @@index([workerProfileId])
+  @@index([employerId])
+  @@index([hireId])
+  @@index([status])
+  @@map("worker_earnings")
+}
+
 enum Role {
   WORKER
   EMPLOYER

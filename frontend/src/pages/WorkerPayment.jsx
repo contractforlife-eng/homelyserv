@@ -28,6 +28,7 @@ import {
   Building,
   Phone,
   RefreshCw,
+  Info,
   Shield,
   Crown
 } from 'lucide-react';
@@ -41,8 +42,8 @@ const WorkerPayment = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  const [payments, setPayments] = useState([]);
-  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [ledgerRecords, setLedgerRecords] = useState([]);
+  const [filteredRecords, setFilteredRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -61,12 +62,13 @@ const WorkerPayment = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutError, setPayoutError] = useState('');
-  const [workerStats, setWorkerStats] = useState({
-    totalTasksCompleted: 0,
-    totalEarned: 0,
-    hourlyRate: 0,
-    monthlySalary: 0
+  const [earningsSummary, setEarningsSummary] = useState({
+    pendingContractValue: 0,
+    earnedBalance: 0,
+    paidTotal: 0,
+    onHoldAmount: 0
   });
+  const [activeHires, setActiveHires] = useState(0);
 
    // ============================================
    // IS PREMIUM CHECK
@@ -87,54 +89,62 @@ const WorkerPayment = () => {
       title: 'Payments',
       subtitle: 'Manage your payments and payment information',
       stats: {
-        totalEarned: 'Total Earned',
-        tasksCompleted: 'Tasks Completed',
-        hourlyRate: 'Hourly Rate',
-        monthlySalary: 'Monthly Salary'
+        pendingContract: 'Pending Contract Value',
+        confirmedEarnings: 'Confirmed Earnings',
+        paidThroughHomelyServ: 'Paid Through HomelyServ',
+        activeHires: 'Active Hires'
+      },
+      notice: {
+        title: 'Salary is paid off-platform between you and the Employer',
+        body: 'HomelyServ does not process your salary from Employers. Salary payments are arranged directly between you and the Employer. This page tracks contract and earning status recorded by HomelyServ.'
       },
       paymentInfo: {
-        title: 'Payment Information',
+        title: 'Payout Details (for future supported payouts)',
         walletNumber: 'Wallet Number',
         instapayNumber: 'InstaPay Number',
         bankAccount: 'Bank Account Number',
         bankName: 'Bank Name',
         accountHolder: 'Account Holder Name',
-        edit: 'Edit Payment Info',
+        edit: 'Edit Payout Details',
         save: 'Save Changes',
         cancel: 'Cancel',
-        saved: 'Payment information updated successfully!',
-        saveError: 'Failed to save payment information. Please try again.',
-        loadError: 'Failed to load payment information.'
+        saved: 'Payout details updated successfully!',
+        saveError: 'Failed to save payout details. Please try again.',
+        loadError: 'Failed to load payout details.',
+        hint: 'Saving your payout details does not transfer money. Payouts are not offered yet.'
       },
       paymentHistory: {
-        title: 'Payment History',
-        id: 'Transaction ID',
-        employer: 'Employer',
+        title: 'Earnings & Contract Ledger',
+        id: 'Ledger ID',
+        hireId: 'Hire ID',
         amount: 'Amount',
         date: 'Date',
         status: 'Status',
-        description: 'Description',
-        noResults: 'No payments found',
-        searchPlaceholder: 'Search payments...',
-        employerId: 'Employer ID',
-        passportNumber: 'Passport Number'
+        noResults: 'No ledger entries found',
+        searchPlaceholder: 'Search ledger...'
       },
       status: {
-        completed: 'Completed',
-        pending: 'Pending',
-        failed: 'Failed'
+        PENDING: 'Pending / Contract Active',
+        EARNED: 'Confirmed Earned',
+        PAID: 'Paid',
+        ON_HOLD: 'On Hold',
+        DISPUTED: 'Disputed',
+        CANCELLED: 'Cancelled'
       },
       filters: {
-        all: 'All Payments',
-        completed: 'Completed',
-        pending: 'Pending',
-        failed: 'Failed'
+        all: 'All Entries',
+        PENDING: 'Pending / Contract Active',
+        EARNED: 'Confirmed Earned',
+        PAID: 'Paid',
+        ON_HOLD: 'On Hold',
+        DISPUTED: 'Disputed',
+        CANCELLED: 'Cancelled'
       },
       languageToggle: 'العربية',
       notifications: 'Notifications',
-      loading: 'Loading payment data...',
-      noPayments: 'No payment history yet',
-      noPaymentsDesc: 'Your payment history will appear here once you complete tasks',
+      loading: 'Loading earnings data...',
+      noPayments: 'No ledger entries yet',
+      noPaymentsDesc: 'Your contract ledger will appear here once your hires are activated.',
       refresh: 'Refresh',
       premiumBadge: 'Premium Verified',
       getPremium: 'Get Premium',
@@ -144,54 +154,62 @@ const WorkerPayment = () => {
       title: 'المدفوعات',
       subtitle: 'إدارة مدفوعاتك ومعلومات الدفع',
       stats: {
-        totalEarned: 'إجمالي المكاسب',
-        tasksCompleted: 'المهام المكتملة',
-        hourlyRate: 'السعر بالساعة',
-        monthlySalary: 'الراتب الشهري'
+        pendingContract: 'قيمة العقد المعلقة',
+        confirmedEarnings: 'أرباح مؤكدة',
+        paidThroughHomelyServ: 'مدفوع عبر HomelyServ',
+        activeHires: 'عقود نشطة'
+      },
+      notice: {
+        title: 'الراتب يُدفع مباشرة بينك وبين صاحب العمل',
+        body: 'لا تتعامل منصة HomelyServ حاليًا مع دفع رواتب الموظفين من أصحاب العمل. يتم ترتيب مدفوعات الراتب مباشرة بينك وبين صاحب العمل. تعرض هذه الصفحة حالة العقد والأرباح التي تسجلها المنصة.'
       },
       paymentInfo: {
-        title: 'معلومات الدفع',
+        title: 'تفاصيل الدفع (للمدفوعات المستقبلية)',
         walletNumber: 'رقم المحفظة',
         instapayNumber: 'رقم InstaPay',
         bankAccount: 'رقم الحساب البنكي',
         bankName: 'اسم البنك',
         accountHolder: 'اسم صاحب الحساب',
-        edit: 'تعديل معلومات الدفع',
+        edit: 'تعديل تفاصيل الدفع',
         save: 'حفظ التغييرات',
         cancel: 'إلغاء',
-        saved: 'تم تحديث معلومات الدفع بنجاح!',
-        saveError: 'تعذر حفظ معلومات الدفع. حاول مرة أخرى.',
-        loadError: 'تعذر تحميل معلومات الدفع.'
+        saved: 'تم تحديث تفاصيل الدفع بنجاح!',
+        saveError: 'تعذر حفظ تفاصيل الدفع. حاول مرة أخرى.',
+        loadError: 'تعذر تحميل تفاصيل الدفع.',
+        hint: 'حفظ تفاصيل الدفع لا يعني تحويل الأموال. المدفوعات غير متاحة بعد.'
       },
       paymentHistory: {
-        title: 'سجل المدفوعات',
-        id: 'رقم المعاملة',
-        employer: 'صاحب العمل',
+        title: 'سجل الأرباح والعقود',
+        id: 'معرف السجل',
+        hireId: 'معرف العقد',
         amount: 'المبلغ',
         date: 'التاريخ',
         status: 'الحالة',
-        description: 'الوصف',
-        noResults: 'لا توجد مدفوعات',
-        searchPlaceholder: 'ابحث عن مدفوعات...',
-        employerId: 'معرف صاحب العمل',
-        passportNumber: 'رقم جواز السفر'
+        noResults: 'لا توجد سجلات',
+        searchPlaceholder: 'ابحث في السجل...'
       },
       status: {
-        completed: 'مكتملة',
-        pending: 'قيد الانتظار',
-        failed: 'فاشلة'
+        PENDING: 'معلق / العقد نشط',
+        EARNED: 'أرباح مؤكدة',
+        PAID: 'مدفوع',
+        ON_HOLD: 'قيد الانتظار',
+        DISPUTED: 'متنازع عليه',
+        CANCELLED: 'ملغى'
       },
       filters: {
-        all: 'جميع المدفوعات',
-        completed: 'مكتملة',
-        pending: 'قيد الانتظار',
-        failed: 'فاشلة'
+        all: 'جميع السجلات',
+        PENDING: 'معلق / العقد نشط',
+        EARNED: 'أرباح مؤكدة',
+        PAID: 'مدفوع',
+        ON_HOLD: 'قيد الانتظار',
+        DISPUTED: 'متنازع عليه',
+        CANCELLED: 'ملغى'
       },
       languageToggle: 'English',
       notifications: 'الإشعارات',
-      loading: 'جاري تحميل بيانات الدفع...',
-      noPayments: 'لا يوجد سجل مدفوعات بعد',
-      noPaymentsDesc: 'سيظهر سجل مدفوعاتك هنا بمجرد إكمال المهام',
+      loading: 'جاري تحميل بيانات الأرباح...',
+      noPayments: 'لا يوجد سجل بعد',
+      noPaymentsDesc: 'سيظهر سجل عقودك هنا بمجرد تفعيل عقودك.',
       refresh: 'تحديث',
       premiumBadge: 'مميز معتمد',
       getPremium: 'اشتراك مميز',
@@ -204,75 +222,48 @@ const WorkerPayment = () => {
   // ============================================
   // 4. DATA LOADING FUNCTIONS
   // ============================================
-  const loadPaymentData = async () => {
+  const loadEarningsData = async () => {
     if (!authUser) return;
-    
     setLoading(true);
 
     try {
-      const userId = authUser.id || authUser.email;
-      
-      // Load real Hire data from backend ONLY
-      const allHiresData = await hireService.getMyHires();
-      const myHires = Array.isArray(allHiresData) ? allHiresData : [];
-      
-      // Filter completed hires (active or completed status with payment completed)
-      const completedHires = myHires.filter(h => 
-        h.status === 'active' || h.status === 'completed' || h.paymentStatus === 'completed'
-      );
-      
-      // Convert hires to payments format directly from database
-      const paymentsFromHires = completedHires.map(hire => ({
-        id: hire.paymentReference || `PAY-${hire.id}`,
-        hireId: hire.id,
-        offerId: hire.offerId,
-        employer: {
-          name: hire.employerName || 'Unknown Employer',
-          id: hire.employerId || 'EMP-001'
-        },
-        amount: hire.agreedSalary || hire.salary || 0,
-        date: new Date(hire.createdAt || Date.now()).toLocaleDateString(
-          dashboard.language === 'ar' ? 'ar-EG' : 'en-US',
-          { year: 'numeric', month: 'short', day: 'numeric' }
-        ),
-        status: 'completed',
-        description: `Payment for ${hire.jobTitle || 'service'}`,
-        workerId: userId,
-        workerEmail: authUser.email,
-        createdAt: hire.createdAt || new Date().toISOString()
-      }));
-      
-      // Sort by date
-      paymentsFromHires.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
-      setPayments(paymentsFromHires);
-      setFilteredPayments(paymentsFromHires);
-      
-      updateStatsFromPayments(paymentsFromHires);
-      
-      console.log(`✅ Loaded ${paymentsFromHires.length} payments from database for worker`);
-      
+      // Real ledger from the backend. Phase 1 only contains PENDING records
+      // (contractual amounts), so earned/paid totals are correctly 0 (or 0
+      // until Phase 2/3 events exist). We never fabricate balances.
+      const response = await api.get('/api/worker/earnings');
+      const data = response.data || {};
+
+      const summary = data.summary || {
+        pendingContractValue: 0,
+        earnedBalance: 0,
+        paidTotal: 0,
+        onHoldAmount: 0
+      };
+      const records = Array.isArray(data.records) ? data.records : [];
+
+      setEarningsSummary(summary);
+      setLedgerRecords(records);
+      setFilteredRecords(records);
+
+      // Real active-hire count (for the "Active Hires" card).
+      let activeCount = 0;
+      try {
+        const allHiresData = await hireService.getMyHires();
+        const myHires = Array.isArray(allHiresData) ? allHiresData : [];
+        activeCount = myHires.filter(
+          h => h.status === 'active' || h.status === 'completed'
+        ).length;
+      } catch (hireError) {
+        console.warn('Could not load active hire count:', hireError.message);
+      }
+      setActiveHires(activeCount);
+
+      console.log(`✅ Loaded ${records.length} ledger entries for worker`);
     } catch (error) {
-      console.error('Error loading payment data:', error);
+      console.error('Error loading earnings ledger:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateStatsFromPayments = (paymentsList) => {
-    const completedPayments = paymentsList.filter(p => p.status === 'completed');
-    const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalTasksCompleted = completedPayments.length;
-    
-    const hourlyRate = authUser?.hourlyRate || 35;
-    const monthlySalary = totalEarned / 6;
-    
-    setWorkerStats({
-      totalTasksCompleted,
-      totalEarned,
-      hourlyRate: hourlyRate,
-      monthlySalary: monthlySalary || hourlyRate * 160
-    });
   };
 
   const PAYOUT_FIELDS = ['walletNumber', 'instapayNumber', 'bankAccountNumber', 'bankName', 'accountHolderName'];
@@ -354,26 +345,26 @@ const WorkerPayment = () => {
 
   useEffect(() => {
     if (authUser) {
-      loadPaymentData();
+      loadEarningsData();
       loadPayoutDetails();
     }
   }, [authUser]);
 
   useEffect(() => {
-    let filtered = payments;
+    let filtered = ledgerRecords;
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === statusFilter);
+      filtered = filtered.filter(r => r.status === statusFilter);
     }
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.id?.toLowerCase().includes(searchLower) ||
-        p.employer?.name?.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(r =>
+        String(r.id || '').toLowerCase().includes(searchLower) ||
+        String(r.hireId || '').toLowerCase().includes(searchLower) ||
+        String(r.idempotencyKey || '').toLowerCase().includes(searchLower)
       );
     }
-    setFilteredPayments(filtered);
-  }, [payments, statusFilter, searchTerm]);
+    setFilteredRecords(filtered);
+  }, [ledgerRecords, statusFilter, searchTerm]);
 
   // ============================================
   // 6. HANDLERS
@@ -418,23 +409,29 @@ const WorkerPayment = () => {
   };
 
   const handleRefresh = () => {
-    loadPaymentData();
+    loadEarningsData();
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      completed: 'bg-green-100 text-green-800 border border-green-200',
-      pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-      failed: 'bg-red-100 text-red-800 border border-red-200'
+      PENDING: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      EARNED: 'bg-green-100 text-green-800 border border-green-200',
+      PAID: 'bg-blue-100 text-blue-800 border border-blue-200',
+      ON_HOLD: 'bg-amber-100 text-amber-800 border border-amber-200',
+      DISPUTED: 'bg-red-100 text-red-800 border border-red-200',
+      CANCELLED: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
     };
     return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-200 dark:border-gray-700';
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed': return <CheckCircle size={14} />;
-      case 'pending': return <Clock size={14} />;
-      case 'failed': return <X size={14} />;
+      case 'PENDING': return <Clock size={14} />;
+      case 'EARNED': return <CheckCircle size={14} />;
+      case 'PAID': return <CheckCircle size={14} />;
+      case 'ON_HOLD': return <Clock size={14} />;
+      case 'DISPUTED': return <AlertTriangle size={14} />;
+      case 'CANCELLED': return <X size={14} />;
       default: return <AlertCircle size={14} />;
     }
   };
@@ -442,10 +439,10 @@ const WorkerPayment = () => {
   const formatCurrency = (amount) => `EGP ${amount?.toLocaleString() || 0}`;
 
   const stats = {
-    totalEarned: workerStats.totalEarned || 0,
-    tasksCompleted: workerStats.totalTasksCompleted || 0,
-    hourlyRate: workerStats.hourlyRate || authUser?.hourlyRate || 0,
-    monthlySalary: workerStats.monthlySalary || 0
+    pendingContractValue: earningsSummary.pendingContractValue || 0,
+    confirmedEarnings: earningsSummary.earnedBalance || 0,
+    paidThroughHomelyServ: earningsSummary.paidTotal || 0,
+    activeHires: activeHires || 0
   };
 
   const userProfileImage = authUser?.profileImage || null;
@@ -505,13 +502,22 @@ const WorkerPayment = () => {
             </div>
           </div>
 
+          {/* Explanatory Notice - salary is off-platform */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex gap-3">
+            <Info size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">{t.notice.title}</p>
+              <p className="text-sm text-blue-700/90 dark:text-blue-200/80 mt-0.5">{t.notice.body}</p>
+            </div>
+          </div>
+
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { label: t.stats.totalEarned, value: formatCurrency(stats.totalEarned), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
-              { label: t.stats.tasksCompleted, value: stats.tasksCompleted, icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-              { label: t.stats.hourlyRate, value: `EGP ${stats.hourlyRate}/hr`, icon: Clock, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/30' },
-              { label: t.stats.monthlySalary, value: formatCurrency(stats.monthlySalary), icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
+              { label: t.stats.pendingContract, value: formatCurrency(stats.pendingContractValue), icon: DollarSign, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
+              { label: t.stats.confirmedEarnings, value: formatCurrency(stats.confirmedEarnings), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+              { label: t.stats.paidThroughHomelyServ, value: formatCurrency(stats.paidThroughHomelyServ), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+              { label: t.stats.activeHires, value: stats.activeHires, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
             ].map((stat, idx) => (
               <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
@@ -556,6 +562,11 @@ const WorkerPayment = () => {
                   </button>
                 </div>
               )}
+            </div>
+
+            <div className="px-6 py-3 bg-blue-50/60 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-900/40 text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
+              <Info size={14} className="flex-shrink-0" />
+              {t.paymentInfo.hint}
             </div>
 
             {saveSuccess && (
@@ -624,7 +635,7 @@ const WorkerPayment = () => {
             </div>
           </div>
 
-          {/* Payment History Section */}
+          {/* Earnings & Contract Ledger Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymentHistory.title}</h3>
@@ -649,15 +660,18 @@ const WorkerPayment = () => {
                     className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer"
                   >
                     <option value="all">{t.filters.all}</option>
-                    <option value="completed">{t.filters.completed}</option>
-                    <option value="pending">{t.filters.pending}</option>
-                    <option value="failed">{t.filters.failed}</option>
+                    <option value="PENDING">{t.filters.PENDING}</option>
+                    <option value="EARNED">{t.filters.EARNED}</option>
+                    <option value="PAID">{t.filters.PAID}</option>
+                    <option value="ON_HOLD">{t.filters.ON_HOLD}</option>
+                    <option value="DISPUTED">{t.filters.DISPUTED}</option>
+                    <option value="CANCELLED">{t.filters.CANCELLED}</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {filteredPayments.length === 0 ? (
+            {filteredRecords.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CreditCard size={32} className="text-gray-400 dark:text-gray-500" />
@@ -671,32 +685,34 @@ const WorkerPayment = () => {
                   <thead className="bg-gray-50 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.id}</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.employer}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.hireId}</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.amount}</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.date}</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredPayments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50 dark:bg-gray-900/50 transition-colors group">
-                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 font-mono">{payment.id}</td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{payment.employer?.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[200px]">{payment.description}</p>
-                          </div>
+                    {filteredRecords.map((record) => (
+                      <tr key={record.id} className="hover:bg-gray-50 dark:bg-gray-900/50 transition-colors group">
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 font-mono">
+                          {(record.idempotencyKey || record.id || '').replace('worker_earning_initial_', 'EL-')}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white font-mono">
+                          {record.hireId || '-'}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(payment.amount)}
+                          {formatCurrency(record.amount)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {payment.date}
+                          {new Date(record.periodStart || record.createdAt || Date.now()).toLocaleDateString(
+                            dashboard.language === 'ar' ? 'ar-EG' : 'en-US',
+                            { year: 'numeric', month: 'short', day: 'numeric' }
+                          )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusColor(payment.status)}`}>
-                            {getStatusIcon(payment.status)}
-                            {t.status[payment.status] || payment.status}
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusColor(record.status)}`}>
+                            {getStatusIcon(record.status)}
+                            {t.status[record.status] || record.status}
                           </span>
                         </td>
                       </tr>
@@ -707,7 +723,7 @@ const WorkerPayment = () => {
             )}
             
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-              Showing {filteredPayments.length} results
+              Showing {filteredRecords.length} results
             </div>
           </div>         </div>
     </DashboardLayout>
