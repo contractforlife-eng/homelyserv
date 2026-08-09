@@ -6,6 +6,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
+import { PREMIUM_DURATION_DAYS, PAYMENT_PURPOSES, getPremiumPriceForRole } from '../config/subscription.js';
 
 const router = express.Router();
 
@@ -267,6 +268,14 @@ const updateHireAfterPayment = async (hireId, captureId) => {
     console.log(`   Status before: ${hire.status}`);
     console.log(`   Payment status before: ${hire.paymentStatus}`);
 
+    // Idempotency: a hire already marked 'completed' was fulfilled by an
+    // earlier callback/capture. A retried fulfillment must NEVER re-run the
+    // side effects (duplicate notifications / duplicate ledger entries).
+    if (hire.paymentStatus === 'completed') {
+      console.log(`⏳ Hire ${hire.id} already fulfilled (paymentStatus='completed') — skipping (idempotent)`);
+      return true;
+    }
+
     // Update the hire with payment completion
     const updatedHire = await prisma.hire.update({
       where: { id: hireId },
@@ -355,129 +364,235 @@ const updateHireAfterPayment = async (hireId, captureId) => {
 // ============================================================
 
 const ensureSubscription = async (userId, amount) => {
-  try {
-    console.log("ENTER ensureSubscription");
-    console.log("Running findFirst...");
-    const existing = await prisma.subscription.findFirst({
-      where: {
-        userId: String(userId),
-        status: 'active',
-        endDate: { gte: new Date() }
-      }
+  if (!userId) {
+    throw new Error('Cannot activate subscription: userId is required');
+  }
+
+  const now = new Date();
+  const durationMs = PREMIUM_DURATION_DAYS * 24 * 60 * 60 * 1000;
+
+  const existing = await prisma.subscription.findFirst({
+    where: {
+      userId: String(userId),
+      status: 'active',
+      endDate: { gte: now }
+    },
+    orderBy: { endDate: 'desc' }
+  });
+
+  if (existing) {
+    // RENEWAL: extend from the CURRENT expiry, never from "now". One claimed
+    // payment transaction extends the subscription EXACTLY once (it reaches
+    // this code only after an atomic fulfillment claim), so a user who renews
+    // early keeps the full value of their remaining days.
+    const extendedEndDate = new Date(new Date(existing.endDate).getTime() + durationMs);
+
+    const updated = await prisma.subscription.update({
+      where: { id: existing.id },
+      data: { endDate: extendedEndDate, amount: Number(amount) }
     });
-    console.log("findFirst result:", existing);
-    if (existing) {
-      console.log("Updating existing subscription...");
-      const updated = await prisma.subscription.update({
-        where: { id: existing.id },
-        data: {
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        }
-      });
-      console.log("Update succeeded:", updated);
 
-      // Notify the user their premium subscription was extended.
-      await createNotification(String(userId), {
-        type: NOTIFICATION_TYPES.SYSTEM,
-        title: 'Premium Subscription Renewed',
-        message: `Your premium subscription has been extended until ${updated.endDate.toLocaleDateString()}.`,
-        entityType: 'SUBSCRIPTION',
-        entityId: String(updated.id),
-        icon: '👑',
-        link: '/subscription',
-      });
+    await createNotification(String(userId), {
+      type: NOTIFICATION_TYPES.SYSTEM,
+      title: 'Premium Subscription Renewed',
+      message: `Your premium subscription has been extended until ${updated.endDate.toLocaleDateString()}.`,
+      entityType: 'SUBSCRIPTION',
+      entityId: String(updated.id),
+      icon: '👑',
+      link: '/subscription',
+    });
 
-      return updated;
-    }
-    console.log("Creating subscription...");
-    const subscriptionData = {
+    return updated;
+  }
+
+  // First activation (or restart after expiry): counted from today.
+  const startDate = now;
+  const endDate = new Date(startDate.getTime() + durationMs);
+
+  const created = await prisma.subscription.create({
+    data: {
       userId: String(userId),
       plan: 'premium',
       amount: Number(amount),
       status: 'active',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    };
-    console.log("subscriptionData =", JSON.stringify(subscriptionData, null, 2));
-    console.log(typeof subscriptionData.userId);
-    console.log(typeof subscriptionData.amount);
-    console.log(typeof subscriptionData.plan);
-    console.log(typeof subscriptionData.status);
-    console.log("DATABASE_URL:", process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/\/\/[^\/]+@/, "//<masked>@") : "not set");
-    console.log("Authenticated userId:", userId);
-    const count = await prisma.user.count();
-    console.log("Total Prisma users:", count);
-    const firstUsers = await prisma.user.findMany({
-      take: 5
-    });
-    console.dir(firstUsers, { depth: null });
-    const byId = await prisma.user.findUnique({
-      where: {
-        id: userId
-      }
-    });
-    console.log("findUnique result:");
-    console.dir(byId, { depth: null });
-    const userExists = await prisma.user.findUnique({
-      where: {
-        id: subscriptionData.userId
-      }
-    });
-    console.log("USER EXISTS:");
-    console.dir(userExists, { depth: null });
-    const existingSubs = await prisma.subscription.findMany({
-      where: {
-        userId: subscriptionData.userId
-      }
-    });
-    console.log("EXISTING SUBSCRIPTIONS:");
-    console.dir(existingSubs, { depth: null });
-    try {
-      console.log("========= BEFORE CREATE =========");
-      console.log(subscriptionData);
-      const created = await prisma.subscription.create({
-        data: subscriptionData
-      });
-      console.log("========= CREATE SUCCESS =========");
-      console.dir(created, { depth: null });
-
-      // Notify the user their premium subscription is now active.
-      await createNotification(String(userId), {
-        type: NOTIFICATION_TYPES.SYSTEM,
-        title: 'Premium Subscription Activated',
-        message: `Your premium subscription is now active until ${created.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
-        entityType: 'SUBSCRIPTION',
-        entityId: String(created.id),
-        icon: '👑',
-        link: '/subscription',
-      });
-
-      return created;
-    } catch (e) {
-      console.log("========= CREATE FAILED =========");
-      console.log("name:");
-      console.log(e.name);
-      console.log("code:");
-      console.log(e.code);
-      console.log("message:");
-      console.log(e.message);
-      console.log("meta:");
-      console.dir(e.meta, { depth: null });
-      console.log("stack:");
-      console.log(e.stack);
-      console.log("full error:");
-      console.dir(e, { depth: null });
-      throw e;
+      startDate,
+      endDate
     }
-  } catch(err) {
-    console.error("========= PRISMA CREATE FAILED =========");
-    console.error("name:", err.name);
-    console.error("code:", err.code);
-    console.error("message:", err.message);
-    console.error("meta:", err.meta);
-    console.error("stack:", err.stack);
-    console.error(err);
-    throw err;
+  });
+
+  await createNotification(String(userId), {
+    type: NOTIFICATION_TYPES.SYSTEM,
+    title: 'Premium Subscription Activated',
+    message: `Your premium subscription is now active until ${created.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
+    entityType: 'SUBSCRIPTION',
+    entityId: String(created.id),
+    icon: '👑',
+    link: '/subscription',
+  });
+
+  return created;
+};
+
+// ============================================================
+// PAYMENT COMPLETION — route side effects by explicit PURPOSE
+// ============================================================
+// DESIGN (retry-safe fulfillment, no reliance on status alone):
+//   status='completed'  means "money captured".                       ❌ NOT a guarantee
+//   fulfillmentStatus   means "entitlement granted".                  ✅ the real truth
+//
+// Lifecycle: pending -> (claimed) processing -> fulfilled | failed
+//   - A completed-but-failed/pending fulfillment IS retried safely by the
+//     next callback/capture (it re-claims, never re-runs in parallel).
+//   - Duplicate callbacks cannot double-grant: only one concurrent claim wins
+//     the atomic updateMany; the loser sees fulfillmentStatus already
+//     processing/fulfilled and returns without side effects.
+//   - Side-effect failure leaves fulfillmentStatus='failed' so retry re-attempts.
+//
+// PURPOSE routing (explicit discriminator — never inferred from amount):
+//   SUBSCRIPTION -> activate/extend Premium ONLY (no hire behavior)
+//   COMMISSION   -> update the associated Hire ONLY (never grants Premium)
+const FULFILLMENT_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  FULFILLED: 'fulfilled',
+  FAILED: 'failed'
+};
+
+const FULFILLMENT_STALE_MS = 10 * 60 * 1000; // reclaim a stuck 'processing' claim after 10 min
+const MAX_FULFILLMENT_ATTEMPTS = 5;          // eventually disables endless retry loops
+
+/**
+ * Atomically claim the exclusive right to run fulfillment for one Payment.
+ * Also marks the payment 'completed' (money captured) exactly once.
+ * Returns { granted:true } for the single winner; everything else returns a
+ * reason ('fulfilled' | 'in-flight' | 'exhausted' | 'unknown') so callers can
+ * acknowledge duplicates without running side effects.
+ */
+const claimFulfillment = async (paymentId, captureRef) => {
+  const now = new Date();
+
+  // 1) Record that money was captured — safe to do independently of fulfillment.
+  await prisma.payment.updateMany({
+    where: {
+      id: paymentId,
+      NOT: { status: 'completed' }
+    },
+    data: {
+      status: 'completed',
+      completedAt: now,
+      captureId: captureRef || null
+    }
+  });
+
+  // 2) Try to claim the fulfillment slot.
+  const claimed = await prisma.payment.updateMany({
+    where: {
+      id: paymentId,
+      fulfillmentStatus: { in: [FULFILLMENT_STATUS.PENDING, FULFILLMENT_STATUS.FAILED] },
+      fulfillmentAttempts: { lt: MAX_FULFILLMENT_ATTEMPTS }
+    },
+    data: {
+      fulfillmentStatus: FULFILLMENT_STATUS.PROCESSING,
+      fulfillmentAttempts: { increment: 1 },
+      fulfillmentError: null,
+      fulfillmentStartedAt: now
+    }
+  });
+  if (claimed.count > 0) {
+    return { granted: true };
+  }
+
+  // 3) Not claimable by the query above — decide why.
+  const current = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: {
+      fulfillmentStatus: true,
+      fulfillmentStartedAt: true,
+      fulfillmentAttempts: true
+    }
+  });
+
+  if (current?.fulfillmentStatus === FULFILLMENT_STATUS.FULFILLED) {
+    return { granted: false, reason: 'fulfilled' };
+  }
+  if (current?.fulfillmentAttempts >= MAX_FULFILLMENT_ATTEMPTS) {
+    return { granted: false, reason: 'exhausted' };
+  }
+
+  // A 'processing' claim that never finished is stale — reclaim it.
+  if (current?.fulfillmentStatus === FULFILLMENT_STATUS.PROCESSING) {
+    const startedAt = current.fulfillmentStartedAt ? new Date(current.fulfillmentStartedAt).getTime() : 0;
+    if (startedAt && (now.getTime() - startedAt) > FULFILLMENT_STALE_MS) {
+      const reclaimed = await prisma.payment.updateMany({
+        where: {
+          id: paymentId,
+          fulfillmentStatus: FULFILLMENT_STATUS.PROCESSING,
+          fulfillmentAttempts: { lt: MAX_FULFILLMENT_ATTEMPTS },
+          fulfillmentStartedAt: { lte: new Date(now.getTime() - FULFILLMENT_STALE_MS) }
+        },
+        data: {
+          fulfillmentAttempts: { increment: 1 },
+          fulfillmentStartedAt: now
+        }
+      });
+      if (reclaimed.count > 0) {
+        return { granted: true };
+      }
+    }
+    return { granted: false, reason: 'in-flight' };
+  }
+
+  return { granted: false, reason: current?.fulfillmentStatus || 'unknown' };
+};
+
+const completePaymentTransaction = async (payment, captureRef) => {
+  if (!payment) return { fulfilled: false, error: 'No payment' };
+
+  const claim = await claimFulfillment(payment.id, captureRef);
+  if (!claim.granted) {
+    console.log(`⚠️ Payment ${payment.transactionId} fulfillment not granted: ${claim.reason} — duplicate/retry handled idempotently`);
+    return { fulfilled: claim.reason === 'fulfilled', error: null };
+  }
+
+  try {
+    if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      console.log(`👑 SUBSCRIPTION payment ${payment.transactionId} completed — activating Premium ONLY`);
+      await ensureSubscription(payment.userId, payment.amount);
+    } else {
+      // COMMISSION (default for hire-linked payments) — never grants Premium.
+      console.log(`💳 COMMISSION payment ${payment.transactionId} completed — hire update only, NO premium granted`);
+      if (!payment.hireId) {
+        throw new Error('COMMISSION payment completed without hireId — nothing to fulfill');
+      }
+      const hireOk = await updateHireAfterPayment(payment.hireId, captureRef);
+      if (!hireOk) {
+        throw new Error('updateHireAfterPayment did not complete successfully');
+      }
+    }
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        fulfillmentStatus: FULFILLMENT_STATUS.FULFILLED,
+        fulfillmentError: null,
+        fulfillmentCompletedAt: new Date()
+      }
+    });
+    console.log(`✅ Payment ${payment.transactionId} fulfilled (${payment.purpose})`);
+    return { fulfilled: true, error: null };
+
+  } catch (error) {
+    // Side-effect failure: keep `status='completed'` but record failure so a
+    // retried callback/capture reclaims and re-attempts fulfillment.
+    console.error(`❌ Fulfillment failed for payment ${payment.transactionId}:`, error.message);
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        fulfillmentStatus: FULFILLMENT_STATUS.FAILED,
+        fulfillmentError: error.message || String(error)
+      }
+    });
+    return { fulfilled: false, error: error.message || String(error) };
   }
 };
 
@@ -492,7 +607,6 @@ const ensureSubscription = async (userId, amount) => {
 router.post('/create-payment-intent', authenticate, async (req, res) => {
   try {
     const {
-      amount,
       paymentMethod,
       userEmail,
       workerName,
@@ -502,31 +616,100 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       employerName,
       hireId,
       phone,
-      offerId
+      offerId,
+      purpose: requestedPurpose
     } = req.body;
+
+    // Amount is NEVER taken from the client as authority. It is re-derived
+    // server-side below (SUBSCRIPTION -> role pricing, COMMISSION -> hire
+    // total), so it starts undefined and is assigned before any use.
+    let amount;
+
+    // ============================================================
+    // EXPLICIT PAYMENT PURPOSE — explicit discriminator, never inferred
+    // from the amount. Defaults to COMMISSION so all existing hire/
+    // commission flows behave identically unless they opt into SUBSCRIPTION.
+    // ============================================================
+    const purpose = requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION
+      ? PAYMENT_PURPOSES.SUBSCRIPTION
+      : PAYMENT_PURPOSES.COMMISSION;
+
+    if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      // SERVER-SIDE PRICE AUTHORITY: never trust the client-supplied amount
+      // for a subscription. Price is derived from the authenticated user's
+      // role (verified against the DB when possible).
+      let role = req.userRole;
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: String(req.userId) },
+          select: { role: true }
+        });
+        if (dbUser?.role) role = dbUser.role;
+      } catch (roleErr) {
+        console.warn('⚠️ Could not resolve role for subscription pricing:', roleErr.message);
+      }
+
+      amount = getPremiumPriceForRole(role);
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid amount'
+        });
+      }
+    } else {
+      // COMMISSION: hire context is required.
+      if (!hireId) {
+        return res.status(400).json({
+          success: false,
+          error: 'hireId is required for commission payments'
+        });
+      }
+
+      // Commission amount + ownership are SERVER-AUTHORITATIVE from the Hire
+      // record (the 15% commission is derived at hire creation and stored on
+      // the hire). The client-supplied amount is ignored — it can neither
+      // inflate nor deflate what actually gets charged.
+      const commissionHire = await prisma.hire.findUnique({
+        where: { id: String(hireId) },
+        select: { id: true, totalDue: true, employerId: true }
+      });
+      if (!commissionHire) {
+        return res.status(400).json({
+          success: false,
+          error: 'Hire not found for commission payment'
+        });
+      }
+
+      // Only the authenticated employer who owns the Hire may charge for it.
+      if (!req.userId || String(commissionHire.employerId) !== String(req.userId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'You are not authorized to pay for this hire'
+        });
+      }
+
+      // COMMISSION AMOUNT AUTHORITY: charge exactly the hire's server-derived
+      // total; the client amount is ignored.
+      amount = Number(commissionHire.totalDue);
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid amount'
+        });
+      }
+    }
 
     console.log('📤 Creating payment intent:', {
       amount,
+      purpose,
       paymentMethod,
       userEmail,
       jobTitle,
       hireId,
       offerId
     });
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid amount'
-      });
-    }
-
-    if (!hireId) {
-      return res.status(400).json({
-        success: false,
-        error: 'hireId is required'
-      });
-    }
 
     const orderId = generateOrderId();
     const transactionId = generateId();
@@ -548,67 +731,101 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       description: `Payment for ${jobTitle || 'service'} - ${workerName || 'worker'}`
     };
 
-    // Check if payment already exists for this hireId with pending/processing status
-    const existingPayment = await prisma.payment.findFirst({
-      where: {
-        hireId: hireId,
-        status: {
-          in: ['pending', 'processing']
-        }
-      }
-    });
-
     let payment;
-    if (existingPayment) {
-      console.log('⚠️ Payment already exists for hire:', hireId, 'Updating:', existingPayment.id);
-      
-      // Update existing payment with new order details
-      payment = await prisma.payment.update({
-        where: { id: existingPayment.id },
-        data: {
-          orderId: orderId,
-          transactionId: transactionId,
-          amount: Number(amount),
-          paymentMethod: paymentMethod || 'paymob',
-          userEmail: userEmail || existingPayment.userEmail,
-          workerId: workerId || existingPayment.workerId,
-          workerName: workerName || existingPayment.workerName,
-          jobTitle: jobTitle || existingPayment.jobTitle,
-          employerId: employerId || existingPayment.employerId,
-          employerName: employerName || existingPayment.employerName,
-          hireId: hireId,
-          offerId: offerId || existingPayment.offerId,
-          phone: phone || existingPayment.phone,
-          metadata: {
-            ...existingPayment.metadata,
-            createdFrom: 'payment-intent',
-            source: 'frontend',
-            originalAmount: amount,
-            originalCurrency: 'EGP',
-            updatedAt: new Date().toISOString()
+
+    if (purpose === PAYMENT_PURPOSES.COMMISSION) {
+      // Reuse a pending payment for the same hire across retries.
+      const existingPayment = await prisma.payment.findFirst({
+        where: {
+          hireId: String(hireId),
+          status: {
+            in: ['pending', 'processing']
           }
         }
       });
-      
-      console.log('✅ Payment record updated:', transactionId);
+
+      if (existingPayment) {
+        console.log('⚠️ Payment already exists for hire:', hireId, 'Updating:', existingPayment.id);
+
+        payment = await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            orderId: orderId,
+            transactionId: transactionId,
+            amount: Number(amount),
+            paymentMethod: paymentMethod || 'paymob',
+            purpose: PAYMENT_PURPOSES.COMMISSION,
+            userEmail: userEmail || existingPayment.userEmail,
+            workerId: workerId || existingPayment.workerId,
+            workerName: workerName || existingPayment.workerName,
+            jobTitle: jobTitle || existingPayment.jobTitle,
+            employerId: employerId || existingPayment.employerId,
+            employerName: employerName || existingPayment.employerName,
+            hireId: hireId,
+            offerId: offerId || existingPayment.offerId,
+            phone: phone || existingPayment.phone,
+            metadata: {
+              ...existingPayment.metadata,
+              createdFrom: 'payment-intent',
+              source: 'frontend',
+              originalAmount: amount,
+              originalCurrency: 'EGP',
+              updatedAt: new Date().toISOString()
+            }
+          }
+        });
+
+        console.log('✅ Payment record updated:', transactionId);
+      } else {
+        payment = await prisma.payment.create({
+          data: {
+            orderId,
+            transactionId,
+            amount: Number(amount),
+            currency: 'EGP',
+            paymentMethod: paymentMethod,
+            purpose: PAYMENT_PURPOSES.COMMISSION,
+            status: 'pending',
+            userEmail: userEmail || 'employer@example.com',
+            userId: req.userId || null,
+            workerId: workerId || null,
+            workerName: workerName || 'Worker',
+            jobTitle: jobTitle || null,
+            employerId: employerId || null,
+            employerName: employerName || null,
+            hireId: hireId,
+            offerId: offerId || null,
+            phone: phone || null,
+            metadata: {
+              createdFrom: 'payment-intent',
+              source: 'frontend',
+              originalAmount: amount,
+              originalCurrency: 'EGP'
+            }
+          }
+        });
+        console.log('✅ Payment record created:', transactionId);
+      }
     } else {
-      // Create new payment record
+      // SUBSCRIPTION: no hire context — a fresh Payment row per attempt. The
+      // completion flow (webhook / capture) grants Premium via purpose.
       payment = await prisma.payment.create({
         data: {
           orderId,
           transactionId,
           amount: Number(amount),
           currency: 'EGP',
-          paymentMethod: paymentMethod || 'paymob',
+          paymentMethod: paymentMethod,
+          purpose: PAYMENT_PURPOSES.SUBSCRIPTION,
           status: 'pending',
           userEmail: userEmail || 'employer@example.com',
           userId: req.userId || null,
           workerId: workerId || null,
-          workerName: workerName || 'Worker',
+          workerName: workerName || null,
           jobTitle: jobTitle || null,
           employerId: employerId || null,
           employerName: employerName || null,
-          hireId: hireId,
+          hireId: null,
           offerId: offerId || null,
           phone: phone || null,
           metadata: {
@@ -619,7 +836,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           }
         }
       });
-      console.log('✅ Payment record created:', transactionId);
+      console.log('✅ SUBSCRIPTION payment record created:', transactionId);
     }
 
     let result;
@@ -868,23 +1085,9 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
         if (orderCheck.data?.status === 'COMPLETED') {
           const captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'completed',
-              completedAt: new Date(),
-              captureId: captureId || null
-            }
-          });
-
-          // Update hire status
-          if (payment.hireId) {
-            await updateHireAfterPayment(payment.hireId, captureId);
-          }
-
-          // Persist subscription in MongoDB
-          console.log("CALLING ensureSubscription");
-          await ensureSubscription(payment.userId, payment.amount);
+          // Atomic, idempotent completion — side effects routed by PURPOSE
+          // (SUBSCRIPTION grants Premium; COMMISSION updates the hire).
+          await completePaymentTransaction(payment, captureId);
 
           console.log("RETURN SUCCESS PATH A");
           return res.json({
@@ -920,25 +1123,9 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
             const captureId = captureResponse.data.id || captureResponse.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
-            await prisma.payment.update({
-              where: { id: payment.id },
-              data: {
-                status: 'completed',
-                completedAt: new Date(),
-                captureId: captureId || null
-              }
-            });
+            await completePaymentTransaction(payment, captureId);
 
             console.log(`✅ PayPal order captured successfully: ${orderId}`);
-
-            // Update hire status
-            if (payment.hireId) {
-              await updateHireAfterPayment(payment.hireId, captureId);
-            }
-
-            // Persist subscription in MongoDB
-            console.log("CALLING ensureSubscription");
-            await ensureSubscription(payment.userId, payment.amount);
 
             console.log("RETURN SUCCESS PATH B");
             return res.json({
@@ -993,23 +1180,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           // Check for ORDER_ALREADY_CAPTURED
           const alreadyCaptured = details.some(d => d.issue === 'ORDER_ALREADY_CAPTURED');
           if (alreadyCaptured) {
-            await prisma.payment.update({
-              where: { id: payment.id },
-              data: {
-                status: 'completed',
-                completedAt: new Date(),
-                captureId: 'CAPTURED_' + Date.now()
-              }
-            });
-
-            // Update hire status
-            if (payment.hireId) {
-              await updateHireAfterPayment(payment.hireId, 'CAPTURED_' + Date.now());
-            }
-
-            // Persist subscription in MongoDB
-            console.log("CALLING ensureSubscription");
-            await ensureSubscription(payment.userId, payment.amount);
+            await completePaymentTransaction(payment, 'CAPTURED_' + Date.now());
 
             console.log("RETURN SUCCESS PATH A");
             return res.json({
@@ -1048,23 +1219,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               const testCaptureId = 'TEST_CAPTURE_' + Date.now();
 
               // Update payment status to completed
-              await prisma.payment.update({
-                where: { id: payment.id },
-                data: {
-                  status: 'completed',
-                  completedAt: new Date(),
-                  captureId: testCaptureId
-                }
-              });
-
-              // Update hire status
-              if (payment.hireId) {
-                await updateHireAfterPayment(payment.hireId, testCaptureId);
-              }
-
-              // Persist subscription in MongoDB
-              console.log("CALLING ensureSubscription");
-              await ensureSubscription(payment.userId, payment.amount);
+              await completePaymentTransaction(payment, testCaptureId);
 
               console.log('✅ Payment simulated successfully for testing');
               console.log("RETURN SUCCESS PATH B");
@@ -1189,6 +1344,7 @@ router.get('/status/:paymentId', async (req, res) => {
         amount: payment.amount,
         currency: payment.currency,
         status: payment.status,
+        purpose: payment.purpose,
         paymentMethod: payment.paymentMethod,
         userEmail: payment.userEmail,
         workerName: payment.workerName,
@@ -1424,23 +1580,132 @@ router.post('/verify', async (req, res) => {
   }
 });
 
+// ============================================================
+// PAYMOB WEBHOOK HMAC — Transaction Processed Callback (official spec)
+// ============================================================
+// Paymob does NOT sign the raw body and does NOT use a signature header.
+// The server-to-server callback POSTs `{ type: "TRANSACTION", obj }` and
+// delivers the signature as the `hmac` QUERY PARAMETER. The digest is
+// HMAC-SHA512 (lowercase hex) over a FIXED, ORDERED concatenation of exactly
+// these 20 obj fields with NO separator (booleans as lowercase true/false):
+//   amount_cents, created_at, currency, error_occured, has_parent_transaction,
+//   id, integration_id, is_3d_secure, is_auth, is_capture, is_refunded,
+//   is_standalone_payment, is_voided, order.id, owner, pending,
+//   source_data.pan, source_data.sub_type, source_data.type, success
+const PAYMOB_HMAC_FIELD_ORDER = [
+  ['amount_cents'],
+  ['created_at'],
+  ['currency'],
+  ['error_occured'],
+  ['has_parent_transaction'],
+  ['id'],
+  ['integration_id'],
+  ['is_3d_secure'],
+  ['is_auth'],
+  ['is_capture'],
+  ['is_refunded'],
+  ['is_standalone_payment'],
+  ['is_voided'],
+  ['order', 'id'],
+  ['owner'],
+  ['pending'],
+  ['source_data', 'pan'],
+  ['source_data', 'sub_type'],
+  ['source_data', 'type'],
+  ['success']
+];
+
+const resolvePaymobField = (obj, path) => {
+  return path.reduce((acc, key) => (acc == null ? undefined : acc[key]), obj);
+};
+
+const paymobHmacStringify = (value) => {
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (value === null || value === undefined) return '';
+  return String(value);
+};
+
+const verifyPaymobTransactionHmac = (obj, receivedHmac, secret) => {
+  if (!obj || typeof obj !== 'object' || !receivedHmac || !secret) return false;
+  try {
+    const concatenated = PAYMOB_HMAC_FIELD_ORDER
+      .map((path) => paymobHmacStringify(resolvePaymobField(obj, path)))
+      .join('');
+    const expected = crypto.createHmac('sha512', secret).update(concatenated).digest('hex');
+    const a = Buffer.from(expected, 'utf8');
+    const b = Buffer.from(String(receivedHmac), 'utf8');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch (error) {
+    console.error('❌ Paymob HMAC computation error:', error.message);
+    return false;
+  }
+};
+
 /**
  * Webhook Handler
  * POST /api/payments/webhook
+ *
+ * SECURITY (Transaction Processed Callback, official spec):
+ *  - body shape `{ type: "TRANSACTION", obj: {...} }`; hmac is a QUERY PARAM.
+ *  - Verification: 20-field ordered concatenation, HMAC-SHA512,
+ *    crypto.timingSafeEqual comparison.
+ *  - PRODUCTION: an unverified success webhook is ALWAYS rejected (401, no
+ *    state change) — even if PAYMOB_HMAC_SECRET is missing.
+ *  - DEVELOPMENT: explicit bypass ONLY when NODE_ENV !== 'production' AND
+ *    PAYMOB_DEV_UNVERIFIED_WEBHOOK === 'true'.
+ *
+ * IDEMPOTENCY: completion goes through completePaymentTransaction's atomic
+ * fulfillment claim — duplicate/re-delivered callbacks never grant a
+ * subscription twice or update a hire twice.
  */
 router.post('/webhook', async (req, res) => {
   try {
-    console.log('📨 Webhook received:', req.body);
+    const body = req.body || {};
+    const obj = body.obj;
+    const isPaymobTransactionCallback = obj && typeof obj === 'object' && !Array.isArray(obj);
 
-    const { transactionId, orderId, status, amount, merchant_order_id } = req.body;
+    // Paymob sends hmac as a query parameter; a few legacy fixtures also carry
+    // it at the top of the body. Headers are never a trusted source.
+    const receivedHmac = String(req.query.hmac || body.hmac || '').trim();
+    const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
+
+    let hmacVerified = false;
+    if (isPaymobTransactionCallback && hmacSecret) {
+      hmacVerified = verifyPaymobTransactionHmac(obj, receivedHmac, hmacSecret);
+    }
+
+    if (!hmacVerified) {
+      // Controlled development-only bypass — NEVER available in production.
+      const devBypass = process.env.NODE_ENV !== 'production' && process.env.PAYMOB_DEV_UNVERIFIED_WEBHOOK === 'true';
+      if (!devBypass) {
+        console.error('❌ Webhook rejected: unverified Paymob signature (no state was changed)');
+        return res.status(401).json({ success: false, error: 'Invalid HMAC signature' });
+      }
+      console.warn(`⚠️ DEV BYPASS enabled: processing unverified callback (NODE_ENV=${process.env.NODE_ENV}) — NEVER enabled in production`);
+    }
+
+    // Identifiers from the standard callback, else legacy flat-body fields.
+    const transactionId = isPaymobTransactionCallback && obj.id != null
+      ? String(obj.id)
+      : (body.transactionId || '');
+    const paymobOrderId = isPaymobTransactionCallback && obj.order?.id != null
+      ? String(obj.order.id)
+      : '';
+    const merchantOrderId = isPaymobTransactionCallback && obj.order?.merchant_order_id != null
+      ? String(obj.order.merchant_order_id)
+      : (body.merchant_order_id || '');
+    const bodyOrderId = body.orderId || '';
+    const flatStatus = body.status || '';
 
     const payment = await prisma.payment.findFirst({
       where: {
         OR: [
-          { orderId: merchant_order_id || orderId },
+          { paymobOrderId },
+          { orderId: merchantOrderId },
+          { orderId: bodyOrderId },
+          { paymobTransactionId: transactionId },
           { transactionId },
-          { paymobOrderId: orderId },
-          { paypalOrderId: orderId }
+          { paypalOrderId: bodyOrderId }
         ]
       }
     });
@@ -1450,33 +1715,34 @@ router.post('/webhook', async (req, res) => {
       return res.json({ success: true, message: 'Webhook processed (payment not found)' });
     }
 
-    const newStatus = status === 'success' || status === 'completed' || status === 'COMPLETED'
-      ? 'completed'
-      : status === 'failed' || status === 'FAILED'
-        ? 'failed'
-        : payment.status;
+    const success = isPaymobTransactionCallback
+      ? obj.success === true && obj.pending === false
+      : ['success', 'completed', 'COMPLETED'].includes(flatStatus);
+    const failed = isPaymobTransactionCallback
+      ? obj.success === false
+      : ['failed', 'FAILED', 'declined', 'DECLINED'].includes(flatStatus);
 
-    if (newStatus !== payment.status) {
-      const updateData = { status: newStatus };
-
-      if (newStatus === 'completed') {
-        updateData.completedAt = new Date();
-      }
+    if (success) {
+      // Fulfillment is claimed atomically and keyed to fulfillmentStatus
+      // (never merely status='completed'), so re-delivered callbacks cannot
+      // double-grant Premium or double-update a hire.
+      const captureRef = 'PAYMOB_' + (transactionId || Date.now());
+      await completePaymentTransaction(payment, captureRef);
 
       if (transactionId) {
-        updateData.paymobTransactionId = transactionId;
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { paymobTransactionId: transactionId }
+        });
       }
-
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: updateData
+      console.log(`✅ Payment ${payment.transactionId} completed via webhook`);
+    } else if (failed) {
+      // A later decline must NEVER leapfrog an already-completed payment.
+      await prisma.payment.updateMany({
+        where: { id: payment.id, NOT: { status: 'completed' } },
+        data: { status: 'failed' }
       });
-      console.log(`✅ Payment ${payment.transactionId} updated to ${newStatus}`);
-
-      // Update hire status if payment completed
-      if (newStatus === 'completed' && payment.hireId) {
-        await updateHireAfterPayment(payment.hireId, 'WEBHOOK_' + Date.now());
-      }
+      console.log(`❌ Payment ${payment.transactionId} failed via webhook`);
     }
 
     res.json({

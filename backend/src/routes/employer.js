@@ -2,7 +2,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import prisma from '../lib/prisma.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
 
 const router = express.Router();
@@ -15,7 +15,19 @@ const escapeRegExp = (string) => {
 // ============================================================
 // Search Workers
 // ============================================================
-router.get('/search', authenticate, async (req, res) => {
+/**
+ * Search Workers — EMPLOYER ONLY
+ *
+ * SECURITY: restricted to authenticated EMPLOYER accounts (WORKER / SUPPORT /
+ * ADMIN cannot consume the Employer search quota or read worker results here).
+ *
+ * PRIVACY: worker email/phone are ONLY returned to an Employer who is
+ * authorized to contact that specific worker (i.e. a completed paid hire /
+ * commission with that worker). Authorization is resolved in BATCH — exactly
+ * three DB queries (workers, worker profiles, completed payments) regardless
+ * of result size — so no N+1 query pattern is introduced.
+ */
+router.get('/search', requireEmployer, async (req, res) => {
   try {
     const employerId = req.userId;
     const employerRole = req.userRole;
@@ -55,14 +67,66 @@ router.get('/search', authenticate, async (req, res) => {
       filter.location = { $regex: escapedLocation, $options: 'i' };
     }
     
+    // NOTE: never select the password; leave email/phone selected so we can
+    // strip them per-worker below (matching /api/workers/profile/:id behavior).
     const workers = await User.find(filter).select('-password');
-    
+
+    // ============================================================
+    // BATCHED CONTACT AUTHORIZATION (no N+1)
+    // 1. Map each worker User._id -> WorkerProfile.id
+    // 2. Find which worker profiles this Employer has a completed payment for
+    // ============================================================
+    let profileIdByUserId = new Map();
+    let unlockedProfileIds = new Set();
+
+    const userIds = workers.map(w => String(w._id));
+    if (userIds.length > 0) {
+      const workerProfiles = await prisma.workerProfile.findMany({
+        where: { userId: { in: userIds } },
+        select: { id: true, userId: true }
+      });
+
+      workerProfiles.forEach(p => profileIdByUserId.set(String(p.userId), String(p.id)));
+
+      const profileIds = workerProfiles.map(p => String(p.id));
+      if (profileIds.length > 0) {
+        const completedPayments = await prisma.payment.findMany({
+          where: {
+            employerId: String(employerId),
+            workerId: { in: profileIds },
+            status: 'completed'
+          },
+          select: { workerId: true },
+          distinct: ['workerId']
+        });
+        completedPayments.forEach(p => unlockedProfileIds.add(String(p.workerId)));
+      }
+    }
+
+    const result = workers.map(w => {
+      const workerObj = w.toObject ? w.toObject() : { ...w };
+      workerObj.id = String(workerObj._id || workerObj.id || '');
+
+      const profileId = profileIdByUserId.get(String(workerObj._id));
+      const canContact = profileId ? unlockedProfileIds.has(profileId) : false;
+
+      if (!canContact) {
+        workerObj.email = null;
+        workerObj.phone = null;
+      }
+
+      delete workerObj.password;
+      delete workerObj.__v;
+
+      return workerObj;
+    });
+
     const isPremium = await hasActiveSubscription(employerId);
     const limitStatus = await getSearchLimitStatus(employerId);
     
     res.json({
       success: true,
-      workers,
+      workers: result,
       isPremium,
       searchCount: limitStatus.count,
       searchLimit: limitStatus.limit,

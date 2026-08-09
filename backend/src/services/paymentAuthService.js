@@ -72,20 +72,33 @@ export const recordSearch = async (employerId) => {
       return { allowed: true, remaining: Infinity };
     }
 
-    if (tracking.searchCount >= 3) {
+    // Atomic quota consumption: only ONE concurrent request may increment the
+    // counter while it is still below the daily limit (3). A conditional
+    // updateMany (with searchCount < 3 in the WHERE) makes parallel requests
+    // race safely — at most one increments at the boundary, so the free limit
+    // cannot be trivially exceeded by issuing multiple requests at once.
+    const claimed = await prisma.employerSearchTracking.updateMany({
+      where: {
+        id: tracking.id,
+        searchCount: { lt: 3 }
+      },
+      data: {
+        searchCount: { increment: 1 }
+      }
+    });
+
+    if (claimed.count === 0) {
       return { allowed: false, remaining: 0 };
     }
 
-    tracking = await prisma.employerSearchTracking.update({
+    const freshTracking = await prisma.employerSearchTracking.findUnique({
       where: { id: tracking.id },
-      data: {
-        searchCount: tracking.searchCount + 1
-      }
+      select: { searchCount: true }
     });
 
     return {
       allowed: true,
-      remaining: 3 - tracking.searchCount
+      remaining: Math.max(0, 3 - (freshTracking?.searchCount ?? tracking.searchCount + 1))
     };
 
   } catch (error) {

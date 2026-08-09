@@ -170,8 +170,21 @@ model Payment {
   approvalUrl         String?   @map("approvalUrl")
   captureId           String?   @map("captureId")
   offerId             String?   @map("offerId")
+  purpose             String?   @default("COMMISSION") @map("purpose")
   metadata            Json?     @default("{}") @map("metadata")
   completedAt         DateTime? @map("completedAt")
+
+  // FULFILLMENT LIFECYCLE — separates "money captured" (status) from
+  // "entitlement granted" (fulfillmentStatus). A completed-but-unfulfilled
+  // payment is retryable; fulfillment is claimed atomically so duplicate
+  // callbacks/captures never grant a subscription twice or update a hire
+  // twice. `status='completed'` alone must NEVER be treated as fulfilled.
+  fulfillmentStatus      String    @default("pending") @map("fulfillmentStatus")
+  fulfillmentAttempts    Int       @default(0) @map("fulfillmentAttempts")
+  fulfillmentError       String?   @map("fulfillmentError")
+  fulfillmentStartedAt   DateTime? @map("fulfillmentStartedAt")
+  fulfillmentCompletedAt DateTime? @map("fulfillmentCompletedAt")
+
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

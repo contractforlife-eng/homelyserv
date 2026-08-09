@@ -623,7 +623,7 @@ const Subscription = () => {
 
       if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
         // Paymob Payment
-        const result = await createPaymobPayment(price, orderId, customerData);
+        const result = await createPaymobPayment(price, orderId, customerData, { purpose: 'SUBSCRIPTION' });
         
         if (result.success) {
           setPaymobIframe(result.iframeUrl);
@@ -634,7 +634,7 @@ const Subscription = () => {
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         // PayPal Payment
-        const result = await createPayPalOrder(price, orderId, customerData);
+        const result = await createPayPalOrder(price, orderId, customerData, { purpose: 'SUBSCRIPTION' });
         
         if (result.success) {
           // Open PayPal in new window

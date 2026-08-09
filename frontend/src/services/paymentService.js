@@ -6,10 +6,15 @@ export const createPaymentIntent = async (paymentData) => {
   return response.data;
 };
 
-export const createPaymobPayment = async (amount, orderId, customerData) => {
+// PURPOSE is the backend's explicit discriminator (PAYMENT_PURPOSES in
+// backend/src/config/subscription.js): SUBSCRIPTION or COMMISSION. The
+// backend is authoritative for amounts — a SUBSCRIPTION intent is priced by
+// the user's role and a COMMISSION intent by the hire's server-derived total.
+export const createPaymobPayment = async (amount, orderId, customerData, options = {}) => {
   return createPaymentIntent({
     amount: Number(amount),
     paymentMethod: 'paymob',
+    purpose: options.purpose || 'COMMISSION',
     userEmail: customerData?.email || 'employer@example.com',
     workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
     userId: customerData?.userId,
@@ -58,10 +63,11 @@ export const processPaymobWebhook = async (webhookData) => {
   }
 };
 
-export const createPayPalOrder = async (amount, orderId, customerData) => {
+export const createPayPalOrder = async (amount, orderId, customerData, options = {}) => {
   return createPaymentIntent({
     amount: Number(amount),
     paymentMethod: 'paypal',
+    purpose: options.purpose || 'COMMISSION',
     userEmail: customerData?.email || 'employer@example.com',
     workerName: customerData?.firstName + ' ' + customerData?.lastName || customerData?.workerName || 'Worker',
     userId: customerData?.userId,
