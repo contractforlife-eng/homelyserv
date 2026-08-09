@@ -326,15 +326,21 @@ model WorkerPayoutDetails {
 // salary payments (those are arranged directly between employer and
 // worker, off-platform).
 //
-// Phase 1 only ever creates records with status PENDING. Automatic
-// transitions to EARNED / PAID are intentionally NOT implemented
-// because no trustworthy work-completion or salary-payment event
-// exists yet.
+// Phase 1 only ever creates records with status PENDING.
+// Phase 2 adds the bilateral confirmation state machine:
+//   PENDING -> (worker submits) -> AWAITING_CONFIRMATION -> (employer
+//   approves) -> EARNED. The employer may reject a submitted period
+//   as DISPUTED. EARNED means: both parties confirmed the work period
+//   was completed inside HomelyServ - NOT that any salary was paid.
+// Transitions to PAID are intentionally NOT implemented yet.
 //
 // workerId        -> User.id (authenticated worker identity)
 // workerProfileId -> WorkerProfile.id (Hire.workerId)
 // idempotencyKey  -> deterministic unique key (unique index) that
 //                    prevents duplicate ledger entries.
+// confirmationRequestedBy -> actor (role:userId) that requested
+//                    confirmation of the work period (Phase 2).
+// metadata.audit  -> append-only log of confirmation events.
 // ============================================================
 model WorkerEarning {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -352,6 +358,14 @@ model WorkerEarning {
   earnedAt        DateTime? @map("earnedAt")
   dueAt           DateTime? @map("dueAt")
   paidAt          DateTime? @map("paidAt")
+
+  // ---- Phase 2: bilateral confirmation state (see model comment) ----
+  confirmationRequestedAt  DateTime?
+  confirmationRequestedBy  String?
+  confirmedByWorkerAt      DateTime?
+  confirmedByEmployerAt    DateTime?
+  confirmedAt              DateTime?
+
   idempotencyKey  String    @unique
   metadata        Json?     @default("{}")
   createdAt       DateTime  @default(now())
@@ -467,6 +481,11 @@ model Complaint {
   attachments      String[]  @default([])
   resolvedAt       DateTime?
   closedAt         DateTime?
+
+  // ---- Phase 2: dispute resolution (Hire completeness) ----
+  hireId          String?   @db.ObjectId
+  workerEarningId String?   @db.ObjectId
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

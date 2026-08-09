@@ -7,6 +7,7 @@ import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
+import workerEarningService from '../services/workerEarningService';
 import api from '../utils/api';
 import {
   User,
@@ -47,6 +48,7 @@ const WorkerPayment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
 
   const dashboard = useDashboard();
   
@@ -125,6 +127,7 @@ const WorkerPayment = () => {
       },
       status: {
         PENDING: 'Pending / Contract Active',
+        AWAITING_CONFIRMATION: 'Awaiting Employer Confirmation',
         EARNED: 'Confirmed Earned',
         PAID: 'Paid',
         ON_HOLD: 'On Hold',
@@ -134,11 +137,23 @@ const WorkerPayment = () => {
       filters: {
         all: 'All Entries',
         PENDING: 'Pending / Contract Active',
+        AWAITING_CONFIRMATION: 'Awaiting Employer Confirmation',
         EARNED: 'Confirmed Earned',
         PAID: 'Paid',
         ON_HOLD: 'On Hold',
         DISPUTED: 'Disputed',
         CANCELLED: 'Cancelled'
+      },
+      submit: {
+        button: 'Submit Period',
+        confirmTitle: 'Submit this period for confirmation?',
+        confirmBody: 'This tells your employer the work period is completed and requests their confirmation. It does NOT confirm salary payment.',
+        confirm: 'Submit for Confirmation',
+        cancel: 'Cancel',
+        submitting: 'Submitting...',
+        success: 'Work period submitted for employer confirmation',
+        error: 'Failed to submit work period. Please try again.',
+        alreadySubmitted: 'This period is already awaiting confirmation'
       },
       languageToggle: 'العربية',
       notifications: 'Notifications',
@@ -190,6 +205,7 @@ const WorkerPayment = () => {
       },
       status: {
         PENDING: 'معلق / العقد نشط',
+        AWAITING_CONFIRMATION: 'في انتظار تأكيد صاحب العمل',
         EARNED: 'أرباح مؤكدة',
         PAID: 'مدفوع',
         ON_HOLD: 'قيد الانتظار',
@@ -199,11 +215,23 @@ const WorkerPayment = () => {
       filters: {
         all: 'جميع السجلات',
         PENDING: 'معلق / العقد نشط',
+        AWAITING_CONFIRMATION: 'في انتظار تأكيد صاحب العمل',
         EARNED: 'أرباح مؤكدة',
         PAID: 'مدفوع',
         ON_HOLD: 'قيد الانتظار',
         DISPUTED: 'متنازع عليه',
         CANCELLED: 'ملغى'
+      },
+      submit: {
+        button: 'إرسال الفترة',
+        confirmTitle: 'إرسال هذه الفترة للموافقة؟',
+        confirmBody: 'هذا يخبر صاحب العمل أن فترة العمل قد اكتملت ويطلب موافقته. لا يؤكد استلام الراتب.',
+        confirm: 'إرسال للموافقة',
+        cancel: 'إلغاء',
+        submitting: 'جاري الإرسال...',
+        success: 'تم إرسال فترة العمل لتأكيد صاحب العمل',
+        error: 'فشل إرسال فترة العمل. حاول مرة أخرى.',
+        alreadySubmitted: 'هذه الفترة في انتظار التأكيد بالفعل'
       },
       languageToggle: 'English',
       notifications: 'الإشعارات',
@@ -412,9 +440,40 @@ const WorkerPayment = () => {
     loadEarningsData();
   };
 
+  // Worker submits a PENDING period for employer confirmation.
+  const handleSubmitPeriod = async (record) => {
+    if (!record || submittingId) return;
+
+    if (!window.confirm(`${t.submit.confirmTitle}\n\n${t.submit.confirmBody}`)) {
+      return;
+    }
+
+    setSubmittingId(record.id);
+    try {
+      const data = await workerEarningService.submitWorkerEarning(record.id);
+      if (data && data.success) {
+        await loadEarningsData();
+        alert(t.submit.success);
+      } else {
+        alert(data?.message || t.submit.error);
+      }
+    } catch (error) {
+      console.error('Error submitting period:', error);
+      const message =
+        error?.response?.data?.message === 'This period is already awaiting employer confirmation'
+          ? t.submit.alreadySubmitted
+          : t.submit.error;
+      alert(message);
+      await loadEarningsData();
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       PENDING: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      AWAITING_CONFIRMATION: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
       EARNED: 'bg-green-100 text-green-800 border border-green-200',
       PAID: 'bg-blue-100 text-blue-800 border border-blue-200',
       ON_HOLD: 'bg-amber-100 text-amber-800 border border-amber-200',
@@ -427,6 +486,7 @@ const WorkerPayment = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'PENDING': return <Clock size={14} />;
+      case 'AWAITING_CONFIRMATION': return <Clock size={14} />;
       case 'EARNED': return <CheckCircle size={14} />;
       case 'PAID': return <CheckCircle size={14} />;
       case 'ON_HOLD': return <Clock size={14} />;
@@ -661,6 +721,7 @@ const WorkerPayment = () => {
                   >
                     <option value="all">{t.filters.all}</option>
                     <option value="PENDING">{t.filters.PENDING}</option>
+                    <option value="AWAITING_CONFIRMATION">{t.filters.AWAITING_CONFIRMATION}</option>
                     <option value="EARNED">{t.filters.EARNED}</option>
                     <option value="PAID">{t.filters.PAID}</option>
                     <option value="ON_HOLD">{t.filters.ON_HOLD}</option>
@@ -710,10 +771,26 @@ const WorkerPayment = () => {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusColor(record.status)}`}>
-                            {getStatusIcon(record.status)}
-                            {t.status[record.status] || record.status}
-                          </span>
+                          <div className="flex flex-col items-start gap-2">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusColor(record.status)}`}>
+                              {getStatusIcon(record.status)}
+                              {t.status[record.status] || record.status}
+                            </span>
+                            {record.status === 'PENDING' && (
+                              <button
+                                onClick={() => handleSubmitPeriod(record)}
+                                disabled={submittingId !== null}
+                                className="px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                              >
+                                {submittingId === record.id ? (
+                                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <CheckCircle size={12} />
+                                )}
+                                {submittingId === record.id ? t.submit.submitting : t.submit.button}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

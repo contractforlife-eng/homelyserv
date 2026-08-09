@@ -28,7 +28,11 @@ router.get('/user/:userId', authenticate, getMyHires);
 // ============================================================
 // Update Hire Status
 // ============================================================
-router.put('/:hireId/status', updateHireStatus);
+// PHASE 2 SECURITY FIX: previously unauthenticated — anyone could set
+// any hire to any status. Now requires auth; the controller restricts
+// which statuses may be set and verifies ownership (EMPLOYER owner or
+// ADMIN).
+router.put('/:hireId/status', authenticate, updateHireStatus);
 
 // ============================================================
 // Respond to Offer (accept/reject)

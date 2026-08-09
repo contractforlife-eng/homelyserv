@@ -336,7 +336,7 @@ const serializeComplaint = (complaint, { includeInternal = false } = {}) => {
  */
 export const createComplaint = async (req, res) => {
   try {
-    const { subject, description, category, priority, attachments } = req.body;
+    const { subject, description, category, priority, attachments, hireId, workerEarningId } = req.body;
     const userId = String(req.userId);
     const userRole = req.userRole;
 
@@ -370,6 +370,12 @@ export const createComplaint = async (req, res) => {
         priority: validPriority ? priority : 'Medium',
         status: 'NEW',
         attachments: Array.isArray(attachments) ? attachments.filter(Boolean) : [],
+        // Optional Phase 2 linkage: populate only when valid ObjectIds are
+        // provided so a dispute ticket traces back to the hire/earning.
+        hireId: hireId && /^[0-9a-fA-F]{24}$/.test(String(hireId)) ? String(hireId) : null,
+        workerEarningId: workerEarningId && /^[0-9a-fA-F]{24}$/.test(String(workerEarningId))
+          ? String(workerEarningId)
+          : null,
       },
       include: {
         User: {

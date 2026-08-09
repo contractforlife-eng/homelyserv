@@ -379,14 +379,43 @@ export const getMyOffers = async (req, res) => {
 };
 
 // UPDATE HIRE STATUS
+// PHASE 2 SECURITY FIX:
+// - Requires authentication (route now uses authenticate).
+// - Whitelists the only statuses callers legitimately use ('terminated').
+// - Ownership is enforced from the token: EMPLOYER must own the hire;
+//   ADMIN may act on any hire. No other role may mutate hire status.
 export const updateHireStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const hire = await prisma.hire.update({
-      where: { id: req.params.hireId },
-      data: { status }
+    const hireId = String(req.params.hireId);
+
+    if (!['terminated'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid hire status action' });
+    }
+
+    const hire = await prisma.hire.findUnique({ where: { id: hireId } });
+    if (!hire) {
+      return res.status(404).json({ message: 'Hire not found' });
+    }
+
+    if (req.userRole !== 'ADMIN') {
+      if (req.userRole !== 'EMPLOYER') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      if (String(hire.employerId) !== String(req.userId)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
+
+    if (hire.status === 'terminated') {
+      return res.status(400).json({ message: 'Hire is already terminated' });
+    }
+
+    const updatedHire = await prisma.hire.update({
+      where: { id: hireId },
+      data: { status },
     });
-    res.json({ message: 'Hire status updated successfully', hire });
+    res.json({ message: 'Hire status updated successfully', hire: updatedHire });
   } catch (error) {
     console.error('Update hire status error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -503,6 +532,9 @@ export const getAllHires = async (req, res) => {
 };
 
 // UPDATE OFFER STATUS
+// PHASE 2 SECURITY FIX: ownership is now enforced from the token.
+// EMPLOYER -> only their own offers; WORKER -> only offers addressed to
+// their WorkerProfile. Admin/others are denied.
 export const updateOfferStatus = async (req, res) => {
   try {
     const { offerId } = req.params;
@@ -515,6 +547,23 @@ export const updateOfferStatus = async (req, res) => {
     const offer = await prisma.offer.findUnique({ where: { id: offerId } });
     if (!offer) {
       return res.status(404).json({ message: 'Offer not found' });
+    }
+
+    // Ownership guard from the authenticated caller.
+    if (req.userRole === 'EMPLOYER') {
+      if (String(offer.employerId) !== String(req.userId)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else if (req.userRole === 'WORKER') {
+      const profile = await prisma.workerProfile.findUnique({
+        where: { userId: String(req.userId) },
+        select: { id: true },
+      });
+      if (!profile || String(offer.workerId) !== String(profile.id)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else if (req.userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     const updatedOffer = await prisma.offer.update({

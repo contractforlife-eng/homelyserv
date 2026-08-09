@@ -98,7 +98,7 @@ const WorkerOffers = () => {
         employer: 'Employer',
         noOffers: 'No offers in this section',
         chat: 'Chat',
-        completeWork: 'Complete Work',
+        completeWork: 'Submit Period Completed',
         waitingPayment: '⏳ Waiting for payment...',
         paymentReceived: '✅ Payment Received',
         workCompleted: 'Work Completed',
@@ -157,7 +157,7 @@ const WorkerOffers = () => {
         employer: 'صاحب العمل',
         noOffers: 'لا توجد عروض في هذا القسم',
         chat: 'محادثة',
-        completeWork: 'إكمال العمل',
+        completeWork: 'إرسال فترة مكتملة',
         waitingPayment: '⏳ في انتظار الدفع...',
         paymentReceived: '✅ تم استلام الدفع',
         workCompleted: 'تم إكمال العمل',
@@ -337,7 +337,7 @@ const WorkerOffers = () => {
   const handleCompleteWork = async (offer) => {
     if (processingOffer) return;
     
-    if (!confirm('Mark this job as completed? This cannot be undone.')) {
+    if (!confirm('Submit this work period for your employer\'s confirmation? This does not confirm salary payment.')) {
       return;
     }
 
@@ -352,12 +352,12 @@ const WorkerOffers = () => {
       };
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      alert('✅ Work completed successfully!');
+      alert('Work period submitted for employer confirmation.');
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
-      console.error('Error completing work:', error);
-      alert('Failed to complete work. Please try again.');
+      console.error('Error submitting work period:', error);
+      alert('Failed to submit work period. Please try again.');
     } finally {
       setProcessingOffer(null);
     }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import hireService from '../services/hireService';
+import employerEarningService from '../services/employerEarningService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { useDashboard } from '../components/layout/DashboardContext';
@@ -84,6 +85,16 @@ const MyHires = () => {
   const [terminating, setTerminating] = useState(false);
   const [creatingConversation, setCreatingConversation] = useState(false);
 
+  // ============================================================
+  // Work-period confirmation (Phase 2) state
+  // ============================================================
+  const [hireEarnings, setHireEarnings] = useState([]);
+  const [hireEarningsLoading, setHireEarningsLoading] = useState(false);
+  const [earningToReview, setEarningToReview] = useState(null);
+  const [reviewAction, setReviewAction] = useState(null); // 'approve' | 'dispute'
+  const [reviewReason, setReviewReason] = useState('');
+  const [reviewInProgress, setReviewInProgress] = useState(false);
+
   const isPremium = useMemo(() => {
     const userId = authUser?.id || authUser?.email;
     return userId ? isUserPremium(userId) : false;
@@ -141,6 +152,33 @@ const MyHires = () => {
         processing: 'Terminating...',
         success: 'Hire terminated successfully',
         error: 'Error terminating hire'
+      },
+      review: {
+        title: 'Work Period Completion',
+        empty: 'No work periods recorded for this hire yet.',
+        loading: 'Loading work periods...',
+        amount: 'Amount',
+        period: 'Period',
+        submitted: 'Submitted',
+        statusLabel: 'Status',
+        awaiting: 'Awaiting confirmation',
+        approveButton: 'Confirm Work Period Completed',
+        disputeButton: 'Dispute Period',
+        approveTitle: 'Confirm Work Period Completed',
+        approveBody: 'Confirm that the work covered by this contract period was completed. This does NOT confirm any salary payment — salaries are arranged directly between you and the worker.',
+        disputeTitle: 'Dispute Work Period',
+        disputeBody: 'Opening a dispute sends this period to review. Please provide a short reason.',
+        reasonLabel: 'Reason (optional)',
+        reasonPlaceholder: 'Explain why you are disputing this period...',
+        cancel: 'Cancel',
+        confirmApprove: 'Confirm',
+        confirmDispute: 'Submit Dispute',
+        processing: 'Please wait...',
+        approved: 'Work period confirmed',
+        disputed: 'Work period disputed',
+        error: 'Failed to update work period. Please try again.',
+        alreadyUpdated: 'This period was already updated',
+        none: 'No periods awaiting confirmation.'
       },
       actions: {
         view: 'View Details',
@@ -218,6 +256,33 @@ const MyHires = () => {
         processing: 'جاري الإنهاء...',
         success: 'تم إنهاء التوظيف بنجاح',
         error: 'خطأ في إنهاء التوظيف'
+      },
+      review: {
+        title: 'إكمال فترة العمل',
+        empty: 'لا توجد فترات عمل مسجلة لهذا العقد بعد.',
+        loading: 'جاري تحميل فترات العمل...',
+        amount: 'المبلغ',
+        period: 'الفترة',
+        submitted: 'تم الإرسال',
+        statusLabel: 'الحالة',
+        awaiting: 'في انتظار التأكيد',
+        approveButton: 'تأكيد إكمال فترة العمل',
+        disputeButton: 'الاعتراض على الفترة',
+        approveTitle: 'تأكيد إكمال فترة العمل',
+        approveBody: 'أكد اكتمال العمل المغطى بفترة العقد هذه. هذا لا يؤكد أي دفعة راتب — يتم ترتيب الرواتب مباشرة بينك وبين العامل.',
+        disputeTitle: 'الاعتراض على فترة العمل',
+        disputeBody: 'فتح اعتراض يرسل هذه الفترة للمراجعة. يرجى تقديم سبب مختصر.',
+        reasonLabel: 'السبب (اختياري)',
+        reasonPlaceholder: 'اشرح سبب اعتراضك على هذه الفترة...',
+        cancel: 'إلغاء',
+        confirmApprove: 'تأكيد',
+        confirmDispute: 'إرسال الاعتراض',
+        processing: 'يرجى الانتظار...',
+        approved: 'تم تأكيد فترة العمل',
+        disputed: 'تم الاعتراض على فترة العمل',
+        error: 'فشل تحديث فترة العمل. حاول مرة أخرى.',
+        alreadyUpdated: 'تم تحديث هذه الفترة بالفعل',
+        none: 'لا توجد فترات في انتظار التأكيد.'
       },
       actions: {
         view: 'عرض التفاصيل',
@@ -334,11 +399,32 @@ const MyHires = () => {
   const handleViewDetails = (hire) => {
     setSelectedHire(hire);
     setShowDetailsModal(true);
+    loadHireEarnings(hire);
   };
 
   const handleCloseModal = () => {
     setShowDetailsModal(false);
     setSelectedHire(null);
+    setHireEarnings([]);
+  };
+
+  // Fetch the earning periods attached to a hire (employer-owned).
+  const loadHireEarnings = async (hire) => {
+    const hireId = hire?.id || hire?.hireId;
+    if (!hireId) {
+      setHireEarnings([]);
+      return;
+    }
+    setHireEarningsLoading(true);
+    try {
+      const data = await employerEarningService.getHireEarnings(hireId);
+      setHireEarnings(Array.isArray(data.records) ? data.records : []);
+    } catch (error) {
+      console.error('Error loading hire earnings:', error);
+      setHireEarnings([]);
+    } finally {
+      setHireEarningsLoading(false);
+    }
   };
 
   const handleTerminateClick = (hire) => {
@@ -377,6 +463,66 @@ const MyHires = () => {
     } finally {
       setTerminating(false);
     }
+  };
+
+  // ============================================================
+  // WORK-PERIOD REVIEW HANDLERS (Phase 2)
+  // ============================================================
+  const openReview = (earning, action) => {
+    setEarningToReview(earning);
+    setReviewAction(action);
+    setReviewReason('');
+  };
+
+  const closeReview = () => {
+    setEarningToReview(null);
+    setReviewAction(null);
+    setReviewReason('');
+  };
+
+  const handleSubmitReview = async () => {
+    if (!earningToReview || !selectedHire || reviewInProgress) return;
+
+    const hireId = selectedHire.id || selectedHire.hireId;
+    const earningId = earningToReview.id;
+    setReviewInProgress(true);
+
+    try {
+      if (reviewAction === 'approve') {
+        await employerEarningService.approveWorkerEarning(hireId, earningId);
+      } else {
+        await employerEarningService.disputeWorkerEarning(hireId, earningId, reviewReason.trim());
+      }
+
+      await loadHireEarnings(selectedHire);
+      closeReview();
+      alert(reviewAction === 'approve' ? t.review.approved : t.review.disputed);
+    } catch (error) {
+      console.error('Error reviewing work period:', error);
+      const message = error?.response?.data?.message;
+      alert(
+        message === 'Only periods with confirmed payment can be approved' ||
+          message === 'Only periods submitted for confirmation can be disputed' ||
+          message === 'Only periods submitted for confirmation can be approved'
+          ? t.review.alreadyUpdated
+          : t.review.error
+      );
+      await loadHireEarnings(selectedHire);
+    } finally {
+      setReviewInProgress(false);
+    }
+  };
+
+  const formatEarnedStatus = (status) => {
+    const labels = {
+      PENDING: t.review.awaiting,
+      AWAITING_CONFIRMATION: t.review.awaiting,
+      EARNED: t.review.approved,
+      DISPUTED: t.review.disputed,
+      CANCELLED: 'Cancelled',
+      ON_HOLD: 'On Hold'
+    };
+    return labels[status] || status;
   };
 
   const handleSendMessage = async (hire) => {
@@ -957,6 +1103,83 @@ const MyHires = () => {
               </div>
 
               {canMessageOrTerminate(selectedHire) && (
+                <div className="mt-6 p-4 border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-900/10 rounded-xl">
+                  <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <CheckCircle size={16} className="text-indigo-500" />
+                    {t.review.title}
+                  </h4>
+
+                  {hireEarningsLoading ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.review.loading}</p>
+                  ) : hireEarnings.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.review.empty}</p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {hireEarnings.map((earning) => {
+                        const isAwaiting = earning.status === 'AWAITING_CONFIRMATION';
+                        return (
+                          <div
+                            key={earning.id}
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-white dark:bg-gray-800 border ${
+                              isAwaiting
+                                ? 'border-indigo-200 dark:border-indigo-800'
+                                : 'border-gray-100 dark:border-gray-700'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-800 dark:text-white text-sm">
+                                  {formatCurrency(earning.amount)} EGP
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                                  isAwaiting
+                                    ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800'
+                                    : earning.status === 'EARNED'
+                                      ? 'bg-green-100 text-green-700 border-green-200'
+                                      : earning.status === 'DISPUTED'
+                                        ? 'bg-red-100 text-red-700 border-red-200'
+                                        : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                }`}>
+                                  {formatEarnedStatus(earning.status)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {t.review.period}: {new Date(earning.periodStart || earning.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {earning.periodEnd ? ` – ${new Date(earning.periodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                              </p>
+                            </div>
+
+                            {isAwaiting && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => openReview(earning, 'approve')}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 hover:bg-green-700 text-white transition inline-flex items-center gap-1.5"
+                                >
+                                  <CheckCircle size={13} />
+                                  {t.review.approveButton}
+                                </button>
+                                <button
+                                  onClick={() => openReview(earning, 'dispute')}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition inline-flex items-center gap-1.5"
+                                >
+                                  <AlertTriangle size={13} />
+                                  {t.review.disputeButton}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-400 mt-3">
+                    Confirming a work period records that BOTH parties confirmed the period inside HomelyServ. It does NOT confirm salary payment.
+                  </p>
+                </div>
+              )}
+
+              {canMessageOrTerminate(selectedHire) && (
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => handleSendMessage(selectedHire)}
@@ -1025,6 +1248,69 @@ const MyHires = () => {
               >
                 {terminating && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                 {terminating ? t.terminate.processing : t.terminate.confirmButton}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Work-period Review Modal (approve / dispute) */}
+      {earningToReview && reviewAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[85dvh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                {reviewAction === 'approve' ? t.review.approveTitle : t.review.disputeTitle}
+              </h3>
+              <button
+                onClick={closeReview}
+                disabled={reviewInProgress}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
+              {reviewAction === 'approve' ? t.review.approveBody : t.review.disputeBody}
+            </p>
+
+            {reviewAction === 'dispute' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t.review.reasonLabel}
+                </label>
+                <textarea
+                  value={reviewReason}
+                  onChange={(e) => setReviewReason(e.target.value)}
+                  placeholder={t.review.reasonPlaceholder}
+                  rows="3"
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeReview}
+                disabled={reviewInProgress}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+              >
+                {t.review.cancel}
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={reviewInProgress}
+                className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white transition disabled:opacity-50 flex items-center justify-center gap-2 ${
+                  reviewAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {reviewInProgress && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {reviewInProgress
+                  ? t.review.processing
+                  : reviewAction === 'approve'
+                    ? t.review.confirmApprove
+                    : t.review.confirmDispute}
               </button>
             </div>
           </div>
