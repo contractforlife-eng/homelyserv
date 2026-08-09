@@ -38,6 +38,7 @@ import {
 // Main WorkerProfileView Component
 const WorkerProfileView = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -186,7 +187,12 @@ const WorkerProfileView = () => {
   }, [worker?.id, user?.id]);
 
   const handleBack = () => {
-    navigate('/employer-search');
+    // Return to the Employer Search page. Carry the previous search snapshot
+    // (if any) so the search page restores its results instead of showing an
+    // empty list after this profile page unmounted it.
+    navigate('/employer-search', {
+      state: location.state?.search ? { search: location.state.search } : undefined
+    });
   };
 
   const handleHireNow = () => {

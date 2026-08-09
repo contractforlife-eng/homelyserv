@@ -241,6 +241,32 @@ const EmployerSearch = () => {
       return;
     }
 
+    // Restore the previous search results if we just returned from a worker
+    // profile page (the search state was carried via route state — the same
+    // state pattern already used for offer creation). This avoids showing an
+    // empty results list after the profile page unmounted this component.
+    const restored = location.state?.search;
+    if (restored && Array.isArray(restored.searchResults)) {
+      setSearchQuery(restored.searchQuery || '');
+      setSelectedJob(restored.selectedJob || '');
+      setSelectedLocation(restored.selectedLocation || '');
+      setAdvancedFilters(restored.advancedFilters || {
+        minRating: 0,
+        minExperience: 0,
+        availability: 'all',
+        maxHourlyRate: 100,
+        language: 'all'
+      });
+      setSortBy(restored.sortBy || 'relevance');
+      setAllWorkers(restored.allWorkers || []);
+      setSearchResults(restored.searchResults || []);
+      setShowResults(true);
+      if (restored.searchLimitStatus) {
+        setSearchLimitStatus(restored.searchLimitStatus);
+      }
+      return;
+    }
+
     loadWorkersFromBackend();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
@@ -916,7 +942,25 @@ const EmployerSearch = () => {
                           <button
                             onClick={() => {
                               const sanitizedWorker = { ...worker, profileImage: isBase64Image(worker.profileImage) ? '' : worker.profileImage };
-                              navigate('/worker-profile-view', { state: { worker: sanitizedWorker } });
+                              // Pass the current search snapshot alongside the
+                              // worker so the profile's Back button can restore
+                              // this page (results + filters) without reloading.
+                              navigate('/worker-profile-view', {
+                                state: {
+                                  worker: sanitizedWorker,
+                                  search: {
+                                    searchQuery,
+                                    selectedJob,
+                                    selectedLocation,
+                                    advancedFilters,
+                                    sortBy,
+                                    allWorkers,
+                                    searchResults,
+                                    showResults,
+                                    searchLimitStatus
+                                  }
+                                }
+                              });
                             }}
                             className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-1"
                           >
