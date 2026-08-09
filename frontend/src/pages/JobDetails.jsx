@@ -1,9 +1,9 @@
-// src/pages/JobDetails.jsx — real JobPost detail (Phase 1)
+// src/pages/JobDetails.jsx — real JobPost detail (Phase 1 + Phase 2 apply)
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   MapPin, DollarSign, Calendar, Clock, Briefcase, CheckCircle, Award,
-  Building, ArrowLeft, Loader2, FileText
+  Building, ArrowLeft, Loader2, FileText, Send, Users, Check
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -41,9 +41,34 @@ const translations = {
     notFoundDesc: 'This job may have been closed or removed.',
     loading: 'Loading job details...',
     error: 'Failed to load job details.',
-    comingSoon: 'Applications coming soon',
     company: 'Company',
     locationNotSpecified: 'Location not specified',
+    // Apply flow
+    apply: 'Apply Now',
+    applying: 'Applying...',
+    applied: 'Applied',
+    coverMessageLabel: 'Cover Message (optional)',
+    coverMessagePlaceholder: 'Tell the employer why you are a good fit...',
+    coverMessageMax: 'Max 2000 characters',
+    submitApplication: 'Submit Application',
+    applicationStatus: 'Application Status',
+    statusApplied: 'Applied',
+    statusShortlisted: 'Shortlisted',
+    statusRejected: 'Rejected',
+    statusWithdrawn: 'Withdrawn',
+    statusOfferSent: 'Offer Sent',
+    viewOffer: 'View Offer',
+    viewApplicants: 'View Applicants',
+    applyError: 'Failed to submit application. Please try again.',
+    applySuccess: 'Application submitted successfully!',
+    alreadyApplied: 'You have already applied to this job.',
+    cannotReapply: 'You cannot re-apply to this job.',
+    noReapplyAfterWithdraw: 'You have withdrawn your application and cannot re-apply.',
+    offerSentDesc: 'The employer has sent you an offer. View it in your offers.',
+    shortlistedDesc: 'The employer has shortlisted your application.',
+    rejectedDesc: 'Your application was not selected.',
+    withdrawnDesc: 'You withdrew your application.',
+    appliedDesc: 'Your application has been submitted.',
   },
   ar: {
     title: 'تفاصيل الوظيفة',
@@ -73,9 +98,34 @@ const translations = {
     notFoundDesc: 'ربما تم إغلاق هذه الوظيفة أو إزالتها.',
     loading: 'جارٍ تحميل تفاصيل الوظيفة...',
     error: 'فشل تحميل تفاصيل الوظيفة.',
-    comingSoon: 'التقديم قريباً',
     company: 'الشركة',
     locationNotSpecified: 'الموقع غير محدد',
+    // Apply flow
+    apply: 'تقديم الآن',
+    applying: 'جارٍ التقديم...',
+    applied: 'تم التقديم',
+    coverMessageLabel: 'رسالة التقديم (اختياري)',
+    coverMessagePlaceholder: 'أخبر صاحب العمل لماذا أنت مناسب للوظيفة...',
+    coverMessageMax: 'الحد الأقصى 2000 حرف',
+    submitApplication: 'إرسال الطلب',
+    applicationStatus: 'حالة الطلب',
+    statusApplied: 'تم التقديم',
+    statusShortlisted: 'تم الاختيار المبدئي',
+    statusRejected: 'مرفوض',
+    statusWithdrawn: 'تم السحب',
+    statusOfferSent: 'تم إرسال العرض',
+    viewOffer: 'عرض العرض',
+    viewApplicants: 'عرض المتقدمين',
+    applyError: 'فشل إرسال الطلب. حاول مرة أخرى.',
+    applySuccess: 'تم إرسال الطلب بنجاح!',
+    alreadyApplied: 'لقد تقدمت لهذه الوظيفة بالفعل.',
+    cannotReapply: 'لا يمكنك إعادة التقديم لهذه الوظيفة.',
+    noReapplyAfterWithdraw: 'لقد سحبت طلبك ولا يمكنك إعادة التقديم.',
+    offerSentDesc: 'أرسل لك صاحب العمل عرضاً. شاهده في عروضك.',
+    shortlistedDesc: 'قام صاحب العمل باختيار طلبك مبدئياً.',
+    rejectedDesc: 'لم يتم اختيار طلبك.',
+    withdrawnDesc: 'لقد سحبت طلبك.',
+    appliedDesc: 'تم إرسال طلبك.',
   },
 };
 
@@ -84,6 +134,22 @@ const TYPE_LABELS = {
   'part-time': { en: 'Part Time', ar: 'دوام جزئي' },
   contract: { en: 'Contract', ar: 'عقد' },
   freelance: { en: 'Freelance', ar: 'حر' },
+};
+
+const APPLICATION_STATUS_LABELS = {
+  applied: { en: 'Applied', ar: 'تم التقديم' },
+  shortlisted: { en: 'Shortlisted', ar: 'تم الاختيار المبدئي' },
+  rejected: { en: 'Rejected', ar: 'مرفوض' },
+  withdrawn: { en: 'Withdrawn', ar: 'تم السحب' },
+  offer_sent: { en: 'Offer Sent', ar: 'تم إرسال العرض' },
+};
+
+const APPLICATION_STATUS_STYLES = {
+  applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  shortlisted: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  withdrawn: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  offer_sent: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
 };
 
 function JobDetails() {
@@ -99,6 +165,17 @@ function JobDetails() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Application state
+  const [myApplication, setMyApplication] = useState(null);
+  const [applicationLoading, setApplicationLoading] = useState(false);
+  const [coverMessage, setCoverMessage] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState('');
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  const isWorker = authUser?.role === 'WORKER';
+  const isEmployerOwner = authUser?.role === 'EMPLOYER' && job && String(job.employerId) === String(authUser?.id);
 
   useEffect(() => {
     const fetchJobDetails = async () => {
@@ -123,6 +200,28 @@ function JobDetails() {
     fetchJobDetails();
   }, [id, t.notFoundDesc]);
 
+  // Determine current application for WORKER on load
+  useEffect(() => {
+    if (!isWorker || !id) return;
+    const checkMyApplication = async () => {
+      setApplicationLoading(true);
+      try {
+        const data = await jobService.getMyApplications();
+        if (data?.success) {
+          const found = (data.applications || []).find(
+            (app) => String(app.jobPostId) === String(id)
+          );
+          setMyApplication(found || null);
+        }
+      } catch (checkError) {
+        console.error('Error checking my application:', checkError);
+      } finally {
+        setApplicationLoading(false);
+      }
+    };
+    checkMyApplication();
+  }, [isWorker, id]);
+
   const backPath = authUser?.role === 'EMPLOYER' ? '/employer-jobs' : '/worker-jobs';
 
   const formatSalary = () => {
@@ -140,6 +239,135 @@ function JobDetails() {
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return '';
     return d.toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const handleApply = async (e) => {
+    e.preventDefault();
+    setApplying(true);
+    setApplyError('');
+    setApplySuccess(false);
+    try {
+      const data = await jobService.applyToJob(id, coverMessage.trim() || null);
+      if (data?.success) {
+        setApplySuccess(true);
+        setMyApplication(data.application);
+        setCoverMessage('');
+      } else {
+        setApplyError(data?.message || t.applyError);
+      }
+    } catch (applyErr) {
+      console.error('Apply error:', applyErr);
+      setApplyError(applyErr.response?.data?.message || t.applyError);
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const renderApplicationStatus = () => {
+    if (!myApplication) return null;
+    const status = myApplication.status;
+    const label = APPLICATION_STATUS_LABELS[status]?.[language] || status;
+    const style = APPLICATION_STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+
+    let desc = '';
+    switch (status) {
+      case 'applied': desc = t.appliedDesc; break;
+      case 'shortlisted': desc = t.shortlistedDesc; break;
+      case 'rejected': desc = t.rejectedDesc; break;
+      case 'withdrawn': desc = t.withdrawnDesc; break;
+      case 'offer_sent': desc = t.offerSentDesc; break;
+      default: break;
+    }
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${style}`}>
+            {label}
+          </span>
+        </div>
+        {desc && <p className="text-sm text-gray-600 dark:text-gray-300">{desc}</p>}
+        {status === 'offer_sent' && (
+          <Link
+            to="/worker/offers"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition text-sm"
+          >
+            <Briefcase size={16} /> {t.viewOffer}
+          </Link>
+        )}
+      </div>
+    );
+  };
+
+  const renderApplySection = () => {
+    // EMPLOYER owner: show View Applicants
+    if (isEmployerOwner) {
+      return (
+        <button
+          onClick={() => navigate(`/employer-jobs/${job.id}/applicants`)}
+          className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition flex items-center justify-center gap-2"
+        >
+          <Users size={18} />
+          {t.viewApplicants}
+        </button>
+      );
+    }
+
+    // Non-owner EMPLOYER or other roles: no apply UI
+    if (!isWorker) {
+      return null;
+    }
+
+    // Application loading
+    if (applicationLoading) {
+      return (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 size={20} className="animate-spin text-red-600" />
+        </div>
+      );
+    }
+
+    // Already applied — show status
+    if (myApplication) {
+      return renderApplicationStatus();
+    }
+
+    // Not applied — show apply form
+    return (
+      <form onSubmit={handleApply} className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t.coverMessageLabel}
+          </label>
+          <textarea
+            value={coverMessage}
+            onChange={(e) => setCoverMessage(e.target.value.slice(0, 2000))}
+            placeholder={t.coverMessagePlaceholder}
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-900 text-gray-800 dark:text-white resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">{coverMessage.length}/2000 {t.coverMessageMax}</p>
+        </div>
+        {applyError && (
+          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400 text-sm">
+            {applyError}
+          </div>
+        )}
+        {applySuccess && (
+          <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 text-green-700 dark:text-green-400 text-sm">
+            {t.applySuccess}
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={applying}
+          className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {applying ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+          {applying ? t.applying : t.submitApplication}
+        </button>
+      </form>
+    );
   };
 
   if (loading) {
@@ -335,13 +563,7 @@ function JobDetails() {
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-              <button
-                disabled
-                className="w-full bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 py-3 rounded-lg font-medium cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Briefcase size={18} />
-                {t.comingSoon}
-              </button>
+              {renderApplySection()}
             </div>
           </div>
         </div>

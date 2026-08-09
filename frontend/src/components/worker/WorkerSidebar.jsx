@@ -19,7 +19,8 @@ import {
   X,
   Shield,
   AlertTriangle,
-  CreditCard
+  CreditCard,
+  ClipboardList
 } from 'lucide-react';
 
 const WorkerSidebar = ({ 
@@ -48,6 +49,7 @@ const WorkerSidebar = ({
       dashboard: 'Dashboard',
       myProfile: 'My Profile',
       myOffers: 'My Offers',
+      myApplications: 'My Applications',
       findJobs: 'Find Jobs',
       messages: 'Messages',
       complaints: 'Complaints',
@@ -62,6 +64,7 @@ const WorkerSidebar = ({
       dashboard: 'لوحة التحكم',
       myProfile: 'ملفي الشخصي',
       myOffers: 'عروضي',
+      myApplications: 'طلباتي',
       findJobs: 'البحث عن وظائف',
       messages: 'الرسائل',
       complaints: 'الشكاوى',
@@ -79,6 +82,7 @@ const WorkerSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
     { id: 'findJobs', label: t.findJobs, icon: Search, path: '/worker-jobs' },
+    { id: 'myApplications', label: t.myApplications, icon: ClipboardList, path: '/worker-applications' },
     { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
     { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },

@@ -5,6 +5,7 @@ import {
 } from '../services/notificationService.js';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
+import { createOffer } from '../services/offerService.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -91,37 +92,31 @@ export const sendOffer = async (req, res) => {
       });
     }
 
-    const offer = await prisma.offer.create({
-      data: {
-        workerId: workerProfile.id,
-        employerId: req.userId,
-        jobTitle,
-        message: message || null,
-        salary,
-        status: 'pending',
-        workerName: workerName || null,
-        workerEmail: workerEmail || null,
-        workerPhone: workerPhone || null,
-        workerLocation: workerLocation || null,
-        workerRating: workerRating ? parseFloat(workerRating) : null,
-        workerSkills: workerSkills || [],
-        workerImage: workerImage || null,
-        employerName: employerName || null,
-        employerEmail: employerEmail || null,
-        hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
-        amount: amount ? parseFloat(amount) : null,
-        description: description || null,
-        workingHoursPerDay: workingHoursPerDay ? parseFloat(workingHoursPerDay) : null,
-        workingDaysPerWeek: workingDaysPerWeek ? parseFloat(workingDaysPerWeek) : null,
-        weeklyDaysOff: weeklyDaysOff ? String(weeklyDaysOff) : null,
-        workStartTime: workStartTime || null,
-        workEndTime: workEndTime || null,
-        employmentStartDate: employmentStartDate ? new Date(employmentStartDate) : null,
-        additionalNotes: additionalNotes || null,
-        contactRevealed: false,
-        paymentConfirmed: false,
-        paymentVerified: false
-      }
+    const offer = await createOffer({
+      employerId: req.userId,
+      workerProfileId: workerProfile.id,
+      jobTitle,
+      salary,
+      message: message || null,
+      workerName: workerName || null,
+      workerEmail: workerEmail || null,
+      workerPhone: workerPhone || null,
+      workerLocation: workerLocation || null,
+      workerRating: workerRating ? parseFloat(workerRating) : null,
+      workerSkills: workerSkills || [],
+      workerImage: workerImage || null,
+      employerName: employerName || null,
+      employerEmail: employerEmail || null,
+      hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
+      amount: amount ? parseFloat(amount) : null,
+      description: description || null,
+      workingHoursPerDay: workingHoursPerDay ? parseFloat(workingHoursPerDay) : null,
+      workingDaysPerWeek: workingDaysPerWeek ? parseFloat(workingDaysPerWeek) : null,
+      weeklyDaysOff: weeklyDaysOff ? String(weeklyDaysOff) : null,
+      workStartTime: workStartTime || null,
+      workEndTime: workEndTime || null,
+      employmentStartDate: employmentStartDate ? new Date(employmentStartDate) : null,
+      additionalNotes: additionalNotes || null,
     });
 
     await createNotification(

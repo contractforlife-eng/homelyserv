@@ -494,6 +494,44 @@ model JobPost {
   @@map("job_posts")
 }
 
+// ============================================================
+// JOB APPLICATION — Phase 2 Job Marketplace
+// workerId = authenticated Worker User.id
+// workerProfileId = WorkerProfile.id resolved server-side
+// employerId = JobPost.employerId derived server-side
+// Statuses: applied | shortlisted | rejected | withdrawn | offer_sent
+// ============================================================
+model JobApplication {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  jobPostId        String                  @db.ObjectId
+  workerId         String                  @db.ObjectId
+  workerProfileId  String                  @db.ObjectId
+  employerId       String                  @db.ObjectId
+  coverMessage     String?
+  status           JobApplicationStatus    @default(applied)
+  // Set atomically when an Offer is created for this application.
+  // Used as the idempotency/claim guard so one application can
+  // produce at most ONE Offer even under concurrent requests.
+  offerId          String?                 @db.ObjectId
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@unique([jobPostId, workerId])
+  @@index([jobPostId])
+  @@index([workerId])
+  @@index([employerId, status])
+  @@index([offerId])
+  @@map("job_applications")
+}
+
+enum JobApplicationStatus {
+  applied
+  shortlisted
+  rejected
+  withdrawn
+  offer_sent
+}
+
 model Subscription {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 

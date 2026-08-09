@@ -6,7 +6,7 @@ import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
-import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Pause, Play, XCircle, MapPin, Calendar, Clock, Loader2, Users } from 'lucide-react';
 import jobService from '../services/jobService';
 
 const translations = {
@@ -17,6 +17,7 @@ const translations = {
     emptyTitle: 'No job posts yet',
     emptyDesc: 'Post your first job to start receiving applications.',
     view: 'View',
+    viewApplicants: 'View Applicants',
     edit: 'Edit',
     pause: 'Pause',
     reopen: 'Reopen',
@@ -48,6 +49,7 @@ const translations = {
     emptyTitle: 'لا توجد وظائف منشورة بعد',
     emptyDesc: 'انشر وظيفتك الأولى لبدء استقبال الطلبات.',
     view: 'عرض',
+    viewApplicants: 'عرض المتقدمين',
     edit: 'تعديل',
     pause: 'إيقاف مؤقت',
     reopen: 'إعادة فتح',
@@ -307,6 +309,12 @@ const EmployerJobs = () => {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                       >
                         <Eye size={16} /> {t.view}
+                      </button>
+                      <button
+                        onClick={() => navigate(`/employer-jobs/${job.id}/applicants`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-teal-600 text-white hover:bg-teal-700 transition"
+                      >
+                        <Users size={16} /> {t.viewApplicants}
                       </button>
                       <button
                         onClick={() => navigate('/employer-post-job', { state: { editJob: job } })}
