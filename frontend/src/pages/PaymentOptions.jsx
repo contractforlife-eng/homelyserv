@@ -8,7 +8,6 @@ import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-import hireService from '../services/hireService';
 import {
   ArrowLeft,
   CreditCard,
@@ -249,18 +248,6 @@ const PaymentOptions = () => {
   };
 
   // ============================================================
-  // UPDATE OFFER STATUS
-  // ============================================================
-  const updateOfferStatus = async (offerId, status, hireId) => {
-    try {
-      if (!offerId) return;
-      await hireService.updateOfferStatus(offerId, status);
-    } catch (error) {
-      console.error('Error updating offer status:', error);
-    }
-  };
-
-  // ============================================================
   // PROCESS SUCCESSFUL PAYMENT
   // ============================================================
   const processSuccessfulPayment = async (paymentData) => {
@@ -340,55 +327,100 @@ const PaymentOptions = () => {
       } catch (err) {
         console.warn('Backend complete-payment call failed:', err);
       }
-      
-      if (pendingPayment?.offerId) {
-        updateOfferStatus(pendingPayment.offerId, 'hired', hireId);
-      }
 
-      // Create payment record
+      // NOTE: The backend payment fulfillment already updates Hire/Offer state.
+      // Do NOT call updateOfferStatus() here — it is a redundant frontend state
+      // mutation that returns 400 because the backend already transitioned the
+      // Offer/Hire. The backend is the single source of truth for Hire/Offer state.
+
+      // Create payment record (optional localStorage mirror only — backend is authoritative)
       const paymentRecord = {
-    id: 'PAY-' + Date.now(),
-    offerId: pendingPayment?.offerId,
-    hireId: hireId,
+        id: 'PAY-' + Date.now(),
+        offerId: pendingPayment?.offerId,
+        hireId: hireId,
 
-    workerId: workerData?.workerId || workerData?.workerEmail,
-    workerName: workerData?.workerName,
-    workerEmail: workerData?.workerEmail,
-    jobTitle: workerData?.desiredJob || 'Service Provider',
+        workerId: workerData?.workerId || workerData?.workerEmail,
+        workerName: workerData?.workerName,
+        workerEmail: workerData?.workerEmail,
+        jobTitle: workerData?.desiredJob || 'Service Provider',
 
-    employerId: authUser?.id || authUser?.email,
-    employerEmail: authUser?.email || '',
-    employerName: authUser?.fullName || 'Employer',
+        employerId: authUser?.id || authUser?.email,
+        employerEmail: authUser?.email || '',
+        employerName: authUser?.fullName || 'Employer',
 
-    amount: total,
-    status: 'completed',
+        amount: total,
+        status: 'completed',
 
-    paymentMethod: selectedMethod,
+        paymentMethod: selectedMethod,
 
-    paymentType: pendingPayment?.paymentType || 'recruitment',
-    type: pendingPayment?.paymentType || 'recruitment',
+        paymentType: pendingPayment?.paymentType || 'recruitment',
+        type: pendingPayment?.paymentType || 'recruitment',
 
-    transactionId: paymentData?.transactionId || 'TXN-' + Date.now(),
-    paymentId: paymentData?.paymentId,
+        transactionId: paymentData?.transactionId || 'TXN-' + Date.now(),
+        paymentId: paymentData?.paymentId,
+        orderId: paymentData?.orderId,
 
-    createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
 
-    contactRevealed: true,
-    paymentVerified: true,
+        contactRevealed: true,
+        paymentVerified: true,
 
-    fullSalary: pendingPayment?.fullSalary || workerData?.salary || total,
-    commission: total
+        fullSalary: pendingPayment?.fullSalary || workerData?.salary || total,
+        commission: total
       };
 
-      // Save to all_payments
-      const allPayments = JSON.parse(localStorage.getItem('all_payments') || '[]');
-      allPayments.push(paymentRecord);
-      localStorage.setItem('all_payments', JSON.stringify(allPayments));
+      // Helper to update, deduplicate, and bound payments cache to the latest 20 records.
+      // LocalStorage failures must remain non-fatal.
+      const saveBoundedPayments = (key) => {
+        try {
+          let payments = JSON.parse(localStorage.getItem(key) || '[]');
+          if (!Array.isArray(payments)) {
+            payments = [];
+          }
 
-      // Save to employer_payments
-      const employerPayments = JSON.parse(localStorage.getItem('employer_payments') || '[]');
-      employerPayments.push(paymentRecord);
-      localStorage.setItem('employer_payments', JSON.stringify(employerPayments));
+          // Deduplicate using the best stable identifier already available in paymentRecord:
+          // prefer transactionId/orderId/payment id if present.
+          const newTxId = paymentRecord.transactionId && !paymentRecord.transactionId.startsWith('TXN-') ? paymentRecord.transactionId : null;
+          const newOrderId = paymentRecord.orderId || null;
+          const newPayId = paymentRecord.paymentId || null;
+
+          let duplicateIndex = -1;
+
+          if (newTxId || newOrderId || newPayId) {
+            duplicateIndex = payments.findIndex(p => {
+              if (newTxId && p.transactionId === newTxId) return true;
+              if (newOrderId && p.orderId === newOrderId) return true;
+              if (newPayId && p.paymentId === newPayId) return true;
+              return false;
+            });
+          }
+
+          // Fallback: match by generated transactionId even if it starts with TXN- just in case
+          if (duplicateIndex === -1 && paymentRecord.transactionId) {
+            duplicateIndex = payments.findIndex(p => p.transactionId === paymentRecord.transactionId);
+          }
+
+          if (duplicateIndex !== -1) {
+            // Replace the old duplicate record with the new one
+            payments[duplicateIndex] = { ...payments[duplicateIndex], ...paymentRecord };
+          } else {
+            // Add the new record
+            payments.push(paymentRecord);
+          }
+
+          // Keep only the latest 20 records
+          if (payments.length > 20) {
+            payments = payments.slice(-20);
+          }
+
+          localStorage.setItem(key, JSON.stringify(payments));
+        } catch (lsErr) {
+          console.warn(`⚠️ Could not mirror payment to ${key} (non-fatal):`, lsErr);
+        }
+      };
+
+      saveBoundedPayments('all_payments');
+      saveBoundedPayments('employer_payments');
 
       // Clear pending data
       localStorage.removeItem('homelyserv_pending_payment');
