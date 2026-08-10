@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { uploadFromBuffer } from '../utils/cloudinary.js';
+import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
@@ -75,10 +76,67 @@ const hashPasswordResetToken = (rawToken) => {
 // ============================================================
 // REGISTER
 // ============================================================
+const PHONE_REGEX = /^\+?[0-9\s\-().]{7,20}$/;
+
+/**
+ * Validate that a phone number is non-empty, trimmed, and
+ * international-friendly. Returns an error message or null.
+ */
+const validatePhone = (phone) => {
+  if (phone === undefined || phone === null) {
+    return 'Phone number is required';
+  }
+  const trimmed = String(phone).trim();
+  if (!trimmed) {
+    return 'Phone number is required';
+  }
+  if (!PHONE_REGEX.test(trimmed)) {
+    return 'Phone number must be 7-20 characters and may contain digits, spaces, dashes, parentheses, dots, and an optional leading +';
+  }
+  const digitCount = trimmed.replace(/\D/g, '').length;
+  if (digitCount < 7) {
+    return 'Phone number must contain at least 7 digits';
+  }
+  return null;
+};
+
 export const register = async (req, res) => {
   console.log('📝 Registration request received:', req.body);
   try {
-    const { fullName, email, password, role, phone, location } = req.body;
+    const { fullName, email, password, role, phone, countryCode, countryName, location } = req.body;
+
+    // ----------------------------------------------------------
+    // PHONE - required for all new email/password registrations
+    // ----------------------------------------------------------
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      return res.status(400).json({
+        success: false,
+        message: phoneError
+      });
+    }
+    const trimmedPhone = String(phone).trim();
+
+    // ----------------------------------------------------------
+    // COUNTRY - required for all new email/password registrations
+    // Validate against the supported country list. The countryName
+    // is derived from the matched supported country, not trusted
+    // from the client.
+    // ----------------------------------------------------------
+    if (!countryCode || !String(countryCode).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Country is required'
+      });
+    }
+
+    const matchedCountry = getSupportedCountryByCode(String(countryCode));
+    if (!matchedCountry) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a valid supported country'
+      });
+    }
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -99,7 +157,9 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
       role: role || 'WORKER',
-      phone: phone || '',
+      phone: trimmedPhone,
+      countryCode: matchedCountry.code,
+      countryName: matchedCountry.name,
       location: location || ''
     });
 

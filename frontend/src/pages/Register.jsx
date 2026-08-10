@@ -112,6 +112,23 @@ function Register() {
     }
   };
 
+  // Phone validation - international-friendly format
+  const validatePhone = (phone) => {
+    if (!phone || !String(phone).trim()) {
+      return 'Phone number is required';
+    }
+    const trimmed = String(phone).trim();
+    // ^\+?[0-9\s\-().]{7,20}$
+    if (!/^\+?[0-9\s\-().]{7,20}$/.test(trimmed)) {
+      return 'Enter a valid phone number (7-20 characters)';
+    }
+    const digitCount = trimmed.replace(/\D/g, '').length;
+    if (digitCount < 7) {
+      return 'Phone number must contain at least 7 digits';
+    }
+    return '';
+  };
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
@@ -138,6 +155,11 @@ function Register() {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    const phoneError = validatePhone(formData.phone);
+    if (phoneError) {
+      newErrors.phone = phoneError;
     }
 
     if (!formData.countryCode) {
@@ -175,7 +197,7 @@ function Register() {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: formData.role,
-        phone: formData.phone || "",
+        phone: String(formData.phone || "").trim(),
         countryCode: formData.countryCode,
         countryName: formData.countryName
       });
@@ -336,7 +358,7 @@ function Register() {
 
             {/* Phone */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number (Optional)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number <span className="text-red-600">*</span></label>
               <div className="relative group">
                 <Phone size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -344,15 +366,21 @@ function Register() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500"
+                  className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                    errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
                   placeholder="Enter your phone number"
+                  required
                 />
               </div>
+              {errors.phone && (
+                <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.phone}</p>
+              )}
             </div>
 
             {/* Country */}
             <div className="mb-3 sm:mb-4">
-              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country</label>
+              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country <span className="text-red-600">*</span></label>
               <CountrySelect
                 id="country"
                 name="country"

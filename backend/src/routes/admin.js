@@ -1086,18 +1086,55 @@ router.get('/escalated-conversations', async (req, res) => {
 });
 
 // GET /api/admin/support-conversations
-// List all support conversations (user <-> support) for supervision.
+// List genuine member <-> support conversations for supervision.
+// Staff-to-staff conversations (Admin/Support/SUP_ADMIN) that were
+// historically misclassified as SUPPORT are EXCLUDED here (read-time
+// only - no database records are modified) so that the Support tab
+// shows only real member conversations.
 router.get('/support-conversations', async (req, res) => {
   try {
+    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
+
     const conversationsMeta = await Conversation.find({
       type: 'SUPPORT'
     }).sort({ lastMessageAt: -1 });
 
-    if (!conversationsMeta.length) {
+    // Resolve the roles of all participants once so we can detect
+    // staff-to-staff conversations without touching the database.
+    const allParticipantIds = new Set();
+    for (const conv of conversationsMeta) {
+      for (const id of conv.participantIds || []) allParticipantIds.add(id);
+    }
+    const validIds = [...allParticipantIds].filter(isValidObjectId);
+    const staffUserMap = new Map();
+    if (validIds.length > 0) {
+      const staffUsers = await prisma.user.findMany({
+        where: { id: { in: validIds }, role: { in: ['ADMIN', 'SUPPORT'] } },
+        select: { id: true, role: true }
+      });
+      for (const u of staffUsers) staffUserMap.set(u.id, u.role);
+    }
+
+    // Keep only genuine member <-> support conversations: a conversation
+    // is staff-to-staff when BOTH participants are staff roles.
+    const filteredMeta = conversationsMeta.filter((conv) => {
+      const participantIds = conv.participantIds || [];
+      const roles = participantIds
+        .map((id) => staffUserMap.get(id))
+        .filter(Boolean);
+      const staffCount = roles.filter((r) => STAFF_ROLES.has(r)).length;
+      // Exclude when both participants are staff (staff-to-staff).
+      // If we cannot determine both roles (e.g. legacy non-ObjectId ids),
+      // keep the conversation as support (safe default).
+      if (participantIds.length >= 2 && staffCount >= 2) return false;
+      return true;
+    });
+
+    if (!filteredMeta.length) {
       return res.json({ success: true, count: 0, conversations: [] });
     }
 
-    const conversationIds = conversationsMeta.map(c => c.conversationId);
+    const conversationIds = filteredMeta.map(c => c.conversationId);
     const userId = String(req.userId);
 
     const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
@@ -1117,7 +1154,7 @@ router.get('/support-conversations', async (req, res) => {
 
     const userIds = new Set();
     const supportAgentIds = new Set();
-    for (const conv of conversationsMeta) {
+    for (const conv of filteredMeta) {
       const userParticipantId = conv.participantIds.find(id => id !== conv.supportAgentId);
       if (userParticipantId) userIds.add(userParticipantId);
       if (conv.supportAgentId) supportAgentIds.add(conv.supportAgentId);
@@ -1134,7 +1171,7 @@ router.get('/support-conversations', async (req, res) => {
     const userMap = new Map(users.map(u => [u.id, u]));
 
     const conversations = [];
-    for (const conv of conversationsMeta) {
+    for (const conv of filteredMeta) {
       const lastMsg = lastMessageMap.get(conv.conversationId);
       if (!lastMsg) continue;
 
@@ -1170,20 +1207,73 @@ router.get('/support-conversations', async (req, res) => {
 
 // GET /api/admin/internal-messages
 // List internal staff conversations (Support <-> Admin).
+// Includes:
+//   A. type=INTERNAL conversations where this admin is a staff member
+//   B. legacy type=SUPPORT conversations where BOTH participants are
+//      staff roles (ADMIN/SUPPORT/SUP_ADMIN) — historically misclassified
+//      via the chat /send & /ensure-conversation routes. These are surfaced
+//      here READ-ONLY (no database records modified) so they remain visible.
 router.get('/internal-messages', async (req, res) => {
   try {
+    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
     const userId = String(req.userId);
 
-    const conversationsMeta = await Conversation.find({
+    const internalMeta = await Conversation.find({
       type: 'INTERNAL',
       staffIds: userId
     }).sort({ lastMessageAt: -1 });
 
-    if (!conversationsMeta.length) {
+    // Legacy staff-to-staff conversations that were misclassified as SUPPORT.
+    // We find them by looking for SUPPORT-type conversations where the current
+    // admin is a participant AND both participants are staff roles.
+    const legacySupportMeta = await Conversation.find({
+      type: 'SUPPORT',
+      participantIds: userId
+    }).sort({ lastMessageAt: -1 });
+
+    // Determine if a legacy SUPPORT conversation is truly staff-to-staff by
+    // resolving participant roles. Only keep those where this admin is a
+    // participant and the OTHER participant is staff.
+    const allParticipantIds = new Set();
+    for (const conv of legacySupportMeta) {
+      for (const id of conv.participantIds || []) allParticipantIds.add(id);
+    }
+    const validIds = [...allParticipantIds].filter(isValidObjectId);
+    const roleMap = new Map();
+    if (validIds.length > 0) {
+      const users = await prisma.user.findMany({
+        where: { id: { in: validIds } },
+        select: { id: true, role: true }
+      });
+      for (const u of users) roleMap.set(u.id, u.role);
+    }
+
+    const filteredLegacy = legacySupportMeta.filter((conv) => {
+      const participantIds = conv.participantIds || [];
+      if (participantIds.length < 2) return false;
+      const otherId = participantIds.find(id => id !== userId);
+      if (!otherId) return false;
+      const otherRole = roleMap.get(otherId);
+      // Only include when the OTHER participant is staff and this user
+      // is also known to be staff (admin requesting this endpoint).
+      return STAFF_ROLES.has(otherRole);
+    });
+
+    // Merge both sets, avoiding duplicates by conversationId.
+    const seen = new Set();
+    const mergedMeta = [];
+    for (const conv of [...internalMeta, ...filteredLegacy]) {
+      if (seen.has(conv.conversationId)) continue;
+      seen.add(conv.conversationId);
+      mergedMeta.push(conv);
+    }
+    mergedMeta.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+
+    if (!mergedMeta.length) {
       return res.json({ success: true, count: 0, conversations: [] });
     }
 
-    const conversationIds = conversationsMeta.map(c => c.conversationId);
+    const conversationIds = mergedMeta.map(c => c.conversationId);
 
     const lastMessages = await Message.find({ conversationId: { $in: conversationIds } })
       .sort({ createdAt: -1 });
@@ -1200,8 +1290,14 @@ router.get('/internal-messages', async (req, res) => {
     ]);
     const unreadMap = new Map(unreadAgg.map(item => [item._id, item.count]));
 
-    const otherStaffIds = conversationsMeta
-      .map(conv => conv.staffIds.find(id => id !== userId))
+    // For INTERNAL conversations, otherStaffId comes from staffIds.
+    // For legacy SUPPORT conversations, otherStaffId is the non-admin participant.
+    const otherStaffIds = mergedMeta
+      .map(conv =>
+        conv.type === 'INTERNAL'
+          ? conv.staffIds?.find(id => id !== userId)
+          : conv.participantIds?.find(id => id !== userId)
+      )
       .filter(id => id);
 
     const validStaffIds = otherStaffIds.filter(isValidObjectId);
@@ -1214,11 +1310,13 @@ router.get('/internal-messages', async (req, res) => {
     const staffMap = new Map(staffUsers.map(u => [u.id, u]));
 
     const conversations = [];
-    for (const conv of conversationsMeta) {
+    for (const conv of mergedMeta) {
       const lastMsg = lastMessageMap.get(conv.conversationId);
       if (!lastMsg) continue;
 
-      const otherStaffId = conv.staffIds.find(id => id !== userId);
+      const otherStaffId = conv.type === 'INTERNAL'
+        ? conv.staffIds?.find(id => id !== userId)
+        : conv.participantIds?.find(id => id !== userId);
       const otherStaffInfo = otherStaffId ? staffMap.get(otherStaffId) || null : null;
 
       conversations.push({

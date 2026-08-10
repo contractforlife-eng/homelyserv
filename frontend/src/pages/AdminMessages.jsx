@@ -256,6 +256,7 @@ const AdminMessages = () => {
   const [internalConversations, setInternalConversations] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Chat panel state
@@ -448,9 +449,30 @@ const AdminMessages = () => {
   // ============================================================
   // HANDLERS
   // ============================================================
-  const handleRefresh = () => {
-    loadAllData();
-    loadNotifications();
+  const handleRefresh = async () => {
+    if (refreshing) return;
+
+    setRefreshing(true);
+    try {
+      // Reload conversation lists + notifications in parallel
+      await Promise.all([loadAllData(), loadNotifications()]);
+
+      // Reload the currently open conversation messages (if any)
+      // while keeping the conversation selected and messages intact
+      if (selectedConversation?.id) {
+        try {
+          const result = await getAdminConversationMessages(selectedConversation.id);
+          setMessages(result.messages || []);
+          if (authUser?.id) {
+            await markMessagesAsRead(selectedConversation.id, authUser.id);
+          }
+        } catch (error) {
+          console.error('Error reloading open conversation messages:', error);
+        }
+      }
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // ============================================================
@@ -1044,10 +1066,11 @@ const AdminMessages = () => {
               </button>
               <button
                 onClick={handleRefresh}
-                className="px-4 py-2 bg-[#1a1a1a] border border-yellow-500/30 text-white rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2 text-sm"
+                disabled={refreshing}
+                className="px-4 py-2 bg-[#1a1a1a] border border-yellow-500/30 text-white rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCw size={16} />
-                {t.refresh}
+                <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? 'Refreshing...' : t.refresh}
               </button>
             </div>
           </div>

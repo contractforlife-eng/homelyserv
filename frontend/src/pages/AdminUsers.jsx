@@ -872,7 +872,7 @@ const AdminUsers = () => {
                         <RoleBadge role={u.role} />
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge isSuspended={u.isSuspended || u.status === 'suspended'} isVerified={u.isVerified} />
+                        <StatusBadge isSuspended={u.isSuspended || u.status === 'suspended'} isVerified={u.emailVerified === true} />
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}

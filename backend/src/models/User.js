@@ -30,6 +30,17 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Country fields - optional at the schema level so existing users
+  // remain valid. The registration endpoint enforces these for NEW
+  // email/password registrations.
+  countryCode: {
+    type: String,
+    default: ''
+  },
+  countryName: {
+    type: String,
+    default: ''
+  },
   location: {
     type: String,
     default: ''

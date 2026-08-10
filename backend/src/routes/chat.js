@@ -283,7 +283,12 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
       console.error('Error looking up recipient:', e.message);
     }
 
-    // Determine conversation type based on roles
+    // Determine conversation type based on roles.
+    // Classification order matters:
+    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN) -> INTERNAL
+    //   2. Exactly one SUPPORT + one normal user -> SUPPORT
+    //   3. Otherwise -> PRIVATE
+    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
     const senderRoleUpper = (senderRole || '').toUpperCase();
     const recipientRoleUpper = (recipientRole || '').toUpperCase();
 
@@ -291,15 +296,18 @@ router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
     let supportAgentId = null;
     let staffIds = [];
 
-    if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT') {
-      // User <-> Support conversation
+    const senderIsStaff = STAFF_ROLES.has(senderRoleUpper);
+    const recipientIsStaff = STAFF_ROLES.has(recipientRoleUpper);
+
+    if (senderIsStaff && recipientIsStaff) {
+      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN)
+      conversationType = 'INTERNAL';
+      staffIds = [String(senderId), String(recipientId)];
+    } else if (senderRoleUpper === 'SUPPORT' || recipientRoleUpper === 'SUPPORT') {
+      // User <-> Support conversation (exactly one SUPPORT, other is a normal user)
       conversationType = 'SUPPORT';
       const supportId = senderRoleUpper === 'SUPPORT' ? String(senderId) : String(recipientId);
       supportAgentId = supportId;
-    } else if (senderRoleUpper === 'ADMIN' || recipientRoleUpper === 'ADMIN') {
-      // Admin <-> Support internal conversation
-      conversationType = 'INTERNAL';
-      staffIds = [String(senderId), String(recipientId)];
     }
 
     // Ensure conversation metadata exists
@@ -614,7 +622,12 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
     const conversationId = getConversationId(user1Id, user2Id);
     const existing = await Message.findOne({ conversationId });
 
-    // Determine conversation type
+    // Determine conversation type.
+    // Classification order matters:
+    //   1. Staff-to-staff (ADMIN/SUPPORT/SUP_ADMIN) -> INTERNAL
+    //   2. Exactly one SUPPORT + one normal user -> SUPPORT
+    //   3. Otherwise -> PRIVATE
+    const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
     let conversationType = 'PRIVATE';
     let supportAgentId = null;
     let staffIds = [];
@@ -622,12 +635,17 @@ router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (r
     const role1 = (user1Role || 'USER').toUpperCase();
     const role2 = (user2Role || 'USER').toUpperCase();
 
-    if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
-      conversationType = 'SUPPORT';
-      supportAgentId = role1 === 'SUPPORT' ? String(user1Id) : String(user2Id);
-    } else if (role1 === 'ADMIN' || role2 === 'ADMIN') {
+    const user1IsStaff = STAFF_ROLES.has(role1);
+    const user2IsStaff = STAFF_ROLES.has(role2);
+
+    if (user1IsStaff && user2IsStaff) {
+      // Staff <-> Staff internal conversation (Admin/Support/SUP_ADMIN)
       conversationType = 'INTERNAL';
       staffIds = [String(user1Id), String(user2Id)];
+    } else if (role1 === 'SUPPORT' || role2 === 'SUPPORT') {
+      // User <-> Support conversation (exactly one SUPPORT, other is a normal user)
+      conversationType = 'SUPPORT';
+      supportAgentId = role1 === 'SUPPORT' ? String(user1Id) : String(user2Id);
     }
 
     await ensureConversationMetadata(conversationId, {
