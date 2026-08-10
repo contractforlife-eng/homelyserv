@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, Globe, AlertCircle, Shield, Home, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
+import LoginMarketing from '../components/LoginMarketing';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { migrateLegacyProfileIfNeeded } from '../utils/profileMigration';
@@ -219,7 +220,7 @@ const redirectUser = (user) => {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-red-100 via-white to-red-50 p-3 sm:p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-red-100 via-white to-red-50 relative">
       {/* Radiant decorative background elements */}
       <div className="absolute top-0 left-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
@@ -230,8 +231,18 @@ const redirectUser = (user) => {
       <div className="absolute bottom-20 left-5 sm:left-10 w-2 h-2 bg-red-400 rounded-full blur-sm animate-ping delay-300"></div>
       <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-6 sm:p-8 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
+      {/* Desktop: Split layout | Mobile: Stacked */}
+      <div className="flex flex-col lg:flex-row w-full min-h-dvh relative z-10">
+        
+        {/* Marketing Panel - Hidden on mobile, visible on desktop */}
+        <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] bg-white/80 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto">
+          <LoginMarketing />
+        </div>
+
+        {/* Login Panel */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12">
+          <div className="w-full max-w-lg">
+            <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 sm:p-10 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
           
           {/* Language Selector */}
           <div className="absolute top-4 right-4">
@@ -501,6 +512,8 @@ const redirectUser = (user) => {
               {t('createOne')}
             </Link>
           </p>
+        </div>
+          </div>
         </div>
       </div>
 
