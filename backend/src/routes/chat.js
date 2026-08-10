@@ -223,15 +223,29 @@ const ensureConversationMetadata = async (conversationId, { type = 'PRIVATE', pa
 
 /**
  * Update last message info on Conversation metadata.
+ * Auto-reopens CLOSED conversations for SUPPORT and INTERNAL types.
  */
 const touchConversation = async (conversationId, text) => {
   try {
+    const conversation = await Conversation.findOne({ conversationId });
+
+    const updateData = {
+      lastMessageAt: new Date(),
+      lastMessagePreview: text ? text.slice(0, 120) : ''
+    };
+
+    // Auto-reopen CLOSED conversations for SUPPORT and INTERNAL types
+    if (conversation && conversation.status === 'CLOSED') {
+      if (conversation.type === 'SUPPORT' || conversation.type === 'INTERNAL') {
+        updateData.status = 'ACTIVE';
+        updateData.closedAt = null;
+        updateData.closedBy = null;
+      }
+    }
+
     await Conversation.findOneAndUpdate(
       { conversationId },
-      {
-        lastMessageAt: new Date(),
-        lastMessagePreview: text ? text.slice(0, 120) : ''
-      }
+      updateData
     );
   } catch (error) {
     console.error('Error touching conversation:', error.message);

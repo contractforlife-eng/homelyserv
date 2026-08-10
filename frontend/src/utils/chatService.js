@@ -112,6 +112,15 @@ export const deleteConversation = async (conversationId) => {
   return !!response.data?.success;
 };
 
+// POST /api/admin/conversations/:conversationId/close
+// Soft-close a SUPPORT or INTERNAL conversation (admin only).
+// Does NOT delete messages or conversation metadata.
+export const closeConversation = async (conversationId) => {
+  if (!conversationId) return false;
+  const response = await api.post(`/api/admin/conversations/${encodeURIComponent(conversationId)}/close`);
+  return !!response.data?.success;
+};
+
 export const getSupportUsers = async () => {
   const response = await api.get('/api/chat/support-users');
   return response.data?.users || [];
@@ -251,6 +260,7 @@ export default {
   getOrCreateConversation,
   sendWelcomeMessage,
   deleteConversation,
+  closeConversation,
   getSupportUsers,
   getEscalatedConversations,
   getAdminSupportConversations,

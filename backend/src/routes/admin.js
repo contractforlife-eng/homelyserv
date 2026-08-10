@@ -1096,7 +1096,11 @@ router.get('/support-conversations', async (req, res) => {
     const STAFF_ROLES = new Set(['ADMIN', 'SUPPORT']);
 
     const conversationsMeta = await Conversation.find({
-      type: 'SUPPORT'
+      type: 'SUPPORT',
+      $or: [
+        { status: 'ACTIVE' },
+        { status: { $exists: false } }
+      ]
     }).sort({ lastMessageAt: -1 });
 
     // Resolve the roles of all participants once so we can detect
@@ -1220,7 +1224,11 @@ router.get('/internal-messages', async (req, res) => {
 
     const internalMeta = await Conversation.find({
       type: 'INTERNAL',
-      staffIds: userId
+      staffIds: userId,
+      $or: [
+        { status: 'ACTIVE' },
+        { status: { $exists: false } }
+      ]
     }).sort({ lastMessageAt: -1 });
 
     // Legacy staff-to-staff conversations that were misclassified as SUPPORT.
@@ -1228,7 +1236,11 @@ router.get('/internal-messages', async (req, res) => {
     // admin is a participant AND both participants are staff roles.
     const legacySupportMeta = await Conversation.find({
       type: 'SUPPORT',
-      participantIds: userId
+      participantIds: userId,
+      $or: [
+        { status: 'ACTIVE' },
+        { status: { $exists: false } }
+      ]
     }).sort({ lastMessageAt: -1 });
 
     // Determine if a legacy SUPPORT conversation is truly staff-to-staff by
@@ -1396,6 +1408,81 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
   } catch (error) {
     console.error('Error fetching conversation messages:', error);
     return res.status(500).json({ error: 'Failed to fetch conversation messages' });
+  }
+});
+
+// ============================================================
+// CLOSE CONVERSATION (soft-close)
+// POST /api/admin/conversations/:conversationId/close
+// Admin-only. Soft-closes a SUPPORT or INTERNAL conversation.
+// Does NOT delete messages or conversation metadata.
+// ============================================================
+router.post('/conversations/:conversationId/close', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = String(req.userId);
+
+    const conv = await Conversation.findOne({ conversationId });
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Only SUPPORT or INTERNAL conversations may be closed from Admin Messages.
+    // PRIVATE conversations must NEVER be affected.
+    // ESCALATED conversations are outside the current Admin Messages UI.
+    if (conv.type !== 'SUPPORT' && conv.type !== 'INTERNAL') {
+      return res.status(403).json({
+        error: `Cannot close ${conv.type} conversation from Admin Messages`
+      });
+    }
+
+    // Verify admin has legitimate access:
+    // - SUPPORT: admin can supervise (requireAdmin already applied to router)
+    // - INTERNAL: admin must be a staff member
+    if (conv.type === 'INTERNAL' && !conv.staffIds.includes(userId)) {
+      return res.status(403).json({ error: 'Not authorized to close this conversation' });
+    }
+
+    // Idempotent: if already CLOSED, return success
+    if (conv.status === 'CLOSED') {
+      return res.json({
+        success: true,
+        message: 'Conversation is already closed',
+        conversation: {
+          id: conv.conversationId,
+          type: conv.type,
+          status: conv.status,
+          closedAt: conv.closedAt,
+          closedBy: conv.closedBy
+        }
+      });
+    }
+
+    // Soft-close: set status, closedAt, closedBy. Do NOT delete anything.
+    const updated = await Conversation.findOneAndUpdate(
+      { conversationId },
+      {
+        status: 'CLOSED',
+        closedAt: new Date(),
+        closedBy: userId
+      },
+      { new: true }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Conversation closed successfully',
+      conversation: {
+        id: updated.conversationId,
+        type: updated.type,
+        status: updated.status,
+        closedAt: updated.closedAt,
+        closedBy: updated.closedBy
+      }
+    });
+  } catch (error) {
+    console.error('Error closing conversation:', error);
+    return res.status(500).json({ error: 'Failed to close conversation' });
   }
 });
 

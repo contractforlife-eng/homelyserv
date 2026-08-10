@@ -35,7 +35,8 @@ import {
   sendMessage,
   markMessagesAsRead,
   formatDisplayName,
-  startAdminConversation
+  startAdminConversation,
+  closeConversation
 } from '../utils/chatService';
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../components/users';
@@ -260,6 +261,7 @@ const AdminMessages = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [showStartConversation, setShowStartConversation] = useState(false);
   const [showConversationList, setShowConversationList] = useState(true);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -600,6 +602,32 @@ const AdminMessages = () => {
     }
   };
 
+  // ============================================================
+  // CLOSE CONVERSATION (soft-close)
+  // ============================================================
+  const handleCloseConversation = async () => {
+    if (!selectedConversation) return;
+
+    try {
+      const success = await closeConversation(selectedConversation.id);
+      if (success) {
+        // Remove from local list immediately (unread badge updates automatically)
+        if (selectedConversation.type === 'SUPPORT') {
+          setSupportConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+        } else if (selectedConversation.type === 'INTERNAL') {
+          setInternalConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+        }
+        // Clear selected conversation and messages
+        setSelectedConversation(null);
+        setMessages([]);
+        setShowCloseConfirm(false);
+      }
+    } catch (error) {
+      console.error('Error closing conversation:', error);
+      alert('Failed to close conversation. Please try again.');
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -837,6 +865,14 @@ const AdminMessages = () => {
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
             </div>
           </div>
+          {/* Three-dot menu: Close Conversation */}
+          <button
+            onClick={() => setShowCloseConfirm(true)}
+            className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-gray-400 hover:text-white transition"
+            title="More actions"
+          >
+            <MoreVertical size={18} />
+          </button>
         </div>
 
         {/* Messages Area */}
@@ -1075,6 +1111,34 @@ const AdminMessages = () => {
         onClose={() => setShowStartConversation(false)}
         onSelectUser={handleStartConversation}
       />
+
+      {/* Close Confirmation Dialog */}
+      {showCloseConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowCloseConfirm(false)} />
+          <div className="relative w-full max-w-md bg-[#1a1a1a] border border-yellow-500/20 rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-3">Close Conversation</h3>
+            <p className="text-sm text-gray-400 mb-5">
+              Closing this conversation will remove it from the active Admin Messages list.
+              Message history will be preserved.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCloseConfirm(false)}
+                className="px-4 py-2 bg-[#0a0a0a] border border-gray-700 text-white rounded-lg hover:bg-yellow-500/10 transition text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCloseConversation}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition text-sm font-medium"
+              >
+                Close Conversation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

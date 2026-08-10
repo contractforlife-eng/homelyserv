@@ -31,6 +31,16 @@ const conversationSchema = new mongoose.Schema(
     escalatedBy: { type: String, default: null },
     escalatedAt: { type: Date, default: null },
     escalationReason: { type: String, default: null },
+    // Lifecycle: soft-close for admin conversations.
+    // Existing documents without status are treated as 'ACTIVE'.
+    status: {
+      type: String,
+      enum: ['ACTIVE', 'CLOSED'],
+      default: 'ACTIVE',
+      index: true
+    },
+    closedAt: { type: Date, default: null },
+    closedBy: { type: String, default: null },
     // Last activity for sorting.
     lastMessageAt: { type: Date, default: Date.now },
     lastMessagePreview: { type: String, default: '' }
