@@ -18,10 +18,8 @@ import {
   Send,
   RefreshCw,
   X,
-  AlertTriangle,
   Shield,
   Users,
-  Bell,
   ChevronRight,
   Plus,
   Briefcase,
@@ -31,7 +29,6 @@ import {
   MoreVertical
 } from 'lucide-react';
 import {
-  getEscalatedConversations,
   getAdminSupportConversations,
   getInternalMessages,
   getAdminConversationMessages,
@@ -49,10 +46,8 @@ import PageLoader from '../components/common/PageLoader';
 // SECTION TABS
 // ============================================================
 const SECTIONS = {
-  ESCALATED: 'escalated',
   SUPPORT: 'support',
-  INTERNAL: 'internal',
-  NOTIFICATIONS: 'notifications'
+  INTERNAL: 'internal'
 };
 
 // ============================================================
@@ -250,11 +245,9 @@ const AdminMessages = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
 
-  const [activeSection, setActiveSection] = useState(SECTIONS.ESCALATED);
-  const [escalatedConversations, setEscalatedConversations] = useState([]);
+  const [activeSection, setActiveSection] = useState(SECTIONS.SUPPORT);
   const [supportConversations, setSupportConversations] = useState([]);
   const [internalConversations, setInternalConversations] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -349,33 +342,19 @@ const AdminMessages = () => {
     if (!authUser?.id) return;
 
     try {
-      const [escalated, support, internal] = await Promise.all([
-        getEscalatedConversations(),
+      const [support, internal] = await Promise.all([
         getAdminSupportConversations(),
         getInternalMessages()
       ]);
 
-      setEscalatedConversations(escalated);
       setSupportConversations(support);
       setInternalConversations(internal);
     } catch (error) {
       console.error('Error loading admin conversations:', error);
-      setEscalatedConversations([]);
       setSupportConversations([]);
       setInternalConversations([]);
     }
   }, [authUser]);
-
-  // Load notifications
-  const loadNotifications = useCallback(async () => {
-    try {
-      const response = await api.get('/api/notifications');
-      setNotifications(Array.isArray(response.data) ? response.data : response.data?.notifications || []);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-      setNotifications([]);
-    }
-  }, []);
 
   // ============================================================
   // LOAD MESSAGES FOR SELECTED CONVERSATION
@@ -395,7 +374,19 @@ const AdminMessages = () => {
 
       // Mark as read
       if (authUser?.id) {
-        await markMessagesAsRead(conversation.id, authUser.id);
+        const marked = await markMessagesAsRead(conversation.id, authUser.id);
+        if (marked) {
+          // Immediately update local unread state without waiting for polling
+          if (conversation.type === 'SUPPORT') {
+            setSupportConversations(prev =>
+              prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
+            );
+          } else if (conversation.type === 'INTERNAL') {
+            setInternalConversations(prev =>
+              prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
+            );
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading conversation messages:', error);
@@ -426,9 +417,7 @@ const AdminMessages = () => {
       setLoading(false);
       setDataLoaded(true);
     });
-
-    loadNotifications();
-  }, [authUser, isAuthenticated, authLoading, navigate, loadAllData, loadNotifications]);
+  }, [authUser, isAuthenticated, authLoading, navigate, loadAllData]);
 
   // Polling for conversations (silent)
   useEffect(() => {
@@ -454,8 +443,8 @@ const AdminMessages = () => {
 
     setRefreshing(true);
     try {
-      // Reload conversation lists + notifications in parallel
-      await Promise.all([loadAllData(), loadNotifications()]);
+      // Reload conversation lists
+      await loadAllData();
 
       // Reload the currently open conversation messages (if any)
       // while keeping the conversation selected and messages intact
@@ -464,7 +453,19 @@ const AdminMessages = () => {
           const result = await getAdminConversationMessages(selectedConversation.id);
           setMessages(result.messages || []);
           if (authUser?.id) {
-            await markMessagesAsRead(selectedConversation.id, authUser.id);
+            const marked = await markMessagesAsRead(selectedConversation.id, authUser.id);
+            if (marked) {
+              // Immediately update local unread state without waiting for polling
+              if (selectedConversation.type === 'SUPPORT') {
+                setSupportConversations(prev =>
+                  prev.map(c => c.id === selectedConversation.id ? { ...c, unread: 0 } : c)
+                );
+              } else if (selectedConversation.type === 'INTERNAL') {
+                setInternalConversations(prev =>
+                  prev.map(c => c.id === selectedConversation.id ? { ...c, unread: 0 } : c)
+                );
+              }
+            }
           }
         } catch (error) {
           console.error('Error reloading open conversation messages:', error);
@@ -519,11 +520,6 @@ const AdminMessages = () => {
           const exists = prev.some(c => c.id === conversation.id);
           return exists ? prev : [conversation, ...prev];
         });
-      } else if (conversation.type === 'ESCALATED') {
-        setEscalatedConversations(prev => {
-          const exists = prev.some(c => c.id === conversation.id);
-          return exists ? prev : [conversation, ...prev];
-        });
       }
 
       await loadConversationMessages(conversation);
@@ -575,10 +571,6 @@ const AdminMessages = () => {
           .find(id => id !== String(authUser.id));
         recipientId = userParticipant || selectedConversation.user?.id || null;
         recipientName = selectedConversation.user?.fullName || 'User';
-      } else if (selectedConversation.type === 'ESCALATED') {
-        // For escalated conversations, reply to the support agent
-        recipientId = selectedConversation.supportAgentId;
-        recipientName = selectedConversation.supportAgent?.fullName || 'Support';
       }
 
       if (!recipientId) {
@@ -643,7 +635,6 @@ const AdminMessages = () => {
     });
   };
 
-  const filteredEscalated = filterConversations(escalatedConversations);
   const filteredSupport = filterConversations(supportConversations);
   const filteredInternal = filterConversations(internalConversations);
 
@@ -652,19 +643,11 @@ const AdminMessages = () => {
   // ============================================================
   const sections = [
     {
-      id: SECTIONS.ESCALATED,
-      label: t.escalated,
-      desc: t.escalatedDesc,
-      icon: AlertTriangle,
-      count: escalatedConversations.length,
-      color: 'red'
-    },
-    {
       id: SECTIONS.SUPPORT,
       label: t.support,
       desc: t.supportDesc,
       icon: Shield,
-      count: supportConversations.length,
+      count: supportConversations.reduce((sum, c) => sum + (c.unread || 0), 0),
       color: 'green'
     },
     {
@@ -672,16 +655,8 @@ const AdminMessages = () => {
       label: t.internal,
       desc: t.internalDesc,
       icon: Users,
-      count: internalConversations.length,
+      count: internalConversations.reduce((sum, c) => sum + (c.unread || 0), 0),
       color: 'yellow'
-    },
-    {
-      id: SECTIONS.NOTIFICATIONS,
-      label: t.notifications,
-      desc: t.notificationsDesc,
-      icon: Bell,
-      count: notifications.length,
-      color: 'blue'
     }
   ];
 
@@ -705,13 +680,7 @@ const AdminMessages = () => {
     let avatarRole = 'USER';
     let avatarImage = null;
 
-    if (type === 'ESCALATED') {
-      title = conv.user?.fullName || 'User';
-      subtitle = conv.complaint?.subject || conv.escalationReason || conv.lastMessage || '';
-      avatarName = conv.user?.fullName || 'User';
-      avatarRole = conv.user?.role || 'USER';
-      avatarImage = getUserImage(conv.user);
-    } else if (type === 'SUPPORT') {
+    if (type === 'SUPPORT') {
       title = conv.user?.fullName || 'User';
       subtitle = conv.lastMessage || '';
       avatarName = conv.user?.fullName || 'User';
@@ -752,12 +721,6 @@ const AdminMessages = () => {
           </div>
           <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
           <div className="flex items-center gap-2 mt-1">
-            {type === 'ESCALATED' && (
-              <span className="text-xs text-red-400 flex items-center gap-1">
-                <AlertTriangle size={10} />
-                {t.escalated}
-              </span>
-            )}
             {type === 'SUPPORT' && conv.supportAgent && (
               <span className="text-xs text-gray-500">
                 {conv.supportAgent.fullName}
@@ -801,11 +764,6 @@ const AdminMessages = () => {
     }
 
     switch (activeSection) {
-      case SECTIONS.ESCALATED:
-        return filteredEscalated.length === 0
-          ? renderEmptyState(t.noEscalated)
-          : filteredEscalated.map(conv => renderConversationItem(conv, 'ESCALATED'));
-
       case SECTIONS.SUPPORT:
         return filteredSupport.length === 0
           ? renderEmptyState(t.noSupport)
@@ -815,30 +773,6 @@ const AdminMessages = () => {
         return filteredInternal.length === 0
           ? renderEmptyState(t.noInternal)
           : filteredInternal.map(conv => renderConversationItem(conv, 'INTERNAL'));
-
-      case SECTIONS.NOTIFICATIONS:
-        return notifications.length === 0
-          ? renderEmptyState(t.noNotifications)
-          : notifications.map((notif) => (
-              <div
-                key={notif._id || notif.id}
-                className="p-3 flex items-start gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10"
-              >
-                <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                  <Bell size={16} className="text-yellow-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium text-white text-sm">{notif.title || 'Notification'}</p>
-                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatFullDate(notif.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{notif.body || notif.message || ''}</p>
-                  {notif.type && (
-                    <span className="text-xs text-gray-500 mt-1 inline-block">{notif.type}</span>
-                  )}
-                </div>
-              </div>
-            ));
 
       default:
         return null;
@@ -870,13 +804,7 @@ const AdminMessages = () => {
     let chatAvatarRole = 'USER';
     let chatAvatarImage = null;
 
-    if (selectedConversation.type === 'ESCALATED') {
-      chatTitle = selectedConversation.user?.fullName || 'User';
-      chatSubtitle = selectedConversation.complaint?.subject || t.escalated;
-      chatAvatarName = selectedConversation.user?.fullName || 'User';
-      chatAvatarRole = selectedConversation.user?.role || 'USER';
-      chatAvatarImage = getUserImage(selectedConversation.user);
-    } else if (selectedConversation.type === 'SUPPORT') {
+    if (selectedConversation.type === 'SUPPORT') {
       chatTitle = selectedConversation.user?.fullName || 'User';
       chatSubtitle = selectedConversation.supportAgent?.fullName
         ? `${t.supportAgent}: ${selectedConversation.supportAgent.fullName}`
@@ -909,14 +837,6 @@ const AdminMessages = () => {
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
             </div>
           </div>
-          {selectedConversation.type === 'ESCALATED' && (
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-red-500/10 text-red-400 text-xs rounded-lg flex items-center gap-1">
-                <AlertTriangle size={12} />
-                {t.escalated}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Messages Area */}
