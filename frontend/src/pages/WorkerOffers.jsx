@@ -497,12 +497,21 @@ const WorkerOffers = () => {
   // Render Offer Card
   // ============================================================
   const renderOfferCard = (offer) => {
-    const statusColor = getStatusColor(offer.status);
-    const statusIcon = getStatusIcon(offer.status);
-    const statusLabel = getStatusLabel(offer.status);
-    const isExpanded = expandedOffer === offer.id;
+  const statusColor = getStatusColor(offer.status);
+  const statusIcon = getStatusIcon(offer.status);
 
-    return (
+  const isPaymentConfirmed =
+    offer.status === 'accepted' &&
+    offer.paymentConfirmed === true &&
+    offer.paymentVerified === true;
+
+  const statusLabel = isPaymentConfirmed
+    ? t.tabs.paid
+    : getStatusLabel(offer.status);
+
+  const isExpanded = expandedOffer === offer.id;
+
+  return (
       <div
         key={offer.id}
         className={`bg-white dark:bg-gray-800 rounded-xl border ${statusColor} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}
@@ -555,7 +564,9 @@ const WorkerOffers = () => {
               </div>
 
               {/* Payment Status Badge */}
-              {offer.paymentCompleted === true && offer.status !== 'completed' && offer.status !== 'paid' && (
+              {offer.status === 'accepted' &&
+  offer.paymentConfirmed === true &&
+  offer.paymentVerified === true && (
                 <div className="mt-2.5">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
                     <Wallet size={12} />
@@ -689,7 +700,9 @@ const WorkerOffers = () => {
                         <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
                       </div>
                     )}
-                    {offer.paymentCompleted && (
+                    {offer.status === 'accepted' &&
+  offer.paymentConfirmed === true &&
+  offer.paymentVerified === true && (
                       <div className="flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">Payment Status</span>
                         <span className="font-medium text-green-600">✅ Paid</span>
