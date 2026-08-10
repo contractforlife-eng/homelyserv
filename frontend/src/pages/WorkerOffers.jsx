@@ -28,7 +28,6 @@ import {
   CheckCheck,
   Wallet,
   Clock,
-  Zap,
   ChevronRight
 } from 'lucide-react';
 import { 
@@ -76,14 +75,14 @@ const WorkerOffers = () => {
       tabs: {
         pending: 'Pending',
         accepted: 'Accepted',
-        paid: 'Paid',
+        paid: 'Payment Confirmed',
         rejected: 'Rejected',
         completed: 'Completed'
       },
       stats: {
         pending: 'Pending',
         accepted: 'Accepted',
-        paid: 'Paid',
+        paid: 'Payment Confirmed',
         rejected: 'Rejected',
         completed: 'Completed',
         total: 'Total'
@@ -102,9 +101,7 @@ const WorkerOffers = () => {
         waitingPayment: '⏳ Waiting for payment...',
         paymentReceived: '✅ Payment Received',
         workCompleted: 'Work Completed',
-        offerRejected: 'Offer Declined',
-        inProgress: 'In Progress',
-        paid: 'Paid'
+        offerRejected: 'Offer Declined'
       },
       actions: {
         accept: 'Accept Offer',
@@ -135,14 +132,14 @@ const WorkerOffers = () => {
       tabs: {
         pending: 'معلقة',
         accepted: 'مقبولة',
-        paid: 'مدفوعة',
+        paid: 'تم تأكيد الدفع',
         rejected: 'مرفوضة',
         completed: 'مكتملة'
       },
       stats: {
         pending: 'معلقة',
         accepted: 'مقبولة',
-        paid: 'مدفوعة',
+        paid: 'تم تأكيد الدفع',
         rejected: 'مرفوضة',
         completed: 'مكتملة',
         total: 'الإجمالي'
@@ -161,9 +158,7 @@ const WorkerOffers = () => {
         waitingPayment: '⏳ في انتظار الدفع...',
         paymentReceived: '✅ تم استلام الدفع',
         workCompleted: 'تم إكمال العمل',
-        offerRejected: 'تم رفض العرض',
-        inProgress: 'قيد التنفيذ',
-        paid: 'مدفوعة'
+        offerRejected: 'تم رفض العرض'
       },
       actions: {
         accept: 'قبول العرض',
@@ -389,7 +384,6 @@ const WorkerOffers = () => {
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
       accepted: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 text-blue-700',
       rejected: 'bg-red-50 dark:bg-red-900/30 border-red-200 text-red-700',
-      in_progress: 'bg-emerald-50 border-emerald-200 text-emerald-700',
       completed: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 text-purple-700'
     };
     return colors[status] || 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300';
@@ -400,7 +394,6 @@ const WorkerOffers = () => {
       case 'pending': return <Clock size={14} className="text-amber-500" />;
       case 'accepted': return <CheckCircle size={14} className="text-blue-500" />;
       case 'rejected': return <XCircle size={14} className="text-red-500" />;
-      case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
       case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
       default: return <AlertCircle size={14} className="text-gray-500 dark:text-gray-400" />;
     }
@@ -411,7 +404,6 @@ const WorkerOffers = () => {
       pending: 'Pending',
       accepted: 'Accepted',
       rejected: 'Declined',
-      in_progress: 'In Progress',
       completed: 'Completed'
     };
     return labels[status] || status;
@@ -442,12 +434,16 @@ const WorkerOffers = () => {
         filtered = offers.filter(o => o.status === 'pending');
         break;
       case 'accepted':
-        filtered = offers.filter(o => o.status === 'accepted');
+        filtered = offers.filter(o => 
+          o.status === 'accepted' && 
+          !(o.paymentConfirmed === true && o.paymentVerified === true)
+        );
         break;
       case 'paid':
         filtered = offers.filter(o => 
-          (o.status === 'accepted' && o.paymentConfirmed === true && o.paymentVerified === true) ||
-          o.status === 'in_progress'
+          o.status === 'accepted' && 
+          o.paymentConfirmed === true && 
+          o.paymentVerified === true
         );
         break;
       case 'rejected':
@@ -475,8 +471,15 @@ const WorkerOffers = () => {
 
   const stats = {
     pending: offers.filter(o => o.status === 'pending').length,
-    accepted: offers.filter(o => o.status === 'accepted').length,
-    paid: offers.filter(o => (o.status === 'accepted' && o.paymentConfirmed === true && o.paymentVerified === true) || o.status === 'in_progress').length,
+    accepted: offers.filter(o => 
+      o.status === 'accepted' && 
+      !(o.paymentConfirmed === true && o.paymentVerified === true)
+    ).length,
+    paid: offers.filter(o => 
+      o.status === 'accepted' && 
+      o.paymentConfirmed === true && 
+      o.paymentVerified === true
+    ).length,
     rejected: offers.filter(o => o.status === 'rejected').length,
     completed: offers.filter(o => o.status === 'completed').length,
     total: offers.length
@@ -626,30 +629,6 @@ const WorkerOffers = () => {
     </>
   )}
 
-                {offer.status === 'in_progress' && (
-                  <>
-                    <button
-                      onClick={() => handleCompleteWork(offer)}
-                      disabled={processingOffer === offer.id}
-                      className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {processingOffer === offer.id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCheck size={14} />
-                      )}
-                      {t.card.completeWork}
-                    </button>
-                    <button
-                      onClick={() => navigate('/worker-messages')}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
-                    >
-                      <MessageSquare size={14} />
-                      {t.card.chat}
-                    </button>
-                  </>
-                )}
-
                 {offer.status === 'completed' && (
                   <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1.5">
                     <CheckCheck size={14} />
@@ -729,12 +708,11 @@ const WorkerOffers = () => {
                       {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
                       {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && 'You accepted this offer. Waiting for employer payment.'}
                       {offer.status === 'accepted' && offer.paymentConfirmed === true && offer.paymentVerified === true && '✅ Payment received! You can now start working.'}
-                      {offer.status === 'in_progress' && 'Work is in progress.'}
                       {offer.status === 'completed' && 'Work has been completed successfully.'}
                       {offer.status === 'rejected' && 'You declined this offer.'}
                     </p>
                   </div>
-                  {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
+                  {(offer.status === 'accepted' || offer.status === 'completed') && (
                     <button
                       onClick={() => navigate('/worker-messages')}
                       className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
