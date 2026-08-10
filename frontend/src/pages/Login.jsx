@@ -221,18 +221,21 @@ const redirectUser = (user) => {
 
   return (
     <div className="min-h-dvh flex flex-col bg-gradient-to-br from-red-100 via-white to-red-50 relative">
-      {/* Radiant decorative background elements */}
-      <div className="absolute top-0 left-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
-      <div className="absolute bottom-0 right-0 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] bg-gradient-to-r from-red-300/10 via-white to-red-400/10 rounded-full blur-3xl"></div>
+      {/* Decorative background elements - clipped to prevent scroll overflow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Radiant decorative background elements */}
+        <div className="absolute top-0 left-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-gradient-to-br from-red-400/40 via-red-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-gradient-to-tl from-gray-900/20 via-red-600/10 to-transparent rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[700px] h-[450px] sm:h-[700px] bg-gradient-to-r from-red-300/10 via-white to-red-400/10 rounded-full blur-3xl"></div>
 
-      {/* Floating sparkle elements */}
-      <div className="absolute top-10 right-10 sm:right-20 w-3 h-3 bg-red-500 rounded-full blur-sm animate-ping"></div>
-      <div className="absolute bottom-20 left-5 sm:left-10 w-2 h-2 bg-red-400 rounded-full blur-sm animate-ping delay-300"></div>
-      <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
+        {/* Floating sparkle elements */}
+        <div className="absolute top-10 right-10 sm:right-20 w-3 h-3 bg-red-500 rounded-full blur-sm animate-ping"></div>
+        <div className="absolute bottom-20 left-5 sm:left-10 w-2 h-2 bg-red-400 rounded-full blur-sm animate-ping delay-300"></div>
+        <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-red-300 rounded-full blur-md animate-pulse delay-700"></div>
+      </div>
 
       {/* Desktop: Split layout | Mobile: Stacked */}
-      <div className="flex flex-col lg:flex-row w-full min-h-dvh relative z-10">
+      <div className="flex flex-col lg:flex-row w-full relative z-10">
         
         {/* Marketing Panel - Hidden on mobile, visible on desktop */}
         <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] bg-white/80 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto">
