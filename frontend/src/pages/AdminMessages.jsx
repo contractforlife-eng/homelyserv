@@ -1,7 +1,6 @@
-// src/pages/AdminMessages.jsx - ARCHITECTURE REFACTOR
+// src/pages/AdminMessages.jsx - VISUAL ALIGNMENT WITH SUPPORT MESSAGES
 // ============================================================
-// Admin messaging page redesigned with secure permission model.
-//
+// Admin messaging page with secure permission model.
 // Admin does NOT have automatic access to private user chats.
 // This page shows only:
 //   1. Escalated Conversations (after support escalates)
@@ -28,7 +27,8 @@ import {
   Briefcase,
   Wrench,
   Headphones,
-  MessageSquare
+  MessageSquare,
+  MoreVertical
 } from 'lucide-react';
 import {
   getEscalatedConversations,
@@ -43,7 +43,6 @@ import {
 import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import api from '../utils/api';
-import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 
 // ============================================================
@@ -514,8 +513,6 @@ const AdminMessages = () => {
 
   // ============================================================
   // AUTO-OPEN CONVERSATION FROM NAVIGATION (e.g. Admin Hires)
-  // Waits for initial data load, then creates/opens the correct
-  // admin conversation via the same handler used elsewhere.
   // ============================================================
   useEffect(() => {
     if (!authUser || !dataLoaded || autoOpenDoneRef.current) return;
