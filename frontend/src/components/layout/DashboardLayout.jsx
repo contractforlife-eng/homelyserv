@@ -104,7 +104,9 @@ const DashboardLayout = ({
     handleLogout,
   }), [language, sidebarCollapsed, mobileMenuOpen, authUser]);
 
-  if (authLoading) {
+  // Only block during initial unresolved authentication
+  // Once user is loaded, never show full-page loader during SPA navigation
+  if (authLoading && !authUser) {
     return (
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

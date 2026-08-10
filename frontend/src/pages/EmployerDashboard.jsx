@@ -1,5 +1,5 @@
 // src/pages/EmployerDashboard.jsx - WITH WORKING NOTIFICATION BELL (NO TEST NOTIFICATIONS)
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -65,6 +65,9 @@ const EmployerDashboard = () => {
     totalHires: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  // Track whether initial load has completed to distinguish initial fetch from background polling
+  const hasLoadedRef = useRef(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const userIsPremium = () => {
     const userId = authUser?.id || authUser?.email;
@@ -140,8 +143,13 @@ const EmployerDashboard = () => {
   // ============================================================
   const loadDashboardData = async () => {
     if (!authUser) return;
-    
-    setLoading(true);
+
+    // Only set loading on initial fetch, NOT on polling/background refresh
+    const isInitial = !hasLoadedRef.current;
+    if (isInitial) {
+      setLoading(true);
+      setIsInitialLoading(true);
+    }
     
     try {
       const employerId = authUser.id || authUser.email;
@@ -270,7 +278,9 @@ const EmployerDashboard = () => {
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
+      hasLoadedRef.current = true;
       setLoading(false);
+      setIsInitialLoading(false);
     }
   };
 
@@ -324,7 +334,9 @@ const EmployerDashboard = () => {
   // ============================================================
   // RENDER
   // ============================================================
-  if (authLoading || loading) {
+  // Show full-page loader ONLY during initial auth check when no user data exists
+  // After auth is resolved, render the layout shell immediately
+  if (authLoading && !authUser) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -434,71 +446,83 @@ const EmployerDashboard = () => {
 
           {/* Stats Cards - REAL DATA */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.activeHires}</p>
-                <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
-                  <Briefcase size={20} className="text-teal-600" />
+            {isInitialLoading ? (
+              /* Skeleton placeholders while initial data loads - no fake numbers */
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 animate-pulse">
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+                  <div className="h-7 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.activeHires}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Active contracts</p>
-            </div>
+              ))
+            ) : (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.activeHires}</p>
+                    <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
+                      <Briefcase size={20} className="text-teal-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.activeHires}</p>
+                  <p className="text-xs text-gray-400 mt-1">Active contracts</p>
+                </div>
 
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.total}</p>
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <Users size={20} className="text-blue-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.total}</p>
+                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                      <Users size={20} className="text-blue-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.totalHires}</p>
+                  <p className="text-xs text-gray-400 mt-1">Total hires</p>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.totalHires}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Total hires</p>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
-                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                  <CheckCircle size={20} className="text-green-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.completed}</p>
+                    <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                      <CheckCircle size={20} className="text-green-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completedHires}</p>
+                  <p className="text-xs text-gray-400 mt-1">Completed hires</p>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.completedHires}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Completed hires</p>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
-                <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-yellow-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
+                    <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                      <Clock size={20} className="text-yellow-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pendingApplications}</p>
+                  <p className="text-xs text-gray-400 mt-1">Pending applications</p>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.pendingApplications}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Pending applications</p>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.messages}</p>
-                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-                  <MessageCircle size={20} className="text-indigo-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.messages}</p>
+                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+                      <MessageCircle size={20} className="text-indigo-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.unreadMessages}</p>
+                  <p className="text-xs text-gray-400 mt-1">Unread messages</p>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.unreadMessages}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Unread messages</p>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.saved}</p>
-                <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                  <Heart size={20} className="text-purple-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.saved}</p>
+                    <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                      <Heart size={20} className="text-purple-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.savedWorkers}</p>
+                  <p className="text-xs text-gray-400 mt-1">Saved workers</p>
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white dark:text-white mt-1">{stats.savedWorkers}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Saved workers</p>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Quick Actions */}

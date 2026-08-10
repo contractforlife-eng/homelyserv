@@ -88,7 +88,9 @@ const SupportLayout = ({
     navigate('/login');
   };
 
-  if (authLoading || !authUser) {
+  // Only block during initial unresolved authentication
+  // Once user is loaded, never show full-page loader during SPA navigation
+  if (authLoading && !authUser) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

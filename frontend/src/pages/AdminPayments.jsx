@@ -178,34 +178,13 @@ const AdminPayments = () => {
   // ============================================================
   // RENDER
   // ============================================================
-  if (authLoading) {
+  // Only block during initial unresolved authentication
+  // After auth resolves, render the page shell immediately
+  if (authLoading && !authUser) {
     return <PageLoader text="Loading..." fullScreen />;
   }
 
   if (!authUser) return null;
-
-  if (loading) {
-    return <PageLoader text="Loading payments..." fullScreen />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-red-500/20 max-w-md w-full">
-          <AlertCircle size={40} className="mx-auto text-red-500 mb-3" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to load payments</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
-          <button
-            onClick={loadPayments}
-            className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition inline-flex items-center gap-2 font-medium"
-          >
-            <RefreshCw size={16} />
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
@@ -233,45 +212,56 @@ const AdminPayments = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Payments</p>
-              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                <CreditCard size={20} className="text-blue-400" />
+        {/* Stats Cards - skeleton on initial load, real data after */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 animate-pulse">
+                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+                <div className="h-7 w-14 bg-gray-200 dark:bg-gray-700 rounded"></div>
               </div>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
+            ))}
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-              <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-green-400" />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Payments</p>
+                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <CreditCard size={20} className="text-blue-400" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.completed}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                <Clock size={20} className="text-yellow-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} className="text-green-400" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.completed}</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.pending}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                <DollarSign size={20} className="text-yellow-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-yellow-400" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.pending}</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(totalAmount)}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                  <DollarSign size={20} className="text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(totalAmount)}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Search and Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20 mb-6">
@@ -309,8 +299,28 @@ const AdminPayments = () => {
           </p>
         </div>
 
-        {/* Payments List */}
-        {filteredPayments.length === 0 ? (
+        {/* Payments List - inline loading/error states */}
+        {loading ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-500 mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400">Loading payments...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-red-500/20">
+            <AlertCircle size={40} className="mx-auto text-red-500 mb-3" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to load payments</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
+            <button
+              onClick={loadPayments}
+              className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition inline-flex items-center gap-2 font-medium"
+            >
+              <RefreshCw size={16} />
+              Retry
+            </button>
+          </div>
+        ) : filteredPayments.length === 0 ? (
           <EmptyState
             icon={CreditCard}
             title="No payments found"

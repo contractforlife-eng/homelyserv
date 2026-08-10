@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 // AuthContext is a thin wrapper around useAuthStore (single source of truth)
 import React, { createContext, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 const AuthContext = createContext();
@@ -16,37 +16,36 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const store = useAuthStore();
+  
+  // Use individual selectors to prevent unnecessary re-renders and effect retriggers
+  const user = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const login = useAuthStore(state => state.login);
+  const logout = useAuthStore(state => state.logout);
+  const checkAuth = useAuthStore(state => state.checkAuth);
 
   // On mount, verify token with backend via Zustand's checkAuth
-  // Skip for public routes that don't require authentication
+  // This runs ONLY ONCE per app load/browser refresh, not on every navigation
   useEffect(() => {
-    const publicRoutes = ['/verify-email', '/forgot-password', '/reset-password', '/login', '/register', '/about', '/contact', '/terms', '/refund-policy', '/privacy'];
-    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
-
     const initAuth = async () => {
-      if (!isPublicRoute) {
-        await store.checkAuth();
-      } else {
-        // For public routes, just set loading to false without checking auth
-        store.setLoading(false);
-      }
+      // Always validate auth on initial load
+      await checkAuth();
     };
     initAuth();
-  }, [location.pathname]);
+  }, [checkAuth]);
 
   // AuthContext exposes authStore values directly — no duplicate state
   const value = {
-    user: store.user,
-    isAuthenticated: store.isAuthenticated,
-    loading: store.isLoading,
-    login: store.login,
+    user,
+    isAuthenticated,
+    loading: isLoading,
+    login,
     logout: () => {
-      store.logout();
+      logout();
       navigate('/login');
     },
-    checkAuth: store.checkAuth
+    checkAuth
   };
 
   return (

@@ -768,6 +768,16 @@ const AdminMessages = () => {
   // RENDER SECTION CONTENT
   // ============================================================
   const renderSectionContent = () => {
+    // Initial load: show inline skeleton in the conversation list area only
+    if (loading && !dataLoaded) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mb-3"></div>
+          <p className="text-sm text-gray-400">{t.loading}</p>
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case SECTIONS.ESCALATED:
         return filteredEscalated.length === 0
@@ -999,13 +1009,13 @@ const AdminMessages = () => {
   // ============================================================
   // RENDER
   // ============================================================
-  if (!authUser) {
+  // Only block during initial unresolved authentication
+  // After auth resolves, render the page shell immediately
+  if (authLoading && !authUser) {
     return <PageLoader text="Loading..." fullScreen />;
   }
 
-  if (loading) {
-    return <PageLoader text={t.loading} fullScreen />;
-  }
+  if (!authUser) return null;
 
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
