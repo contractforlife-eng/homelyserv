@@ -388,7 +388,6 @@ const WorkerOffers = () => {
     const colors = {
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
       accepted: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 text-blue-700',
-      paid: 'bg-green-50 dark:bg-green-900/30 border-green-200 text-green-700',
       rejected: 'bg-red-50 dark:bg-red-900/30 border-red-200 text-red-700',
       in_progress: 'bg-emerald-50 border-emerald-200 text-emerald-700',
       completed: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 text-purple-700'
@@ -400,7 +399,6 @@ const WorkerOffers = () => {
     switch (status) {
       case 'pending': return <Clock size={14} className="text-amber-500" />;
       case 'accepted': return <CheckCircle size={14} className="text-blue-500" />;
-      case 'paid': return <Wallet size={14} className="text-green-500" />;
       case 'rejected': return <XCircle size={14} className="text-red-500" />;
       case 'in_progress': return <Zap size={14} className="text-emerald-500" />;
       case 'completed': return <CheckCheck size={14} className="text-purple-500" />;
@@ -412,7 +410,6 @@ const WorkerOffers = () => {
     const labels = {
       pending: 'Pending',
       accepted: 'Accepted',
-      paid: 'Paid',
       rejected: 'Declined',
       in_progress: 'In Progress',
       completed: 'Completed'
@@ -448,7 +445,10 @@ const WorkerOffers = () => {
         filtered = offers.filter(o => o.status === 'accepted');
         break;
       case 'paid':
-        filtered = offers.filter(o => o.status === 'paid' || o.status === 'in_progress');
+        filtered = offers.filter(o => 
+          (o.status === 'accepted' && o.paymentConfirmed === true && o.paymentVerified === true) ||
+          o.status === 'in_progress'
+        );
         break;
       case 'rejected':
         filtered = offers.filter(o => o.status === 'rejected');
@@ -476,7 +476,7 @@ const WorkerOffers = () => {
   const stats = {
     pending: offers.filter(o => o.status === 'pending').length,
     accepted: offers.filter(o => o.status === 'accepted').length,
-    paid: offers.filter(o => o.status === 'paid' || o.status === 'in_progress').length,
+    paid: offers.filter(o => (o.status === 'accepted' && o.paymentConfirmed === true && o.paymentVerified === true) || o.status === 'in_progress').length,
     rejected: offers.filter(o => o.status === 'rejected').length,
     completed: offers.filter(o => o.status === 'completed').length,
     total: offers.length
@@ -600,28 +600,31 @@ const WorkerOffers = () => {
                   </>
                 )}
 
-                {offer.status === 'accepted' && (
-                  <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
-                    <Clock size={14} />
-                    {t.card.waitingPayment}
-                  </span>
-                )}
+                {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && (
+  <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
+    <Clock size={14} />
+    {t.card.waitingPayment}
+  </span>
+)}
 
-                {offer.status === 'paid' && (
-                  <>
-                    <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
-                      <Wallet size={14} />
-                      {t.card.paymentReceived}
-                    </span>
-                    <button
-                      onClick={() => navigate('/worker-messages')}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
-                    >
-                      <MessageSquare size={14} />
-                      {t.card.chat}
-                    </button>
-                  </>
-                )}
+{offer.status === 'accepted' &&
+  offer.paymentConfirmed === true &&
+  offer.paymentVerified === true && (
+    <>
+      <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
+        <Wallet size={14} />
+        {t.card.paymentReceived}
+      </span>
+
+      <button
+        onClick={() => navigate('/worker-messages')}
+        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
+      >
+        <MessageSquare size={14} />
+        {t.card.chat}
+      </button>
+    </>
+  )}
 
                 {offer.status === 'in_progress' && (
                   <>
@@ -724,14 +727,14 @@ const WorkerOffers = () => {
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1.5">
                       {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
-                      {offer.status === 'accepted' && 'You accepted this offer. Waiting for employer payment.'}
-                      {offer.status === 'paid' && '✅ Payment received! You can now start working.'}
+                      {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && 'You accepted this offer. Waiting for employer payment.'}
+                      {offer.status === 'accepted' && offer.paymentConfirmed === true && offer.paymentVerified === true && '✅ Payment received! You can now start working.'}
                       {offer.status === 'in_progress' && 'Work is in progress.'}
                       {offer.status === 'completed' && 'Work has been completed successfully.'}
                       {offer.status === 'rejected' && 'You declined this offer.'}
                     </p>
                   </div>
-                  {(offer.status === 'paid' || offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
+                  {(offer.status === 'in_progress' || offer.status === 'accepted' || offer.status === 'completed') && (
                     <button
                       onClick={() => navigate('/worker-messages')}
                       className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
