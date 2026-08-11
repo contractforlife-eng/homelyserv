@@ -160,7 +160,7 @@ const AdminProfile = () => {
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 

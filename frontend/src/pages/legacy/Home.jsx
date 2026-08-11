@@ -213,7 +213,7 @@ const Home = () => {
     const newLang = language === 'en' ? 'ar' : 'en';
     setLanguage(newLang);
     localStorage.setItem('homelyserv_language', newLang);
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
     document.documentElement.lang = newLang;
   };
 
@@ -223,8 +223,6 @@ const Home = () => {
     if (user.role === 'EMPLOYER') return '/employer-dashboard';
     return '/worker-dashboard';
   };
-
-  const isRTL = language === 'ar';
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-800">
@@ -373,7 +371,6 @@ const Home = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 dark:text-white"
-                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
               <div className="relative">
@@ -381,7 +378,6 @@ const Home = () => {
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full md:w-48 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 dark:text-white appearance-none bg-white dark:bg-gray-800"
-                  dir={isRTL ? 'rtl' : 'ltr'}
                 >
                   <option value="">{t.allCategories}</option>
                   {categories.map((cat) => (

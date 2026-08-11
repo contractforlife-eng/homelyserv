@@ -178,7 +178,7 @@ const Navbar = ({ user, onLogout }) => {
               </button>
 
               {isNotificationsOpen && (
-                <div className={`absolute ${i18n.language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50`}>
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800">
                     {t('notifications')}
                   </div>
@@ -219,9 +219,9 @@ const Navbar = ({ user, onLogout }) => {
               </button>
 
               {isProfileOpen && (
-                <div className={`absolute ${i18n.language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50`}>
-                  <Link 
-                    to={getProfilePath()} 
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                  <Link
+                    to={getProfilePath()}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     onClick={() => setIsProfileOpen(false)}
                   >

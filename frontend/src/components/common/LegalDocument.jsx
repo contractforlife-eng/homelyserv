@@ -1,6 +1,6 @@
 // src/components/common/LegalDocument.jsx
 // Reusable public document shell for legal/policy pages (Terms, Refund Policy, Privacy Policy).
-// Supports English + Arabic with RTL/LTR, a back button, a language toggle and the shared footer.
+// Supports English + Arabic with LTR layout only, a back button, a language toggle and the shared footer.
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -93,7 +93,6 @@ const LegalDocument = ({ content }) => {
 
   const lang = resolveLang(language);
   const data = content[lang] || content.en;
-  const isRTL = lang === 'ar';
 
   useEffect(() => {
     const onLanguageChanged = (lng) => {
@@ -116,10 +115,10 @@ const LegalDocument = ({ content }) => {
     }
   };
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const BackIcon = ArrowLeft;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-50 dark:bg-gray-900" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-dvh flex flex-col bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
         <div className="w-full max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">

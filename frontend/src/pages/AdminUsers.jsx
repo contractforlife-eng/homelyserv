@@ -411,7 +411,7 @@ const AdminUsers = () => {
   };
 
   useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 
