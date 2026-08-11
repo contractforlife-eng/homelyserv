@@ -20,8 +20,7 @@ const DashboardLayout = ({
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
-
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Language is synced with the global i18n instance (single source of truth).
   // i18n initializes from the same localStorage key via its language detector.
   const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem('homelyserv_language') || 'en');
@@ -98,7 +97,7 @@ const DashboardLayout = ({
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('loading')}</p>
         </div>
       </div>
     );

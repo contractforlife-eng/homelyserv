@@ -6,26 +6,58 @@ import { useTranslation } from 'react-i18next';
 
 const FOOTER_LINKS = {
   en: [
-    { to: '/about', label: 'About' },
-    { to: '/terms', label: 'Terms & Conditions' },
-    { to: '/refund-policy', label: 'Refund Policy' },
-    { to: '/privacy', label: 'Privacy Policy' },
-    { to: '/contact', label: 'Contact Us' },
-    { to: '/help', label: 'Help' }
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
   ],
   ar: [
-    { to: '/about', label: 'من نحن' },
-    { to: '/terms', label: 'الشروط والأحكام' },
-    { to: '/refund-policy', label: 'سياسة الاسترداد' },
-    { to: '/privacy', label: 'سياسة الخصوصية' },
-    { to: '/contact', label: 'اتصل بنا' },
-    { to: '/help', label: 'المساعدة' }
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
+  ],
+  fr: [
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
+  ],
+  ru: [
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
+  ],
+  tr: [
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
+  ],
+  de: [
+    { to: '/about', key: 'about' },
+    { to: '/terms', key: 'terms' },
+    { to: '/refund-policy', key: 'refundPolicy' },
+    { to: '/privacy', key: 'privacy' },
+    { to: '/contact', key: 'contact' },
+    { to: '/help', key: 'help' }
   ]
 };
 
 const LegalFooter = ({ className = '' }) => {
-  const { i18n } = useTranslation();
-  const lang = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'en').toLowerCase();
   const links = FOOTER_LINKS[lang] || FOOTER_LINKS.en;
 
   return (
@@ -39,7 +71,7 @@ const LegalFooter = ({ className = '' }) => {
                   to={link.to}
                   className="hover:text-red-600 dark:hover:text-red-400 transition-colors hover:underline underline-offset-2"
                 >
-                  {link.label}
+                  {t(link.key)}
                 </Link>
               </li>
             ))}

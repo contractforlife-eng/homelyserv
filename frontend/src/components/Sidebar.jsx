@@ -1,6 +1,7 @@
 // src/components/Sidebar.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { isUserPremium } from '../utils/subscriptionService';
 import { getRoleLabel } from '../utils/userDisplay';
 import {
@@ -30,7 +31,6 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ 
-  language = 'en',
   collapsed = false,
   toggleCollapse,
   mobileOpen = false,
@@ -39,53 +39,7 @@ const Sidebar = ({
   onLogout
 }) => {
   const location = useLocation();
-
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      profile: 'Profile',
-      offers: 'Offers',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      payment: 'Payment',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview',
-      myHires: 'My Hires',
-      pending: 'Pending',
-      past: 'Past',
-      users: 'Users',
-      reports: 'Reports',
-      hires: 'Hires',
-      search: 'Search',
-      notifications: 'Notifications',
-      premium: 'Premium'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      profile: 'الملف الشخصي',
-      offers: 'العروض',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      payment: 'الدفع',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة',
-      myHires: 'تعاقداتي',
-      pending: 'قيد الانتظار',
-      past: 'السابقة',
-      users: 'المستخدمين',
-      reports: 'التقارير',
-      hires: 'التعاقدات',
-      search: 'بحث',
-      notifications: 'الإشعارات',
-      premium: 'مميز'
-    }
-  };
-
-  const t = translations[language || 'en'];
+  const { t } = useTranslation();
 
   // Check if user has premium subscription
   const isPremium = () => {
@@ -103,46 +57,46 @@ const Sidebar = ({
     switch (user.role) {
       case 'WORKER':
         return [
-          { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-          { id: 'profile', label: t.profile, icon: User, path: '/worker-profile' },
-          { id: 'offers', label: t.offers, icon: Briefcase, path: '/worker/offers' },
-          { id: 'my-hires', label: t.myHires, icon: FileText, path: '/my-hires' },
-          { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-          { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-          { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
-          { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
-          { id: 'notifications', label: t.notifications, icon: Bell, path: '/notifications' },
+          { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/worker-dashboard' },
+          { id: 'profile', label: t('profile'), icon: User, path: '/worker-profile' },
+          { id: 'offers', label: t('offers'), icon: Briefcase, path: '/worker/offers' },
+          { id: 'my-hires', label: t('myHires'), icon: FileText, path: '/my-hires' },
+          { id: 'messages', label: t('messages'), icon: MessageCircle, path: '/worker-messages' },
+          { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/worker-complaints' },
+          { id: 'payment', label: t('payments'), icon: CreditCard, path: '/worker-payment' },
+          { id: 'premium', label: t('premium'), icon: Crown, path: '/subscription' },
+          { id: 'notifications', label: t('notifications'), icon: Bell, path: '/notifications' },
         ];
 
       case 'EMPLOYER':
         return [
-          { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-          { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
-          { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-          { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-          { id: 'payments', label: t.payment, icon: DollarSign, path: '/employer-payments' },
-          { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-          { id: 'profile', label: t.profile, icon: User, path: '/employer-profile' },
-          { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
+          { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/employer-dashboard' },
+          { id: 'search', label: t('search'), icon: Search, path: '/employer-search' },
+          { id: 'hires', label: t('myHires'), icon: FileCheck, path: '/my-hires' },
+          { id: 'messages', label: t('messages'), icon: MessageCircle, path: '/employer-messages' },
+          { id: 'payments', label: t('payments'), icon: DollarSign, path: '/employer-payments' },
+          { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/employer-complaints' },
+          { id: 'profile', label: t('profile'), icon: User, path: '/employer-profile' },
+          { id: 'premium', label: t('premium'), icon: Crown, path: '/subscription' },
         ];
 
       case 'ADMIN':
         return [
-          { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
-          { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
-          { id: 'hires', label: t.hires, icon: FileText, path: '/admin/hires' },
-          { id: 'payments', label: t.payment, icon: DollarSign, path: '/admin/payments' },
-          { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/admin/complaints' },
-          { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
-          { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
-          { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
+          { id: 'dashboard', label: t('dashboard'), icon: Home, path: '/admin' },
+          { id: 'users', label: t('users'), icon: Users, path: '/admin/users' },
+          { id: 'hires', label: t('bookings'), icon: FileText, path: '/admin/hires' },
+          { id: 'payments', label: t('payments'), icon: DollarSign, path: '/admin/payments' },
+          { id: 'complaints', label: t('complaints'), icon: AlertTriangle, path: '/admin/complaints' },
+          { id: 'reports', label: t('reports'), icon: BarChart3, path: '/admin/reports' },
+          { id: 'messages', label: t('messages'), icon: MessageCircle, path: '/admin/messages' },
+          { id: 'settings', label: t('settings'), icon: Settings, path: '/admin/settings' },
         ];
 
       default:
         return [
-          { id: 'home', label: 'Home', icon: Home, path: '/home' },
-          { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
-          { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+          { id: 'home', label: t('home'), icon: Home, path: '/home' },
+          { id: 'profile', label: t('profile'), icon: User, path: '/profile' },
+          { id: 'settings', label: t('settings'), icon: Settings, path: '/settings' },
         ];
     }
   };
@@ -298,10 +252,10 @@ const Sidebar = ({
                 }`}
               >
                 <Settings size={20} />
-                {!collapsed && <span className="text-sm font-medium">{t.settings}</span>}
+                {!collapsed && <span className="text-sm font-medium">{t('settings')}</span>}
                 {collapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    {t.settings}
+                    {t('settings')}
                   </div>
                 )}
               </Link>
@@ -312,10 +266,10 @@ const Sidebar = ({
                 }`}
               >
                 <HelpCircle size={20} />
-                {!collapsed && <span className="text-sm font-medium">{t.help}</span>}
+                {!collapsed && <span className="text-sm font-medium">{t('help')}</span>}
                 {collapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    {t.help}
+                    {t('help')}
                   </div>
                 )}
               </Link>
@@ -330,10 +284,10 @@ const Sidebar = ({
             }`}
           >
             <LogOut size={20} />
-            {!collapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {!collapsed && <span className="text-sm font-medium">{t('logout')}</span>}
             {collapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
+                {t('logout')}
               </div>
             )}
           </button>

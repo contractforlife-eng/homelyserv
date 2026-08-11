@@ -2,12 +2,16 @@
 // Reusable loading component for consistent loading UI.
 // Supports dark/light mode and matches the existing design system.
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const PageLoader = ({ text = 'Loading...', fullScreen = false }) => {
+const PageLoader = ({ text, fullScreen = false }) => {
+  const { t } = useTranslation();
+  const displayText = text || t('loading');
+
   const content = (
     <div className="flex flex-col items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
-      <p className="mt-4 text-gray-500 dark:text-gray-400">{text}</p>
+      <p className="mt-4 text-gray-500 dark:text-gray-400">{displayText}</p>
     </div>
   );
 

@@ -1,6 +1,9 @@
 import api from '../utils/api';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
-const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
+const Navbar = ({ user, onLogout }) => {
+  const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -22,37 +25,6 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
       fetchNotifications();
     }
   }, [isNotificationsOpen]);
-
-  const translations = {
-    en: {
-      home: 'Home',
-      offers: 'Offers',
-      messages: 'Messages',
-      notifications: 'Notifications',
-      profile: 'Profile',
-      settings: 'Settings',
-      logout: 'Logout',
-      dashboard: 'Dashboard',
-      myHires: 'My Hires',
-      search: 'Search',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      home: 'الرئيسية',
-      offers: 'العروض',
-      messages: 'الرسائل',
-      notifications: 'الإشعارات',
-      profile: 'الملف الشخصي',
-      settings: 'الإعدادات',
-      logout: 'تسجيل الخروج',
-      dashboard: 'لوحة التحكم',
-      myHires: 'تعاقداتي',
-      search: 'بحث',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[language || 'en'];
 
   const getDashboardPath = () => {
     if (!user) return '/login';
@@ -135,7 +107,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               }`}
             >
               <Home size={18} />
-              {t.dashboard}
+              {t('dashboard')}
             </Link>
             
             <Link 
@@ -147,7 +119,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               }`}
             >
               <Briefcase size={18} />
-              {t.offers}
+              {t('offers')}
             </Link>
 
             {user?.role === 'WORKER' && (
@@ -160,7 +132,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
                 }`}
               >
                 <Briefcase size={18} />
-                {t.myHires}
+                {t('myHires')}
               </Link>
             )}
 
@@ -174,7 +146,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
                 }`}
               >
                 <Clock size={18} />
-                Pending
+                {t('pending')}
               </Link>
             )}
 
@@ -187,7 +159,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               }`}
             >
               <MessageCircle size={18} />
-              {t.messages}
+              {t('messages')}
             </Link>
 
             {/* Notifications Dropdown Element */}
@@ -206,14 +178,14 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               </button>
 
               {isNotificationsOpen && (
-                <div className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50`}>
+                <div className={`absolute ${i18n.language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50`}>
                   <div className="px-4 py-2 border-b border-gray-100 font-semibold text-sm text-gray-800">
-                    {t.notifications}
+                    {t('notifications')}
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="px-4 py-6 text-sm text-gray-400 text-center">
-                        {t.noNotifications}
+                        {t('noNotifications')}
                       </div>
                     ) : (
                       notifications.map((n) => (
@@ -228,14 +200,8 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               )}
             </div>
 
-            {/* Language Toggle */}
-            <button
-              onClick={toggleLanguage}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-            >
-              <Globe size={16} />
-              {language === 'en' ? 'العربية' : 'English'}
-            </button>
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Profile Dropdown */}
             <div className="relative">
@@ -253,14 +219,14 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               </button>
 
               {isProfileOpen && (
-                <div className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50`}>
+                <div className={`absolute ${i18n.language === 'ar' ? 'left-0' : 'right-0'} mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50`}>
                   <Link 
                     to={getProfilePath()} 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     onClick={() => setIsProfileOpen(false)}
                   >
                     <User size={16} />
-                    {t.profile}
+                    {t('profile')}
                   </Link>
                   <Link 
                     to={getSettingsPath()} 
@@ -268,7 +234,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
                     onClick={() => setIsProfileOpen(false)}
                   >
                     <Settings size={16} />
-                    {t.settings}
+                    {t('settings')}
                   </Link>
                   <hr className="my-1" />
                   <button
@@ -276,7 +242,7 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                   >
                     <LogOut size={16} />
-                    {t.logout}
+                    {t('logout')}
                   </button>
                 </div>
               )}
@@ -302,47 +268,44 @@ const Navbar = ({ user, onLogout, language, toggleLanguage }) => {
               className="block text-gray-700 hover:text-red-600"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t.dashboard}
+              {t('dashboard')}
             </Link>
             <Link 
               to={getOffersPath()} 
               className="block text-gray-700 hover:text-red-600"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t.offers}
+              {t('offers')}
             </Link>
             <Link 
               to={getMessagesPath()} 
               className="block text-gray-700 hover:text-red-600"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t.messages}
+              {t('messages')}
             </Link>
             <Link 
               to={getProfilePath()} 
               className="block text-gray-700 hover:text-red-600"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t.profile}
+              {t('profile')}
             </Link>
             <Link 
               to={getSettingsPath()} 
               className="block text-gray-700 hover:text-red-600"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t.settings}
+              {t('settings')}
             </Link>
-            <button
-              onClick={toggleLanguage}
-              className="block w-full text-left text-gray-700 hover:text-red-600"
-            >
-              {language === 'en' ? 'العربية' : 'English'}
-            </button>
+            <div className="py-2">
+              <LanguageSwitcher />
+            </div>
             <button
               onClick={handleLogout}
               className="block w-full text-left text-red-600 hover:text-red-700"
             >
-              {t.logout}
+              {t('logout')}
             </button>
           </div>
         </div>
