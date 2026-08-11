@@ -891,6 +891,11 @@ const EmployerSearch = () => {
                           {worker.fullName || 'Worker'}
                         </h3>
 
+                        {/* Worker Job / Service */}
+                        <div className="text-xs text-teal-700 dark:text-teal-400 font-medium mb-1 truncate">
+                          {getJobLabel(worker.desiredJob) || (worker.skills && worker.skills.length > 0 ? worker.skills[0] : 'Service not specified')}
+                        </div>
+
                         {/* Location */}
                         <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
                           <MapPin size={12} className="flex-shrink-0" />
