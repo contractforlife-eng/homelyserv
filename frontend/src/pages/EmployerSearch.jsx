@@ -68,6 +68,16 @@ const EmployerSearch = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState('grid');
 
+  // Dynamic hourly rate maximum based on real worker data
+  const getDynamicHourlyMax = () => {
+    if (allWorkers.length === 0) return 100;
+    const maxRate = Math.max(...allWorkers.map(w => Number(w.hourlyRate) || 0));
+    // Round up to nearest 50 for clean UX, but never below actual max
+    return Math.ceil(maxRate / 50) * 50 || 100;
+  };
+
+  const dynamicHourlyMax = getDynamicHourlyMax();
+
   const jobOptions = ['All Jobs', ...JOB_OPTIONS.map(job => job.label)];
 
   const experienceLevels = [
@@ -297,6 +307,16 @@ const EmployerSearch = () => {
 
     loadWorkersFromBackend();
   }, [authUser, isAuthenticated, authLoading, navigate]);
+
+  // Update maxHourlyRate when dynamic max changes and current value exceeds it
+  useEffect(() => {
+    if (advancedFilters.maxHourlyRate > dynamicHourlyMax) {
+      setAdvancedFilters(prev => ({
+        ...prev,
+        maxHourlyRate: dynamicHourlyMax
+      }));
+    }
+  }, [dynamicHourlyMax, advancedFilters.maxHourlyRate]);
 
   // ============================================================
   // 4. LOAD WORKERS FROM BACKEND
@@ -550,7 +570,7 @@ const EmployerSearch = () => {
         results = results.filter(worker => worker.available === false);
       }
 
-      if (advancedFilters.maxHourlyRate < 100) {
+      if (advancedFilters.maxHourlyRate < dynamicHourlyMax) {
         results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
       }
 
@@ -722,7 +742,7 @@ const EmployerSearch = () => {
               <input
                 type="range"
                 min="10"
-                max="100"
+                max={dynamicHourlyMax}
                 step="5"
                 value={advancedFilters.maxHourlyRate}
                 onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxHourlyRate: parseInt(e.target.value) }))}
