@@ -180,7 +180,7 @@ export const getSidebarCounters = async (userId, role) => {
         where: { paymentStatus: 'pending', paymentProofUrl: { not: null } },
       })),
       safeCount('payments', prisma.payment.count({
-        where: { status: { in: PENDING_PAYMENT_STATUSES } },
+        where: { status: 'pending_verification' },
       })),
       safeCount('complaints', prisma.complaint.count({
         where: { status: 'ESCALATED' },
