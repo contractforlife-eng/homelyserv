@@ -16,8 +16,10 @@ import {
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
 import LegalFooter from '../components/common/LegalFooter';
+import { useTranslation } from 'react-i18next';
 
 function VerifyEmail() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
@@ -33,7 +35,7 @@ function VerifyEmail() {
     const verify = async () => {
       if (!token) {
         setState('failed');
-        setError('No verification token provided.');
+        setError(t('invalidVerificationLink'));
         return;
       }
 
@@ -70,7 +72,7 @@ function VerifyEmail() {
             setState('expired');
           } else {
             setState('failed');
-            setError(response.data?.message || 'Verification failed.');
+            setError(response.data?.message || t('emailVerificationFailed'));
           }
         }
       } catch (err) {
@@ -79,7 +81,7 @@ function VerifyEmail() {
           setState('expired');
         } else {
           setState('failed');
-          setError(err.response?.data?.message || 'Verification failed. Please try again.');
+          setError(err.response?.data?.message || t('emailVerificationFailed'));
         }
       }
     };
@@ -96,7 +98,7 @@ function VerifyEmail() {
         setTimeout(() => setState('expired'), 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend verification email.');
+      setError(err.response?.data?.message || t('resendVerificationFailed'));
     }
   };
 
@@ -111,8 +113,8 @@ function VerifyEmail() {
                 <Loader2 size={40} className="text-white animate-spin" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Verifying your email...</h2>
-            <p className="text-gray-500 dark:text-gray-400">Please wait while we confirm your email address.</p>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('verifyingEmail')}</h2>
+            <p className="text-gray-500 dark:text-gray-400">{t('verifyingEmail')}</p>
           </div>
         );
 
@@ -125,9 +127,9 @@ function VerifyEmail() {
                 <CheckCircle size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Email Verified!</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('emailVerified')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Your email address has been successfully verified. You can now enjoy all HomelyServ features.
+              {t('emailVerifiedDesc')}
             </p>
             <button
               onClick={() => {
@@ -140,7 +142,7 @@ function VerifyEmail() {
               }}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
             >
-              Continue to Dashboard <ArrowRight size={16} sm:size={18} />
+              {t('continueToDashboard')} <ArrowRight size={16} sm:size={18} />
             </button>
           </div>
         );
@@ -154,9 +156,9 @@ function VerifyEmail() {
                 <MailCheck size={32} sm:size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">Already Verified</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('alreadyVerified')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 text-xs sm:text-sm">
-              Your email address is already verified. No further action is needed.
+              {t('alreadyVerifiedDesc')}
             </p>
             <button
               onClick={() => {
@@ -169,7 +171,7 @@ function VerifyEmail() {
               }}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
             >
-              Continue to Dashboard <ArrowRight size={16} sm:size={18} />
+              {t('continueToDashboard')} <ArrowRight size={16} sm:size={18} />
             </button>
           </div>
         );
@@ -183,15 +185,15 @@ function VerifyEmail() {
                 <Clock size={32} sm:size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">Link Expired</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('expiredVerificationLink')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 text-xs sm:text-sm">
-              This verification link has expired. Please request a new verification email.
+              {t('expiredVerificationLink')}
             </p>
             <button
               onClick={handleResend}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
             >
-              Resend Verification Email
+              {t('resendVerification')}
             </button>
             {error && (
               <p className="mt-4 text-xs sm:text-sm text-red-500">{error}</p>
@@ -209,22 +211,22 @@ function VerifyEmail() {
                 <XCircle size={32} sm:size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">Verification Failed</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('emailVerificationFailed')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 text-xs sm:text-sm">
-              {error || 'The verification link is invalid or has already been used.'}
+              {error || t('invalidVerificationLink')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={handleResend}
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold text-xs sm:text-sm"
               >
-                Resend Verification Email
+                {t('resendVerification')}
               </button>
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 sm:px-6 py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 font-semibold text-xs sm:text-sm"
               >
-                Go to Login
+                {t('continueToLogin')}
               </Link>
             </div>
             {error && (
@@ -262,7 +264,7 @@ function VerifyEmail() {
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
-                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Email Verification</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">{t('emailVerification')}</p>
               </div>
             </div>
           </div>
@@ -273,9 +275,9 @@ function VerifyEmail() {
           {/* Footer */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
             <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
-              Need help?{' '}
+              {t('help')}?{' '}
               <Link to="/contact" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Contact Support
+                {t('support')}
               </Link>
             </p>
           </div>

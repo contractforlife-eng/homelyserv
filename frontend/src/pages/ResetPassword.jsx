@@ -18,8 +18,10 @@ import {
 } from 'lucide-react';
 import LegalFooter from '../components/common/LegalFooter';
 import api from '../utils/api';
+import { useTranslation } from 'react-i18next';
 
 function ResetPassword() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
@@ -39,13 +41,13 @@ function ResetPassword() {
   useEffect(() => {
     if (!token) {
       setState('invalid');
-      setError('No reset token provided. Please use the link from your email.');
+      setError(t('invalidResetToken'));
     }
   }, [token]);
 
   const validatePassword = (password) => {
     if (password.length < 6) {
-      return 'Password must be at least 6 characters';
+      return t('passwordMinLength');
     }
     return '';
   };
@@ -64,7 +66,7 @@ function ResetPassword() {
 
     // Validate confirmation
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('passwordMismatch'));
       return;
     }
 
@@ -84,10 +86,10 @@ function ResetPassword() {
       if (response.data?.success) {
         setState('success');
       } else {
-        throw new Error(response.data?.message || 'Failed to reset password');
+        throw new Error(response.data?.message || t('resetPasswordFailed'));
       }
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Failed to reset password. Please try again.';
+      const message = err.response?.data?.message || err.message || t('resetPasswordFailed');
       setError(message);
 
       // Determine state based on error message
@@ -114,15 +116,15 @@ function ResetPassword() {
                 <CheckCircle size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Password Reset Successful!</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('passwordResetSuccess')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Your password has been changed successfully. You can now log in with your new password.
+              {t('passwordResetSuccess')}
             </p>
             <button
               onClick={() => navigate('/login')}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold"
             >
-              Go to Login <ArrowRight size={18} />
+              {t('continueToLogin')} <ArrowRight size={18} />
             </button>
           </div>
         );
@@ -136,22 +138,22 @@ function ResetPassword() {
                 <XCircle size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Invalid Reset Link</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('invalidResetToken')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              {error || 'This password reset link is invalid or has already been used.'}
+              {error || t('invalidResetToken')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 to="/forgot-password"
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold"
               >
-                Request New Link
+                {t('sendResetLink')}
               </Link>
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 font-semibold"
               >
-                Go to Login
+                {t('continueToLogin')}
               </Link>
             </div>
           </div>
@@ -166,15 +168,15 @@ function ResetPassword() {
                 <Clock size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Link Expired</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('expiredVerificationLink')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              This password reset link has expired. Please request a new one.
+              {t('expiredVerificationLink')}
             </p>
             <Link
               to="/forgot-password"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold"
             >
-              Request New Link
+              {t('sendResetLink')}
             </Link>
           </div>
         );
@@ -188,15 +190,15 @@ function ResetPassword() {
                 <AlertCircle size={40} className="text-white" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Something Went Wrong</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t('error')}</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              {error || 'Failed to reset password. Please try again.'}
+              {error || t('resetPasswordFailed')}
             </p>
             <button
               onClick={() => setState('ready')}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 font-semibold"
             >
-              Try Again
+              {t('tryAgain')}
             </button>
           </div>
         );
@@ -206,7 +208,7 @@ function ResetPassword() {
         return (
           <form onSubmit={handleSubmit}>
             <div className="mb-3 sm:mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">NEW PASSWORD</label>
+              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">{t('newPasswordLabel')}</label>
               <div className="relative">
                 <KeyRound size={16} sm:size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
                 <input
@@ -219,7 +221,7 @@ function ResetPassword() {
                   className={`w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border ${
                     error ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200`}
-                  placeholder="Enter new password"
+                  placeholder={t('newPasswordPlaceholder')}
                   required
                   disabled={submitting}
                 />
@@ -235,7 +237,7 @@ function ResetPassword() {
             </div>
 
             <div className="mb-3 sm:mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">CONFIRM NEW PASSWORD</label>
+              <label className="block text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold mb-2">{t('confirmNewPasswordLabel')}</label>
               <div className="relative">
                 <KeyRound size={16} sm:size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500" />
                 <input
@@ -248,7 +250,7 @@ function ResetPassword() {
                   className={`w-full pl-10 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border ${
                     error ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200`}
-                  placeholder="Confirm new password"
+                  placeholder={t('confirmNewPasswordPlaceholder')}
                   required
                   disabled={submitting}
                 />
@@ -277,10 +279,10 @@ function ResetPassword() {
               {submitting ? (
                 <>
                   <Loader2 size={18} sm:size={20} className="animate-spin" />
-                  Resetting...
+                  {t('resettingPassword')}
                 </>
               ) : (
-                'Reset Password'
+                t('resetPassword')
               )}
             </button>
           </form>
@@ -315,7 +317,7 @@ function ResetPassword() {
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent tracking-tight">
                   HomelyServ
                 </h1>
-                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Reset Password</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">{t('resetPassword')}</p>
               </div>
             </div>
           </div>
@@ -326,9 +328,9 @@ function ResetPassword() {
           {/* Footer */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
             <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
-              Need help?{' '}
+              {t('help')}?{' '}
               <Link to="/contact" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Contact Support
+                {t('support')}
               </Link>
             </p>
           </div>

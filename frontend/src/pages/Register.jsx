@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from "../utils/api";
 import useAuthStore from "../store/authStore";
+import { useTranslation } from 'react-i18next';
+import i18n, { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import { 
   User, 
   Mail, 
@@ -26,6 +28,7 @@ import { getCountryByCode } from '../utils/countries';
 
 function Register() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -74,14 +77,6 @@ function Register() {
     }
   }, []);
 
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'ar', name: 'Arabic', flag: '🇪🇬' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-    { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
-  ];
-
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -115,16 +110,16 @@ function Register() {
   // Phone validation - international-friendly format
   const validatePhone = (phone) => {
     if (!phone || !String(phone).trim()) {
-      return 'Phone number is required';
+      return t('phoneRequired');
     }
     const trimmed = String(phone).trim();
     // ^\+?[0-9\s\-().]{7,20}$
     if (!/^\+?[0-9\s\-().]{7,20}$/.test(trimmed)) {
-      return 'Enter a valid phone number (7-20 characters)';
+      return t('phoneInvalid');
     }
     const digitCount = trimmed.replace(/\D/g, '').length;
     if (digitCount < 7) {
-      return 'Phone number must contain at least 7 digits';
+      return t('phoneDigits');
     }
     return '';
   };
@@ -134,27 +129,27 @@ function Register() {
     const newErrors = {};
 
     if (!formData.fullName) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = t('fullNameRequired');
     } else if (formData.fullName.length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
+      newErrors.fullName = t('fullNameMinLength');
     }
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = t('emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('passwordMinLength');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordMismatch');
     }
 
     const phoneError = validatePhone(formData.phone);
@@ -163,13 +158,13 @@ function Register() {
     }
 
     if (!formData.countryCode) {
-      newErrors.country = 'Please select your country';
+      newErrors.country = t('countryRequired');
     } else if (!getCountryByCode(formData.countryCode)) {
-      newErrors.country = 'Please select a valid country';
+      newErrors.country = t('countryInvalid');
     }
 
     if (!formData.role) {
-      newErrors.role = 'Please select a role';
+      newErrors.role = t('roleRequired');
     }
 
     setErrors(newErrors);
@@ -203,7 +198,7 @@ function Register() {
       });
 
       if (!response.data.success) {
-        throw new Error(response.data.message || "Registration failed");
+        throw new Error(response.data.message || t('registrationFailed'));
       }
 
       console.log("✅ User registered in MongoDB:", response.data.user);
@@ -227,8 +222,8 @@ function Register() {
 
     } catch (error) {
       console.error('❌ Registration error:', error);
-      setErrors({ 
-        general: error.message || 'Registration failed. Please try again.' 
+      setErrors({
+        general: error.message || t('registrationFailed')
       });
     } finally {
       setLoading(false);
@@ -253,18 +248,22 @@ function Register() {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-red-200 rounded-xl hover:border-red-400 hover:bg-red-50 dark:bg-red-900/30/50 transition text-sm shadow-sm"
               >
                 <Globe size={15} className="text-red-600" />
-                <span className="text-gray-600 dark:text-gray-300 text-xs font-medium">EN</span>
+                <span className="text-gray-600 dark:text-gray-300 text-xs font-medium">
+                  {SUPPORTED_LANGUAGES.find(l => l.code === i18n.language)?.nativeName || t('language')}
+                </span>
               </button>
               {showLanguages && (
                 <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-red-100 rounded-xl shadow-lg z-50 overflow-hidden">
-                  {languages.map((lang) => (
+                  {SUPPORTED_LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
-                      onClick={() => { setShowLanguages(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 transition text-sm"
+                      onClick={() => { changeLanguageGlobal(lang.code); setShowLanguages(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:bg-red-900/30 transition text-sm ${
+                        i18n.language === lang.code ? 'bg-red-50 font-semibold' : ''
+                      }`}
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700 dark:text-gray-300">{lang.name}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
                     </button>
                   ))}
                 </div>
@@ -291,7 +290,7 @@ function Register() {
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
                   <span className="text-red-600">Homely</span><span className="text-emerald-600">Serv</span>
                 </h1>
-                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">Create Your Account</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 tracking-widest uppercase mt-1 font-light">{t('createAccount')}</p>
               </div>
             </div>
           </div>
@@ -300,7 +299,7 @@ function Register() {
           {success && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30/80 backdrop-blur-sm border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
-              Account created successfully! Redirecting to login...
+              {t('accountCreatedSuccess')}
             </div>
           )}
 
@@ -314,7 +313,7 @@ function Register() {
           <form onSubmit={handleSubmit}>
             {/* Full Name */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('fullName')}</label>
               <div className="relative group">
                 <User size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -325,7 +324,7 @@ function Register() {
                   className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                     errors.fullName ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                  placeholder="Enter your full name"
+                  placeholder={t('fullNamePlaceholder')}
                   required
                 />
               </div>
@@ -336,7 +335,7 @@ function Register() {
 
             {/* Email */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('email')}</label>
               <div className="relative group">
                 <Mail size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -347,7 +346,7 @@ function Register() {
                   className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                     errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                  placeholder="Enter your email"
+                  placeholder={t('emailPlaceholder')}
                   required
                 />
               </div>
@@ -358,7 +357,7 @@ function Register() {
 
             {/* Phone */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number <span className="text-red-600">*</span></label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('phone')} <span className="text-red-600">*</span></label>
               <div className="relative group">
                 <Phone size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -369,7 +368,7 @@ function Register() {
                   className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                     errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                  placeholder="Enter your phone number"
+                  placeholder={t('phonePlaceholder')}
                   required
                 />
               </div>
@@ -380,7 +379,7 @@ function Register() {
 
             {/* Country */}
             <div className="mb-3 sm:mb-4">
-              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country <span className="text-red-600">*</span></label>
+              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('country')} <span className="text-red-600">*</span></label>
               <CountrySelect
                 id="country"
                 name="country"
@@ -395,7 +394,7 @@ function Register() {
 
             {/* Role Selection */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Register as</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('registerAs')}</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -407,7 +406,7 @@ function Register() {
                   }`}
                 >
                   <Briefcase size={18} sm:size={20} className="mx-auto mb-1" />
-                  <span className="text-xs sm:text-sm font-medium">Job Seeker</span>
+                  <span className="text-xs sm:text-sm font-medium">{t('jobSeeker')}</span>
                 </button>
                 <button
                   type="button"
@@ -419,7 +418,7 @@ function Register() {
                   }`}
                 >
                   <User size={18} sm:size={20} className="mx-auto mb-1" />
-                  <span className="text-xs sm:text-sm font-medium">Employer</span>
+                  <span className="text-xs sm:text-sm font-medium">{t('employer')}</span>
                 </button>
               </div>
               {errors.role && (
@@ -429,7 +428,7 @@ function Register() {
 
             {/* Password */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('password')}</label>
               <div className="relative group">
                 <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -440,7 +439,7 @@ function Register() {
                   className={`w-full pl-11 pr-12 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                     errors.password ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                  placeholder="Create a password (min 6 characters)"
+                  placeholder={t('passwordPlaceholder')}
                   required
                 />
                 <button
@@ -458,7 +457,7 @@ function Register() {
 
             {/* Confirm Password */}
             <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirm Password</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('confirmPassword')}</label>
               <div className="relative group">
                 <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                 <input
@@ -469,7 +468,7 @@ function Register() {
                   className={`w-full pl-11 pr-12 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                  placeholder="Confirm your password"
+                  placeholder={t('confirmPasswordPlaceholder')}
                   required
                 />
                 <button
@@ -494,11 +493,11 @@ function Register() {
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Creating Account...
+                  {t('creatingAccount')}
                 </div>
               ) : (
                 <>
-                  Create Account
+                  {t('createAccount')}
                   <UserPlus size={18} sm:size={20} />
                 </>
               )}
@@ -522,25 +521,25 @@ function Register() {
 
           {/* Login Link */}
           <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
-            Already have an account?{' '}
+            {t('alreadyHaveAccount')}{' '}
             <Link to="/login" className="text-red-600 font-semibold hover:text-red-700 transition-colors hover:underline">
-              Sign In
+              {t('signInLink')}
             </Link>
           </p>
 
           <div className="mt-3 sm:mt-4 text-center">
             <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
-              By creating an account, you agree to our{' '}
+              {t('agreeToTerms')}{' '}
               <Link to="/terms" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Terms &amp; Conditions
+                {t('terms')}
               </Link>{' '}
-              and{' '}
+              {t('and')}{' '}
               <Link to="/privacy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Privacy Policy
+                {t('privacy')}
               </Link>
-              {', and you acknowledge the '}
+              {', '}{t('andAcknowledge')}{' '}
               <Link to="/refund-policy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                Refund Policy
+                {t('refundPolicy')}
               </Link>
               .
             </p>

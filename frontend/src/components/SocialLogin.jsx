@@ -4,10 +4,12 @@ import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
+import { useTranslation } from 'react-i18next';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 
 export default function SocialLogin({ onLoginSuccess }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fbLoaded, setFbLoaded] = useState(false);
@@ -71,7 +73,7 @@ export default function SocialLogin({ onLoginSuccess }) {
       if (data.success) {
         useAuthStore.getState().setAuth(data.user, data.token);
 
-        toast.success(`Welcome ${data.user.fullName}!`);
+        toast.success(`${t('welcome')} ${data.user.fullName}!`);
         
         if (onLoginSuccess) {
           onLoginSuccess(data.user);
@@ -89,11 +91,11 @@ export default function SocialLogin({ onLoginSuccess }) {
           navigate('/employer-dashboard');
         }
       } else {
-        toast.error(data.message || 'Social login failed');
+        toast.error(data.message || t('socialLoginError'));
       }
     } catch (error) {
       console.error('Social login error:', error);
-      toast.error('Social login failed. Please try again.');
+      toast.error(t('socialLoginError'));
     } finally {
       setLoading(false);
     }
@@ -112,7 +114,7 @@ export default function SocialLogin({ onLoginSuccess }) {
       if (data.success) {
         useAuthStore.getState().setAuth(data.user, data.token);
 
-        toast.success(`Welcome ${data.user.fullName}!`);
+        toast.success(`${t('welcome')} ${data.user.fullName}!`);
         
         if (onLoginSuccess) {
           onLoginSuccess(data.user);
@@ -129,28 +131,28 @@ export default function SocialLogin({ onLoginSuccess }) {
           navigate('/employer-dashboard');
         }
       } else {
-        toast.error(data.message || 'Google login failed');
+        toast.error(data.message || t('socialLoginError'));
       }
     } catch (error) {
       console.error('Error decoding Google token:', error);
-      toast.error('Google login failed');
+      toast.error(t('socialLoginError'));
     }
   };
 
   const handleGoogleError = () => {
     console.error('Google login failed');
-    toast.error('Google login failed. Please try again.');
+    toast.error(t('socialLoginError'));
   };
 
   // Facebook Login Handler
   const handleFacebookLogin = () => {
     if (!fbLoaded) {
-      toast.info('Facebook SDK is loading. Please try again.');
+      toast.info(t('socialLoginError'));
       return;
     }
 
     if (!window.FB) {
-      toast.error('Facebook SDK not loaded. Please refresh the page.');
+      toast.error(t('socialLoginError'));
       return;
     }
 
@@ -167,7 +169,7 @@ export default function SocialLogin({ onLoginSuccess }) {
           handleSocialLogin('facebook', userData);
         });
       } else {
-        toast.error('Facebook login cancelled or failed');
+        toast.error(t('socialLoginError'));
       }
     }, { scope: 'email,public_profile' });
   };
@@ -176,7 +178,7 @@ export default function SocialLogin({ onLoginSuccess }) {
     <div className="mt-6">
       <div className="flex items-center gap-4 mb-5">
         <div className="flex-1 border-t border-gray-200"></div>
-        <span className="text-sm text-gray-400 whitespace-nowrap font-medium">Or continue with</span>
+        <span className="text-sm text-gray-400 whitespace-nowrap font-medium">{t('orSignInWith')}</span>
         <div className="flex-1 border-t border-gray-200"></div>
       </div>
 
@@ -208,7 +210,7 @@ export default function SocialLogin({ onLoginSuccess }) {
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
           </svg>
-          <span className="text-sm font-medium">Facebook</span>
+          <span className="text-sm font-medium">{t('facebook')}</span>
         </button>
       </div>
 
@@ -216,7 +218,7 @@ export default function SocialLogin({ onLoginSuccess }) {
         <div className="mt-4 text-center">
           <div className="inline-flex items-center gap-2 text-sm text-gray-500">
             <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-            Logging in...
+            {t('loading')}
           </div>
         </div>
       )}

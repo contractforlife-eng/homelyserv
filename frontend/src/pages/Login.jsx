@@ -255,8 +255,8 @@ const redirectUser = (user) => {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/90 backdrop-blur-sm border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 dark:bg-red-900/30/80 transition-all text-sm shadow-md hover:shadow-red-200"
               >
                 <Globe size={15} className="text-red-600" />
-                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
-                  {SUPPORTED_LANGUAGES.find(l => l.code === i18n.language)?.nativeName || 'English'}
+               <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                  {SUPPORTED_LANGUAGES.find(l => l.code === i18n.language)?.nativeName || t('language')}
                 </span>
               </button>
               {showLanguages && (
@@ -431,10 +431,10 @@ const redirectUser = (user) => {
             <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 rounded-2xl">
               <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
                 <Lock size={18} sm:size={20} className="text-yellow-600" />
-                Change Your Password
+                {t('changePasswordTitle')}
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Your password was reset by an administrator. Please set a new password to continue.
+                {t('changePasswordDescription')}
               </p>
 
               {changePasswordError && (
@@ -445,14 +445,14 @@ const redirectUser = (user) => {
 
               {changePasswordSuccess && (
                 <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-xl text-green-600 text-xs sm:text-sm flex items-center gap-2">
-                  <CheckCircle size={14} sm:size={16} className="text-green-500" /> Password changed! Redirecting...
+                  <CheckCircle size={14} sm:size={16} className="text-green-500" /> {t('passwordChangedSuccess')}
                 </div>
               )}
 
               {!changePasswordSuccess && (
                 <form onSubmit={handleForceChangePassword} className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('newPasswordLabel')}</label>
                     <div className="relative group">
                       <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                       <input
@@ -466,7 +466,7 @@ const redirectUser = (user) => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New Password</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('confirmNewPasswordLabel')}</label>
                     <div className="relative group">
                       <Lock size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                       <input
