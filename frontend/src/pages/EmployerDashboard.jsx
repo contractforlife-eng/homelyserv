@@ -387,7 +387,11 @@ const EmployerDashboard = () => {
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800/20 border-2 border-white/50 overflow-hidden flex-shrink-0 relative">
+                <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ${
+                  isPremium
+                    ? 'ring-2 ring-[#F5C542] shadow-[0_0_8px_rgba(245,197,66,0.55),0_0_16px_rgba(245,197,66,0.25)]'
+                    : 'border-2 border-white/50'
+                }`}>
                   {authUser?.profileImage ? (
                     <img 
                       src={authUser.profileImage} 
@@ -395,11 +399,8 @@ const EmployerDashboard = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User size={24} className="text-white m-3" />
-                  )}
-                  {isPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
-                      <Crown size={10} className="text-white" />
+                    <div className="w-full h-full bg-white dark:bg-gray-800/20 flex items-center justify-center">
+                      <User size={24} className="text-white m-3" />
                     </div>
                   )}
                 </div>

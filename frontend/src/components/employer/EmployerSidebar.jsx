@@ -161,22 +161,33 @@ const EmployerSidebar = ({
 
         <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
-              {getProfileImage() ? (
-                <img 
-                  src={getProfileImage()} 
-                  alt={authUser?.fullName || 'Employer'} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={20} className="text-white" />
-              )}
-              {isPremium && (
-                <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                  <Crown size={10} className="text-white" />
+            {isPremium ? (
+              <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-[#F5C542] to-[#D4A820] shadow-[0_0_8px_rgba(245,197,66,0.70),0_0_16px_rgba(245,197,66,0.35)] flex-shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                  {getProfileImage() ? (
+                    <img 
+                      src={getProfileImage()} 
+                      alt={authUser?.fullName || 'Employer'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={20} className="text-white" />
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {getProfileImage() ? (
+                  <img 
+                    src={getProfileImage()} 
+                    alt={authUser?.fullName || 'Employer'} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User size={20} className="text-white" />
+                )}
+              </div>
+            )}
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

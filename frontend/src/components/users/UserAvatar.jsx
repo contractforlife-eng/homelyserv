@@ -3,7 +3,7 @@
 import React from 'react';
 import { getRoleColor } from '../../utils/userDisplay';
 
-const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', className = '' }) => {
+const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', className = '', isPremium = false }) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -21,9 +21,13 @@ const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', c
 
   const gradient = bgColor[getRoleColor(role)] || bgColor.gray;
 
+  const premiumGlowClass = isPremium
+    ? 'ring-2 ring-[#F5C542] shadow-[0_0_8px_rgba(245,197,66,0.55),0_0_16px_rgba(245,197,66,0.25)]'
+    : '';
+
   if (image) {
     return (
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden flex-shrink-0 ${className}`}>
+      <div className={`${sizeClasses[size]} rounded-full overflow-hidden flex-shrink-0 ${premiumGlowClass} ${className}`}>
         <img src={image} alt={name} className="w-full h-full object-cover" />
       </div>
     );
@@ -38,7 +42,7 @@ const UserAvatar = ({ name = 'User', image = null, role = 'USER', size = 'md', c
     .toUpperCase();
 
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold flex-shrink-0 ${className}`}>
+    <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold flex-shrink-0 ${premiumGlowClass} ${className}`}>
       {initials || 'U'}
     </div>
   );

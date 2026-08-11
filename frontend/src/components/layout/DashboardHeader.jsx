@@ -109,12 +109,16 @@ const DashboardHeader = ({
         <div className="flex items-center gap-2 sm:gap-3">
           {/* User profile section */}
           <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full overflow-hidden border-2 relative flex-shrink-0 ${
+            <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ${
+              isPremium
+                ? 'ring-2 ring-[#F5C542] shadow-[0_0_8px_rgba(245,197,66,0.55),0_0_16px_rgba(245,197,66,0.25)]'
+                : ''
+            } ${
               isAdmin
-                ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-200'
+                ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
                 : isWorker
-                  ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-200 dark:border-red-800'
-                  : 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-200 dark:border-teal-800'
+                  ? 'bg-gradient-to-br from-red-500 to-red-600'
+                  : 'bg-gradient-to-br from-teal-500 to-teal-600'
             }`}>
               {profileImage ? (
                 <img
@@ -124,13 +128,6 @@ const DashboardHeader = ({
                 />
               ) : (
                 <User size={16} className="text-white m-1" />
-              )}
-              {isPremium && (
-                <div className={`absolute -bottom-0.5 -right-0.5 rounded-full p-0.5 border-2 ${
-                  isAdmin ? 'bg-yellow-500 border-[#1a1a1a]' : 'bg-yellow-500 border-white'
-                }`}>
-                  <Crown size={8} className="text-white" />
-                </div>
               )}
             </div>
             <div className="flex items-center gap-1 hidden sm:flex">
