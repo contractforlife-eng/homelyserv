@@ -854,49 +854,68 @@ const EmployerSearch = () => {
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">{t.availableWorkers}</h2>
             <div className="relative">
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                {featuredWorkers.map((worker) => (
-                  <div
-                    key={worker.id || worker.email}
-                    className="flex-shrink-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    {/* Worker Photo */}
-                    <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700">
-                      {worker.profileImage ? (
-                        <img
-                          src={worker.profileImage}
-                          alt={worker.fullName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <User size={48} className="text-gray-400 dark:text-gray-500" />
-                        </div>
-                      )}
-                      {worker.isPremium && (
-                        <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
-                          <Crown size={14} className="text-white" />
-                        </div>
-                      )}
-                    </div>
+                {featuredWorkers.map((worker) => {
+                  const hourlyRate = Number(worker.hourlyRate);
+                  const hasValidRate = !isNaN(hourlyRate) && hourlyRate > 0;
+                  const displayRate = hasValidRate ? `${hourlyRate} EGP / hour` : 'Rate not specified';
 
-                    {/* Worker Info */}
-                    <div className="p-3">
-                      <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        <MapPin size={14} className="flex-shrink-0" />
-                        <span className="truncate">{getWorkerDisplayLocation(worker)}</span>
+                  return (
+                    <div
+                      key={worker.id || worker.email}
+                      className="flex-shrink-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+                    >
+                      {/* Worker Photo */}
+                      <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                        {worker.profileImage ? (
+                          <img
+                            src={worker.profileImage}
+                            alt={worker.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User size={48} className="text-gray-400 dark:text-gray-500" />
+                          </div>
+                        )}
+                        {worker.isPremium && (
+                          <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
+                            <Crown size={14} className="text-white" />
+                          </div>
+                        )}
                       </div>
 
-                      {/* Hire Now Button */}
-                      <button
-                        onClick={() => handleHireNow(worker)}
-                        className="w-full px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <UserPlus size={14} />
-                        {t.hireNow}
-                      </button>
+                      {/* Worker Info */}
+                      <div className="p-3 flex flex-col flex-1">
+                        {/* Worker Name */}
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-1 truncate">
+                          {worker.fullName || 'Worker'}
+                        </h3>
+
+                        {/* Location */}
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          <MapPin size={12} className="flex-shrink-0" />
+                          <span className="truncate">{getWorkerDisplayLocation(worker)}</span>
+                        </div>
+
+                        {/* Hourly Rate */}
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                          {displayRate}
+                        </div>
+
+                        {/* Hire Now Button - pushed to bottom */}
+                        <div className="mt-auto">
+                          <button
+                            onClick={() => handleHireNow(worker)}
+                            className="w-full px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <UserPlus size={14} />
+                            {t.hireNow}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
