@@ -122,14 +122,9 @@ const WorkerSettings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
- // ============================================================
-  // TOGGLE FUNCTIONS
   // ============================================================
-   
-   const handleLanguageChange = (langCode) => {
-     changeLanguageGlobal(langCode);
-     setSettings(prev => ({ ...prev, language: langCode }));
-   };
+   // TOGGLE FUNCTIONS
+   // ============================================================
 
   // ============================================================
   // IS PREMIUM CHECK
@@ -574,22 +569,7 @@ useEffect(() => {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
             <div className="space-y-4">
-              {/* Language */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
-                </div>
-                <select
-                  value={settings.language}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Language selector removed - using global LanguageSwitcher in header */}
 
               {/* Dark Mode - uses global theme store */}
               <div className="flex items-center justify-between">

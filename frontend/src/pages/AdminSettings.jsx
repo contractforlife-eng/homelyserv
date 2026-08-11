@@ -410,14 +410,6 @@ const AdminSettings = () => {
     setShowLangDropdown(false);
   };
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    changeLanguageGlobal(newLang);
-    setLanguage(newLang);
-    setSettings(prev => ({ ...prev, language: newLang }));
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang);
-  };
-
   // Theme store integration (same as WorkerSettings and SupportSettings)
   const theme = useThemeStore(state => state.theme);
   const toggleTheme = useThemeStore(state => state.toggleTheme);
@@ -558,8 +550,6 @@ const AdminSettings = () => {
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={user?.id || user?.email}
         isPremium={false}
         variant="admin"
@@ -684,43 +674,7 @@ const AdminSettings = () => {
                     </div>
                   </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 dark:text-gray-500 mb-1">{t.appearance.language}</label>
-                  <div className="relative">
-                    <button
-                      ref={langTriggerRef}
-                      onClick={() => setShowLangDropdown(!showLangDropdown)}
-                      className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg text-left flex items-center justify-between hover:border-yellow-500/50 transition"
-                      aria-haspopup="menu"
-                      aria-expanded={showLangDropdown}
-                    >
-                      <span className="text-white">
-                        {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
-                      </span>
-                      <Globe size={18} className="text-gray-400 dark:text-gray-500" />
-                    </button>
-                    <ActionMenuPortal
-                      triggerRef={langTriggerRef}
-                      isOpen={showLangDropdown}
-                      onClose={() => setShowLangDropdown(false)}
-                      align="end"
-                      className="w-44 bg-[#1a1a1a] border border-yellow-500/20 rounded-lg shadow-lg z-50 overflow-hidden"
-                    >
-                      {SUPPORTED_LANGUAGES.map((lang) => (
-                        <button
-                          key={lang.code}
-                          onClick={() => handleLanguageChange(lang.code)}
-                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-yellow-500/10 transition text-sm ${
-                            language === lang.code ? 'bg-yellow-500/10 font-semibold text-yellow-500' : 'text-gray-300'
-                          }`}
-                        >
-                          <span className="text-lg">{lang.flag}</span>
-                          <span>{lang.nativeName}</span>
-                        </button>
-                      ))}
-                    </ActionMenuPortal>
-                  </div>
-                </div>
+                {/* Language selector removed - using global LanguageSwitcher in header */}
               </div>
             </div>
           )}

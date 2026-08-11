@@ -6,9 +6,9 @@ import { isUserPremium } from '../../utils/subscriptionService';
 import { getDisplayName } from '../../utils/userDisplay';
 import NotificationBell from '../NotificationBell';
 import { useDashboard } from './DashboardContext';
+import LanguageSwitcher from '../LanguageSwitcher';
 import {
   Menu,
-  Globe,
   Bell,
   User,
   Crown,
@@ -48,7 +48,7 @@ const DashboardHeader = ({
   // Use prop or fall back to context value
   const language = languageProp !== undefined ? languageProp : dashboard.language;
   const handleToggleMenu = onToggleMenu || dashboard.toggleMobileMenu;
-  const handleToggleLanguage = onToggleLanguage || dashboard.toggleLanguage;
+  // Language toggle removed - using shared LanguageSwitcher component
 
   // Use prop or calculate from authUser
   const isPremium = isPremiumProp !== undefined ? isPremiumProp : (() => {
@@ -157,22 +157,8 @@ const DashboardHeader = ({
           {/* Custom notification component */}
           {customNotificationComponent}
 
-          {/* Language toggle */}
-          {showLanguageToggle && handleToggleLanguage && (
-            <button
-              onClick={handleToggleLanguage}
-              className={`px-2 sm:px-3 py-1.5 border rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center gap-2 min-h-[40px] ${
-                isAdmin
-                  ? 'border-yellow-500/20 text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-500'
-                  : isWorker
-                    ? 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600'
-              }`}
-            >
-              <Globe size={16} />
-              <span className="hidden sm:inline">{language === 'en' ? 'العربية' : 'English'}</span>
-            </button>
-          )}
+          {/* Language switcher */}
+          {showLanguageToggle && <LanguageSwitcher />}
 
           {/* Additional right content */}
           {rightContent}

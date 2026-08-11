@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import LegalFooter from '../components/common/LegalFooter';
 import { getMessagesRoute, getComplaintsRoute } from '../utils/supportRoutes';
-import { changeLanguageGlobal } from '../i18n';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -58,7 +57,7 @@ const Help = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
   const { i18n } = useTranslation();
-  const language = i18n.language === 'ar' ? 'ar' : 'en';
+  const language = i18n.language || 'en';
 
   const [userRole, setUserRole] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -200,9 +199,7 @@ const Help = () => {
     }
   }, [authUser]);
 
-  const toggleLanguage = () => {
-    changeLanguageGlobal(language === 'en' ? 'ar' : 'en');
-  };
+  // Language toggle removed - using shared LanguageSwitcher component from DashboardLayout
 
   const toggleFaq = (index) => {
     setExpandedFaq(expandedFaq === index ? null : index);
@@ -294,13 +291,7 @@ const Help = () => {
               </div>
               <span className="font-bold text-gray-800 dark:text-white text-lg">HomelyServ</span>
             </Link>
-            <button
-              onClick={toggleLanguage}
-              className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
-            >
-              <Globe size={16} />
-              {t.languageToggle}
-            </button>
+            {/* Language switcher removed - using shared LanguageSwitcher component from DashboardLayout */}
           </div>
         </header>
 

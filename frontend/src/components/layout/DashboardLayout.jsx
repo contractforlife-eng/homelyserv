@@ -9,7 +9,6 @@ import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 import VerificationBanner from '../VerificationBanner';
 import LegalFooter from '../common/LegalFooter';
-import { changeLanguageGlobal } from '../../i18n';
 
 const DashboardLayout = ({ 
   children, 
@@ -59,17 +58,6 @@ const DashboardLayout = ({
     }
   }, [authUser, isAuthenticated, authLoading, navigate, requiredRole]);
 
-  // Update document direction for RTL
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    // Goes through the global i18n helper so every component updates at once
-    changeLanguageGlobal(language === 'ar' ? 'en' : 'ar');
-  };
-
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
       const newState = !prev;
@@ -95,7 +83,6 @@ const DashboardLayout = ({
   // the hook order stays identical across loading/auth render transitions.
   const contextValue = useMemo(() => ({
     language,
-    toggleLanguage,
     toggleMobileMenu,
     toggleSidebar,
     sidebarCollapsed,

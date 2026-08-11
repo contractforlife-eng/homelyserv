@@ -69,8 +69,6 @@ const EmployerSettings = () => {
 
   const dashboard = useDashboard();
 
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const langTriggerRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -294,14 +292,7 @@ const EmployerSettings = () => {
     }
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  const handleLanguageChange = (langCode) => {
-    // Single source of truth: updates i18n, localStorage and RTL direction.
-    // DashboardLayout syncs dashboard.language from i18n, so the UI
-    // re-renders immediately without a page reload.
-    changeLanguageGlobal(langCode);
-    setSettings(prev => ({ ...prev, language: langCode }));
-    setShowLangDropdown(false);
-  };
+  // Language change handler removed - using global LanguageSwitcher in header
 
   const handleLogout = () => {
     logout();
@@ -511,44 +502,7 @@ const EmployerSettings = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-300">{t.language}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.languageDesc}</p>
-                  </div>
-                  <div className="relative">
-                    <button
-                      ref={langTriggerRef}
-                      onClick={() => setShowLangDropdown(!showLangDropdown)}
-                      className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 flex items-center gap-2"
-                      aria-haspopup="menu"
-                      aria-expanded={showLangDropdown}
-                    >
-                      <Globe size={16} />
-                      {SUPPORTED_LANGUAGES.find(l => l.code === dashboard.language)?.nativeName || 'English'}
-                    </button>
-                    <ActionMenuPortal
-                      triggerRef={langTriggerRef}
-                      isOpen={showLangDropdown}
-                      onClose={() => setShowLangDropdown(false)}
-                      align="end"
-                      className="w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden"
-                    >
-                      {SUPPORTED_LANGUAGES.map((lang) => (
-                        <button
-                          key={lang.code}
-                          onClick={() => handleLanguageChange(lang.code)}
-                          className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-teal-50 dark:hover:bg-gray-900 transition text-sm ${
-                            dashboard.language === lang.code ? 'bg-teal-50 dark:bg-gray-900 font-semibold' : ''
-                          }`}
-                        >
-                          <span className="text-lg">{lang.flag}</span>
-                          <span className="text-gray-700 dark:text-gray-300">{lang.nativeName}</span>
-                        </button>
-                      ))}
-                    </ActionMenuPortal>
-                  </div>
-                </div>
+                {/* Language selector removed - using global LanguageSwitcher in header */}
 
                 {/* Dark Mode - uses global theme store */}
                 <div className="flex items-center justify-between">

@@ -34,8 +34,6 @@ const SupportSettings = () => {
 
   // Language synced with the global i18n instance (single source of truth)
   const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const langTriggerRef = useRef(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -136,12 +134,7 @@ const SupportSettings = () => {
     }
   }, [notification]);
 
-  const handleLanguageChange = (langCode) => {
-    // Global helper updates i18n (which syncs local state above),
-    // persists to localStorage and applies RTL/LTR direction.
-    changeLanguageGlobal(langCode);
-    setShowLangDropdown(false);
-  };
+  // Language change handler removed - using global LanguageSwitcher in header
 
   const toggleDarkMode = () => {
     toggleTheme();
@@ -264,44 +257,7 @@ const SupportSettings = () => {
               </h2>
             </div>
             <div className="p-6 space-y-6">
-              {/* Language */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.language}</label>
-                <div className="relative">
-                  <button
-                    ref={langTriggerRef}
-                    onClick={() => setShowLangDropdown(!showLangDropdown)}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-left flex items-center justify-between hover:border-green-500/50 transition"
-                    aria-haspopup="menu"
-                    aria-expanded={showLangDropdown}
-                  >
-                    <span className="text-gray-900 dark:text-white">
-                      {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
-                    </span>
-                    <Globe size={18} className="text-gray-400" />
-                  </button>
-                  <ActionMenuPortal
-                    triggerRef={langTriggerRef}
-                    isOpen={showLangDropdown}
-                    onClose={() => setShowLangDropdown(false)}
-                    align="end"
-                    className="w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden"
-                  >
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full text-left flex items-center gap-3 px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 transition text-sm ${
-                          language === lang.code ? 'bg-green-50 dark:bg-green-900/30 font-semibold text-green-600' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <span className="text-lg">{lang.flag}</span>
-                        <span>{lang.nativeName}</span>
-                      </button>
-                    ))}
-                  </ActionMenuPortal>
-                </div>
-              </div>
+              {/* Language selector removed - using global LanguageSwitcher in header */}
 
               {/* Dark Mode */}
               <div className="flex items-center justify-between">

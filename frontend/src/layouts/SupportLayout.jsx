@@ -8,7 +8,6 @@ import DashboardContext from '../components/layout/DashboardContext';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import VerificationBanner from '../components/VerificationBanner';
 import LegalFooter from '../components/common/LegalFooter';
-import { changeLanguageGlobal } from '../i18n';
 
 const SupportLayout = ({ 
   children, 
@@ -60,17 +59,6 @@ const SupportLayout = ({
     }
   }, [authUser, isAuthenticated, authLoading, navigate, requiredRole]);
 
-  // Update document direction for RTL
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const toggleLanguage = () => {
-    // Goes through the global i18n helper so every component updates at once
-    changeLanguageGlobal(language === 'ar' ? 'en' : 'ar');
-  };
-
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
       const newState = !prev;
@@ -104,7 +92,6 @@ const SupportLayout = ({
   // Provide layout state to children
   const contextValue = useMemo(() => ({
     language,
-    toggleLanguage,
     toggleMobileMenu,
     toggleSidebar,
     sidebarCollapsed,

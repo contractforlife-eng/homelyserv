@@ -405,27 +405,6 @@ const WorkerDashboard = () => {
         title={t.dashboard}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
-        rightContent={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              {userIsPremium && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 hidden sm:inline-flex">
-                  <Crown size={10} className="text-yellow-500" />
-                  Premium
-                </span>
-              )}
-            </div>
-            {!userIsPremium && (
-              <Link
-                to="/subscription"
-                className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 border border-yellow-400/30"
-              >
-                <Crown size={14} />
-                <span className="hidden sm:inline">{t.getPremium}</span>
-              </Link>
-            )}
-          </div>
-        }
       />
 
         <div className="p-4 md:p-6">

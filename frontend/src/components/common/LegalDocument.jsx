@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Globe, Loader2 } from 'lucide-react';
 import { applyDocumentDirection, LANGUAGE_STORAGE_KEY, changeLanguageGlobal } from '../../i18n';
 import LegalFooter from './LegalFooter';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 const resolveLang = (code) => (code && code.toLowerCase().startsWith('ar')) ? 'ar' : 'en';
 
@@ -133,14 +134,7 @@ const LegalDocument = ({ content }) => {
               {data.title}
             </h1>
           </div>
-          <button
-            onClick={() => changeLanguageGlobal(lang === 'ar' ? 'en' : 'ar')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-red-300 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
-            aria-label="Toggle language"
-          >
-            <Globe size={15} className="text-red-600" />
-            {lang === 'ar' ? 'English' : 'العربية'}
-          </button>
+          <LanguageSwitcher />
         </div>
       </header>
 
