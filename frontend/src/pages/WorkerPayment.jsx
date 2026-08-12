@@ -1,5 +1,6 @@
 // src/pages/WorkerPayment.jsx - RED AND WHITE THEME WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../components/layout/DashboardContext';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
@@ -39,6 +40,7 @@ import {
 // ============================================
 const WorkerPayment = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -82,170 +84,6 @@ const WorkerPayment = () => {
   };
 
   const userIsPremium = isPremium();
-
-  // ============================================
-  // 3. TRANSLATIONS
-  // ============================================
-  const translations = {
-    en: {
-      title: 'Payments',
-      subtitle: 'Manage your payments and payment information',
-      stats: {
-        pendingContract: 'Pending Contract Value',
-        confirmedEarnings: 'Confirmed Earnings',
-        paidThroughHomelyServ: 'Paid Through HomelyServ',
-        activeHires: 'Active Hires'
-      },
-      notice: {
-        title: 'Salary is paid off-platform between you and the Employer',
-        body: 'HomelyServ does not process your salary from Employers. Salary payments are arranged directly between you and the Employer. This page tracks contract and earning status recorded by HomelyServ.'
-      },
-      paymentInfo: {
-        title: 'Payout Details (for future supported payouts)',
-        walletNumber: 'Wallet Number',
-        instapayNumber: 'InstaPay Number',
-        bankAccount: 'Bank Account Number',
-        bankName: 'Bank Name',
-        accountHolder: 'Account Holder Name',
-        edit: 'Edit Payout Details',
-        save: 'Save Changes',
-        cancel: 'Cancel',
-        saved: 'Payout details updated successfully!',
-        saveError: 'Failed to save payout details. Please try again.',
-        loadError: 'Failed to load payout details.',
-        hint: 'Saving your payout details does not transfer money. Payouts are not offered yet.'
-      },
-      paymentHistory: {
-        title: 'Earnings & Contract Ledger',
-        id: 'Ledger ID',
-        hireId: 'Hire ID',
-        amount: 'Amount',
-        date: 'Date',
-        status: 'Status',
-        noResults: 'No ledger entries found',
-        searchPlaceholder: 'Search ledger...'
-      },
-      status: {
-        PENDING: 'Pending / Contract Active',
-        AWAITING_CONFIRMATION: 'Awaiting Employer Confirmation',
-        EARNED: 'Confirmed Earned',
-        PAID: 'Paid',
-        ON_HOLD: 'On Hold',
-        DISPUTED: 'Disputed',
-        CANCELLED: 'Cancelled'
-      },
-      filters: {
-        all: 'All Entries',
-        PENDING: 'Pending / Contract Active',
-        AWAITING_CONFIRMATION: 'Awaiting Employer Confirmation',
-        EARNED: 'Confirmed Earned',
-        PAID: 'Paid',
-        ON_HOLD: 'On Hold',
-        DISPUTED: 'Disputed',
-        CANCELLED: 'Cancelled'
-      },
-      submit: {
-        button: 'Submit Period',
-        confirmTitle: 'Submit this period for confirmation?',
-        confirmBody: 'This tells your employer the work period is completed and requests their confirmation. It does NOT confirm salary payment.',
-        confirm: 'Submit for Confirmation',
-        cancel: 'Cancel',
-        submitting: 'Submitting...',
-        success: 'Work period submitted for employer confirmation',
-        error: 'Failed to submit work period. Please try again.',
-        alreadySubmitted: 'This period is already awaiting confirmation'
-      },
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading earnings data...',
-      noPayments: 'No ledger entries yet',
-      noPaymentsDesc: 'Your contract ledger will appear here once your hires are activated.',
-      refresh: 'Refresh',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'المدفوعات',
-      subtitle: 'إدارة مدفوعاتك ومعلومات الدفع',
-      stats: {
-        pendingContract: 'قيمة العقد المعلقة',
-        confirmedEarnings: 'أرباح مؤكدة',
-        paidThroughHomelyServ: 'مدفوع عبر HomelyServ',
-        activeHires: 'عقود نشطة'
-      },
-      notice: {
-        title: 'الراتب يُدفع مباشرة بينك وبين صاحب العمل',
-        body: 'لا تتعامل منصة HomelyServ حاليًا مع دفع رواتب الموظفين من أصحاب العمل. يتم ترتيب مدفوعات الراتب مباشرة بينك وبين صاحب العمل. تعرض هذه الصفحة حالة العقد والأرباح التي تسجلها المنصة.'
-      },
-      paymentInfo: {
-        title: 'تفاصيل الدفع (للمدفوعات المستقبلية)',
-        walletNumber: 'رقم المحفظة',
-        instapayNumber: 'رقم InstaPay',
-        bankAccount: 'رقم الحساب البنكي',
-        bankName: 'اسم البنك',
-        accountHolder: 'اسم صاحب الحساب',
-        edit: 'تعديل تفاصيل الدفع',
-        save: 'حفظ التغييرات',
-        cancel: 'إلغاء',
-        saved: 'تم تحديث تفاصيل الدفع بنجاح!',
-        saveError: 'تعذر حفظ تفاصيل الدفع. حاول مرة أخرى.',
-        loadError: 'تعذر تحميل تفاصيل الدفع.',
-        hint: 'حفظ تفاصيل الدفع لا يعني تحويل الأموال. المدفوعات غير متاحة بعد.'
-      },
-      paymentHistory: {
-        title: 'سجل الأرباح والعقود',
-        id: 'معرف السجل',
-        hireId: 'معرف العقد',
-        amount: 'المبلغ',
-        date: 'التاريخ',
-        status: 'الحالة',
-        noResults: 'لا توجد سجلات',
-        searchPlaceholder: 'ابحث في السجل...'
-      },
-      status: {
-        PENDING: 'معلق / العقد نشط',
-        AWAITING_CONFIRMATION: 'في انتظار تأكيد صاحب العمل',
-        EARNED: 'أرباح مؤكدة',
-        PAID: 'مدفوع',
-        ON_HOLD: 'قيد الانتظار',
-        DISPUTED: 'متنازع عليه',
-        CANCELLED: 'ملغى'
-      },
-      filters: {
-        all: 'جميع السجلات',
-        PENDING: 'معلق / العقد نشط',
-        AWAITING_CONFIRMATION: 'في انتظار تأكيد صاحب العمل',
-        EARNED: 'أرباح مؤكدة',
-        PAID: 'مدفوع',
-        ON_HOLD: 'قيد الانتظار',
-        DISPUTED: 'متنازع عليه',
-        CANCELLED: 'ملغى'
-      },
-      submit: {
-        button: 'إرسال الفترة',
-        confirmTitle: 'إرسال هذه الفترة للموافقة؟',
-        confirmBody: 'هذا يخبر صاحب العمل أن فترة العمل قد اكتملت ويطلب موافقته. لا يؤكد استلام الراتب.',
-        confirm: 'إرسال للموافقة',
-        cancel: 'إلغاء',
-        submitting: 'جاري الإرسال...',
-        success: 'تم إرسال فترة العمل لتأكيد صاحب العمل',
-        error: 'فشل إرسال فترة العمل. حاول مرة أخرى.',
-        alreadySubmitted: 'هذه الفترة في انتظار التأكيد بالفعل'
-      },
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل بيانات الأرباح...',
-      noPayments: 'لا يوجد سجل بعد',
-      noPaymentsDesc: 'سيظهر سجل عقودك هنا بمجرد تفعيل عقودك.',
-      refresh: 'تحديث',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   // ============================================
   // 4. DATA LOADING FUNCTIONS
@@ -351,7 +189,7 @@ const WorkerPayment = () => {
       }
     } catch (error) {
       console.error('Error loading payout details:', error);
-      setPayoutError(t.paymentInfo.loadError);
+      setPayoutError(t('workerPayment.paymentInfo.loadError'));
       setTimeout(() => setPayoutError(''), 4000);
     }
   };
@@ -414,7 +252,7 @@ const WorkerPayment = () => {
     });
 
     if (Object.keys(payload).length === 0) {
-      setPayoutError(t.paymentInfo.saveError);
+      setPayoutError(t('workerPayment.paymentInfo.saveError'));
       setTimeout(() => setPayoutError(''), 4000);
       return;
     }
@@ -429,7 +267,7 @@ const WorkerPayment = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving payout details:', error);
-      setPayoutError(t.paymentInfo.saveError);
+      setPayoutError(t('workerPayment.paymentInfo.saveError'));
       setTimeout(() => setPayoutError(''), 4000);
     } finally {
       setPayoutSaving(false);
@@ -444,7 +282,7 @@ const WorkerPayment = () => {
   const handleSubmitPeriod = async (record) => {
     if (!record || submittingId) return;
 
-    if (!window.confirm(`${t.submit.confirmTitle}\n\n${t.submit.confirmBody}`)) {
+    if (!window.confirm(`${t('workerPayment.submit.confirmTitle')}\n\n${t('workerPayment.submit.confirmBody')}`)) {
       return;
     }
 
@@ -453,16 +291,16 @@ const WorkerPayment = () => {
       const data = await workerEarningService.submitWorkerEarning(record.id);
       if (data && data.success) {
         await loadEarningsData();
-        alert(t.submit.success);
+        alert(t('workerPayment.submit.success'));
       } else {
-        alert(data?.message || t.submit.error);
+        alert(data?.message || t('workerPayment.submit.error'));
       }
     } catch (error) {
       console.error('Error submitting period:', error);
       const message =
         error?.response?.data?.message === 'This period is already awaiting employer confirmation'
-          ? t.submit.alreadySubmitted
-          : t.submit.error;
+          ? t('workerPayment.submit.alreadySubmitted')
+          : t('workerPayment.submit.error');
       alert(message);
       await loadEarningsData();
     } finally {
@@ -510,7 +348,7 @@ const WorkerPayment = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerPayment.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
       />
@@ -525,7 +363,7 @@ const WorkerPayment = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={authUser.fullName || 'Worker'} 
+                      alt={authUser.fullName || t('workerPayment.worker')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -539,15 +377,15 @@ const WorkerPayment = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl md:text-3xl font-bold">{t.title}</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold">{t('workerPayment.title')}</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
+                        {t('workerPayment.premiumBadge')}
                       </span>
                     )}
                   </div>
-                  <p className="text-white/80 mt-1 text-sm md:text-base">{t.subtitle}</p>
+                  <p className="text-white/80 mt-1 text-sm md:text-base">{t('workerPayment.subtitle')}</p>
                 </div>
               </div>
               {!userIsPremium && (
@@ -556,7 +394,7 @@ const WorkerPayment = () => {
                   className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
                 >
                   <Crown size={16} />
-                  {t.getPremium}
+                  {t('workerPayment.getPremium')}
                 </Link>
               )}
             </div>
@@ -566,18 +404,18 @@ const WorkerPayment = () => {
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex gap-3">
             <Info size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">{t.notice.title}</p>
-              <p className="text-sm text-blue-700/90 dark:text-blue-200/80 mt-0.5">{t.notice.body}</p>
+              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">{t('workerPayment.notice.title')}</p>
+              <p className="text-sm text-blue-700/90 dark:text-blue-200/80 mt-0.5">{t('workerPayment.notice.body')}</p>
             </div>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { label: t.stats.pendingContract, value: formatCurrency(stats.pendingContractValue), icon: DollarSign, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
-              { label: t.stats.confirmedEarnings, value: formatCurrency(stats.confirmedEarnings), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
-              { label: t.stats.paidThroughHomelyServ, value: formatCurrency(stats.paidThroughHomelyServ), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-              { label: t.stats.activeHires, value: stats.activeHires, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
+              { label: t('workerPayment.stats.pendingContract'), value: formatCurrency(stats.pendingContractValue), icon: DollarSign, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
+              { label: t('workerPayment.stats.confirmedEarnings'), value: formatCurrency(stats.confirmedEarnings), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+              { label: t('workerPayment.stats.paidThroughHomelyServ'), value: formatCurrency(stats.paidThroughHomelyServ), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+              { label: t('workerPayment.stats.activeHires'), value: stats.activeHires, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
             ].map((stat, idx) => (
               <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
@@ -596,14 +434,14 @@ const WorkerPayment = () => {
             <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50 dark:bg-gray-900/50">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                 <CreditCard size={20} className="text-red-500" />
-                {t.paymentInfo.title}
+                {t('workerPayment.paymentInfo.title')}
               </h3>
               {!isEditingPaymentInfo ? (
                 <button
                   onClick={() => setIsEditingPaymentInfo(true)}
                   className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 hover:text-red-600 transition-colors shadow-sm w-full sm:w-auto"
                 >
-                  {t.paymentInfo.edit}
+                  {t('workerPayment.paymentInfo.edit')}
                 </button>
               ) : (
                 <div className="flex gap-2 w-full sm:w-auto">
@@ -611,14 +449,14 @@ const WorkerPayment = () => {
                     onClick={() => setIsEditingPaymentInfo(false)}
                     className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors"
                   >
-                    {t.paymentInfo.cancel}
+                    {t('workerPayment.paymentInfo.cancel')}
                   </button>
                   <button
                     onClick={handleSavePaymentInfo}
                     disabled={payoutSaving}
                     className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {payoutSaving ? '...' : t.paymentInfo.save}
+                    {payoutSaving ? t('workerPayment.paymentInfo.saving') : t('workerPayment.paymentInfo.save')}
                   </button>
                 </div>
               )}
@@ -626,13 +464,13 @@ const WorkerPayment = () => {
 
             <div className="px-6 py-3 bg-blue-50/60 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-900/40 text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
               <Info size={14} className="flex-shrink-0" />
-              {t.paymentInfo.hint}
+              {t('workerPayment.paymentInfo.hint')}
             </div>
 
             {saveSuccess && (
               <div className="px-6 py-3 bg-green-50 dark:bg-green-900/30/80 border-b border-green-100 text-green-700 text-sm flex items-center gap-2">
                 <CheckCircle size={16} />
-                {t.paymentInfo.saved}
+                {t('workerPayment.paymentInfo.saved')}
               </div>
             )}
 
@@ -646,10 +484,10 @@ const WorkerPayment = () => {
             <div className="p-5 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 {[
-                  { label: t.paymentInfo.walletNumber, name: 'walletNumber', icon: Wallet, placeholder: '01xxxxxxxxx' },
-                  { label: t.paymentInfo.instapayNumber, name: 'instapayNumber', icon: Phone, placeholder: 'username@instapay' },
-                  { label: t.paymentInfo.bankAccount, name: 'bankAccountNumber', icon: Building, placeholder: 'EGxx xxxx xxxx' },
-                  { label: t.paymentInfo.bankName, name: 'bankName', icon: Building, placeholder: 'Bank Name' }
+                  { label: t('workerPayment.paymentInfo.walletNumber'), name: 'walletNumber', icon: Wallet, placeholder: '01xxxxxxxxx' },
+                  { label: t('workerPayment.paymentInfo.instapayNumber'), name: 'instapayNumber', icon: Phone, placeholder: 'username@instapay' },
+                  { label: t('workerPayment.paymentInfo.bankAccount'), name: 'bankAccountNumber', icon: Building, placeholder: 'EGxx xxxx xxxx' },
+                  { label: t('workerPayment.paymentInfo.bankName'), name: 'bankName', icon: Building, placeholder: t('workerPayment.paymentInfo.bankNamePlaceholder') }
                 ].map((field) => (
                   <div key={field.name}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{field.label}</label>
@@ -673,7 +511,7 @@ const WorkerPayment = () => {
                 ))}
                 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t.paymentInfo.accountHolder}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('workerPayment.paymentInfo.accountHolder')}</label>
                   <div className="relative">
                     <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     <input
@@ -687,7 +525,7 @@ const WorkerPayment = () => {
                           ? 'border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800' 
                           : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 dark:text-gray-500 cursor-not-allowed'
                       }`}
-                      placeholder="Full Name as in Bank"
+                      placeholder={t('workerPayment.paymentInfo.accountHolderPlaceholder')}
                     />
                   </div>
                 </div>
@@ -698,7 +536,7 @@ const WorkerPayment = () => {
           {/* Earnings & Contract Ledger Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-5 md:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymentHistory.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('workerPayment.paymentHistory.title')}</h3>
             </div>
 
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -707,7 +545,7 @@ const WorkerPayment = () => {
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
-                    placeholder={t.paymentHistory.searchPlaceholder}
+                    placeholder={t('workerPayment.paymentHistory.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-shadow"
@@ -719,14 +557,14 @@ const WorkerPayment = () => {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer"
                   >
-                    <option value="all">{t.filters.all}</option>
-                    <option value="PENDING">{t.filters.PENDING}</option>
-                    <option value="AWAITING_CONFIRMATION">{t.filters.AWAITING_CONFIRMATION}</option>
-                    <option value="EARNED">{t.filters.EARNED}</option>
-                    <option value="PAID">{t.filters.PAID}</option>
-                    <option value="ON_HOLD">{t.filters.ON_HOLD}</option>
-                    <option value="DISPUTED">{t.filters.DISPUTED}</option>
-                    <option value="CANCELLED">{t.filters.CANCELLED}</option>
+                    <option value="all">{t('workerPayment.filters.all')}</option>
+                    <option value="PENDING">{t('workerPayment.filters.PENDING')}</option>
+                    <option value="AWAITING_CONFIRMATION">{t('workerPayment.filters.AWAITING_CONFIRMATION')}</option>
+                    <option value="EARNED">{t('workerPayment.filters.EARNED')}</option>
+                    <option value="PAID">{t('workerPayment.filters.PAID')}</option>
+                    <option value="ON_HOLD">{t('workerPayment.filters.ON_HOLD')}</option>
+                    <option value="DISPUTED">{t('workerPayment.filters.DISPUTED')}</option>
+                    <option value="CANCELLED">{t('workerPayment.filters.CANCELLED')}</option>
                   </select>
                 </div>
               </div>
@@ -737,19 +575,19 @@ const WorkerPayment = () => {
                 <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CreditCard size={32} className="text-gray-400 dark:text-gray-500" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{t.noPayments}</h3>
-                <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm max-w-sm mx-auto">{t.noPaymentsDesc}</p>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{t('workerPayment.noPayments')}</h3>
+                <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm max-w-sm mx-auto">{t('workerPayment.noPaymentsDesc')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.id}</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.hireId}</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.amount}</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.date}</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.paymentHistory.status}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('workerPayment.paymentHistory.id')}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('workerPayment.paymentHistory.hireId')}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('workerPayment.paymentHistory.amount')}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('workerPayment.paymentHistory.date')}</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('workerPayment.paymentHistory.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -774,7 +612,7 @@ const WorkerPayment = () => {
                           <div className="flex flex-col items-start gap-2">
                             <span className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${getStatusColor(record.status)}`}>
                               {getStatusIcon(record.status)}
-                              {t.status[record.status] || record.status}
+                              {t(`workerPayment.status.${record.status}`, { defaultValue: record.status })}
                             </span>
                             {record.status === 'PENDING' && (
                               <button
@@ -787,7 +625,7 @@ const WorkerPayment = () => {
                                 ) : (
                                   <CheckCircle size={12} />
                                 )}
-                                {submittingId === record.id ? t.submit.submitting : t.submit.button}
+                                {submittingId === record.id ? t('workerPayment.submit.submitting') : t('workerPayment.submit.button')}
                               </button>
                             )}
                           </div>
@@ -800,7 +638,7 @@ const WorkerPayment = () => {
             )}
             
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-              Showing {filteredRecords.length} results
+              {t('workerPayment.showingResults', { count: filteredRecords.length })}
             </div>
           </div>         </div>
     </DashboardLayout>
