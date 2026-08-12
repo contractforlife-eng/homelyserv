@@ -1,6 +1,8 @@
 // src/pages/PaymentOptions.jsx - COMPLETE WITH PAYMOB & PAYPAL INTEGRATION - FIXED
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, changeLanguageGlobal } from '../i18n';
 import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
@@ -43,9 +45,10 @@ import {
 // MAIN PAYMENT OPTIONS COMPONENT
 // ============================================================
 const PaymentOptions = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [language, setLanguage] = useState('en');
+  const language = i18n.resolvedLanguage || i18n.language || 'en';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workerData, setWorkerData] = useState(null);
@@ -75,112 +78,22 @@ const PaymentOptions = () => {
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
       icon: CreditCard,
-      description: 'Pay with credit card, debit card, or online banking',
+      description: t('paymentOptionsPage.methods.paymobDescription'),
       color: 'teal',
-      badge: 'Recommended',
+      badge: t('paymentOptionsPage.recommended'),
       badgeColor: 'bg-green-100 text-green-700'
     },
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
       icon: Wallet,
-      description: 'Pay securely with your PayPal account',
+      description: t('paymentOptionsPage.methods.paypalDescription'),
       color: 'blue',
       badge: null,
       badgeColor: null
     }
   ];
 
-  const translations = {
-    en: {
-      title: 'Payment Options',
-      subtitle: 'Choose your preferred payment method',
-      selectedWorker: 'Selected Worker',
-      totalAmount: 'Total Amount',
-      commission: `Commission (${RECRUITMENT_COMMISSION_RATE * 100}%) included`,
-      paymentMethods: 'Payment Methods',
-      selectMethod: 'Select a payment method',
-      confirmPayment: 'Confirm Payment',
-      processing: 'Processing...',
-      success: 'Payment Successful!',
-      successMessage: 'You have successfully hired this worker. An offer has been created for them.',
-      back: 'Back',
-      languageToggle: 'العربية',
-      loading: 'Loading payment options...',
-      noWorkerData: 'No worker selected',
-      goBack: 'Go back and select a worker',
-      securePayment: 'Secure Payment',
-      chooseMethod: 'Choose your payment method below',
-      jobTitle: 'Job Title',
-      employer: 'Employer',
-      worker: 'Worker',
-      hireSuccess: '✅ Successfully hired {worker}!',
-      viewHires: 'View My Hires',
-      paymobTitle: 'Pay with Paymob',
-      paypalTitle: 'Pay with PayPal',
-      redirecting: 'Redirecting to PayPal...',
-      paymentFailed: 'Payment failed. Please try again.',
-      paymentCancelled: 'Payment cancelled.',
-      paymentVerifying: 'Verifying payment...',
-      payNow: 'Pay Now',
-      reference: 'Reference',
-      orderId: 'Order ID',
-      amount: 'Amount',
-      currency: 'EGP',
-      paypalOpened: '🔄 PayPal window opened. Complete the payment there.',
-      checkingPayment: 'Checking payment status...',
-      waitingApproval: '⏳ Waiting for you to approve the payment in PayPal...',
-      paymentApproved: '✅ Payment approved! Finalizing...',
-      reopenPaypal: 'Reopen PayPal Window',
-      paypalDidNotOpen: '⚠️ PayPal window didn\'t open automatically. Click below to open it manually.',
-      completingPayment: 'Completing your payment...'
-    },
-    ar: {
-      title: 'خيارات الدفع',
-      subtitle: 'اختر طريقة الدفع المفضلة لديك',
-      selectedWorker: 'العامل المختار',
-      totalAmount: 'المبلغ الإجمالي',
-      commission: `العمولة (${RECRUITMENT_COMMISSION_RATE * 100}%) مشمولة`,
-      paymentMethods: 'طرق الدفع',
-      selectMethod: 'اختر طريقة الدفع',
-      confirmPayment: 'تأكيد الدفع',
-      processing: 'جاري المعالجة...',
-      success: 'تم الدفع بنجاح!',
-      successMessage: 'لقد قمت بتوظيف هذا العامل بنجاح. تم إنشاء عرض عمل له.',
-      back: 'رجوع',
-      languageToggle: 'English',
-      loading: 'جاري تحميل خيارات الدفع...',
-      noWorkerData: 'لم يتم اختيار عامل',
-      goBack: 'ارجع واختر عاملاً',
-      securePayment: 'دفع آمن',
-      chooseMethod: 'اختر طريقة الدفع أدناه',
-      jobTitle: 'المسمى الوظيفي',
-      employer: 'صاحب العمل',
-      worker: 'العامل',
-      hireSuccess: '✅ تم توظيف {worker} بنجاح!',
-      viewHires: 'عرض توظيفاتي',
-      paymobTitle: 'الدفع عبر Paymob',
-      paypalTitle: 'الدفع عبر PayPal',
-      redirecting: 'جاري التوجيه إلى PayPal...',
-      paymentFailed: 'فشل الدفع. يرجى المحاولة مرة أخرى.',
-      paymentCancelled: 'تم إلغاء الدفع.',
-      paymentVerifying: 'جاري التحقق من الدفع...',
-      payNow: 'ادفع الآن',
-      reference: 'المرجع',
-      orderId: 'رقم الطلب',
-      amount: 'المبلغ',
-      currency: 'EGP',
-      paypalOpened: '🔄 تم فتح نافذة PayPal. أكمل الدفع هناك.',
-      checkingPayment: 'جاري التحقق من حالة الدفع...',
-      waitingApproval: '⏳ في انتظار موافقتك على الدفع في PayPal...',
-      paymentApproved: '✅ تم الموافقة على الدفع! جاري الإنهاء...',
-      reopenPaypal: 'إعادة فتح نافذة PayPal',
-      paypalDidNotOpen: '⚠️ لم تفتح نافذة PayPal تلقائياً. انقر أدناه لفتحها يدوياً.',
-      completingPayment: 'جاري إكمال دفعتك...'
-    }
-  };
-
-  const t = translations[language] || translations.en;
 
   // ============================================================
   // CALCULATE TOTAL
@@ -449,7 +362,7 @@ const PaymentOptions = () => {
       // Reset the guard so a genuine failure can be retried.
       paymentProcessedRef.current = false;
       console.error('Error processing payment:', error);
-      setPaymentError('Failed to process payment. Please contact support.');
+      setPaymentError(t('paymentOptionsPage.errors.processingFailed'));
       setIsProcessing(false);
     }
   };
@@ -483,7 +396,7 @@ const PaymentOptions = () => {
       }
       setIsProcessing(false);
       setPaymentMessage('');
-      setPaymentError(t.paymentCancelled || 'Payment cancelled.');
+      setPaymentError(t('paymentOptionsPage.paymentCancelled'));
       return;
     }
 
@@ -512,7 +425,7 @@ const PaymentOptions = () => {
 
     // Fallback: backend already captured the payment (Premium is active),
     // so show a completion message rather than leaving the user stuck.
-    setPaymentMessage('✅ Payment completed! Finalizing...');
+    setPaymentMessage(t('paymentOptionsPage.paymentCompleted'));
   };
 
   // ============================================================
@@ -531,7 +444,7 @@ const PaymentOptions = () => {
     localStorage.setItem('homelyserv_paypal_order_id', orderId);
     
     // Set initial message
-    setPaymentMessage(t.waitingApproval);
+    setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
     
     const interval = setInterval(async () => {
       attempts++;
@@ -545,7 +458,7 @@ const PaymentOptions = () => {
         if (result.success) {
           clearInterval(interval);
           setPollingInterval(null);
-          setPaymentMessage('✅ Payment captured successfully!');
+          setPaymentMessage(t('paymentOptionsPage.paymentCaptured'));
           processSuccessfulPayment(result.transaction);
           return;
         }
@@ -553,7 +466,7 @@ const PaymentOptions = () => {
         // Check if order is approved but not yet captured
         if (result.status === 'APPROVED') {
           console.log('⏳ Order approved, attempting to capture...');
-          setPaymentMessage(t.paymentApproved);
+          setPaymentMessage(t('paymentOptionsPage.paymentApproved'));
           // Continue polling - next attempt will try to capture again
           return;
         }
@@ -561,7 +474,7 @@ const PaymentOptions = () => {
         // Check if order is still pending approval
         if (result.status === 'PENDING_APPROVAL' || result.status === 'CREATED') {
           console.log('⏳ Waiting for user approval...');
-          setPaymentMessage(t.waitingApproval);
+          setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
           // Continue polling
           return;
         }
@@ -569,7 +482,7 @@ const PaymentOptions = () => {
         // Check for ORDER_NOT_APPROVED error
         if (result.error && (result.error.includes('ORDER_NOT_APPROVED') || result.error.includes('not approved'))) {
           console.log('⏳ Order not approved yet, waiting...');
-          setPaymentMessage(t.waitingApproval);
+          setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
           // Continue polling - this is expected until user approves
           return;
         }
@@ -578,7 +491,7 @@ const PaymentOptions = () => {
         if (attempts >= maxAttempts) {
           clearInterval(interval);
           setPollingInterval(null);
-          setPaymentError('Payment verification timed out. Please check your PayPal account.');
+          setPaymentError(t('paymentOptionsPage.errors.verificationTimeout'));
           setIsProcessing(false);
           setPaymentMessage('');
           return;
@@ -595,7 +508,7 @@ const PaymentOptions = () => {
         if (attempts >= maxAttempts) {
           clearInterval(interval);
           setPollingInterval(null);
-          setPaymentError('Payment verification failed. Please try again.');
+          setPaymentError(t('paymentOptionsPage.errors.verificationFailed'));
           setIsProcessing(false);
           setPaymentMessage('');
         }
@@ -610,7 +523,7 @@ const PaymentOptions = () => {
   // ============================================================
   const handlePayment = async () => {
     if (!selectedMethod) {
-      setPaymentError('Please select a payment method');
+      setPaymentError(t('paymentOptionsPage.selectMethod'));
       return;
     }
 
@@ -622,7 +535,7 @@ const PaymentOptions = () => {
       const total = calculateTotal();
       
       if (total <= 0 || Number.isNaN(total)) {
-        throw new Error('Invalid payment amount. Please try again.');
+        throw new Error(t('paymentOptionsPage.errors.invalidAmount'));
       }
 
       const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
@@ -657,7 +570,7 @@ const PaymentOptions = () => {
           setPaymobIframe(result.iframeUrl);
           window.addEventListener('message', handlePaymobMessage);
         } else {
-          throw new Error(result.error || 'Paymob payment failed');
+          throw new Error(result.error || t('paymentOptionsPage.errors.paymobFailed'));
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
@@ -679,22 +592,22 @@ const PaymentOptions = () => {
           
           if (!paypalWindow || paypalWindow.closed || typeof paypalWindow.closed === 'undefined') {
             // Popup was blocked or closed
-            setPaymentMessage(t.paypalDidNotOpen);
+            setPaymentMessage(t('paymentOptionsPage.paypalDidNotOpen'));
             // Still start polling and show the reopen button
             startPollingPayPalOrder(result.paypalOrderId || result.orderId);
           } else {
-            setPaymentMessage(t.paypalOpened);
+            setPaymentMessage(t('paymentOptionsPage.paypalOpened'));
             // Start polling for payment completion
             startPollingPayPalOrder(result.paypalOrderId || result.orderId);
           }
         } else {
-          throw new Error(result.error || 'PayPal payment failed');
+          throw new Error(result.error || t('paymentOptionsPage.errors.paypalFailed'));
         }
       }
       
     } catch (error) {
       console.error('❌ Payment error:', error);
-      setPaymentError(error.message || 'Payment failed. Please try again.');
+      setPaymentError(error.message || t('paymentOptionsPage.paymentFailed'));
       setIsProcessing(false);
     }
   };
@@ -703,9 +616,9 @@ const PaymentOptions = () => {
   // UI HELPERS
   // ============================================================
   const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
+    const currentIndex = SUPPORTED_LANGUAGES.findIndex(item => item.code === language);
+    const nextLanguage = SUPPORTED_LANGUAGES[(currentIndex + 1) % SUPPORTED_LANGUAGES.length];
+    changeLanguageGlobal(nextLanguage.code);
   };
 
   const toggleSidebar = () => {
@@ -745,9 +658,6 @@ const PaymentOptions = () => {
   // LOAD DATA
   // ============================================================
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
-    
     // Check authentication
     if (!isAuthenticated || !authUser) {
       navigate('/login');
@@ -780,11 +690,6 @@ const PaymentOptions = () => {
     setLoading(false);
   }, [navigate, isAuthenticated, authUser]);
 
-  useEffect(() => {
-    document.documentElement.dir = 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   const total = calculateTotal();
 
   // ============================================================
@@ -795,7 +700,7 @@ const PaymentOptions = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('paymentOptionsPage.loading')}</p>
         </div>
       </div>
     );
@@ -806,13 +711,13 @@ const PaymentOptions = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Please Log In</h3>
-          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">You need to be logged in to make a payment.</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentOptionsPage.loginRequired')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.loginDescription')}</p>
           <button
             onClick={() => navigate('/login')}
             className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
           >
-            Log In
+            {t('paymentOptionsPage.login')}
           </button>
         </div>
       </div>
@@ -835,13 +740,13 @@ const PaymentOptions = () => {
           <div className="p-4 md:p-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
-              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.goBack}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentOptionsPage.noWorkerData')}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.goBack')}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
               >
-                {t.goBack}
+                {t('paymentOptionsPage.goBack')}
               </button>
             </div>
           </div>
@@ -873,7 +778,7 @@ const PaymentOptions = () => {
                 <Menu size={20} />
               </button>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t.title}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white hidden sm:block">{t('paymentOptionsPage.title')}</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -885,7 +790,7 @@ const PaymentOptions = () => {
                 className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
               >
                 <Globe size={16} />
-                {t.languageToggle}
+                {SUPPORTED_LANGUAGES[(SUPPORTED_LANGUAGES.findIndex(item => item.code === language) + 1) % SUPPORTED_LANGUAGES.length].nativeName}
               </button>
             </div>
           </div>
@@ -895,8 +800,8 @@ const PaymentOptions = () => {
           {/* Page Header */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+              <h1 className="text-2xl font-bold">{t('paymentOptionsPage.title')}</h1>
+              <p className="text-teal-100 mt-1">{t('paymentOptionsPage.subtitle')}</p>
             </div>
           </div>
 
@@ -920,7 +825,7 @@ const PaymentOptions = () => {
           {paymentSuccess && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
-              {t.success} Redirecting...
+              {t('paymentOptionsPage.successRedirecting')}
             </div>
           )}
 
@@ -943,12 +848,12 @@ const PaymentOptions = () => {
                   <h3 className="text-lg font-bold text-gray-800 dark:text-white">{workerData?.workerName}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Briefcase size={14} />
-                    <span>{workerData?.desiredJob || 'Service Provider'}</span>
+                    <span>{workerData?.desiredJob || t('paymentOptionsPage.serviceProvider')}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <span className="flex items-center gap-1">
                       <MapPin size={14} />
-                      {workerData?.workerLocation || 'Location not specified'}
+                      {workerData?.workerLocation || t('paymentOptionsPage.locationNotSpecified')}
                     </span>
                     <span className="flex items-center gap-1">
                       <Star size={14} className="text-yellow-500" />
@@ -956,18 +861,18 @@ const PaymentOptions = () => {
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign size={14} className="text-green-500" />
-                      {workerData?.hourlyRate || 30} EGP/hr
+                      {workerData?.hourlyRate || 30} {t('paymentOptionsPage.hourlyRateUnit')}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.totalAmount}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.totalAmount')}</p>
                 <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {pendingPayment?.paymentType === 'quick_hire_premium'
-                    ? 'Quick Hire premium service fee'
-                    : `${RECRUITMENT_COMMISSION_RATE * 100}% recruitment commission included`}
+                    ? t('paymentOptionsPage.quickHireFee')
+                    : t('paymentOptionsPage.commissionIncluded', { rate: RECRUITMENT_COMMISSION_RATE * 100 })}
                 </p>
               </div>
             </div>
@@ -977,12 +882,12 @@ const PaymentOptions = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymentMethods}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.chooseMethod}</p>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentOptionsPage.paymentMethods')}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.chooseMethod')}</p>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <Lock size={16} className="text-green-500" />
-                <span>{t.securePayment}</span>
+                <span>{t('paymentOptionsPage.securePayment')}</span>
               </div>
             </div>
 
@@ -1041,12 +946,12 @@ const PaymentOptions = () => {
               {isProcessing ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  {t.processing}
+                  {t('paymentOptionsPage.processing')}
                 </>
               ) : (
                 <>
                   <Shield size={18} />
-                  {t.payNow}
+                  {t('paymentOptionsPage.payNow')}
                 </>
               )}
             </button>
@@ -1055,23 +960,23 @@ const PaymentOptions = () => {
               className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-2"
             >
               <ArrowLeft size={18} />
-              {t.back}
+              {t('paymentOptionsPage.back')}
             </button>
           </div>
 
           {!selectedMethod && !paymentSuccess && !isProcessing && (
-            <p className="text-sm text-red-500 mt-3 text-center">{t.selectMethod}</p>
+            <p className="text-sm text-red-500 mt-3 text-center">{t('paymentOptionsPage.selectMethod')}</p>
           )}
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
             <Link to="/terms" className="hover:text-red-600 hover:underline transition-colors">
-              Terms &amp; Conditions
+              {t('paymentOptionsPage.terms')}
             </Link>
             <Link to="/refund-policy" className="hover:text-red-600 hover:underline transition-colors">
-              Refund Policy
+              {t('paymentOptionsPage.refundPolicy')}
             </Link>
             <Link to="/privacy" className="hover:text-red-600 hover:underline transition-colors">
-              Privacy Policy
+              {t('paymentOptionsPage.privacyPolicy')}
             </Link>
           </div>
 
@@ -1082,14 +987,14 @@ const PaymentOptions = () => {
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Wallet size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paypalTitle}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentOptionsPage.paypalTitle')}</h3>
                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Loader2 size={20} className="animate-spin text-teal-600" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{paymentMessage || t.paymentVerifying}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{paymentMessage || t('paymentOptionsPage.paymentVerifying')}</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
-                    {paymentMessage === t.paypalDidNotOpen ? t.paypalDidNotOpen : t.paypalOpened}
+                    {paymentMessage === t('paymentOptionsPage.paypalDidNotOpen') ? t('paymentOptionsPage.paypalDidNotOpen') : t('paymentOptionsPage.paypalOpened')}
                   </p>
                 </div>
                 
@@ -1100,23 +1005,23 @@ const PaymentOptions = () => {
                     if (approvalUrl) {
                       const newWindow = window.open(approvalUrl, '_blank', 'width=800,height=600');
                       if (!newWindow || newWindow.closed) {
-                        setPaymentMessage('⚠️ Popup blocked. Please allow popups or click the link below.');
+                        setPaymentMessage(t('paymentOptionsPage.popupBlocked'));
                       } else {
-                        setPaymentMessage('🔄 PayPal window reopened. Please complete the payment.');
+                        setPaymentMessage(t('paymentOptionsPage.paypalReopened'));
                       }
                     } else {
-                      setPaymentError('Could not find PayPal order. Please try again.');
+                      setPaymentError(t('paymentOptionsPage.errors.paypalOrderNotFound'));
                     }
                   }}
                   className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition w-full"
                 >
-                  {t.reopenPaypal}
+                  {t('paymentOptionsPage.reopenPaypal')}
                 </button>
                 
                 <button
                   onClick={() => {
                     setIsProcessing(false);
-                    setPaymentError('Payment cancelled by user.');
+                    setPaymentError(t('paymentOptionsPage.cancelledByUser'));
                     setPaymentMessage('');
                     if (pollingInterval) {
                       clearInterval(pollingInterval);
@@ -1127,7 +1032,7 @@ const PaymentOptions = () => {
                   }}
                   className="mt-3 text-sm text-red-500 hover:text-red-600 transition block w-full"
                 >
-                  Cancel Payment
+                  {t('paymentOptionsPage.cancelPayment')}
                 </button>
 
                 {/* Direct link fallback */}
@@ -1138,7 +1043,7 @@ const PaymentOptions = () => {
                     rel="noopener noreferrer"
                     className="mt-2 text-sm text-teal-600 hover:text-teal-700 underline block"
                   >
-                    Click here if PayPal doesn't open
+                    {t('paymentOptionsPage.paypalManualLink')}
                   </a>
                 )}
               </div>
@@ -1149,8 +1054,7 @@ const PaymentOptions = () => {
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100">
             <p className="text-xs text-blue-600 text-center flex items-center justify-center gap-2">
               <Lock size={14} />
-              Your payment will be processed securely through Paymob or PayPal. 
-              The worker will be hired immediately after payment confirmation.
+              {t('paymentOptionsPage.securityNotice')}
             </p>
           </div>
 
@@ -1159,7 +1063,7 @@ const PaymentOptions = () => {
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.paymobTitle}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentOptionsPage.paymobTitle')}</h3>
                   <button
                     onClick={() => {
                       setPaymobIframe(null);
@@ -1176,7 +1080,7 @@ const PaymentOptions = () => {
                     src={paymobIframe}
                     className="w-full h-full border-0"
                     allow="payment"
-                    title="Paymob Payment"
+                    title={t('paymentOptionsPage.paymobIframeTitle')}
                   />
                 </div>
               </div>
