@@ -147,7 +147,6 @@ const en = {
     cancel: 'Cancel',
     edit: 'Edit',
     delete: 'Delete',
-    confirm: 'Confirm',
     back: 'Back',
     next: 'Next',
     submit: 'Submit',
@@ -411,7 +410,8 @@ const en = {
     message: 'Message',
     hireNow: 'Hire Now',
     saveProfile: 'Save Profile',
-    saved: 'Saved',
+    commonStates: { saved: 'Saved' },
+    settingsFeedback: { savedSuccess: 'Settings saved successfully!' },
     shareProfile: 'Share Profile',
     reportProfile: 'Report Profile',
     clearFilters: 'Clear Filters',
@@ -584,7 +584,6 @@ const en = {
     currentPassword: 'Current Password',
     newPassword: 'New Password',
     confirmPassword: 'Confirm Password',
-    saved: 'Settings saved successfully!',
     passwordChanged: 'Password changed successfully!',
     passwordMismatch: 'New passwords do not match',
     passwordTooShort: 'Password must be at least 6 characters',
@@ -690,7 +689,6 @@ const en = {
     recentPayments: 'Recent Payments',
     topCategories: 'Top Categories',
     generateReport: 'Generate Report',
-    exportData: 'Export Data',
     refreshData: 'Refresh Data'
   }
 };
@@ -786,7 +784,6 @@ const ar = {
     cancel: 'إلغاء',
     edit: 'تعديل',
     delete: 'حذف',
-    confirm: 'تأكيد',
     back: 'رجوع',
     next: 'التالي',
     submit: 'إرسال',
@@ -1050,7 +1047,8 @@ const ar = {
     message: 'رسالة',
     hireNow: 'وظف الآن',
     saveProfile: 'حفظ الملف الشخصي',
-    saved: 'تم الحفظ',
+    commonStates: { saved: 'تم الحفظ' },
+    settingsFeedback: { savedSuccess: 'تم حفظ الإعدادات بنجاح!' },
     shareProfile: 'مشاركة الملف الشخصي',
     reportProfile: 'الإبلاغ عن الملف',
     clearFilters: 'مسح الفلاتر',
@@ -1223,7 +1221,6 @@ const ar = {
     currentPassword: 'كلمة المرور الحالية',
     newPassword: 'كلمة المرور الجديدة',
     confirmPassword: 'تأكيد كلمة المرور',
-    saved: 'تم حفظ الإعدادات بنجاح!',
     passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
     passwordMismatch: 'كلمات المرور الجديدة غير متطابقة',
     passwordTooShort: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
@@ -1329,7 +1326,6 @@ const ar = {
     recentPayments: 'آخر المدفوعات',
     topCategories: 'أفضل الفئات',
     generateReport: 'إنشاء تقرير',
-    exportData: 'تصدير البيانات',
     refreshData: 'تحديث البيانات'
   }
 };
@@ -1420,7 +1416,6 @@ const fr = {
     cancel: 'Annuler',
     edit: 'Modifier',
     delete: 'Supprimer',
-    confirm: 'Confirmer',
     back: 'Retour',
     next: 'Suivant',
     submit: 'Soumettre',
@@ -1680,7 +1675,8 @@ const fr = {
     message: 'Message',
     hireNow: 'Embaucher maintenant',
     saveProfile: 'Enregistrer le profil',
-    saved: 'Enregistré',
+    commonStates: { saved: 'Enregistré' },
+    settingsFeedback: { savedSuccess: 'Paramètres enregistrés avec succès !' },
     shareProfile: 'Partager le profil',
     reportProfile: 'Signaler le profil',
     clearFilters: 'Effacer les filtres',
@@ -1848,7 +1844,6 @@ const fr = {
     currentPassword: 'Mot de passe actuel',
     newPassword: 'Nouveau mot de passe',
     confirmPassword: 'Confirmer le mot de passe',
-    saved: 'Paramètres enregistrés avec succès !',
     passwordChanged: 'Mot de passe changé avec succès !',
     passwordMismatch: 'Les nouveaux mots de passe ne correspondent pas',
     passwordTooShort: 'Le mot de passe doit comporter au moins 6 caractères',
@@ -1952,7 +1947,6 @@ const fr = {
     recentPayments: 'Paiements récents',
     topCategories: 'Meilleures catégories',
     generateReport: 'Générer un rapport',
-    exportData: 'Exporter les données',
     refreshData: 'Actualiser les données'
   }
 };
@@ -2041,7 +2035,6 @@ const ru = {
     cancel: 'Отмена',
     edit: 'Редактировать',
     delete: 'Удалить',
-    confirm: 'Подтвердить',
     back: 'Назад',
     next: 'Далее',
     submit: 'Отправить',
@@ -2301,7 +2294,8 @@ const ru = {
     message: 'Сообщение',
     hireNow: 'Нанять сейчас',
     saveProfile: 'Сохранить профиль',
-    saved: 'Сохранено',
+    commonStates: { saved: 'Сохранено' },
+    settingsFeedback: { savedSuccess: 'Настройки успешно сохранены!' },
     shareProfile: 'Поделиться профилем',
     reportProfile: 'Пожаловаться на профиль',
     clearFilters: 'Очистить фильтры',
@@ -2469,7 +2463,6 @@ const ru = {
     currentPassword: 'Текущий пароль',
     newPassword: 'Новый пароль',
     confirmPassword: 'Подтвердите пароль',
-    saved: 'Настройки успешно сохранены!',
     passwordChanged: 'Пароль успешно изменен!',
     passwordMismatch: 'Новые пароли не совпадают',
     passwordTooShort: 'Пароль должен быть не менее 6 символов',
@@ -2573,7 +2566,6 @@ const ru = {
     recentPayments: 'Недавние платежи',
     topCategories: 'Топ категории',
     generateReport: 'Создать отчет',
-    exportData: 'Экспорт данных',
     refreshData: 'Обновить данные'
   }
 };
@@ -2662,7 +2654,6 @@ const tr = {
     cancel: 'İptal',
     edit: 'Düzenle',
     delete: 'Sil',
-    confirm: 'Onayla',
     back: 'Geri',
     next: 'İleri',
     submit: 'Gönder',
@@ -2922,7 +2913,8 @@ const tr = {
     message: 'Mesaj',
     hireNow: 'Hemen işe al',
     saveProfile: 'Profili kaydet',
-    saved: 'Kaydedildi',
+    commonStates: { saved: 'Kaydedildi' },
+    settingsFeedback: { savedSuccess: 'Ayarlar başarıyla kaydedildi!' },
     shareProfile: 'Profili paylaş',
     reportProfile: 'Profili şikayet et',
     clearFilters: 'Filtreleri temizle',
@@ -3090,7 +3082,6 @@ const tr = {
     currentPassword: 'Mevcut şifre',
     newPassword: 'Yeni şifre',
     confirmPassword: 'Şifreyi onayla',
-    saved: 'Ayarlar başarıyla kaydedildi!',
     passwordChanged: 'Şifre başarıyla değiştirildi!',
     passwordMismatch: 'Yeni şifreler eşleşmiyor',
     passwordTooShort: 'Şifre en az 6 karakter olmalıdır',
@@ -3194,7 +3185,6 @@ const tr = {
     recentPayments: 'Son ödemeler',
     topCategories: 'En iyi kategoriler',
     generateReport: 'Rapor oluştur',
-    exportData: 'Verileri dışa aktar',
     refreshData: 'Verileri yenile'
   }
 };
@@ -3283,7 +3273,6 @@ const de = {
     cancel: 'Abbrechen',
     edit: 'Bearbeiten',
     delete: 'Löschen',
-    confirm: 'Bestätigen',
     back: 'Zurück',
     next: 'Weiter',
     submit: 'Absenden',
@@ -3543,7 +3532,8 @@ const de = {
     message: 'Nachricht',
     hireNow: 'Jetzt einstellen',
     saveProfile: 'Profil speichern',
-    saved: 'Gespeichert',
+    commonStates: { saved: 'Gespeichert' },
+    settingsFeedback: { savedSuccess: 'Einstellungen erfolgreich gespeichert!' },
     shareProfile: 'Profil teilen',
     reportProfile: 'Profil melden',
     clearFilters: 'Filter löschen',
@@ -3711,7 +3701,6 @@ const de = {
     currentPassword: 'Aktuelles Passwort',
     newPassword: 'Neues Passwort',
     confirmPassword: 'Passwort bestätigen',
-    saved: 'Einstellungen erfolgreich gespeichert!',
     passwordChanged: 'Passwort erfolgreich geändert!',
     passwordMismatch: 'Neue Passwörter stimmen nicht überein',
     passwordTooShort: 'Passwort muss mindestens 6 Zeichen lang sein',
@@ -3815,7 +3804,6 @@ const de = {
     recentPayments: 'Letzte Zahlungen',
     topCategories: 'Top-Kategorien',
     generateReport: 'Bericht erstellen',
-    exportData: 'Daten exportieren',
     refreshData: 'Daten aktualisieren'
   }
 };
