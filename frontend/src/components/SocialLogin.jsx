@@ -62,6 +62,7 @@ export default function SocialLogin({ onLoginSuccess }) {
     try {
       const response = await api.post('/api/oauth/social-login', {
         provider: provider,
+        accessToken: providerData.accessToken,
         providerId: providerData.id,
         email: providerData.email,
         fullName: providerData.name,
@@ -162,7 +163,8 @@ export default function SocialLogin({ onLoginSuccess }) {
           console.log('Facebook user info:', userInfo);
           const userData = {
             id: userInfo.id,
-            email: userInfo.email || `fb_${userInfo.id}@facebook.com`,
+            accessToken: response.authResponse.accessToken,
+            email: userInfo.email,
             name: userInfo.name,
             picture: userInfo.picture?.data?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.name)}&background=1877F2&color=fff`
           };
@@ -262,4 +264,4 @@ export default function SocialLogin({ onLoginSuccess }) {
       `}</style>
     </div>
   );
-} 
+}
