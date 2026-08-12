@@ -5,6 +5,7 @@
 // Staff names use font-semibold with a subtle lighter role suffix.
 // Other roles use default styling.
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   getRoleLabel,
   isStaffRole,
@@ -17,11 +18,12 @@ const UserDisplayName = ({
   size = 'md',
   className = '',
 }) => {
+  const { t } = useTranslation();
   const roleValue = user?.role || role;
   const staff = isStaffRole(roleValue);
 
   // Base name (without role suffix)
-  const baseName = user ? (user.fullName || user.name || 'User') : (name || 'User');
+  const baseName = user ? (user.fullName || user.name || t('sharedUserDisplay.fallbacks.user')) : (name || t('sharedUserDisplay.fallbacks.user'));
   const roleLabel = getRoleLabel(roleValue);
 
   const sizeClasses = {

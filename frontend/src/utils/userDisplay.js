@@ -6,6 +6,7 @@
 //
 // Database roles remain unchanged: ADMIN, SUPPORT, EMPLOYER, WORKER
 // ============================================================
+import i18n from '../i18n';
 
 // ============================================================
 // ROLE LABELS
@@ -13,13 +14,17 @@
 // SUP_ADMIN is supported as an alias of the support tier so any
 // future role split keeps working without code changes.
 // ============================================================
-const ROLE_LABELS = {
-  ADMIN: 'Co-Admin',
-  SUPPORT: 'Sup-Admin',
-  SUP_ADMIN: 'Sup-Admin',
-  EMPLOYER: 'Employer',
-  WORKER: 'Worker'
+const ROLE_LABEL_KEYS = {
+  ADMIN: 'sharedUserDisplay.roles.coAdmin',
+  SUPPORT: 'sharedUserDisplay.roles.supportAdmin',
+  SUP_ADMIN: 'sharedUserDisplay.roles.supportAdmin',
+  EMPLOYER: 'sharedUserDisplay.roles.employer',
+  WORKER: 'sharedUserDisplay.roles.worker',
+  USER: 'sharedUserDisplay.roles.user',
+  GUEST: 'sharedUserDisplay.roles.guest'
 };
+
+const getUserFallback = () => i18n.t('sharedUserDisplay.fallbacks.user');
 
 // ============================================================
 // ROLE COLORS (Tailwind classes)
@@ -62,12 +67,12 @@ const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN'];
  * @returns {string} Formatted display name
  */
 export const getDisplayName = (user) => {
-  if (!user) return 'User';
-  const name = user.fullName || user.name || 'User';
+  if (!user) return getUserFallback();
+  const name = user.fullName || user.name || getUserFallback();
   const role = (user.role || '').toUpperCase();
 
   if (STAFF_ROLES.includes(role)) {
-    return `${name} (${ROLE_LABELS[role]})`;
+    return `${name} (${getRoleLabel(role)})`;
   }
   return name;
 };
@@ -110,7 +115,8 @@ export const formatStaffIdentity = (userOrName, roleArg = null) => {
  */
 export const getRoleLabel = (role) => {
   const normalized = (role || '').toUpperCase();
-  return ROLE_LABELS[normalized] || normalized || 'User';
+  const labelKey = ROLE_LABEL_KEYS[normalized];
+  return labelKey ? i18n.t(labelKey) : (normalized || getUserFallback());
 };
 
 /**
