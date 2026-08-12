@@ -1,6 +1,7 @@
 // src/pages/Notifications.jsx - Production-ready Notification Center
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Bell,
   Check,
@@ -31,6 +32,7 @@ import {
 } from '../utils/notificationService';
 
 const Notifications = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -58,7 +60,7 @@ const Notifications = () => {
       setUnreadCount(result.unreadCount || 0);
     } catch (err) {
       console.error('Error loading notifications:', err);
-      setError('Failed to load notifications');
+      setError(t('notificationsPage.loadError'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,7 @@ const Notifications = () => {
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm('Clear all notifications?')) return;
+    if (!window.confirm(t('sharedChrome.notifications.clearConfirm'))) return;
     try {
       await clearAllNotifications();
       setNotifications([]);
@@ -132,15 +134,44 @@ const Notifications = () => {
   // HELPERS
   // ============================================================
   const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('notificationsPage.notAvailable');
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    if (diff < 60000) return t('sharedChrome.notifications.justNow');
+    if (diff < 3600000) return t('sharedChrome.notifications.minutesAgo', { count: Math.floor(diff / 60000) });
+    if (diff < 86400000) return t('sharedChrome.notifications.hoursAgo', { count: Math.floor(diff / 3600000) });
+    if (diff < 604800000) return t('sharedChrome.notifications.daysAgo', { count: Math.floor(diff / 86400000) });
     return date.toLocaleDateString();
+  };
+
+  const getPriorityLabel = (priority) => {
+    const labels = {
+      [PRIORITIES.LOW]: t('notificationsPage.priorities.low'),
+      [PRIORITIES.NORMAL]: t('notificationsPage.priorities.normal'),
+      [PRIORITIES.HIGH]: t('notificationsPage.priorities.high'),
+      [PRIORITIES.CRITICAL]: t('notificationsPage.priorities.critical')
+    };
+    return labels[priority] || labels[PRIORITIES.NORMAL];
+  };
+
+  const getTypeLabel = (type) => {
+    const labels = {
+      [NOTIFICATION_TYPES.NEW_MESSAGE]: t('notificationsPage.types.newMessage'),
+      [NOTIFICATION_TYPES.NEW_COMPLAINT]: t('notificationsPage.types.newComplaint'),
+      [NOTIFICATION_TYPES.COMPLAINT_ASSIGNED]: t('notificationsPage.types.complaintAssigned'),
+      [NOTIFICATION_TYPES.COMPLAINT_REPLY]: t('notificationsPage.types.complaintReply'),
+      [NOTIFICATION_TYPES.COMPLAINT_ESCALATED]: t('notificationsPage.types.complaintEscalated'),
+      [NOTIFICATION_TYPES.COMPLAINT_RESOLVED]: t('notificationsPage.types.complaintResolved'),
+      [NOTIFICATION_TYPES.PAYMENT_SUCCESS]: t('notificationsPage.types.paymentSuccess'),
+      [NOTIFICATION_TYPES.PAYMENT_FAILED]: t('notificationsPage.types.paymentFailed'),
+      [NOTIFICATION_TYPES.PREMIUM_EXPIRES]: t('notificationsPage.types.premiumExpires'),
+      [NOTIFICATION_TYPES.NEW_HIRE]: t('notificationsPage.types.newHire'),
+      [NOTIFICATION_TYPES.HIRE_ACCEPTED]: t('notificationsPage.types.hireAccepted'),
+      [NOTIFICATION_TYPES.HIRE_REJECTED]: t('notificationsPage.types.hireRejected'),
+      [NOTIFICATION_TYPES.SYSTEM]: t('notificationsPage.types.system')
+    };
+    return labels[type] || t('notificationsPage.types.other');
   };
 
   const getPriorityBadge = (priority) => {
@@ -178,12 +209,12 @@ const Notifications = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center max-w-md">
           <Bell size={48} className="text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Please Sign In</h3>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('notificationsPage.signInRequired')}</h3>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
           >
-            Sign In
+            {t('notificationsPage.signIn')}
           </button>
         </div>
       </div>
@@ -200,11 +231,11 @@ const Notifications = () => {
               onClick={() => navigate(-1)}
               className="text-gray-600 dark:text-gray-300 hover:text-green-600 transition"
             >
-              ← Back
+              {t('notificationsPage.back')}
             </button>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Notification Center</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t('notificationsPage.title')}</h1>
             {unreadCount > 0 && (
-              <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount} new</span>
+              <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{t('notificationsPage.newCount', { count: unreadCount })}</span>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -212,7 +243,7 @@ const Notifications = () => {
               onClick={loadNotifications}
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition"
             >
-              Refresh
+              {t('notificationsPage.refresh')}
             </button>
             {unreadCount > 0 && (
               <button
@@ -220,7 +251,7 @@ const Notifications = () => {
                 className="text-sm text-green-600 hover:underline flex items-center gap-1"
               >
                 <CheckCheck size={14} />
-                Mark all read
+                {t('sharedChrome.notifications.markAllRead')}
               </button>
             )}
             {notifications.length > 0 && (
@@ -229,7 +260,7 @@ const Notifications = () => {
                 className="text-sm text-red-600 hover:underline flex items-center gap-1"
               >
                 <Trash2 size={14} />
-                Clear all
+                {t('sharedChrome.notifications.clearAll')}
               </button>
             )}
           </div>
@@ -249,7 +280,7 @@ const Notifications = () => {
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              {f === 'all' ? 'All' : f === 'unread' ? 'Unread' : 'Read'}
+              {f === 'all' ? t('notificationsPage.filters.all') : f === 'unread' ? t('notificationsPage.filters.unread') : t('notificationsPage.filters.read')}
             </button>
           ))}
         </div>
@@ -268,8 +299,8 @@ const Notifications = () => {
         ) : filtered.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
             <Bell size={48} className="text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">No notifications</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">You're all caught up!</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t('notificationsPage.empty')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">{t('notificationsPage.caughtUp')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -303,7 +334,7 @@ const Notifications = () => {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getPriorityBadge(notification.priority)}`}>
-                            {notification.priority || PRIORITIES.NORMAL}
+                            {getPriorityLabel(notification.priority || PRIORITIES.NORMAL)}
                           </span>
                           {!notification.read && (
                             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -316,10 +347,10 @@ const Notifications = () => {
                           {formatTime(notification.createdAt)}
                         </span>
                         <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {getTypeIcon(notification.type)} {notification.type}
+                          {getTypeIcon(notification.type)} {getTypeLabel(notification.type)}
                         </span>
                         <span className="text-xs text-green-600 flex items-center gap-0.5 ml-auto">
-                          View
+                          {t('sharedChrome.notifications.view')}
                           <ChevronRight size={12} />
                         </span>
                       </div>
@@ -329,7 +360,7 @@ const Notifications = () => {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                           className="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors text-green-600"
-                          title="Mark as read"
+                          title={t('sharedChrome.notifications.markAsRead')}
                         >
                           <Check size={14} />
                         </button>
@@ -337,7 +368,7 @@ const Notifications = () => {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
                         className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors text-red-500"
-                        title="Delete"
+                        title={t('sharedChrome.notifications.delete')}
                       >
                         <Trash2 size={14} />
                       </button>
