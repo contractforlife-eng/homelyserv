@@ -1,6 +1,6 @@
 // src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../components/layout/DashboardContext';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
@@ -39,6 +39,7 @@ import {
 // Main WorkerProfile Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerProfile = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Auth Store
   const authUser = useAuthStore(state => state.user);
@@ -49,7 +50,6 @@ const WorkerProfile = () => {
 
   // Local State
   const [isEditing, setIsEditing] = useState(false);
-  const dashboard = useDashboard();
    
   const [formData, setFormData] = useState({
     fullName: '',
@@ -91,75 +91,6 @@ const WorkerProfile = () => {
   // NOTIFICATION FUNCTIONS
   // ============================================================
   
-
-  const translations = {
-    en: {
-      title: 'My Profile',
-      subtitle: 'Manage your personal information and preferences',
-      personalInfo: 'Personal Information',
-      fullName: 'Full Name',
-      email: 'Email Address',
-      phone: 'Phone Number',
-      location: 'Location',
-      bio: 'About Me',
-      skills: 'Skills',
-      experience: 'Years of Experience',
-      hourlyRate: 'Hourly Rate (EGP)',
-      desiredJob: 'Desired Job Type',
-      selectJob: 'Select a job type...',
-      editProfile: 'Edit Profile',
-      saveChanges: 'Save Changes',
-      cancel: 'Cancel',
-      addSkill: 'Add Skill',
-      profileComplete: 'Profile Complete',
-      memberSince: 'Member Since',
-      rating: 'Rating',
-      jobsCompleted: 'Jobs Completed',
-      languages: 'Languages',
-      notifications: 'Notifications',
-      languageToggle: 'العربية',
-      saved: '✅ Profile updated successfully!',
-      profilePhoto: 'Profile Photo',
-      changePhoto: 'Click to change photo',
-      premiumBadge: 'Premium',
-      getPremium: 'Get Premium',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'ملفي الشخصي',
-      subtitle: 'إدارة معلوماتك الشخصية وتفضيلاتك',
-      personalInfo: 'المعلومات الشخصية',
-      fullName: 'الاسم الكامل',
-      email: 'البريد الإلكتروني',
-      phone: 'رقم الهاتف',
-      location: 'الموقع',
-      bio: 'عني',
-      skills: 'المهارات',
-      experience: 'سنوات الخبرة',
-      hourlyRate: 'السعر بالساعة (جنيه)',
-      desiredJob: 'نوع الوظيفة المطلوبة',
-      selectJob: 'اختر نوع الوظيفة...',
-      editProfile: 'تعديل الملف',
-      saveChanges: 'حفظ التغييرات',
-      cancel: 'إلغاء',
-      addSkill: 'إضافة مهارة',
-      profileComplete: 'الملف مكتمل',
-      memberSince: 'عضو منذ',
-      rating: 'التقييم',
-      jobsCompleted: 'الوظائف المكتملة',
-      languages: 'اللغات',
-      notifications: 'الإشعارات',
-      languageToggle: 'English',
-      saved: '✅ تم تحديث الملف الشخصي بنجاح!',
-      profilePhoto: 'الصورة الشخصية',
-      changePhoto: 'انقر لتغيير الصورة',
-      premiumBadge: 'مميز',
-      getPremium: 'اشتراك مميز',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const isPremium = subscriptionStatus.isPremium;
 
@@ -220,7 +151,7 @@ const WorkerProfile = () => {
     } catch (error) {
       console.error('Error loading real stats:', error);
       setRealStats({
-        memberSince: 'June 2025',
+        memberSince: t('workerProfile.memberSinceValue'),
         rating: 4.8,
         jobsCompleted: 0,
         profileComplete: 0
@@ -291,7 +222,7 @@ const WorkerProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        alert(t('workerOwnProfile.imageTooLarge'));
         return;
       }
 
@@ -326,7 +257,7 @@ const WorkerProfile = () => {
     try {
       const userId = authUser?.id || authUser?._id;
       if (!userId) {
-        alert('User ID not found. Please log in again.');
+        alert(t('workerOwnProfile.userIdMissing'));
         setSaving(false);
         return;
       }
@@ -338,7 +269,7 @@ const WorkerProfile = () => {
         if (uploadResult.success && uploadResult.user) {
           profileImageUrl = uploadResult.user.profileImage;
         } else {
-          throw new Error(uploadResult.error || 'Photo upload failed');
+          throw new Error(uploadResult.error || t('workerOwnProfile.photoUploadFailed'));
         }
       }
 
@@ -359,14 +290,14 @@ const WorkerProfile = () => {
         setPendingImageFile(null);
         setIsEditing(false);
         setSaveSuccess(true);
-        alert(t.saved);
+        alert(t('workerOwnProfile.saved'));
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(response.data.message || 'Failed to update profile');
+        throw new Error(response.data.message || t('workerOwnProfile.updateFailed'));
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      alert(t('workerOwnProfile.updateFailedRetry'));
     } finally {
       setSaving(false);
     }
@@ -374,7 +305,7 @@ const WorkerProfile = () => {
 
   const getJobLabel = (value) => {
     const job = jobOptions.find(j => j.value === value);
-    return job ? job.label : value || 'Not specified';
+    return job ? t(`employerSearch.jobs.${job.value}`) : value || t('workerOwnProfile.notSpecified');
   };
 
   if (authLoading) {
@@ -382,7 +313,7 @@ const WorkerProfile = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerOwnProfile.loading')}</p>
         </div>
       </div>
     );
@@ -395,7 +326,7 @@ const WorkerProfile = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerOwnProfile.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
       />
@@ -406,15 +337,15 @@ const WorkerProfile = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <h1 className="text-2xl font-bold">{t('workerOwnProfile.title')}</h1>
                   {isPremium && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                       <Crown size={12} className="text-yellow-300" />
-                      {t.premiumBadge}
+                      {t('workerOwnProfile.premiumBadge')}
                     </span>
                   )}
                 </div>
-                <p className="text-white/80 mt-1">{t.subtitle}</p>
+                <p className="text-white/80 mt-1">{t('workerOwnProfile.subtitle')}</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -422,14 +353,14 @@ const WorkerProfile = () => {
                    className="bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   {isEditing ? <X size={16} /> : <Edit size={16} />}
-                  {isEditing ? t.cancel : t.editProfile}
+                  {isEditing ? t('workerOwnProfile.cancel') : t('workerOwnProfile.editProfile')}
                 </button>
                 <Link
                   to="/subscription"
                   className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
                 >
                   <Crown size={16} />
-                  {t.getPremium}
+                  {t('workerOwnProfile.getPremium')}
                 </Link>
               </div>
             </div>
@@ -438,20 +369,20 @@ const WorkerProfile = () => {
           {saveSuccess && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
-              {t.saved}
+              {t('workerOwnProfile.saved')}
             </div>
           )}
 
           {/* Profile Photo Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.profilePhoto}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('workerOwnProfile.profilePhoto')}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-200 bg-gray-100 dark:bg-gray-800 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
-                      alt="Profile" 
+                      alt={t('workerOwnProfile.profileImageAlt')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -478,10 +409,10 @@ const WorkerProfile = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t('workerOwnProfile.changePhoto')}</p>
               )}
               {!isEditing && imagePreview && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Photo uploaded</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('workerOwnProfile.photoUploaded')}</p>
               )}
             </div>
           </div>
@@ -490,14 +421,14 @@ const WorkerProfile = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.memberSince}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerOwnProfile.memberSince')}</p>
                 <Calendar size={20} className="text-blue-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{realStats.memberSince}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.rating}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerOwnProfile.rating')}</p>
                 <Star size={20} className="text-yellow-500" />
               </div>
               <div className="flex items-center gap-1 mt-1">
@@ -507,14 +438,14 @@ const WorkerProfile = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.jobsCompleted}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerOwnProfile.jobsCompleted')}</p>
                 <CheckCircle size={20} className="text-green-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{realStats.jobsCompleted}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.profileComplete}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerOwnProfile.profileComplete')}</p>
                 <Award size={20} className="text-purple-500" />
               </div>
               <div className="mt-1">
@@ -536,10 +467,10 @@ const WorkerProfile = () => {
 
           {/* Personal Information */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t.personalInfo}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t('workerOwnProfile.personalInfo')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.fullName}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.fullName')}</label>
                 <div className="relative">
                   <User size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -556,7 +487,7 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.email')}</label>
                 <div className="relative">
                   <Mail size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -570,7 +501,7 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.phone')}</label>
                 <div className="relative">
                   <Phone size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -587,7 +518,7 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.location}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.location')}</label>
                 <div className="relative">
                   <MapPin size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -604,7 +535,7 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.experience}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.experience')}</label>
                 <div className="relative">
                   <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -621,7 +552,7 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.hourlyRate}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.hourlyRate')}</label>
                 <div className="relative">
                   <span className="absolute left-3 top-3 text-gray-400 dark:text-gray-500">EGP</span>
                   <input
@@ -640,7 +571,7 @@ const WorkerProfile = () => {
               {/* Desired Job Dropdown Field */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t.desiredJob}
+                  {t('workerOwnProfile.desiredJob')}
                 </label>
                 <div className="relative">
                   <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500 z-10" />
@@ -653,10 +584,10 @@ const WorkerProfile = () => {
                       isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   >
-                    <option value="">{t.selectJob}</option>
+                    <option value="">{t('workerOwnProfile.selectJob')}</option>
                     {jobOptions.map((job) => (
                       <option key={job.value} value={job.value}>
-                        {job.label}
+                        {t(`employerSearch.jobs.${job.value}`)}
                       </option>
                     ))}
                   </select>
@@ -664,16 +595,16 @@ const WorkerProfile = () => {
                 </div>
                 {!isEditing && formData.desiredJob && (
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Selected:</span> {getJobLabel(formData.desiredJob)}
+                    <span className="font-medium">{t('workerOwnProfile.selected')}:</span> {getJobLabel(formData.desiredJob)}
                   </p>
                 )}
                 {!isEditing && !formData.desiredJob && (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">No job type selected</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('workerOwnProfile.noJobSelected')}</p>
                 )}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.bio}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.bio')}</label>
                 <textarea
                   name="bio"
                   value={formData.bio}
@@ -687,7 +618,7 @@ const WorkerProfile = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.skills}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.skills')}</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.skills.map((skill, index) => (
                     <span
@@ -713,7 +644,7 @@ const WorkerProfile = () => {
                       type="text"
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
-                      placeholder={t.addSkill}
+                      placeholder={t('workerOwnProfile.addSkill')}
                       className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
                     <button
@@ -721,7 +652,7 @@ const WorkerProfile = () => {
                       onClick={handleAddSkill}
                       className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition"
                     >
-                      {t.addSkill}
+                      {t('workerOwnProfile.addSkill')}
                     </button>
                   </div>
                 )}
@@ -740,14 +671,14 @@ const WorkerProfile = () => {
                   ) : (
                     <Save size={18} />
                   )}
-                  {saving ? 'Saving...' : t.saveChanges}
+                  {saving ? t('workerOwnProfile.saving') : t('workerOwnProfile.saveChanges')}
                 </button>
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
                   className="px-6 py-2 w-full sm:w-auto border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition disabled:opacity-50"
                 >
-                  {t.cancel}
+                  {t('workerOwnProfile.cancel')}
                 </button>
               </div>
             )}
