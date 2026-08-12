@@ -1,12 +1,12 @@
 // src/pages/EmployerMessages.jsx - COMPLETE FIXED VERSION WITH WORKING NOTIFICATION BELL
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { UserAvatar, UserDisplayName } from '../components/users';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -72,7 +72,7 @@ const EmployerMessages = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
   
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
@@ -98,54 +98,6 @@ const EmployerMessages = () => {
 
   const userIsPremium = isPremium();
 
-  const translations = {
-    en: {
-      title: 'Messages',
-      subtitle: 'Communicate with workers you\'ve hired',
-      searchPlaceholder: 'Search conversations...',
-      typeMessage: 'Type a message...',
-      send: 'Send',
-      noConversations: 'No conversations yet',
-      noConversationsDesc: 'Start hiring workers to connect with them',
-      online: 'Online',
-      offline: 'Offline',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading messages...',
-      noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!',
-      refresh: 'Refresh',
-      newMessage: 'New message from {name}',
-      acceptedOffer: 'You accepted an offer from {name}',
-      typing: 'Typing...',
-      premiumBadge: 'Premium',
-      getPremium: 'Get Premium'
-    },
-    ar: {
-      title: 'الرسائل',
-      subtitle: 'تواصل مع العمال الذين قمت بتوظيفهم',
-      searchPlaceholder: 'ابحث في المحادثات...',
-      typeMessage: 'اكتب رسالة...',
-      send: 'إرسال',
-      noConversations: 'لا توجد محادثات بعد',
-      noConversationsDesc: 'ابدأ في توظيف العمال للتواصل معهم',
-      online: 'متصل',
-      offline: 'غير متصل',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل الرسائل...',
-      noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث',
-      newMessage: 'رسالة جديدة من {name}',
-      acceptedOffer: 'لقد قبلت عرضاً من {name}',
-      typing: 'جاري الكتابة...',
-      premiumBadge: 'مميز',
-      getPremium: 'اشتراك مميز'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const formatSenderName = (senderName, senderRole) => {
     return formatDisplayName(senderName, senderRole);
@@ -461,7 +413,7 @@ const EmployerMessages = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerMessages.loading')}</p>
         </div>
       </div>
     );
@@ -474,7 +426,7 @@ const EmployerMessages = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerMessages.title')}
         notificationUserId={authUser?.id}
         isPremium={userIsPremium}
         rightContent={
@@ -484,7 +436,7 @@ const EmployerMessages = () => {
             className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-            {t.refresh}
+            {t('employerMessages.refresh')}
           </button>
         }
       />
@@ -498,7 +450,7 @@ const EmployerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={authUser.fullName || 'Employer'} 
+                      alt={authUser.fullName || t('employerMessages.employer')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -512,30 +464,30 @@ const EmployerMessages = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
+                    <h1 className="text-2xl font-bold">{t('employerMessages.title')}</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
+                        {t('employerMessages.premiumBadge')}
                       </span>
                     )}
                   </div>
-                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                  <p className="text-white/80 mt-1">{t('employerMessages.subtitle')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-white/90">
-                  {authUser?.fullName || 'Employer'}
+                  {authUser?.fullName || t('employerMessages.employer')}
                 </span>
                 <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
-                  {conversations.length} chats
+                  {t('employerMessages.chatCount', { count: conversations.length })}
                 </span>
                 <button
                   onClick={() => setShowSupportModal(true)}
                   className="bg-purple-500/30 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-purple-400/30"
                 >
                   <Shield size={12} />
-                  Contact Support
+                  {t('employerMessages.contactSupport')}
                 </button>
                 {!userIsPremium && (
                   <Link
@@ -543,7 +495,7 @@ const EmployerMessages = () => {
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
                   >
                     <Crown size={12} />
-                    {t.getPremium}
+                    {t('employerMessages.getPremium')}
                   </Link>
                 )}
               </div>
@@ -560,7 +512,7 @@ const EmployerMessages = () => {
                     <Search size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
-                      placeholder={t.searchPlaceholder}
+                      placeholder={t('employerMessages.searchPlaceholder')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -571,8 +523,8 @@ const EmployerMessages = () => {
                   {filteredConversations.length === 0 ? (
                     <div className="p-8 text-center">
                       <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noConversations}</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.noConversationsDesc}</p>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerMessages.noConversations')}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t('employerMessages.noConversationsDesc')}</p>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -604,7 +556,7 @@ const EmployerMessages = () => {
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-green-500">{t.online}</span>
+                            <span className="text-xs text-green-500">{t('employerMessages.online')}</span>
                             {conv.unread > 0 && (
                               <span className="px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">
                                 {conv.unread}
@@ -626,7 +578,7 @@ const EmployerMessages = () => {
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                       <div className="flex items-center gap-3">
                         <UserAvatar
-                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Worker'}
+                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || t('employerMessages.worker')}
                           image={conversations.find(c => c.id === selectedConversationId)?.avatar || null}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
                           size="md"
@@ -639,7 +591,7 @@ const EmployerMessages = () => {
                             size="sm"
                             className="text-gray-800 dark:text-white"
                           />
-                          <p className="text-xs text-green-500">{t.online}</p>
+                          <p className="text-xs text-green-500">{t('employerMessages.online')}</p>
                         </div>
                       </div>
                       <div className="flex gap-2 relative" ref={dropdownRef}>
@@ -677,21 +629,21 @@ const EmployerMessages = () => {
                               className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 dark:bg-red-900/30 flex items-center gap-2 transition"
                             >
                               <Trash2 size={16} />
-                              Delete Conversation
+                              {t('employerMessages.deleteConversation')}
                             </button>
                             <button
                               disabled
                               className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <Mail size={16} />
-                              Mark as unread
+                              {t('employerMessages.markAsUnread')}
                             </button>
                             <button
                               disabled
                               className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <UserIcon size={16} />
-                              View Worker Profile
+                              {t('employerMessages.viewWorkerProfile')}
                             </button>
                           </div>
                         )}
@@ -702,8 +654,8 @@ const EmployerMessages = () => {
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/20">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-                          <p>{t.noMessages}</p>
-                          <p className="text-sm">{t.startConversation}</p>
+                          <p>{t('employerMessages.noMessages')}</p>
+                          <p className="text-sm">{t('employerMessages.startConversation')}</p>
                         </div>
                       ) : (
                         messages.map((msg, index) => {
@@ -718,7 +670,7 @@ const EmployerMessages = () => {
                             >
                               {!isEmployer && showAvatar && (
                                 <UserAvatar
-                                  name={msg.senderName || 'User'}
+                                  name={msg.senderName || t('employerMessages.user')}
                                   image={msg.sender?.image || msg.sender?.profileImage || conversations.find(c => c.id === selectedConversationId)?.avatar || null}
                                   role={msg.senderRole}
                                   size="sm"
@@ -757,7 +709,7 @@ const EmployerMessages = () => {
                               </div>
                               {isEmployer && showAvatar && (
                                 <UserAvatar
-                                  name={authUser?.fullName || 'Employer'}
+                                  name={authUser?.fullName || t('employerMessages.employer')}
                                   image={authUser?.profileImage || null}
                                   role="EMPLOYER"
                                   size="sm"
@@ -782,7 +734,7 @@ const EmployerMessages = () => {
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
-                          placeholder={t.typeMessage}
+                          placeholder={t('employerMessages.typeMessage')}
                           className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         />
                         <button
@@ -791,7 +743,7 @@ const EmployerMessages = () => {
                           disabled={!message.trim()}
                         >
                           <Send size={18} />
-                          {t.send}
+                          {t('employerMessages.send')}
                         </button>
                       </form>
                     </div>
@@ -800,8 +752,8 @@ const EmployerMessages = () => {
                   <div className="flex-1 flex items-center justify-center text-center p-8">
                     <div>
                       <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Select a conversation</h3>
-                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Choose a conversation from the list to start messaging</p>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('employerMessages.selectConversation')}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerMessages.selectConversationDesc')}</p>
                     </div>
                   </div>
                 )}
@@ -814,7 +766,7 @@ const EmployerMessages = () => {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Contact Support</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t('employerMessages.contactSupport')}</h3>
                   <button
                     onClick={() => setShowSupportModal(false)}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -822,7 +774,7 @@ const EmployerMessages = () => {
                     <X size={24} />
                   </button>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Select a support agent to start a conversation:</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{t('employerMessages.selectSupportAgent')}</p>
                 <div className="space-y-2">
                   {supportUsers.map((user) => (
                     <button
