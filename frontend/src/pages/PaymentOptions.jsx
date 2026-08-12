@@ -64,6 +64,16 @@ const PaymentOptions = () => {
   const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
 
+  const displayWorkerName = workerData?.workerNameIsFallback
+    ? t('sharedUserDisplay.roles.worker')
+    : workerData?.workerName;
+  const displayJobTitle = workerData?.desiredJobIsFallback
+    ? t('paymentOptionsPage.serviceProvider')
+    : workerData?.desiredJob || t('paymentOptionsPage.serviceProvider');
+  const displayWorkerLocation = workerData?.workerLocationIsFallback
+    ? t('paymentOptionsPage.locationNotSpecified')
+    : workerData?.workerLocation || t('paymentOptionsPage.locationNotSpecified');
+
   // Guard against double-processing (polling + popup-return can both fire).
   const paymentProcessedRef = useRef(false);
 
@@ -837,7 +847,7 @@ const PaymentOptions = () => {
                   {workerData?.profileImage ? (
                     <img 
                       src={workerData.profileImage} 
-                      alt={workerData?.workerName} 
+                      alt={displayWorkerName}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -845,15 +855,15 @@ const PaymentOptions = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">{workerData?.workerName}</h3>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">{displayWorkerName}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Briefcase size={14} />
-                    <span>{workerData?.desiredJob || t('paymentOptionsPage.serviceProvider')}</span>
+                    <span>{displayJobTitle}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <span className="flex items-center gap-1">
                       <MapPin size={14} />
-                      {workerData?.workerLocation || t('paymentOptionsPage.locationNotSpecified')}
+                      {displayWorkerLocation}
                     </span>
                     <span className="flex items-center gap-1">
                       <Star size={14} className="text-yellow-500" />

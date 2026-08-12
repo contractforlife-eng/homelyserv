@@ -129,6 +129,7 @@ const EmployerDashboard = () => {
             id: offer.hireId || offer.id,
             workerId: workerId,
             workerName: offer.workerName || 'Worker',
+            workerNameIsFallback: !offer.workerName,
             status: offer.status === 'hired' ? 'active' : offer.status,
             startDate: offer.hiredAt || offer.createdAt,
             salary: offer.amount || 0,
@@ -175,7 +176,11 @@ const EmployerDashboard = () => {
           activities.push({
             icon: 'hire',
             messageKey: 'employerDashboard.activityHired',
-            messageValues: { worker: hire.workerName },
+            messageValues: {
+              worker: hire.workerNameIsFallback
+                ? t('sharedUserDisplay.roles.worker')
+                : hire.workerName
+            },
             time: hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'recently',
             status: hire.status === 'active' ? 'Active' : hire.status === 'completed' ? 'Completed' : 'Pending',
             statusKey: hire.status === 'active' ? 'active' : hire.status === 'completed' ? 'completed' : 'pending'
