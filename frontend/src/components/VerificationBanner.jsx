@@ -7,8 +7,10 @@ import { X, MailWarning, RefreshCw } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 function VerificationBanner() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [dismissed, setDismissed] = useState(false);
@@ -24,14 +26,14 @@ function VerificationBanner() {
     try {
       const response = await api.post('/api/auth/resend-verification');
       if (response.data?.success) {
-        toast.success('Verification email sent. Please check your inbox.');
+        toast.success(t('sharedChrome.verification.emailSent'));
       } else if (response.data?.status === 'rate_limited') {
-        toast.error(response.data.message || 'Please wait before requesting another email.');
+        toast.error(response.data.message || t('sharedChrome.verification.waitBeforeResend'));
       } else {
-        toast.success('Verification email sent. Please check your inbox.');
+        toast.success(t('sharedChrome.verification.emailSent'));
       }
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to resend verification email.';
+      const message = err.response?.data?.message || t('sharedChrome.verification.resendFailed');
       toast.error(message);
     } finally {
       setResending(false);
@@ -44,7 +46,7 @@ function VerificationBanner() {
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <MailWarning size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-200 font-medium truncate">
-            Your email address has not been verified.
+            {t('sharedChrome.verification.notVerified')}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -52,7 +54,7 @@ function VerificationBanner() {
             onClick={() => navigate('/verify-email')}
             className="px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
           >
-            Verify Now
+            {t('sharedChrome.verification.verifyNow')}
           </button>
           <button
             onClick={handleResend}
@@ -62,19 +64,19 @@ function VerificationBanner() {
             {resending ? (
               <>
                 <RefreshCw size={12} className="animate-spin" />
-                Sending...
+                {t('sharedChrome.verification.sending')}
               </>
             ) : (
               <>
                 <RefreshCw size={12} />
-                Resend Email
+                {t('sharedChrome.verification.resendEmail')}
               </>
             )}
           </button>
           <button
             onClick={() => setDismissed(true)}
             className="p-1.5 text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
-            aria-label="Dismiss"
+            aria-label={t('sharedChrome.verification.dismiss')}
           >
             <X size={16} />
           </button>

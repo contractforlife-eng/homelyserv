@@ -14,8 +14,10 @@ import {
 import { onSocketEvent } from '../utils/socket';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { useTranslation } from 'react-i18next';
 
 const NotificationBell = ({ userId: userIdProp, className = '' }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   // Use the userId prop if provided, otherwise fall back to the authenticated user's id
@@ -116,7 +118,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
 
   // Handle clearing all
   const handleClearAll = () => {
-    if (window.confirm('Clear all notifications?')) {
+    if (window.confirm(t('sharedChrome.notifications.clearConfirm'))) {
       clearAllNotifications();
       loadNotifications();
     }
@@ -141,10 +143,10 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
     const now = new Date();
     const diff = now - date;
     
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    if (diff < 60000) return t('sharedChrome.notifications.justNow');
+    if (diff < 3600000) return t('sharedChrome.notifications.minutesAgo', { count: Math.floor(diff / 60000) });
+    if (diff < 86400000) return t('sharedChrome.notifications.hoursAgo', { count: Math.floor(diff / 3600000) });
+    if (diff < 604800000) return t('sharedChrome.notifications.daysAgo', { count: Math.floor(diff / 86400000) });
     return date.toLocaleDateString();
   };
 
@@ -160,7 +162,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
         ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        aria-label="Notifications"
+        aria-label={t('sharedChrome.notifications.title')}
       >
         <Bell size={20} className="text-gray-600" />
         {unreadCount > 0 && (
@@ -179,10 +181,10 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-800">Notifications</h3>
+              <h3 className="font-semibold text-gray-800">{t('sharedChrome.notifications.title')}</h3>
               {unreadCount > 0 && (
                 <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {unreadCount} unread
+                  {t('sharedChrome.notifications.unreadCount', { count: unreadCount })}
                 </span>
               )}
             </div>
@@ -193,7 +195,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                   className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-xs text-gray-600 flex items-center gap-1"
                 >
                   <CheckCheck size={14} />
-                  <span>Mark all read</span>
+                  <span>{t('sharedChrome.notifications.markAllRead')}</span>
                 </button>
               )}
               {notifications.length > 0 && (
@@ -202,7 +204,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                   className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-xs text-red-600 flex items-center gap-1"
                 >
                   <Trash2 size={14} />
-                  <span>Clear all</span>
+                  <span>{t('sharedChrome.notifications.clearAll')}</span>
                 </button>
               )}
             </div>
@@ -217,8 +219,8 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-gray-500">
                 <Bell size={40} className="text-gray-300 mb-2" />
-                <p className="text-sm">No notifications yet</p>
-                <p className="text-xs mt-1">We'll notify you when something happens</p>
+                <p className="text-sm">{t('sharedChrome.notifications.empty')}</p>
+                <p className="text-xs mt-1">{t('sharedChrome.notifications.emptyDescription')}</p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -251,7 +253,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                       {notification.link && (
                         <span className="text-[10px] text-teal-600 flex items-center gap-0.5">
                           <ExternalLink size={10} />
-                          View
+                          {t('sharedChrome.notifications.view')}
                         </span>
                       )}
                     </div>
@@ -264,7 +266,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                           handleMarkAsRead(notification.id);
                         }}
                         className="p-1 hover:bg-blue-100 rounded transition-colors text-blue-600"
-                        title="Mark as read"
+                        title={t('sharedChrome.notifications.markAsRead')}
                       >
                         <Check size={12} />
                       </button>
@@ -272,7 +274,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                     <button
                       onClick={(e) => handleDelete(notification.id, e)}
                       className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
-                      title="Delete"
+                      title={t('sharedChrome.notifications.delete')}
                     >
                       <X size={12} />
                     </button>
@@ -292,7 +294,7 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
                 }}
                 className="text-xs text-teal-600 hover:text-teal-700 transition-colors"
               >
-                View all notifications
+                {t('sharedChrome.notifications.viewAll')}
               </button>
             </div>
           )}

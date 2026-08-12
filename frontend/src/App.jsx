@@ -76,9 +76,11 @@ import SupportComplaints from './pages/support/SupportComplaints';
 import SupportProfile from './pages/support/SupportProfile';
 
 import { useAuth } from './context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // Messages Redirect Component
 const MessagesRedirect = () => {
+  const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   
@@ -111,7 +113,7 @@ const role = user.role?.toUpperCase();
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Redirecting to your messages...</p>
+        <p className="mt-4 text-gray-600">{t('sharedChrome.app.redirectingMessages')}</p>
       </div>
     </div>
   );
@@ -119,6 +121,7 @@ const role = user.role?.toUpperCase();
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requiredRole }) => {
+  const { t } = useTranslation();
   const { user, isAuthenticated, loading } = useAuth();
   
   // Only block during initial unresolved authentication
@@ -128,7 +131,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t('sharedChrome.app.loading')}</p>
         </div>
       </div>
     );
@@ -143,7 +146,7 @@ if (!isAuthenticated) {
        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
          <div className="text-center">
            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-           <p className="mt-4 text-gray-600">Loading...</p>
+           <p className="mt-4 text-gray-600">{t('sharedChrome.app.loading')}</p>
          </div>
        </div>
      );

@@ -7,6 +7,7 @@ import { getDisplayName } from '../../utils/userDisplay';
 import NotificationBell from '../NotificationBell';
 import { useDashboard } from './DashboardContext';
 import LanguageSwitcher from '../LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 import {
   Menu,
   Bell,
@@ -25,7 +26,7 @@ const DashboardHeader = ({
   rightContent,
   userProfileImage,
   isPremium: isPremiumProp,
-  premiumBadgeText = 'Premium',
+  premiumBadgeText,
   notificationUserId,
   onToggleNotifications,
   isNotificationsOpen,
@@ -34,13 +35,14 @@ const DashboardHeader = ({
   onMarkAllRead,
   getNotificationIcon,
   getNotificationBgColor,
-  noNotificationsText = 'No notifications',
-  viewAllText = 'View All',
-  markAllReadText = 'Mark All Read',
-  notificationsText = 'Notifications',
+  noNotificationsText,
+  viewAllText,
+  markAllReadText,
+  notificationsText,
   customNotificationComponent,
   variant = 'default'
 }) => {
+  const { t } = useTranslation();
   // Consume layout state from DashboardLayout context
   const dashboard = useDashboard();
   const authUser = useAuthStore(state => state.user);
@@ -58,7 +60,8 @@ const DashboardHeader = ({
   })();
 
   const profileImage = userProfileImage || authUser?.profileImage;
-  const fullName = authUser?.fullName || 'User';
+  const fullName = authUser?.fullName || t('sharedChrome.header.user');
+  const resolvedPremiumBadgeText = premiumBadgeText || t('sharedChrome.header.premium');
   // Role-aware variant: 'admin' is explicit (dark), otherwise derive from the
   // authenticated role so Worker gets the red identity and Employer the teal one.
   const effectiveVariant =
@@ -74,7 +77,9 @@ const DashboardHeader = ({
   const isWorker = effectiveVariant === 'worker';
   
   // Use centralized display name formatter
-  const displayName = getDisplayName(authUser);
+  const displayName = authUser?.fullName || authUser?.name
+    ? getDisplayName(authUser)
+    : t('sharedChrome.header.user');
 
   return (
     <header className={`sticky top-0 z-30 ${
@@ -87,7 +92,7 @@ const DashboardHeader = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={handleToggleMenu}
-            aria-label="Toggle menu"
+            aria-label={t('sharedChrome.header.toggleMenu')}
             className={`p-2 rounded-lg transition-colors lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center ${
               isAdmin
                 ? 'hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500'
@@ -143,7 +148,7 @@ const DashboardHeader = ({
                     : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
                 }`}>
                   <Crown size={10} className={isAdmin ? 'text-yellow-400' : 'text-yellow-500'} />
-                  {premiumBadgeText}
+                  {resolvedPremiumBadgeText}
                 </span>
               )}
             </div>
