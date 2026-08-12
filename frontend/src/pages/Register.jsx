@@ -521,9 +521,9 @@ function Register() {
 
           {/* Login Link */}
           <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
-            {t('alreadyHaveAccount')}{' '}
+            {t('auth.alreadyHaveAccount')}{' '}
             <Link to="/login" className="text-red-600 font-semibold hover:text-red-700 transition-colors hover:underline">
-              {t('signInLink')}
+              {t('auth.signInLink')}
             </Link>
           </p>
 

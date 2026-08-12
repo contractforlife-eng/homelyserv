@@ -125,7 +125,7 @@ function ForgotPassword() {
         )}
 
         <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
-          {t('rememberPassword')} <Link to="/login" className="text-red-600 font-semibold hover:underline">{t('signInLink')}</Link>
+          {t('rememberPassword')} <Link to="/login" className="text-red-600 font-semibold hover:underline">{t('auth.signInLink')}</Link>
         </p>
       </div>
 
