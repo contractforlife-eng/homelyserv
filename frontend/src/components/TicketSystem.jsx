@@ -5,6 +5,7 @@
 // Reuses the existing complaint API. No backend changes.
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   AlertTriangle,
@@ -67,6 +68,26 @@ const THEMES = {
   }
 };
 
+const DATE_LOCALES = {
+  en: 'en-US',
+  ar: 'ar-EG',
+  fr: 'fr-FR',
+  ru: 'ru-RU',
+  tr: 'tr-TR',
+  de: 'de-DE'
+};
+
+const CATEGORY_KEYS = {
+  Payments: 'payments',
+  Account: 'account',
+  Hiring: 'hiring',
+  Messages: 'messages',
+  'Technical Issue': 'technicalIssue',
+  Abuse: 'abuse',
+  Fraud: 'fraud',
+  Other: 'other'
+};
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -78,9 +99,9 @@ const getTicketNumber = (ticket) => {
   return `HS-${String(ticket?.id || '').slice(-6) || '000000'}`;
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
+const formatDate = (dateString, locale, fallback) => {
+  if (!dateString) return fallback;
+  return new Date(dateString).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -89,9 +110,9 @@ const formatDate = (dateString) => {
   });
 };
 
-const formatShortDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
+const formatShortDate = (dateString, locale, fallback) => {
+  if (!dateString) return fallback;
+  return new Date(dateString).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
@@ -102,7 +123,18 @@ const formatShortDate = (dateString) => {
 // MAIN COMPONENT
 // ============================================================
 const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
+  const { t, i18n } = useTranslation();
   const th = THEMES[theme] || THEMES.red;
+  const languageCode = i18n.language?.split('-')[0] || 'en';
+  const dateLocale = DATE_LOCALES[languageCode] || DATE_LOCALES.en;
+  const formatTicketDate = (dateString) => formatDate(dateString, dateLocale, t('ticketSystem.notAvailable'));
+  const formatTicketShortDate = (dateString) => formatShortDate(dateString, dateLocale, t('ticketSystem.notAvailable'));
+  const getStatusDisplayLabel = (status) => t(`ticketSystem.statusValues.${status}`, { defaultValue: status });
+  const getPriorityDisplayLabel = (priority) => t(`ticketSystem.priorityValues.${priority}`, { defaultValue: priority });
+  const getCategoryDisplayLabel = (category) => {
+    const categoryKey = CATEGORY_KEYS[category];
+    return categoryKey ? t(`ticketSystem.categoryValues.${categoryKey}`) : category;
+  };
 
   // State
   const [tickets, setTickets] = useState([]);
@@ -128,161 +160,6 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     priority: 'Medium',
     attachments: []
   });
-
-  // Translations
-  const translations = {
-    en: {
-      title: 'Support Tickets',
-      subtitle: 'Submit and track your support tickets',
-      newTicket: 'New Ticket',
-      cancel: 'Cancel',
-      stats: { total: 'Total Tickets', open: 'Open', inProgress: 'In Progress', resolved: 'Resolved' },
-      filters: {
-        all: 'All Tickets', new: 'New', open: 'Open', inProgress: 'In Progress',
-        waiting: 'Waiting for User', escalated: 'Escalated', resolved: 'Resolved', closed: 'Closed',
-        allPriorities: 'All Priorities'
-      },
-      searchPlaceholder: 'Search tickets...',
-      ticketId: 'Ticket ID',
-      subject: 'Subject',
-      category: 'Category',
-      status: 'Status',
-      priority: 'Priority',
-      assigned: 'Assigned Support',
-      unassigned: 'Unassigned',
-      supportTeam: 'Support Team',
-      created: 'Created',
-      lastUpdate: 'Last Update',
-      description: 'Description',
-      attachments: 'Attachments',
-      noAttachments: 'No attachments',
-      timeline: 'Timeline',
-      conversation: 'Conversation',
-      reply: 'Reply',
-      replyPlaceholder: 'Type your reply...',
-      sendReply: 'Send Reply',
-      viewDetails: 'View Details',
-      close: 'Close',
-      reopen: 'Reopen Ticket',
-      confirmReopen: 'Are you sure you want to reopen this ticket?',
-      confirm: 'Confirm',
-      noTickets: 'No tickets found',
-      noTicketsDesc: 'Submit a ticket and our support team will help you',
-      loading: 'Loading tickets...',
-      showing: 'Showing',
-      tickets: 'tickets',
-      replySent: 'Reply sent successfully',
-      replyFailed: 'Failed to send reply',
-      ticketCreated: 'Ticket submitted successfully',
-      ticketFailed: 'Failed to submit ticket',
-      reopened: 'Ticket reopened. Support will respond shortly.',
-      reopenFailed: 'Failed to reopen ticket',
-      submitting: 'Submitting...',
-      sending: 'Sending...',
-      reopening: 'Reopening...',
-      titleLabel: 'Subject',
-      categoryLabel: 'Category',
-      priorityLabel: 'Priority',
-      descriptionLabel: 'Description',
-      attachmentsLabel: 'Attachments (optional)',
-      submit: 'Submit Ticket',
-      you: 'You',
-      system: 'System',
-      admin: 'Admin',
-      support: 'Support',
-      eventLabels: {
-        CREATED: 'Ticket Created',
-        USER_REPLIED: 'You Replied',
-        SUPPORT_REPLIED: 'Support Replied',
-        ADMIN_REPLIED: 'Admin Replied',
-        ASSIGNED: 'Support Assigned',
-        STATUS_CHANGED: 'Status Changed',
-        ESCALATED: 'Escalated',
-        RESOLVED: 'Resolved',
-        CLOSED: 'Closed',
-        NOTE_ADDED: 'Internal Note Added',
-        REASSIGNED: 'Reassigned',
-        RETURNED_TO_SUPPORT: 'Returned to Support'
-      }
-    },
-    ar: {
-      title: 'تذاكر الدعم',
-      subtitle: 'تقديم وتتبع تذاكر الدعم الخاصة بك',
-      newTicket: 'تذكرة جديدة',
-      cancel: 'إلغاء',
-      stats: { total: 'إجمالي التذاكر', open: 'مفتوحة', inProgress: 'قيد المعالجة', resolved: 'تم الحل' },
-      filters: {
-        all: 'جميع التذاكر', new: 'جديدة', open: 'مفتوحة', inProgress: 'قيد المعالجة',
-        waiting: 'بانتظار المستخدم', escalated: 'مرفوعة', resolved: 'تم الحل', closed: 'مغلقة',
-        allPriorities: 'جميع الأولويات'
-      },
-      searchPlaceholder: 'ابحث في التذاكر...',
-      ticketId: 'رقم التذكرة',
-      subject: 'الموضوع',
-      category: 'الفئة',
-      status: 'الحالة',
-      priority: 'الأولوية',
-      assigned: 'الدعم المعين',
-      unassigned: 'غير معين',
-      supportTeam: 'فريق الدعم',
-      created: 'تاريخ الإنشاء',
-      lastUpdate: 'آخر تحديث',
-      description: 'الوصف',
-      attachments: 'المرفقات',
-      noAttachments: 'لا توجد مرفقات',
-      timeline: 'الخط الزمني',
-      conversation: 'المحادثة',
-      reply: 'رد',
-      replyPlaceholder: 'اكتب ردك...',
-      sendReply: 'إرسال الرد',
-      viewDetails: 'عرض التفاصيل',
-      close: 'إغلاق',
-      reopen: 'إعادة فتح التذكرة',
-      confirmReopen: 'هل أنت متأكد من إعادة فتح هذه التذكرة؟',
-      confirm: 'تأكيد',
-      noTickets: 'لا توجد تذاكر',
-      noTicketsDesc: 'قدم تذكرة وسيساعدك فريق الدعم',
-      loading: 'جاري تحميل التذاكر...',
-      showing: 'عرض',
-      tickets: 'تذاكر',
-      replySent: 'تم إرسال الرد بنجاح',
-      replyFailed: 'فشل إرسال الرد',
-      ticketCreated: 'تم تقديم التذكرة بنجاح',
-      ticketFailed: 'فشل تقديم التذكرة',
-      reopened: 'تم إعادة فتح التذكرة. سيرد الدعم قريباً.',
-      reopenFailed: 'فشل إعادة فتح التذكرة',
-      submitting: 'جاري التقديم...',
-      sending: 'جاري الإرسال...',
-      reopening: 'جاري إعادة الفتح...',
-      titleLabel: 'الموضوع',
-      categoryLabel: 'الفئة',
-      priorityLabel: 'الأولوية',
-      descriptionLabel: 'الوصف',
-      attachmentsLabel: 'المرفقات (اختياري)',
-      submit: 'تقديم التذكرة',
-      you: 'أنت',
-      system: 'النظام',
-      admin: 'المشرف',
-      support: 'الدعم',
-      eventLabels: {
-        CREATED: 'تم إنشاء التذكرة',
-        USER_REPLIED: 'قمت بالرد',
-        SUPPORT_REPLIED: 'رد الدعم',
-        ADMIN_REPLIED: 'رد المشرف',
-        ASSIGNED: 'تم تعيين الدعم',
-        STATUS_CHANGED: 'تغيرت الحالة',
-        ESCALATED: 'تم الرفع',
-        RESOLVED: 'تم الحل',
-        CLOSED: 'مغلقة',
-        NOTE_ADDED: 'تمت إضافة ملاحظة',
-        REASSIGNED: 'تمت إعادة التعيين',
-        RETURNED_TO_SUPPORT: 'أعيدت للدعم'
-      }
-    }
-  };
-
-  const lang = localStorage.getItem('homelyserv_language') === 'ar' ? 'ar' : 'en';
-  const t = translations[lang];
 
   // ============================================================
   // LOAD TICKETS
@@ -363,7 +240,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         }
       } catch (error) {
         console.error('❌ Error uploading attachment:', error);
-        setNotification({ type: 'error', text: 'Failed to upload attachment' });
+        setNotification({ type: 'error', text: t('ticketSystem.attachmentUploadFailed') });
       }
     }
   };
@@ -384,14 +261,14 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         attachments: newTicket.attachments
       });
       if (data?.success) {
-        setNotification({ type: 'success', text: t.ticketCreated });
+        setNotification({ type: 'success', text: t('ticketSystem.ticketCreated') });
         setNewTicket({ subject: '', description: '', category: 'Other', priority: 'Medium', attachments: [] });
         setShowCreate(false);
         loadTickets();
       }
     } catch (error) {
       console.error('❌ Error creating ticket:', error);
-      setNotification({ type: 'error', text: t.ticketFailed });
+      setNotification({ type: 'error', text: t('ticketSystem.ticketFailed') });
     } finally {
       setSubmitting(false);
     }
@@ -425,7 +302,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     try {
       const data = await complaintsService.userReplyToComplaint(selected.id, replyText);
       if (data?.success) {
-        setNotification({ type: 'success', text: t.replySent });
+        setNotification({ type: 'success', text: t('ticketSystem.replySent') });
         setReplyText('');
         setSelected(data.complaint);
         const detail = await complaintsService.getComplaintById(selected.id);
@@ -437,7 +314,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       }
     } catch (error) {
       console.error('❌ Error sending reply:', error);
-      setNotification({ type: 'error', text: t.replyFailed });
+      setNotification({ type: 'error', text: t('ticketSystem.replyFailed') });
     } finally {
       setSendingReply(false);
     }
@@ -456,7 +333,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       if (data?.success) {
         setSelected(prev => ({ ...prev, status: 'IN_PROGRESS' }));
         setTickets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'IN_PROGRESS' } : t));
-        setNotification({ type: 'success', text: t.reopened });
+        setNotification({ type: 'success', text: t('ticketSystem.reopened') });
         const detail = await complaintsService.getComplaintById(selected.id);
         if (detail?.success) {
           setSelected(detail.complaint);
@@ -465,7 +342,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       }
     } catch (error) {
       console.error('❌ Error reopening ticket:', error);
-      setNotification({ type: 'error', text: t.reopenFailed });
+      setNotification({ type: 'error', text: t('ticketSystem.reopenFailed') });
     } finally {
       setReopening(false);
     }
@@ -499,7 +376,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     const messages = [
       {
         id: 'original',
-        authorName: selected?.User?.fullName || t.you,
+        authorName: selected?.User?.fullName || t('ticketSystem.you'),
         authorRole: userRole,
         message: selected?.description || '',
         attachments: selected?.attachments || [],
@@ -521,7 +398,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       <div className="space-y-3">
         {messages.map((msg, index) => {
           const isMine = msg.isOriginal || ['WORKER', 'EMPLOYER'].includes(msg.authorRole);
-          const authorLabel = msg.authorName || (isMine ? t.you : t.support);
+          const authorLabel = msg.authorName || (isMine ? t('ticketSystem.you') : t('ticketSystem.support'));
           const bubbleClass = isMine
             ? `ml-auto ${th.bubble} border`
             : 'mr-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
@@ -537,7 +414,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                     className={isMine ? th.textDark : 'text-gray-700 dark:text-gray-200'}
                   />
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                    {formatDate(msg.createdAt)}
+                    {formatTicketDate(msg.createdAt)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
@@ -553,7 +430,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                         rel="noopener noreferrer"
                         className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
                       >
-                        <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={t('ticketSystem.attachmentAlt', { number: i + 1 })} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -573,7 +450,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
     if (!timeline.length) {
       return (
         <div className="text-center py-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">No timeline events</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('ticketSystem.noTimelineEvents')}</p>
         </div>
       );
     }
@@ -589,10 +466,10 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
             <div className="flex-1 pb-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {t.eventLabels[event.action] || event.action}
+                  {t(`ticketSystem.eventLabels.${event.action}`, { defaultValue: event.action })}
                 </p>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {formatShortDate(event.createdAt)}
+                  {formatTicketShortDate(event.createdAt)}
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -631,8 +508,8 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               <LifeBuoy size={24} className="text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-white/80 mt-1">{t.subtitle}</p>
+              <h1 className="text-2xl font-bold">{t('ticketSystem.title')}</h1>
+              <p className="text-white/80 mt-1">{t('ticketSystem.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -647,7 +524,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               className={`${th.headerBtn} px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm`}
             >
               {showCreate ? <X size={16} /> : <AlertTriangle size={16} />}
-              {showCreate ? t.cancel : t.newTicket}
+              {showCreate ? t('ticketSystem.cancel') : t('ticketSystem.newTicket')}
             </button>
           </div>
         </div>
@@ -656,10 +533,10 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: t.stats.total, value: stats.total, icon: Inbox, color: th.text, bg: th.bg },
-          { label: t.stats.open, value: stats.open, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
-          { label: t.stats.inProgress, value: stats.inProgress, icon: AlertCircle, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-          { label: t.stats.resolved, value: stats.resolved, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' }
+          { label: t('ticketSystem.stats.total'), value: stats.total, icon: Inbox, color: th.text, bg: th.bg },
+          { label: t('ticketSystem.stats.open'), value: stats.open, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
+          { label: t('ticketSystem.stats.inProgress'), value: stats.inProgress, icon: AlertCircle, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+          { label: t('ticketSystem.stats.resolved'), value: stats.resolved, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' }
         ].map((s, i) => (
           <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
@@ -678,12 +555,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <FileText size={18} className={th.text} />
-            {t.newTicket}
+            {t('ticketSystem.newTicket')}
           </h3>
           <form onSubmit={handleCreate}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.titleLabel} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ticketSystem.titleLabel')} *</label>
                 <input
                   type="text"
                   name="subject"
@@ -694,7 +571,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.categoryLabel} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ticketSystem.categoryLabel')} *</label>
                 <select
                   name="category"
                   value={newTicket.category}
@@ -703,12 +580,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                   className={`w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 ${th.ring} focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                 >
                   {complaintsService.COMPLAINT_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat} value={cat}>{getCategoryDisplayLabel(cat)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.priorityLabel} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ticketSystem.priorityLabel')} *</label>
                 <select
                   name="priority"
                   value={newTicket.priority}
@@ -717,12 +594,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                   className={`w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 ${th.ring} focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                 >
                   {complaintsService.COMPLAINT_PRIORITIES.map(pri => (
-                    <option key={pri} value={pri}>{pri}</option>
+                    <option key={pri} value={pri}>{getPriorityDisplayLabel(pri)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.attachmentsLabel}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ticketSystem.attachmentsLabel')}</label>
                 <input
                   type="file"
                   multiple
@@ -733,7 +610,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {newTicket.attachments.map((url, index) => (
                       <div key={index} className="relative">
-                        <img src={url} alt={`Attachment ${index + 1}`} className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
+                        <img src={url} alt={t('ticketSystem.attachmentAlt', { number: index + 1 })} className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                         <button
                           type="button"
                           onClick={() => removeAttachment(index)}
@@ -748,7 +625,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               </div>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.descriptionLabel} *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ticketSystem.descriptionLabel')} *</label>
               <textarea
                 name="description"
                 value={newTicket.description}
@@ -765,14 +642,14 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 className={`px-6 py-2 ${th.button} text-white rounded-lg ${th.buttonHover} transition flex items-center gap-2 disabled:opacity-50`}
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                {submitting ? t.submitting : t.submit}
+                {submitting ? t('ticketSystem.submitting') : t('ticketSystem.submit')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
                 className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
               >
-                {t.cancel}
+                {t('ticketSystem.cancel')}
               </button>
             </div>
           </form>
@@ -786,7 +663,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
-              placeholder={t.searchPlaceholder}
+              placeholder={t('ticketSystem.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 ${th.ring} focus:border-transparent`}
@@ -798,23 +675,23 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              <option value="all">{t.filters.all}</option>
-              <option value="NEW">{t.filters.new}</option>
-              <option value="OPEN">{t.filters.open}</option>
-              <option value="IN_PROGRESS">{t.filters.inProgress}</option>
-              <option value="WAITING_FOR_USER">{t.filters.waiting}</option>
-              <option value="ESCALATED">{t.filters.escalated}</option>
-              <option value="RESOLVED">{t.filters.resolved}</option>
-              <option value="CLOSED">{t.filters.closed}</option>
+              <option value="all">{t('ticketSystem.filters.all')}</option>
+              <option value="NEW">{t('ticketSystem.filters.new')}</option>
+              <option value="OPEN">{t('ticketSystem.filters.open')}</option>
+              <option value="IN_PROGRESS">{t('ticketSystem.filters.inProgress')}</option>
+              <option value="WAITING_FOR_USER">{t('ticketSystem.filters.waiting')}</option>
+              <option value="ESCALATED">{t('ticketSystem.filters.escalated')}</option>
+              <option value="RESOLVED">{t('ticketSystem.filters.resolved')}</option>
+              <option value="CLOSED">{t('ticketSystem.filters.closed')}</option>
             </select>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              <option value="all">{t.filters.allPriorities}</option>
+              <option value="all">{t('ticketSystem.filters.allPriorities')}</option>
               {complaintsService.COMPLAINT_PRIORITIES.map(p => (
-                <option key={p} value={p}>{p}</option>
+                <option key={p} value={p}>{getPriorityDisplayLabel(p)}</option>
               ))}
             </select>
           </div>
@@ -824,7 +701,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       {/* Results Count */}
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t.showing} <span className="font-semibold text-gray-700 dark:text-gray-300">{filtered.length}</span> {t.tickets}
+          {t('ticketSystem.showing')} <span className="font-semibold text-gray-700 dark:text-gray-300">{filtered.length}</span> {t('ticketSystem.tickets')}
         </p>
       </div>
 
@@ -832,24 +709,24 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
       {loading ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
           <Loader2 size={32} className={`animate-spin mx-auto ${th.text}`} />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">{t.loading}</p>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">{t('ticketSystem.loading')}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
           <div className="text-6xl mb-4">🎫</div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noTickets}</h3>
-          <p className="text-gray-500 dark:text-gray-400">{t.noTicketsDesc}</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('ticketSystem.noTickets')}</h3>
+          <p className="text-gray-500 dark:text-gray-400">{t('ticketSystem.noTicketsDesc')}</p>
           <button
             onClick={() => setShowCreate(true)}
             className={`mt-4 px-6 py-2 ${th.button} text-white rounded-lg ${th.buttonHover} transition-colors`}
           >
-            {t.newTicket}
+            {t('ticketSystem.newTicket')}
           </button>
         </div>
       ) : (
         <div className="space-y-4">
           {filtered.map((ticket) => {
-            const assignedName = ticket.assignedSupport?.fullName || t.unassigned;
+            const assignedName = ticket.assignedSupport?.fullName || t('ticketSystem.unassigned');
             return (
               <div
                 key={ticket.id}
@@ -864,15 +741,15 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                       {getTicketNumber(ticket)}
                     </span>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(ticket.status)}`}>
-                      {complaintsService.getStatusLabel(ticket.status)}
+                      {getStatusDisplayLabel(ticket.status)}
                     </span>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(ticket.priority)}`}>
                       <Flag size={12} />
-                      {complaintsService.getPriorityLabel(ticket.priority)}
+                      {getPriorityDisplayLabel(ticket.priority)}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                       <FileText size={12} />
-                      {ticket.category}
+                      {getCategoryDisplayLabel(ticket.category)}
                     </span>
                   </div>
 
@@ -884,20 +761,20 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                   <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
                     <span className="inline-flex items-center gap-1">
                       <LifeBuoy size={12} />
-                      {t.assigned}: <span className="font-medium text-gray-700 dark:text-gray-200">{assignedName}</span>
+                      {t('ticketSystem.assigned')}: <span className="font-medium text-gray-700 dark:text-gray-200">{assignedName}</span>
                     </span>
                     <span className="text-gray-300 dark:text-gray-600">|</span>
                     <span className="inline-flex items-center gap-1">
                       <Calendar size={12} />
-                      {t.created}: {formatShortDate(ticket.createdAt)}
+                      {t('ticketSystem.created')}: {formatTicketShortDate(ticket.createdAt)}
                     </span>
                     <span className="text-gray-300 dark:text-gray-600">|</span>
                     <span className="inline-flex items-center gap-1">
                       <Clock size={12} />
-                      {t.lastUpdate}: {formatShortDate(ticket.updatedAt)}
+                      {t('ticketSystem.lastUpdate')}: {formatTicketShortDate(ticket.updatedAt)}
                     </span>
                     <span className="ml-auto inline-flex items-center gap-1 text-gray-400 dark:text-gray-500">
-                      {t.viewDetails}
+                      {t('ticketSystem.viewDetails')}
                       <ChevronDown size={14} />
                     </span>
                   </div>
@@ -923,7 +800,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                     {getTicketNumber(selected)}
                   </span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(selected.status)}`}>
-                    {complaintsService.getStatusLabel(selected.status)}
+                    {getStatusDisplayLabel(selected.status)}
                   </span>
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{selected.subject}</h2>
@@ -942,56 +819,56 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Flag size={12} />
-                    {t.priority}
+                    {t('ticketSystem.priority')}
                   </p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selected.priority)}`}>
-                    {complaintsService.getPriorityLabel(selected.priority)}
+                    {getPriorityDisplayLabel(selected.priority)}
                   </span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <FileText size={12} />
-                    {t.category}
+                    {t('ticketSystem.category')}
                   </p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{selected.category}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{getCategoryDisplayLabel(selected.category)}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <LifeBuoy size={12} />
-                    {t.assigned}
+                    {t('ticketSystem.assigned')}
                   </p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                    {selected.assignedSupport?.fullName || t.unassigned}
+                    {selected.assignedSupport?.fullName || t('ticketSystem.unassigned')}
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Calendar size={12} />
-                    {t.created}
+                    {t('ticketSystem.created')}
                   </p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{formatDate(selected.createdAt)}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{formatTicketDate(selected.createdAt)}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Clock size={12} />
-                    {t.lastUpdate}
+                    {t('ticketSystem.lastUpdate')}
                   </p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{formatDate(selected.updatedAt)}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{formatTicketDate(selected.updatedAt)}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Shield size={12} />
-                    {t.status}
+                    {t('ticketSystem.status')}
                   </p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getStatusBadgeClass(selected.status)}`}>
-                    {complaintsService.getStatusLabel(selected.status)}
+                    {getStatusDisplayLabel(selected.status)}
                   </span>
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.description}</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('ticketSystem.description')}</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg p-4 whitespace-pre-wrap">
                   {selected.description}
                 </p>
@@ -1001,7 +878,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Paperclip size={14} />
-                  {t.attachments}
+                  {t('ticketSystem.attachments')}
                 </h4>
                 {selected.attachments && selected.attachments.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1013,12 +890,12 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                         rel="noopener noreferrer"
                         className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
                       >
-                        <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={t('ticketSystem.attachmentAlt', { number: index + 1 })} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.noAttachments}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('ticketSystem.noAttachments')}</p>
                 )}
               </div>
 
@@ -1026,7 +903,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   <MessageSquare size={14} />
-                  {t.conversation}
+                  {t('ticketSystem.conversation')}
                 </h4>
                 {renderThread()}
               </div>
@@ -1035,7 +912,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   <History size={14} />
-                  {t.timeline}
+                  {t('ticketSystem.timeline')}
                 </h4>
                 {renderTimeline()}
               </div>
@@ -1043,7 +920,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
               {/* Reply box */}
               {!['RESOLVED', 'CLOSED'].includes(selected.status) && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.reply}</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('ticketSystem.reply')}</h4>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
@@ -1055,7 +932,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                           handleSendReply();
                         }
                       }}
-                      placeholder={t.replyPlaceholder}
+                      placeholder={t('ticketSystem.replyPlaceholder')}
                       className={`flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 ${th.ring} text-gray-900 dark:text-white`}
                     />
                     <button
@@ -1064,7 +941,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                       className={`px-4 py-2.5 ${th.button} text-white rounded-lg ${th.buttonHover} transition disabled:opacity-50 flex items-center gap-2`}
                     >
                       {sendingReply ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                      {sendingReply ? t.sending : t.sendReply}
+                      {sendingReply ? t('ticketSystem.sending') : t('ticketSystem.sendReply')}
                     </button>
                   </div>
                 </div>
@@ -1088,20 +965,20 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                         ? 'text-green-700 dark:text-green-300'
                         : 'text-gray-600 dark:text-gray-300'
                     }`}>
-                      {complaintsService.getStatusLabel(selected.status)} — {formatDate(selected.resolvedAt || selected.closedAt)}
+                      {getStatusDisplayLabel(selected.status)} — {formatTicketDate(selected.resolvedAt || selected.closedAt)}
                     </p>
                   </div>
                   <button
                     onClick={() => setConfirmDialog({
-                      title: t.reopen,
-                      message: t.confirmReopen,
+                      title: t('ticketSystem.reopen'),
+                      message: t('ticketSystem.confirmReopen'),
                       onConfirm: handleReopen
                     })}
                     disabled={reopening}
                     className="px-4 py-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/20 transition flex items-center gap-2 disabled:opacity-50"
                   >
                     {reopening ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
-                    {reopening ? t.reopening : t.reopen}
+                    {reopening ? t('ticketSystem.reopening') : t('ticketSystem.reopen')}
                   </button>
                 </div>
               )}
@@ -1113,7 +990,7 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 onClick={() => setShowDetails(false)}
                 className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
               >
-                {t.close}
+                {t('ticketSystem.close')}
               </button>
             </div>
           </div>
@@ -1136,13 +1013,13 @@ const TicketSystem = ({ theme = 'red', userRole = 'WORKER' }) => {
                 onClick={() => setConfirmDialog(null)}
                 className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
-                {t.cancel}
+                {t('ticketSystem.cancel')}
               </button>
               <button
                 onClick={handleConfirm}
                 className={`flex-1 px-4 py-2.5 ${th.button} text-white rounded-lg ${th.buttonHover} transition`}
               >
-                {t.confirm}
+                {t('ticketSystem.confirm')}
               </button>
             </div>
           </div>
