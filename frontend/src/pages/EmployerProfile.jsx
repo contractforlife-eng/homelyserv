@@ -1,12 +1,12 @@
 // src/pages/EmployerProfile.jsx - WITH PROFILE PHOTO UPLOAD, PREMIUM BADGE, AND WORKING NOTIFICATION BELL
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Home,
   User,
@@ -50,7 +50,7 @@ const EmployerProfile = () => {
   const uploadProfilePhoto = useAuthStore(state => state.uploadProfilePhoto);
   const { logout: authLogout } = useAuthStore();
   
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -67,61 +67,6 @@ const EmployerProfile = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [pendingImageFile, setPendingImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
-
-  const translations = {
-    en: {
-      title: 'My Profile',
-      subtitle: 'Manage your personal information and preferences',
-      personalInfo: 'Personal Information',
-      fullName: 'Full Name',
-      email: 'Email Address',
-      phone: 'Phone Number',
-      location: 'Location',
-      bio: 'About Me',
-      company: 'Company Name',
-      website: 'Website',
-      editProfile: 'Edit Profile',
-      saveChanges: 'Save Changes',
-      cancel: 'Cancel',
-      profileComplete: 'Profile Complete',
-      memberSince: 'Member Since',
-      notifications: 'Notifications',
-      languageToggle: 'العربية',
-      saved: '✅ Profile updated successfully!',
-      profilePhoto: 'Profile Photo',
-      changePhoto: 'Click to change photo',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium',
-      errorSaving: 'Failed to save profile. Please try again.'
-    },
-    ar: {
-      title: 'ملفي الشخصي',
-      subtitle: 'إدارة معلوماتك الشخصية وتفضيلاتك',
-      personalInfo: 'المعلومات الشخصية',
-      fullName: 'الاسم الكامل',
-      email: 'البريد الإلكتروني',
-      phone: 'رقم الهاتف',
-      location: 'الموقع',
-      bio: 'عني',
-      company: 'اسم الشركة',
-      website: 'الموقع الإلكتروني',
-      editProfile: 'تعديل الملف',
-      saveChanges: 'حفظ التغييرات',
-      cancel: 'إلغاء',
-      profileComplete: 'الملف مكتمل',
-      memberSince: 'عضو منذ',
-      notifications: 'الإشعارات',
-      languageToggle: 'English',
-      saved: '✅ تم تحديث الملف الشخصي بنجاح!',
-      profilePhoto: 'الصورة الشخصية',
-      changePhoto: 'انقر لتغيير الصورة',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز',
-      errorSaving: 'فشل حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const checkPremiumStatus = () => {
     const userId = authUser?.id || authUser?.email;
@@ -195,7 +140,7 @@ const EmployerProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        alert(t('employerProfile.imageTooLarge'));
         return;
       }
 
@@ -215,7 +160,7 @@ const EmployerProfile = () => {
     try {
       const userId = authUser?.id || authUser?._id;
       if (!userId) {
-        alert('User ID not found. Please log in again.');
+        alert(t('employerProfile.userIdNotFound'));
         setSaving(false);
         return;
       }
@@ -227,7 +172,7 @@ const EmployerProfile = () => {
         if (uploadResult.success && uploadResult.user) {
           profileImageUrl = uploadResult.user.profileImage;
         } else {
-          throw new Error(uploadResult.error || 'Photo upload failed');
+          throw new Error(uploadResult.error || t('employerProfile.photoUploadFailed'));
         }
       }
 
@@ -246,15 +191,15 @@ const EmployerProfile = () => {
         setPendingImageFile(null);
         setIsEditing(false);
         setSaveSuccess(true);
-        alert(t.saved);
+        alert(t('employerProfile.saved'));
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(response.data.message || 'Failed to update profile');
+        throw new Error(response.data.message || t('employerProfile.updateFailed'));
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      setSaveError(error.message || t.errorSaving);
-      alert(t.errorSaving);
+      setSaveError(error.message || t('employerProfile.errorSaving'));
+      alert(t('employerProfile.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -265,7 +210,7 @@ const EmployerProfile = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">{t('employerProfile.loading')}</p>
         </div>
       </div>
     );
@@ -278,7 +223,7 @@ const EmployerProfile = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerProfile.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
       />
@@ -288,15 +233,15 @@ const EmployerProfile = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{t.title}</h1>
+                  <h1 className="text-2xl font-bold">{t('employerProfile.title')}</h1>
                   {isPremium && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                       <Crown size={12} className="text-yellow-300" />
-                      {t.premiumBadge}
+                      {t('employerProfile.premiumBadge')}
                     </span>
                   )}
                 </div>
-                <p className="text-teal-100 mt-1">{t.subtitle}</p>
+                <p className="text-teal-100 mt-1">{t('employerProfile.subtitle')}</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -304,14 +249,14 @@ const EmployerProfile = () => {
                   className="bg-white text-teal-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   {isEditing ? <X size={16} /> : <Edit size={16} />}
-                  {isEditing ? t.cancel : t.editProfile}
+                  {isEditing ? t('employerProfile.cancel') : t('employerProfile.editProfile')}
                 </button>
                 <Link
                   to="/subscription"
                   className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
                 >
                   <Crown size={16} />
-                  {t.getPremium}
+                  {t('employerProfile.getPremium')}
                 </Link>
               </div>
             </div>
@@ -320,7 +265,7 @@ const EmployerProfile = () => {
           {saveSuccess && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
               <CheckCircle size={16} />
-              {t.saved}
+              {t('employerProfile.saved')}
             </div>
           )}
 
@@ -333,14 +278,14 @@ const EmployerProfile = () => {
 
           {/* Profile Photo Section */}
           <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.profilePhoto}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t('employerProfile.profilePhoto')}</h3>
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-teal-200 bg-gray-100 dark:bg-gray-800 relative">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
-                      alt="Profile" 
+                      alt={t('employerProfile.profilePhotoAlt')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -367,20 +312,20 @@ const EmployerProfile = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t.changePhoto}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t('employerProfile.changePhoto')}</p>
               )}
               {!isEditing && imagePreview && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">Photo uploaded</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">{t('employerProfile.photoUploaded')}</p>
               )}
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-6">{t.personalInfo}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-6">{t('employerProfile.personalInfo')}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.fullName}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.fullName')}</label>
                 <div className="relative">
                   <User size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -397,7 +342,7 @@ const EmployerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.email')}</label>
                 <div className="relative">
                   <Mail size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -411,7 +356,7 @@ const EmployerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.phone')}</label>
                 <div className="relative">
                   <Phone size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -428,7 +373,7 @@ const EmployerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.location}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.location')}</label>
                 <div className="relative">
                   <MapPin size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -445,7 +390,7 @@ const EmployerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.company}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.company')}</label>
                 <div className="relative">
                   <Briefcase size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -462,7 +407,7 @@ const EmployerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.website}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.website')}</label>
                 <div className="relative">
                   <Globe size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                   <input
@@ -479,7 +424,7 @@ const EmployerProfile = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t.bio}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">{t('employerProfile.bio')}</label>
                 <textarea
                   name="bio"
                   value={formData.bio}
@@ -501,14 +446,14 @@ const EmployerProfile = () => {
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto justify-center"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {saving ? 'Saving...' : t.saveChanges}
+                  {saving ? t('employerProfile.saving') : t('employerProfile.saveChanges')}
                 </button>
                 <button
                   onClick={handleEditToggle}
                   disabled={saving}
                   className="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition disabled:opacity-50 w-full sm:w-auto"
                 >
-                  {t.cancel}
+                  {t('employerProfile.cancel')}
                 </button>
               </div>
             )}
