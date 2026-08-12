@@ -535,7 +535,7 @@ function Register() {
               </Link>{' '}
               {t('and')}{' '}
               <Link to="/privacy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">
-                {t('privacy')}
+                {t('legalLinks.privacyPolicy')}
               </Link>
               {', '}{t('andAcknowledge')}{' '}
               <Link to="/refund-policy" className="text-red-500 hover:text-red-600 transition-colors hover:underline">

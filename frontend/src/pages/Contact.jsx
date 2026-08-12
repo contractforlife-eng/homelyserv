@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import LegalFooter from '../components/common/LegalFooter';
@@ -9,8 +9,29 @@ import { getMessagesRoute } from '../utils/supportRoutes';
 function Contact() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const handleBack = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (location.key && location.key !== 'default') {
+      navigate(-1);
+      return;
+    }
+
+    if (authUser?.role === 'EMPLOYER') {
+      navigate('/employer-dashboard');
+    } else if (authUser?.role === 'WORKER') {
+      navigate('/worker-dashboard');
+    } else {
+      navigate('/help');
+    }
+  };
 
   const handleStartChat = () => {
     if (isAuthenticated && authUser?.role) {
@@ -52,7 +73,7 @@ function Contact() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/help" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t('contactPage.backToHelp')}</Link>
+            <button type="button" onClick={handleBack} className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t('back')}</button>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t('contactPage.title')}</h1>
           </div>
         </div>

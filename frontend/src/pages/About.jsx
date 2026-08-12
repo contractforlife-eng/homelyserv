@@ -1,11 +1,37 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Users, Briefcase, Award, Shield, Heart, Globe, CheckCircle, TrendingUp } from 'lucide-react';
 import LegalFooter from '../components/common/LegalFooter';
+import useAuthStore from '../store/authStore';
 
 function About() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const authUser = useAuthStore(state => state.user);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const handleBack = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (location.key && location.key !== 'default') {
+      navigate(-1);
+      return;
+    }
+
+    if (authUser?.role === 'EMPLOYER') {
+      navigate('/employer-dashboard');
+    } else if (authUser?.role === 'WORKER') {
+      navigate('/worker-dashboard');
+    } else {
+      navigate('/help');
+    }
+  };
+
   const stats = [
     { label: t('aboutPage.stats.activeUsers'), value: '25,000+', icon: <Users size={24} /> },
     { label: t('aboutPage.stats.workers'), value: '8,000+', icon: <Briefcase size={24} /> },
@@ -25,7 +51,7 @@ function About() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link to="/help" className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t('aboutPage.backToHelp')}</Link>
+            <button type="button" onClick={handleBack} className="text-gray-600 dark:text-gray-300 hover:text-red-600 transition">{t('back')}</button>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t('aboutPage.title')}</h1>
           </div>
         </div>

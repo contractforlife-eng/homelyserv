@@ -6,50 +6,50 @@ import { useTranslation } from 'react-i18next';
 
 const FOOTER_LINKS = {
   en: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ],
   ar: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ],
   fr: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ],
   ru: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ],
   tr: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ],
   de: [
-    { to: '/about', key: 'about' },
+    { to: '/about', key: 'legalFooter.about' },
     { to: '/terms', key: 'terms' },
     { to: '/refund-policy', key: 'refundPolicy' },
-    { to: '/privacy', key: 'privacy' },
+    { to: '/privacy', key: 'legalLinks.privacyPolicy' },
     { to: '/contact', key: 'contact' },
     { to: '/help', key: 'help' }
   ]
