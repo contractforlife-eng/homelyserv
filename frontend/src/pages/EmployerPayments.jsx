@@ -1,11 +1,11 @@
 // src/pages/EmployerPayments.jsx - FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import { sendMessage } from '../utils/chatService';
 import hireService from '../services/hireService';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
@@ -45,7 +45,7 @@ const EmployerPayments = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
@@ -64,186 +64,6 @@ const EmployerPayments = () => {
   });
   const isLoadingRef = React.useRef(false);
 
-  const translations = {
-    en: {
-      title: 'Payments',
-      subtitle: 'Manage your platform commission payments',
-      stats: {
-        totalPaid: 'Total Commission Paid',
-        pending: 'Pending',
-        completed: 'Completed',
-        workers: 'Workers Hired',
-        monthlyAverage: 'Monthly Avg',
-        totalSalary: 'Total Worker Salaries'
-      },
-      status: {
-        completed: 'Completed',
-        pending: 'Pending',
-        accepted: 'Accepted',
-        rejected: 'Rejected',
-        processing: 'Processing',
-        waiting_payment: 'Waiting for Payment',
-        in_progress: 'In Progress'
-      },
-      table: {
-        id: 'Payment ID',
-        worker: 'Worker',
-        job: 'Job',
-        commission: 'Commission',
-        fullSalary: 'Monthly Salary',
-        date: 'Date',
-        status: 'Status',
-        actions: 'Actions'
-      },
-      modal: {
-        title: 'Payment Details',
-        paymentId: 'Payment ID',
-        worker: 'Worker',
-        job: 'Job Title',
-        commission: 'Platform Commission',
-        fullSalary: 'Worker\'s Monthly Salary',
-        note: 'Note: The worker\'s full salary is paid directly to the worker by the employer. The platform only charges a commission fee.',
-        date: 'Date',
-        status: 'Status',
-        method: 'Payment Method',
-        description: 'Description',
-        reference: 'Reference',
-        receipt: 'Download Receipt',
-        close: 'Close',
-        copyId: 'Copy ID',
-        workerEmail: 'Worker Email',
-        workerPhone: 'Worker Phone',
-        contactInfo: 'Contact Information',
-        contactLocked: 'Contact info locked until payment confirmed',
-        contactUnlocked: 'Contact info unlocked!',
-        whatsapp: 'WhatsApp',
-        message: 'Send Message'
-      },
-      actions: {
-        view: 'View Details',
-        download: 'Download Receipt',
-        payNow: 'Pay Commission',
-        contact: 'Contact Worker'
-      },
-      empty: {
-        title: 'No payments found',
-        description: 'You haven\'t made any commission payments yet',
-        start: 'Hire a worker to get started'
-      },
-      filters: {
-        all: 'All Payments',
-        completed: 'Completed',
-        pending: 'Pending',
-        accepted: 'Accepted',
-        rejected: 'Rejected'
-      },
-      loading: 'Loading payment history...',
-      error: 'Error loading payments. Please try again.',
-      retry: 'Retry',
-      languageToggle: 'العربية',
-      searchPlaceholder: 'Search by worker name, job title, or payment ID...',
-      noResults: 'No payments match your search',
-      clearFilters: 'Clear filters',
-      copySuccess: 'Copied to clipboard!',
-      redirectingToPayment: 'Redirecting to payment options...',
-      refresh: 'Refresh',
-      acceptedOffer: 'Worker accepted your offer!',
-      payNowToUnlock: 'Pay commission to unlock contact information',
-      contactRevealed: 'Contact information revealed',
-      waitingForPayment: 'Waiting for payment confirmation',
-      commissionInfo: 'You pay the platform commission only. Worker\'s salary is paid directly by you.'
-    },
-    ar: {
-      title: 'المدفوعات',
-      subtitle: 'إدارة مدفوعات عمولة المنصة',
-      stats: {
-        totalPaid: 'إجمالي العمولة المدفوعة',
-        pending: 'معلقة',
-        completed: 'مكتملة',
-        workers: 'عدد العمال',
-        monthlyAverage: 'المتوسط الشهري',
-        totalSalary: 'إجمالي رواتب العمال'
-      },
-      status: {
-        completed: 'مكتملة',
-        pending: 'معلقة',
-        accepted: 'مقبولة',
-        rejected: 'مرفوضة',
-        processing: 'قيد المعالجة',
-        waiting_payment: 'في انتظار الدفع',
-        in_progress: 'قيد التنفيذ'
-      },
-      table: {
-        id: 'رقم الدفع',
-        worker: 'العامل',
-        job: 'الوظيفة',
-        commission: 'العمولة',
-        fullSalary: 'الراتب الشهري',
-        date: 'التاريخ',
-        status: 'الحالة',
-        actions: 'الإجراءات'
-      },
-      modal: {
-        title: 'تفاصيل الدفع',
-        paymentId: 'رقم الدفع',
-        worker: 'العامل',
-        job: 'عنوان الوظيفة',
-        commission: 'عمولة المنصة',
-        fullSalary: 'راتب العامل الشهري',
-        note: 'ملاحظة: يدفع صاحب العمل الراتب الكامل للعامل مباشرة. المنصة تفرض عمولة فقط.',
-        date: 'التاريخ',
-        status: 'الحالة',
-        method: 'طريقة الدفع',
-        description: 'الوصف',
-        reference: 'المرجع',
-        receipt: 'تحميل الإيصال',
-        close: 'إغلاق',
-        copyId: 'نسخ الرقم',
-        workerEmail: 'بريد العامل',
-        workerPhone: 'هاتف العامل',
-        contactInfo: 'معلومات الاتصال',
-        contactLocked: 'معلومات الاتصال مقفلة حتى تأكيد الدفع',
-        contactUnlocked: 'تم فتح معلومات الاتصال!',
-        whatsapp: 'واتساب',
-        message: 'إرسال رسالة'
-      },
-      actions: {
-        view: 'عرض التفاصيل',
-        download: 'تحميل الإيصال',
-        payNow: 'ادفع العمولة',
-        contact: 'اتصال بالعامل'
-      },
-      empty: {
-        title: 'لا توجد مدفوعات',
-        description: 'لم تقم بأي مدفوعات عمولة بعد',
-        start: 'قم بتوظيف عامل للبدء'
-      },
-      filters: {
-        all: 'جميع المدفوعات',
-        completed: 'مكتملة',
-        pending: 'معلقة',
-        accepted: 'مقبولة',
-        rejected: 'مرفوضة'
-      },
-      loading: 'جاري تحميل سجل المدفوعات...',
-      error: 'حدث خطأ في تحميل المدفوعات. يرجى المحاولة مرة أخرى.',
-      retry: 'إعادة المحاولة',
-      languageToggle: 'English',
-      searchPlaceholder: 'ابحث باسم العامل أو عنوان الوظيفة أو رقم الدفع...',
-      noResults: 'لا توجد مدفوعات تطابق بحثك',
-      clearFilters: 'مسح التصفيات',
-      copySuccess: 'تم النسخ إلى الحافظة!',
-      redirectingToPayment: 'جاري التوجيه إلى خيارات الدفع...',
-      refresh: 'تحديث',
-      acceptedOffer: 'قبل العامل عرضك!',
-      payNowToUnlock: 'ادفع العمولة لفتح معلومات الاتصال',
-      contactRevealed: 'تم فتح معلومات الاتصال',
-      waitingForPayment: 'في انتظار تأكيد الدفع',
-      commissionInfo: 'أنت تدفع عمولة المنصة فقط. راتب العامل يدفع من قبلك مباشرة.'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const handleLogout = () => {
     useAuthStore.getState().logout();
@@ -398,7 +218,7 @@ const EmployerPayments = () => {
   const handleProcessPayment = (payment) => {
     const paymentData = payment || selectedPayment;
     if (!paymentData) {
-      alert('Payment not found');
+      alert(t('employerPayments.paymentNotFound'));
       return;
     }
 
@@ -455,14 +275,14 @@ const EmployerPayments = () => {
         const formattedPhone = phone.replace(/\s/g, '').replace(/^0/, '20');
         window.open(`https://wa.me/${formattedPhone}`, '_blank');
       } else {
-        alert('No phone number available');
+        alert(t('employerPayments.noPhoneNumber'));
       }
     } else if (method === 'message') {
       const workerId = payment.workerId;
       const workerName = payment.workerName || 'Worker';
       
       if (!workerId) {
-        alert('Unable to open chat: Worker ID not found');
+        alert(t('employerPayments.workerIdNotFound'));
         return;
       }
       
@@ -489,7 +309,7 @@ const EmployerPayments = () => {
 
   const handleCopyId = (id) => {
     navigator.clipboard.writeText(id);
-    alert(t.copySuccess);
+    alert(t('employerPayments.copySuccess'));
   };
 
   const handleCloseModal = () => {
@@ -536,7 +356,7 @@ const EmployerPayments = () => {
   };
 
   const formatStatus = (status) => {
-    return t.status[status] || status;
+    return t(`employerPayments.status.${status}`, { defaultValue: status });
   };
 
   if (authLoading) {
@@ -544,7 +364,7 @@ const EmployerPayments = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerPayments.authLoading')}</p>
         </div>
       </div>
     );
@@ -559,7 +379,7 @@ const EmployerPayments = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerPayments.loading')}</p>
         </div>
       </div>
     );
@@ -568,7 +388,7 @@ const EmployerPayments = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerPayments.title')}
         notificationUserId={authUser?.id}
         isPremium={isUserPremium(authUser?.id)}
         rightContent={
@@ -577,7 +397,7 @@ const EmployerPayments = () => {
             className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-center gap-2"
           >
             <RefreshCw size={16} />
-            {t.refresh}
+            {t('employerPayments.refresh')}
           </button>
         }
       />
@@ -585,11 +405,11 @@ const EmployerPayments = () => {
         <div className="p-4 lg:p-6">
           <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
             <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-teal-100 mt-1">{t.subtitle}</p>
+              <h1 className="text-2xl font-bold">{t('employerPayments.title')}</h1>
+              <p className="text-teal-100 mt-1">{t('employerPayments.subtitle')}</p>
               <p className="text-teal-200 text-sm mt-1 flex items-center gap-1">
                 <Info size={14} />
-                {t.commissionInfo}
+                {t('employerPayments.commissionInfo')}
               </p>
             </div>
           </div>
@@ -598,42 +418,42 @@ const EmployerPayments = () => {
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.totalPaid}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.totalPaid')}</p>
                 <DollarSign size={16} className="text-green-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalCommissionPaid)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pending}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.pending')}</p>
                 <Clock size={16} className="text-yellow-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.pendingCount}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.completed')}</p>
                 <CheckCircle size={16} className="text-green-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.completedCount}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.workers}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.workers')}</p>
                 <Users size={16} className="text-teal-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{stats.totalWorkers}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.monthlyAverage}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.monthlyAverage')}</p>
                 <BarChart3 size={16} className="text-purple-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.monthlyAverage)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.totalSalary}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.totalSalary')}</p>
                 <Briefcase size={16} className="text-orange-500" />
               </div>
               <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalSalary)}</p>
@@ -647,7 +467,7 @@ const EmployerPayments = () => {
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder={t.searchPlaceholder}
+                  placeholder={t('employerPayments.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
@@ -659,11 +479,11 @@ const EmployerPayments = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
                 >
-                  <option value="all">{t.filters.all}</option>
-                  <option value="pending">{t.filters.pending}</option>
-                  <option value="completed">{t.filters.completed}</option>
-                  <option value="accepted">{t.filters.accepted}</option>
-                  <option value="rejected">{t.filters.rejected}</option>
+                  <option value="all">{t('employerPayments.filters.all')}</option>
+                  <option value="pending">{t('employerPayments.filters.pending')}</option>
+                  <option value="completed">{t('employerPayments.filters.completed')}</option>
+                  <option value="accepted">{t('employerPayments.filters.accepted')}</option>
+                  <option value="rejected">{t('employerPayments.filters.rejected')}</option>
                 </select>
               </div>
             </div>
@@ -672,7 +492,7 @@ const EmployerPayments = () => {
           {/* Results Count */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-              Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredPayments.length}</span> payments
+              {t('ticketSystem.showing')} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredPayments.length}</span> {t('ticketSystem.categoryValues.payments')}
             </p>
           </div>
 
@@ -680,13 +500,13 @@ const EmployerPayments = () => {
           {filteredPayments.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
-              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.empty.description}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('employerPayments.empty.title')}</h3>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.empty.description')}</p>
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
               >
-                {t.empty.start}
+                {t('employerPayments.empty.start')}
               </button>
             </div>
           ) : (
@@ -695,14 +515,14 @@ const EmployerPayments = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.id}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.worker}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">{t.table.job}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.commission}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t.table.fullSalary}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t.table.date}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.status}</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.table.actions}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('employerPayments.table.id')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('employerPayments.table.worker')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">{t('employerPayments.table.job')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('employerPayments.table.commission')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t('employerPayments.table.fullSalary')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">{t('employerPayments.table.date')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('employerPayments.table.status')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('employerPayments.table.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -719,14 +539,14 @@ const EmployerPayments = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <UserAvatar
-                              name={payment.workerName || 'Worker'}
+                              name={payment.workerName || t('employerPayments.workerFallback')}
                               image={payment.workerImage || null}
                               role="WORKER"
                               size="sm"
                               className="border border-teal-200"
                             />
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{payment.workerName || 'Unknown'}</p>
+                              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{payment.workerName || t('employerPayments.unknown')}</p>
                               {payment.workerEmail && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}
@@ -738,11 +558,11 @@ const EmployerPayments = () => {
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission)}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">Platform commission</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{t('employerPayments.platformCommission')}</p>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <p className="text-sm text-gray-700 dark:text-gray-300">{formatCurrency(payment.fullSalary)}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">Worker's salary</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{t('employerPayments.workerSalary')}</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(payment.createdAt)}</p>
@@ -755,26 +575,26 @@ const EmployerPayments = () => {
                           {payment.status === 'pending' && payment.contactRevealed === false && (
                             <div className="text-xs text-yellow-600 flex items-center gap-1 mt-1">
                               <Lock size={10} />
-                              {t.waitingForPayment}
+                              {t('employerPayments.waitingForPayment')}
                             </div>
                           )}
                           {payment.status === 'completed' && payment.contactRevealed === true && (
                             <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
                               <Unlock size={10} />
-                              {t.contactRevealed}
+                              {t('employerPayments.contactRevealed')}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
-                            <button onClick={() => handleViewDetails(payment)} className="p-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition-colors" title={t.actions.view}>
+                            <button onClick={() => handleViewDetails(payment)} className="p-1.5 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:bg-teal-900/30 rounded-lg transition-colors" title={t('employerPayments.actions.view')}>
                               <Eye size={16} />
                             </button>
                             {payment.status === 'pending' && !payment.paymentVerified && (
                               <>
                                 <button onClick={() => handleProcessPayment(payment)} className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
                                   <CreditCard size={12} />
-                                  {t.actions.payNow}
+                                  {t('employerPayments.actions.payNow')}
                                 </button>
                               </>
                             )}
@@ -782,11 +602,11 @@ const EmployerPayments = () => {
                               <>
                                 <button onClick={() => handleContact(payment, 'whatsapp')} className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1">
                                   <MessageSquare size={12} />
-                                  WhatsApp
+                                  {t('employerPayments.whatsapp')}
                                 </button>
                                 <button onClick={() => handleContact(payment, 'message')} className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1">
                                   <MessageCircle size={12} />
-                                  Message
+                                  {t('employerPayments.message')}
                                 </button>
                               </>
                             )}
@@ -806,7 +626,7 @@ const EmployerPayments = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t.modal.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t('employerPayments.modal.title')}</h2>
               <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors">
                 <X size={20} />
               </button>
@@ -815,7 +635,7 @@ const EmployerPayments = () => {
               <div className="bg-teal-50 dark:bg-teal-900/30 rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.modal.paymentId}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.modal.paymentId')}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white">{selectedPayment.id}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPayment.status)}`}>
@@ -826,51 +646,51 @@ const EmployerPayments = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.worker}</p>
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.workerName || 'N/A'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.worker')}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.workerName || t('employerPayments.notAvailable')}</p>
                   {selectedPayment.workerEmail && (
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{selectedPayment.workerEmail}</p>
                   )}
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.job}</p>
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.jobTitle || 'N/A'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.job')}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.jobTitle || t('employerPayments.notAvailable')}</p>
                 </div>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">{t.modal.commission}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">{t('employerPayments.modal.commission')}</p>
                 <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{RECRUITMENT_COMMISSION_RATE * 100}% of {formatCurrency(selectedPayment.fullSalary)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('employerPayments.commissionOfSalary', { rate: RECRUITMENT_COMMISSION_RATE * 100, salary: formatCurrency(selectedPayment.fullSalary) })}</p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.fullSalary}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.fullSalary')}</p>
                 <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatCurrency(selectedPayment.fullSalary)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t.modal.note}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('employerPayments.modal.note')}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.date}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.date')}</p>
                   <p className="text-sm font-medium text-gray-800 dark:text-white">{formatDate(selectedPayment.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.method}</p>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">{selectedPayment.paymentMethod || 'N/A'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.method')}</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">{selectedPayment.paymentMethod === 'commission' ? t('employerPayments.commissionMethod') : (selectedPayment.paymentMethod || t('employerPayments.notAvailable'))}</p>
                 </div>
               </div>
 
               {selectedPayment.description && (
                 <div className="mb-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.description')}</p>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{selectedPayment.description}</p>
                 </div>
               )}
 
               {selectedPayment.reference && (
                 <div className="mb-6">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t.modal.reference}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.reference')}</p>
                   <p className="text-sm font-mono text-gray-800 dark:text-white">{selectedPayment.reference}</p>
                 </div>
               )}
@@ -880,13 +700,13 @@ const EmployerPayments = () => {
                   onClick={handleCloseModal}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors"
                 >
-                  {t.modal.close}
+                  {t('employerPayments.modal.close')}
                 </button>
                 <button
                   onClick={() => handleCopyId(selectedPayment.id)}
                   className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                 >
-                  {t.modal.copyId}
+                  {t('employerPayments.modal.copyId')}
                 </button>
               </div>
             </div>
