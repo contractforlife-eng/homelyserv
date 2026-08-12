@@ -5,6 +5,7 @@
 // captures the payment, updates status, and activates Premium.
 // This page only verifies the result and provides a clean UX after PayPal redirects back.
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Loader2, AlertCircle, X } from 'lucide-react';
 import { capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
@@ -13,6 +14,7 @@ import useAuthStore from '../store/authStore';
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [message, setMessage] = useState('');
   const [countdown, setCountdown] = useState(3);
@@ -71,7 +73,7 @@ const PaymentSuccess = () => {
       if (statusResult.success && statusResult.payment) {
         if (statusResult.payment.status === 'completed') {
           setStatus('success');
-          setMessage('Your payment has been confirmed.');
+          setMessage(t('paymentSuccess.messages.confirmed'));
           return true;
         }
       }
@@ -82,19 +84,19 @@ const PaymentSuccess = () => {
       
       if (captureResult.success) {
         setStatus('success');
-        setMessage('Your payment has been confirmed.');
+        setMessage(t('paymentSuccess.messages.confirmed'));
         return true;
       }
 
       // Payment still pending - wait and retry
       setStatus('verifying');
-      setMessage('Payment is being processed. Please wait...');
+      setMessage(t('paymentSuccess.messages.processing'));
       return false;
     } catch (error) {
       console.error('Payment verification error:', error);
       // Don't fail immediately - the polling in the main tab may still be processing
       setStatus('verifying');
-      setMessage('Payment is being processed. Please wait...');
+      setMessage(t('paymentSuccess.messages.processing'));
       return false;
     }
   };
@@ -116,7 +118,7 @@ const PaymentSuccess = () => {
 
     if (!orderId) {
       setStatus('error');
-      setMessage('Payment reference not found. Please check your payment status.');
+      setMessage(t('paymentSuccess.messages.referenceNotFound'));
       return;
     }
 
@@ -145,10 +147,10 @@ const PaymentSuccess = () => {
         // (the polling in the main tab will complete the capture)
         if (token || storedOrderId) {
           setStatus('success');
-          setMessage('Payment is being finalized. You will be redirected shortly.');
+          setMessage(t('paymentSuccess.messages.finalizing'));
         } else {
           setStatus('error');
-          setMessage('Unable to verify payment. Please check your payment status.');
+          setMessage(t('paymentSuccess.messages.unableToVerify'));
         }
         return;
       }
@@ -196,10 +198,10 @@ const PaymentSuccess = () => {
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <Loader2 size={32} className="text-blue-600 dark:text-blue-400 animate-spin" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Verifying Payment</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{message || 'Please wait while we confirm your payment...'}</p>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentSuccess.verifyingTitle')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{message || t('paymentSuccess.verifyingFallback')}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-              You may safely close this window. Your payment is being processed.
+              {t('paymentSuccess.safeCloseProcessing')}
             </p>
           </>
         )}
@@ -209,21 +211,21 @@ const PaymentSuccess = () => {
             <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Payment Successful</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentSuccess.successTitle')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Your Premium subscription has been activated.
+              {t('paymentSuccess.premiumActivated')}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Redirecting in {countdown} seconds...
+              {t('paymentSuccess.redirectingIn', { count: countdown })}
             </p>
             <button
               onClick={() => navigate(destination, { replace: true })}
               className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition"
             >
-              Continue Now
+              {t('paymentSuccess.continueNow')}
             </button>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-              You may safely close this window.
+              {t('paymentSuccess.safeClose')}
             </p>
           </>
         )}
@@ -233,20 +235,20 @@ const PaymentSuccess = () => {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle size={32} className="text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Payment Verification Issue</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentSuccess.issueTitle')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => navigate('/employer-payments')}
                 className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-700 transition"
               >
-                Back to Payments
+                {t('paymentSuccess.backToPayments')}
               </button>
               <button
                 onClick={() => navigate('/subscription')}
                 className="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition"
               >
-                Check Subscription
+                {t('paymentSuccess.checkSubscription')}
               </button>
             </div>
           </>
