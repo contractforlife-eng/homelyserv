@@ -1,6 +1,6 @@
 // src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
-import { useDashboard } from '../components/layout/DashboardContext';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -41,6 +41,7 @@ import {
 
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerMessages = () => {
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -58,8 +59,6 @@ const WorkerMessages = () => {
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const dashboard = useDashboard();
-
   // ============================================================
   // IS PREMIUM CHECK
   // ============================================================
@@ -71,57 +70,6 @@ const WorkerMessages = () => {
   };
 
   const userIsPremium = isPremium();
-
-  const translations = {
-    en: {
-      title: 'Messages',
-      subtitle: 'Communicate with employers and professionals',
-      searchPlaceholder: 'Search conversations...',
-      typeMessage: 'Type a message...',
-      send: 'Send',
-      noConversations: 'No conversations yet',
-      noConversationsDesc: 'Start applying for jobs to connect with employers',
-      online: 'Online',
-      offline: 'Offline',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading messages...',
-      noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!',
-      refresh: 'Refresh',
-      newMessage: 'New message from {name}',
-      acceptedOffer: 'You accepted an offer from {name}',
-      typing: 'Typing...',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'الرسائل',
-      subtitle: 'تواصل مع أصحاب العمل والمتخصصين',
-      searchPlaceholder: 'ابحث في المحادثات...',
-      typeMessage: 'اكتب رسالة...',
-      send: 'إرسال',
-      noConversations: 'لا توجد محادثات بعد',
-      noConversationsDesc: 'ابدأ في التقديم على الوظائف للتواصل مع أصحاب العمل',
-      online: 'متصل',
-      offline: 'غير متصل',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل الرسائل...',
-      noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث',
-      newMessage: 'رسالة جديدة من {name}',
-      acceptedOffer: 'لقد قبلت عرضاً من {name}',
-      typing: 'جاري الكتابة...',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const formatSenderName = (senderName, senderRole) => {
     return formatDisplayName(senderName, senderRole);
@@ -335,7 +283,7 @@ const WorkerMessages = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerMessages.title')}
         notificationUserId={authUser?.id}
         isPremium={userIsPremium}
       />
@@ -348,7 +296,7 @@ const WorkerMessages = () => {
                   {userProfileImage ? (
                     <img 
                       src={userProfileImage} 
-                      alt={authUser.fullName || 'Worker'} 
+                      alt={authUser.fullName || t('workerMessages.worker')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -362,30 +310,30 @@ const WorkerMessages = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.title}</h1>
+                    <h1 className="text-2xl font-bold">{t('workerMessages.title')}</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
+                        {t('workerMessages.premiumBadge')}
                       </span>
                     )}
                   </div>
-                  <p className="text-white/80 mt-1">{t.subtitle}</p>
+                  <p className="text-white/80 mt-1">{t('workerMessages.subtitle')}</p>
                 </div>
               </div>
                 <div className="flex items-center gap-2">
                 <span className="text-sm text-white/90">
-                  {authUser?.fullName || 'Worker'}
+                  {authUser?.fullName || t('workerMessages.worker')}
                 </span>
                 <span className="px-2 py-1 bg-green-500/30 text-white text-xs rounded-full">
-                  {conversations.length} chats
+                  {t('workerMessages.chatCount', { count: conversations.length })}
                 </span>
                 <button
                   onClick={() => setShowSupportModal(true)}
                   className="bg-purple-500/30 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-purple-400/30"
                 >
                   <Shield size={12} />
-                  Contact Support
+                  {t('workerMessages.contactSupport')}
                 </button>
                 {!userIsPremium && (
                   <Link
@@ -393,7 +341,7 @@ const WorkerMessages = () => {
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 backdrop-blur-sm border border-yellow-400/30"
                   >
                     <Crown size={12} />
-                    {t.getPremium}
+                    {t('workerMessages.getPremium')}
                   </Link>
                 )}
               </div>
@@ -408,7 +356,7 @@ const WorkerMessages = () => {
                     <Search size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
-                      placeholder={t.searchPlaceholder}
+                      placeholder={t('workerMessages.searchPlaceholder')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -419,8 +367,8 @@ const WorkerMessages = () => {
                   {filteredConversations.length === 0 ? (
                     <div className="p-8 text-center">
                       <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.noConversations}</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">{t.noConversationsDesc}</p>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerMessages.noConversations')}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{t('workerMessages.noConversationsDesc')}</p>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -452,7 +400,7 @@ const WorkerMessages = () => {
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{conv.lastMessage}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-green-500">{t.online}</span>
+                            <span className="text-xs text-green-500">{t('workerMessages.online')}</span>
                             {conv.unread > 0 && (
                               <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
                                 {conv.unread}
@@ -472,7 +420,7 @@ const WorkerMessages = () => {
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
                       <div className="flex items-center gap-3">
                         <UserAvatar
-                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || 'Employer'}
+                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || t('workerMessages.employer')}
                           image={conversations.find(c => c.id === selectedConversationId)?.avatar || null}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
                           size="md"
@@ -485,7 +433,7 @@ const WorkerMessages = () => {
                             size="sm"
                             className="text-gray-800 dark:text-white"
                           />
-                          <p className="text-xs text-green-500">{t.online}</p>
+                          <p className="text-xs text-green-500">{t('workerMessages.online')}</p>
                         </div>
                       </div>
                       <div className="flex gap-2 relative" ref={dropdownRef}>
@@ -523,21 +471,21 @@ const WorkerMessages = () => {
                               className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 dark:bg-red-900/30 flex items-center gap-2 transition"
                             >
                               <Trash2 size={16} />
-                              Delete Conversation
+                              {t('workerMessages.deleteConversation')}
                             </button>
                             <button
                               disabled
                               className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <Mail size={16} />
-                              Mark as unread
+                              {t('workerMessages.markAsUnread')}
                             </button>
                             <button
                               disabled
                               className="w-full px-4 py-2.5 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed"
                             >
                               <UserIcon size={16} />
-                              View Employer Profile
+                              {t('workerMessages.viewEmployerProfile')}
                             </button>
                           </div>
                         )}
@@ -547,8 +495,8 @@ const WorkerMessages = () => {
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900/20">
                       {messages.length === 0 ? (
                         <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-                          <p>{t.noMessages}</p>
-                          <p className="text-sm">{t.startConversation}</p>
+                          <p>{t('workerMessages.noMessages')}</p>
+                          <p className="text-sm">{t('workerMessages.startConversation')}</p>
                         </div>
                       ) : (
                         messages.map((msg, index) => {
@@ -563,7 +511,7 @@ const WorkerMessages = () => {
                             >
                               {!isWorker && showAvatar && (
                                 <UserAvatar
-                                  name={msg.senderName || 'User'}
+                                  name={msg.senderName || t('workerMessages.user')}
                                   image={msg.sender?.image || msg.sender?.profileImage || conversations.find(c => c.id === selectedConversationId)?.avatar || null}
                                   role={msg.senderRole}
                                   size="sm"
@@ -602,7 +550,7 @@ const WorkerMessages = () => {
                               </div>
                               {isWorker && showAvatar && (
                                 <UserAvatar
-                                  name={authUser?.fullName || 'Worker'}
+                                  name={authUser?.fullName || t('workerMessages.worker')}
                                   image={authUser?.profileImage || null}
                                   role="WORKER"
                                   size="sm"
@@ -625,7 +573,7 @@ const WorkerMessages = () => {
                           type="text"
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
-                          placeholder={t.typeMessage}
+                          placeholder={t('workerMessages.typeMessage')}
                           className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         />
                         <button
@@ -634,7 +582,7 @@ const WorkerMessages = () => {
                           disabled={!message.trim()}
                         >
                           <Send size={18} />
-                          {t.send}
+                          {t('workerMessages.send')}
                         </button>
                       </form>
                     </div>
@@ -643,8 +591,8 @@ const WorkerMessages = () => {
                   <div className="flex-1 flex items-center justify-center text-center p-8">
                     <div>
                       <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Select a conversation</h3>
-                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Choose a conversation from the list to start messaging</p>
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('workerMessages.selectConversation')}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerMessages.selectConversationDesc')}</p>
                     </div>
                   </div>
                 )}
@@ -657,7 +605,7 @@ const WorkerMessages = () => {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Contact Support</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerMessages.contactSupport')}</h3>
                   <button
                     onClick={() => setShowSupportModal(false)}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -665,7 +613,7 @@ const WorkerMessages = () => {
                     <X size={24} />
                   </button>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Select a support agent to start a conversation:</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{t('workerMessages.selectSupportAgent')}</p>
                 <div className="space-y-2">
                   {supportUsers.map((user) => (
                     <button
