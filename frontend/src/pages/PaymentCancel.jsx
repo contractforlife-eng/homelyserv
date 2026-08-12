@@ -1,12 +1,14 @@
 // src/pages/PaymentCancel.jsx
 // PayPal cancel callback page - shown when user cancels payment in PayPal.
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { XCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 const PaymentCancel = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
@@ -55,12 +57,12 @@ const PaymentCancel = () => {
         <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
           <XCircle size={32} className="text-amber-600 dark:text-amber-400" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Payment Cancelled</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('paymentCancel.title')}</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          Your payment was cancelled.
+          {t('paymentCancel.cancelled')}
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          No charges were applied.
+          {t('paymentCancel.noCharges')}
         </p>
         
         <div className="flex flex-col gap-3">
@@ -69,19 +71,19 @@ const PaymentCancel = () => {
             className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
           >
             <RefreshCw size={18} />
-            Retry Payment
+            {t('paymentCancel.retryPayment')}
           </button>
           <button
             onClick={() => navigate(getBackDestination())}
             className="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-700 transition flex items-center justify-center gap-2"
           >
             <ArrowLeft size={18} />
-            Return to Dashboard
+            {t('paymentCancel.returnToDashboard')}
           </button>
         </div>
 
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-          You may safely close this window.
+          {t('paymentCancel.safeClose')}
         </p>
       </div>
     </div>
