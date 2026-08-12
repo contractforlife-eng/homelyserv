@@ -1,7 +1,7 @@
 // src/pages/PaymentCommission.jsx - FIXED: Only commission is charged
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -27,7 +27,7 @@ import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
   const navigate = useNavigate();
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
   const [commissionData, setCommissionData] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -46,15 +46,15 @@ const PaymentCommission = () => {
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
       icon: CreditCard,
-      description: 'Pay with credit card, debit card, or mobile wallet',
+      description: t('paymentCommission.methods.paymobDescription'),
       color: 'from-blue-500 to-blue-600',
-      badge: 'Recommended'
+      badge: t('paymentCommission.recommended')
     },
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
       icon: Wallet,
-      description: 'Pay securely with your PayPal account',
+      description: t('paymentCommission.methods.paypalDescription'),
       color: 'from-blue-700 to-blue-800',
       badge: null
     }
@@ -138,30 +138,30 @@ const PaymentCommission = () => {
           });
         }, 1500);
       } else {
-        setPaymentError(result.message || 'Failed to record payment');
+        setPaymentError(result.message || t('paymentCommission.errors.recordFailed'));
         setProcessing(false);
       }
     } catch (error) {
       console.error('Error processing payment:', error);
-      setPaymentError('An error occurred during payment. Please try again.');
+      setPaymentError(t('paymentCommission.errors.processingFailed'));
       setProcessing(false);
     }
   };
 
   const handlePayment = async () => {
     if (!selectedMethod) {
-      setPaymentError('Please select a payment method');
+      setPaymentError(t('paymentCommission.errors.selectMethod'));
       return;
     }
 
     if (!commissionData) {
-      setPaymentError('Payment data not found');
+      setPaymentError(t('paymentCommission.errors.dataNotFound'));
       return;
     }
 
     // Check if user is authenticated
     if (!isAuthenticated || !authUser) {
-      setPaymentError('Please log in to make a payment');
+      setPaymentError(t('paymentCommission.errors.loginRequired'));
       return;
     }
 
@@ -194,7 +194,7 @@ const PaymentCommission = () => {
           setPaymobIframe(result.iframeUrl);
           window.addEventListener('message', handlePaymobMessage);
         } else {
-          throw new Error(result.error || 'Paymob payment failed');
+          throw new Error(result.error || t('paymentCommission.errors.paymobFailed'));
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
@@ -204,7 +204,7 @@ const PaymentCommission = () => {
           window.open(result.approvalUrl, '_blank');
           startPollingPayPalOrder(result.orderId);
         } else {
-          throw new Error(result.error || 'PayPal payment failed');
+          throw new Error(result.error || t('paymentCommission.errors.paypalFailed'));
         }
       }
       
@@ -230,14 +230,14 @@ const PaymentCommission = () => {
           processSuccessfulPayment(result.transaction);
         } else if (attempts >= maxAttempts) {
           clearInterval(interval);
-          setPaymentError('Payment verification timed out. Please check your PayPal account.');
+          setPaymentError(t('paymentCommission.errors.verificationTimeout'));
           setProcessing(false);
         }
       } catch (error) {
         console.error('PayPal polling error:', error);
         if (attempts >= maxAttempts) {
           clearInterval(interval);
-          setPaymentError('Payment verification failed. Please try again.');
+          setPaymentError(t('paymentCommission.errors.verificationFailed'));
           setProcessing(false);
         }
       }
@@ -303,20 +303,20 @@ const PaymentCommission = () => {
           <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <CheckCircle size={48} className="text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">✅ Payment Successful!</h2>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">{t('paymentCommission.success.title')}</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Commission of <strong>EGP {commissionData.commissionAmount?.toLocaleString()}</strong> paid successfully.
+            {t('paymentCommission.success.commissionPrefix')} <strong>EGP {commissionData.commissionAmount?.toLocaleString()}</strong> {t('paymentCommission.success.commissionSuffix')}
           </p>
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 mb-6 border border-green-200">
             <div className="flex items-center gap-2 justify-center text-green-700">
               <Lock size={18} />
-              <span className="font-semibold">Contact information is now unlocked!</span>
+              <span className="font-semibold">{t('paymentCommission.success.contactUnlocked')}</span>
             </div>
             <p className="text-sm text-green-600 mt-1">{commissionData.company}</p>
           </div>
           <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <Loader2 size={18} className="animate-spin" />
-            <span>Redirecting...</span>
+            <span>{t('paymentCommission.success.redirecting')}</span>
           </div>
         </div>
       </div>
@@ -326,7 +326,7 @@ const PaymentCommission = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title="Commission Payment"
+        title={t('paymentCommission.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
       <div className="p-4 md:p-6">
@@ -336,7 +336,7 @@ const PaymentCommission = () => {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
         >
           <ArrowLeft size={20} />
-          Back to Offers
+          {t('paymentCommission.backToOffers')}
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-10">
@@ -344,22 +344,22 @@ const PaymentCommission = () => {
             <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Lock size={36} className="text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Unlock Contact Information</h1>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">{t('paymentCommission.unlockTitle')}</h1>
             <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
-              Pay the platform commission to contact {commissionData.company}
+              {t('paymentCommission.unlockDescription', { company: commissionData.company })}
             </p>
           </div>
 
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-5 mb-8 border border-amber-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Platform Commission</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentCommission.platformCommission')}</p>
                 <p className="text-3xl font-bold text-amber-600">EGP {commissionData.commissionAmount?.toLocaleString()}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Worker's Salary (For Info)</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentCommission.workerSalaryInfo')}</p>
                 <p className="font-medium text-gray-800 dark:text-white">EGP {commissionData.fullSalary?.toLocaleString()}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Paid directly to worker by employer</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('paymentCommission.salaryDirect')}</p>
               </div>
             </div>
           </div>
@@ -369,10 +369,10 @@ const PaymentCommission = () => {
             <div className="flex items-start gap-3">
               <Info size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-blue-700 font-medium">How it works:</p>
+                <p className="text-sm text-blue-700 font-medium">{t('paymentCommission.howItWorks')}</p>
                 <p className="text-xs text-blue-600 mt-1">
-                  You are paying the <strong>platform commission</strong> ({RECRUITMENT_COMMISSION_RATE * 100}% of the worker's monthly salary).
-                  The worker's full salary is an agreement between you and the employer and is paid directly.
+                  {t('paymentCommission.explanationPrefix')} <strong>{t('paymentCommission.platformCommissionLower')}</strong> ({RECRUITMENT_COMMISSION_RATE * 100}% {t('paymentCommission.salaryPercentageSuffix')}).
+                  {t('paymentCommission.explanationSalary')}
                 </p>
               </div>
             </div>
@@ -386,7 +386,7 @@ const PaymentCommission = () => {
           )}
 
           <div className="space-y-4 mb-8">
-            <p className="font-semibold text-gray-700 dark:text-gray-300 text-lg">Select Payment Method</p>
+            <p className="font-semibold text-gray-700 dark:text-gray-300 text-lg">{t('paymentCommission.selectMethod')}</p>
             {paymentMethods.map((method) => {
               const isSelected = selectedMethod === method.id;
               const Icon = method.icon;
@@ -440,27 +440,27 @@ const PaymentCommission = () => {
             {processing ? (
               <>
                 <Loader2 size={22} className="animate-spin" />
-                Processing Payment...
+                {t('paymentCommission.processing')}
               </>
             ) : (
-              `Pay EGP ${commissionData.commissionAmount?.toLocaleString()} to Unlock`
+              t('paymentCommission.payToUnlock', { amount: commissionData.commissionAmount?.toLocaleString() })
             )}
           </button>
 
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <Shield size={16} />
-            Secured by HomelyServ
+            {t('paymentCommission.securedBy')}
           </div>
 
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
             <Link to="/terms" className="hover:text-red-600 hover:underline transition-colors">
-              Terms &amp; Conditions
+              {t('paymentCommission.terms')}
             </Link>
             <Link to="/refund-policy" className="hover:text-red-600 hover:underline transition-colors">
-              Refund Policy
+              {t('paymentCommission.refundPolicy')}
             </Link>
             <Link to="/privacy" className="hover:text-red-600 hover:underline transition-colors">
-              Privacy Policy
+              {t('paymentCommission.privacyPolicy')}
             </Link>
           </div>
         </div>
@@ -471,7 +471,7 @@ const PaymentCommission = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Pay with Paymob</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('paymentCommission.payWithPaymob')}</h3>
               <button
                 onClick={() => {
                   setPaymobIframe(null);
@@ -488,7 +488,7 @@ const PaymentCommission = () => {
                 src={paymobIframe}
                 className="w-full h-full border-0"
                 allow="payment"
-                title="Paymob Payment"
+                title={t('paymentCommission.paymobIframeTitle')}
               />
             </div>
           </div>
