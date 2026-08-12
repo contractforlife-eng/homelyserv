@@ -12,136 +12,29 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 
-const translations = {
-  en: {
-    title: 'Job Details',
-    subtitle: 'Review a job posting and its requirements',
-    backToJobs: 'Back to Jobs',
-    salary: 'Salary',
-    jobType: 'Job Type',
-    posted: 'Posted',
-    employer: 'Employer',
-    jobDescription: 'Job Description',
-    requirements: 'Requirements',
-    benefits: 'Benefits',
-    schedule: 'Schedule',
-    startDate: 'Start Date',
-    deadline: 'Application Deadline',
-    fullTime: 'Full Time',
-    partTime: 'Part Time',
-    contract: 'Contract',
-    freelance: 'Freelance',
-    urgent: 'Urgent',
-    featured: 'Featured',
-    perDay: 'hrs/day',
-    daysPerWeek: 'days/week',
-    to: 'to',
-    daysOff: 'Weekly days off',
-    notFoundTitle: 'Job Not Found',
-    notFoundDesc: 'This job may have been closed or removed.',
-    loading: 'Loading job details...',
-    error: 'Failed to load job details.',
-    company: 'Company',
-    locationNotSpecified: 'Location not specified',
-    // Apply flow
-    apply: 'Apply Now',
-    applying: 'Applying...',
-    applied: 'Applied',
-    coverMessageLabel: 'Cover Message (optional)',
-    coverMessagePlaceholder: 'Tell the employer why you are a good fit...',
-    coverMessageMax: 'Max 2000 characters',
-    submitApplication: 'Submit Application',
-    applicationStatus: 'Application Status',
-    statusApplied: 'Applied',
-    statusShortlisted: 'Shortlisted',
-    statusRejected: 'Rejected',
-    statusWithdrawn: 'Withdrawn',
-    statusOfferSent: 'Offer Sent',
-    viewOffer: 'View Offer',
-    viewApplicants: 'View Applicants',
-    applyError: 'Failed to submit application. Please try again.',
-    applySuccess: 'Application submitted successfully!',
-    alreadyApplied: 'You have already applied to this job.',
-    cannotReapply: 'You cannot re-apply to this job.',
-    noReapplyAfterWithdraw: 'You have withdrawn your application and cannot re-apply.',
-    offerSentDesc: 'The employer has sent you an offer. View it in your offers.',
-    shortlistedDesc: 'The employer has shortlisted your application.',
-    rejectedDesc: 'Your application was not selected.',
-    withdrawnDesc: 'You withdrew your application.',
-    appliedDesc: 'Your application has been submitted.',
-  },
-  ar: {
-    title: 'تفاصيل الوظيفة',
-    subtitle: 'مراجعة تفاصيل الوظيفة ومتطلباتها',
-    backToJobs: 'العودة إلى الوظائف',
-    salary: 'الراتب',
-    jobType: 'نوع الوظيفة',
-    posted: 'تاريخ النشر',
-    employer: 'صاحب العمل',
-    jobDescription: 'وصف الوظيفة',
-    requirements: 'المتطلبات',
-    benefits: 'المزايا',
-    schedule: 'الجدول',
-    startDate: 'تاريخ البدء',
-    deadline: 'الموعد النهائي للتقديم',
-    fullTime: 'دوام كامل',
-    partTime: 'دوام جزئي',
-    contract: 'عقد',
-    freelance: 'حر',
-    urgent: 'عاجل',
-    featured: 'مميزة',
-    perDay: 'ساعة/يوم',
-    daysPerWeek: 'أيام/أسبوع',
-    to: 'إلى',
-    daysOff: 'أيام الإجازة الأسبوعية',
-    notFoundTitle: 'الوظيفة غير موجودة',
-    notFoundDesc: 'ربما تم إغلاق هذه الوظيفة أو إزالتها.',
-    loading: 'جارٍ تحميل تفاصيل الوظيفة...',
-    error: 'فشل تحميل تفاصيل الوظيفة.',
-    company: 'الشركة',
-    locationNotSpecified: 'الموقع غير محدد',
-    // Apply flow
-    apply: 'تقديم الآن',
-    applying: 'جارٍ التقديم...',
-    applied: 'تم التقديم',
-    coverMessageLabel: 'رسالة التقديم (اختياري)',
-    coverMessagePlaceholder: 'أخبر صاحب العمل لماذا أنت مناسب للوظيفة...',
-    coverMessageMax: 'الحد الأقصى 2000 حرف',
-    submitApplication: 'إرسال الطلب',
-    applicationStatus: 'حالة الطلب',
-    statusApplied: 'تم التقديم',
-    statusShortlisted: 'تم الاختيار المبدئي',
-    statusRejected: 'مرفوض',
-    statusWithdrawn: 'تم السحب',
-    statusOfferSent: 'تم إرسال العرض',
-    viewOffer: 'عرض العرض',
-    viewApplicants: 'عرض المتقدمين',
-    applyError: 'فشل إرسال الطلب. حاول مرة أخرى.',
-    applySuccess: 'تم إرسال الطلب بنجاح!',
-    alreadyApplied: 'لقد تقدمت لهذه الوظيفة بالفعل.',
-    cannotReapply: 'لا يمكنك إعادة التقديم لهذه الوظيفة.',
-    noReapplyAfterWithdraw: 'لقد سحبت طلبك ولا يمكنك إعادة التقديم.',
-    offerSentDesc: 'أرسل لك صاحب العمل عرضاً. شاهده في عروضك.',
-    shortlistedDesc: 'قام صاحب العمل باختيار طلبك مبدئياً.',
-    rejectedDesc: 'لم يتم اختيار طلبك.',
-    withdrawnDesc: 'لقد سحبت طلبك.',
-    appliedDesc: 'تم إرسال طلبك.',
-  },
-};
 
 const TYPE_LABELS = {
-  'full-time': { en: 'Full Time', ar: 'دوام كامل' },
-  'part-time': { en: 'Part Time', ar: 'دوام جزئي' },
-  contract: { en: 'Contract', ar: 'عقد' },
-  freelance: { en: 'Freelance', ar: 'حر' },
+  'full-time': 'jobDetails.types.fullTime',
+  'part-time': 'jobDetails.types.partTime',
+  contract: 'jobDetails.types.contract',
+  freelance: 'jobDetails.types.freelance',
 };
 
 const APPLICATION_STATUS_LABELS = {
-  applied: { en: 'Applied', ar: 'تم التقديم' },
-  shortlisted: { en: 'Shortlisted', ar: 'تم الاختيار المبدئي' },
-  rejected: { en: 'Rejected', ar: 'مرفوض' },
-  withdrawn: { en: 'Withdrawn', ar: 'تم السحب' },
-  offer_sent: { en: 'Offer Sent', ar: 'تم إرسال العرض' },
+  applied: 'jobDetails.applicationStatusValues.applied',
+  shortlisted: 'jobDetails.applicationStatusValues.shortlisted',
+  rejected: 'jobDetails.applicationStatusValues.rejected',
+  withdrawn: 'jobDetails.applicationStatusValues.withdrawn',
+  offer_sent: 'jobDetails.applicationStatusValues.offerSent',
+};
+
+const CONTRACT_TYPE_LABELS = {
+  Permanent: 'jobDetails.contractTypes.permanent',
+  Contract: 'jobDetails.contractTypes.contract',
+  Temporary: 'jobDetails.contractTypes.temporary',
+  permanent: 'jobDetails.contractTypes.permanent',
+  contract: 'jobDetails.contractTypes.contract',
+  temporary: 'jobDetails.contractTypes.temporary',
 };
 
 const APPLICATION_STATUS_STYLES = {
@@ -155,10 +48,8 @@ const APPLICATION_STATUS_STYLES = {
 function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
-  const language = i18n.language === 'ar' ? 'ar' : 'en';
-  const t = translations[language] || translations.en;
-  const isArabic = language === 'ar';
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage === 'ar';
 
   const authUser = useAuthStore(state => state.user);
 
@@ -187,18 +78,18 @@ function JobDetails() {
         if (data?.success) {
           setJob(data.job);
         } else {
-          throw new Error(data?.message || t.notFoundDesc);
+          throw new Error(data?.message || t('jobDetails.notFoundDesc'));
         }
       } catch (fetchError) {
         console.error('Error fetching job details:', fetchError);
-        setError(t.notFoundDesc);
+        setError(t('jobDetails.notFoundDesc'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobDetails();
-  }, [id, t.notFoundDesc]);
+  }, [id, t('jobDetails.notFoundDesc')]);
 
   // Determine current application for WORKER on load
   useEffect(() => {
@@ -253,11 +144,11 @@ function JobDetails() {
         setMyApplication(data.application);
         setCoverMessage('');
       } else {
-        setApplyError(data?.message || t.applyError);
+        setApplyError(data?.message || t('jobDetails.applyError'));
       }
     } catch (applyErr) {
       console.error('Apply error:', applyErr);
-      setApplyError(applyErr.response?.data?.message || t.applyError);
+      setApplyError(applyErr.response?.data?.message || t('jobDetails.applyError'));
     } finally {
       setApplying(false);
     }
@@ -266,16 +157,16 @@ function JobDetails() {
   const renderApplicationStatus = () => {
     if (!myApplication) return null;
     const status = myApplication.status;
-    const label = APPLICATION_STATUS_LABELS[status]?.[language] || status;
+    const label = APPLICATION_STATUS_LABELS[status] ? t(APPLICATION_STATUS_LABELS[status]) : status;
     const style = APPLICATION_STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
 
     let desc = '';
     switch (status) {
-      case 'applied': desc = t.appliedDesc; break;
-      case 'shortlisted': desc = t.shortlistedDesc; break;
-      case 'rejected': desc = t.rejectedDesc; break;
-      case 'withdrawn': desc = t.withdrawnDesc; break;
-      case 'offer_sent': desc = t.offerSentDesc; break;
+      case 'applied': desc = t('jobDetails.appliedDesc'); break;
+      case 'shortlisted': desc = t('jobDetails.shortlistedDesc'); break;
+      case 'rejected': desc = t('jobDetails.rejectedDesc'); break;
+      case 'withdrawn': desc = t('jobDetails.withdrawnDesc'); break;
+      case 'offer_sent': desc = t('jobDetails.offerSentDesc'); break;
       default: break;
     }
 
@@ -292,7 +183,7 @@ function JobDetails() {
             to="/worker/offers"
             className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition text-sm"
           >
-            <Briefcase size={16} /> {t.viewOffer}
+            <Briefcase size={16} /> {t('jobDetails.viewOffer')}
           </Link>
         )}
       </div>
@@ -308,7 +199,7 @@ function JobDetails() {
           className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition flex items-center justify-center gap-2"
         >
           <Users size={18} />
-          {t.viewApplicants}
+          {t('jobDetails.viewApplicants')}
         </button>
       );
     }
@@ -337,16 +228,16 @@ function JobDetails() {
       <form onSubmit={handleApply} className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t.coverMessageLabel}
+            {t('jobDetails.coverMessageLabel')}
           </label>
           <textarea
             value={coverMessage}
             onChange={(e) => setCoverMessage(e.target.value.slice(0, 2000))}
-            placeholder={t.coverMessagePlaceholder}
+            placeholder={t('jobDetails.coverMessagePlaceholder')}
             rows={4}
             className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-900 text-gray-800 dark:text-white resize-none"
           />
-          <p className="text-xs text-gray-400 mt-1">{coverMessage.length}/2000 {t.coverMessageMax}</p>
+          <p className="text-xs text-gray-400 mt-1">{coverMessage.length}/2000 {t('jobDetails.coverMessageMax')}</p>
         </div>
         {applyError && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400 text-sm">
@@ -355,7 +246,7 @@ function JobDetails() {
         )}
         {applySuccess && (
           <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 text-green-700 dark:text-green-400 text-sm">
-            {t.applySuccess}
+            {t('jobDetails.applySuccess')}
           </div>
         )}
         <button
@@ -364,7 +255,7 @@ function JobDetails() {
           className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {applying ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          {applying ? t.applying : t.submitApplication}
+          {applying ? t('jobDetails.applying') : t('jobDetails.submitApplication')}
         </button>
       </form>
     );
@@ -374,14 +265,14 @@ function JobDetails() {
     return (
       <DashboardLayout>
         <DashboardHeader
-          title={t.title}
+          title={t('jobDetails.title')}
           notificationUserId={authUser?.id || authUser?.email}
         />
-        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={t('jobDetails.title')} subtitle={t('jobDetails.subtitle')} />
         <div className="p-4 md:p-6 flex items-center justify-center py-24">
           <div className="text-center">
             <Loader2 size={48} className="animate-spin text-red-600 mx-auto" />
-            <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('jobDetails.loading')}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -392,21 +283,21 @@ function JobDetails() {
     return (
       <DashboardLayout>
         <DashboardHeader
-          title={t.title}
+          title={t('jobDetails.title')}
           notificationUserId={authUser?.id || authUser?.email}
         />
-        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={t('jobDetails.title')} subtitle={t('jobDetails.subtitle')} />
         <div className="p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
               <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.notFoundTitle}</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">{error || t.notFoundDesc}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('jobDetails.notFoundTitle')}</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">{error || t('jobDetails.notFoundDesc')}</p>
               <button
                 onClick={() => navigate(backPath)}
                 className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
-                {t.backToJobs}
+                {t('jobDetails.backToJobs')}
               </button>
             </div>
           </div>
@@ -420,14 +311,14 @@ function JobDetails() {
   return (
     <DashboardLayout>
       <DashboardHeader
-        title={t.title}
+        title={t('jobDetails.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
-      <RolePageHeader title={t.title} subtitle={t.subtitle} />
+      <RolePageHeader title={t('jobDetails.title')} subtitle={t('jobDetails.subtitle')} />
       <div className="p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <Link to={backPath} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-red-600 transition mb-4">
-            <ArrowLeft size={18} /> {t.backToJobs}
+            <ArrowLeft size={18} /> {t('jobDetails.backToJobs')}
           </Link>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-6">
@@ -437,12 +328,12 @@ function JobDetails() {
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white break-words">{job.jobTitle}</h1>
                 {job.isUrgent && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                    {t.urgent}
+                    {t('jobDetails.urgent')}
                   </span>
                 )}
                 {job.isFeatured && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    {t.featured}
+                    {t('jobDetails.featured')}
                   </span>
                 )}
               </div>
@@ -463,15 +354,15 @@ function JobDetails() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
             <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.salary}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('jobDetails.salary')}</p>
               <p className="font-semibold text-gray-800 dark:text-white">{formatSalary()}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.jobType}</p>
-              <p className="font-semibold text-gray-800 dark:text-white">{TYPE_LABELS[job.employmentType]?.[language] || job.employmentType}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('jobDetails.jobType')}</p>
+              <p className="font-semibold text-gray-800 dark:text-white">{TYPE_LABELS[job.employmentType] ? t(TYPE_LABELS[job.employmentType]) : job.employmentType}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.posted}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('jobDetails.posted')}</p>
               <p className="font-semibold text-gray-800 dark:text-white">{formatDate(job.createdAt)}</p>
             </div>
           </div>
@@ -481,14 +372,14 @@ function JobDetails() {
           <div className="md:col-span-2 space-y-6">
             {job.description && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t.jobDescription}</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t('jobDetails.jobDescription')}</h2>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words">{job.description}</p>
               </div>
             )}
 
             {job.requirements && job.requirements.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t.requirements}</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t('jobDetails.requirements')}</h2>
                 <ul className="space-y-2">
                   {job.requirements.map((req, i) => (
                     <li key={i} className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
@@ -501,7 +392,7 @@ function JobDetails() {
 
             {job.benefits && job.benefits.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t.benefits}</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-3">{t('jobDetails.benefits')}</h2>
                 <ul className="space-y-2">
                   {job.benefits.map((benefit, i) => (
                     <li key={i} className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
@@ -515,48 +406,48 @@ function JobDetails() {
 
           <div className="md:col-span-1 space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-800 dark:text-white mb-4">{t.schedule}</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-4">{t('jobDetails.schedule')}</h3>
               <div className="space-y-2.5 text-sm text-gray-600 dark:text-gray-300">
                 {job.workingHoursPerDay !== null && job.workingHoursPerDay !== undefined && (
                   <p className="flex items-center gap-2">
                     <Clock size={14} className="text-gray-400 dark:text-gray-500" />
-                    {job.workingHoursPerDay} {t.perDay}
+                    {job.workingHoursPerDay} {t('jobDetails.perDay')}
                   </p>
                 )}
                 {job.workingDaysPerWeek !== null && job.workingDaysPerWeek !== undefined && (
                   <p className="flex items-center gap-2">
                     <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                    {job.workingDaysPerWeek} {t.daysPerWeek}
+                    {job.workingDaysPerWeek} {t('jobDetails.daysPerWeek')}
                   </p>
                 )}
                 {job.workStartTime && job.workEndTime && (
                   <p className="flex items-center gap-2">
                     <Clock size={14} className="text-gray-400 dark:text-gray-500" />
-                    {job.workStartTime} {t.to} {job.workEndTime}
+                    {job.workStartTime} {t('jobDetails.to')} {job.workEndTime}
                   </p>
                 )}
                 {job.weeklyDaysOff && (
                   <p className="flex items-start gap-2">
                     <Clock size={14} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span className="break-words">{t.daysOff}: {job.weeklyDaysOff}</span>
+                    <span className="break-words">{t('jobDetails.daysOff')}: {job.weeklyDaysOff}</span>
                   </p>
                 )}
                 {job.employmentStartDate && (
                   <p className="flex items-center gap-2">
                     <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                    {t.startDate}: {formatDate(job.employmentStartDate)}
+                    {t('jobDetails.startDate')}: {formatDate(job.employmentStartDate)}
                   </p>
                 )}
                 {job.deadline && (
                   <p className="flex items-center gap-2">
                     <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                    {t.deadline}: {formatDate(job.deadline)}
+                    {t('jobDetails.deadline')}: {formatDate(job.deadline)}
                   </p>
                 )}
                 {job.contractType && (
                   <p className="flex items-center gap-2">
                     <FileText size={14} className="text-gray-400 dark:text-gray-500" />
-                    {job.contractType}
+                    {CONTRACT_TYPE_LABELS[job.contractType] ? t(CONTRACT_TYPE_LABELS[job.contractType]) : job.contractType}
                   </p>
                 )}
               </div>
