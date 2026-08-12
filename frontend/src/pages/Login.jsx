@@ -235,7 +235,7 @@ const redirectUser = (user) => {
       </div>
 
       {/* Desktop: Split layout | Mobile: Stacked */}
-      <div className="flex flex-col lg:flex-row w-full relative z-10">
+      <div className="flex flex-col lg:flex-row w-full relative z-10 2xl:flex-1 2xl:min-h-0">
         
         {/* Marketing Panel - Hidden on mobile, visible on desktop */}
         <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] bg-white/80 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto">
@@ -243,9 +243,9 @@ const redirectUser = (user) => {
         </div>
 
         {/* Login Panel */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12">
-          <div className="w-full max-w-lg">
-            <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 sm:p-10 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 2xl:p-16">
+          <div className="w-full max-w-lg 2xl:max-w-xl">
+            <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-red-500/30 p-8 sm:p-10 2xl:p-12 border border-red-200/50 transition-all duration-300 hover:shadow-red-500/40">
           
           {/* Language Selector */}
           <div className="absolute top-4 right-4">
