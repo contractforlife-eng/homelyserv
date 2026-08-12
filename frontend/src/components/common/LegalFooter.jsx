@@ -63,7 +63,7 @@ const LegalFooter = ({ className = '' }) => {
   return (
     <footer className={`w-full mt-auto ${className}`}>
       <div className="w-full max-w-5xl mx-auto px-4 py-5">
-        <nav aria-label="Legal" className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <nav aria-label={t('legalFooter.navigation')} className="border-t border-gray-200 dark:border-gray-700 pt-4">
           <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {links.map((link) => (
               <li key={link.to}>
@@ -78,7 +78,7 @@ const LegalFooter = ({ className = '' }) => {
           </ul>
         </nav>
         <p className="mt-3 text-center text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500">
-          © {new Date().getFullYear()} HomelyServ. All rights reserved.
+          {t('legalFooter.copyright', { year: new Date().getFullYear() })}
         </p>
       </div>
     </footer>
