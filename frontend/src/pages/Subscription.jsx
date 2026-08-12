@@ -36,8 +36,7 @@ const Subscription = () => {
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  const { i18n } = useTranslation();
-  const language = i18n.language === 'ar' ? 'ar' : 'en';
+  const { t } = useTranslation();
 
   const [isEmployer, setIsEmployer] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -56,133 +55,23 @@ const Subscription = () => {
 
   const price = isEmployer ? 200 : 100;
 
-  const translations = {
-    en: {
-      title: 'Premium Subscription',
-      subtitle: 'Unlock Premium features',
-      heroSubtitle: 'Choose the benefits that match how you use HomelyServ today.',
-      pricing: {
-        title: 'Premium Plan',
-        description: 'Every benefit below is delivered now',
-        price: 'EGP {price}/month',
-        workerFeatures: [
-          '⭐ Premium badge on your profile',
-          '⭐ Higher visibility in matching employer searches',
-          '⭐ "Actively Looking" status to signal you are open to work'
-        ],
-        employerFeatures: [
-          '⭐ Unlimited searches — the free plan is limited to 3 per day',
-          '⭐ Premium badge on your profile'
-        ]
-      },
-      payment: {
-        title: 'Subscribe Now',
-        chooseMethod: 'Choose Payment Method',
-        processing: 'Processing...',
-        subscribe: 'Subscribe Now',
-        success: '🎉 Subscription Activated!',
-        successMessage: 'Your premium subscription is now active.',
-        error: 'Payment failed. Please try again.',
-        verifyPending: 'Your payment is being verified...',
-        alreadySubscribed: 'You already have an active subscription!',
-        activationRetry: 'Payment received — we could not confirm Premium activation yet. Re-check your status below or refresh the page.',
-        verificationTimeout: 'Payment verification timed out. Please check your PayPal account and retry.',
-        verificationFailed: 'Payment verification failed. Please try again.',
-        checkStatusAgain: 'Check Status Again'
-      },
-      methods: {
-        paymob: 'Paymob',
-        paymobDesc: 'Pay with credit card, debit card, or mobile wallet',
-        paypal: 'PayPal',
-        paypalDesc: 'Pay securely with your PayPal account'
-      },
-      status: {
-        active: 'Active',
-        expired: 'Expired',
-        inactive: 'Inactive',
-        daysLeft: '{days} days left',
-        expiresAt: 'Expires on {date}'
-      },
-      back: 'Back to Dashboard',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      payNow: 'Subscribe Now',
-      securePayment: '🔒 Secure payment processed by HomelyServ',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'الاشتراك المميز',
-      subtitle: 'افتح ميزات Premium',
-      heroSubtitle: 'اختر الميزات التي تناسب طريقة استخدامك لـ HomelyServ اليوم.',
-      pricing: {
-        title: 'الخطة المميزة',
-        description: 'كل ميزة أدناه مفعّلة بالفعل',
-        price: '{price} جنيه/شهر',
-        workerFeatures: [
-          '⭐ شارة Premium على ملفك الشخصي',
-          '⭐ ظهور أعلى في نتائج بحث أصحاب العمل المطابقين',
-          '⭐ حالة «أبحث بنشاط عن عمل» للإشارة إلى توفرك للعمل'
-        ],
-        employerFeatures: [
-          '⭐ بحث غير محدود — الخطة المجانية محدودة بـ 3 عمليات بحث يومياً',
-          '⭐ شارة Premium على ملفك الشخصي'
-        ]
-      },
-      payment: {
-        title: 'اشترك الآن',
-        chooseMethod: 'اختر طريقة الدفع',
-        processing: 'جاري المعالجة...',
-        subscribe: 'اشترك الآن',
-        success: '🎉 تم تفعيل الاشتراك!',
-        successMessage: 'اشتراكك المميز نشط الآن.',
-        error: 'فشل الدفع. يرجى المحاولة مرة أخرى.',
-        verifyPending: 'دفعتك قيد التحقق...',
-        alreadySubscribed: 'لديك اشتراك نشط بالفعل!',
-        activationRetry: 'تم استلام الدفع — لم نتمكن من تأكيد تفعيل Premium بعد. أعد التحقق من الحالة أدناه أو حدّث الصفحة.',
-        verificationTimeout: 'انتهت مهلة التحقق من الدفع. يرجى التحقق من حساب PayPal الخاص بك والمحاولة مرة أخرى.',
-        verificationFailed: 'فشل التحقق من الدفع. يرجى المحاولة مرة أخرى.',
-        checkStatusAgain: 'إعادة التحقق من الحالة'
-      },
-      methods: {
-        paymob: 'Paymob',
-        paymobDesc: 'ادفع ببطاقة الائتمان أو الخصم أو المحفظة الإلكترونية',
-        paypal: 'PayPal',
-        paypalDesc: 'ادفع بأمان باستخدام حساب PayPal الخاص بك'
-      },
-      status: {
-        active: 'نشط',
-        expired: 'منتهي',
-        inactive: 'غير نشط',
-        daysLeft: '{days} أيام متبقية',
-        expiresAt: 'ينتهي في {date}'
-      },
-      back: 'العودة إلى لوحة التحكم',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      payNow: 'اشترك الآن',
-      securePayment: '🔒 دفعات آمنة بواسطة HomelyServ',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[language] || translations.en;
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
     {
       id: PAYMENT_METHODS.PAYMOB,
-      name: t.methods.paymob,
+      name: t('subscriptionPage.methods.paymob'),
       icon: CreditCard,
-      description: t.methods.paymobDesc,
+      description: t('subscriptionPage.methods.paymobDesc'),
       color: 'from-blue-500 to-blue-600',
-      badge: 'Recommended',
+      badge: t('subscriptionPage.recommended'),
       badgeColor: 'bg-green-100 text-green-700'
     },
     {
       id: PAYMENT_METHODS.PAYPAL,
-      name: t.methods.paypal,
+      name: t('subscriptionPage.methods.paypal'),
       icon: Wallet,
-      description: t.methods.paypalDesc,
+      description: t('subscriptionPage.methods.paypalDesc'),
       color: 'from-blue-700 to-blue-800',
       badge: null,
       badgeColor: null
@@ -305,7 +194,7 @@ const Subscription = () => {
       }
     } catch (error) {
       console.error('Error processing subscription:', error);
-      setPaymentError('Failed to process subscription. Please try again.');
+      setPaymentError(t('subscriptionPage.payment.processFailed'));
     }
   };
 
@@ -373,12 +262,12 @@ const Subscription = () => {
 
   const handleSubscribe = async () => {
     if (!selectedMethod) {
-      setPaymentError('Please select a payment method');
+      setPaymentError(t('subscriptionPage.payment.selectMethodError'));
       return;
     }
 
     if (!authUser) {
-      setPaymentError('User not found');
+      setPaymentError(t('subscriptionPage.payment.userNotFound'));
       return;
     }
 
@@ -413,7 +302,7 @@ const Subscription = () => {
           setPaymobIframe(result.iframeUrl);
           window.addEventListener('message', handlePaymobMessage);
         } else {
-          throw new Error(result.error || 'Paymob payment failed');
+          throw new Error(result.error || t('subscriptionPaymentErrors.paymobFailed'));
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
@@ -427,7 +316,7 @@ const Subscription = () => {
           // Start polling for payment completion
           startPollingPayPalOrder(result.paypalOrderId);
         } else {
-          throw new Error(result.error || 'PayPal payment failed');
+          throw new Error(result.error || t('subscriptionPaymentErrors.paypalFailed'));
         }
       }
       
@@ -491,19 +380,19 @@ const Subscription = () => {
             // Capture succeeded but the entitlement row is not visible yet.
             // Show a retryable message — never auto-create/capture a new payment.
             setProcessing(false);
-            setPaymentError(t.payment.activationRetry);
+            setPaymentError(t('subscriptionPage.payment.activationRetry'));
             setRetryableStatus(true);
           }
         } else if (attempts >= maxAttempts) {
           stopPolling();
-          setPaymentError(t.payment.verificationTimeout);
+          setPaymentError(t('subscriptionPage.payment.verificationTimeout'));
           setProcessing(false);
         }
       } catch (error) {
         console.error('PayPal polling error:', error);
         if (attempts >= maxAttempts) {
           stopPolling();
-          setPaymentError(t.payment.verificationFailed);
+          setPaymentError(t('subscriptionPage.payment.verificationFailed'));
           setProcessing(false);
         }
       }
@@ -518,7 +407,7 @@ const Subscription = () => {
     const active = await refreshSubscriptionStatus({ attempts: 4, intervalMs: 1200 });
     if (!active) {
       setProcessing(false);
-      setPaymentError(t.payment.activationRetry);
+      setPaymentError(t('subscriptionPage.payment.activationRetry'));
       setRetryableStatus(true);
     }
   };
@@ -541,14 +430,14 @@ const Subscription = () => {
     return (
       <DashboardLayout>
         <DashboardHeader
-          title={t.title}
+          title={t('subscriptionPage.title')}
           notificationUserId={authUser?.id || authUser?.email}
         />
-        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={t('subscriptionPage.title')} subtitle={t('subscriptionPage.subtitle')} />
         <div className="p-4 md:p-6 flex items-center justify-center py-24">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('subscriptionPage.loading')}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -562,10 +451,10 @@ const Subscription = () => {
   return (
     <DashboardLayout>
       <DashboardHeader
-        title={t.title}
+        title={t('subscriptionPage.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
-      <RolePageHeader title={t.title} subtitle={t.subtitle} />
+      <RolePageHeader title={t('subscriptionPage.title')} subtitle={t('subscriptionPage.subtitle')} />
       <div className="p-4 md:p-6">
         {/* Back Button */}
         <button
@@ -573,7 +462,7 @@ const Subscription = () => {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:text-white mb-6 transition-colors"
         >
           <ArrowLeft size={18} />
-          {t.back}
+          {t('subscriptionPage.back')}
         </button>
 
           {paymentSuccess ? (
@@ -582,8 +471,8 @@ const Subscription = () => {
               <div className="w-28 h-28 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <CheckCircle size={56} className="text-white" />
               </div>
-              <h2 className="text-4xl font-bold text-gray-800 dark:text-white mb-3">{t.payment.success}</h2>
-              <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">{t.payment.successMessage}</p>
+              <h2 className="text-4xl font-bold text-gray-800 dark:text-white mb-3">{t('subscriptionPage.payment.success')}</h2>
+              <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">{t('subscriptionPage.payment.successMessage')}</p>
               
               <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 mb-8 border border-yellow-200">
                 <div className="flex items-center gap-4 justify-center">
@@ -592,15 +481,15 @@ const Subscription = () => {
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-gray-800 dark:text-white text-lg">
-                      {isEmployer ? 'Employer' : 'Worker'} Premium
+                      {isEmployer ? t('subscriptionPage.roles.employerPremium') : t('subscriptionPage.roles.workerPremium')}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Active Subscription</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{t('subscriptionPage.activeSubscription')}</p>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">Active</span>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">{t('subscriptionPage.status.active')}</span>
                 </div>
                 {currentSubscription?.expiresAt && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-3">
-                    {t.status.expiresAt.replace('{date}', new Date(currentSubscription.expiresAt).toLocaleDateString())}
+                    {t('subscriptionPage.status.expiresAt', { date: new Date(currentSubscription.expiresAt).toLocaleDateString() })}
                   </p>
                 )}
               </div>
@@ -610,7 +499,7 @@ const Subscription = () => {
                   onClick={handleGoBack}
                   className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
                 >
-                  Go to Dashboard
+                  {t('subscriptionPage.goToDashboard')}
                 </button>
               </div>
             </div>
@@ -621,13 +510,13 @@ const Subscription = () => {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full text-yellow-700 dark:text-yellow-400 text-sm font-semibold mb-4">
                   <Sparkles size={16} />
-                  Premium Features
+                  {t('subscriptionPage.premiumFeatures')}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-                  Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">Premium</span> Features
+                  {t('subscriptionPage.unlock')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{t('subscriptionPage.premium')}</span> {t('subscriptionPage.features')}
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                  {t.heroSubtitle}
+                  {t('subscriptionPage.heroSubtitle')}
                 </p>
               </div>
 
@@ -639,16 +528,16 @@ const Subscription = () => {
                       <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Crown size={36} className="text-white" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t.pricing.title}</h3>
-                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.pricing.description}</p>
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('subscriptionPage.pricing.title')}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('subscriptionPage.pricing.description')}</p>
                       <div className="mt-4">
                         <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">EGP {price}</span>
-                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-lg">/month</span>
+                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-lg">{t('subscriptionPage.pricing.perMonth')}</span>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      {(isEmployer ? t.pricing.employerFeatures : t.pricing.workerFeatures).map((feature, index) => (
+                      {(isEmployer ? t('subscriptionPage.pricing.employerFeatures', { returnObjects: true }) : t('subscriptionPage.pricing.workerFeatures', { returnObjects: true })).map((feature, index) => (
                         <div key={index} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                           <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                             <CheckCircle size={14} className="text-white" />
@@ -662,14 +551,14 @@ const Subscription = () => {
                       <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-2xl border border-green-200">
                         <div className="flex items-center gap-2 text-green-700">
                           <CheckCircle size={18} />
-                          <span className="font-semibold">{t.status.active}</span>
+                          <span className="font-semibold">{t('subscriptionPage.status.active')}</span>
                           <span className="text-sm text-green-600">
-                            ({t.status.daysLeft.replace('{days}', subscriptionStatus.daysLeft || 30)})
+                            ({t('subscriptionPage.status.daysLeft', { days: subscriptionStatus.daysLeft || 30 })})
                           </span>
                         </div>
                         {subscriptionStatus.expiresAt && (
                           <p className="text-xs text-green-600 mt-1">
-                            {t.status.expiresAt.replace('{date}', new Date(subscriptionStatus.expiresAt).toLocaleDateString())}
+                            {t('subscriptionPage.status.expiresAt', { date: new Date(subscriptionStatus.expiresAt).toLocaleDateString() })}
                           </p>
                         )}
                       </div>
@@ -680,7 +569,7 @@ const Subscription = () => {
                 {/* Payment Form - Takes 3/5 of the space */}
                 <div className="lg:col-span-3">
                   <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{t.payment.title}</h3>
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{t('subscriptionPage.payment.title')}</h3>
                     
                     {paymentError && (
                       <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-2xl text-red-600 flex items-start gap-3">
@@ -694,7 +583,7 @@ const Subscription = () => {
                               className="mt-3 flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
                             >
                               {processing && <Loader2 size={16} className="animate-spin" />}
-                              {t.payment.checkStatusAgain}
+                              {t('subscriptionPage.payment.checkStatusAgain')}
                             </button>
                           )}
                         </div>
@@ -702,7 +591,7 @@ const Subscription = () => {
                     )}
 
                     <div className="space-y-4 mb-8">
-                      <p className="font-medium text-gray-700 dark:text-gray-300">{t.payment.chooseMethod}</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-300">{t('subscriptionPage.payment.chooseMethod')}</p>
                       {paymentMethods.map((method) => {
                         const isSelected = selectedMethod === method.id;
                         const Icon = method.icon;
@@ -756,18 +645,18 @@ const Subscription = () => {
                       {processing ? (
                         <>
                           <Loader2 size={22} className="animate-spin" />
-                          {t.payment.processing}
+                          {t('subscriptionPage.payment.processing')}
                         </>
                       ) : (
                         <>
                           <Crown size={22} />
-                          {t.payNow}
+                          {t('subscriptionPage.payNow')}
                         </>
                       )}
                     </button>
 
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center mt-4">
-                      🔒 {t.securePayment}
+                      {t('subscriptionPage.securePayment')}
                     </p>
                   </div>
                 </div>
@@ -781,7 +670,7 @@ const Subscription = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Pay with Paymob</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('subscriptionPage.payWithPaymob')}</h3>
               <button
                 onClick={() => {
                   setPaymobIframe(null);
@@ -798,7 +687,7 @@ const Subscription = () => {
                 src={paymobIframe}
                 className="w-full h-full border-0"
                 allow="payment"
-                title="Paymob Payment"
+                title={t('subscriptionPage.paymobPaymentTitle')}
               />
             </div>
           </div>
