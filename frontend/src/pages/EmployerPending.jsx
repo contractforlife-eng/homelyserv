@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   AlertCircle,
   CheckCircle,
@@ -22,7 +22,7 @@ function EmployerPending() {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
 
   const pendingApplications = [
     {
@@ -75,15 +75,15 @@ function EmployerPending() {
   }, [authUser, isAuthenticated, authLoading]);
 
   const handlePayFee = (id) => {
-    alert(`Processing payment for application #${id}`);
+    alert(t('employerPending.processingPayment', { id }));
   };
 
   const getStatusBadge = (status) => {
     switch(status) {
       case 'pending_fee':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending Fee (10%)</span>;
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">{t('employerPending.status.pendingFee')}</span>;
       case 'pending_approval':
-        return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Pending Approval</span>;
+        return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{t('employerPending.status.pendingApproval')}</span>;
       default:
         return <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white rounded-full text-xs">{status}</span>;
     }
@@ -94,7 +94,7 @@ function EmployerPending() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerPending.loading')}</p>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ function EmployerPending() {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title="Pending Applications"
+        title={t('employerPending.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
@@ -115,8 +115,8 @@ function EmployerPending() {
         <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Pending Applications</h1>
-              <p className="text-teal-100 mt-1">Review and manage pending requests</p>
+              <h1 className="text-2xl font-bold">{t('employerPending.title')}</h1>
+              <p className="text-teal-100 mt-1">{t('employerPending.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -124,19 +124,19 @@ function EmployerPending() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Pending</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPending.stats.totalPending')}</p>
             <p className="text-2xl font-bold text-gray-800 dark:text-white">{pendingApplications.length}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Pending Fee</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPending.stats.pendingFee')}</p>
             <p className="text-2xl font-bold text-yellow-600">
               {pendingApplications.filter(a => a.status === 'pending_fee').length}
             </p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Fee Amount</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPending.stats.totalFeeAmount')}</p>
             <p className="text-2xl font-bold text-red-600">
-              EGP {pendingApplications.reduce((sum, a) => sum + a.fee, 0).toLocaleString()}
+              {t('employerPending.moneyValue', { amount: pendingApplications.reduce((sum, a) => sum + a.fee, 0).toLocaleString() })}
             </p>
           </div>
         </div>
@@ -164,10 +164,10 @@ function EmployerPending() {
                 </div>
 
                 <div className="flex flex-col items-end justify-center min-w-[150px]">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Salary</p>
-                  <p className="font-bold text-gray-800 dark:text-white">EGP {app.salary.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Fee (10%)</p>
-                  <p className="font-bold text-red-600">EGP {app.fee.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPending.salary')}</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{t('employerPending.moneyValue', { amount: app.salary.toLocaleString() })}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPending.fee')}</p>
+                  <p className="font-bold text-red-600">{t('employerPending.moneyValue', { amount: app.fee.toLocaleString() })}</p>
                 </div>
 
                 <div className="flex flex-col items-end justify-center gap-2 min-w-[160px]">
@@ -181,12 +181,12 @@ function EmployerPending() {
                         onClick={() => handlePayFee(app.id)}
                         className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition flex items-center gap-1"
                       >
-                        <CreditCard size={16} /> Pay Fee
+                        <CreditCard size={16} /> {t('employerPending.payFee')}
                       </button>
                     )}
                   </div>
                   {app.status === 'pending_fee' && (
-                    <p className="text-xs text-yellow-600">Pay 10% fee to proceed</p>
+                    <p className="text-xs text-yellow-600">{t('employerPending.payFeeHelper')}</p>
                   )}
                 </div>
               </div>
