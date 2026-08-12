@@ -84,7 +84,7 @@ const Block = ({ block }) => {
 };
 
 const LegalDocument = ({ content }) => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [language, setLanguage] = useState(() => {
     const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -93,6 +93,10 @@ const LegalDocument = ({ content }) => {
 
   const lang = resolveLang(language);
   const data = content[lang] || content.en;
+  const lastUpdatedSeparator = data.lastUpdated?.indexOf(':') ?? -1;
+  const lastUpdatedValue = lastUpdatedSeparator >= 0
+    ? data.lastUpdated.slice(lastUpdatedSeparator + 1).trim()
+    : data.lastUpdated;
 
   useEffect(() => {
     const onLanguageChanged = (lng) => {
@@ -104,8 +108,8 @@ const LegalDocument = ({ content }) => {
   }, [i18n]);
 
   useEffect(() => {
-    applyDocumentDirection(lang);
-  }, [lang]);
+    applyDocumentDirection(language);
+  }, [language]);
 
   const goBack = () => {
     if (window.history.length > 1) {
@@ -127,7 +131,7 @@ const LegalDocument = ({ content }) => {
               className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-red-600 transition-colors text-sm font-medium shrink-0"
             >
               <BackIcon size={18} />
-              {data.back}
+              {t('back')}
             </button>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white truncate">
               {data.title}
@@ -139,7 +143,9 @@ const LegalDocument = ({ content }) => {
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <article className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 sm:p-8">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{data.lastUpdated}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            {t('legalDocument.lastUpdated')}: {lastUpdatedValue}
+          </p>
           {data.subtitle && (
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">{data.subtitle}</p>
           )}

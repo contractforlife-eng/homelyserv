@@ -3823,6 +3823,13 @@ const de = {
 // ---------------------------------------------------------------------------
 // Initialize i18n
 // ---------------------------------------------------------------------------
+en.translation.legalDocument = { lastUpdated: 'Last updated' };
+ar.translation.legalDocument = { lastUpdated: 'آخر تحديث' };
+fr.translation.legalDocument = { lastUpdated: 'Dernière mise à jour' };
+ru.translation.legalDocument = { lastUpdated: 'Последнее обновление' };
+tr.translation.legalDocument = { lastUpdated: 'Son güncelleme' };
+de.translation.legalDocument = { lastUpdated: 'Letzte Aktualisierung' };
+
 en.translation.employerPayments.serviceProvider = 'Service Provider';
 ar.translation.employerPayments.serviceProvider = 'مقدم خدمة';
 fr.translation.employerPayments.serviceProvider = 'Prestataire de services';
