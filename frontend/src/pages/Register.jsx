@@ -379,7 +379,7 @@ function Register() {
 
             {/* Country */}
             <div className="mb-3 sm:mb-4">
-              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('country')} <span className="text-red-600">*</span></label>
+              <label htmlFor="country" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('auth.country')} <span className="text-red-600">*</span></label>
               <CountrySelect
                 id="country"
                 name="country"

@@ -229,7 +229,9 @@ const en = {
     createOne: 'Create one',
     auth: {
       alreadyHaveAccount: 'Already have an account?',
-      signInLink: 'Sign in'
+      signInLink: 'Sign in',
+      country: 'Country',
+      countrySelect: { placeholder: 'Select your country', searchPlaceholder: 'Search countries...', searchLabel: 'Search countries', countriesLabel: 'Countries', noCountries: 'No countries found', selectedCountry: 'Selected country: {{country}}' }
     },
     forgotPassword: 'Forgot password?',
     rememberMe: 'Remember me',
@@ -866,7 +868,9 @@ const ar = {
     createOne: 'إنشاء حساب',
     auth: {
       alreadyHaveAccount: 'لديك حساب بالفعل؟',
-      signInLink: 'تسجيل الدخول'
+      signInLink: 'تسجيل الدخول',
+      country: 'البلد',
+      countrySelect: { placeholder: 'اختر بلدك', searchPlaceholder: 'ابحث عن البلدان...', searchLabel: 'البحث عن البلدان', countriesLabel: 'البلدان', noCountries: 'لم يتم العثور على بلدان', selectedCountry: 'البلد المحدد: {{country}}' }
     },
     forgotPassword: 'نسيت كلمة المرور؟',
     rememberMe: 'تذكرني',
@@ -1497,7 +1501,9 @@ const fr = {
     createOne: 'Créer un compte',
     auth: {
       alreadyHaveAccount: 'Vous avez déjà un compte ?',
-      signInLink: 'Se connecter'
+      signInLink: 'Se connecter',
+      country: 'Pays',
+      countrySelect: { placeholder: 'Sélectionnez votre pays', searchPlaceholder: 'Rechercher des pays...', searchLabel: 'Rechercher des pays', countriesLabel: 'Pays', noCountries: 'Aucun pays trouvé', selectedCountry: 'Pays sélectionné : {{country}}' }
     },
     forgotPassword: 'Mot de passe oublié ?',
     rememberMe: 'Se souvenir de moi',
@@ -2116,7 +2122,9 @@ const ru = {
     createOne: 'Создать',
     auth: {
       alreadyHaveAccount: 'Уже есть аккаунт?',
-      signInLink: 'Войти'
+      signInLink: 'Войти',
+      country: 'Страна',
+      countrySelect: { placeholder: 'Выберите страну', searchPlaceholder: 'Поиск стран...', searchLabel: 'Поиск стран', countriesLabel: 'Страны', noCountries: 'Страны не найдены', selectedCountry: 'Выбранная страна: {{country}}' }
     },
     forgotPassword: 'Забыли пароль?',
     rememberMe: 'Запомнить меня',
@@ -2735,7 +2743,9 @@ const tr = {
     createOne: 'Hesap oluştur',
     auth: {
       alreadyHaveAccount: 'Zaten hesabınız var mı?',
-      signInLink: 'Giriş Yap'
+      signInLink: 'Giriş Yap',
+      country: 'Ülke',
+      countrySelect: { placeholder: 'Ülkenizi seçin', searchPlaceholder: 'Ülke ara...', searchLabel: 'Ülke ara', countriesLabel: 'Ülkeler', noCountries: 'Ülke bulunamadı', selectedCountry: 'Seçilen ülke: {{country}}' }
     },
     forgotPassword: 'Şifremi unuttum',
     rememberMe: 'Beni hatırla',
@@ -3354,7 +3364,9 @@ const de = {
     createOne: 'Konto erstellen',
     auth: {
       alreadyHaveAccount: 'Schon ein Konto?',
-      signInLink: 'Anmelden'
+      signInLink: 'Anmelden',
+      country: 'Land',
+      countrySelect: { placeholder: 'Wählen Sie Ihr Land', searchPlaceholder: 'Länder suchen...', searchLabel: 'Länder suchen', countriesLabel: 'Länder', noCountries: 'Keine Länder gefunden', selectedCountry: 'Ausgewähltes Land: {{country}}' }
     },
     forgotPassword: 'Passwort vergessen?',
     rememberMe: 'Angemeldet bleiben',

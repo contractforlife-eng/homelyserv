@@ -15,16 +15,18 @@
 // ============================================================
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapPin, ChevronDown, Search, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { countries } from '../utils/countries';
 
 const CountrySelect = ({
   value = '', // selected ISO country code
   onChange, // ({ countryCode, countryName }) => void
   error = false,
-  placeholder = 'Select your country',
+  placeholder,
   id = 'country',
   name = 'country',
 }) => {
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -37,15 +39,36 @@ const CountrySelect = ({
     [value]
   );
 
+  const language = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+  const regionNames = useMemo(() => {
+    try {
+      return new Intl.DisplayNames([language], { type: 'region' });
+    } catch {
+      return null;
+    }
+  }, [language]);
+
+  const getCountryDisplayName = (country) => {
+    try {
+      const regionCode = country.code === 'UK' ? 'GB' : country.code;
+      return regionNames?.of(regionCode) || country.name;
+    } catch {
+      return country.name;
+    }
+  };
+
+  const placeholderText = placeholder || t('auth.countrySelect.placeholder');
+
   const filteredCountries = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim().toLocaleLowerCase(language);
     if (!q) return countries;
     return countries.filter(
       (c) =>
+        getCountryDisplayName(c).toLocaleLowerCase(language).includes(q) ||
         c.name.toLowerCase().includes(q) ||
         c.code.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, language, regionNames]);
 
   // Close on outside click
   useEffect(() => {
@@ -134,6 +157,9 @@ const CountrySelect = ({
         name={name}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-label={selectedCountry
+          ? t('auth.countrySelect.selectedCountry', { country: getCountryDisplayName(selectedCountry) })
+          : placeholderText}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleButtonKeyDown}
         className={`w-full pl-11 pr-10 py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
@@ -143,10 +169,10 @@ const CountrySelect = ({
         {selectedCountry ? (
           <span className="flex items-center gap-2 truncate">
             <span className="text-lg leading-none">{selectedCountry.flag}</span>
-            <span className="text-gray-800 dark:text-gray-100 truncate">{selectedCountry.name}</span>
+            <span className="text-gray-800 dark:text-gray-100 truncate">{getCountryDisplayName(selectedCountry)}</span>
           </span>
         ) : (
-          <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>
+          <span className="text-gray-400 dark:text-gray-500">{placeholderText}</span>
         )}
       </button>
       <ChevronDown
@@ -167,14 +193,15 @@ const CountrySelect = ({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search countries..."
+                placeholder={t('auth.countrySelect.searchPlaceholder')}
+                aria-label={t('auth.countrySelect.searchLabel')}
                 className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all placeholder:text-gray-400 dark:text-gray-100"
               />
             </div>
           </div>
-          <ul ref={listRef} role="listbox" aria-label="Countries" className="max-h-60 overflow-y-auto py-1">
+          <ul ref={listRef} role="listbox" aria-label={t('auth.countrySelect.countriesLabel')} className="max-h-60 overflow-y-auto py-1">
             {filteredCountries.length === 0 && (
-              <li className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No countries found</li>
+              <li className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">{t('auth.countrySelect.noCountries')}</li>
             )}
             {filteredCountries.map((country, index) => {
               const isSelected = selectedCountry?.code === country.code;
@@ -195,7 +222,7 @@ const CountrySelect = ({
                   }`}
                 >
                   <span className="text-lg leading-none">{country.flag}</span>
-                  <span className="flex-1 truncate">{country.name}</span>
+                  <span className="flex-1 truncate">{getCountryDisplayName(country)}</span>
                   {isSelected && <Check size={15} className="text-red-500 flex-shrink-0" />}
                 </li>
               );
