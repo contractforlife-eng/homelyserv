@@ -1,8 +1,8 @@
 // src/pages/EmployerPostJob.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -10,98 +10,13 @@ import jobService from '../services/jobService';
 
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance'];
 
-const translations = {
-  en: {
-    title: 'Post a Job',
-    editTitle: 'Edit Job',
-    subtitle: 'Post a job and reach the right workers',
-    jobTitle: 'Job Title',
-    jobTitlePlaceholder: 'e.g., Senior Nanny',
-    location: 'Location',
-    locationPlaceholder: 'e.g., Cairo, Egypt',
-    employmentType: 'Employment Type',
-    salaryMin: 'Min Salary (EGP)',
-    salaryMinPlaceholder: 'e.g., 3000',
-    salaryMax: 'Max Salary (EGP)',
-    salaryMaxPlaceholder: 'e.g., 4500',
-    jobDescription: 'Job Description',
-    descriptionPlaceholder: 'Describe the job responsibilities and requirements...',
-    requirements: 'Requirements',
-    addRequirementPlaceholder: 'Add a requirement...',
-    add: 'Add',
-    benefits: 'Benefits',
-    addBenefitPlaceholder: 'Add a benefit...',
-    contractType: 'Contract Type',
-    workSchedule: 'Work Schedule',
-    workSchedulePlaceholder: 'e.g., Sunday - Thursday, 9AM - 5PM',
-    startDate: 'Start Date',
-    deadline: 'Application Deadline',
-    isUrgent: 'Mark as Urgent',
-    isFeatured: 'Feature this job',
-    postJob: 'Post Job',
-    saveChanges: 'Save Changes',
-    cancel: 'Cancel',
-    posting: 'Posting...',
-    saving: 'Saving...',
-    success: 'Job posted successfully!',
-    editSuccess: 'Job updated successfully!',
-    error: 'Failed to post job. Please try again.',
-    editError: 'Failed to update job. Please try again.',
-    validateMinSalary: 'Min salary must be 0 or more',
-    validateMaxSalary: 'Max salary must be 0 or more',
-    validateSalaryRange: 'Max salary must be greater than or equal to min salary',
-  },
-  ar: {
-    title: 'نشر وظيفة',
-    editTitle: 'تعديل الوظيفة',
-    subtitle: 'انشر وظيفة واعثر على العمال المناسبين',
-    jobTitle: 'المسمى الوظيفي',
-    jobTitlePlaceholder: 'مثال: مربية أطفال أول',
-    location: 'الموقع',
-    locationPlaceholder: 'مثال: القاهرة، مصر',
-    employmentType: 'نوع التوظيف',
-    salaryMin: 'الحد الأدنى للراتب (جنيه)',
-    salaryMinPlaceholder: 'مثال: 3000',
-    salaryMax: 'الحد الأقصى للراتب (جنيه)',
-    salaryMaxPlaceholder: 'مثال: 4500',
-    jobDescription: 'وصف الوظيفة',
-    descriptionPlaceholder: 'صف مسؤوليات ومتطلبات الوظيفة...',
-    requirements: 'المتطلبات',
-    addRequirementPlaceholder: 'أضف متطلباً...',
-    add: 'إضافة',
-    benefits: 'المزايا',
-    addBenefitPlaceholder: 'أضف ميزة...',
-    contractType: 'نوع العقد',
-    workSchedule: 'جدول العمل',
-    workSchedulePlaceholder: 'مثال: الأحد - الخميس، 9ص - 5م',
-    startDate: 'تاريخ البدء',
-    deadline: 'الموعد النهائي للتقديم',
-    isUrgent: 'وضع علامة عاجل',
-    isFeatured: 'تمييز هذه الوظيفة',
-    postJob: 'نشر الوظيفة',
-    saveChanges: 'حفظ التغييرات',
-    cancel: 'إلغاء',
-    posting: 'جارٍ النشر...',
-    saving: 'جارٍ الحفظ...',
-    success: 'تم نشر الوظيفة بنجاح!',
-    editSuccess: 'تم تحديث الوظيفة بنجاح!',
-    error: 'فشل نشر الوظيفة. حاول مرة أخرى.',
-    editError: 'فشل تحديث الوظيفة. حاول مرة أخرى.',
-    validateMinSalary: 'الحد الأدنى للراتب يجب أن يكون 0 أو أكثر',
-    validateMaxSalary: 'الحد الأقصى للراتب يجب أن يكون 0 أو أكثر',
-    validateSalaryRange: 'الحد الأقصى للراتب يجب أن يكون أكبر من أو يساوي الحد الأدنى',
-  },
-};
-
 const EmployerPostJob = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
-  const t = translations[dashboard.language] || translations.en;
-  const isArabic = dashboard.language === 'ar';
+  const { t } = useTranslation();
 
   const editJob = location.state?.editJob || null;
 
@@ -196,15 +111,15 @@ const EmployerPostJob = () => {
     const salaryMax = formData.salaryMax !== '' ? parseFloat(formData.salaryMax) : null;
 
     if (salaryMin !== null && salaryMin < 0) {
-      setError(t.validateMinSalary);
+      setError(t('employerPostJob.validateMinSalary'));
       return;
     }
     if (salaryMax !== null && salaryMax < 0) {
-      setError(t.validateMaxSalary);
+      setError(t('employerPostJob.validateMaxSalary'));
       return;
     }
     if (salaryMin !== null && salaryMax !== null && salaryMax < salaryMin) {
-      setError(t.validateSalaryRange);
+      setError(t('employerPostJob.validateSalaryRange'));
       return;
     }
 
@@ -215,17 +130,17 @@ const EmployerPostJob = () => {
 
       if (editJob) {
         await jobService.updateJob(editJob.id, payload);
-        alert(t.editSuccess);
+        alert(t('employerPostJob.editSuccess'));
       } else {
         await jobService.createJob(payload);
-        alert(t.success);
+        alert(t('employerPostJob.success'));
       }
 
       navigate('/employer-jobs');
     } catch (submitError) {
       console.error('Job submit error:', submitError);
       const serverMessage = submitError.response?.data?.message;
-      setError(serverMessage || (editJob ? t.editError : t.error));
+      setError(serverMessage || (editJob ? t('employerPostJob.editError') : t('employerPostJob.error')));
     } finally {
       setSubmitting(false);
     }
@@ -278,7 +193,7 @@ const EmployerPostJob = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerPostJob.loading')}</p>
         </div>
       </div>
     );
@@ -291,13 +206,13 @@ const EmployerPostJob = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={editJob ? t.editTitle : t.title}
+        title={editJob ? t('employerPostJob.editTitle') : t('employerPostJob.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
-        <RolePageHeader title={editJob ? t.editTitle : t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={editJob ? t('employerPostJob.editTitle') : t('employerPostJob.title')} subtitle={t('employerPostJob.subtitle')} />
 
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
@@ -308,7 +223,7 @@ const EmployerPostJob = () => {
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.jobTitle}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.jobTitle')}</label>
               <input
                 type="text"
                 name="title"
@@ -317,39 +232,39 @@ const EmployerPostJob = () => {
                 required
                 maxLength={120}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.jobTitlePlaceholder}
+                placeholder={t('employerPostJob.jobTitlePlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.location}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.location')}</label>
               <input
                 type="text"
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.locationPlaceholder}
+                placeholder={t('employerPostJob.locationPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.employmentType}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.employmentType')}</label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               >
-                <option value="full-time">{isArabic ? 'دوام كامل' : 'Full Time'}</option>
-                <option value="part-time">{isArabic ? 'دوام جزئي' : 'Part Time'}</option>
-                <option value="contract">{isArabic ? 'عقد' : 'Contract'}</option>
-                <option value="freelance">{isArabic ? 'حر' : 'Freelance'}</option>
+                <option value="full-time">{t('employerPostJob.employmentTypes.fullTime')}</option>
+                <option value="part-time">{t('employerPostJob.employmentTypes.partTime')}</option>
+                <option value="contract">{t('employerPostJob.employmentTypes.contract')}</option>
+                <option value="freelance">{t('employerPostJob.employmentTypes.freelance')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.salaryMin}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.salaryMin')}</label>
               <input
                 type="number"
                 name="salaryMin"
@@ -357,12 +272,12 @@ const EmployerPostJob = () => {
                 onChange={handleChange}
                 min="0"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.salaryMinPlaceholder}
+                placeholder={t('employerPostJob.salaryMinPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.salaryMax}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.salaryMax')}</label>
               <input
                 type="number"
                 name="salaryMax"
@@ -370,12 +285,12 @@ const EmployerPostJob = () => {
                 onChange={handleChange}
                 min="0"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.salaryMaxPlaceholder}
+                placeholder={t('employerPostJob.salaryMaxPlaceholder')}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.jobDescription}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.jobDescription')}</label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -383,12 +298,12 @@ const EmployerPostJob = () => {
                 rows="4"
                 maxLength={5000}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.descriptionPlaceholder}
+                placeholder={t('employerPostJob.descriptionPlaceholder')}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.requirements}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.requirements')}</label>
               <div className="flex gap-2 mb-2 flex-wrap">
                 <input
                   type="text"
@@ -396,14 +311,14 @@ const EmployerPostJob = () => {
                   onChange={(e) => setRequirement(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRequirement(); } }}
                   className="flex-1 min-w-[160px] px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder={t.addRequirementPlaceholder}
+                  placeholder={t('employerPostJob.addRequirementPlaceholder')}
                 />
                 <button
                   type="button"
                   onClick={addRequirement}
                   className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
                 >
-                  {t.add}
+                  {t('employerPostJob.add')}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -414,6 +329,7 @@ const EmployerPostJob = () => {
                       type="button"
                       onClick={() => removeRequirement(index)}
                       className="hover:text-red-600"
+                      aria-label={t('employerPostJob.removeRequirement')}
                     >
                       ×
                     </button>
@@ -423,7 +339,7 @@ const EmployerPostJob = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.benefits}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.benefits')}</label>
               <div className="flex gap-2 mb-2 flex-wrap">
                 <input
                   type="text"
@@ -431,14 +347,14 @@ const EmployerPostJob = () => {
                   onChange={(e) => setBenefit(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBenefit(); } }}
                   className="flex-1 min-w-[160px] px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                  placeholder={t.addBenefitPlaceholder}
+                  placeholder={t('employerPostJob.addBenefitPlaceholder')}
                 />
                 <button
                   type="button"
                   onClick={addBenefit}
                   className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
                 >
-                  {t.add}
+                  {t('employerPostJob.add')}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -449,6 +365,7 @@ const EmployerPostJob = () => {
                       type="button"
                       onClick={() => removeBenefit(index)}
                       className="hover:text-red-600"
+                      aria-label={t('employerPostJob.removeBenefit')}
                     >
                       ×
                     </button>
@@ -458,21 +375,21 @@ const EmployerPostJob = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.contractType}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.contractType')}</label>
               <select
                 name="contractType"
                 value={formData.contractType}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               >
-                <option value="Permanent">Permanent</option>
-                <option value="Contract">Contract</option>
-                <option value="Temporary">Temporary</option>
+                <option value="Permanent">{t('employerPostJob.contractTypes.permanent')}</option>
+                <option value="Contract">{t('employerPostJob.contractTypes.contract')}</option>
+                <option value="Temporary">{t('employerPostJob.contractTypes.temporary')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.workSchedule}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.workSchedule')}</label>
               <input
                 type="text"
                 name="workSchedule"
@@ -480,12 +397,12 @@ const EmployerPostJob = () => {
                 onChange={handleChange}
                 maxLength={100}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder={t.workSchedulePlaceholder}
+                placeholder={t('employerPostJob.workSchedulePlaceholder')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.startDate}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.startDate')}</label>
               <input
                 type="date"
                 name="startDate"
@@ -496,7 +413,7 @@ const EmployerPostJob = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.deadline}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.deadline')}</label>
               <input
                 type="date"
                 name="deadline"
@@ -515,7 +432,7 @@ const EmployerPostJob = () => {
                   onChange={handleChange}
                   className="w-4 h-4 text-teal-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{t.isUrgent}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('employerPostJob.isUrgent')}</span>
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -525,7 +442,7 @@ const EmployerPostJob = () => {
                   onChange={handleChange}
                   className="w-4 h-4 text-teal-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{t.isFeatured}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('employerPostJob.isFeatured')}</span>
               </label>
             </div>
           </div>
@@ -536,14 +453,14 @@ const EmployerPostJob = () => {
               disabled={submitting}
               className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? (editJob ? t.saving : t.posting) : (editJob ? t.saveChanges : t.postJob)}
+              {submitting ? (editJob ? t('employerPostJob.saving') : t('employerPostJob.posting')) : (editJob ? t('employerPostJob.saveChanges') : t('employerPostJob.postJob'))}
             </button>
             <button
               type="button"
               onClick={() => navigate('/employer-jobs')}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
             >
-              {t.cancel}
+              {t('employerPostJob.cancel')}
             </button>
           </div>
         </form>
