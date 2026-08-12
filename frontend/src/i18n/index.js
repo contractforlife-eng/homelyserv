@@ -3823,6 +3823,13 @@ const de = {
 // ---------------------------------------------------------------------------
 // Initialize i18n
 // ---------------------------------------------------------------------------
+en.translation.employerPayments.serviceProvider = 'Service Provider';
+ar.translation.employerPayments.serviceProvider = 'مقدم خدمة';
+fr.translation.employerPayments.serviceProvider = 'Prestataire de services';
+ru.translation.employerPayments.serviceProvider = 'Поставщик услуг';
+tr.translation.employerPayments.serviceProvider = 'Hizmet sağlayıcı';
+de.translation.employerPayments.serviceProvider = 'Dienstleister';
+
 fr.translation.myHiresPage.fallbacks = { unknownWorker: 'Travailleur inconnu', serviceProvider: 'Prestataire de services' };
 ru.translation.myHiresPage.fallbacks = { unknownWorker: 'Неизвестный работник', serviceProvider: 'Поставщик услуг' };
 tr.translation.myHiresPage.fallbacks = { unknownWorker: 'Bilinmeyen çalışan', serviceProvider: 'Hizmet sağlayıcı' };

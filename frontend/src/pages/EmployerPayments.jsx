@@ -101,6 +101,7 @@ const EmployerPayments = () => {
         offerId: hire.offerId,
         workerId: hire.workerId,
         workerName: hire.workerName || 'Worker',
+        workerNameIsFallback: !hire.workerName,
         workerEmail: hire.workerEmail || '',
         workerPhone: hire.workerPhone || '',
         workerLocation: hire.workerLocation || 'Not specified',
@@ -109,6 +110,7 @@ const EmployerPayments = () => {
         employerId: employerId,
         employerEmail: employerEmail,
         jobTitle: hire.jobTitle || 'Service Provider',
+        jobTitleIsFallback: !hire.jobTitle,
         commission: hire.commissionAmount || 0,
         fullSalary: hire.agreedSalary || hire.salary || 0,
         status: hire.paymentStatus === 'completed' ? 'completed' : 'pending',
@@ -359,6 +361,16 @@ const EmployerPayments = () => {
     return t(`employerPayments.status.${status}`, { defaultValue: status });
   };
 
+  const formatWorkerName = (workerName, isFallback) => {
+    if (isFallback) return t('employerPayments.workerFallback');
+    return workerName || t('employerPayments.unknown');
+  };
+
+  const formatJobTitle = (jobTitle, isFallback) => {
+    if (isFallback) return t('employerPayments.serviceProvider');
+    return jobTitle || t('employerPayments.notAvailable');
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -539,14 +551,14 @@ const EmployerPayments = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <UserAvatar
-                              name={payment.workerName || t('employerPayments.workerFallback')}
+                              name={formatWorkerName(payment.workerName, payment.workerNameIsFallback)}
                               image={payment.workerImage || null}
                               role="WORKER"
                               size="sm"
                               className="border border-teal-200"
                             />
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{payment.workerName || t('employerPayments.unknown')}</p>
+                              <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{formatWorkerName(payment.workerName, payment.workerNameIsFallback)}</p>
                               {payment.workerEmail && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate max-w-[100px]">{payment.workerEmail}</p>
                               )}
@@ -554,7 +566,7 @@ const EmployerPayments = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{payment.jobTitle || '-'}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{formatJobTitle(payment.jobTitle, payment.jobTitleIsFallback)}</p>
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission)}</p>
@@ -647,14 +659,14 @@ const EmployerPayments = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.worker')}</p>
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.workerName || t('employerPayments.notAvailable')}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatWorkerName(selectedPayment.workerName, selectedPayment.workerNameIsFallback)}</p>
                   {selectedPayment.workerEmail && (
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{selectedPayment.workerEmail}</p>
                   )}
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.job')}</p>
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{selectedPayment.jobTitle || t('employerPayments.notAvailable')}</p>
+                  <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatJobTitle(selectedPayment.jobTitle, selectedPayment.jobTitleIsFallback)}</p>
                 </div>
               </div>
 
