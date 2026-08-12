@@ -602,10 +602,10 @@ const MyHires = () => {
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || 'Unknown Worker'}</p>
+                              <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || t('myHiresPage.fallbacks.unknownWorker')}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
                                 <Briefcase size={11} />
-                                {hire.jobTitle || 'Service Provider'}
+                                {hire.jobTitle || t('myHiresPage.fallbacks.serviceProvider')}
                               </p>
                             </div>
                           </div>
@@ -711,10 +711,10 @@ const MyHires = () => {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || 'Unknown Worker'}</p>
+                          <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || t('myHiresPage.fallbacks.unknownWorker')}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
                             <Briefcase size={11} />
-                            {hire.jobTitle || 'Service Provider'}
+                            {hire.jobTitle || t('myHiresPage.fallbacks.serviceProvider')}
                           </p>
                         </div>
                       </div>
