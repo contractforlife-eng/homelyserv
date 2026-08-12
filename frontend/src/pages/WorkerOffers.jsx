@@ -1,6 +1,6 @@
 // src/pages/WorkerOffers.jsx - FIXED: Shows "Paid" status when payment is completed
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../components/layout/DashboardContext';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
@@ -42,6 +42,7 @@ import { UserAvatar } from '../components/users';
 // ============================================================
 const WorkerOffers = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -54,8 +55,6 @@ const WorkerOffers = () => {
   const [processingOffer, setProcessingOffer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const dashboard = useDashboard();
-
   const toggleExpand = (offerId) => {
     setExpandedOffer(expandedOffer === offerId ? null : offerId);
   };
@@ -67,125 +66,6 @@ const WorkerOffers = () => {
   };
 
   const userIsPremium = isPremium();
-
-  const translations = {
-    en: {
-      title: 'My Offers',
-      subtitle: 'Review and respond to job offers',
-      tabs: {
-        pending: 'Pending',
-        accepted: 'Accepted',
-        paid: 'Payment Confirmed',
-        rejected: 'Rejected',
-        completed: 'Completed'
-      },
-      stats: {
-        pending: 'Pending',
-        accepted: 'Accepted',
-        paid: 'Payment Confirmed',
-        rejected: 'Rejected',
-        completed: 'Completed',
-        total: 'Total'
-      },
-      card: {
-        viewDetails: 'View Details',
-        accept: 'Accept',
-        reject: 'Decline',
-        salaryPerMonth: '/month',
-        location: 'Location',
-        posted: 'Posted',
-        employer: 'Employer',
-        noOffers: 'No offers in this section',
-        chat: 'Chat',
-        completeWork: 'Submit Period Completed',
-        waitingPayment: '⏳ Waiting for payment...',
-        paymentReceived: '✅ Payment Received',
-        workCompleted: 'Work Completed',
-        offerRejected: 'Offer Declined'
-      },
-      actions: {
-        accept: 'Accept Offer',
-        rejecting: 'Rejecting...',
-        accepting: 'Accepting...',
-        view: 'View Details',
-        close: 'Close'
-      },
-      empty: {
-        title: 'No offers yet',
-        description: 'You haven\'t received any job offers',
-        wait: 'Employers will reach out when they find your profile'
-      },
-      loading: 'Loading offers...',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      acceptSuccess: '✅ Offer accepted from {employer}!',
-      rejectSuccess: 'You declined the offer from {employer}',
-      acceptError: 'Failed to accept offer. Please try again.',
-      rejectError: 'Failed to decline offer. Please try again.',
-      premiumBadge: 'Premium',
-      getPremium: 'Upgrade',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'عروضي',
-      subtitle: 'مراجعة والرد على عروض العمل',
-      tabs: {
-        pending: 'معلقة',
-        accepted: 'مقبولة',
-        paid: 'تم تأكيد الدفع',
-        rejected: 'مرفوضة',
-        completed: 'مكتملة'
-      },
-      stats: {
-        pending: 'معلقة',
-        accepted: 'مقبولة',
-        paid: 'تم تأكيد الدفع',
-        rejected: 'مرفوضة',
-        completed: 'مكتملة',
-        total: 'الإجمالي'
-      },
-      card: {
-        viewDetails: 'عرض التفاصيل',
-        accept: 'قبول',
-        reject: 'رفض',
-        salaryPerMonth: '/شهر',
-        location: 'الموقع',
-        posted: 'نشر',
-        employer: 'صاحب العمل',
-        noOffers: 'لا توجد عروض في هذا القسم',
-        chat: 'محادثة',
-        completeWork: 'إرسال فترة مكتملة',
-        waitingPayment: '⏳ في انتظار الدفع...',
-        paymentReceived: '✅ تم استلام الدفع',
-        workCompleted: 'تم إكمال العمل',
-        offerRejected: 'تم رفض العرض'
-      },
-      actions: {
-        accept: 'قبول العرض',
-        rejecting: 'جاري الرفض...',
-        accepting: 'جاري القبول...',
-        view: 'عرض التفاصيل',
-        close: 'إغلاق'
-      },
-      empty: {
-        title: 'لا توجد عروض',
-        description: 'لم تتلق أي عروض عمل بعد',
-        wait: 'سيتواصل معك أصحاب العمل عند العثور على ملفك الشخصي'
-      },
-      loading: 'جاري تحميل العروض...',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      acceptSuccess: '✅ تم قبول العرض من {employer}!',
-      rejectSuccess: 'لقد رفضت العرض من {employer}',
-      acceptError: 'فشل قبول العرض. يرجى المحاولة مرة أخرى.',
-      rejectError: 'فشل رفض العرض. يرجى المحاولة مرة أخرى.',
-      premiumBadge: 'مميز',
-      getPremium: 'ترقية',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // Load Offers - FIXED: No clearing of offers before fetch
@@ -282,12 +162,12 @@ const WorkerOffers = () => {
       }
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      alert(t.acceptSuccess.replace('{employer}', offer.employerName || 'Employer'));
+      alert(t('workerOffers.acceptSuccess', { employer: offer.employerName || t('workerOffers.employer') }));
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
       console.error('Error accepting offer:', error);
-      alert(t.acceptError);
+      alert(t('workerOffers.acceptError'));
     } finally {
       setProcessingOffer(null);
     }
@@ -299,7 +179,7 @@ const WorkerOffers = () => {
   const handleRejectOffer = async (offer) => {
     if (processingOffer) return;
     
-    if (!confirm(`Are you sure you want to decline the offer from ${offer.employerName || 'Employer'}?`)) {
+    if (!confirm(t('workerOffers.rejectConfirm', { employer: offer.employerName || t('workerOffers.employer') }))) {
       return;
     }
 
@@ -315,12 +195,12 @@ const WorkerOffers = () => {
       };
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      alert(t.rejectSuccess.replace('{employer}', offer.employerName || 'Employer'));
+      alert(t('workerOffers.rejectSuccess', { employer: offer.employerName || t('workerOffers.employer') }));
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
       console.error('Error rejecting offer:', error);
-      alert(t.rejectError);
+      alert(t('workerOffers.rejectError'));
     } finally {
       setProcessingOffer(null);
     }
@@ -332,7 +212,7 @@ const WorkerOffers = () => {
   const handleCompleteWork = async (offer) => {
     if (processingOffer) return;
     
-    if (!confirm('Submit this work period for your employer\'s confirmation? This does not confirm salary payment.')) {
+    if (!confirm(t('workerOffers.completeWorkConfirm'))) {
       return;
     }
 
@@ -347,12 +227,12 @@ const WorkerOffers = () => {
       };
 
       setOffers(prev => prev.map(o => o.id === offer.id ? updatedOffer : o));
-      alert('Work period submitted for employer confirmation.');
+      alert(t('workerOffers.completeWorkSuccess'));
       setRefreshKey(prev => prev + 1);
 
     } catch (error) {
       console.error('Error submitting work period:', error);
-      alert('Failed to submit work period. Please try again.');
+      alert(t('workerOffers.completeWorkError'));
     } finally {
       setProcessingOffer(null);
     }
@@ -401,12 +281,12 @@ const WorkerOffers = () => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      pending: 'Pending',
-      accepted: 'Accepted',
-      rejected: 'Declined',
-      completed: 'Completed'
+      pending: 'workerOffers.status.pending',
+      accepted: 'workerOffers.status.accepted',
+      rejected: 'workerOffers.status.rejected',
+      completed: 'workerOffers.status.completed'
     };
-    return labels[status] || status;
+    return labels[status] ? t(labels[status]) : status;
   };
 
   const formatDate = (dateString) => {
@@ -414,9 +294,9 @@ const WorkerOffers = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays === 0) return t('workerOffers.today');
+    if (diffDays === 1) return t('workerOffers.yesterday');
+    if (diffDays < 7) return t('workerOffers.daysAgo', { count: diffDays });
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -486,11 +366,11 @@ const WorkerOffers = () => {
   };
 
   const tabItems = [
-    { id: 'pending', label: t.tabs.pending, icon: Clock, count: stats.pending },
-    { id: 'accepted', label: t.tabs.accepted, icon: CheckCircle, count: stats.accepted },
-    { id: 'paid', label: t.tabs.paid, icon: Wallet, count: stats.paid },
-    { id: 'rejected', label: t.tabs.rejected, icon: XCircle, count: stats.rejected },
-    { id: 'completed', label: t.tabs.completed, icon: CheckCheck, count: stats.completed }
+    { id: 'pending', label: t('workerOffers.status.pending'), icon: Clock, count: stats.pending },
+    { id: 'accepted', label: t('workerOffers.status.accepted'), icon: CheckCircle, count: stats.accepted },
+    { id: 'paid', label: t('workerOffers.status.paymentConfirmed'), icon: Wallet, count: stats.paid },
+    { id: 'rejected', label: t('workerOffers.status.rejected'), icon: XCircle, count: stats.rejected },
+    { id: 'completed', label: t('workerOffers.status.completed'), icon: CheckCheck, count: stats.completed }
   ];
 
   // ============================================================
@@ -506,7 +386,7 @@ const WorkerOffers = () => {
     offer.paymentVerified === true;
 
   const statusLabel = isPaymentConfirmed
-    ? t.tabs.paid
+    ? t('workerOffers.status.paymentConfirmed')
     : getStatusLabel(offer.status);
 
   const isExpanded = expandedOffer === offer.id;
@@ -531,10 +411,10 @@ const WorkerOffers = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">{offer.jobTitle || 'Job Offer'}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">{offer.jobTitle || t('workerOffers.jobOfferFallback')}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <Building2 size={14} />
-                    <span>{offer.employerName || 'Employer'}</span>
+                    <span>{offer.employerName || t('workerOffers.employer')}</span>
                   </div>
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusColor} whitespace-nowrap flex-shrink-0`}>
@@ -547,11 +427,11 @@ const WorkerOffers = () => {
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-1.5">
                   <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
-                  <span>{offer.workerLocation || 'Not specified'}</span>
+                  <span>{offer.workerLocation || t('workerOffers.notSpecified')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
-                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 dark:text-gray-500 text-xs">/mo</span></span>
+                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 dark:text-gray-500 text-xs">{t('workerOffers.perMonth')}</span></span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-gray-400 dark:text-gray-500" />
@@ -570,7 +450,7 @@ const WorkerOffers = () => {
                 <div className="mt-2.5">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
                     <Wallet size={12} />
-                    Payment Confirmed
+                    {t('workerOffers.status.paymentConfirmed')}
                   </span>
                 </div>
               )}
@@ -582,7 +462,7 @@ const WorkerOffers = () => {
                   className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
                 >
                   <Eye size={15} />
-                  {isExpanded ? 'Hide Details' : t.card.viewDetails}
+                  {isExpanded ? t('workerOffers.hideDetails') : t('workerOffers.viewDetails')}
                 </button>
                 
                 {offer.status === 'pending' && (
@@ -597,7 +477,7 @@ const WorkerOffers = () => {
                       ) : (
                         <ThumbsUp size={14} />
                       )}
-                      {t.card.accept}
+                      {t('workerOffers.accept')}
                     </button>
                     <button
                       onClick={() => handleRejectOffer(offer)}
@@ -609,7 +489,7 @@ const WorkerOffers = () => {
                       ) : (
                         <X size={14} />
                       )}
-                      {t.card.reject}
+                      {t('workerOffers.decline')}
                     </button>
                   </>
                 )}
@@ -617,7 +497,7 @@ const WorkerOffers = () => {
                 {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && (
   <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
     <Clock size={14} />
-    {t.card.waitingPayment}
+    {t('workerOffers.waitingPayment')}
   </span>
 )}
 
@@ -627,7 +507,7 @@ const WorkerOffers = () => {
     <>
       <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg flex items-center gap-1.5">
         <Wallet size={14} />
-        {t.card.paymentReceived}
+        {t('workerOffers.paymentReceived')}
       </span>
 
       <button
@@ -635,7 +515,7 @@ const WorkerOffers = () => {
         className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-1.5"
       >
         <MessageSquare size={14} />
-        {t.card.chat}
+        {t('workerOffers.chat')}
       </button>
     </>
   )}
@@ -643,14 +523,14 @@ const WorkerOffers = () => {
                 {offer.status === 'completed' && (
                   <span className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm rounded-lg flex items-center gap-1.5">
                     <CheckCheck size={14} />
-                    {t.card.workCompleted}
+                    {t('workerOffers.workCompleted')}
                   </span>
                 )}
 
                 {offer.status === 'rejected' && (
                   <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg flex items-center gap-1.5">
                     <XCircle size={14} />
-                    {t.card.offerRejected}
+                    {t('workerOffers.offerDeclined')}
                   </span>
                 )}
               </div>
@@ -662,41 +542,41 @@ const WorkerOffers = () => {
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Offer Details</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">{t('workerOffers.offerDetails')}</h4>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Employer</span>
-                      <span className="font-medium">{offer.employerName || 'Not provided'}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.employer')}</span>
+                      <span className="font-medium">{offer.employerName || t('workerOffers.notProvided')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Position</span>
-                      <span className="font-medium">{offer.jobTitle || 'Service Provider'}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.position')}</span>
+                      <span className="font-medium">{offer.jobTitle || t('workerOffers.serviceProvider')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Monthly Salary</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.monthlySalary')}</span>
                       <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Hourly Rate</span>
-                      <span className="font-medium">EGP {offer.hourlyRate || 30}/hr</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.hourlyRate')}</span>
+                      <span className="font-medium">EGP {offer.hourlyRate || 30}{t('workerOffers.perHour')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Location</span>
-                      <span className="font-medium">{offer.workerLocation || 'Not specified'}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.location')}</span>
+                      <span className="font-medium">{offer.workerLocation || t('workerOffers.notSpecified')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Posted</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.posted')}</span>
                       <span className="font-medium">{formatDate(offer.createdAt)}</span>
                     </div>
                     {offer.workerResponseAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">Responded</span>
+                        <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.responded')}</span>
                         <span className="font-medium">{formatDate(offer.workerResponseAt)}</span>
                       </div>
                     )}
                     {offer.workCompletedAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">Completed</span>
+                        <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.status.completed')}</span>
                         <span className="font-medium">{formatDate(offer.workCompletedAt)}</span>
                       </div>
                     )}
@@ -704,25 +584,25 @@ const WorkerOffers = () => {
   offer.paymentConfirmed === true &&
   offer.paymentVerified === true && (
                       <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">Payment Status</span>
-                        <span className="font-medium text-green-600">✅ Paid</span>
+                        <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.paymentStatus')}</span>
+                        <span className="font-medium text-green-600">{t('workerOffers.paid')}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Status</h4>
+                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">{t('workerOffers.statusLabel')}</h4>
                   <div className={`p-3 rounded-lg border ${statusColor}`}>
                     <div className="flex items-center gap-2">
                       {statusIcon}
                       <span className="font-medium">{statusLabel}</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1.5">
-                      {offer.status === 'pending' && 'Awaiting your decision on this offer.'}
-                      {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && 'You accepted this offer. Waiting for employer payment.'}
-                      {offer.status === 'accepted' && offer.paymentConfirmed === true && offer.paymentVerified === true && '✅ Payment received! You can now start working.'}
-                      {offer.status === 'completed' && 'Work has been completed successfully.'}
-                      {offer.status === 'rejected' && 'You declined this offer.'}
+                      {offer.status === 'pending' && t('workerOffers.statusDescriptions.pending')}
+                      {offer.status === 'accepted' && !(offer.paymentConfirmed === true && offer.paymentVerified === true) && t('workerOffers.statusDescriptions.awaitingPayment')}
+                      {offer.status === 'accepted' && offer.paymentConfirmed === true && offer.paymentVerified === true && t('workerOffers.statusDescriptions.paymentReceived')}
+                      {offer.status === 'completed' && t('workerOffers.statusDescriptions.completed')}
+                      {offer.status === 'rejected' && t('workerOffers.statusDescriptions.rejected')}
                     </p>
                   </div>
                   {(offer.status === 'accepted' || offer.status === 'completed') && (
@@ -731,7 +611,7 @@ const WorkerOffers = () => {
                       className="mt-3 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
                     >
                       <MessageSquare size={16} />
-                      Message Employer
+                      {t('workerOffers.messageEmployer')}
                     </button>
                   )}
                 </div>
@@ -749,7 +629,7 @@ const WorkerOffers = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerOffers.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
       />
@@ -759,12 +639,12 @@ const WorkerOffers = () => {
         <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 mb-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-red-100 mt-1">{t.subtitle}</p>
+              <h1 className="text-2xl font-bold">{t('workerOffers.title')}</h1>
+              <p className="text-red-100 mt-1">{t('workerOffers.subtitle')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm text-red-200">
-                {stats.total} total offers
+                {t('workerOffers.totalOffers', { count: stats.total })}
               </span>
               {!userIsPremium && (
                 <Link
@@ -772,7 +652,7 @@ const WorkerOffers = () => {
                   className="bg-yellow-400/20 hover:bg-yellow-400/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-yellow-400/30"
                 >
                   <Crown size={16} className="text-yellow-300" />
-                  {t.getPremium}
+                  {t('workerOffers.upgrade')}
                 </Link>
               )}
             </div>
@@ -783,35 +663,35 @@ const WorkerOffers = () => {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerOffers.status.pending')}</p>
               <Clock size={18} className="text-amber-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pending}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.accepted}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerOffers.status.accepted')}</p>
               <CheckCircle size={18} className="text-blue-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.accepted}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.paid}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerOffers.status.paymentConfirmed')}</p>
               <Wallet size={18} className="text-green-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.paid}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.rejected}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerOffers.status.rejected')}</p>
               <XCircle size={18} className="text-red-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.rejected}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.completed}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerOffers.status.completed')}</p>
               <CheckCheck size={18} className="text-purple-500" />
             </div>
             <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completed}</p>
@@ -825,7 +705,7 @@ const WorkerOffers = () => {
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search offers..."
+                placeholder={t('workerOffers.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
@@ -839,7 +719,7 @@ const WorkerOffers = () => {
               className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg transition flex items-center gap-2 text-sm"
             >
               <RefreshCw size={16} />
-              Refresh
+              {t('workerOffers.refresh')}
             </button>
           </div>
 
@@ -874,7 +754,7 @@ const WorkerOffers = () => {
         {/* Results Count */}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredOffers.length}</span> offers
+            {t('workerOffersCount.showing')} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredOffers.length}</span> {t('workerOffersCount.offers')}
           </p>
         </div>
 
@@ -883,7 +763,7 @@ const WorkerOffers = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
             <div className="flex flex-col items-center justify-center">
               <Loader2 size={40} className="animate-spin text-red-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">{t.loading}</p>
+              <p className="text-gray-500 dark:text-gray-400">{t('workerOffers.loading')}</p>
             </div>
           </div>
         ) : offers.length === 0 ? (
@@ -891,17 +771,17 @@ const WorkerOffers = () => {
             <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <Inbox size={32} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.empty.title}</h3>
-            <p className="text-gray-500 dark:text-gray-400">{t.empty.description}</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t.empty.wait}</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('workerOffers.emptyTitle')}</h3>
+            <p className="text-gray-500 dark:text-gray-400">{t('workerOffers.emptyDescription')}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{t('workerOffers.emptyWait')}</p>
           </div>
         ) : filteredOffers.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-100 dark:border-gray-700">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
               <Search size={24} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300">No results found</h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Try adjusting your search or filter</p>
+            <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300">{t('workerOffers.noResults')}</h4>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('workerOffers.adjustSearch')}</p>
           </div>
         ) : (
           <div className="space-y-4">
