@@ -1,6 +1,7 @@
 // src/pages/MyHires.jsx - Employer hire management dashboard
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import hireService from '../services/hireService';
@@ -8,7 +9,6 @@ import employerEarningService from '../services/employerEarningService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   User,
   Briefcase,
@@ -67,12 +67,11 @@ const normalizeStatus = (status) => {
 };
 
 const MyHires = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-
-  const dashboard = useDashboard();
 
   const [loading, setLoading] = useState(true);
   const [hires, setHires] = useState([]);
@@ -101,218 +100,6 @@ const MyHires = () => {
     return userId ? isUserPremium(userId) : false;
   }, [authUser]);
 
-  const translations = {
-    en: {
-      title: 'My Hires',
-      subtitle: 'Manage your hired workers',
-      stats: {
-        total: 'Total Hires',
-        active: 'Active',
-        awaitingPayment: 'Awaiting Payment',
-        terminated: 'Terminated'
-      },
-      status: {
-        offer_sent: 'Awaiting Payment',
-        active: 'Active',
-        terminated: 'Terminated'
-      },
-      payment: {
-        paid: 'Paid',
-        unpaid: 'Unpaid',
-        pending: 'Processing'
-      },
-      table: {
-        worker: 'Worker',
-        job: 'Job Title',
-        salary: 'Salary',
-        commission: 'Commission',
-        hiredOn: 'Hired On',
-        status: 'Status',
-        payment: 'Payment',
-        actions: 'Actions'
-      },
-      modal: {
-        title: 'Hire Details',
-        salary: 'Salary',
-        commission: 'Commission',
-        startDate: 'Start Date',
-        endDate: 'End Date',
-        status: 'Status',
-        contact: 'Contact Information',
-        rating: 'Rating',
-        terminate: 'Terminate',
-        message: 'Send Message'
-      },
-      terminate: {
-        title: 'Terminate Hire',
-        confirm: 'Are you sure you want to terminate this hire?',
-        reason: 'Reason for termination (optional)',
-        placeholder: 'Enter reason...',
-        cancel: 'Cancel',
-        confirmButton: 'Terminate Hire',
-        processing: 'Terminating...',
-        success: 'Hire terminated successfully',
-        error: 'Error terminating hire'
-      },
-      review: {
-        title: 'Work Period Completion',
-        empty: 'No work periods recorded for this hire yet.',
-        loading: 'Loading work periods...',
-        amount: 'Amount',
-        period: 'Period',
-        submitted: 'Submitted',
-        statusLabel: 'Status',
-        awaiting: 'Awaiting confirmation',
-        approveButton: 'Confirm Work Period Completed',
-        disputeButton: 'Dispute Period',
-        approveTitle: 'Confirm Work Period Completed',
-        approveBody: 'Confirm that the work covered by this contract period was completed. This does NOT confirm any salary payment — salaries are arranged directly between you and the worker.',
-        disputeTitle: 'Dispute Work Period',
-        disputeBody: 'Opening a dispute sends this period to review. Please provide a short reason.',
-        reasonLabel: 'Reason (optional)',
-        reasonPlaceholder: 'Explain why you are disputing this period...',
-        cancel: 'Cancel',
-        confirmApprove: 'Confirm',
-        confirmDispute: 'Submit Dispute',
-        processing: 'Please wait...',
-        approved: 'Work period confirmed',
-        disputed: 'Work period disputed',
-        error: 'Failed to update work period. Please try again.',
-        alreadyUpdated: 'This period was already updated',
-        none: 'No periods awaiting confirmation.'
-      },
-      actions: {
-        view: 'View Details',
-        terminate: 'Terminate',
-        message: 'Message Worker'
-      },
-      filters: {
-        all: 'All Hires',
-        offer_sent: 'Awaiting Payment',
-        active: 'Active',
-        terminated: 'Terminated'
-      },
-      empty: {
-        title: 'No hires yet',
-        description: "You haven't hired any workers yet",
-        start: 'Find workers to hire'
-      },
-      loading: 'Loading hires...',
-      searchPlaceholder: 'Search by worker name or job title...',
-      noResults: 'No hires match your search',
-      clearFilters: 'Clear filters',
-      refresh: 'Refresh',
-      salaryPerMonth: 'EGP/mo',
-      showing: 'Showing',
-      hiresWord: 'hires'
-    },
-    ar: {
-      title: 'توظيفاتي',
-      subtitle: 'إدارة العمال الذين قمت بتوظيفهم',
-      stats: {
-        total: 'إجمالي التوظيفات',
-        active: 'نشط',
-        awaitingPayment: 'في انتظار الدفع',
-        terminated: 'منتهي'
-      },
-      status: {
-        offer_sent: 'في انتظار الدفع',
-        active: 'نشط',
-        terminated: 'منتهي'
-      },
-      payment: {
-        paid: 'مدفوع',
-        unpaid: 'غير مدفوع',
-        pending: 'قيد المعالجة'
-      },
-      table: {
-        worker: 'العامل',
-        job: 'المسمى الوظيفي',
-        salary: 'الراتب',
-        commission: 'العمولة',
-        hiredOn: 'تاريخ التوظيف',
-        status: 'الحالة',
-        payment: 'الدفع',
-        actions: 'الإجراءات'
-      },
-      modal: {
-        title: 'تفاصيل التوظيف',
-        salary: 'الراتب',
-        commission: 'العمولة',
-        startDate: 'تاريخ البدء',
-        endDate: 'تاريخ الانتهاء',
-        status: 'الحالة',
-        contact: 'معلومات الاتصال',
-        rating: 'التقييم',
-        terminate: 'إنهاء',
-        message: 'إرسال رسالة'
-      },
-      terminate: {
-        title: 'إنهاء التوظيف',
-        confirm: 'هل أنت متأكد من رغبتك في إنهاء هذا التوظيف؟',
-        reason: 'سبب الإنهاء (اختياري)',
-        placeholder: 'أدخل السبب...',
-        cancel: 'إلغاء',
-        confirmButton: 'إنهاء التوظيف',
-        processing: 'جاري الإنهاء...',
-        success: 'تم إنهاء التوظيف بنجاح',
-        error: 'خطأ في إنهاء التوظيف'
-      },
-      review: {
-        title: 'إكمال فترة العمل',
-        empty: 'لا توجد فترات عمل مسجلة لهذا العقد بعد.',
-        loading: 'جاري تحميل فترات العمل...',
-        amount: 'المبلغ',
-        period: 'الفترة',
-        submitted: 'تم الإرسال',
-        statusLabel: 'الحالة',
-        awaiting: 'في انتظار التأكيد',
-        approveButton: 'تأكيد إكمال فترة العمل',
-        disputeButton: 'الاعتراض على الفترة',
-        approveTitle: 'تأكيد إكمال فترة العمل',
-        approveBody: 'أكد اكتمال العمل المغطى بفترة العقد هذه. هذا لا يؤكد أي دفعة راتب — يتم ترتيب الرواتب مباشرة بينك وبين العامل.',
-        disputeTitle: 'الاعتراض على فترة العمل',
-        disputeBody: 'فتح اعتراض يرسل هذه الفترة للمراجعة. يرجى تقديم سبب مختصر.',
-        reasonLabel: 'السبب (اختياري)',
-        reasonPlaceholder: 'اشرح سبب اعتراضك على هذه الفترة...',
-        cancel: 'إلغاء',
-        confirmApprove: 'تأكيد',
-        confirmDispute: 'إرسال الاعتراض',
-        processing: 'يرجى الانتظار...',
-        approved: 'تم تأكيد فترة العمل',
-        disputed: 'تم الاعتراض على فترة العمل',
-        error: 'فشل تحديث فترة العمل. حاول مرة أخرى.',
-        alreadyUpdated: 'تم تحديث هذه الفترة بالفعل',
-        none: 'لا توجد فترات في انتظار التأكيد.'
-      },
-      actions: {
-        view: 'عرض التفاصيل',
-        terminate: 'إنهاء',
-        message: 'مراسلة العامل'
-      },
-      filters: {
-        all: 'جميع التوظيفات',
-        offer_sent: 'في انتظار الدفع',
-        active: 'نشط',
-        terminated: 'منتهي'
-      },
-      empty: {
-        title: 'لا توجد توظيفات',
-        description: 'لم تقم بتوظيف أي عامل بعد',
-        start: 'ابحث عن عمال للتوظيف'
-      },
-      loading: 'جاري تحميل التوظيفات...',
-      searchPlaceholder: 'ابحث باسم العامل أو المسمى الوظيفي...',
-      noResults: 'لا توجد توظيفات تطابق بحثك',
-      clearFilters: 'مسح التصفيات',
-      refresh: 'تحديث',
-      salaryPerMonth: 'جنيه/شهر',
-      showing: 'عرض',
-      hiresWord: 'توظيف'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // LOAD HIRES
@@ -457,10 +244,10 @@ const MyHires = () => {
 
       setShowTerminateModal(false);
       setTerminatingHire(null);
-      alert(t.terminate.success);
+      alert(t('myHiresPage.terminate.success'));
     } catch (error) {
       console.error('Error terminating hire:', error);
-      alert(t.terminate.error);
+      alert(t('myHiresPage.terminate.error'));
     } finally {
       setTerminating(false);
     }
@@ -497,7 +284,7 @@ const MyHires = () => {
 
       await loadHireEarnings(selectedHire);
       closeReview();
-      alert(reviewAction === 'approve' ? t.review.approved : t.review.disputed);
+      alert(reviewAction === 'approve' ? t('myHiresPage.review.approved') : t('myHiresPage.review.disputed'));
     } catch (error) {
       console.error('Error reviewing work period:', error);
       const message = error?.response?.data?.message;
@@ -505,8 +292,8 @@ const MyHires = () => {
         message === 'Only periods with confirmed payment can be approved' ||
           message === 'Only periods submitted for confirmation can be disputed' ||
           message === 'Only periods submitted for confirmation can be approved'
-          ? t.review.alreadyUpdated
-          : t.review.error
+          ? t('myHiresPage.review.alreadyUpdated')
+          : t('myHiresPage.review.error')
       );
       await loadHireEarnings(selectedHire);
     } finally {
@@ -516,14 +303,14 @@ const MyHires = () => {
 
   const formatEarnedStatus = (status) => {
     const labels = {
-      PENDING: t.review.awaiting,
-      AWAITING_CONFIRMATION: t.review.awaiting,
-      EARNED: t.review.approved,
-      DISPUTED: t.review.disputed,
-      CANCELLED: 'Cancelled',
-      ON_HOLD: 'On Hold'
+      PENDING: t('myHiresPage.review.awaiting'),
+      AWAITING_CONFIRMATION: t('myHiresPage.review.awaiting'),
+      EARNED: t('myHiresPage.review.approved'),
+      DISPUTED: t('myHiresPage.review.disputed'),
+      CANCELLED: t('myHiresPage.review.cancelled'),
+      ON_HOLD: t('myHiresPage.review.onHold')
     };
-    return labels[status] || status;
+    return labels[status] || t('myHiresPage.status.unknown');
   };
 
   const handleSendMessage = async (hire) => {
@@ -533,7 +320,7 @@ const MyHires = () => {
     const workerName = hire.workerName || 'Worker';
 
     if (!workerId) {
-      alert('Unable to open chat: Worker ID not found');
+      alert(t('myHiresPage.workerIdNotFound'));
       return;
     }
 
@@ -583,19 +370,19 @@ const MyHires = () => {
     return {
       className: styles[canonical] || 'bg-gray-100 text-gray-700 border-gray-200',
       icon: icons[canonical] || <AlertTriangle size={13} />,
-      label: t.status[canonical] || canonical
+      label: t(`myHiresPage.status.${canonical}`, { defaultValue: t('myHiresPage.status.unknown') })
     };
   };
 
   const getPaymentBadge = (hire) => {
     const ps = (hire.paymentStatus || '').toLowerCase();
     if (ps === 'completed' || ps === 'confirmed' || ps === 'paid') {
-      return { className: 'bg-green-50 text-green-700 border-green-200', label: t.payment.paid };
+      return { className: 'bg-green-50 text-green-700 border-green-200', label: t('myHiresPage.payment.paid') };
     }
     if (ps === 'pending' || ps === 'processing') {
-      return { className: 'bg-amber-50 text-amber-700 border-amber-200', label: t.payment.pending };
+      return { className: 'bg-amber-50 text-amber-700 border-amber-200', label: t('myHiresPage.payment.pending') };
     }
-    return { className: 'bg-gray-100 text-gray-600 border-gray-200', label: t.payment.unpaid };
+    return { className: 'bg-gray-100 text-gray-600 border-gray-200', label: t('myHiresPage.payment.unpaid') };
   };
 
   const formatDate = (dateString) => {
@@ -631,7 +418,7 @@ const MyHires = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('myHiresPage.loading')}</p>
         </div>
       </div>
     );
@@ -640,10 +427,10 @@ const MyHires = () => {
   if (!authUser) return null;
 
   const statCards = [
-    { key: 'total', label: t.stats.total, value: stats.total, icon: Users, color: 'teal' },
-    { key: 'active', label: t.stats.active, value: stats.active, icon: CheckCircle, color: 'green' },
-    { key: 'awaitingPayment', label: t.stats.awaitingPayment, value: stats.awaitingPayment, icon: Clock, color: 'amber' },
-    { key: 'terminated', label: t.stats.terminated, value: stats.terminated, icon: XIcon, color: 'red' }
+    { key: 'total', label: t('myHiresPage.stats.total'), value: stats.total, icon: Users, color: 'teal' },
+    { key: 'active', label: t('myHiresPage.stats.active'), value: stats.active, icon: CheckCircle, color: 'green' },
+    { key: 'awaitingPayment', label: t('myHiresPage.stats.awaitingPayment'), value: stats.awaitingPayment, icon: Clock, color: 'amber' },
+    { key: 'terminated', label: t('myHiresPage.stats.terminated'), value: stats.terminated, icon: XIcon, color: 'red' }
   ];
 
   const statColor = {
@@ -656,7 +443,7 @@ const MyHires = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('myHiresPage.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
         rightContent={
@@ -665,20 +452,20 @@ const MyHires = () => {
             className="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
           >
             <RefreshCw size={16} />
-            {t.refresh}
+            {t('myHiresPage.refresh')}
           </button>
         }
       />
 
       <div className="p-4 md:p-6 space-y-6">
         <RolePageHeader
-          title={t.title}
-          subtitle={t.subtitle}
+          title={t('myHiresPage.title')}
+          subtitle={t('myHiresPage.subtitle')}
           actions={
             <div className="flex items-center gap-2 text-sm text-teal-100">
               <Users size={16} className="flex-shrink-0" />
               <span className="font-medium text-white">{stats.total}</span>
-              <span>{t.hiresWord}</span>
+              <span>{t('myHiresPage.hiresWord')}</span>
             </div>
           }
         />
@@ -719,7 +506,7 @@ const MyHires = () => {
               <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder={t.searchPlaceholder}
+                placeholder={t('myHiresPage.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
@@ -730,17 +517,17 @@ const MyHires = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
             >
-              <option value="all">{t.filters.all}</option>
-              <option value={HIRE_STATUS.ACTIVE}>{t.filters.active}</option>
-              <option value={HIRE_STATUS.OFFER_SENT}>{t.filters.offer_sent}</option>
-              <option value={HIRE_STATUS.TERMINATED}>{t.filters.terminated}</option>
+              <option value="all">{t('myHiresPage.filters.all')}</option>
+              <option value={HIRE_STATUS.ACTIVE}>{t('myHiresPage.filters.active')}</option>
+              <option value={HIRE_STATUS.OFFER_SENT}>{t('myHiresPage.filters.offer_sent')}</option>
+              <option value={HIRE_STATUS.TERMINATED}>{t('myHiresPage.filters.terminated')}</option>
             </select>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
                 className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
               >
-                {t.clearFilters}
+                {t('myHiresPage.clearFilters')}
               </button>
             )}
           </div>
@@ -748,7 +535,7 @@ const MyHires = () => {
 
         {/* Results count */}
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t.showing} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> {t.hiresWord}
+          {t('myHiresPage.showing')} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredHires.length}</span> {t('myHiresPage.hiresWord')}
         </p>
 
         {/* Empty state */}
@@ -756,22 +543,22 @@ const MyHires = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
             <div className="text-6xl mb-4">👥</div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-              {hasActiveFilters ? t.noResults : t.empty.title}
+              {hasActiveFilters ? t('myHiresPage.noResults') : t('myHiresPage.empty.title')}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">{hasActiveFilters ? '' : t.empty.description}</p>
+            <p className="text-gray-500 dark:text-gray-400">{hasActiveFilters ? '' : t('myHiresPage.empty.description')}</p>
             {!hasActiveFilters ? (
               <button
                 onClick={() => navigate('/employer-search')}
                 className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
               >
-                {t.empty.start}
+                {t('myHiresPage.empty.start')}
               </button>
             ) : (
               <button
                 onClick={clearFilters}
                 className="mt-4 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                {t.clearFilters}
+                {t('myHiresPage.clearFilters')}
               </button>
             )}
           </div>
@@ -782,13 +569,13 @@ const MyHires = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-700">
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.worker}</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.salary}</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.commission}</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.hiredOn}</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.status}</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.payment}</th>
-                    <th className="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t.table.actions}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.worker')}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.salary')}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.commission')}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.hiredOn')}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.status')}</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.payment')}</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-4 py-3">{t('myHiresPage.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/60">
@@ -826,7 +613,7 @@ const MyHires = () => {
                         {/* Salary */}
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
-                          <p className="text-xs text-gray-400">{t.salaryPerMonth}</p>
+                          <p className="text-xs text-gray-400">{t('myHiresPage.salaryPerMonth')}</p>
                         </td>
                         {/* Commission */}
                         <td className="px-4 py-3">
@@ -863,7 +650,7 @@ const MyHires = () => {
                             <button
                               onClick={() => handleViewDetails(hire)}
                               className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
-                              title={t.actions.view}
+                              title={t('myHiresPage.actions.view')}
                             >
                               <Eye size={16} />
                             </button>
@@ -873,7 +660,7 @@ const MyHires = () => {
                                   onClick={() => handleSendMessage(hire)}
                                   disabled={creatingConversation}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
-                                  title={t.actions.message}
+                                  title={t('myHiresPage.actions.message')}
                                 >
                                   {creatingConversation ? (
                                     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -884,7 +671,7 @@ const MyHires = () => {
                                 <button
                                   onClick={() => handleTerminateClick(hire)}
                                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                                  title={t.actions.terminate}
+                                  title={t('myHiresPage.actions.terminate')}
                                 >
                                   <XIcon size={16} />
                                 </button>
@@ -940,17 +727,17 @@ const MyHires = () => {
                     {/* Middle: key facts */}
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                       <div>
-                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.salary}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.salary')}</p>
                         <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
-                        <p className="text-[10px] text-gray-400">{t.salaryPerMonth}</p>
+                        <p className="text-[10px] text-gray-400">{t('myHiresPage.salaryPerMonth')}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.commission}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.commission')}</p>
                         <p className="text-sm font-semibold text-teal-600">{commission != null ? formatCurrency(commission) : '-'}</p>
                         <p className="text-[10px] text-gray-400">EGP</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t.table.payment}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.payment')}</p>
                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border mt-0.5 ${payment.className}`}>
                           <Wallet size={10} />
                           {payment.label}
@@ -968,7 +755,7 @@ const MyHires = () => {
                         <button
                           onClick={() => handleViewDetails(hire)}
                           className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
-                          title={t.actions.view}
+                          title={t('myHiresPage.actions.view')}
                         >
                           <Eye size={16} />
                         </button>
@@ -978,7 +765,7 @@ const MyHires = () => {
                               onClick={() => handleSendMessage(hire)}
                               disabled={creatingConversation}
                               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition disabled:opacity-50"
-                              title={t.actions.message}
+                              title={t('myHiresPage.actions.message')}
                             >
                               {creatingConversation ? (
                                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -989,7 +776,7 @@ const MyHires = () => {
                             <button
                               onClick={() => handleTerminateClick(hire)}
                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                              title={t.actions.terminate}
+                              title={t('myHiresPage.actions.terminate')}
                             >
                               <XIcon size={16} />
                             </button>
@@ -1010,7 +797,7 @@ const MyHires = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t.modal.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t('myHiresPage.modal.title')}</h2>
               <button onClick={handleCloseModal} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <X size={20} />
               </button>
@@ -1035,7 +822,7 @@ const MyHires = () => {
                     {selectedHire.isPremium && (
                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                         <Crown size={10} className="text-yellow-500" />
-                        Premium
+                        {t('myHiresPage.premium')}
                       </span>
                     )}
                   </div>
@@ -1056,26 +843,26 @@ const MyHires = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.salary}</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t.salaryPerMonth}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.salary')}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t('myHiresPage.salaryPerMonth')}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.commission}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.commission')}</p>
                   <p className="text-lg font-bold text-teal-600">{getCommission(selectedHire) != null ? `${formatCurrency(getCommission(selectedHire))} EGP` : '-'}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.startDate}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.startDate')}</p>
                   <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.startDate || selectedHire.createdAt)}</p>
                 </div>
                 {selectedHire.terminationDate && (
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.endDate}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.endDate')}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white">{formatDate(selectedHire.terminationDate)}</p>
                   </div>
                 )}
                 {selectedHire.workerRating && (
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.modal.rating}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.rating')}</p>
                     <p className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-1">
                       <StarIcon size={18} className="text-yellow-500" />
                       {selectedHire.workerRating}
@@ -1085,19 +872,19 @@ const MyHires = () => {
               </div>
 
               <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{t.modal.contact}</h4>
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('myHiresPage.modal.contact')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-3">
                     <Mail size={16} className="text-gray-400" />
-                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerEmail || 'Not provided'}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerEmail || t('myHiresPage.notProvided')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone size={16} className="text-gray-400" />
-                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerPhone || 'Not provided'}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerPhone || t('myHiresPage.notProvided')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin size={16} className="text-gray-400" />
-                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerLocation || 'Not specified'}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{selectedHire.workerLocation || t('myHiresPage.notSpecified')}</span>
                   </div>
                 </div>
               </div>
@@ -1106,13 +893,13 @@ const MyHires = () => {
                 <div className="mt-6 p-4 border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-900/10 rounded-xl">
                   <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                     <CheckCircle size={16} className="text-indigo-500" />
-                    {t.review.title}
+                    {t('myHiresPage.review.title')}
                   </h4>
 
                   {hireEarningsLoading ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.review.loading}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('myHiresPage.review.loading')}</p>
                   ) : hireEarnings.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.review.empty}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('myHiresPage.review.empty')}</p>
                   ) : (
                     <div className="mt-3 space-y-2">
                       {hireEarnings.map((earning) => {
@@ -1144,7 +931,7 @@ const MyHires = () => {
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {t.review.period}: {new Date(earning.periodStart || earning.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {t('myHiresPage.review.period')}: {new Date(earning.periodStart || earning.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 {earning.periodEnd ? ` – ${new Date(earning.periodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
                               </p>
                             </div>
@@ -1156,14 +943,14 @@ const MyHires = () => {
                                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 hover:bg-green-700 text-white transition inline-flex items-center gap-1.5"
                                 >
                                   <CheckCircle size={13} />
-                                  {t.review.approveButton}
+                                  {t('myHiresPage.review.approveButton')}
                                 </button>
                                 <button
                                   onClick={() => openReview(earning, 'dispute')}
                                   className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition inline-flex items-center gap-1.5"
                                 >
                                   <AlertTriangle size={13} />
-                                  {t.review.disputeButton}
+                                  {t('myHiresPage.review.disputeButton')}
                                 </button>
                               </div>
                             )}
@@ -1174,7 +961,7 @@ const MyHires = () => {
                   )}
 
                   <p className="text-xs text-gray-400 mt-3">
-                    Confirming a work period records that BOTH parties confirmed the period inside HomelyServ. It does NOT confirm salary payment.
+                    {t('myHiresPage.review.explanation')}
                   </p>
                 </div>
               )}
@@ -1191,14 +978,14 @@ const MyHires = () => {
                     ) : (
                       <MessageCircle size={18} />
                     )}
-                    {t.actions.message}
+                    {t('myHiresPage.actions.message')}
                   </button>
                   <button
                     onClick={() => handleTerminateClick(selectedHire)}
                     className="flex-1 px-4 py-2 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition flex items-center justify-center gap-2"
                   >
                     <XIcon size={18} />
-                    {t.actions.terminate}
+                    {t('myHiresPage.actions.terminate')}
                   </button>
                 </div>
               )}
@@ -1212,7 +999,7 @@ const MyHires = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[85dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.terminate.title}</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t('myHiresPage.terminate.title')}</h3>
               <button
                 onClick={() => setShowTerminateModal(false)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -1220,15 +1007,15 @@ const MyHires = () => {
                 <X size={20} />
               </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">{t.terminate.confirm}</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{t('myHiresPage.terminate.confirm')}</p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t.terminate.reason}
+                {t('myHiresPage.terminate.reason')}
               </label>
               <textarea
                 value={terminateReason}
                 onChange={(e) => setTerminateReason(e.target.value)}
-                placeholder={t.terminate.placeholder}
+                placeholder={t('myHiresPage.terminate.placeholder')}
                 rows="3"
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
               />
@@ -1239,7 +1026,7 @@ const MyHires = () => {
                 disabled={terminating}
                 className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
               >
-                {t.terminate.cancel}
+                {t('myHiresPage.terminate.cancel')}
               </button>
               <button
                 onClick={handleTerminateHire}
@@ -1247,7 +1034,7 @@ const MyHires = () => {
                 className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {terminating && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                {terminating ? t.terminate.processing : t.terminate.confirmButton}
+                {terminating ? t('myHiresPage.terminate.processing') : t('myHiresPage.terminate.confirmButton')}
               </button>
             </div>
           </div>
@@ -1260,7 +1047,7 @@ const MyHires = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[85dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">
-                {reviewAction === 'approve' ? t.review.approveTitle : t.review.disputeTitle}
+                {reviewAction === 'approve' ? t('myHiresPage.review.approveTitle') : t('myHiresPage.review.disputeTitle')}
               </h3>
               <button
                 onClick={closeReview}
@@ -1272,18 +1059,18 @@ const MyHires = () => {
             </div>
 
             <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
-              {reviewAction === 'approve' ? t.review.approveBody : t.review.disputeBody}
+              {reviewAction === 'approve' ? t('myHiresPage.review.approveBody') : t('myHiresPage.review.disputeBody')}
             </p>
 
             {reviewAction === 'dispute' && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t.review.reasonLabel}
+                  {t('myHiresPage.review.reasonLabel')}
                 </label>
                 <textarea
                   value={reviewReason}
                   onChange={(e) => setReviewReason(e.target.value)}
-                  placeholder={t.review.reasonPlaceholder}
+                  placeholder={t('myHiresPage.review.reasonPlaceholder')}
                   rows="3"
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                 />
@@ -1296,7 +1083,7 @@ const MyHires = () => {
                 disabled={reviewInProgress}
                 className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
               >
-                {t.review.cancel}
+                {t('myHiresPage.review.cancel')}
               </button>
               <button
                 onClick={handleSubmitReview}
@@ -1307,10 +1094,10 @@ const MyHires = () => {
               >
                 {reviewInProgress && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                 {reviewInProgress
-                  ? t.review.processing
+                  ? t('myHiresPage.review.processing')
                   : reviewAction === 'approve'
-                    ? t.review.confirmApprove
-                    : t.review.confirmDispute}
+                    ? t('myHiresPage.review.confirmApprove')
+                    : t('myHiresPage.review.confirmDispute')}
               </button>
             </div>
           </div>
