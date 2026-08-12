@@ -1,6 +1,5 @@
 // src/pages/WorkerSettings.jsx - COMPREHENSIVE SETTINGS WITH RED THEME + WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../components/layout/DashboardContext';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
@@ -83,7 +82,6 @@ const WorkerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const dashboard = useDashboard();
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -137,159 +135,7 @@ const WorkerSettings = () => {
 
   const userIsPremium = isPremium();
 
-  const translations = {
-    en: {
-      title: 'Settings',
-      subtitle: 'Manage your account preferences',
-      preferences: 'Preferences',
-      language: 'Language',
-      languageDesc: 'Choose your preferred language',
-      darkMode: 'Dark Mode',
-      darkModeDesc: 'Switch between light and dark theme',
-      notifications: 'Notifications',
-      notificationsDesc: 'Enable or disable notifications',
-      emailNotifications: 'Email Notifications',
-      emailNotificationsDesc: 'Receive updates via email',
-      pushNotifications: 'Push Notifications',
-      pushNotificationsDesc: 'Receive real-time push notifications',
-      smsNotifications: 'SMS Notifications',
-      smsNotificationsDesc: 'Receive updates via SMS',
-      account: 'Account',
-      security: 'Security',
-      changePassword: 'Change Password',
-      changePasswordDesc: 'Update your account password',
-      twoFactorAuth: 'Two-Factor Authentication',
-      twoFactorAuthDesc: 'Add an extra layer of security',
-      privacy: 'Privacy',
-      profileVisibility: 'Profile Visibility',
-      profileVisibilityDesc: 'Control who can see your profile',
-      showOnlineStatus: 'Show Online Status',
-      showOnlineStatusDesc: 'Display your online status to others',
-      allowMessages: 'Allow Messages',
-      allowMessagesDesc: 'Allow employers to send you messages',
-      availableForHire: 'Available for Hire',
-      availableForHireDesc: 'Show employers you are available for work',
-      general: 'General',
-      timezone: 'Timezone',
-      timezoneDesc: 'Select your preferred timezone',
-      currency: 'Currency',
-      currencyDesc: 'Choose your preferred currency',
-      dateFormat: 'Date Format',
-      dateFormatDesc: 'Select how dates are displayed',
-      data: 'Data',
-      saveSearchHistory: 'Save Search History',
-      saveSearchHistoryDesc: 'Store your search history for quick access',
-      showRecommended: 'Show Recommended',
-      showRecommendedDesc: 'Display recommended jobs and offers',
-      autoSave: 'Auto Save',
-      autoSaveDesc: 'Automatically save your preferences',
-      deleteAccount: 'Delete Account',
-      deleteAccountDesc: 'Permanently delete your account and all data',
-      exportData: 'Export Data',
-      exportDataDesc: 'Download all your account data',
-      currentPassword: 'Current Password',
-      newPassword: 'New Password',
-      confirmPassword: 'Confirm Password',
-      cancel: 'Cancel',
-      confirm: 'Confirm',
-      saveChanges: 'Save Changes',
-      saved: 'Settings saved successfully!',
-      errorSaving: 'Failed to save settings. Please try again.',
-      passwordChanged: 'Password changed successfully!',
-      passwordMismatch: 'New passwords do not match',
-      passwordTooShort: 'Password must be at least 6 characters',
-      wrongPassword: 'Current password is incorrect',
-      deleteConfirm: 'Are you sure you want to delete your account?',
-      deleteWarning: 'This action cannot be undone. All your data will be permanently deleted.',
-      deleteConfirmText: 'Type DELETE to confirm',
-      deleteButton: 'Delete Account',
-      languageToggle: 'العربية',
-      notificationsTitle: 'Notifications',
-      public: 'Public',
-      private: 'Private',
-      contacts: 'Contacts Only',
-      premiumBadge: 'Premium Verified',
-      getPremium: 'Get Premium',
-      noNotifications: 'No new notifications'
-    },
-    ar: {
-      title: 'الإعدادات',
-      subtitle: 'إدارة تفضيلات حسابك',
-      preferences: 'التفضيلات',
-      language: 'اللغة',
-      languageDesc: 'اختر لغتك المفضلة',
-      darkMode: 'الوضع الداكن',
-      darkModeDesc: 'التبديل بين الوضع الفاتح والداكن',
-      notifications: 'الإشعارات',
-      notificationsDesc: 'تفعيل أو تعطيل الإشعارات',
-      emailNotifications: 'الإشعارات البريدية',
-      emailNotificationsDesc: 'تلقي التحديثات عبر البريد الإلكتروني',
-      pushNotifications: 'إشعارات فورية',
-      pushNotificationsDesc: 'تلقي إشعارات فورية في الوقت الحقيقي',
-      smsNotifications: 'إشعارات SMS',
-      smsNotificationsDesc: 'تلقي التحديثات عبر الرسائل القصيرة',
-      account: 'الحساب',
-      security: 'الأمان',
-      changePassword: 'تغيير كلمة المرور',
-      changePasswordDesc: 'تحديث كلمة مرور حسابك',
-      twoFactorAuth: 'المصادقة الثنائية',
-      twoFactorAuthDesc: 'إضافة طبقة إضافية من الأمان',
-      privacy: 'الخصوصية',
-      profileVisibility: 'رؤية الملف الشخصي',
-      profileVisibilityDesc: 'التحكم في من يمكنه رؤية ملفك الشخصي',
-      showOnlineStatus: 'إظهار الحالة',
-      showOnlineStatusDesc: 'عرض حالتك للآخرين',
-      allowMessages: 'السماح بالرسائل',
-      allowMessagesDesc: 'السماح لأصحاب العمل بإرسال رسائل لك',
-      availableForHire: 'متاح للتوظيف',
-      availableForHireDesc: 'إظهار لأصحاب العمل أنك متاح للعمل',
-      general: 'عام',
-      timezone: 'المنطقة الزمنية',
-      timezoneDesc: 'اختر منطقتك الزمنية المفضلة',
-      currency: 'العملة',
-      currencyDesc: 'اختر عملتك المفضلة',
-      dateFormat: 'تنسيق التاريخ',
-      dateFormatDesc: 'اختر كيفية عرض التواريخ',
-      data: 'البيانات',
-      saveSearchHistory: 'حفظ سجل البحث',
-      saveSearchHistoryDesc: 'تخزين سجل البحث للوصول السريع',
-      showRecommended: 'إظهار الموصى بهم',
-      showRecommendedDesc: 'عرض الوظائف والعروض الموصى بها',
-      autoSave: 'حفظ تلقائي',
-      autoSaveDesc: 'حفظ تفضيلاتك تلقائياً',
-      deleteAccount: 'حذف الحساب',
-      deleteAccountDesc: 'حذف حسابك وجميع بياناتك بشكل دائم',
-      exportData: 'تصدير البيانات',
-      exportDataDesc: 'تحميل جميع بيانات حسابك',
-      currentPassword: 'كلمة المرور الحالية',
-      newPassword: 'كلمة المرور الجديدة',
-      confirmPassword: 'تأكيد كلمة المرور',
-      cancel: 'إلغاء',
-      confirm: 'تأكيد',
-      saveChanges: 'حفظ التغييرات',
-      saved: 'تم حفظ الإعدادات بنجاح!',
-      errorSaving: 'فشل حفظ الإعدادات. يرجى المحاولة مرة أخرى.',
-      passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
-      passwordMismatch: 'كلمات المرور الجديدة غير متطابقة',
-      passwordTooShort: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
-      wrongPassword: 'كلمة المرور الحالية غير صحيحة',
-      deleteConfirm: 'هل أنت متأكد من رغبتك في حذف حسابك؟',
-      deleteWarning: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك بشكل دائم.',
-      deleteConfirmText: 'اكتب DELETE للتأكيد',
-      deleteButton: 'حذف الحساب',
-      languageToggle: 'English',
-      notificationsTitle: 'الإشعارات',
-      public: 'عام',
-      private: 'خاص',
-      contacts: 'جهات الاتصال فقط',
-      premiumBadge: 'مميز معتمد',
-      getPremium: 'اشتراك مميز',
-      noNotifications: 'لا توجد إشعارات جديدة'
-    }
-  };
-
-  const { i18n } = useTranslation();
-  const t = translations[dashboard.language] || translations.en;
+  const { t } = useTranslation();
 
 useEffect(() => {
      // Load saved settings from backend
@@ -360,12 +206,12 @@ useEffect(() => {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(result.error || t.errorSaving);
+        throw new Error(result.error || t('employerSettings.errorSaving'));
       }
     } catch (error) {
       // Never show success here — surface the failure to the user
       console.error('Error saving settings:', error);
-      setSaveError(error.message || t.errorSaving);
+      setSaveError(error.message || t('employerSettings.errorSaving'));
       setTimeout(() => setSaveError(null), 5000);
     } finally {
       setSaving(false);
@@ -377,17 +223,17 @@ useEffect(() => {
     setPasswordError('');
     
     if (!passwordData.currentPassword) {
-      setPasswordError('Please enter your current password');
+      setPasswordError(t('employerSettings.currentPasswordRequired'));
       return;
     }
     
     if (passwordData.newPassword.length < 6) {
-      setPasswordError(t.passwordTooShort);
+      setPasswordError(t('employerSettings.passwordTooShort'));
       return;
     }
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError(t.passwordMismatch);
+      setPasswordError(t('employerSettings.passwordMismatch'));
       return;
     }
     
@@ -405,18 +251,18 @@ useEffect(() => {
           setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         }, 2000);
       } else {
-        throw new Error(response.data.message || t.wrongPassword);
+        throw new Error(response.data.message || t('employerSettings.wrongPassword'));
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      setPasswordError(error.message || t.wrongPassword);
+      setPasswordError(error.message || t('employerSettings.wrongPassword'));
     }
   };
 
   // ===== Delete Account Functionality =====
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') {
-      alert('Please type DELETE to confirm');
+      alert(t('workerSettings.deleteTypeRequired'));
       return;
     }
     
@@ -425,15 +271,15 @@ useEffect(() => {
 
       if (response.data.success) {
         localStorage.removeItem('worker_settings');
-        alert('Account deleted successfully');
+        alert(t('workerSettings.accountDeleted'));
         logout();
         navigate('/login');
       } else {
-        throw new Error(response.data.message || 'Failed to delete account');
+        throw new Error(response.data.message || t('workerSettings.deleteFailed'));
       }
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert('Error deleting account. Please try again.');
+      alert(t('workerSettings.deleteFailedRetry'));
     }
   };
 
@@ -496,7 +342,7 @@ useEffect(() => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting data:', error);
-      alert('Failed to export data. Please try again.');
+      alert(t('workerSettings.exportFailed'));
     }
   };
 
@@ -507,7 +353,7 @@ useEffect(() => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerSettings.loading')}</p>
         </div>
       </div>
     );
@@ -518,12 +364,12 @@ useEffect(() => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300 mb-6">Please login to view your settings</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{t('workerSettings.loginRequired')}</p>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition-all"
           >
-            Go to Login
+            {t('workerSettings.goToLogin')}
           </button>
         </div>
       </div>
@@ -533,7 +379,7 @@ useEffect(() => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerSettings.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
       />
@@ -542,8 +388,8 @@ useEffect(() => {
         {/* Page Header - RED THEME */}
         <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-2xl p-6 mb-6 text-white">
           <div>
-            <h1 className="text-2xl font-bold">{t.title}</h1>
-            <p className="text-red-100 mt-1">{t.subtitle}</p>
+            <h1 className="text-2xl font-bold">{t('employerSettings.title')}</h1>
+            <p className="text-red-100 mt-1">{t('employerSettings.subtitle')}</p>
           </div>
         </div>
 
@@ -551,7 +397,7 @@ useEffect(() => {
         {saveSuccess && (
           <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
             <CheckCircle size={16} />
-            {t.saved}
+            {t('employerSettings.saved')}
           </div>
         )}
 
@@ -567,15 +413,15 @@ useEffect(() => {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
           {/* Preferences */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.preferences}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.preferences')}</h3>
             <div className="space-y-4">
               {/* Language selector removed - using global LanguageSwitcher in header */}
 
               {/* Dark Mode - uses global theme store */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.darkMode}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.darkModeDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.darkMode')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.darkModeDesc')}</p>
                 </div>
                 <button
                   onClick={toggleTheme}
@@ -594,8 +440,8 @@ useEffect(() => {
               {/* Auto Save */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.autoSave}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.autoSaveDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.autoSave')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.autoSaveDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
@@ -615,13 +461,13 @@ useEffect(() => {
 
           {/* General */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.general}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.general')}</h3>
             <div className="space-y-4">
               {/* Timezone */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.timezone}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.timezoneDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.timezone')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.timezoneDesc')}</p>
                 </div>
                 <select
                   value={settings.timezone}
@@ -659,28 +505,28 @@ useEffect(() => {
               {/* Currency */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.currency}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.currencyDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.currency')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.currencyDesc')}</p>
                 </div>
                 <select
                   value={settings.currency}
                   onChange={(e) => handleSettingChange('currency', e.target.value)}
                   className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  <option value="EGP">EGP - Egyptian Pound</option>
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="SAR">SAR - Saudi Riyal</option>
-                  <option value="AED">AED - UAE Dirham</option>
+                  <option value="EGP">{t('employerSettings.currencyOptions.egp')}</option>
+                  <option value="USD">{t('employerSettings.currencyOptions.usd')}</option>
+                  <option value="EUR">{t('employerSettings.currencyOptions.eur')}</option>
+                  <option value="GBP">{t('employerSettings.currencyOptions.gbp')}</option>
+                  <option value="SAR">{t('employerSettings.currencyOptions.sar')}</option>
+                  <option value="AED">{t('employerSettings.currencyOptions.aed')}</option>
                 </select>
               </div>
 
               {/* Date Format */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.dateFormat}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.dateFormatDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.dateFormat')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.dateFormatDesc')}</p>
                 </div>
                 <select
                   value={settings.dateFormat}
@@ -690,7 +536,7 @@ useEffect(() => {
                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                   <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  <option value="DD Month YYYY">DD Month YYYY</option>
+                  <option value="DD Month YYYY">{t('employerSettings.dateFormatLong')}</option>
                 </select>
               </div>
             </div>
@@ -698,12 +544,12 @@ useEffect(() => {
 
           {/* Notifications */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.notificationsTitle}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.notificationsTitle')}</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.notifications}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.notificationsDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.notifications')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.notificationsDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('notifications', !settings.notifications)}
@@ -721,8 +567,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.emailNotifications}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.emailNotificationsDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.emailNotifications')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.emailNotificationsDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('emailNotifications', !settings.emailNotifications)}
@@ -740,8 +586,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.pushNotifications}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.pushNotificationsDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.pushNotifications')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.pushNotificationsDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('pushNotifications', !settings.pushNotifications)}
@@ -759,8 +605,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.smsNotifications}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.smsNotificationsDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.smsNotifications')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.smsNotificationsDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
@@ -780,28 +626,28 @@ useEffect(() => {
 
           {/* Privacy */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.privacy}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.privacy')}</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.profileVisibility}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.profileVisibilityDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.profileVisibility')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.profileVisibilityDesc')}</p>
                 </div>
                 <select
                   value={settings.profileVisibility}
                   onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
                   className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  <option value="public">{t.public}</option>
-                  <option value="private">{t.private}</option>
-                  <option value="contacts">{t.contacts}</option>
+                  <option value="public">{t('employerSettings.public')}</option>
+                  <option value="private">{t('employerSettings.private')}</option>
+                  <option value="contacts">{t('employerSettings.contacts')}</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.showOnlineStatus}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.showOnlineStatusDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.showOnlineStatus')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.showOnlineStatusDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('showOnlineStatus', !settings.showOnlineStatus)}
@@ -819,8 +665,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.allowMessages}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.allowMessagesDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.allowMessages')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerSettings.allowMessagesDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('allowMessages', !settings.allowMessages)}
@@ -838,8 +684,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.availableForHire}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.availableForHireDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('workerSettings.availableForHire')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerSettings.availableForHireDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('availableForHire', !settings.availableForHire)}
@@ -859,7 +705,7 @@ useEffect(() => {
 
           {/* Security */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.security}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.security')}</h3>
             <div className="space-y-4">
               <button
                 onClick={() => setShowPasswordModal(true)}
@@ -868,8 +714,8 @@ useEffect(() => {
                 <div className="flex items-center gap-3">
                   <Lock size={20} className="text-red-600" />
                   <div className="text-left">
-                    <p className="font-medium">{t.changePassword}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.changePasswordDesc}</p>
+                    <p className="font-medium">{t('employerSettings.changePassword')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.changePasswordDesc')}</p>
                   </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -877,8 +723,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.twoFactorAuth}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.twoFactorAuthDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.twoFactorAuth')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.twoFactorAuthDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
@@ -898,12 +744,12 @@ useEffect(() => {
 
           {/* Data */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.data}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('employerSettings.data')}</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.saveSearchHistory}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.saveSearchHistoryDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.saveSearchHistory')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.saveSearchHistoryDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('saveSearchHistory', !settings.saveSearchHistory)}
@@ -921,8 +767,8 @@ useEffect(() => {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">{t.showRecommended}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.showRecommendedDesc}</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.showRecommended')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('workerSettings.showRecommendedDesc')}</p>
                 </div>
                 <button
                   onClick={() => handleSettingChange('showRecommended', !settings.showRecommended)}
@@ -945,8 +791,8 @@ useEffect(() => {
                 <div className="flex items-center gap-3">
                   <Download size={20} className="text-red-600" />
                   <div className="text-left">
-                    <p className="font-medium">{t.exportData}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.exportDataDesc}</p>
+                    <p className="font-medium">{t('employerSettings.exportData')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.exportDataDesc')}</p>
                   </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -959,8 +805,8 @@ useEffect(() => {
                 <div className="flex items-center gap-3">
                   <Trash2 size={20} className="text-red-500" />
                   <div className="text-left">
-                    <p className="font-medium">{t.deleteAccount}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.deleteAccountDesc}</p>
+                    <p className="font-medium">{t('employerSettings.deleteAccount')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.deleteAccountDesc')}</p>
                   </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-400 dark:text-gray-500" />
@@ -976,7 +822,7 @@ useEffect(() => {
               className={`px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50`}
             >
               {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-              {saving ? 'Saving...' : t.saveChanges}
+              {saving ? t('employerSettings.saving') : t('employerSettings.saveChanges')}
             </button>
           </div>
         </div>
@@ -987,7 +833,7 @@ useEffect(() => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t.changePassword}</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{t('employerSettings.changePassword')}</h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
@@ -999,14 +845,14 @@ useEffect(() => {
             {passwordSuccess ? (
               <div className="text-center py-6">
                 <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-                <p className="text-lg font-semibold text-gray-800 dark:text-white">{t.passwordChanged}</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">{t('employerSettings.passwordChanged')}</p>
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t.currentPassword}
+                      {t('employerSettings.currentPassword')}
                     </label>
                     <div className="relative">
                       <input
@@ -1014,7 +860,7 @@ useEffect(() => {
                         value={passwordData.currentPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                         className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Enter current password"
+                        placeholder={t('employerSettings.currentPasswordPlaceholder')}
                       />
                       <button
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -1027,7 +873,7 @@ useEffect(() => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t.newPassword}
+                      {t('employerSettings.newPassword')}
                     </label>
                     <div className="relative">
                       <input
@@ -1035,7 +881,7 @@ useEffect(() => {
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                         className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Enter new password (min 6 characters)"
+                        placeholder={t('employerSettings.newPasswordPlaceholder')}
                       />
                       <button
                         onClick={() => setShowNewPassword(!showNewPassword)}
@@ -1048,7 +894,7 @@ useEffect(() => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t.confirmPassword}
+                      {t('employerSettings.confirmPassword')}
                     </label>
                     <div className="relative">
                       <input
@@ -1056,7 +902,7 @@ useEffect(() => {
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                         className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Confirm new password"
+                        placeholder={t('employerSettings.confirmPasswordPlaceholder')}
                       />
                       <button
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -1080,13 +926,13 @@ useEffect(() => {
                     onClick={() => setShowPasswordModal(false)}
                     className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
                   >
-                    {t.cancel}
+                    {t('employerSettings.cancel')}
                   </button>
                   <button
                     onClick={handlePasswordChange}
                     className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition"
                   >
-                    {t.confirm}
+                    {t('employerSettings.confirm')}
                   </button>
                 </div>
               </>
@@ -1100,7 +946,7 @@ useEffect(() => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-xl font-bold text-red-600">{t.deleteAccount}</h3>
+              <h3 className="text-xl font-bold text-red-600">{t('employerSettings.deleteAccount')}</h3>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400"
@@ -1111,20 +957,20 @@ useEffect(() => {
 
             <div className="text-center py-4">
               <Trash2 size={48} className="text-red-500 mx-auto mb-3" />
-              <p className="text-lg font-semibold text-gray-800 dark:text-white">{t.deleteConfirm}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t.deleteWarning}</p>
+              <p className="text-lg font-semibold text-gray-800 dark:text-white">{t('employerSettings.deleteConfirm')}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('employerSettings.deleteWarning')}</p>
             </div>
 
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t.deleteConfirmText}
+                {t('employerSettings.deleteConfirmText')}
               </label>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 className="w-full px-4 py-2.5 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                placeholder="Type DELETE"
+                placeholder={t('workerSettings.deletePlaceholder')}
               />
             </div>
 
@@ -1133,14 +979,14 @@ useEffect(() => {
                 onClick={() => setShowDeleteModal(false)}
                 className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition hover:bg-gray-50 dark:hover:bg-gray-900"
               >
-                {t.cancel}
+                {t('employerSettings.cancel')}
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== 'DELETE'}
                 className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg font-medium text-white hover:bg-red-700 transition disabled:opacity-50"
               >
-                {t.deleteButton}
+                {t('employerSettings.deleteButton')}
               </button>
             </div>
           </div>
