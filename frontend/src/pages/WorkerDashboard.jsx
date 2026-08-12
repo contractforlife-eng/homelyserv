@@ -1,6 +1,6 @@
 // src/pages/WorkerDashboard.jsx - RED AND WHITE THEME WITH ENHANCED NOTIFICATIONS
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../components/layout/DashboardContext';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { fetchSubscriptionStatus } from '../services/paymentService';
@@ -73,7 +73,7 @@ const WorkerDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
 
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
 
   const userIsPremium = subscriptionStatus.isPremium;
 
@@ -98,80 +98,6 @@ const WorkerDashboard = () => {
     return () => { cancelled = true; };
   }, [authUser]);
 
-  const translations = {
-    en: {
-      welcome: 'Welcome back',
-      dashboard: 'Dashboard',
-      overview: 'Overview',
-      stats: {
-        applications: 'Applications',
-        activeOffers: 'Active Offers',
-        interviews: 'Interviews',
-        savedJobs: 'Saved Jobs',
-        profileViews: 'Profile Views',
-        messages: 'Messages',
-        completedJobs: 'Completed Jobs',
-        pendingPayments: 'Pending Payments',
-        totalEarnings: 'Total Earnings',
-        pendingOffers: 'Pending Offers',
-        acceptedOffers: 'Accepted',
-        inProgress: 'In Progress',
-        rejected: 'Rejected',
-        completed: 'Completed'
-      },
-      recentActivity: 'Recent Activity',
-      quickActions: 'Quick Actions',
-      findJobs: 'Find Jobs',
-      viewOffers: 'View Offers',
-      viewProfile: 'View Profile',
-      viewMessages: 'View Messages',
-      notifications: 'Notifications',
-      languageToggle: 'العربية',
-      noActivity: 'No recent activity',
-      noNotifications: 'No notifications',
-      viewAll: 'View All',
-      markAllRead: 'Mark All Read',
-      premiumBadge: 'Premium',
-      getPremium: 'Get Premium'
-    },
-    ar: {
-      welcome: 'مرحباً بعودتك',
-      dashboard: 'لوحة التحكم',
-      overview: 'نظرة عامة',
-      stats: {
-        applications: 'الطلبات',
-        activeOffers: 'العروض النشطة',
-        interviews: 'المقابلات',
-        savedJobs: 'الوظائف المحفوظة',
-        profileViews: 'مشاهدات الملف',
-        messages: 'الرسائل',
-        completedJobs: 'الوظائف المكتملة',
-        pendingPayments: 'المدفوعات المعلقة',
-        totalEarnings: 'إجمالي الأرباح',
-        pendingOffers: 'عروض معلقة',
-        acceptedOffers: 'مقبولة',
-        inProgress: 'قيد التنفيذ',
-        rejected: 'مرفوضة',
-        completed: 'مكتملة'
-      },
-      recentActivity: 'النشاط الأخير',
-      quickActions: 'إجراءات سريعة',
-      findJobs: 'البحث عن وظائف',
-      viewOffers: 'عرض العروض',
-      viewProfile: 'عرض الملف الشخصي',
-      viewMessages: 'عرض الرسائل',
-      notifications: 'الإشعارات',
-      languageToggle: 'English',
-      noActivity: 'لا يوجد نشاط حديث',
-      noNotifications: 'لا توجد إشعارات',
-      viewAll: 'عرض الكل',
-      markAllRead: 'تعيين الكل كمقروء',
-      premiumBadge: 'مميز',
-      getPremium: 'اشتراك مميز'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   const handleLogout = () => {
     useAuthStore.getState().logout();
@@ -325,8 +251,10 @@ const WorkerDashboard = () => {
       }
       
       activities.push({
+        type: 'offer',
         icon: icon,
-        message: `${offer.jobTitle || 'Job offer'} from ${offer.employerName || 'employer'} - ${statusText}`,
+        jobTitle: offer.jobTitle,
+        employerName: offer.employerName,
         time: offer.updatedAt ? new Date(offer.updatedAt).toLocaleDateString() : 'Recently',
         status: statusText
       });
@@ -334,8 +262,10 @@ const WorkerDashboard = () => {
     
     payments.forEach(payment => {
       activities.push({
+        type: 'payment',
         icon: 'payment',
-        message: `Payment of EGP ${payment.amount} ${payment.status === 'completed' ? 'received' : 'pending'}`,
+        amount: payment.amount,
+        paymentState: payment.status,
         time: payment.date ? new Date(payment.date).toLocaleDateString() : 'Recently',
         status: payment.status === 'completed' ? 'Completed' : 'Pending'
       });
@@ -348,6 +278,36 @@ const WorkerDashboard = () => {
     });
     
     setRecentActivity(activities.slice(0, 10));
+  };
+
+  const formatActivityStatus = (status) => {
+    const statusKeys = {
+      'Pending Review': 'pendingReview',
+      Pending: 'pending',
+      Accepted: 'accepted',
+      'In Progress': 'inProgress',
+      Completed: 'completed',
+      Rejected: 'rejected',
+      Unknown: 'unknown'
+    };
+    const key = statusKeys[status];
+    return key ? t(`workerDashboard.status.${key}`) : status;
+  };
+
+  const formatActivityMessage = (activity) => {
+    if (activity.type === 'payment') {
+      return t('workerDashboard.activity.payment', {
+        amount: activity.amount,
+        state: activity.paymentState === 'completed'
+          ? t('workerDashboard.activity.received')
+          : t('workerDashboard.status.pending')
+      });
+    }
+    return t('workerDashboard.activity.offer', {
+      job: activity.jobTitle || t('workerDashboard.activity.jobOffer'),
+      employer: activity.employerName || t('workerDashboard.activity.employer'),
+      status: formatActivityStatus(activity.status)
+    });
   };
 
   // ============================================================
@@ -389,7 +349,7 @@ const WorkerDashboard = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerDashboard.loading')}</p>
         </div>
       </div>
     );
@@ -402,7 +362,7 @@ const WorkerDashboard = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.dashboard}
+        title={t('workerDashboard.dashboard')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={userIsPremium}
       />
@@ -420,7 +380,7 @@ const WorkerDashboard = () => {
                   {authUser?.profileImage ? (
                     <img 
                       src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Worker'} 
+                      alt={authUser.fullName || t('workerDashboard.worker')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -431,15 +391,15 @@ const WorkerDashboard = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl font-bold">{t.welcome}, {authUser.fullName || 'Worker'}!</h1>
+                    <h1 className="text-2xl font-bold">{t('workerDashboard.welcomeName', { name: authUser.fullName || t('workerDashboard.worker') })}</h1>
                     {userIsPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
+                        {t('workerDashboard.premiumBadge')}
                       </span>
                     )}
                   </div>
-                  <p className="text-white/80 mt-1">{t.overview}</p>
+                  <p className="text-white/80 mt-1">{t('workerDashboard.overview')}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -448,14 +408,14 @@ const WorkerDashboard = () => {
                    className="bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Briefcase size={16} />
-                  {t.viewOffers}
+                  {t('workerDashboard.viewOffers')}
                 </Link>
                 <Link
                   to="/worker-profile"
                    className="bg-white text-red-600 hover:bg-gray-100 dark:bg-gray-800/20 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <User size={16} />
-                  {t.viewProfile}
+                  {t('workerDashboard.viewProfile')}
                 </Link>
                 {!userIsPremium && (
                   <Link
@@ -463,7 +423,7 @@ const WorkerDashboard = () => {
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
                   >
                     <Crown size={16} />
-                    {t.getPremium}
+                    {t('workerDashboard.getPremium')}
                   </Link>
                 )}
               </div>
@@ -474,35 +434,35 @@ const WorkerDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pendingOffers}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.pendingOffers')}</p>
                 <Clock size={20} className="text-yellow-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pendingOffers}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.acceptedOffers}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.acceptedOffers')}</p>
                 <CheckCircle size={20} className="text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.acceptedOffers}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.inProgress}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.inProgress')}</p>
                 <Zap size={20} className="text-green-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.inProgressOffers}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completed}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.completed')}</p>
                 <CheckCircle size={20} className="text-purple-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completedOffers}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.rejected}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.rejected')}</p>
                 <X size={20} className="text-red-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.rejectedOffers}</p>
@@ -513,28 +473,28 @@ const WorkerDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.totalEarnings}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.totalEarnings')}</p>
                 <span className="text-red-500 font-bold">$</span>
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">EGP {stats.totalEarnings}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.pendingPayments}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.pendingPayments')}</p>
                 <CreditCard size={20} className="text-yellow-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pendingPayments}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.completedJobs}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.completedJobs')}</p>
                 <CheckCircle size={20} className="text-emerald-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completedJobs}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t.stats.messages}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('workerDashboard.stats.messages')}</p>
                 <MessageCircle size={20} className="text-indigo-500" />
               </div>
               <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.messages}</p>
@@ -548,47 +508,47 @@ const WorkerDashboard = () => {
 
           {/* Quick Actions - RED THEME */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.quickActions}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('workerDashboard.quickActions')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Link
                 to="/worker/offers"
                 className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 group"
               >
                 <Briefcase size={20} className="text-blue-600 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-blue-700">{t.findJobs}</span>
+                <span className="font-medium text-blue-700">{t('workerDashboard.findJobs')}</span>
               </Link>
               <Link
                 to="/worker/offers"
                 className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 rounded-lg transition-colors border border-green-200 group"
               >
                 <Zap size={20} className="text-green-600 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-green-700">{t.viewOffers}</span>
+                <span className="font-medium text-green-700">{t('workerDashboard.viewOffers')}</span>
               </Link>
               <Link
                 to="/worker-profile"
                 className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200 group"
               >
                 <User size={20} className="text-purple-600 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-purple-700">{t.viewProfile}</span>
+                <span className="font-medium text-purple-700">{t('workerDashboard.viewProfile')}</span>
               </Link>
               <Link
                 to="/worker-messages"
                 className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 rounded-lg transition-colors border border-red-200 group"
               >
                 <MessageCircle size={20} className="text-red-600 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-red-700">{t.viewMessages}</span>
+                <span className="font-medium text-red-700">{t('workerDashboard.viewMessages')}</span>
               </Link>
             </div>
           </div>
 
           {/* Recent Activity */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.recentActivity}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('workerDashboard.recentActivity')}</h3>
             {recentActivity.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <div className="text-4xl mb-2">📋</div>
-                <p>{t.noActivity}</p>
-                <p className="text-sm mt-2">Start applying for jobs to see activity here</p>
+                <p>{t('workerDashboard.noActivity')}</p>
+                <p className="text-sm mt-2">{t('workerDashboard.startApplying')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -610,8 +570,8 @@ const WorkerDashboard = () => {
                       {activity.icon === 'payment' && <CreditCard size={16} className="text-purple-600" />}
                     </div>
                     <div className="flex-1 min-w-0 pr-2">
-                      <p className="font-medium text-gray-800 dark:text-white">{activity.message}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time}</p>
+                      <p className="font-medium text-gray-800 dark:text-white">{formatActivityMessage(activity)}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time === 'Recently' ? t('workerDashboard.recently') : activity.time}</p>
                     </div>
                     {activity.status && (
                       <span className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ${
@@ -621,7 +581,7 @@ const WorkerDashboard = () => {
                         activity.status === 'Rejected' ? 'bg-red-100 text-red-700' :
                         'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                       }`}>
-                        {activity.status}
+                        {formatActivityStatus(activity.status)}
                       </span>
                     )}
                   </div>

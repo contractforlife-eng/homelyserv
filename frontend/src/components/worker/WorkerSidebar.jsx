@@ -1,5 +1,6 @@
 // src/components/worker/WorkerSidebar.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { isUserPremium } from '../../utils/subscriptionService';
 import SidebarBadge from '../SidebarBadge';
@@ -44,51 +45,18 @@ const WorkerSidebar = ({
     payment: 'payments',
   };
 
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      myProfile: 'My Profile',
-      myOffers: 'My Offers',
-      myApplications: 'My Applications',
-      findJobs: 'Find Jobs',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      payment: 'Payment',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview',
-      premium: 'Premium'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      myProfile: 'ملفي الشخصي',
-      myOffers: 'عروضي',
-      myApplications: 'طلباتي',
-      findJobs: 'البحث عن وظائف',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      payment: 'الدفع',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة',
-      premium: 'مميز'
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const { t } = useTranslation();
 
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/worker-dashboard' },
-    { id: 'findJobs', label: t.findJobs, icon: Search, path: '/worker-jobs' },
-    { id: 'myApplications', label: t.myApplications, icon: ClipboardList, path: '/worker-applications' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/worker-profile' },
-    { id: 'offers', label: t.myOffers, icon: Briefcase, path: '/worker/offers' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/worker-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/worker-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/worker-payment' },
-    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
+    { id: 'dashboard', label: t('workerSidebar.dashboard'), icon: Home, path: '/worker-dashboard' },
+    { id: 'findJobs', label: t('workerSidebar.findJobs'), icon: Search, path: '/worker-jobs' },
+    { id: 'myApplications', label: t('workerSidebar.myApplications'), icon: ClipboardList, path: '/worker-applications' },
+    { id: 'profile', label: t('workerSidebar.myProfile'), icon: User, path: '/worker-profile' },
+    { id: 'offers', label: t('workerSidebar.myOffers'), icon: Briefcase, path: '/worker/offers' },
+    { id: 'messages', label: t('workerSidebar.messages'), icon: MessageCircle, path: '/worker-messages' },
+    { id: 'complaints', label: t('workerSidebar.complaints'), icon: AlertTriangle, path: '/worker-complaints' },
+    { id: 'payment', label: t('workerSidebar.payment'), icon: CreditCard, path: '/worker-payment' },
+    { id: 'premium', label: t('workerSidebar.premium'), icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -166,7 +134,7 @@ const WorkerSidebar = ({
                   {getProfileImage() ? (
                     <img 
                       src={getProfileImage()} 
-                      alt={authUser?.fullName || 'Worker'} 
+                      alt={authUser?.fullName || t('workerSidebar.worker')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -179,7 +147,7 @@ const WorkerSidebar = ({
                 {getProfileImage() ? (
                   <img 
                     src={getProfileImage()} 
-                    alt={authUser?.fullName || 'Worker'} 
+                    alt={authUser?.fullName || t('workerSidebar.worker')}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -190,11 +158,11 @@ const WorkerSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || 'Worker'}</p>
+                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || t('workerSidebar.worker')}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
-                      Premium
+                      {t('workerSidebar.premium')}
                     </span>
                   )}
                 </div>
@@ -207,7 +175,7 @@ const WorkerSidebar = ({
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100dvh-180px)]">
           {!sidebarCollapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              {t.overview}
+              {t('workerSidebar.overview')}
             </div>
           )}
           {sidebarCollapsed && (
@@ -251,7 +219,7 @@ const WorkerSidebar = ({
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">{t('workerSidebar.new')}</span>
                 </div>
               )}
             </Link>
@@ -267,10 +235,10 @@ const WorkerSidebar = ({
             }`}
           >
             <Settings size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('workerSidebar.settings')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.settings}
+                {t('workerSidebar.settings')}
               </div>
             )}
           </Link>
@@ -281,10 +249,10 @@ const WorkerSidebar = ({
             }`}
           >
             <HelpCircle size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('workerSidebar.help')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.help}
+                {t('workerSidebar.help')}
               </div>
             )}
           </Link>
@@ -295,10 +263,10 @@ const WorkerSidebar = ({
             }`}
           >
             <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('workerSidebar.logout')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
+                {t('workerSidebar.logout')}
               </div>
             )}
           </button>
