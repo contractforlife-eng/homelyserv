@@ -1,8 +1,8 @@
 // src/pages/WorkerApplications.jsx — My Applications (Phase 2)
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -12,80 +12,19 @@ import {
 } from 'lucide-react';
 import jobService from '../services/jobService';
 
-const translations = {
-  en: {
-    title: 'My Applications',
-    subtitle: 'Track the jobs you have applied to',
-    emptyTitle: 'No applications yet',
-    emptyDesc: 'Browse jobs and apply to start tracking your applications.',
-    browseJobs: 'Browse Jobs',
-    viewJob: 'View Job',
-    withdraw: 'Withdraw',
-    withdrawing: 'Withdrawing...',
-    viewOffer: 'View Offer',
-    salary: 'Salary',
-    location: 'Location',
-    type: 'Type',
-    appliedOn: 'Applied on',
-    company: 'Company',
-    withdrawConfirmTitle: 'Withdraw Application?',
-    withdrawConfirmDesc: 'Are you sure you want to withdraw this application? You cannot re-apply after withdrawing.',
-    cancel: 'Cancel',
-    confirmWithdraw: 'Yes, Withdraw',
-    error: 'Failed to load your applications.',
-    withdrawError: 'Failed to withdraw application. Please try again.',
-    withdrawSuccess: 'Application withdrawn.',
-    noLocation: 'Location not specified',
-    statusApplied: 'Applied',
-    statusShortlisted: 'Shortlisted',
-    statusRejected: 'Rejected',
-    statusWithdrawn: 'Withdrawn',
-    statusOfferSent: 'Offer Sent',
-  },
-  ar: {
-    title: 'طلباتي',
-    subtitle: 'تتبع الوظائف التي تقدمت إليها',
-    emptyTitle: 'لا توجد طلبات بعد',
-    emptyDesc: 'تصفح الوظائف وتقدم لبدء تتبع طلباتك.',
-    browseJobs: 'تصفح الوظائف',
-    viewJob: 'عرض الوظيفة',
-    withdraw: 'سحب',
-    withdrawing: 'جارٍ السحب...',
-    viewOffer: 'عرض العرض',
-    salary: 'الراتب',
-    location: 'الموقع',
-    type: 'النوع',
-    appliedOn: 'تاريخ التقديم',
-    company: 'الشركة',
-    withdrawConfirmTitle: 'سحب الطلب؟',
-    withdrawConfirmDesc: 'هل أنت متأكد من رغبتك في سحب هذا الطلب؟ لا يمكنك إعادة التقديم بعد السحب.',
-    cancel: 'إلغاء',
-    confirmWithdraw: 'نعم، سحب',
-    error: 'فشل تحميل طلباتك.',
-    withdrawError: 'فشل سحب الطلب. حاول مرة أخرى.',
-    withdrawSuccess: 'تم سحب الطلب.',
-    noLocation: 'الموقع غير محدد',
-    statusApplied: 'تم التقديم',
-    statusShortlisted: 'تم الاختيار المبدئي',
-    statusRejected: 'مرفوض',
-    statusWithdrawn: 'تم السحب',
-    statusOfferSent: 'تم إرسال العرض',
-  },
-};
-
 const TYPE_LABELS = {
-  'full-time': { en: 'Full Time', ar: 'دوام كامل' },
-  'part-time': { en: 'Part Time', ar: 'دوام جزئي' },
-  contract: { en: 'Contract', ar: 'عقد' },
-  freelance: { en: 'Freelance', ar: 'حر' },
+  'full-time': 'workerApplications.types.fullTime',
+  'part-time': 'workerApplications.types.partTime',
+  contract: 'workerApplications.types.contract',
+  freelance: 'workerApplications.types.freelance',
 };
 
 const STATUS_LABELS = {
-  applied: { en: 'Applied', ar: 'تم التقديم' },
-  shortlisted: { en: 'Shortlisted', ar: 'تم الاختيار المبدئي' },
-  rejected: { en: 'Rejected', ar: 'مرفوض' },
-  withdrawn: { en: 'Withdrawn', ar: 'تم السحب' },
-  offer_sent: { en: 'Offer Sent', ar: 'تم إرسال العرض' },
+  applied: 'workerApplications.status.applied',
+  shortlisted: 'workerApplications.status.shortlisted',
+  rejected: 'workerApplications.status.rejected',
+  withdrawn: 'workerApplications.status.withdrawn',
+  offer_sent: 'workerApplications.status.offerSent',
 };
 
 const STATUS_STYLES = {
@@ -98,12 +37,11 @@ const STATUS_STYLES = {
 
 const WorkerApplications = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
-  const isArabic = dashboard.language === 'ar';
-  const t = translations[dashboard.language] || translations.en;
+  const isArabic = i18n.resolvedLanguage === 'ar';
 
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,15 +57,15 @@ const WorkerApplications = () => {
       if (data?.success) {
         setApplications(data.applications || []);
       } else {
-        setError(t.error);
+        setError(t('workerApplications.error'));
       }
     } catch (loadError) {
       console.error('Load my applications error:', loadError);
-      setError(t.error);
+      setError(t('workerApplications.error'));
     } finally {
       setLoading(false);
     }
-  }, [t.error]);
+  }, [t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -157,11 +95,11 @@ const WorkerApplications = () => {
         ));
         setConfirmWithdrawId(null);
       } else {
-        alert(data?.message || t.withdrawError);
+        alert(data?.message || t('workerApplications.withdrawError'));
       }
     } catch (withdrawError) {
       console.error('Withdraw error:', withdrawError);
-      alert(withdrawError.response?.data?.message || t.withdrawError);
+      alert(withdrawError.response?.data?.message || t('workerApplications.withdrawError'));
     } finally {
       setWithdrawingId(null);
     }
@@ -192,7 +130,7 @@ const WorkerApplications = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerApplications.loading')}</p>
         </div>
       </div>
     );
@@ -205,12 +143,12 @@ const WorkerApplications = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerApplications.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
       <div className="p-4 md:p-6">
-        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={t('workerApplications.title')} subtitle={t('workerApplications.subtitle')} />
 
         <div className="max-w-4xl mx-auto">
           {error && (
@@ -226,13 +164,13 @@ const WorkerApplications = () => {
           ) : applications.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
               <div className="text-5xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.emptyTitle}</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">{t.emptyDesc}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('workerApplications.emptyTitle')}</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">{t('workerApplications.emptyDesc')}</p>
               <button
                 onClick={() => navigate('/worker-jobs')}
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
-                {t.browseJobs}
+                {t('workerApplications.browseJobs')}
               </button>
             </div>
           ) : (
@@ -240,7 +178,7 @@ const WorkerApplications = () => {
               {applications.map((app) => {
                 const jobPost = app.jobPost;
                 const status = app.status;
-                const statusLabel = STATUS_LABELS[status]?.[dashboard.language] || status;
+                const statusLabel = STATUS_LABELS[status] ? t(STATUS_LABELS[status]) : status;
                 const statusStyle = STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
                 const employerName = app.employer?.companyName || app.employer?.fullName || null;
 
@@ -253,7 +191,7 @@ const WorkerApplications = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h2 className="text-lg font-semibold text-gray-800 dark:text-white break-words">
-                            {jobPost?.jobTitle || 'Job'}
+                            {jobPost?.jobTitle || t('workerApplications.job')}
                           </h2>
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle}`}>
                             {statusLabel}
@@ -275,14 +213,14 @@ const WorkerApplications = () => {
                           )}
                           {jobPost?.employmentType && (
                             <span className="inline-flex items-center gap-1">
-                              <Briefcase size={14} /> {TYPE_LABELS[jobPost.employmentType]?.[dashboard.language] || jobPost.employmentType}
+                              <Briefcase size={14} /> {TYPE_LABELS[jobPost.employmentType] ? t(TYPE_LABELS[jobPost.employmentType]) : jobPost.employmentType}
                             </span>
                           )}
                           <span>
-                            {t.salary}: <span className="text-gray-700 dark:text-gray-300 font-medium">{formatSalary(jobPost)}</span>
+                            {t('workerApplications.salary')}: <span className="text-gray-700 dark:text-gray-300 font-medium">{formatSalary(jobPost)}</span>
                           </span>
                           <span className="inline-flex items-center gap-1">
-                            <Calendar size={14} /> {t.appliedOn}: {formatDate(app.createdAt)}
+                            <Calendar size={14} /> {t('workerApplications.appliedOn')}: {formatDate(app.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -293,7 +231,7 @@ const WorkerApplications = () => {
                             onClick={() => navigate(`/job/${jobPost.id}`)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                           >
-                            <Eye size={16} /> {t.viewJob}
+                            <Eye size={16} /> {t('workerApplications.viewJob')}
                           </button>
                         )}
                         {status === 'offer_sent' && (
@@ -301,7 +239,7 @@ const WorkerApplications = () => {
                             onClick={() => navigate('/worker/offers')}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-teal-600 text-white hover:bg-teal-700 transition"
                           >
-                            <FileText size={16} /> {t.viewOffer}
+                            <FileText size={16} /> {t('workerApplications.viewOffer')}
                           </button>
                         )}
                         {canWithdraw(status) && (
@@ -310,7 +248,7 @@ const WorkerApplications = () => {
                             disabled={withdrawingId === app.id}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
                           >
-                            <XCircle size={16} /> {withdrawingId === app.id ? t.withdrawing : t.withdraw}
+                            <XCircle size={16} /> {withdrawingId === app.id ? t('workerApplications.withdrawing') : t('workerApplications.withdraw')}
                           </button>
                         )}
                       </div>
@@ -331,22 +269,22 @@ const WorkerApplications = () => {
               <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
                 <XCircle size={20} className="text-red-600 dark:text-red-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.withdrawConfirmTitle}</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('workerApplications.withdrawConfirmTitle')}</h3>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">{t.withdrawConfirmDesc}</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">{t('workerApplications.withdrawConfirmDesc')}</p>
             <div className="flex flex-wrap gap-3 justify-end">
               <button
                 onClick={() => setConfirmWithdrawId(null)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
               >
-                {t.cancel}
+                {t('workerApplications.cancel')}
               </button>
               <button
                 onClick={() => handleWithdraw(confirmWithdrawId)}
                 disabled={withdrawingId === confirmWithdrawId}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
               >
-                {withdrawingId === confirmWithdrawId ? t.withdrawing : t.confirmWithdraw}
+                {withdrawingId === confirmWithdrawId ? t('workerApplications.withdrawing') : t('workerApplications.confirmWithdraw')}
               </button>
             </div>
           </div>
