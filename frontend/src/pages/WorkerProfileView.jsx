@@ -1,13 +1,13 @@
 // src/pages/WorkerProfileView.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import employerService from '../services/employerService';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   ArrowLeft,
   User,
@@ -49,90 +49,9 @@ const WorkerProfileView = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
 
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
 
   const isBase64Image = (str) => typeof str === 'string' && str.startsWith('data:image/');
-
-  const translations = {
-    en: {
-      title: 'Worker Profile',
-      back: 'Back to Search',
-      contact: 'Contact Worker',
-      hire: 'Hire Now',
-      about: 'About',
-      skills: 'Skills',
-      experience: 'Experience',
-      location: 'Location',
-      hourlyRate: 'Hourly Rate',
-      rating: 'Rating',
-      jobsCompleted: 'Jobs Completed',
-      memberSince: 'Member Since',
-      availability: 'Availability',
-      available: 'Available',
-      notAvailable: 'Not Available',
-      premiumLabel: 'Premium',
-      activelyLooking: 'Actively Looking',
-      contactInfo: 'Contact Information',
-      email: 'Email',
-      phone: 'Phone',
-      noBio: 'No bio provided',
-      noSkills: 'No skills listed',
-      languageToggle: 'العربية',
-      notifications: 'Notifications',
-      loading: 'Loading worker profile...',
-      noWorkerData: 'No worker data found',
-      contactOptions: 'Contact Options',
-      sendEmail: 'Send Email',
-      callPhone: 'Call Phone',
-      startChat: 'Start Chat',
-      copyEmail: 'Copy Email',
-      emailCopied: 'Email copied!',
-      phoneCopied: 'Phone copied!',
-      close: 'Close',
-      contactLocked: 'Contact information locked. Complete payment to unlock contact details and messaging.',
-      paymentRequired: 'Payment required'
-    },
-    ar: {
-      title: 'الملف الشخصي للعامل',
-      back: 'العودة إلى البحث',
-      contact: 'تواصل مع العامل',
-      hire: 'توظيف الآن',
-      about: 'عن',
-      skills: 'المهارات',
-      experience: 'الخبرة',
-      location: 'الموقع',
-      hourlyRate: 'السعر بالساعة',
-      rating: 'التقييم',
-      jobsCompleted: 'الوظائف المكتملة',
-      memberSince: 'عضو منذ',
-      availability: 'التوفر',
-      available: 'متاح',
-      notAvailable: 'غير متاح',
-      premiumLabel: 'مميز',
-      activelyLooking: 'أبحث بنشاط',
-      contactInfo: 'معلومات الاتصال',
-      email: 'البريد الإلكتروني',
-      phone: 'الهاتف',
-      noBio: 'لا توجد سيرة ذاتية',
-      noSkills: 'لا توجد مهارات',
-      languageToggle: 'English',
-      notifications: 'الإشعارات',
-      loading: 'جاري تحميل الملف الشخصي...',
-      noWorkerData: 'لا توجد بيانات للعامل',
-      contactOptions: 'خيارات التواصل',
-      sendEmail: 'إرسال بريد إلكتروني',
-      callPhone: 'اتصال هاتفي',
-      startChat: 'بدء محادثة',
-      copyEmail: 'نسخ البريد الإلكتروني',
-      emailCopied: 'تم نسخ البريد الإلكتروني!',
-      phoneCopied: 'تم نسخ رقم الهاتف!',
-      close: 'إغلاق',
-      contactLocked: 'معلومات الاتصال مقفلة. أكمل الدفع لفتح تفاصيل الاتصال والمراسلة.',
-      paymentRequired: 'مطلوب دفع'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   useEffect(() => {
     if (authLoading) {
@@ -215,7 +134,7 @@ const WorkerProfileView = () => {
 
   const handleSendEmail = () => {
     if (worker?.email) {
-      window.location.href = `mailto:${worker.email}?subject=Job Opportunity on HomelyServ&body=Hello ${worker.fullName || 'Worker'},%0D%0A%0D%0AI came across your profile on HomelyServ and I'm interested in discussing a potential opportunity.%0D%0A%0D%0APlease let me know if you're available.%0D%0A%0D%0AThank you.`;
+      window.location.href = `mailto:${worker.email}?subject=${t('workerProfile.emailSubject')}&body=${t('workerProfile.emailBody', { worker: worker.fullName || t('workerProfile.worker') })}`;
     }
     setShowContactOptions(false);
   };
@@ -224,7 +143,7 @@ const WorkerProfileView = () => {
     if (worker?.phone) {
       window.location.href = `tel:${worker.phone}`;
     } else {
-      alert('Phone number not available');
+      alert(t('workerProfile.phoneUnavailable'));
     }
     setShowContactOptions(false);
   };
@@ -270,26 +189,26 @@ const WorkerProfileView = () => {
 
   const getJobLabel = (value) => {
     const jobMap = {
-      'nanny': 'Nanny',
-      'elderly_care': 'Elderly Caregiver',
-      'housekeeper': 'Housekeeper',
-      'cook': 'Cook',
-      'driver': 'Driver',
-      'gardener': 'Gardener',
-      'house_manager': 'House Manager',
-      'tutor': 'Tutor',
-      'pet_care': 'Pet Care',
-      'maintenance': 'Maintenance',
-      'security': 'Security Guard',
-      'personal_assistant': 'Personal Assistant',
-      'event_planner': 'Event Planner',
-      'fitness_trainer': 'Fitness Trainer',
-      'nurse': 'Nurse',
-      'therapist': 'Therapist',
-      'cleaner': 'Cleaner',
-      'other': 'Other'
+      'nanny': t('workerProfile.jobs.nanny'),
+      'elderly_care': t('workerProfile.jobs.elderly_care'),
+      'housekeeper': t('workerProfile.jobs.housekeeper'),
+      'cook': t('workerProfile.jobs.cook'),
+      'driver': t('workerProfile.jobs.driver'),
+      'gardener': t('workerProfile.jobs.gardener'),
+      'house_manager': t('workerProfile.jobs.house_manager'),
+      'tutor': t('workerProfile.jobs.tutor'),
+      'pet_care': t('workerProfile.jobs.pet_care'),
+      'maintenance': t('workerProfile.jobs.maintenance'),
+      'security': t('workerProfile.jobs.security'),
+      'personal_assistant': t('workerProfile.jobs.personal_assistant'),
+      'event_planner': t('workerProfile.jobs.event_planner'),
+      'fitness_trainer': t('workerProfile.jobs.fitness_trainer'),
+      'nurse': t('workerProfile.jobs.nurse'),
+      'therapist': t('workerProfile.jobs.therapist'),
+      'cleaner': t('workerProfile.jobs.cleaner'),
+      'other': t('workerProfile.jobs.other')
     };
-    return jobMap[value] || value || 'Not specified';
+    return jobMap[value] || value || t('workerProfile.notSpecified');
   };
 
   if (loading) {
@@ -297,7 +216,7 @@ const WorkerProfileView = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">{t.loading}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerProfile.loading')}</p>
         </div>
       </div>
     );
@@ -308,7 +227,7 @@ const WorkerProfileView = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerProfile.loading')}</p>
         </div>
       </div>
     );
@@ -318,18 +237,18 @@ const WorkerProfileView = () => {
     return (
       <DashboardLayout requiredRole="EMPLOYER">
         <DashboardHeader
-          title={t.title}
+          title={t('workerProfile.title')}
           notificationUserId={authUser?.id || authUser?.email}
         />
         <div className="p-4 md:p-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
             <div className="text-6xl mb-4">👤</div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('workerProfile.noWorkerData')}</h3>
             <button
               onClick={handleBack}
               className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
             >
-              {t.back}
+              {t('workerProfile.back')}
             </button>
           </div>
         </div>
@@ -340,7 +259,7 @@ const WorkerProfileView = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerProfile.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
       />
@@ -352,7 +271,7 @@ const WorkerProfileView = () => {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 transition mb-4"
           >
             <ArrowLeft size={18} />
-            {t.back}
+            {t('workerProfile.back')}
           </button>
 
           {/* Profile Header */}
@@ -372,14 +291,14 @@ const WorkerProfileView = () => {
               <div className="flex-1 text-center md:text-left">
                 <h1 className="text-2xl font-bold">{worker.fullName}</h1>
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-1">
-                  {worker.isPremium && <PremiumBadge label={t.premiumLabel} size="md" />}
-                  {worker.activelyLooking && <ActivelyLookingBadge label={t.activelyLooking} size="md" />}
+                  {worker.isPremium && <PremiumBadge label={t('workerProfile.premiumLabel')} size="md" />}
+                  {worker.activelyLooking && <ActivelyLookingBadge label={t('workerProfile.activelyLooking')} size="md" />}
                 </div>
                 <p className="text-teal-100">{getJobLabel(worker.desiredJob)}</p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-teal-100">
                   <span className="flex items-center gap-1">
                     <MapPin size={16} />
-                    {worker.location || 'Not specified'}
+                    {worker.location || t('workerProfile.notSpecified')}
                   </span>
                   <span className="flex items-center gap-1">
                     <Star size={16} className="text-yellow-400" />
@@ -387,7 +306,7 @@ const WorkerProfileView = () => {
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle size={16} />
-                    {worker.jobsCompleted || 0} jobs completed
+                    {t('workerProfile.jobsCompletedCount', { count: worker.jobsCompleted || 0 })}
                   </span>
                 </div>
               </div>
@@ -397,14 +316,14 @@ const WorkerProfileView = () => {
                   className="px-6 py-2 bg-white dark:bg-gray-800 text-teal-700 rounded-lg font-medium hover:bg-teal-50 dark:bg-teal-900/30 transition flex items-center gap-2"
                 >
                   <UserCheck size={18} />
-                  {t.hire}
+                  {t('workerProfile.hire')}
                 </button>
                 <button
                   onClick={handleContactWorker}
                   className="px-6 py-2 border border-white/30 text-white rounded-lg font-medium hover:bg-white dark:bg-gray-800/10 transition flex items-center gap-2"
                 >
                   <MessageCircle size={18} />
-                  {t.contact}
+                  {t('workerProfile.contact')}
                 </button>
               </div>
             </div>
@@ -414,14 +333,14 @@ const WorkerProfileView = () => {
             {/* Left Column - About & Skills */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t.about}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t('workerProfile.about')}</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  {worker.bio || t.noBio}
+                  {worker.bio || t('workerProfile.noBio')}
                 </p>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t.skills}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{t('workerProfile.skills')}</h3>
                 {worker.skills && worker.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {worker.skills.map((skill, idx) => (
@@ -431,7 +350,7 @@ const WorkerProfileView = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400">{t.noSkills}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{t('workerProfile.noSkills')}</p>
                 )}
               </div>
             </div>
@@ -439,31 +358,31 @@ const WorkerProfileView = () => {
             {/* Right Column - Details */}
             <div className="space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Details</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('workerProfile.details')}</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{t.experience}</span>
-                    <span className="font-medium">{worker.experience || '0 years'}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.experience')}</span>
+                    <span className="font-medium">{t('workerProfile.yearsExperience', { count: worker.experience || 0 })}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{t.hourlyRate}</span>
-                    <span className="font-medium text-teal-600">EGP {worker.hourlyRate}/hr</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.hourlyRate')}</span>
+                    <span className="font-medium text-teal-600">{t('workerProfile.rateValue', { rate: worker.hourlyRate })}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{t.availability}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.availability')}</span>
                     <span className={`font-medium ${worker.availability === 'available' ? 'text-green-600' : 'text-gray-500'}`}>
-                      {worker.availability === 'available' ? t.available : t.notAvailable}
+                      {worker.availability === 'available' ? t('workerProfile.available') : t('workerProfile.notAvailable')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{t.memberSince}</span>
-                    <span className="font-medium">June 2025</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.memberSince')}</span>
+                    <span className="font-medium">{t('workerProfile.memberSinceValue')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t.contactInfo}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('workerProfile.contactInfo')}</h3>
                 {contactUnlocked ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3 text-sm">
@@ -474,7 +393,8 @@ const WorkerProfileView = () => {
                       <button
                         onClick={handleCopyEmail}
                         className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
-                        title={t.copyEmail}
+                        title={t('workerProfile.copyEmail')}
+                        aria-label={t('workerProfile.copyEmail')}
                       >
                         {copied ? (
                           <Check size={14} className="text-green-500" />
@@ -486,13 +406,14 @@ const WorkerProfileView = () => {
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <div className="flex items-center gap-3">
                         <Phone size={16} className="text-gray-400 dark:text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-300">{worker.phone || 'Not provided'}</span>
+                        <span className="text-gray-600 dark:text-gray-300">{worker.phone || t('workerProfile.notProvided')}</span>
                       </div>
                       {worker.phone && (
                         <button
                           onClick={handleCopyPhone}
                           className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded transition"
-                          title={t.copyEmail}
+                          title={t('workerProfile.copyPhone')}
+                          aria-label={t('workerProfile.copyPhone')}
                         >
                           {copied ? (
                             <Check size={14} className="text-green-500" />
@@ -508,8 +429,8 @@ const WorkerProfileView = () => {
                     <div className="flex items-start gap-3">
                       <Lock size={20} className="text-amber-600 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t.paymentRequired}</p>
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{t.contactLocked}</p>
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t('workerProfile.paymentRequired')}</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{t('workerProfile.contactLocked')}</p>
                       </div>
                     </div>
                   </div>
@@ -524,10 +445,11 @@ const WorkerProfileView = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 max-h-[85dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t.contactOptions}</h3>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t('workerProfile.contactOptions')}</h3>
               <button
                 onClick={() => setShowContactOptions(false)}
                 className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition"
+                aria-label={t('workerProfile.close')}
               >
                 <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
@@ -540,7 +462,7 @@ const WorkerProfileView = () => {
                 >
                   <Mail size={20} className="text-teal-600" />
                   <div className="text-left">
-                    <p className="font-medium text-gray-800 dark:text-white">{t.sendEmail}</p>
+                    <p className="font-medium text-gray-800 dark:text-white">{t('workerProfile.sendEmail')}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{worker.email}</p>
                   </div>
                 </button>
@@ -552,7 +474,7 @@ const WorkerProfileView = () => {
                 >
                   <Phone size={20} className="text-teal-600" />
                   <div className="text-left">
-                    <p className="font-medium text-gray-800 dark:text-white">{t.callPhone}</p>
+                    <p className="font-medium text-gray-800 dark:text-white">{t('workerProfile.callPhone')}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{worker.phone}</p>
                   </div>
                 </button>
@@ -565,13 +487,13 @@ const WorkerProfileView = () => {
                     ? 'border-gray-200 dark:border-gray-700 hover:bg-teal-50 dark:bg-teal-900/30 hover:border-teal-300'
                     : 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
                 }`}
-                title={contactUnlocked ? t.startChat : t.contactLocked}
+                title={contactUnlocked ? t('workerProfile.startChat') : t('workerProfile.contactLocked')}
               >
                 <MessageCircle size={20} className={contactUnlocked ? 'text-teal-600' : 'text-gray-400'} />
                 <div className="text-left">
-                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{t.startChat}</p>
+                  <p className={`font-medium ${contactUnlocked ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{t('workerProfile.startChat')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {contactUnlocked ? `Start a conversation with ${worker.fullName}` : t.contactLocked}
+                    {contactUnlocked ? t('workerProfile.startConversation', { worker: worker.fullName }) : t('workerProfile.contactLocked')}
                   </p>
                 </div>
               </button>
@@ -580,7 +502,7 @@ const WorkerProfileView = () => {
               onClick={() => setShowContactOptions(false)}
               className="w-full mt-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition"
             >
-              {t.close}
+              {t('workerProfile.close')}
             </button>
           </div>
         </div>
