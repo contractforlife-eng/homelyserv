@@ -1,76 +1,28 @@
 // src/pages/WorkerJobs.jsx — Find Jobs
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import { Search, MapPin, Calendar, Loader2, Briefcase, Building } from 'lucide-react';
 import jobService from '../services/jobService';
 
-const translations = {
-  en: {
-    title: 'Find Jobs',
-    subtitle: 'Browse open job opportunities',
-    searchPlaceholder: 'Search by job title or description...',
-    locationPlaceholder: 'All locations',
-    employmentType: 'Employment Type',
-    allTypes: 'All types',
-    fullTime: 'Full Time',
-    partTime: 'Part Time',
-    contract: 'Contract',
-    freelance: 'Freelance',
-    salary: 'Salary',
-    posted: 'Posted',
-    urgent: 'Urgent',
-    featured: 'Featured',
-    viewJob: 'View Job',
-    emptyTitle: 'No jobs found',
-    emptyDesc: 'Try adjusting your search or filters.',
-    noLocation: 'Location not specified',
-    clearFilters: 'Clear filters',
-    company: 'Company',
-  },
-  ar: {
-    title: 'البحث عن وظائف',
-    subtitle: 'تصفح فرص العمل المتاحة',
-    searchPlaceholder: 'ابحث باسم الوظيفة أو الوصف...',
-    locationPlaceholder: 'كل المواقع',
-    employmentType: 'نوع التوظيف',
-    allTypes: 'كل الأنواع',
-    fullTime: 'دوام كامل',
-    partTime: 'دوام جزئي',
-    contract: 'عقد',
-    freelance: 'حر',
-    salary: 'الراتب',
-    posted: 'تاريخ النشر',
-    urgent: 'عاجل',
-    featured: 'مميزة',
-    viewJob: 'عرض الوظيفة',
-    emptyTitle: 'لا توجد وظائف',
-    emptyDesc: 'حاول تعديل البحث أو الفلاتر.',
-    noLocation: 'الموقع غير محدد',
-    clearFilters: 'مسح الفلاتر',
-    company: 'الشركة',
-  },
-};
-
 const TYPE_LABELS = {
-  'full-time': { en: 'Full Time', ar: 'دوام كامل' },
-  'part-time': { en: 'Part Time', ar: 'دوام جزئي' },
-  contract: { en: 'Contract', ar: 'عقد' },
-  freelance: { en: 'Freelance', ar: 'حر' },
+  'full-time': 'workerJobs.fullTime',
+  'part-time': 'workerJobs.partTime',
+  contract: 'workerJobs.contract',
+  freelance: 'workerJobs.freelance',
 };
 
 const WorkerJobs = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
-  const isArabic = dashboard.language === 'ar';
-  const t = translations[dashboard.language] || translations.en;
+  const isArabic = i18n.resolvedLanguage === 'ar';
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,16 +45,16 @@ const WorkerJobs = () => {
       if (data?.success) {
         setJobs(data.jobs || []);
       } else {
-        setError(data?.message || t.emptyTitle);
+        setError(data?.message || t('workerJobs.emptyTitle'));
       }
     } catch (loadError) {
       console.error('Load jobs error:', loadError);
-      setError(loadError.response?.data?.message || t.emptyTitle);
+      setError(loadError.response?.data?.message || t('workerJobs.emptyTitle'));
     } finally {
       setLoading(false);
       setHasLoaded(true);
     }
-  }, [query, location, employmentType, t.emptyTitle]);
+  }, [query, location, employmentType, t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -155,7 +107,7 @@ const WorkerJobs = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('workerJobs.loading')}</p>
         </div>
       </div>
     );
@@ -168,12 +120,12 @@ const WorkerJobs = () => {
   return (
     <DashboardLayout requiredRole="WORKER">
       <DashboardHeader
-        title={t.title}
+        title={t('workerJobs.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
       <div className="p-4 md:p-6">
-        <RolePageHeader title={t.title} subtitle={t.subtitle} />
+        <RolePageHeader title={t('workerJobs.title')} subtitle={t('workerJobs.subtitle')} />
 
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSearch} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
@@ -184,7 +136,7 @@ const WorkerJobs = () => {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t.searchPlaceholder}
+                  placeholder={t('workerJobs.searchPlaceholder')}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -194,7 +146,7 @@ const WorkerJobs = () => {
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder={t.locationPlaceholder}
+                  placeholder={t('workerJobs.locationPlaceholder')}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -203,11 +155,11 @@ const WorkerJobs = () => {
                 onChange={(e) => setEmploymentType(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
               >
-                <option value="">{t.allTypes}</option>
-                <option value="full-time">{t.fullTime}</option>
-                <option value="part-time">{t.partTime}</option>
-                <option value="contract">{t.contract}</option>
-                <option value="freelance">{t.freelance}</option>
+                <option value="">{t('workerJobs.allTypes')}</option>
+                <option value="full-time">{t('workerJobs.fullTime')}</option>
+                <option value="part-time">{t('workerJobs.partTime')}</option>
+                <option value="contract">{t('workerJobs.contract')}</option>
+                <option value="freelance">{t('workerJobs.freelance')}</option>
               </select>
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-3">
@@ -215,7 +167,7 @@ const WorkerJobs = () => {
                 type="submit"
                 className="inline-flex items-center gap-2 px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
               >
-                <Search size={16} /> {t.title}
+                <Search size={16} /> {t('workerJobs.title')}
               </button>
               {(query || location || employmentType) && (
                 <button
@@ -223,7 +175,7 @@ const WorkerJobs = () => {
                   onClick={handleClear}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                 >
-                  {t.clearFilters}
+                  {t('workerJobs.clearFilters')}
                 </button>
               )}
             </div>
@@ -242,8 +194,8 @@ const WorkerJobs = () => {
           ) : hasLoaded && jobs.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
               <div className="text-5xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.emptyTitle}</h3>
-              <p className="text-gray-500 dark:text-gray-400">{t.emptyDesc}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('workerJobs.emptyTitle')}</h3>
+              <p className="text-gray-500 dark:text-gray-400">{t('workerJobs.emptyDesc')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -257,12 +209,12 @@ const WorkerJobs = () => {
                       <h2 className="text-lg font-semibold text-gray-800 dark:text-white break-words">{job.jobTitle}</h2>
                       {job.isUrgent && (
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                          {t.urgent}
+                          {t('workerJobs.urgent')}
                         </span>
                       )}
                       {job.isFeatured && (
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                          {t.featured}
+                          {t('workerJobs.featured')}
                         </span>
                       )}
                     </div>
@@ -276,16 +228,16 @@ const WorkerJobs = () => {
 
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-500 dark:text-gray-400">
                       <span className="inline-flex items-center gap-1">
-                        <MapPin size={14} /> {job.location || t.noLocation}
+                        <MapPin size={14} /> {job.location || t('workerJobs.noLocation')}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Briefcase size={14} /> {TYPE_LABELS[job.employmentType]?.[dashboard.language] || job.employmentType}
+                        <Briefcase size={14} /> {TYPE_LABELS[job.employmentType] ? t(TYPE_LABELS[job.employmentType]) : job.employmentType}
                       </span>
                       <span>
-                        {t.salary}: <span className="text-gray-700 dark:text-gray-300 font-medium">{formatSalary(job)}</span>
+                        {t('workerJobs.salary')}: <span className="text-gray-700 dark:text-gray-300 font-medium">{formatSalary(job)}</span>
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Calendar size={14} /> {t.posted}: {formatDate(job.createdAt)}
+                        <Calendar size={14} /> {t('workerJobs.posted')}: {formatDate(job.createdAt)}
                       </span>
                     </div>
 
@@ -294,7 +246,7 @@ const WorkerJobs = () => {
                         onClick={() => navigate(`/job/${job.id}`)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
                       >
-                        {t.viewJob}
+                        {t('workerJobs.viewJob')}
                       </button>
                     </div>
                   </div>
