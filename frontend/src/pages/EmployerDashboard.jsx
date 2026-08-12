@@ -1,11 +1,11 @@
 // src/pages/EmployerDashboard.jsx - WITH WORKING NOTIFICATION BELL (NO TEST NOTIFICATIONS)
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import hireService from '../services/hireService';
 import {
   Home,
@@ -47,11 +47,11 @@ import {
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   
-  const dashboard = useDashboard();
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,67 +76,6 @@ const EmployerDashboard = () => {
   };
 
   const isPremium = userIsPremium();
-
-  const translations = {
-    en: {
-      welcome: 'Welcome back',
-      dashboard: 'Dashboard',
-      overview: 'Overview',
-      stats: {
-        activeHires: 'Active Hires',
-        pending: 'Pending Applications',
-        totalWorkers: 'Total Workers',
-        messages: 'Unread Messages',
-        completed: 'Completed Hires',
-        saved: 'Saved Workers',
-        total: 'Total Hires'
-      },
-      recentActivity: 'Recent Activity',
-      quickActions: 'Quick Actions',
-      findWorkers: 'Find Workers',
-      viewHires: 'View Hires',
-      viewProfile: 'View Profile',
-      viewMessages: 'View Messages',
-      notifications: 'Notifications',
-      languageToggle: 'العربية',
-      noActivity: 'No recent activity',
-      paymentSuccess: '🎉 Payment Successful!',
-      hiredSuccess: 'Successfully hired {worker}!',
-      viewHireDetails: 'View Hire Details',
-      premiumBadge: 'Premium',
-      getPremium: 'Get Premium'
-    },
-    ar: {
-      welcome: 'مرحباً بعودتك',
-      dashboard: 'لوحة التحكم',
-      overview: 'نظرة عامة',
-      stats: {
-        activeHires: 'التوظيفات النشطة',
-        pending: 'الطلبات المعلقة',
-        totalWorkers: 'إجمالي العمال',
-        messages: 'الرسائل غير المقروءة',
-        completed: 'التوظيفات المكتملة',
-        saved: 'العمال المحفوظين',
-        total: 'إجمالي التوظيفات'
-      },
-      recentActivity: 'النشاط الأخير',
-      quickActions: 'إجراءات سريعة',
-      findWorkers: 'البحث عن عمال',
-      viewHires: 'عرض التوظيفات',
-      viewProfile: 'عرض الملف الشخصي',
-      viewMessages: 'عرض الرسائل',
-      notifications: 'الإشعارات',
-      languageToggle: 'English',
-      noActivity: 'لا يوجد نشاط حديث',
-      paymentSuccess: '🎉 تم الدفع بنجاح!',
-      hiredSuccess: 'تم توظيف {worker} بنجاح!',
-      viewHireDetails: 'عرض تفاصيل التوظيف',
-      premiumBadge: 'مميز',
-      getPremium: 'اشتراك مميز'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   // ============================================================
   // LOAD REAL DATA
@@ -235,9 +174,11 @@ const EmployerDashboard = () => {
         if (hire.workerName) {
           activities.push({
             icon: 'hire',
-            message: `Hired ${hire.workerName}`,
-            time: hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'Recently',
-            status: hire.status === 'active' ? 'Active' : hire.status === 'completed' ? 'Completed' : 'Pending'
+            messageKey: 'employerDashboard.activityHired',
+            messageValues: { worker: hire.workerName },
+            time: hire.startDate ? new Date(hire.startDate).toLocaleDateString() : 'recently',
+            status: hire.status === 'active' ? 'Active' : hire.status === 'completed' ? 'Completed' : 'Pending',
+            statusKey: hire.status === 'active' ? 'active' : hire.status === 'completed' ? 'completed' : 'pending'
           });
         }
       });
@@ -247,9 +188,11 @@ const EmployerDashboard = () => {
         if (offer.status === 'pending' || offer.status === 'new') {
           activities.push({
             icon: 'offer',
-            message: `Posted job: ${offer.jobTitle || 'Job Offer'}`,
-            time: offer.createdAt ? new Date(offer.createdAt).toLocaleDateString() : 'Recently',
-            status: 'Pending'
+            messageKey: 'employerDashboard.activityPostedJob',
+            messageValues: { job: offer.jobTitle || t('employerDashboard.jobOffer') },
+            time: offer.createdAt ? new Date(offer.createdAt).toLocaleDateString() : 'recently',
+            status: 'Pending',
+            statusKey: 'pending'
           });
         }
       });
@@ -290,8 +233,8 @@ const EmployerDashboard = () => {
   useEffect(() => {
     // Check for payment success from navigation state
     if (location.state?.paymentSuccess) {
-      const workerName = location.state.worker || 'worker';
-      const message = t.hiredSuccess.replace('{worker}', workerName);
+      const workerName = location.state.worker || t('employerDashboard.worker');
+      const message = t('employerDashboard.hiredSuccess', { worker: workerName });
       setSuccessMessage(message);
       setShowSuccessBanner(true);
       
@@ -341,7 +284,7 @@ const EmployerDashboard = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 dark:text-gray-300">{t('employerDashboard.loading')}</p>
         </div>
       </div>
     );
@@ -350,7 +293,7 @@ const EmployerDashboard = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.dashboard}
+        title={t('employerDashboard.dashboard')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={isPremium}
       />
@@ -363,7 +306,7 @@ const EmployerDashboard = () => {
                   <CheckCircle size={24} className="text-green-600 dark:text-green-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-green-800 dark:text-green-300">{t.paymentSuccess}</p>
+                  <p className="font-semibold text-green-800 dark:text-green-300">{t('employerDashboard.paymentSuccess')}</p>
                   <p className="text-sm text-green-700 dark:text-green-400 break-words">{successMessage}</p>
                 </div>
               </div>
@@ -372,11 +315,12 @@ const EmployerDashboard = () => {
                   to="/my-hires"
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                 >
-                  {t.viewHireDetails}
+                  {t('employerDashboard.viewHireDetails')}
                 </Link>
                 <button
                   onClick={() => setShowSuccessBanner(false)}
                   className="p-2 hover:bg-green-100 rounded-lg transition-colors"
+                  aria-label={t('employerDashboard.dismissSuccess')}
                 >
                   <X size={18} className="text-green-600" />
                 </button>
@@ -395,7 +339,7 @@ const EmployerDashboard = () => {
                   {authUser?.profileImage ? (
                     <img 
                       src={authUser.profileImage} 
-                      alt={authUser.fullName || 'Employer'} 
+                      alt={authUser.fullName || t('employerDashboard.employer')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -406,15 +350,15 @@ const EmployerDashboard = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t.welcome}, {authUser.fullName || 'Employer'}!</h1>
+                    <h1 className="text-2xl font-bold">{t('employerDashboard.welcome', { name: authUser.fullName || t('employerDashboard.employer') })}</h1>
                     {isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
-                        {t.premiumBadge}
+                        {t('employerDashboard.premium')}
                       </span>
                     )}
                   </div>
-                  <p className="text-teal-100 mt-1">{t.overview}</p>
+                  <p className="text-teal-100 mt-1">{t('employerDashboard.overview')}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -423,14 +367,14 @@ const EmployerDashboard = () => {
                   className="bg-white text-teal-700 dark:bg-gray-800/20 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Search size={16} />
-                  {t.findWorkers}
+                  {t('employerDashboard.findWorkers')}
                 </Link>
                 <Link
                   to="/employer-profile"
                   className="bg-white text-teal-700 dark:bg-gray-800/20 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <User size={16} />
-                  {t.viewProfile}
+                  {t('employerDashboard.viewProfile')}
                 </Link>
                 {!isPremium && (
                   <Link
@@ -438,7 +382,7 @@ const EmployerDashboard = () => {
                     className="bg-yellow-500/30 hover:bg-yellow-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 backdrop-blur-sm border border-yellow-400/30"
                   >
                     <Crown size={16} />
-                    {t.getPremium}
+                    {t('employerDashboard.getPremium')}
                   </Link>
                 )}
               </div>
@@ -459,68 +403,68 @@ const EmployerDashboard = () => {
               <>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.activeHires}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.activeHires')}</p>
                     <div className="w-10 h-10 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
                       <Briefcase size={20} className="text-teal-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.activeHires}</p>
-                  <p className="text-xs text-gray-400 mt-1">Active contracts</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.activeContracts')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.total}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.totalHires')}</p>
                     <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                       <Users size={20} className="text-blue-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.totalHires}</p>
-                  <p className="text-xs text-gray-400 mt-1">Total hires</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.totalHiresSecondary')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.completed}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.completedHires')}</p>
                     <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                       <CheckCircle size={20} className="text-green-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.completedHires}</p>
-                  <p className="text-xs text-gray-400 mt-1">Completed hires</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.completedHiresSecondary')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.pending}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.pendingApplications')}</p>
                     <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                       <Clock size={20} className="text-yellow-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.pendingApplications}</p>
-                  <p className="text-xs text-gray-400 mt-1">Pending applications</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.pendingApplicationsSecondary')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.messages}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.unreadMessages')}</p>
                     <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
                       <MessageCircle size={20} className="text-indigo-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.unreadMessages}</p>
-                  <p className="text-xs text-gray-400 mt-1">Unread messages</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.unreadMessagesSecondary')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.stats.saved}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerDashboard.stats.savedWorkers')}</p>
                     <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                       <Heart size={20} className="text-purple-600" />
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white mt-1">{stats.savedWorkers}</p>
-                  <p className="text-xs text-gray-400 mt-1">Saved workers</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('employerDashboard.stats.savedWorkersSecondary')}</p>
                 </div>
               </>
             )}
@@ -528,45 +472,45 @@ const EmployerDashboard = () => {
 
           {/* Quick Actions */}
           <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.quickActions}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t('employerDashboard.quickActions')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Link
                 to="/employer-search"
                 className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/30 hover:bg-teal-100 rounded-lg transition-colors border border-teal-200"
               >
                 <Search size={20} className="text-teal-600" />
-                <span className="font-medium text-teal-700">{t.findWorkers}</span>
+                <span className="font-medium text-teal-700">{t('employerDashboard.findWorkers')}</span>
               </Link>
               <Link                to="/my-hires"
                 className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
               >
                 <FileCheck size={20} className="text-green-600" />
-                <span className="font-medium text-green-700">{t.viewHires}</span>
+                <span className="font-medium text-green-700">{t('employerDashboard.viewHires')}</span>
               </Link>
               <Link
                 to="/employer-profile"
                 className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
               >
                 <User size={20} className="text-purple-600" />
-                <span className="font-medium text-purple-700">{t.viewProfile}</span>
+                <span className="font-medium text-purple-700">{t('employerDashboard.viewProfile')}</span>
               </Link>
               <Link
                 to="/employer-messages"
                 className="flex items-center gap-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
               >
                 <MessageCircle size={20} className="text-orange-600" />
-                <span className="font-medium text-orange-700">{t.viewMessages}</span>
+                <span className="font-medium text-orange-700">{t('employerDashboard.viewMessages')}</span>
               </Link>
             </div>
           </div>
 
           {/* Recent Activity - REAL DATA */}
           <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t.recentActivity}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white dark:text-white mb-4">{t('employerDashboard.recentActivity')}</h3>
             {recentActivity.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                <p>{t.noActivity}</p>
-                <p className="text-sm mt-2">Start hiring workers to see activity here</p>
+                <p>{t('employerDashboard.noActivity')}</p>
+                <p className="text-sm mt-2">{t('employerDashboard.emptyActivityHint')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -579,8 +523,8 @@ const EmployerDashboard = () => {
                       {!activity.icon && <Briefcase size={16} className="text-teal-600" />}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800 dark:text-white dark:text-gray-200">{activity.message}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time}</p>
+                      <p className="font-medium text-gray-800 dark:text-white dark:text-gray-200">{t(activity.messageKey, activity.messageValues)}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{activity.time === 'recently' ? t('employerDashboard.recently') : activity.time}</p>
                     </div>
                     {activity.status && (
                       <span className={`px-2 py-1 text-xs rounded-full ${
@@ -589,7 +533,7 @@ const EmployerDashboard = () => {
                         activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
                         'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
-                        {activity.status}
+                        {t(`employerDashboard.status.${activity.statusKey}`)}
                       </span>
                     )}
                   </div>

@@ -58,6 +58,18 @@ export function changeLanguageGlobal(langCode) {
 
 const en = {
   translation: {
+    employerDashboard: {
+      dashboard: 'Dashboard', welcome: 'Welcome back, {{name}}!', overview: 'Overview',
+      loading: 'Loading dashboard...', paymentSuccess: '🎉 Payment Successful!',
+      hiredSuccess: 'Successfully hired {{worker}}!', viewHireDetails: 'View Hire Details', dismissSuccess: 'Dismiss success message',
+      employer: 'Employer', worker: 'worker', premium: 'Premium', getPremium: 'Get Premium', findWorkers: 'Find Workers',
+      viewProfile: 'View Profile', viewHires: 'View Hires', viewMessages: 'View Messages', quickActions: 'Quick Actions',
+      recentActivity: 'Recent Activity', noActivity: 'No recent activity', emptyActivityHint: 'Start hiring workers to see activity here',
+      activityHired: 'Hired {{worker}}', activityPostedJob: 'Posted job: {{job}}', jobOffer: 'Job Offer', recently: 'Recently',
+      status: { active: 'Active', completed: 'Completed', pending: 'Pending' },
+      stats: { activeHires: 'Active Hires', activeContracts: 'Active contracts', totalHires: 'Total Hires', totalHiresSecondary: 'Total hires', completedHires: 'Completed Hires', completedHiresSecondary: 'Completed hires', pendingApplications: 'Pending Applications', pendingApplicationsSecondary: 'Pending applications', unreadMessages: 'Unread Messages', unreadMessagesSecondary: 'Unread messages', savedWorkers: 'Saved Workers', savedWorkersSecondary: 'Saved workers' }
+    },
+    employerSidebar: { overview: 'Overview', dashboard: 'Dashboard', postJob: 'Post a Job', myJobs: 'My Job Posts', myProfile: 'My Profile', myHires: 'My Hires', searchWorkers: 'Search Workers', messages: 'Messages', complaints: 'Complaints', payment: 'Payment', premium: 'Premium', settings: 'Settings', help: 'Help & Support', logout: 'Logout', new: 'NEW', employer: 'Employer' },
     // Common
     appName: 'HomelyServ',
     tagline: 'YOUR HOME, OUR PRIORITY',
@@ -625,6 +637,18 @@ const en = {
 
 const ar = {
   translation: {
+    employerDashboard: {
+      dashboard: 'لوحة التحكم', welcome: 'مرحباً بعودتك، {{name}}!', overview: 'نظرة عامة',
+      loading: 'جارٍ تحميل لوحة التحكم...', paymentSuccess: '🎉 تم الدفع بنجاح!', hiredSuccess: 'تم توظيف {{worker}} بنجاح!',
+      viewHireDetails: 'عرض تفاصيل التوظيف', dismissSuccess: 'إغلاق رسالة النجاح', employer: 'صاحب العمل', worker: 'العامل',
+      premium: 'مميز', getPremium: 'احصل على العضوية المميزة', findWorkers: 'البحث عن عمال', viewProfile: 'عرض الملف الشخصي',
+      viewHires: 'عرض التوظيفات', viewMessages: 'عرض الرسائل', quickActions: 'إجراءات سريعة', recentActivity: 'النشاط الأخير',
+      noActivity: 'لا يوجد نشاط حديث', emptyActivityHint: 'ابدأ بتوظيف العمال لعرض النشاط هنا', activityHired: 'تم توظيف {{worker}}',
+      activityPostedJob: 'تم نشر الوظيفة: {{job}}', jobOffer: 'عرض عمل', recently: 'مؤخراً',
+      status: { active: 'نشط', completed: 'مكتمل', pending: 'معلق' },
+      stats: { activeHires: 'التوظيفات النشطة', activeContracts: 'العقود النشطة', totalHires: 'إجمالي التوظيفات', totalHiresSecondary: 'إجمالي التوظيفات', completedHires: 'التوظيفات المكتملة', completedHiresSecondary: 'التوظيفات المكتملة', pendingApplications: 'الطلبات المعلقة', pendingApplicationsSecondary: 'الطلبات المعلقة', unreadMessages: 'الرسائل غير المقروءة', unreadMessagesSecondary: 'الرسائل غير المقروءة', savedWorkers: 'العمال المحفوظون', savedWorkersSecondary: 'العمال المحفوظون' }
+    },
+    employerSidebar: { overview: 'نظرة عامة', dashboard: 'لوحة التحكم', postJob: 'نشر وظيفة', myJobs: 'منشورات الوظائف الخاصة بي', myProfile: 'ملفي الشخصي', myHires: 'توظيفاتي', searchWorkers: 'البحث عن عمال', messages: 'الرسائل', complaints: 'الشكاوى', payment: 'الدفع', premium: 'مميز', settings: 'الإعدادات', help: 'المساعدة والدعم', logout: 'تسجيل الخروج', new: 'جديد', employer: 'صاحب العمل' },
     // Common
     appName: 'هوملي سيرف',
     tagline: 'منزلك، أولويتنا',
@@ -1195,6 +1219,11 @@ const ar = {
 // ---------------------------------------------------------------------------
 const fr = {
   translation: {
+    employerDashboard: {
+      dashboard: 'Tableau de bord', welcome: 'Bon retour, {{name}} !', overview: 'Vue d’ensemble', loading: 'Chargement du tableau de bord...', paymentSuccess: '🎉 Paiement réussi !', hiredSuccess: '{{worker}} a été embauché avec succès !', viewHireDetails: 'Voir les détails de l’embauche', dismissSuccess: 'Fermer le message de réussite', employer: 'Employeur', worker: 'travailleur', premium: 'Premium', getPremium: 'Passer à Premium', findWorkers: 'Trouver des travailleurs', viewProfile: 'Voir le profil', viewHires: 'Voir les embauches', viewMessages: 'Voir les messages', quickActions: 'Actions rapides', recentActivity: 'Activité récente', noActivity: 'Aucune activité récente', emptyActivityHint: 'Commencez à embaucher des travailleurs pour voir l’activité ici', activityHired: '{{worker}} a été embauché', activityPostedJob: 'Offre publiée : {{job}}', jobOffer: 'Offre d’emploi', recently: 'Récemment', status: { active: 'Actif', completed: 'Terminé', pending: 'En attente' },
+      stats: { activeHires: 'Embauches actives', activeContracts: 'Contrats actifs', totalHires: 'Total des embauches', totalHiresSecondary: 'Total des embauches', completedHires: 'Embauches terminées', completedHiresSecondary: 'Embauches terminées', pendingApplications: 'Candidatures en attente', pendingApplicationsSecondary: 'Candidatures en attente', unreadMessages: 'Messages non lus', unreadMessagesSecondary: 'Messages non lus', savedWorkers: 'Travailleurs enregistrés', savedWorkersSecondary: 'Travailleurs enregistrés' }
+    },
+    employerSidebar: { overview: 'Vue d’ensemble', dashboard: 'Tableau de bord', postJob: 'Publier une offre', myJobs: 'Mes offres d’emploi', myProfile: 'Mon profil', myHires: 'Mes embauches', searchWorkers: 'Rechercher des travailleurs', messages: 'Messages', complaints: 'Réclamations', payment: 'Paiement', premium: 'Premium', settings: 'Paramètres', help: 'Aide et assistance', logout: 'Déconnexion', new: 'NOUVEAU', employer: 'Employeur' },
     appName: 'HomelyServ',
     tagline: 'VOTRE MAISON, NOTRE PRIORITÉ',
     premiumServices: 'Services à domicile premium',
@@ -1753,6 +1782,11 @@ const fr = {
 // ---------------------------------------------------------------------------
 const ru = {
   translation: {
+    employerDashboard: {
+      dashboard: 'Панель управления', welcome: 'С возвращением, {{name}}!', overview: 'Обзор', loading: 'Загрузка панели управления...', paymentSuccess: '🎉 Платёж выполнен!', hiredSuccess: '{{worker}} успешно нанят(а)!', viewHireDetails: 'Посмотреть детали найма', dismissSuccess: 'Закрыть сообщение об успехе', employer: 'Работодатель', worker: 'работник', premium: 'Премиум', getPremium: 'Получить Премиум', findWorkers: 'Найти работников', viewProfile: 'Посмотреть профиль', viewHires: 'Посмотреть наймы', viewMessages: 'Посмотреть сообщения', quickActions: 'Быстрые действия', recentActivity: 'Недавняя активность', noActivity: 'Нет недавней активности', emptyActivityHint: 'Начните нанимать работников, чтобы увидеть здесь активность', activityHired: 'Нанят(а) {{worker}}', activityPostedJob: 'Опубликована вакансия: {{job}}', jobOffer: 'Вакансия', recently: 'Недавно', status: { active: 'Активен', completed: 'Завершён', pending: 'В ожидании' },
+      stats: { activeHires: 'Активные наймы', activeContracts: 'Активные контракты', totalHires: 'Всего наймов', totalHiresSecondary: 'Всего наймов', completedHires: 'Завершённые наймы', completedHiresSecondary: 'Завершённые наймы', pendingApplications: 'Заявки в ожидании', pendingApplicationsSecondary: 'Заявки в ожидании', unreadMessages: 'Непрочитанные сообщения', unreadMessagesSecondary: 'Непрочитанные сообщения', savedWorkers: 'Сохранённые работники', savedWorkersSecondary: 'Сохранённые работники' }
+    },
+    employerSidebar: { overview: 'Обзор', dashboard: 'Панель управления', postJob: 'Разместить вакансию', myJobs: 'Мои вакансии', myProfile: 'Мой профиль', myHires: 'Мои наймы', searchWorkers: 'Поиск работников', messages: 'Сообщения', complaints: 'Жалобы', payment: 'Оплата', premium: 'Премиум', settings: 'Настройки', help: 'Помощь и поддержка', logout: 'Выйти', new: 'НОВОЕ', employer: 'Работодатель' },
     appName: 'ХоумиСерв',
     tagline: 'ВАШ ДОМ, НАШ ПРИОРИТЕТ',
     premiumServices: 'Премиальные домашние услуги',
@@ -2311,6 +2345,11 @@ const ru = {
 // ---------------------------------------------------------------------------
 const tr = {
   translation: {
+    employerDashboard: {
+      dashboard: 'Kontrol Paneli', welcome: 'Tekrar hoş geldiniz, {{name}}!', overview: 'Genel Bakış', loading: 'Kontrol paneli yükleniyor...', paymentSuccess: '🎉 Ödeme Başarılı!', hiredSuccess: '{{worker}} başarıyla işe alındı!', viewHireDetails: 'İşe Alım Ayrıntılarını Gör', dismissSuccess: 'Başarı mesajını kapat', employer: 'İşveren', worker: 'çalışan', premium: 'Premium', getPremium: 'Premium Al', findWorkers: 'Çalışan Bul', viewProfile: 'Profili Gör', viewHires: 'İşe Alımları Gör', viewMessages: 'Mesajları Gör', quickActions: 'Hızlı İşlemler', recentActivity: 'Son Etkinlik', noActivity: 'Yakın zamanda etkinlik yok', emptyActivityHint: 'Etkinlikleri burada görmek için çalışanları işe almaya başlayın', activityHired: '{{worker}} işe alındı', activityPostedJob: 'İş ilanı yayınlandı: {{job}}', jobOffer: 'İş İlanı', recently: 'Yakın zamanda', status: { active: 'Aktif', completed: 'Tamamlandı', pending: 'Beklemede' },
+      stats: { activeHires: 'Aktif İşe Alımlar', activeContracts: 'Aktif sözleşmeler', totalHires: 'Toplam İşe Alım', totalHiresSecondary: 'Toplam işe alım', completedHires: 'Tamamlanan İşe Alımlar', completedHiresSecondary: 'Tamamlanan işe alımlar', pendingApplications: 'Bekleyen Başvurular', pendingApplicationsSecondary: 'Bekleyen başvurular', unreadMessages: 'Okunmamış Mesajlar', unreadMessagesSecondary: 'Okunmamış mesajlar', savedWorkers: 'Kaydedilen Çalışanlar', savedWorkersSecondary: 'Kaydedilen çalışanlar' }
+    },
+    employerSidebar: { overview: 'Genel Bakış', dashboard: 'Kontrol Paneli', postJob: 'İş İlanı Ver', myJobs: 'İş İlanlarım', myProfile: 'Profilim', myHires: 'İşe Alımlarım', searchWorkers: 'Çalışan Ara', messages: 'Mesajlar', complaints: 'Şikayetler', payment: 'Ödeme', premium: 'Premium', settings: 'Ayarlar', help: 'Yardım ve Destek', logout: 'Çıkış Yap', new: 'YENİ', employer: 'İşveren' },
     appName: 'HomeyServ',
     tagline: 'EVİNİZ, ÖNCELİĞİMİZ',
     premiumServices: 'Premium ev hizmetleri',
@@ -2869,6 +2908,11 @@ const tr = {
 // ---------------------------------------------------------------------------
 const de = {
   translation: {
+    employerDashboard: {
+      dashboard: 'Dashboard', welcome: 'Willkommen zurück, {{name}}!', overview: 'Übersicht', loading: 'Dashboard wird geladen...', paymentSuccess: '🎉 Zahlung erfolgreich!', hiredSuccess: '{{worker}} wurde erfolgreich eingestellt!', viewHireDetails: 'Einstellungsdetails ansehen', dismissSuccess: 'Erfolgsmeldung schließen', employer: 'Arbeitgeber', worker: 'Arbeitskraft', premium: 'Premium', getPremium: 'Premium erhalten', findWorkers: 'Arbeitskräfte finden', viewProfile: 'Profil ansehen', viewHires: 'Einstellungen ansehen', viewMessages: 'Nachrichten ansehen', quickActions: 'Schnellaktionen', recentActivity: 'Letzte Aktivität', noActivity: 'Keine kürzlichen Aktivitäten', emptyActivityHint: 'Stellen Sie Arbeitskräfte ein, um hier Aktivitäten zu sehen', activityHired: '{{worker}} eingestellt', activityPostedJob: 'Stelle veröffentlicht: {{job}}', jobOffer: 'Stellenangebot', recently: 'Kürzlich', status: { active: 'Aktiv', completed: 'Abgeschlossen', pending: 'Ausstehend' },
+      stats: { activeHires: 'Aktive Einstellungen', activeContracts: 'Aktive Verträge', totalHires: 'Einstellungen gesamt', totalHiresSecondary: 'Einstellungen gesamt', completedHires: 'Abgeschlossene Einstellungen', completedHiresSecondary: 'Abgeschlossene Einstellungen', pendingApplications: 'Ausstehende Bewerbungen', pendingApplicationsSecondary: 'Ausstehende Bewerbungen', unreadMessages: 'Ungelesene Nachrichten', unreadMessagesSecondary: 'Ungelesene Nachrichten', savedWorkers: 'Gespeicherte Arbeitskräfte', savedWorkersSecondary: 'Gespeicherte Arbeitskräfte' }
+    },
+    employerSidebar: { overview: 'Übersicht', dashboard: 'Dashboard', postJob: 'Stelle ausschreiben', myJobs: 'Meine Stellenanzeigen', myProfile: 'Mein Profil', myHires: 'Meine Einstellungen', searchWorkers: 'Arbeitskräfte suchen', messages: 'Nachrichten', complaints: 'Beschwerden', payment: 'Zahlung', premium: 'Premium', settings: 'Einstellungen', help: 'Hilfe und Support', logout: 'Abmelden', new: 'NEU', employer: 'Arbeitgeber' },
     appName: 'HomelyServ',
     tagline: 'IHR ZUHAUSE, UNSERE PRIORITÄT',
     premiumServices: 'Premium-Heimdienste',

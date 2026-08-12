@@ -1,6 +1,7 @@
 // Employer Sidebar Component
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { isUserPremium } from '../../utils/subscriptionService';
 import SidebarBadge from '../SidebarBadge';
 import useSidebarCounters from '../../hooks/useSidebarCounters';
@@ -33,6 +34,7 @@ const EmployerSidebar = ({
   handleLogout,
 }) => {
   const location = useLocation();
+  const { t } = useTranslation();
   // Unified sidebar activity counters (single shared request)
   const counters = useSidebarCounters();
 
@@ -44,54 +46,17 @@ const EmployerSidebar = ({
     payment: 'payments',
   };
 
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      myProfile: 'My Profile',
-      myHires: 'My Hires',
-      postJob: 'Post a Job',
-      myJobs: 'My Job Posts',
-      search: 'Search Workers',
-      messages: 'Messages',
-      complaints: 'Complaints',
-      payment: 'Payment',
-      settings: 'Settings',
-      help: 'Help & Support',
-      logout: 'Logout',
-      overview: 'Overview',
-      premium: 'Premium'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      myProfile: 'ملفي الشخصي',
-      myHires: 'توظيفاتي',
-      postJob: 'نشر وظيفة',
-      myJobs: 'وظائفي',
-      search: 'البحث عن عمال',
-      messages: 'الرسائل',
-      complaints: 'الشكاوى',
-      payment: 'الدفع',
-      settings: 'الإعدادات',
-      help: 'المساعدة والدعم',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة',
-      premium: 'مميز'
-    }
-  };
-
-  const t = translations[language] || translations.en;
-
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/employer-dashboard' },
-    { id: 'postJob', label: t.postJob, icon: PlusCircle, path: '/employer-post-job' },
-    { id: 'myJobs', label: t.myJobs, icon: ClipboardList, path: '/employer-jobs' },
-    { id: 'profile', label: t.myProfile, icon: User, path: '/employer-profile' },
-    { id: 'hires', label: t.myHires, icon: FileCheck, path: '/my-hires' },
-    { id: 'search', label: t.search, icon: Search, path: '/employer-search' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/employer-messages' },
-    { id: 'complaints', label: t.complaints, icon: AlertTriangle, path: '/employer-complaints' },
-    { id: 'payment', label: t.payment, icon: CreditCard, path: '/employer-payments' },
-    { id: 'premium', label: t.premium, icon: Crown, path: '/subscription' },
+    { id: 'dashboard', label: t('employerSidebar.dashboard'), icon: Home, path: '/employer-dashboard' },
+    { id: 'postJob', label: t('employerSidebar.postJob'), icon: PlusCircle, path: '/employer-post-job' },
+    { id: 'myJobs', label: t('employerSidebar.myJobs'), icon: ClipboardList, path: '/employer-jobs' },
+    { id: 'profile', label: t('employerSidebar.myProfile'), icon: User, path: '/employer-profile' },
+    { id: 'hires', label: t('employerSidebar.myHires'), icon: FileCheck, path: '/my-hires' },
+    { id: 'search', label: t('employerSidebar.searchWorkers'), icon: Search, path: '/employer-search' },
+    { id: 'messages', label: t('employerSidebar.messages'), icon: MessageCircle, path: '/employer-messages' },
+    { id: 'complaints', label: t('employerSidebar.complaints'), icon: AlertTriangle, path: '/employer-complaints' },
+    { id: 'payment', label: t('employerSidebar.payment'), icon: CreditCard, path: '/employer-payments' },
+    { id: 'premium', label: t('employerSidebar.premium'), icon: Crown, path: '/subscription' },
   ];
 
   const isActive = (path) => {
@@ -167,7 +132,7 @@ const EmployerSidebar = ({
                   {getProfileImage() ? (
                     <img 
                       src={getProfileImage()} 
-                      alt={authUser?.fullName || 'Employer'} 
+                      alt={authUser?.fullName || t('employerSidebar.employer')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -180,7 +145,7 @@ const EmployerSidebar = ({
                 {getProfileImage() ? (
                   <img 
                     src={getProfileImage()} 
-                    alt={authUser?.fullName || 'Employer'} 
+                    alt={authUser?.fullName || t('employerSidebar.employer')}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -191,11 +156,11 @@ const EmployerSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || 'Employer'}</p>
+                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || t('employerSidebar.employer')}</p>
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
-                      Premium
+                      {t('employerSidebar.premium')}
                     </span>
                   )}
                 </div>
@@ -208,7 +173,7 @@ const EmployerSidebar = ({
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100dvh-180px)]">
           {!sidebarCollapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              {t.overview}
+              {t('employerSidebar.overview')}
             </div>
           )}
           {sidebarCollapsed && (
@@ -252,7 +217,7 @@ const EmployerSidebar = ({
               )}
               {item.id === 'premium' && !isActive(item.path) && !sidebarCollapsed && (
                 <div className="ml-auto">
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">NEW</span>
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] rounded-full font-medium">{t('employerSidebar.new')}</span>
                 </div>
               )}
             </Link>
@@ -268,10 +233,10 @@ const EmployerSidebar = ({
             }`}
           >
             <Settings size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.settings}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('employerSidebar.settings')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.settings}
+                {t('employerSidebar.settings')}
               </div>
             )}
           </Link>
@@ -282,10 +247,10 @@ const EmployerSidebar = ({
             }`}
           >
             <HelpCircle size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.help}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('employerSidebar.help')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.help}
+                {t('employerSidebar.help')}
               </div>
             )}
           </Link>
@@ -296,10 +261,10 @@ const EmployerSidebar = ({
             }`}
           >
             <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('employerSidebar.logout')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
+                {t('employerSidebar.logout')}
               </div>
             )}
           </button>
