@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
-import { useDashboard } from '../components/layout/DashboardContext';
 import {
   Eye,
   Calendar,
@@ -16,7 +16,7 @@ function EmployerPast() {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
 
   const pastApplications = [
     {
@@ -57,7 +57,7 @@ function EmployerPast() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerPast.loading')}</p>
         </div>
       </div>
     );
@@ -70,7 +70,7 @@ function EmployerPast() {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title="Past Applications"
+        title={t('employerPast.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
@@ -78,15 +78,15 @@ function EmployerPast() {
         <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Past Applications</h1>
-              <p className="text-teal-100 mt-1">View your application history</p>
+              <h1 className="text-2xl font-bold">{t('employerPast.title')}</h1>
+              <p className="text-teal-100 mt-1">{t('employerPast.subtitle')}</p>
             </div>
             <div className="flex gap-2">
               <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-1">
-                <Download size={16} /> Export
+                <Download size={16} /> {t('employerPast.export')}
               </button>
               <button className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:bg-gray-900 transition flex items-center gap-1">
-                <Printer size={16} /> Print
+                <Printer size={16} /> {t('employerPast.print')}
               </button>
             </div>
           </div>
@@ -95,19 +95,19 @@ function EmployerPast() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Total</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.stats.total')}</p>
             <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.total}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Completed</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.stats.completed')}</p>
             <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Incomplete</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.stats.incomplete')}</p>
             <p className="text-2xl font-bold text-red-600">{stats.incomplete}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Completion Rate</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.stats.completionRate')}</p>
             <p className="text-2xl font-bold text-blue-600">{stats.completionRate}%</p>
           </div>
         </div>
@@ -138,8 +138,8 @@ function EmployerPast() {
                 </div>
 
                 <div className="flex flex-col items-end justify-center min-w-[120px]">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Salary</p>
-                  <p className="font-bold text-gray-800 dark:text-white">EGP {app.salary.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPast.salary')}</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{t('employerPast.salaryValue', { amount: app.salary.toLocaleString() })}</p>
                   {app.rating && (
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={14} className="fill-yellow-400 text-yellow-400" />
@@ -154,7 +154,9 @@ function EmployerPast() {
                       ? 'bg-green-100 text-green-800'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {app.status === 'completed' ? '✅ Completed' : '⏳ Incomplete'}
+                    {app.status === 'completed'
+                      ? `✅ ${t('employerPast.status.completed')}`
+                      : `⏳ ${t('employerPast.status.incomplete')}`}
                   </span>
                   {app.feedback && (
                     <p className="text-xs text-gray-600 dark:text-gray-300 text-right max-w-[200px]">
