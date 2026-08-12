@@ -1,8 +1,8 @@
 // src/pages/EmployerJobApplicants.jsx — View and manage applicants for a job (Phase 2)
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -12,136 +12,6 @@ import {
   Clock, Building
 } from 'lucide-react';
 import jobService from '../services/jobService';
-
-const translations = {
-  en: {
-    title: 'Applicants',
-    subtitle: 'Review and manage applications for this job',
-    backToJobs: 'Back to My Jobs',
-    emptyTitle: 'No applicants yet',
-    emptyDesc: 'When workers apply to this job, they will appear here.',
-    salary: 'Salary',
-    type: 'Type',
-    location: 'Location',
-    appliedOn: 'Applied on',
-    noLocation: 'Location not specified',
-    skills: 'Skills',
-    experience: 'Experience',
-    years: 'years',
-    expectedSalary: 'Expected Salary',
-    availability: 'Availability',
-    available: 'Available',
-    unavailable: 'Unavailable',
-    coverMessage: 'Cover Message',
-    noCoverMessage: 'No cover message provided.',
-    viewProfile: 'View Profile',
-    shortlist: 'Shortlist',
-    reject: 'Reject',
-    sendOffer: 'Send Offer',
-    offerSent: 'Offer Sent',
-    withdrawn: 'Withdrawn',
-    rejected: 'Rejected',
-    activelyLooking: 'Actively Looking',
-    error: 'Failed to load applicants.',
-    actionError: 'Action failed. Please try again.',
-    offerSentSuccess: 'Offer sent successfully!',
-    offerError: 'Failed to send offer. Please try again.',
-    fullTime: 'Full Time',
-    partTime: 'Part Time',
-    contract: 'Contract',
-    freelance: 'Freelance',
-    // Send Offer modal
-    sendOfferTitle: 'Send Job Offer',
-    applicant: 'Applicant',
-    jobTitle: 'Job Title',
-    salaryRange: 'Salary Range',
-    employmentType: 'Employment Type',
-    scheduleDetails: 'Schedule Details',
-    finalMonthlySalary: 'Final Monthly Salary (EGP)',
-    salaryPlaceholder: 'Enter the final salary',
-    cancel: 'Cancel',
-    sending: 'Sending...',
-    sendOfferSubmit: 'Send Offer',
-    schedule: 'Schedule',
-    workingHoursPerDay: 'Working hours/day',
-    workingDaysPerWeek: 'Working days/week',
-    weeklyDaysOff: 'Weekly days off',
-    workStartTime: 'Work start time',
-    workEndTime: 'Work end time',
-    employmentStartDate: 'Employment start date',
-  },
-  ar: {
-    title: 'المتقدمون',
-    subtitle: 'مراجعة وإدارة الطلبات لهذه الوظيفة',
-    backToJobs: 'العودة إلى وظائفي',
-    emptyTitle: 'لا يوجد متقدمون بعد',
-    emptyDesc: 'عندما يتقدم العمال لهذه الوظيفة، سيظهرون هنا.',
-    salary: 'الراتب',
-    type: 'النوع',
-    location: 'الموقع',
-    appliedOn: 'تاريخ التقديم',
-    noLocation: 'الموقع غير محدد',
-    skills: 'المهارات',
-    experience: 'الخبرة',
-    years: 'سنوات',
-    expectedSalary: 'الراتب المتوقع',
-    availability: 'التوفر',
-    available: 'متاح',
-    unavailable: 'غير متاح',
-    coverMessage: 'رسالة التقديم',
-    noCoverMessage: 'لا توجد رسالة تقديم.',
-    viewProfile: 'عرض الملف الشخصي',
-    shortlist: 'اختيار مبدئي',
-    reject: 'رفض',
-    sendOffer: 'إرسال عرض',
-    offerSent: 'تم إرسال العرض',
-    withdrawn: 'تم السحب',
-    rejected: 'مرفوض',
-    activelyLooking: 'يبحث بنشاط',
-    error: 'فشل تحميل المتقدمين.',
-    actionError: 'فشلت العملية. حاول مرة أخرى.',
-    offerSentSuccess: 'تم إرسال العرض بنجاح!',
-    offerError: 'فشل إرسال العرض. حاول مرة أخرى.',
-    fullTime: 'دوام كامل',
-    partTime: 'دوام جزئي',
-    contract: 'عقد',
-    freelance: 'حر',
-    // Send Offer modal
-    sendOfferTitle: 'إرسال عرض وظيفي',
-    applicant: 'المتقدم',
-    jobTitle: 'المسمى الوظيفي',
-    salaryRange: 'نطاق الراتب',
-    employmentType: 'نوع التوظيف',
-    scheduleDetails: 'تفاصيل الجدول',
-    finalMonthlySalary: 'الراتب الشهري النهائي (ج.م)',
-    salaryPlaceholder: 'أدخل الراتب النهائي',
-    cancel: 'إلغاء',
-    sending: 'جارٍ الإرسال...',
-    sendOfferSubmit: 'إرسال العرض',
-    schedule: 'الجدول',
-    workingHoursPerDay: 'ساعات العمل/اليوم',
-    workingDaysPerWeek: 'أيام العمل/الأسبوع',
-    weeklyDaysOff: 'أيام الإجازة الأسبوعية',
-    workStartTime: 'وقت بدء العمل',
-    workEndTime: 'وقت انتهاء العمل',
-    employmentStartDate: 'تاريخ بدء العمل',
-  },
-};
-
-const TYPE_LABELS = {
-  'full-time': { en: 'Full Time', ar: 'دوام كامل' },
-  'part-time': { en: 'Part Time', ar: 'دوام جزئي' },
-  contract: { en: 'Contract', ar: 'عقد' },
-  freelance: { en: 'Freelance', ar: 'حر' },
-};
-
-const STATUS_LABELS = {
-  applied: { en: 'Applied', ar: 'تم التقديم' },
-  shortlisted: { en: 'Shortlisted', ar: 'تم الاختيار المبدئي' },
-  rejected: { en: 'Rejected', ar: 'مرفوض' },
-  withdrawn: { en: 'Withdrawn', ar: 'تم السحب' },
-  offer_sent: { en: 'Offer Sent', ar: 'تم إرسال العرض' },
-};
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -157,9 +27,7 @@ const EmployerJobApplicants = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
-  const isArabic = dashboard.language === 'ar';
-  const t = translations[dashboard.language] || translations.en;
+  const { t, i18n } = useTranslation();
 
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,15 +46,15 @@ const EmployerJobApplicants = () => {
       if (data?.success) {
         setApplicants(data.applications || []);
       } else {
-        setError(data?.message || t.error);
+        setError(data?.message || t('employerJobApplicants.error'));
       }
     } catch (loadError) {
       console.error('Load applicants error:', loadError);
-      setError(loadError.response?.data?.message || t.error);
+      setError(loadError.response?.data?.message || t('employerJobApplicants.error'));
     } finally {
       setLoading(false);
     }
-  }, [id, t.error]);
+  }, [id, t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -214,11 +82,11 @@ const EmployerJobApplicants = () => {
       if (data?.success) {
         setApplicants(prev => prev.map(a => a.id === app.id ? data.application : a));
       } else {
-        alert(data?.message || t.actionError);
+        alert(data?.message || t('employerJobApplicants.actionError'));
       }
     } catch (err) {
       console.error('Shortlist error:', err);
-      alert(err.response?.data?.message || t.actionError);
+      alert(err.response?.data?.message || t('employerJobApplicants.actionError'));
     } finally {
       setActionId(null);
     }
@@ -232,11 +100,11 @@ const EmployerJobApplicants = () => {
       if (data?.success) {
         setApplicants(prev => prev.map(a => a.id === app.id ? data.application : a));
       } else {
-        alert(data?.message || t.actionError);
+        alert(data?.message || t('employerJobApplicants.actionError'));
       }
     } catch (err) {
       console.error('Reject error:', err);
-      alert(err.response?.data?.message || t.actionError);
+      alert(err.response?.data?.message || t('employerJobApplicants.actionError'));
     } finally {
       setActionId(null);
     }
@@ -254,7 +122,7 @@ const EmployerJobApplicants = () => {
     const salary = Number(offerSalary);
 
     if (!Number.isFinite(salary) || salary <= 0) {
-      setOfferError(t.offerError);
+      setOfferError(t('employerJobApplicants.offerError'));
       return;
     }
 
@@ -272,11 +140,11 @@ const EmployerJobApplicants = () => {
         ));
         setOfferModalApp(null);
       } else {
-        setOfferError(data?.message || t.offerError);
+        setOfferError(data?.message || t('employerJobApplicants.offerError'));
       }
     } catch (err) {
       console.error('Send offer error:', err);
-      setOfferError(err.response?.data?.message || t.offerError);
+      setOfferError(err.response?.data?.message || t('employerJobApplicants.offerError'));
     } finally {
       setOfferLoading(false);
     }
@@ -310,12 +178,13 @@ const EmployerJobApplicants = () => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return d.toLocaleDateString(locales[i18n.resolvedLanguage] || locales.en, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const formatSalary = (value) => {
     if (value === null || value === undefined) return '—';
-    return `${Math.round(value).toLocaleString()} EGP`;
+    return t('employerJobApplicants.salaryValue', { amount: Math.round(value).toLocaleString() });
   };
 
   const formatSalaryRange = (jobPost) => {
@@ -323,10 +192,10 @@ const EmployerJobApplicants = () => {
     const min = jobPost.salaryMin !== null && jobPost.salaryMin !== undefined ? jobPost.salaryMin : null;
     const max = jobPost.salaryMax !== null && jobPost.salaryMax !== undefined ? jobPost.salaryMax : null;
     if (min === null && max === null) return '—';
-    if (min !== null && max !== null && min === max) return `${Math.round(min).toLocaleString()} EGP`;
-    if (min !== null && max !== null) return `${Math.round(min).toLocaleString()} - ${Math.round(max).toLocaleString()} EGP`;
-    if (min !== null) return `${Math.round(min).toLocaleString()}+ EGP`;
-    return `${Math.round(max).toLocaleString()} EGP`;
+    if (min !== null && max !== null && min === max) return t('employerJobApplicants.salaryValue', { amount: Math.round(min).toLocaleString() });
+    if (min !== null && max !== null) return t('employerJobApplicants.salaryRangeValue', { min: Math.round(min).toLocaleString(), max: Math.round(max).toLocaleString() });
+    if (min !== null) return t('employerJobApplicants.salaryFrom', { amount: Math.round(min).toLocaleString() });
+    return t('employerJobApplicants.salaryUpTo', { amount: Math.round(max).toLocaleString() });
   };
 
   const renderActions = (app) => {
@@ -335,7 +204,7 @@ const EmployerJobApplicants = () => {
     if (status === 'offer_sent') {
       return (
         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${STATUS_STYLES.offer_sent}`}>
-          <CheckCircle size={16} /> {t.offerSent}
+          <CheckCircle size={16} /> {t('employerJobApplicants.offerSent')}
         </span>
       );
     }
@@ -343,7 +212,7 @@ const EmployerJobApplicants = () => {
     if (status === 'withdrawn') {
       return (
         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${STATUS_STYLES.withdrawn}`}>
-          <X size={16} /> {t.withdrawn}
+          <X size={16} /> {t('employerJobApplicants.withdrawn')}
         </span>
       );
     }
@@ -351,7 +220,7 @@ const EmployerJobApplicants = () => {
     if (status === 'rejected') {
       return (
         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${STATUS_STYLES.rejected}`}>
-          <XCircle size={16} /> {t.rejected}
+          <XCircle size={16} /> {t('employerJobApplicants.rejected')}
         </span>
       );
     }
@@ -365,7 +234,7 @@ const EmployerJobApplicants = () => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
           >
             {actionId === app.id ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} />}
-            {t.shortlist}
+            {t('employerJobApplicants.shortlist')}
           </button>
         )}
         <button
@@ -374,13 +243,13 @@ const EmployerJobApplicants = () => {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
         >
           {actionId === app.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
-          {t.reject}
+          {t('employerJobApplicants.reject')}
         </button>
         <button
           onClick={() => openOfferModal(app)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-teal-600 text-white hover:bg-teal-700 transition"
         >
-          <Send size={16} /> {t.sendOffer}
+          <Send size={16} /> {t('employerJobApplicants.sendOffer')}
         </button>
       </div>
     );
@@ -391,7 +260,7 @@ const EmployerJobApplicants = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerJobApplicants.loading')}</p>
         </div>
       </div>
     );
@@ -404,17 +273,17 @@ const EmployerJobApplicants = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerJobApplicants.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
       <div className="p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <Link to="/employer-jobs" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 transition mb-4">
-            <ArrowLeft size={18} /> {t.backToJobs}
+            <ArrowLeft size={18} /> {t('employerJobApplicants.backToJobs')}
           </Link>
 
-          <RolePageHeader title={t.title} subtitle={t.subtitle} />
+          <RolePageHeader title={t('employerJobApplicants.title')} subtitle={t('employerJobApplicants.subtitle')} />
 
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 dark:text-red-400">
@@ -429,13 +298,13 @@ const EmployerJobApplicants = () => {
           ) : applicants.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
               <div className="text-5xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.emptyTitle}</h3>
-              <p className="text-gray-500 dark:text-gray-400">{t.emptyDesc}</p>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('employerJobApplicants.emptyTitle')}</h3>
+              <p className="text-gray-500 dark:text-gray-400">{t('employerJobApplicants.emptyDesc')}</p>
             </div>
           ) : (
             <div className="space-y-4">
               {applicants.map((app) => {
-                const statusLabel = STATUS_LABELS[app.status]?.[dashboard.language] || app.status;
+                const statusLabel = t(`employerJobApplicants.status.${app.status}`, { defaultValue: app.status });
                 const statusStyle = STATUS_STYLES[app.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
                 const worker = app.worker || {};
 
@@ -448,7 +317,7 @@ const EmployerJobApplicants = () => {
                       <div className="flex gap-4 min-w-0 flex-1">
                         <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                           {worker.profileImage ? (
-                            <img src={worker.profileImage} alt={worker.fullName || 'Applicant'} className="w-full h-full object-cover" />
+                            <img src={worker.profileImage} alt={worker.fullName || t('employerJobApplicants.applicant')} className="w-full h-full object-cover" />
                           ) : (
                             <Users size={24} className="text-teal-600" />
                           )}
@@ -461,18 +330,18 @@ const EmployerJobApplicants = () => {
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold text-gray-800 dark:text-white break-words">{worker.fullName || 'Applicant'}</h3>
+                            <h3 className="font-semibold text-gray-800 dark:text-white break-words">{worker.fullName || t('employerJobApplicants.applicant')}</h3>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle}`}>
                               {statusLabel}
                             </span>
                             {worker.isPremium && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
-                                <Crown size={10} className="text-yellow-500" /> Premium
+                                <Crown size={10} className="text-yellow-500" /> {t('employerJobApplicants.premium')}
                               </span>
                             )}
                             {worker.activelyLooking && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-green-50 border border-green-200 rounded-full text-[10px] font-medium text-green-700">
-                                <Activity size={10} className="text-green-500" /> {t.activelyLooking}
+                                <Activity size={10} className="text-green-500" /> {t('employerJobApplicants.activelyLooking')}
                               </span>
                             )}
                           </div>
@@ -490,14 +359,14 @@ const EmployerJobApplicants = () => {
                             )}
                             {worker.experienceYears != null && (
                               <span className="inline-flex items-center gap-1">
-                                <Star size={14} className="text-yellow-500" /> {worker.experienceYears} {t.years}
+                                <Star size={14} className="text-yellow-500" /> {worker.experienceYears} {t('employerJobApplicants.years')}
                               </span>
                             )}
                             <span>
-                              {t.expectedSalary}: <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(worker.expectedSalary)}</span>
+                              {t('employerJobApplicants.expectedSalary')}: <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(worker.expectedSalary)}</span>
                             </span>
                             <span className="inline-flex items-center gap-1">
-                              <Calendar size={14} /> {t.appliedOn}: {formatDate(app.createdAt)}
+                              <Calendar size={14} /> {t('employerJobApplicants.appliedOn')}: {formatDate(app.createdAt)}
                             </span>
                           </div>
 
@@ -518,7 +387,7 @@ const EmployerJobApplicants = () => {
 
                           {app.coverMessage && (
                             <div className="mt-3">
-                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.coverMessage}</p>
+                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('employerJobApplicants.coverMessage')}</p>
                               <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">{app.coverMessage}</p>
                             </div>
                           )}
@@ -530,7 +399,7 @@ const EmployerJobApplicants = () => {
                           onClick={() => viewProfile(app)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                         >
-                          <Eye size={16} /> {t.viewProfile}
+                          <Eye size={16} /> {t('employerJobApplicants.viewProfile')}
                         </button>
                         <div className="mt-1">
                           {renderActions(app)}
@@ -550,10 +419,11 @@ const EmployerJobApplicants = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-lg w-full max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t.sendOfferTitle}</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('employerJobApplicants.sendOfferTitle')}</h3>
               <button
                 onClick={() => setOfferModalApp(null)}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                aria-label={t('employerJobApplicants.closeModal')}
               >
                 <X size={18} />
               </button>
@@ -561,22 +431,22 @@ const EmployerJobApplicants = () => {
 
             <div className="space-y-3 mb-5">
               <div>
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t.applicant}</p>
-                <p className="font-medium text-gray-800 dark:text-white">{offerModalApp.worker?.fullName || 'Applicant'}</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.applicant')}</p>
+                <p className="font-medium text-gray-800 dark:text-white">{offerModalApp.worker?.fullName || t('employerJobApplicants.applicant')}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t.jobTitle}</p>
-                <p className="text-gray-800 dark:text-white">{offerModalApp.jobTitle || offerModalApp.jobPost?.jobTitle || 'Job'}</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.jobTitle')}</p>
+                <p className="text-gray-800 dark:text-white">{offerModalApp.jobTitle || offerModalApp.jobPost?.jobTitle || t('employerJobApplicants.job')}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t.salaryRange}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.salaryRange')}</p>
                   <p className="text-gray-800 dark:text-white">{formatSalaryRange(offerModalApp.jobPost)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t.employmentType}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.employmentType')}</p>
                   <p className="text-gray-800 dark:text-white">
-                    {TYPE_LABELS[offerModalApp.jobPost?.employmentType]?.[dashboard.language] || offerModalApp.jobPost?.employmentType || '—'}
+                    {offerModalApp.jobPost?.employmentType ? t(`employerJobApplicants.employmentTypeValue.${offerModalApp.jobPost.employmentType}`, { defaultValue: offerModalApp.jobPost.employmentType }) : '—'}
                   </p>
                 </div>
               </div>
@@ -587,26 +457,26 @@ const EmployerJobApplicants = () => {
                 offerModalApp.jobPost?.workStartTime ||
                 offerModalApp.jobPost?.workEndTime) && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.scheduleDetails}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t('employerJobApplicants.scheduleDetails')}</p>
                   <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                     {offerModalApp.jobPost?.workingHoursPerDay != null && (
                       <p className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-gray-400" /> {t.workingHoursPerDay}: {offerModalApp.jobPost.workingHoursPerDay}
+                        <Clock size={13} className="text-gray-400" /> {t('employerJobApplicants.workingHoursPerDay')}: {offerModalApp.jobPost.workingHoursPerDay}
                       </p>
                     )}
                     {offerModalApp.jobPost?.workingDaysPerWeek != null && (
                       <p className="flex items-center gap-1.5">
-                        <Calendar size={13} className="text-gray-400" /> {t.workingDaysPerWeek}: {offerModalApp.jobPost.workingDaysPerWeek}
+                        <Calendar size={13} className="text-gray-400" /> {t('employerJobApplicants.workingDaysPerWeek')}: {offerModalApp.jobPost.workingDaysPerWeek}
                       </p>
                     )}
                     {offerModalApp.jobPost?.weeklyDaysOff && (
                       <p className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-gray-400" /> {t.weeklyDaysOff}: {offerModalApp.jobPost.weeklyDaysOff}
+                        <Clock size={13} className="text-gray-400" /> {t('employerJobApplicants.weeklyDaysOff')}: {offerModalApp.jobPost.weeklyDaysOff}
                       </p>
                     )}
                     {offerModalApp.jobPost?.workStartTime && offerModalApp.jobPost?.workEndTime && (
                       <p className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-gray-400" /> {t.workStartTime}: {offerModalApp.jobPost.workStartTime} - {t.workEndTime}: {offerModalApp.jobPost.workEndTime}
+                        <Clock size={13} className="text-gray-400" /> {t('employerJobApplicants.workStartTime')}: {offerModalApp.jobPost.workStartTime} - {t('employerJobApplicants.workEndTime')}: {offerModalApp.jobPost.workEndTime}
                       </p>
                     )}
                   </div>
@@ -617,7 +487,7 @@ const EmployerJobApplicants = () => {
             <form onSubmit={handleSendOffer} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t.finalMonthlySalary}
+                  {t('employerJobApplicants.finalMonthlySalary')}
                 </label>
                 <input
                   type="number"
@@ -625,13 +495,13 @@ const EmployerJobApplicants = () => {
                   step="any"
                   value={offerSalary}
                   onChange={(e) => setOfferSalary(e.target.value)}
-                  placeholder={t.salaryPlaceholder}
+                  placeholder={t('employerJobApplicants.salaryPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
                   required
                 />
                 {offerModalApp.jobPost?.salaryMin != null && offerModalApp.jobPost?.salaryMax != null && (
                   <p className="text-xs text-gray-400 mt-1">
-                    {t.salaryRange}: {formatSalaryRange(offerModalApp.jobPost)}
+                    {t('employerJobApplicants.salaryRange')}: {formatSalaryRange(offerModalApp.jobPost)}
                   </p>
                 )}
               </div>
@@ -648,7 +518,7 @@ const EmployerJobApplicants = () => {
                   onClick={() => setOfferModalApp(null)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition"
                 >
-                  {t.cancel}
+                  {t('employerJobApplicants.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -656,7 +526,7 @@ const EmployerJobApplicants = () => {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
                 >
                   {offerLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  {offerLoading ? t.sending : t.sendOfferSubmit}
+                  {offerLoading ? t('employerJobApplicants.sending') : t('employerJobApplicants.sendOfferSubmit')}
                 </button>
               </div>
             </form>
