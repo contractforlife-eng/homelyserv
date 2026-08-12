@@ -1,8 +1,8 @@
 // src/pages/EmployerCreateOffer.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
-import { useDashboard } from '../components/layout/DashboardContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -24,7 +24,7 @@ const EmployerCreateOffer = () => {
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const dashboard = useDashboard();
+  const { t } = useTranslation();
 
   const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,59 +42,6 @@ const EmployerCreateOffer = () => {
     employmentStartDate: '',
     additionalNotes: ''
   });
-
-  const translations = {
-    en: {
-      title: 'Create Job Offer',
-      subtitle: 'Fill in the work details for this position',
-      back: 'Back',
-      sendOffer: 'Send Offer',
-      sending: 'Sending...',
-      workerInfo: 'Worker Information',
-      workDetails: 'Work Details',
-      hourlyRate: 'Hourly Rate (EGP)',
-      monthlySalary: 'Monthly Salary (EGP)',
-      workingHoursPerDay: 'Working Hours Per Day',
-      workingDaysPerWeek: 'Working Days Per Week',
-      weeklyDaysOff: 'Weekly Days Off',
-      workStartTime: 'Work Start Time',
-      workEndTime: 'Work End Time',
-      employmentStartDate: 'Employment Start Date',
-      additionalNotes: 'Additional Notes',
-      additionalNotesPlaceholder: 'Any additional information about the job...',
-      required: 'This field is required',
-      success: '✅ Offer sent successfully!',
-      error: 'Failed to send offer. Please try again.',
-      selectDate: 'Select date',
-      noWorkerData: 'No worker data found'
-    },
-    ar: {
-      title: 'إنشاء عرض عمل',
-      subtitle: 'أدخل تفاصيل العمل لهذا المنصب',
-      back: 'رجوع',
-      sendOffer: 'إرسال العرض',
-      sending: 'جاري الإرسال...',
-      workerInfo: 'معلومات العامل',
-      workDetails: 'تفاصيل العمل',
-      hourlyRate: 'السعر بالساعة (جنيه)',
-      monthlySalary: 'الراتب الشهري (جنيه)',
-      workingHoursPerDay: 'ساعات العمل في اليوم',
-      workingDaysPerWeek: 'أيام العمل في الأسبوع',
-      weeklyDaysOff: 'أيام الإجازة الأسبوعية',
-      workStartTime: 'وقت بدء العمل',
-      workEndTime: 'وقت انتهاء العمل',
-      employmentStartDate: 'تاريخ بدء العمل',
-      additionalNotes: 'ملاحظات إضافية',
-      additionalNotesPlaceholder: 'أي معلومات إضافية عن الوظيفة...',
-      required: 'هذا الحقل مطلوب',
-      success: '✅ تم إرسال العرض بنجاح!',
-      error: 'فشل إرسال العرض. يرجى المحاولة مرة أخرى.',
-      selectDate: 'اختر التاريخ',
-      noWorkerData: 'لم يتم العثور على بيانات العامل'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
 
   // Load worker data from location state
   useEffect(() => {
@@ -131,7 +78,9 @@ const EmployerCreateOffer = () => {
 
     for (const field of requiredFields) {
       if (!formData[field] || formData[field].trim() === '') {
-        setError(`${t.required}: ${t[field]}`);
+        setError(t('employerCreateOffer.validation.requiredField', {
+          field: t(`employerCreateOffer.fields.${field}`)
+        }));
         return false;
       }
     }
@@ -148,7 +97,7 @@ const EmployerCreateOffer = () => {
     }
 
     if (!worker || !authUser) {
-      setError(t.noWorkerData);
+      setError(t('employerCreateOffer.noWorkerData'));
       return;
     }
 
@@ -187,7 +136,7 @@ const EmployerCreateOffer = () => {
       const response = await hireService.sendOffer(offerData);
 
       if (response.success) {
-        alert(t.success);
+        alert(t('employerCreateOffer.success'));
         navigate('/employer-payments', {
           state: {
             offerCreated: true,
@@ -196,11 +145,11 @@ const EmployerCreateOffer = () => {
           }
         });
       } else {
-        throw new Error(response.message || t.error);
+        throw new Error(response.message || t('employerCreateOffer.error'));
       }
     } catch (error) {
       console.error('Error creating offer:', error);
-      setError(error.message || t.error);
+      setError(error.message || t('employerCreateOffer.error'));
     } finally {
       setSubmitting(false);
     }
@@ -215,7 +164,7 @@ const EmployerCreateOffer = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('employerCreateOffer.loading')}</p>
         </div>
       </div>
     );
@@ -229,18 +178,18 @@ const EmployerCreateOffer = () => {
     return (
       <DashboardLayout requiredRole="EMPLOYER">
         <DashboardHeader
-          title={t.title}
+          title={t('employerCreateOffer.title')}
           notificationUserId={authUser?.id || authUser?.email}
         />
         <div className="p-4 md:p-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-100 dark:border-gray-700">
             <div className="text-6xl mb-4">👤</div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.noWorkerData}</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t('employerCreateOffer.noWorkerData')}</h3>
             <button
               onClick={handleBack}
               className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
             >
-              {t.back}
+              {t('employerCreateOffer.back')}
             </button>
           </div>
         </div>
@@ -251,7 +200,7 @@ const EmployerCreateOffer = () => {
   return (
     <DashboardLayout requiredRole="EMPLOYER">
       <DashboardHeader
-        title={t.title}
+        title={t('employerCreateOffer.title')}
         notificationUserId={authUser?.id || authUser?.email}
       />
 
@@ -261,12 +210,12 @@ const EmployerCreateOffer = () => {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 transition mb-4"
         >
           <ArrowLeft size={18} />
-          {t.back}
+          {t('employerCreateOffer.back')}
         </button>
 
         {/* Worker Info Card */}
         <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-6 mb-6 text-white">
-          <h2 className="text-xl font-bold mb-2">{t.workerInfo}</h2>
+          <h2 className="text-xl font-bold mb-2">{t('employerCreateOffer.workerInfo')}</h2>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-800/20 flex items-center justify-center overflow-hidden">
               {worker?.profileImage ? (
@@ -281,15 +230,15 @@ const EmployerCreateOffer = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold">{worker.fullName}</h3>
-              <p className="text-teal-100">{worker.desiredJob || 'Service Provider'}</p>
-              <p className="text-sm text-teal-100">{worker.location || 'Not specified'}</p>
+              <p className="text-teal-100">{worker.desiredJob || t('employerCreateOffer.serviceProvider')}</p>
+              <p className="text-sm text-teal-100">{worker.location || t('employerCreateOffer.notSpecified')}</p>
             </div>
           </div>
         </div>
 
         {/* Offer Form */}
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t.workDetails}</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">{t('employerCreateOffer.workDetails')}</h3>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
@@ -302,7 +251,7 @@ const EmployerCreateOffer = () => {
             {/* Hourly Rate */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.hourlyRate} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.hourlyRate')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <DollarSign size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -315,7 +264,7 @@ const EmployerCreateOffer = () => {
                   min="0"
                   step="0.01"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder="e.g., 50"
+                  placeholder={t('employerCreateOffer.placeholders.hourlyRate')}
                 />
               </div>
             </div>
@@ -323,7 +272,7 @@ const EmployerCreateOffer = () => {
             {/* Monthly Salary */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.monthlySalary} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.monthlySalary')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <DollarSign size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -336,7 +285,7 @@ const EmployerCreateOffer = () => {
                   min="0"
                   step="0.01"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder="e.g., 5000"
+                  placeholder={t('employerCreateOffer.placeholders.monthlySalary')}
                 />
               </div>
             </div>
@@ -344,7 +293,7 @@ const EmployerCreateOffer = () => {
             {/* Working Hours Per Day */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.workingHoursPerDay} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.workingHoursPerDay')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Clock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -358,7 +307,7 @@ const EmployerCreateOffer = () => {
                   max="24"
                   step="0.5"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder="e.g., 8"
+                  placeholder={t('employerCreateOffer.placeholders.workingHoursPerDay')}
                 />
               </div>
             </div>
@@ -366,7 +315,7 @@ const EmployerCreateOffer = () => {
             {/* Working Days Per Week */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.workingDaysPerWeek} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.workingDaysPerWeek')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -380,7 +329,7 @@ const EmployerCreateOffer = () => {
                   max="7"
                   step="1"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder="e.g., 5"
+                  placeholder={t('employerCreateOffer.placeholders.workingDaysPerWeek')}
                 />
               </div>
             </div>
@@ -388,7 +337,7 @@ const EmployerCreateOffer = () => {
             {/* Weekly Days Off */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.weeklyDaysOff} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.weeklyDaysOff')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -402,7 +351,7 @@ const EmployerCreateOffer = () => {
                   max="7"
                   step="1"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder="e.g., 2"
+                  placeholder={t('employerCreateOffer.placeholders.weeklyDaysOff')}
                 />
               </div>
             </div>
@@ -410,7 +359,7 @@ const EmployerCreateOffer = () => {
             {/* Work Start Time */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.workStartTime} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.workStartTime')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Clock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -428,7 +377,7 @@ const EmployerCreateOffer = () => {
             {/* Work End Time */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.workEndTime} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.workEndTime')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Clock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -446,7 +395,7 @@ const EmployerCreateOffer = () => {
             {/* Employment Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.employmentStartDate} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.employmentStartDate')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -465,7 +414,7 @@ const EmployerCreateOffer = () => {
             {/* Additional Notes */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t.additionalNotes}
+                {t('employerCreateOffer.fields.additionalNotes')}
               </label>
               <div className="relative">
                 <FileText size={18} className="absolute left-3 top-3 text-gray-400" />
@@ -475,7 +424,7 @@ const EmployerCreateOffer = () => {
                   onChange={handleChange}
                   rows="4"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
-                  placeholder={t.additionalNotesPlaceholder}
+                  placeholder={t('employerCreateOffer.placeholders.additionalNotes')}
                 />
               </div>
             </div>
@@ -491,12 +440,12 @@ const EmployerCreateOffer = () => {
               {submitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {t.sending}
+                  {t('employerCreateOffer.sending')}
                 </>
               ) : (
                 <>
                   <Send size={18} />
-                  {t.sendOffer}
+                  {t('employerCreateOffer.sendOffer')}
                 </>
               )}
             </button>
@@ -506,7 +455,7 @@ const EmployerCreateOffer = () => {
               disabled={submitting}
               className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-900 transition disabled:opacity-50"
             >
-              {t.back}
+              {t('employerCreateOffer.back')}
             </button>
           </div>
         </form>
