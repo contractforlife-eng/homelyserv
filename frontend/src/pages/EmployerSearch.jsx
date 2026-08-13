@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
@@ -29,7 +29,19 @@ import {
 } from 'lucide-react';
 
 import employerService from '../services/employerService';
-import { formatWorkerRate } from '../utils/workerRateDisplay';
+import {
+  compareWorkerRates,
+  formatWorkerRate,
+  getComparableWorkerRate
+} from '../utils/workerRateDisplay';
+
+const SEARCH_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+
+const getInitialSearchCurrency = (user) => {
+  if (SEARCH_CURRENCIES.includes(user?.preferredCurrency)) return user.preferredCurrency;
+  if (SEARCH_CURRENCIES.includes(user?.effectiveCurrency)) return user.effectiveCurrency;
+  return 'EGP';
+};
 
 const EmployerSearch = () => {
   const navigate = useNavigate();
@@ -49,12 +61,15 @@ const EmployerSearch = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [savedWorkers, setSavedWorkers] = useState([]);
+  const [searchCurrency, setSearchCurrency] = useState(() => getInitialSearchCurrency(authUser));
+  const searchCurrencyInitializedRef = useRef(Boolean(authUser));
 
   const [advancedFilters, setAdvancedFilters] = useState({
     minRating: 0,
     minExperience: 0,
     availability: 'all',
     maxHourlyRate: 100,
+    maxHourlyRateActive: false,
     language: 'all'
   });
 
@@ -70,9 +85,13 @@ const EmployerSearch = () => {
   const [viewMode, setViewMode] = useState('grid');
 
   // Dynamic hourly rate maximum based on real worker data
-  const getDynamicHourlyMax = () => {
-    if (allWorkers.length === 0) return 100;
-    const maxRate = Math.max(...allWorkers.map(w => Number(w.hourlyRate) || 0));
+  const getDynamicHourlyMax = (currency = searchCurrency) => {
+    const comparableRates = allWorkers
+      .map(getComparableWorkerRate)
+      .filter(rate => rate?.currency === currency)
+      .map(rate => rate.amount);
+    if (comparableRates.length === 0) return 100;
+    const maxRate = Math.max(...comparableRates);
     // Round up to nearest 50 for clean UX, but never below actual max
     return Math.ceil(maxRate / 50) * 50 || 100;
   };
@@ -151,11 +170,20 @@ const EmployerSearch = () => {
       setSearchQuery(restored.searchQuery || '');
       setSelectedJob(restored.selectedJob || '');
       setSelectedLocation(restored.selectedLocation || '');
-      setAdvancedFilters(restored.advancedFilters || {
+      const restoredCurrency = SEARCH_CURRENCIES.includes(restored.searchCurrency)
+        ? restored.searchCurrency
+        : getInitialSearchCurrency(authUser);
+      setSearchCurrency(restoredCurrency);
+      searchCurrencyInitializedRef.current = true;
+      setAdvancedFilters(restored.advancedFilters ? {
+        ...restored.advancedFilters,
+        maxHourlyRateActive: restored.advancedFilters.maxHourlyRateActive === true
+      } : {
         minRating: 0,
         minExperience: 0,
         availability: 'all',
         maxHourlyRate: 100,
+        maxHourlyRateActive: false,
         language: 'all'
       });
       setSortBy(restored.sortBy || 'relevance');
@@ -168,18 +196,24 @@ const EmployerSearch = () => {
       return;
     }
 
+    if (!searchCurrencyInitializedRef.current) {
+      setSearchCurrency(getInitialSearchCurrency(authUser));
+      searchCurrencyInitializedRef.current = true;
+    }
+
     loadWorkersFromBackend();
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  // Update maxHourlyRate when dynamic max changes and current value exceeds it
+  // Keep an inactive max filter at the selected currency's current ceiling.
   useEffect(() => {
-    if (advancedFilters.maxHourlyRate > dynamicHourlyMax) {
+    if (!advancedFilters.maxHourlyRateActive || advancedFilters.maxHourlyRate > dynamicHourlyMax) {
       setAdvancedFilters(prev => ({
         ...prev,
-        maxHourlyRate: dynamicHourlyMax
+        maxHourlyRate: dynamicHourlyMax,
+        maxHourlyRateActive: prev.maxHourlyRateActive && prev.maxHourlyRate < dynamicHourlyMax
       }));
     }
-  }, [dynamicHourlyMax, advancedFilters.maxHourlyRate]);
+  }, [dynamicHourlyMax, advancedFilters.maxHourlyRate, advancedFilters.maxHourlyRateActive]);
 
   // ============================================================
   // 4. LOAD WORKERS FROM BACKEND
@@ -252,7 +286,7 @@ const EmployerSearch = () => {
           bio: profile.bio || worker.bio || '',
           skills: profile.skills || worker.skills || [],
           experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
-          hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
+          hourlyRate: profile.hourlyRate ?? worker.hourlyRate ?? null,
           hourlyRateDisplayValue: profile.hourlyRate ?? worker.hourlyRate ?? null,
           hourlyRateCurrency: profile.hourlyRateCurrency ?? worker.hourlyRateCurrency ?? null,
           desiredJob: profile.desiredJob || worker.desiredJob || '',
@@ -290,11 +324,22 @@ const EmployerSearch = () => {
       minExperience: 0,
       availability: 'all',
       maxHourlyRate: 100,
+      maxHourlyRateActive: false,
       language: 'all'
     });
     setSortBy('relevance');
     setShowResults(false);
     setSearchResults([]);
+  };
+
+  const handleSearchCurrencyChange = (currency) => {
+    searchCurrencyInitializedRef.current = true;
+    setSearchCurrency(currency);
+    setAdvancedFilters(prev => ({
+      ...prev,
+      maxHourlyRate: getDynamicHourlyMax(currency),
+      maxHourlyRateActive: false
+    }));
   };
 
   const toggleSaveWorker = (workerId) => {
@@ -436,8 +481,11 @@ const EmployerSearch = () => {
         results = results.filter(worker => worker.available === false);
       }
 
-      if (advancedFilters.maxHourlyRate < dynamicHourlyMax) {
-        results = results.filter(worker => (worker.hourlyRate || 0) <= advancedFilters.maxHourlyRate);
+      if (advancedFilters.maxHourlyRateActive) {
+        results = results.filter(worker => {
+          const rate = getComparableWorkerRate(worker);
+          return rate?.currency === searchCurrency && rate.amount <= advancedFilters.maxHourlyRate;
+        });
       }
 
       if (advancedFilters.language !== 'all') {
@@ -454,10 +502,10 @@ const EmployerSearch = () => {
           results.sort((a, b) => (b.experience || 0) - (a.experience || 0));
           break;
         case 'hourlyLow':
-          results.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+          results.sort((a, b) => compareWorkerRates(a, b, searchCurrency, 1));
           break;
         case 'hourlyHigh':
-          results.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+          results.sort((a, b) => compareWorkerRates(a, b, searchCurrency, -1));
           break;
         case 'relevance':
         default:
@@ -606,19 +654,44 @@ const EmployerSearch = () => {
 
             {/* Max Hourly Rate */}
             <div className="w-full lg:w-48">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">{t('employerSearch.maxHourlyRate')}</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                {t('employerSearch.maxHourlyRate').replace(/\s*\([^)]*\)\s*$/, '')} ({searchCurrency})
+              </label>
               <input
                 type="range"
                 min="10"
                 max={dynamicHourlyMax}
                 step="5"
                 value={advancedFilters.maxHourlyRate}
-                onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxHourlyRate: parseInt(e.target.value) }))}
+                onChange={(e) => {
+                  const maxHourlyRate = parseInt(e.target.value);
+                  setAdvancedFilters(prev => ({
+                    ...prev,
+                    maxHourlyRate,
+                    maxHourlyRateActive: maxHourlyRate < dynamicHourlyMax
+                  }));
+                }}
                 className="w-full"
               />
               <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
-                {t('employerSearch.rateValue', { rate: advancedFilters.maxHourlyRate })}
+                {advancedFilters.maxHourlyRate} {searchCurrency}
               </div>
+            </div>
+
+            {/* Hourly Rate Comparison Currency */}
+            <div className="w-full lg:w-32">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                {t('employerSettings.currency')}
+              </label>
+              <select
+                value={searchCurrency}
+                onChange={(e) => handleSearchCurrencyChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800 text-sm"
+              >
+                {SEARCH_CURRENCIES.map(currency => (
+                  <option key={currency} value={currency}>{currency}</option>
+                ))}
+              </select>
             </div>
 
             {/* Availability */}
@@ -940,6 +1013,7 @@ const EmployerSearch = () => {
                                   searchQuery,
                                   selectedJob,
                                   selectedLocation,
+                                  searchCurrency,
                                   advancedFilters,
                                   sortBy,
                                   allWorkers,
