@@ -6,6 +6,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
 import { UserAvatar } from '../components/users';
+import { formatCompensationAmount, resolveCompensationCurrency } from '../utils/compensationDisplay';
 import {
   Users,
   Briefcase,
@@ -153,7 +154,7 @@ const AdminHires = () => {
       noHiresDesc: 'No hires match your current search or filters.',
       clearFilters: 'Clear filters',
       refresh: 'Refresh',
-      perMonth: 'EGP/mo',
+      perMonth: '/mo',
       actions: {
         view: 'View Details',
         employerProfile: 'Open Employer Profile',
@@ -247,7 +248,7 @@ const AdminHires = () => {
       noHiresDesc: 'لا توجد توظيفات تطابق بحثك أو عوامل التصفية الحالية.',
       clearFilters: 'مسح التصفيات',
       refresh: 'تحديث',
-      perMonth: 'جنيه/شهر',
+      perMonth: '/شهر',
       actions: {
         view: 'عرض التفاصيل',
         employerProfile: 'فتح ملف صاحب العمل',
@@ -383,6 +384,12 @@ const AdminHires = () => {
     const isPaid = (h) => normalizePayment(h.paymentStatus) === 'paid';
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+    const singleCurrency = (records) => {
+      const currencies = new Set(records.map(resolveCompensationCurrency));
+      return currencies.size === 1 ? [...currencies][0] : null;
+    };
+    const paidHires = hires.filter(isPaid);
+    const outstandingHires = hires.filter(h => !isPaid(h));
 
     return {
       total: hires.length,
@@ -390,8 +397,11 @@ const AdminHires = () => {
       awaiting: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.OFFER_SENT).length,
       terminated: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.TERMINATED).length,
       totalCommission: hires.reduce((s, h) => s + commission(h), 0),
-      collected: hires.filter(isPaid).reduce((s, h) => s + commission(h), 0),
-      outstanding: hires.filter(h => !isPaid(h)).reduce((s, h) => s + commission(h), 0),
+      totalCommissionCurrency: singleCurrency(hires),
+      collected: paidHires.reduce((s, h) => s + commission(h), 0),
+      collectedCurrency: singleCurrency(paidHires),
+      outstanding: outstandingHires.reduce((s, h) => s + commission(h), 0),
+      outstandingCurrency: singleCurrency(outstandingHires),
       today: hires.filter(h => new Date(h.createdAt || 0) >= todayStart).length
     };
   }, [hires]);
@@ -425,7 +435,10 @@ const AdminHires = () => {
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatCurrency = (amount) => `EGP ${Number(amount || 0).toLocaleString()}`;
+  const formatCurrency = (amount, hire) => formatCompensationAmount(amount, hire);
+  const formatAggregate = (amount, currency) => currency
+    ? formatCompensationAmount(amount, { compensationCurrency: currency })
+    : '—';
   const getCommission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
 
   const hasActiveFilters = statusFilter !== 'all' || paymentFilter !== 'all' || searchTerm.trim() !== '';
@@ -499,9 +512,9 @@ const AdminHires = () => {
     { key: 'active', label: t.stats.active, value: stats.active, icon: CheckCircle, color: 'text-green-400 bg-green-500/15' },
     { key: 'awaiting', label: t.stats.awaiting, value: stats.awaiting, icon: Hourglass, color: 'text-amber-400 bg-amber-500/15' },
     { key: 'terminated', label: t.stats.terminated, value: stats.terminated, icon: XCircle, color: 'text-red-400 bg-red-500/15' },
-    { key: 'totalCommission', label: t.stats.totalCommission, value: formatCurrency(stats.totalCommission), icon: Banknote, color: 'text-yellow-400 bg-yellow-500/15' },
-    { key: 'collected', label: t.stats.collected, value: formatCurrency(stats.collected), icon: TrendingUp, color: 'text-green-400 bg-green-500/15' },
-    { key: 'outstanding', label: t.stats.outstanding, value: formatCurrency(stats.outstanding), icon: Wallet, color: 'text-orange-400 bg-orange-500/15' },
+    { key: 'totalCommission', label: t.stats.totalCommission, value: formatAggregate(stats.totalCommission, stats.totalCommissionCurrency), icon: Banknote, color: 'text-yellow-400 bg-yellow-500/15' },
+    { key: 'collected', label: t.stats.collected, value: formatAggregate(stats.collected, stats.collectedCurrency), icon: TrendingUp, color: 'text-green-400 bg-green-500/15' },
+    { key: 'outstanding', label: t.stats.outstanding, value: formatAggregate(stats.outstanding, stats.outstandingCurrency), icon: Wallet, color: 'text-orange-400 bg-orange-500/15' },
     { key: 'today', label: t.stats.today, value: stats.today, icon: CalendarClock, color: 'text-purple-400 bg-purple-500/15' }
   ];
 
@@ -699,12 +712,12 @@ const AdminHires = () => {
                           </td>
                           {/* Salary */}
                           <td className="px-4 py-3">
-                            <p className="font-medium text-white text-sm">{formatCurrency(hire.salary || hire.agreedSalary)}</p>
+                            <p className="font-medium text-white text-sm">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
                             <p className="text-[11px] text-gray-500">{t.perMonth}</p>
                           </td>
                           {/* Commission */}
                           <td className="px-4 py-3">
-                            <p className="font-medium text-yellow-400 text-sm">{formatCurrency(getCommission(hire))}</p>
+                            <p className="font-medium text-yellow-400 text-sm">{formatCurrency(getCommission(hire), hire)}</p>
                           </td>
                           {/* Payment */}
                           <td className="px-4 py-3">
@@ -782,11 +795,11 @@ const AdminHires = () => {
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-800">
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.salary}</p>
-                        <p className="text-sm font-semibold text-white">{formatCurrency(hire.salary || hire.agreedSalary)}</p>
+                        <p className="text-sm font-semibold text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.commission}</p>
-                        <p className="text-sm font-semibold text-yellow-400">{formatCurrency(getCommission(hire))}</p>
+                        <p className="text-sm font-semibold text-yellow-400">{formatCurrency(getCommission(hire), hire)}</p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-500">{t.table.hiredOn}</p>
@@ -1018,19 +1031,19 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{t.modal.salary}</span>
-                  <span className="font-semibold text-white">{formatCurrency(hire.salary || hire.agreedSalary)}</span>
+                  <span className="font-semibold text-white">{formatCurrency(hire.agreedSalary ?? hire.salary, hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{t.modal.commission}</span>
-                  <span className="font-semibold text-yellow-400">{formatCurrency(getCommission(hire))}</span>
+                  <span className="font-semibold text-yellow-400">{formatCurrency(getCommission(hire), hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{t.modal.vat}</span>
-                  <span className="text-gray-200">{formatCurrency(hire.vatAmount)}</span>
+                  <span className="text-gray-200">{formatCurrency(hire.vatAmount, hire)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-800 pt-2">
                   <span className="text-xs text-gray-500">{t.modal.totalDue}</span>
-                  <span className="font-bold text-white">{formatCurrency(hire.totalDue ?? getCommission(hire))}</span>
+                  <span className="font-bold text-white">{formatCurrency(hire.totalDue ?? getCommission(hire), hire)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{t.modal.paymentRef}</span>

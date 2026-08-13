@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
+import { formatCompensationAmount } from '../utils/compensationDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
@@ -300,10 +301,6 @@ const WorkerOffers = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const formatSalary = (amount) => {
-    return `${amount?.toLocaleString() || 0}`;
-  };
-
   // ============================================================
   // Filtered Offers by Tab
   // ============================================================
@@ -431,7 +428,7 @@ const WorkerOffers = () => {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <DollarSign size={14} className="text-gray-400 dark:text-gray-500" />
-                  <span>EGP {formatSalary(offer.amount)}<span className="text-gray-400 dark:text-gray-500 text-xs">{t('workerOffers.perMonth')}</span></span>
+                  <span>{formatCompensationAmount(offer.salary, offer, t('workerOffers.notSpecified'))}<span className="text-gray-400 dark:text-gray-500 text-xs">{t('workerOffers.perMonth')}</span></span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-gray-400 dark:text-gray-500" />
@@ -554,11 +551,15 @@ const WorkerOffers = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.monthlySalary')}</span>
-                      <span className="font-medium">EGP {formatSalary(offer.amount)}</span>
+                      <span className="font-medium">{formatCompensationAmount(offer.salary, offer, t('workerOffers.notSpecified'))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.hourlyRate')}</span>
-                      <span className="font-medium">EGP {offer.hourlyRate || 30}{t('workerOffers.perHour')}</span>
+                      <span className="font-medium">
+                        {offer.hourlyRate === null || offer.hourlyRate === undefined
+                          ? t('workerOffers.notSpecified')
+                          : `${formatCompensationAmount(offer.hourlyRate, offer, t('workerOffers.notSpecified'))}${t('workerOffers.perHour')}`}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">{t('workerOffers.location')}</span>

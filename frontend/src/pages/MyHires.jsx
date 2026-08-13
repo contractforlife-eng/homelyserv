@@ -31,6 +31,7 @@ import {
   X
 } from 'lucide-react';
 import { sendMessage, getConversationId } from '../utils/chatService';
+import { formatCompensationAmount } from '../utils/compensationDisplay';
 
 // ============================================================
 // SINGLE SOURCE OF TRUTH — canonical hire statuses
@@ -397,6 +398,7 @@ const MyHires = () => {
   const formatCurrency = (amount) => `${Number(amount || 0).toLocaleString()}`;
 
   const getCommission = (hire) => hire.commissionAmount ?? hire.totalDue ?? null;
+  const getAgreedSalary = (hire) => hire.agreedSalary ?? hire.salary;
 
   const canMessageOrTerminate = (hire) => {
     const s = normalizeStatus(hire.status);
@@ -612,13 +614,13 @@ const MyHires = () => {
                         </td>
                         {/* Salary */}
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
-                          <p className="text-xs text-gray-400">{t('myHiresPage.salaryPerMonth')}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{formatCompensationAmount(getAgreedSalary(hire), hire)}</p>
+                          <p className="text-xs text-gray-400">{t('workerOffers.perMonth')}</p>
                         </td>
                         {/* Commission */}
                         <td className="px-4 py-3">
                           {commission != null ? (
-                            <p className="font-medium text-teal-600">{formatCurrency(commission)} EGP</p>
+                            <p className="font-medium text-teal-600">{formatCompensationAmount(commission, hire)}</p>
                           ) : (
                             <p className="text-gray-400">-</p>
                           )}
@@ -728,13 +730,12 @@ const MyHires = () => {
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.salary')}</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatCurrency(hire.salary)}</p>
-                        <p className="text-[10px] text-gray-400">{t('myHiresPage.salaryPerMonth')}</p>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-white">{formatCompensationAmount(getAgreedSalary(hire), hire)}</p>
+                        <p className="text-[10px] text-gray-400">{t('workerOffers.perMonth')}</p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.commission')}</p>
-                        <p className="text-sm font-semibold text-teal-600">{commission != null ? formatCurrency(commission) : '-'}</p>
-                        <p className="text-[10px] text-gray-400">EGP</p>
+                        <p className="text-sm font-semibold text-teal-600">{commission != null ? formatCompensationAmount(commission, hire) : '-'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('myHiresPage.table.payment')}</p>
@@ -844,11 +845,11 @@ const MyHires = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.salary')}</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(selectedHire.salary)} {t('myHiresPage.salaryPerMonth')}</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{formatCompensationAmount(getAgreedSalary(selectedHire), selectedHire)}{t('workerOffers.perMonth')}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.commission')}</p>
-                  <p className="text-lg font-bold text-teal-600">{getCommission(selectedHire) != null ? `${formatCurrency(getCommission(selectedHire))} EGP` : '-'}</p>
+                  <p className="text-lg font-bold text-teal-600">{getCommission(selectedHire) != null ? formatCompensationAmount(getCommission(selectedHire), selectedHire) : '-'}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('myHiresPage.modal.startDate')}</p>

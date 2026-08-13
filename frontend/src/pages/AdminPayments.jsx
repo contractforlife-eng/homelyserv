@@ -162,7 +162,14 @@ const AdminPayments = () => {
     });
   };
 
-  const formatCurrency = (amount) => `${Number(amount || 0).toLocaleString()} EGP`;
+  const formatCurrency = (amount, payment) => {
+    const numericAmount = typeof amount === 'number' ? amount : Number(amount);
+    if (!Number.isFinite(numericAmount)) return '—';
+    const currency = typeof payment?.currency === 'string' && /^[A-Z]{3}$/i.test(payment.currency.trim())
+      ? payment.currency.trim().toUpperCase()
+      : 'EGP';
+    return `${numericAmount.toLocaleString()} ${currency}`;
+  };
 
   const getPayerName = (p) => p.User?.fullName || p.employerName || p.userEmail || 'Unknown';
 
@@ -174,6 +181,12 @@ const AdminPayments = () => {
   };
 
   const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const paymentCurrencies = new Set(payments.map(payment => (
+    typeof payment.currency === 'string' && /^[A-Z]{3}$/i.test(payment.currency.trim())
+      ? payment.currency.trim().toUpperCase()
+      : 'EGP'
+  )));
+  const totalCurrency = paymentCurrencies.size === 1 ? [...paymentCurrencies][0] : null;
 
   // ============================================================
   // RENDER
@@ -258,7 +271,7 @@ const AdminPayments = () => {
                   <DollarSign size={20} className="text-yellow-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(totalAmount)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalCurrency ? formatCurrency(totalAmount, { currency: totalCurrency }) : '—'}</p>
             </div>
           </div>
         )}
@@ -355,7 +368,7 @@ const AdminPayments = () => {
                           <span className="text-sm text-gray-900 dark:text-white font-medium truncate">{getPayerName(payment)}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{formatCurrency(payment.amount)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{formatCurrency(payment.amount, payment)}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 capitalize">{payment.paymentMethod || 'N/A'}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.status)}`}>
@@ -430,8 +443,7 @@ const AdminPayments = () => {
 
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Amount</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(selectedPayment.amount)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{selectedPayment.currency || 'EGP'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(selectedPayment.amount, selectedPayment)}</p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">

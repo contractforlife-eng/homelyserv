@@ -9,6 +9,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import { sendMessage } from '../utils/chatService';
 import hireService from '../services/hireService';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
+import { formatCompensationAmount, resolveCompensationCurrency } from '../utils/compensationDisplay';
 import { UserAvatar } from '../components/users';
 import {
   User,
@@ -113,7 +114,9 @@ const EmployerPayments = () => {
         jobTitle: hire.jobTitle || 'Service Provider',
         jobTitleIsFallback: !hire.jobTitle,
         commission: hire.commissionAmount || 0,
-        fullSalary: hire.agreedSalary || hire.salary || 0,
+        fullSalary: hire.agreedSalary ?? hire.salary ?? 0,
+        compensationCurrency: hire.compensationCurrency,
+        isHireContext: true,
         status: hire.paymentStatus === 'completed' ? 'completed' : 'pending',
         paymentVerified: hire.paymentStatus === 'completed',
         contactRevealed: hire.paymentStatus === 'completed',
@@ -150,6 +153,14 @@ const EmployerPayments = () => {
       const totalFullSalary = completedPayments.reduce((sum, p) => sum + (p.fullSalary || 0), 0);
       const pendingCount = mergedPayments.filter(p => p.status === 'pending' && !p.paymentVerified).length;
       const completedCount = completedPayments.length;
+      const completedCurrencies = new Set(completedPayments.map(payment => (
+        payment.isHireContext
+          ? resolveCompensationCurrency(payment)
+          : (typeof payment.currency === 'string' && /^[A-Z]{3}$/i.test(payment.currency.trim())
+            ? payment.currency.trim().toUpperCase()
+            : 'EGP')
+      )));
+      const aggregateCurrency = completedCurrencies.size === 1 ? [...completedCurrencies][0] : null;
 
       const uniqueWorkers = new Set();
       mergedPayments.forEach(p => {
@@ -164,7 +175,8 @@ const EmployerPayments = () => {
         completedCount: completedCount,
         totalWorkers: uniqueWorkers.size,
         monthlyAverage: completedCount > 0 ? Math.round(totalCommissionPaid / Math.max(completedCount, 1)) : 0,
-        totalSalary: totalFullSalary
+        totalSalary: totalFullSalary,
+        aggregateCurrency
       });
 
     } catch (error) {
@@ -357,9 +369,19 @@ const EmployerPayments = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatCurrency = (amount) => {
-    return `${amount?.toLocaleString() || 0} EGP`;
+  const formatCurrency = (amount, record) => {
+    if (record?.isHireContext) return formatCompensationAmount(amount, record);
+    const numericAmount = typeof amount === 'number' ? amount : Number(amount);
+    if (!Number.isFinite(numericAmount)) return '—';
+    const currency = typeof record?.currency === 'string' && /^[A-Z]{3}$/i.test(record.currency.trim())
+      ? record.currency.trim().toUpperCase()
+      : 'EGP';
+    return `${numericAmount.toLocaleString()} ${currency}`;
   };
+
+  const formatAggregate = (amount) => stats.aggregateCurrency
+    ? `${Number(amount).toLocaleString()} ${stats.aggregateCurrency}`
+    : '—';
 
   const formatStatus = (status) => {
     return t(`employerPayments.status.${status}`, { defaultValue: status });
@@ -437,7 +459,7 @@ const EmployerPayments = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.totalPaid')}</p>
                 <DollarSign size={16} className="text-green-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalCommissionPaid)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatAggregate(stats.totalCommissionPaid)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
@@ -465,14 +487,14 @@ const EmployerPayments = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.monthlyAverage')}</p>
                 <BarChart3 size={16} className="text-purple-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.monthlyAverage)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatAggregate(stats.monthlyAverage)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('employerPayments.stats.totalSalary')}</p>
                 <Briefcase size={16} className="text-orange-500" />
               </div>
-              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatCurrency(stats.totalSalary)}</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white mt-1">{formatAggregate(stats.totalSalary)}</p>
             </div>
           </div>
 
@@ -573,11 +595,11 @@ const EmployerPayments = () => {
                           <p className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{formatJobTitle(payment.jobTitle, payment.jobTitleIsFallback)}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission)}</p>
+                          <p className="text-sm font-semibold text-teal-600">{formatCurrency(payment.commission, payment)}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{t('employerPayments.platformCommission')}</p>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{formatCurrency(payment.fullSalary)}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{formatCurrency(payment.fullSalary, payment)}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{t('employerPayments.workerSalary')}</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
@@ -676,13 +698,13 @@ const EmployerPayments = () => {
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">{t('employerPayments.modal.commission')}</p>
-                <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('employerPayments.commissionOfSalary', { rate: RECRUITMENT_COMMISSION_RATE * 100, salary: formatCurrency(selectedPayment.fullSalary) })}</p>
+                <p className="text-2xl font-bold text-teal-600">{formatCurrency(selectedPayment.commission, selectedPayment)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('employerPayments.commissionOfSalary', { rate: RECRUITMENT_COMMISSION_RATE * 100, salary: formatCurrency(selectedPayment.fullSalary, selectedPayment) })}</p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 mb-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">{t('employerPayments.modal.fullSalary')}</p>
-                <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatCurrency(selectedPayment.fullSalary)}</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">{formatCurrency(selectedPayment.fullSalary, selectedPayment)}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('employerPayments.modal.note')}</p>
               </div>
 

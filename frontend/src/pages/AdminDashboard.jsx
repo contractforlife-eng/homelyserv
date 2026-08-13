@@ -11,6 +11,7 @@ import StatCard from '../components/admin/StatCard';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import { getDisplayName, getRoleLabel, getRoleBadgeClasses } from '../utils/userDisplay';
 import complaintsService from '../services/complaintService';
+import { formatCompensationAmount } from '../utils/compensationDisplay';
 import {
   Users,
   Briefcase,
@@ -511,7 +512,7 @@ const AdminDashboard = () => {
             </div>
             <div className="text-right flex-shrink-0">
               <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                {formatCurrency(hire.agreedSalary ?? hire.totalDue)}
+                {formatCompensationAmount(hire.agreedSalary ?? hire.totalDue, hire)}
               </p>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
                 hire.status === 'active'
