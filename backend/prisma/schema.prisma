@@ -469,6 +469,7 @@ model JobPost {
 
   salaryMin          Float?
   salaryMax          Float?
+  compensationCurrency String?
   employmentType     String    @default("full-time")
   contractType       String?
 
