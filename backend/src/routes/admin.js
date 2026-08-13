@@ -17,6 +17,10 @@ import {
   getDuplicateRefundEvidence,
   reconcilePayment,
 } from '../services/paymentReconciliationService.js';
+import {
+  executeSandboxFullPayPalRefund,
+  RefundPolicyError,
+} from '../services/paypalRefundService.js';
 
 const router = express.Router();
 
@@ -617,6 +621,21 @@ router.get('/payments', async (req, res) => {
       return {
         ...paymentFields,
         User: userMap.get(payment.userId) || null,
+        refunds: (payment.Refunds || []).map((refund) => ({
+          id: refund.id,
+          type: refund.type,
+          bookAmount: refund.bookAmount,
+          bookCurrency: refund.bookCurrency,
+          requestedProviderAmount: refund.requestedProviderAmount,
+          providerAmount: refund.providerAmount,
+          providerCurrency: refund.providerCurrency,
+          providerRefundId: refund.providerRefundId,
+          status: refund.status,
+          reason: refund.reason,
+          createdAt: refund.createdAt,
+          completedAt: refund.completedAt,
+          failedAt: refund.failedAt,
+        })),
         reconciliation,
         subscriptionReconciliation: reconciliation.subscriptionReconciliation,
       };
@@ -631,7 +650,8 @@ router.get('/payments', async (req, res) => {
       payments: enriched,
       completedRevenueByCurrency: completedRevenue.totals,
       rejectedCurrencyRecords: completedRevenue.rejectedCount,
-      revenueSemantic: 'gross_completed_payment_book_revenue_by_currency'
+      revenueSemantic: 'gross_completed_payment_book_revenue_by_currency',
+      paypalSandboxRefundsEnabled: String(process.env.PAYPAL_MODE || 'sandbox').trim().toLowerCase() !== 'production'
     });
   } catch (error) {
     console.error('Get payments error:', error);
@@ -640,6 +660,33 @@ router.get('/payments', async (req, res) => {
       message: 'Failed to get payments',
       error: error.message
     });
+  }
+});
+
+// Sandbox-only, Admin-only provider refund mutation. The service repeats the
+// production guard before any database or OAuth operation; client input never
+// supplies monetary, currency, capture, provider, or user authority.
+router.post('/payments/:paymentId/refunds', async (req, res) => {
+  const forbiddenFields = [
+    'amount', 'currency', 'captureId', 'providerRefundId', 'providerAmount',
+    'providerCurrency', 'userId', 'paymentMethod', 'type',
+  ];
+  if (forbiddenFields.some((field) => Object.hasOwn(req.body || {}, field))) {
+    return res.status(422).json({ success: false, message: 'Refund financial or provider fields are server-owned' });
+  }
+  try {
+    const refund = await executeSandboxFullPayPalRefund({
+      paymentId: req.params.paymentId,
+      reason: req.body?.reason,
+      adminId: req.userId,
+    });
+    return res.json({ success: true, refund });
+  } catch (error) {
+    if (error instanceof RefundPolicyError) {
+      return res.status(error.status).json({ success: false, code: error.code, message: error.message });
+    }
+    console.error('Admin PayPal refund error:', error?.message || 'Unknown error');
+    return res.status(500).json({ success: false, message: 'Unable to process refund safely' });
   }
 });
 

@@ -44,6 +44,8 @@ const AdminPayments = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [completedRevenueByCurrency, setCompletedRevenueByCurrency] = useState([]);
+  const [paypalSandboxRefundsEnabled, setPaypalSandboxRefundsEnabled] = useState(false);
+  const [refunding, setRefunding] = useState(false);
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
@@ -64,6 +66,7 @@ const AdminPayments = () => {
         setPayments(fetched);
         setFilteredPayments(fetched);
         setCompletedRevenueByCurrency(response.data.completedRevenueByCurrency || []);
+        setPaypalSandboxRefundsEnabled(response.data.paypalSandboxRefundsEnabled === true);
       } else {
         setError(response.data?.message || 'Failed to load payments');
       }
@@ -73,10 +76,42 @@ const AdminPayments = () => {
       setPayments([]);
       setFilteredPayments([]);
       setCompletedRevenueByCurrency([]);
+      setPaypalSandboxRefundsEnabled(false);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const canRefund = (payment) => (
+    paypalSandboxRefundsEnabled
+    && payment?.status === 'completed'
+    && String(payment?.paymentMethod || '').toLowerCase() === 'paypal'
+    && payment?.captureId
+    && payment?.providerAmount
+    && payment?.providerCurrency
+    && payment?.reconciliation?.state === 'MATCHED'
+    && (payment?.refunds || []).length === 0
+  );
+
+  const requestFullRefund = async (payment) => {
+    const book = formatCurrency(payment.amount, payment);
+    const provider = formatCurrency(payment.providerAmount, { currency: payment.providerCurrency });
+    if (!window.confirm(`Refund the full provider charge of ${provider}?\n\nBook payment: ${book}\nProvider refund: ${provider}\n\nThis does not reverse Hire or Premium entitlement.`)) return;
+    const reason = window.prompt('Required Admin refund reason:')?.trim();
+    if (!reason) return;
+    setRefunding(true);
+    setError(null);
+    try {
+      await api.post(`/api/admin/payments/${payment.id}/refunds`, { reason });
+      setShowDetailsModal(false);
+      setSelectedPayment(null);
+      await loadPayments();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Refund could not be processed safely');
+    } finally {
+      setRefunding(false);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -486,7 +521,34 @@ const AdminPayments = () => {
                 </div>
               )}
 
-              <div className="flex justify-end mt-6">
+              {(selectedPayment.refunds || []).length > 0 && (
+                <div className="mt-6 bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Refund history</h3>
+                  <div className="mt-3 space-y-3">
+                    {selectedPayment.refunds.map((refund) => (
+                      <div key={refund.id} className="text-sm border-t border-gray-200 dark:border-gray-600 pt-3 first:border-0 first:pt-0">
+                        <p className="font-medium text-gray-900 dark:text-white capitalize">{refund.type?.toLowerCase()} · {refund.status}</p>
+                        <p className="text-gray-600 dark:text-gray-300">Book: {formatCurrency(refund.bookAmount, { currency: refund.bookCurrency })}</p>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Provider: {formatCurrency(refund.providerAmount || refund.requestedProviderAmount, { currency: refund.providerCurrency })}
+                        </p>
+                        {refund.reason && <p className="text-gray-500 dark:text-gray-400">Reason: {refund.reason}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 mt-6">
+                {canRefund(selectedPayment) && (
+                  <button
+                    onClick={() => requestFullRefund(selectedPayment)}
+                    disabled={refunding}
+                    className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
+                  >
+                    {refunding ? 'Refunding…' : 'Sandbox full refund'}
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDetailsModal(false)}
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
