@@ -24,6 +24,13 @@ const createNotification = async (userId, type, title, message) => {
   }
 };
 
+const isObjectId = (value) => typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value);
+
+const findOwnedWorkerProfile = async (userId) => prisma.workerProfile.findUnique({
+  where: { userId: String(userId) },
+  select: { id: true, userId: true },
+});
+
 // Recruitment commission rate comes from the single source of truth:
 // backend/src/config/monetization.js (RECRUITMENT_COMMISSION_RATE = 15%).
 
@@ -67,6 +74,21 @@ export const sendOffer = async (req, res) => {
     const total = commission;
 
     const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    if (!isObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid worker target' });
+    }
+
+    const workerUser = await prisma.user.findUnique({
+      where: { id: workerId },
+      select: { id: true, role: true },
+    });
+    if (!workerUser) {
+      return res.status(404).json({ message: 'Worker not found' });
+    }
+    if (workerUser.role !== 'WORKER') {
+      return res.status(400).json({ message: 'Offer target must be a Worker' });
+    }
 
     let workerProfile = await prisma.workerProfile.findUnique({
       where: { userId: workerId }
@@ -152,17 +174,25 @@ export const respondToOffer = async (req, res) => {
       return res.status(404).json({ message: 'Offer not found' });
     }
 
-    if (offer.status !== 'pending') {
-      return res.status(400).json({ message: 'Offer has already been responded to' });
+    const workerProfile = await findOwnedWorkerProfile(req.userId);
+    if (!workerProfile || String(offer.workerId) !== String(workerProfile.id)) {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Update offer status
-    const updatedOffer = await prisma.offer.update({
-      where: { id: offerId },
-      data: { status }
-    });
+    if (offer.status === status) {
+      if (status === 'accepted') {
+        const existingHire = await prisma.hire.findFirst({ where: { offerId: offer.id } });
+        if (!existingHire) {
+          return res.status(409).json({ message: 'Accepted Offer has no Hire; manual recovery required' });
+        }
+        return res.json({ message: 'Offer already accepted', offer, hire: existingHire });
+      }
+      return res.json({ message: 'Offer already rejected', offer });
+    }
 
-    const worker = await prisma.workerProfile.findUnique({ where: { id: offer.workerId } });
+    if (offer.status !== 'pending') {
+      return res.status(409).json({ message: 'Offer has already been responded to' });
+    }
 
     if (status === 'accepted') {
       const salary = offer.salary;
@@ -172,53 +202,89 @@ export const respondToOffer = async (req, res) => {
 
       const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // Copy ALL offer details into the Hire record
-      const hire = await prisma.hire.create({
-        data: {
-          workerId: offer.workerId,
-          employerId: offer.employerId,
-          offerId: offer.id,
-          agreedSalary: salary,
-          commissionAmount: commission,
-          vatAmount: vat,
-          totalDue: total,
-          paymentReference: reference,
-          startDate: null,
-          status: 'offer_sent',
-          // Copy work details from Offer
-          hourlyRate: offer.hourlyRate || null,
-          workingHoursPerDay: offer.workingHoursPerDay || null,
-          workingDaysPerWeek: offer.workingDaysPerWeek || null,
-          weeklyDaysOff: offer.weeklyDaysOff || null,
-          workStartTime: offer.workStartTime || null,
-          workEndTime: offer.workEndTime || null,
-          employmentStartDate: offer.employmentStartDate || null,
-          additionalNotes: offer.additionalNotes || null
+      let acceptance;
+      try {
+        acceptance = await prisma.$transaction(async (tx) => {
+          const claim = await tx.offer.updateMany({
+            where: { id: offer.id, workerId: workerProfile.id, status: 'pending' },
+            data: { status: 'accepted' },
+          });
+          if (claim.count !== 1) {
+            throw new Error('OFFER_ACCEPTANCE_CONFLICT');
+          }
+
+          const existingHire = await tx.hire.findFirst({ where: { offerId: offer.id } });
+          const hire = existingHire || await tx.hire.create({
+            data: {
+              workerId: offer.workerId,
+              employerId: offer.employerId,
+              offerId: offer.id,
+              agreedSalary: salary,
+              commissionAmount: commission,
+              vatAmount: vat,
+              totalDue: total,
+              paymentReference: reference,
+              startDate: null,
+              status: 'offer_sent',
+              hourlyRate: offer.hourlyRate || null,
+              workingHoursPerDay: offer.workingHoursPerDay || null,
+              workingDaysPerWeek: offer.workingDaysPerWeek || null,
+              weeklyDaysOff: offer.weeklyDaysOff || null,
+              workStartTime: offer.workStartTime || null,
+              workEndTime: offer.workEndTime || null,
+              employmentStartDate: offer.employmentStartDate || null,
+              additionalNotes: offer.additionalNotes || null
+            }
+          });
+
+          const updatedOffer = await tx.offer.findUnique({ where: { id: offer.id } });
+          return { offer: updatedOffer, hire };
+        });
+      } catch (transactionError) {
+        const [currentOffer, existingHire] = await Promise.all([
+          prisma.offer.findUnique({ where: { id: offer.id } }),
+          prisma.hire.findFirst({ where: { offerId: offer.id } }),
+        ]);
+        if (currentOffer?.status === 'accepted' && existingHire) {
+          return res.json({ message: 'Offer already accepted', offer: currentOffer, hire: existingHire });
         }
-      });
-
-      console.log(`✅ Hire created: ${hire.id} for Offer: ${offer.id}`);
-
-      if (worker) {
-        await createNotification(
-          worker.userId,
-          'offer',
-          'Offer Accepted',
-          `You accepted the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
-        );
+        if (transactionError.message === 'OFFER_ACCEPTANCE_CONFLICT') {
+          return res.status(409).json({ message: 'Offer response is already being processed' });
+        }
+        throw transactionError;
       }
 
-      return res.json({ message: 'Offer accepted, Hire created', offer: updatedOffer, hire });
+      console.log(`✅ Hire created: ${acceptance.hire.id} for Offer: ${offer.id}`);
+
+      await createNotification(
+        workerProfile.userId,
+        'offer',
+        'Offer Accepted',
+        `You accepted the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+      );
+
+      return res.json({ message: 'Offer accepted, Hire created', offer: acceptance.offer, hire: acceptance.hire });
     }
 
-    if (worker) {
-      await createNotification(
-        worker.userId,
-        'offer',
-        'Offer Rejected',
-        `You rejected the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
-      );
+    const rejection = await prisma.offer.updateMany({
+      where: { id: offer.id, workerId: workerProfile.id, status: 'pending' },
+      data: { status: 'rejected' },
+    });
+    if (rejection.count !== 1) {
+      const currentOffer = await prisma.offer.findUnique({ where: { id: offer.id } });
+      if (currentOffer?.status === 'rejected') {
+        return res.json({ message: 'Offer already rejected', offer: currentOffer });
+      }
+      return res.status(409).json({ message: 'Offer has already been responded to' });
     }
+
+    const updatedOffer = await prisma.offer.findUnique({ where: { id: offer.id } });
+    await createNotification(
+      workerProfile.userId,
+      'offer',
+      'Offer Rejected',
+      `You rejected the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
+    );
 
     res.json({ message: 'Offer rejected', offer: updatedOffer });
   } catch (error) {
@@ -527,16 +593,15 @@ export const getAllHires = async (req, res) => {
 };
 
 // UPDATE OFFER STATUS
-// PHASE 2 SECURITY FIX: ownership is now enforced from the token.
-// EMPLOYER -> only their own offers; WORKER -> only offers addressed to
-// their WorkerProfile. Admin/others are denied.
+// Compatibility endpoint for the active WorkerOffers "complete work" action.
+// Worker acceptance/rejection is exclusively handled by respondToOffer.
 export const updateOfferStatus = async (req, res) => {
   try {
     const { offerId } = req.params;
     const { status } = req.body;
 
-    if (!['pending', 'accepted', 'rejected', 'paid', 'in_progress', 'completed'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    if (status !== 'completed') {
+      return res.status(400).json({ message: 'Only work completion is supported by this endpoint' });
     }
 
     const offer = await prisma.offer.findUnique({ where: { id: offerId } });
@@ -544,21 +609,20 @@ export const updateOfferStatus = async (req, res) => {
       return res.status(404).json({ message: 'Offer not found' });
     }
 
-    // Ownership guard from the authenticated caller.
-    if (req.userRole === 'EMPLOYER') {
-      if (String(offer.employerId) !== String(req.userId)) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-    } else if (req.userRole === 'WORKER') {
-      const profile = await prisma.workerProfile.findUnique({
-        where: { userId: String(req.userId) },
-        select: { id: true },
-      });
-      if (!profile || String(offer.workerId) !== String(profile.id)) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-    } else if (req.userRole !== 'ADMIN') {
+    if (req.userRole !== 'WORKER') {
       return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const profile = await findOwnedWorkerProfile(req.userId);
+    if (!profile || String(offer.workerId) !== String(profile.id)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    if (!['accepted', 'paid', 'in_progress'].includes(offer.status)) {
+      if (offer.status === 'completed') {
+        return res.json({ message: 'Offer already completed', offer });
+      }
+      return res.status(409).json({ message: 'Offer cannot be completed from its current status' });
     }
 
     const updatedOffer = await prisma.offer.update({
@@ -566,15 +630,12 @@ export const updateOfferStatus = async (req, res) => {
       data: { status }
     });
 
-    const worker = await prisma.workerProfile.findUnique({ where: { id: offer.workerId } });
-    if (worker && ['accepted', 'rejected', 'paid', 'in_progress', 'completed'].includes(status)) {
-      await createNotification(
-        worker.userId,
-        'offer',
-        'Offer Status Updated',
-        `Your offer for ${offer.jobTitle} has been updated to ${status}`
-      );
-    }
+    await createNotification(
+      profile.userId,
+      'offer',
+      'Offer Status Updated',
+      `Your offer for ${offer.jobTitle} has been updated to ${status}`
+    );
 
     res.json({ message: 'Offer status updated', offer: updatedOffer });
   } catch (error) {

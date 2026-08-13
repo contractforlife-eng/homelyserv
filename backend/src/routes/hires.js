@@ -10,14 +10,14 @@ import {
   updateOfferStatus
 } from '../controllers/hireController.js';
 
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireAdmin, requireEmployer, requireWorker } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // ============================================================
 // Create a Hire / Send Offer
 // ============================================================
-router.post('/', authenticate, sendOffer);
+router.post('/', requireEmployer, sendOffer);
 
 // ============================================================
 // Get Hires for a User (backward compatible)
@@ -37,15 +37,15 @@ router.put('/:hireId/status', authenticate, updateHireStatus);
 // ============================================================
 // Respond to Offer (accept/reject)
 // ============================================================
-router.put('/offer/:offerId/respond', authenticate, respondToOffer);
+router.put('/offer/:offerId/respond', requireWorker, respondToOffer);
 
 // ============================================================
 // Get All Hires (admin only)
 // ============================================================
-router.get('/all', getAllHires);
+router.get('/all', requireAdmin, getAllHires);
 
 router.get('/offers', authenticate, getMyOffers);
 
-router.put('/offer/:offerId/status', authenticate, updateOfferStatus);
+router.put('/offer/:offerId/status', requireWorker, updateOfferStatus);
 
 export default router;
