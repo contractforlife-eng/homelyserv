@@ -57,6 +57,15 @@ router.post('/resend-verification', authenticate, authController.resendVerificat
 router.put('/profile', authenticate, authController.updateProfile);
 
 // ============================================================
+// Update Preferred Currency (authenticated account preference only)
+// ============================================================
+router.patch(
+  '/preferences/currency',
+  authenticate,
+  authController.updatePreferredCurrency
+);
+
+// ============================================================
 // Forgot Password - Delegates to controller
 // ============================================================
 router.post('/forgot-password', authController.forgotPassword);

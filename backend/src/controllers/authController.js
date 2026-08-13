@@ -5,6 +5,11 @@ import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { uploadFromBuffer } from '../utils/cloudinary.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
+import {
+  isSupportedCurrency,
+  normalizeCurrencyCode,
+  resolveAccountDefaultCurrency
+} from '../utils/currencyMetadata.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
@@ -457,6 +462,69 @@ export const updateProfile = async (req, res) => {
       success: false,
       message: 'Failed to update profile',
       error: error.message
+    });
+  }
+};
+
+// ============================================================
+// UPDATE PREFERRED CURRENCY
+// Account-level default preference only; no financial records are changed.
+// ============================================================
+export const updatePreferredCurrency = async (req, res) => {
+  try {
+    const body = req.body || {};
+
+    if (!Object.prototype.hasOwnProperty.call(body, 'preferredCurrency')) {
+      return res.status(400).json({
+        success: false,
+        message: 'preferredCurrency is required'
+      });
+    }
+
+    const input = body.preferredCurrency;
+    let preferredCurrency = null;
+
+    if (input !== null) {
+      if (typeof input !== 'string' || input.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'preferredCurrency must be a supported currency code or null'
+        });
+      }
+
+      preferredCurrency = normalizeCurrencyCode(input);
+      if (!preferredCurrency || !isSupportedCurrency(preferredCurrency)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Unsupported preferred currency'
+        });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { preferredCurrency } },
+      { new: true, runValidators: true }
+    ).select('preferredCurrency countryCode countryName');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const account = user.toObject();
+    return res.json({
+      success: true,
+      preferredCurrency: account.preferredCurrency ?? null,
+      effectiveCurrency: resolveAccountDefaultCurrency(account)
+    });
+  } catch (error) {
+    console.error('Update preferred currency error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update preferred currency'
     });
   }
 };
