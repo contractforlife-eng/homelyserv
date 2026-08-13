@@ -6,6 +6,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
+import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
 import {
   PAYMENT_PURPOSES,
   SUBSCRIPTION_CURRENCY,
@@ -539,90 +540,6 @@ const updateHireAfterPayment = async (hireId, captureId) => {
 };
 
 // ============================================================
-// SUBSCRIPTION MANAGEMENT
-// ============================================================
-
-const ensureSubscription = async (userId, amount, paymentMetadata = {}) => {
-  if (!userId) {
-    throw new Error('Cannot activate subscription: userId is required');
-  }
-
-  const now = new Date();
-  // New Payments snapshot their exact plan duration. Pre-transition Payments
-  // have no snapshot and retain the historical 30-day fulfillment contract.
-  const durationDays = Number.isInteger(paymentMetadata?.durationDays)
-    ? paymentMetadata.durationDays
-    : 30;
-  const durationMs = durationDays * 24 * 60 * 60 * 1000;
-  const projectionPlan = typeof paymentMetadata?.plan === 'string'
-    ? paymentMetadata.plan
-    : 'premium';
-
-  const existing = await prisma.subscription.findFirst({
-    where: {
-      userId: String(userId),
-      status: 'active',
-      endDate: { gte: now }
-    },
-    orderBy: { endDate: 'desc' }
-  });
-
-  if (existing) {
-    // RENEWAL: extend from the CURRENT expiry, never from "now". One claimed
-    // payment transaction extends the subscription EXACTLY once (it reaches
-    // this code only after an atomic fulfillment claim), so a user who renews
-    // early keeps the full value of their remaining days.
-    const extendedEndDate = new Date(new Date(existing.endDate).getTime() + durationMs);
-
-    const updated = await prisma.subscription.update({
-      where: { id: existing.id },
-      // Projection semantics: these fields describe the latest purchase only;
-      // Payment remains the financial/history authority for stacked plans.
-      data: { endDate: extendedEndDate, amount: Number(amount), plan: projectionPlan }
-    });
-
-    await createNotification(String(userId), {
-      type: NOTIFICATION_TYPES.SYSTEM,
-      title: 'Premium Subscription Renewed',
-      message: `Your premium subscription has been extended until ${updated.endDate.toLocaleDateString()}.`,
-      entityType: 'SUBSCRIPTION',
-      entityId: String(updated.id),
-      icon: '👑',
-      link: '/subscription',
-    });
-
-    return updated;
-  }
-
-  // First activation (or restart after expiry): counted from today.
-  const startDate = now;
-  const endDate = new Date(startDate.getTime() + durationMs);
-
-  const created = await prisma.subscription.create({
-    data: {
-      userId: String(userId),
-      plan: projectionPlan,
-      amount: Number(amount),
-      status: 'active',
-      startDate,
-      endDate
-    }
-  });
-
-  await createNotification(String(userId), {
-    type: NOTIFICATION_TYPES.SYSTEM,
-    title: 'Premium Subscription Activated',
-    message: `Your premium subscription is now active until ${created.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
-    entityType: 'SUBSCRIPTION',
-    entityId: String(created.id),
-    icon: '👑',
-    link: '/subscription',
-  });
-
-  return created;
-};
-
-// ============================================================
 // PAYMENT COMPLETION — route side effects by explicit PURPOSE
 // ============================================================
 // DESIGN (retry-safe fulfillment, no reliance on status alone):
@@ -746,7 +663,20 @@ const completePaymentTransaction = async (payment, captureRef) => {
   try {
     if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       console.log(`👑 SUBSCRIPTION payment ${payment.transactionId} completed — activating Premium ONLY`);
-      await ensureSubscription(payment.userId, payment.amount, payment.metadata || {});
+      const fulfillment = await fulfillSubscriptionPayment(payment.id);
+      if (!fulfillment.reused && fulfillment.subscription) {
+        await createNotification(String(payment.userId), {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: fulfillment.wasRenewal ? 'Premium Subscription Renewed' : 'Premium Subscription Activated',
+          message: fulfillment.wasRenewal
+            ? `Your premium subscription has been extended until ${fulfillment.subscription.endDate.toLocaleDateString()}.`
+            : `Your premium subscription is now active until ${fulfillment.subscription.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
+          entityType: 'SUBSCRIPTION',
+          entityId: String(fulfillment.subscription.id),
+          icon: '👑',
+          link: '/subscription',
+        });
+      }
     } else {
       // COMMISSION (default for hire-linked payments) — never grants Premium.
       console.log(`💳 COMMISSION payment ${payment.transactionId} completed — hire update only, NO premium granted`);
@@ -759,14 +689,16 @@ const completePaymentTransaction = async (payment, captureRef) => {
       }
     }
 
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        fulfillmentStatus: FULFILLMENT_STATUS.FULFILLED,
-        fulfillmentError: null,
-        fulfillmentCompletedAt: new Date()
-      }
-    });
+    if (payment.purpose !== PAYMENT_PURPOSES.SUBSCRIPTION) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          fulfillmentStatus: FULFILLMENT_STATUS.FULFILLED,
+          fulfillmentError: null,
+          fulfillmentCompletedAt: new Date()
+        }
+      });
+    }
     console.log(`✅ Payment ${payment.transactionId} fulfilled (${payment.purpose})`);
     return { fulfilled: true, error: null };
 

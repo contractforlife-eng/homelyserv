@@ -194,6 +194,7 @@ model Payment {
   User User? @relation(fields: [userId], references: [id])
   Hire Hire? @relation(fields: [hireId], references: [id])
   Refunds PaymentRefund[]
+  SubscriptionGrant SubscriptionGrant?
 
   @@index([userId])
   @@index([workerId])
@@ -313,6 +314,7 @@ model User {
   Payment                          Payment[]
   OfferAsEmployer                  Offer[]          @relation("EmployerOffers")
   Subscription                     Subscription[]
+  SubscriptionGrant                SubscriptionGrant[]
   Complaint                        Complaint[]
   AssignedComplaints               Complaint[]      @relation("ComplaintAssignedSupport")
   SupportActivity                  SupportActivity[]
@@ -591,6 +593,30 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   User User @relation(fields: [userId], references: [id])
+}
+
+model SubscriptionGrant {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @db.ObjectId
+  paymentId       String    @unique @db.ObjectId
+  plan            String
+  purchaserRole   String
+  durationDays    Int
+  startsAt        DateTime
+  endsAt          DateTime
+  status          String    @default("active")
+  createdAt       DateTime  @default(now())
+  reversedAt      DateTime?
+  reversalReason  String?
+  reversedBy      String?   @db.ObjectId
+  metadata        Json?     @default("{}")
+
+  User    User    @relation(fields: [userId], references: [id])
+  Payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([userId, status])
+  @@index([endsAt])
+  @@map("subscription_grants")
 }
 
 model EmployerSearchTracking {
