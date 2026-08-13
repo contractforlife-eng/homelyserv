@@ -7,6 +7,12 @@ import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { PREMIUM_DURATION_DAYS, PAYMENT_PURPOSES, getPremiumPriceForRole } from '../config/subscription.js';
+import {
+  formatMoneyDecimal,
+  multiplyMoneyByRatio,
+  roundMoney,
+  toMinorUnits,
+} from '../utils/money.js';
 
 const router = express.Router();
 
@@ -71,13 +77,13 @@ const createPaymobOrder = async (authToken, amount, orderId, customerData) => {
     const response = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
       auth_token: authToken,
       delivery_needed: false,
-      amount_cents: Math.round(amount * 100),
+      amount_cents: toMinorUnits(amount, 'EGP'),
       currency: 'EGP',
       merchant_order_id: orderId,
       items: [
         {
           name: customerData?.jobTitle || 'Service Payment',
-          amount_cents: Math.round(amount * 100),
+          amount_cents: toMinorUnits(amount, 'EGP'),
           description: customerData?.description || 'Payment for service',
           quantity: 1
         }
@@ -107,7 +113,7 @@ const getPaymobPaymentKey = async (authToken, orderId, amount, customerData) => 
     const integrationId = process.env.PAYMOB_INTEGRATION_ID;
     const response = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
       auth_token: authToken,
-      amount_cents: Math.round(amount * 100),
+      amount_cents: toMinorUnits(amount, 'EGP'),
       expiration: 3600,
       order_id: orderId,
       billing_data: {
@@ -178,13 +184,60 @@ const getPayPalAccessToken = async () => {
   }
 };
 
+const LEGACY_PAYPAL_EGP_TO_USD_NUMERATOR = 33;
+const LEGACY_PAYPAL_EGP_TO_USD_DENOMINATOR = 1000;
+const PAYPAL_PROVIDER_CURRENCY = 'USD';
+
+export const getExpectedPayPalCharge = (paymentAmount) => {
+  const converted = multiplyMoneyByRatio(
+    paymentAmount,
+    LEGACY_PAYPAL_EGP_TO_USD_NUMERATOR,
+    LEGACY_PAYPAL_EGP_TO_USD_DENOMINATOR,
+    PAYPAL_PROVIDER_CURRENCY
+  );
+  return {
+    amount: formatMoneyDecimal(Math.max(converted, 1), PAYPAL_PROVIDER_CURRENCY),
+    currency: PAYPAL_PROVIDER_CURRENCY,
+  };
+};
+
+const assertPayPalMoney = (money, expected, label) => {
+  if (
+    money?.currency_code !== expected.currency ||
+    String(money?.value ?? '') !== expected.amount
+  ) {
+    throw new Error(`${label} amount/currency mismatch`);
+  }
+};
+
+export const verifyPayPalOrderEvidence = (payment, providerOrder, { requireCapture = false } = {}) => {
+  if (!payment?.paypalOrderId || providerOrder?.id !== payment.paypalOrderId) {
+    throw new Error('PayPal order identity mismatch');
+  }
+
+  const purchaseUnit = providerOrder.purchase_units?.find(
+    (unit) => unit.reference_id === payment.orderId
+  );
+  if (!purchaseUnit) throw new Error('PayPal purchase-unit identity mismatch');
+
+  const expected = getExpectedPayPalCharge(payment.amount);
+  assertPayPalMoney(purchaseUnit.amount, expected, 'PayPal order');
+
+  if (!requireCapture) return { expected, captureId: null };
+  if (providerOrder.status !== 'COMPLETED') throw new Error('PayPal order is not completed');
+
+  const capture = purchaseUnit.payments?.captures?.find((item) => item.status === 'COMPLETED');
+  if (!capture?.id) throw new Error('PayPal completed capture evidence is missing');
+  assertPayPalMoney(capture.amount, expected, 'PayPal capture');
+  return { expected, captureId: capture.id };
+};
+
 const createPayPalOrder = async (accessToken, amount, orderId, customerData) => {
   try {
-    const egpToUsdRate = 0.033;
-    const usdAmount = Math.round((amount * egpToUsdRate) * 100) / 100;
-    const finalAmount = Math.max(usdAmount, 1.00);
+    const expectedCharge = getExpectedPayPalCharge(amount);
+    const finalAmount = expectedCharge.amount;
 
-    console.log(`💰 Converting EGP ${amount} to USD ${finalAmount} (rate: ${egpToUsdRate})`);
+    console.log(`💰 Converting EGP ${amount} to ${expectedCharge.currency} ${finalAmount} (legacy rate: 0.033)`);
 
     const baseUrl = process.env.PAYPAL_MODE === 'production'
       ? 'https://api-m.paypal.com'
@@ -207,8 +260,8 @@ const createPayPalOrder = async (accessToken, amount, orderId, customerData) => 
             description: customerData?.description || `Payment for ${customerData?.jobTitle || 'service'}`,
             custom_id: customerData?.transactionId || orderId,
             amount: {
-              currency_code: 'USD',
-              value: finalAmount.toFixed(2)
+              currency_code: expectedCharge.currency,
+              value: finalAmount
             }
           }
         ],
@@ -715,6 +768,14 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       }
     }
 
+    // Current transaction currency remains EGP. Canonicalize historical Hire
+    // obligations at the checkout boundary without mutating the Hire so the
+    // Payment row and provider receive the exact same two-decimal amount.
+    amount = roundMoney(amount, 'EGP');
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid canonical payment amount' });
+    }
+
     console.log('📤 Creating payment intent:', {
       amount,
       purpose,
@@ -767,6 +828,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             orderId: orderId,
             transactionId: transactionId,
             amount: Number(amount),
+            currency: 'EGP',
             paymentMethod: paymentMethod || 'paymob',
             purpose: PAYMENT_PURPOSES.COMMISSION,
             userEmail: userEmail || existingPayment.userEmail,
@@ -858,9 +920,9 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     if (paymentMethod === 'paymob' || !paymentMethod) {
       try {
         const authToken = await getPaymobAuthToken();
-        const paymobOrder = await createPaymobOrder(authToken, amount, orderId, customerData);
+        const paymobOrder = await createPaymobOrder(authToken, payment.amount, orderId, customerData);
         const paymobOrderId = paymobOrder.id;
-        const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, amount, customerData);
+        const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, payment.amount, customerData);
 
         await prisma.payment.update({
           where: { id: payment.id },
@@ -879,7 +941,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           paymentId: transactionId,
           iframeUrl: iframeUrl,
           status: 'processing',
-          amount: Number(amount),
+          amount: payment.amount,
           currency: 'EGP',
           paymentMethod: 'paymob'
         };
@@ -905,7 +967,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     } else if (paymentMethod === 'paypal') {
       try {
         const accessToken = await getPayPalAccessToken();
-        const paypalOrder = await createPayPalOrder(accessToken, amount, orderId, customerData);
+        const paypalOrder = await createPayPalOrder(accessToken, payment.amount, orderId, customerData);
         const paypalOrderId = paypalOrder.id;
 
         const approvalLink = paypalOrder.links.find(link => link.rel === 'approve');
@@ -934,7 +996,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           approvalUrl: approvalUrl,
           paypalOrderId: paypalOrderId,
           status: 'processing',
-          amount: Number(amount),
+          amount: payment.amount,
           currency: 'EGP',
           paymentMethod: 'paypal'
         };
@@ -1090,7 +1152,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
       try {
         // First, check the order status
         const orderCheck = await axios.get(
-          `${baseUrl}/v2/checkout/orders/${orderId}`,
+          `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`
@@ -1102,7 +1164,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
         // If order is already completed, update and return
         if (orderCheck.data?.status === 'COMPLETED') {
-          const captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+          const { captureId } = verifyPayPalOrderEvidence(payment, orderCheck.data, { requireCapture: true });
 
           // Atomic, idempotent completion — side effects routed by PURPOSE
           // (SUBSCRIPTION grants Premium; COMMISSION updates the hire).
@@ -1124,10 +1186,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
         // If order is APPROVED, capture it
         if (orderCheck.data?.status === 'APPROVED') {
+          verifyPayPalOrderEvidence(payment, orderCheck.data);
           console.log(`🔄 Order ${orderId} is APPROVED, attempting to capture...`);
 
           const captureResponse = await axios.post(
-            `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+            `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}/capture`,
             {},
             {
               headers: {
@@ -1140,7 +1203,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           console.log(`📥 PayPal capture response status: ${captureResponse.data?.status}`);
 
           if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
-            const captureId = captureResponse.data.id || captureResponse.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+            const { captureId } = verifyPayPalOrderEvidence(payment, captureResponse.data, { requireCapture: true });
 
             await completePaymentTransaction(payment, captureId);
 
@@ -1199,7 +1262,16 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           // Check for ORDER_ALREADY_CAPTURED
           const alreadyCaptured = details.some(d => d.issue === 'ORDER_ALREADY_CAPTURED');
           if (alreadyCaptured) {
-            await completePaymentTransaction(payment, 'CAPTURED_' + Date.now());
+            const verifiedOrder = await axios.get(
+              `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}`,
+              { headers: { 'Authorization': `Bearer ${accessToken}` } }
+            );
+            const { captureId } = verifyPayPalOrderEvidence(
+              payment,
+              verifiedOrder.data,
+              { requireCapture: true }
+            );
+            await completePaymentTransaction(payment, captureId);
 
             console.log("RETURN SUCCESS PATH A");
             return res.json({
@@ -1226,38 +1298,11 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
             });
           }
 
-          // Handle COMPLIANCE_VIOLATION with fallback for development
+          // Compliance failures never fabricate capture evidence. Sandbox
+          // tests must complete a real provider capture.
           const complianceViolation = details.some(d => d.issue === 'COMPLIANCE_VIOLATION');
           if (complianceViolation) {
             console.log('⚠️ COMPLIANCE_VIOLATION detected');
-
-            // In development mode, simulate successful capture
-            if (process.env.NODE_ENV === 'development' || process.env.PAYPAL_MODE === 'sandbox') {
-              console.log('🔄 Development mode: Simulating successful capture...');
-
-              const testCaptureId = 'TEST_CAPTURE_' + Date.now();
-
-              // Update payment status to completed
-              await completePaymentTransaction(payment, testCaptureId);
-
-              console.log('✅ Payment simulated successfully for testing');
-              console.log("RETURN SUCCESS PATH B");
-
-              return res.json({
-                success: true,
-                message: 'Payment completed (test mode - compliance bypass)',
-                transaction: {
-                  id: payment.transactionId,
-                  orderId: payment.orderId,
-                  amount: payment.amount,
-                  status: 'completed',
-                  paymentMethod: 'paypal',
-                  captureId: testCaptureId
-                }
-              });
-            }
-
-            // In production, return the error
             return res.json({
               success: false,
               error: 'Payment cannot be processed due to compliance restrictions. Please use a different payment method.',
@@ -1345,8 +1390,12 @@ router.get('/status/:paymentId', async (req, res) => {
         );
 
         if (orderCheck.data?.status === 'COMPLETED') {
-          const captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
-          await completePaymentTransaction(payment, captureId || payment.paypalOrderId);
+          const { captureId } = verifyPayPalOrderEvidence(
+            payment,
+            orderCheck.data,
+            { requireCapture: true }
+          );
+          await completePaymentTransaction(payment, captureId);
 
           const refreshedPayment = await prisma.payment.findUnique({
             where: { id: payment.id }
@@ -1614,6 +1663,31 @@ const verifyPaymobTransactionHmac = (obj, receivedHmac, secret) => {
   }
 };
 
+export const verifyPaymobPaymentEvidence = (payment, obj) => {
+  const providerOrderId = obj?.order?.id == null ? '' : String(obj.order.id);
+  const merchantOrderId = obj?.order?.merchant_order_id == null
+    ? ''
+    : String(obj.order.merchant_order_id);
+
+  if (!payment.paymobOrderId || providerOrderId !== String(payment.paymobOrderId)) {
+    throw new Error('Paymob provider order identity mismatch');
+  }
+  if (merchantOrderId && merchantOrderId !== String(payment.orderId)) {
+    throw new Error('Paymob merchant order identity mismatch');
+  }
+
+  const expectedAmountMinor = toMinorUnits(payment.amount, payment.currency);
+  if (!Number.isSafeInteger(Number(obj.amount_cents)) || Number(obj.amount_cents) !== expectedAmountMinor) {
+    throw new Error('Paymob amount mismatch');
+  }
+
+  const callbackCurrency = typeof obj.currency === 'string' ? obj.currency.trim().toUpperCase() : '';
+  const expectedCurrency = typeof payment.currency === 'string' ? payment.currency.trim().toUpperCase() : '';
+  if (!callbackCurrency || callbackCurrency !== expectedCurrency) {
+    throw new Error('Paymob currency mismatch');
+  }
+};
+
 /**
  * Webhook Handler
  * POST /api/payments/webhook
@@ -1696,6 +1770,14 @@ router.post('/webhook', async (req, res) => {
       : ['failed', 'FAILED', 'declined', 'DECLINED'].includes(flatStatus);
 
     if (success) {
+      try {
+        if (!isPaymobTransactionCallback) throw new Error('Paymob transaction evidence is missing');
+        verifyPaymobPaymentEvidence(payment, obj);
+      } catch (verificationError) {
+        console.error(`❌ Paymob reconciliation rejected for Payment ${payment.id}:`, verificationError.message);
+        return res.status(409).json({ success: false, error: verificationError.message });
+      }
+
       // Fulfillment is claimed atomically and keyed to fulfillmentStatus
       // (never merely status='completed'), so re-delivered callbacks cannot
       // double-grant Premium or double-update a hire.

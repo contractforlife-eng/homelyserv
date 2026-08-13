@@ -6,6 +6,7 @@ import {
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { createOffer } from '../services/offerService.js';
+import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -194,9 +195,10 @@ export const respondToOffer = async (req, res) => {
 
     if (status === 'accepted') {
       const salary = offer.salary;
-      const commission = salary * RECRUITMENT_COMMISSION_RATE;
-      const vat = 0;
-      const total = commission;
+      const compensationCurrency = offer.compensationCurrency || 'EGP';
+      const commission = multiplyMoneyByDecimal(salary, RECRUITMENT_COMMISSION_RATE, compensationCurrency);
+      const vat = roundMoney(0, compensationCurrency);
+      const total = addMoney([commission, vat], compensationCurrency);
 
       const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -217,7 +219,7 @@ export const respondToOffer = async (req, res) => {
               workerId: offer.workerId,
               employerId: offer.employerId,
               offerId: offer.id,
-              compensationCurrency: offer.compensationCurrency || 'EGP',
+              compensationCurrency,
               agreedSalary: salary,
               commissionAmount: commission,
               vatAmount: vat,
