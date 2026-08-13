@@ -1,5 +1,5 @@
 // src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
@@ -9,6 +9,19 @@ import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
+
+const RATE_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+
+const isCanonicalCurrencyCode = (value) =>
+  typeof value === 'string' && /^[A-Z]{3}$/.test(value);
+
+const getInitialRateCurrency = (user) => {
+  if (isCanonicalCurrencyCode(user?.hourlyRateCurrency)) return user.hourlyRateCurrency;
+  if (user?.hourlyRate) return 'EGP';
+  if (isCanonicalCurrencyCode(user?.preferredCurrency)) return user.preferredCurrency;
+  if (isCanonicalCurrencyCode(user?.effectiveCurrency)) return user.effectiveCurrency;
+  return 'EGP';
+};
 
 import {
   User,
@@ -60,6 +73,7 @@ const WorkerProfile = () => {
     skills: [],
     experience: '',
     hourlyRate: '',
+    hourlyRateCurrency: 'EGP',
     profileImage: '',
     desiredJob: ''
   });
@@ -68,6 +82,8 @@ const WorkerProfile = () => {
   const [imagePreview, setImagePreview] = useState('');
   const [pendingImageFile, setPendingImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [rateDirty, setRateDirty] = useState(false);
+  const initializedUserIdRef = useRef(null);
   const [realStats, setRealStats] = useState({
     memberSince: '',
     rating: 0,
@@ -172,7 +188,11 @@ const WorkerProfile = () => {
       return;
     }
 
-    // Load profile data from authUser
+    const userId = String(authUser.id || authUser._id || authUser.email);
+    if (initializedUserIdRef.current === userId) return;
+
+    // Load profile data once per authenticated worker. Subsequent auth-store
+    // updates must not overwrite unsaved edits or mark a seeded currency dirty.
     setFormData({
       fullName: authUser.fullName || '',
       email: authUser.email || '',
@@ -181,10 +201,13 @@ const WorkerProfile = () => {
       bio: authUser.bio || 'Experienced professional in home services.',
       skills: authUser.skills || ['Child Care', 'First Aid', 'Communication'],
       experience: authUser.experience || '3 years',
-      hourlyRate: authUser.hourlyRate || '35',
+      hourlyRate: authUser.hourlyRate ?? '',
+      hourlyRateCurrency: getInitialRateCurrency(authUser),
       profileImage: authUser.profileImage || '',
       desiredJob: authUser.desiredJob || ''
     });
+    setRateDirty(false);
+    initializedUserIdRef.current = userId;
     setImagePreview(authUser.profileImage || '');
     loadRealStats(authUser.email, authUser.id);
   }, [authUser, isAuthenticated, authLoading, navigate]);
@@ -199,12 +222,14 @@ const WorkerProfile = () => {
         bio: authUser.bio || 'Experienced professional in home services.',
         skills: authUser.skills || ['Child Care', 'First Aid', 'Communication'],
         experience: authUser.experience || '3 years',
-        hourlyRate: authUser.hourlyRate || '35',
+        hourlyRate: authUser.hourlyRate ?? '',
+        hourlyRateCurrency: getInitialRateCurrency(authUser),
         profileImage: authUser.profileImage || '',
         desiredJob: authUser.desiredJob || ''
       });
       setImagePreview(authUser.profileImage || '');
       setPendingImageFile(null);
+      setRateDirty(false);
     }
     setIsEditing(!isEditing);
     setSaveSuccess(false);
@@ -212,6 +237,9 @@ const WorkerProfile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'hourlyRate' || name === 'hourlyRateCurrency') {
+      setRateDirty(true);
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -273,6 +301,34 @@ const WorkerProfile = () => {
         }
       }
 
+      if (rateDirty) {
+        const trimmedRate = formData.hourlyRate.trim();
+        const rateResponse = await api.patch('/api/workers/hourly-rate', {
+          hourlyRate: trimmedRate === '' ? null : trimmedRate,
+          hourlyRateCurrency: trimmedRate === '' ? null : formData.hourlyRateCurrency
+        });
+
+        if (!rateResponse.data.success) {
+          throw new Error(rateResponse.data.message || t('workerOwnProfile.updateFailed'));
+        }
+
+        const canonicalRate = rateResponse.data.hourlyRate;
+        const canonicalCurrency = rateResponse.data.hourlyRateCurrency;
+        setFormData(prev => ({
+          ...prev,
+          hourlyRate: canonicalRate ?? '',
+          hourlyRateCurrency: canonicalCurrency || prev.hourlyRateCurrency
+        }));
+        setRateDirty(false);
+        useAuthStore.setState(state => ({
+          user: state.user ? {
+            ...state.user,
+            hourlyRate: canonicalRate,
+            hourlyRateCurrency: canonicalCurrency
+          } : state.user
+        }));
+      }
+
       const response = await api.put(`/api/workers/profile/${userId}`, {
         fullName: formData.fullName,
         phone: formData.phone,
@@ -280,7 +336,6 @@ const WorkerProfile = () => {
         bio: formData.bio,
         skills: formData.skills,
         experience: formData.experience,
-        hourlyRate: formData.hourlyRate,
         profileImage: profileImageUrl,
         desiredJob: formData.desiredJob
       });
@@ -552,19 +607,38 @@ const WorkerProfile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.hourlyRate')}</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-400 dark:text-gray-500">EGP</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('workerProfile.hourlyRate')}
+                </label>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
                   <input
                     type="text"
                     name="hourlyRate"
                     value={formData.hourlyRate}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                    inputMode="decimal"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                       isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
                     }`}
                   />
+                  <select
+                    name="hourlyRateCurrency"
+                    value={formData.hourlyRateCurrency}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    aria-label={t('employerSettings.currency')}
+                    className={`px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                      isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                    }`}
+                  >
+                    {!RATE_CURRENCIES.includes(formData.hourlyRateCurrency) && (
+                      <option value={formData.hourlyRateCurrency}>{formData.hourlyRateCurrency}</option>
+                    )}
+                    {RATE_CURRENCIES.map(currency => (
+                      <option key={currency} value={currency}>{currency}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

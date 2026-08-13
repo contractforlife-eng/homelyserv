@@ -3,13 +3,104 @@ import express from 'express';
 import User from '../models/User.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireWorker } from '../middleware/auth.js';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { canContactWorker } from '../services/paymentAuthService.js';
 import { isUserPremium } from '../services/premiumService.js';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/jwtSecret.js';
 
 const router = express.Router();
+
+const STRICT_HOURLY_RATE_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
+
+const normalizeHourlyRate = (value) => {
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+
+  if (typeof value === 'number' && (!Number.isFinite(value) || !Number.isSafeInteger(Math.trunc(value)))) {
+    return null;
+  }
+
+  const input = typeof value === 'string' ? value : String(value);
+  if (!STRICT_HOURLY_RATE_PATTERN.test(input) || !/[1-9]/.test(input)) return null;
+
+  if (!input.includes('.')) return input;
+  return input.replace(/0+$/, '').replace(/\.$/, '');
+};
+
+// ============================================================
+// Update authenticated Worker's advertised hourly rate
+// ============================================================
+router.patch('/hourly-rate', requireWorker, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const hasRate = Object.prototype.hasOwnProperty.call(body, 'hourlyRate');
+    const hasCurrency = Object.prototype.hasOwnProperty.call(body, 'hourlyRateCurrency');
+
+    if (!hasRate || !hasCurrency) {
+      return res.status(400).json({
+        success: false,
+        message: 'hourlyRate and hourlyRateCurrency are required together'
+      });
+    }
+
+    const { hourlyRate, hourlyRateCurrency } = body;
+    const isClear = hourlyRate === null && hourlyRateCurrency === null;
+
+    if ((hourlyRate === null) !== (hourlyRateCurrency === null)) {
+      return res.status(400).json({
+        success: false,
+        message: 'hourlyRate and hourlyRateCurrency must be cleared together'
+      });
+    }
+
+    let normalizedRate = null;
+    let normalizedCurrency = null;
+
+    if (!isClear) {
+      normalizedRate = normalizeHourlyRate(hourlyRate);
+      if (!normalizedRate) {
+        return res.status(400).json({
+          success: false,
+          message: 'hourlyRate must be a positive decimal with at most 2 fractional digits'
+        });
+      }
+
+      normalizedCurrency = normalizeCurrencyCode(hourlyRateCurrency);
+      if (!normalizedCurrency || !isSupportedCurrency(normalizedCurrency)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Unsupported hourly rate currency'
+        });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { hourlyRate: normalizedRate, hourlyRateCurrency: normalizedCurrency } },
+      { new: true, runValidators: true }
+    ).select('hourlyRate hourlyRateCurrency');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      hourlyRate: user.hourlyRate,
+      hourlyRateCurrency: user.hourlyRateCurrency
+    });
+  } catch (error) {
+    console.error('Update hourly rate error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update hourly rate'
+    });
+  }
+});
 
 // ============================================================
 // Get Worker Profile
@@ -98,11 +189,13 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
       });
     }
 
-    const { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage, desiredJob } = req.body;
+    // Monetary fields are intentionally ignored here. Stale clients may still
+    // send them, but PATCH /hourly-rate is the only active rate write path.
+    const { fullName, phone, location, bio, skills, experience, profileImage, desiredJob } = req.body;
     
     const user = await User.findByIdAndUpdate(
       authenticatedUserId,
-      { fullName, phone, location, bio, skills, experience, hourlyRate, profileImage, desiredJob },
+      { fullName, phone, location, bio, skills, experience, profileImage, desiredJob },
       { new: true, runValidators: true }
     ).select('-password');
 
