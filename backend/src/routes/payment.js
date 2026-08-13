@@ -72,18 +72,18 @@ const getPaymobAuthToken = async () => {
   }
 };
 
-const createPaymobOrder = async (authToken, amount, orderId, customerData) => {
+const createPaymobOrder = async (authToken, providerAmount, orderId, customerData) => {
   try {
     const response = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
       auth_token: authToken,
       delivery_needed: false,
-      amount_cents: toMinorUnits(amount, 'EGP'),
+      amount_cents: toMinorUnits(providerAmount, 'EGP'),
       currency: 'EGP',
       merchant_order_id: orderId,
       items: [
         {
           name: customerData?.jobTitle || 'Service Payment',
-          amount_cents: toMinorUnits(amount, 'EGP'),
+          amount_cents: toMinorUnits(providerAmount, 'EGP'),
           description: customerData?.description || 'Payment for service',
           quantity: 1
         }
@@ -108,12 +108,12 @@ const createPaymobOrder = async (authToken, amount, orderId, customerData) => {
   }
 };
 
-const getPaymobPaymentKey = async (authToken, orderId, amount, customerData) => {
+const getPaymobPaymentKey = async (authToken, orderId, providerAmount, customerData) => {
   try {
     const integrationId = process.env.PAYMOB_INTEGRATION_ID;
     const response = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
       auth_token: authToken,
-      amount_cents: toMinorUnits(amount, 'EGP'),
+      amount_cents: toMinorUnits(providerAmount, 'EGP'),
       expiration: 3600,
       order_id: orderId,
       billing_data: {
@@ -187,6 +187,7 @@ const getPayPalAccessToken = async () => {
 const LEGACY_PAYPAL_EGP_TO_USD_NUMERATOR = 33;
 const LEGACY_PAYPAL_EGP_TO_USD_DENOMINATOR = 1000;
 const PAYPAL_PROVIDER_CURRENCY = 'USD';
+const PAYMOB_PROVIDER_CURRENCY = 'EGP';
 
 export const getExpectedPayPalCharge = (paymentAmount) => {
   const converted = multiplyMoneyByRatio(
@@ -199,6 +200,64 @@ export const getExpectedPayPalCharge = (paymentAmount) => {
     amount: formatMoneyDecimal(Math.max(converted, 1), PAYPAL_PROVIDER_CURRENCY),
     currency: PAYPAL_PROVIDER_CURRENCY,
   };
+};
+
+const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency = 'EGP') => {
+  if (paymentMethod === 'paypal') return getExpectedPayPalCharge(paymentAmount);
+  if (paymentMethod === 'paymob') {
+    const currency = String(paymentCurrency || '').trim().toUpperCase();
+    if (currency !== PAYMOB_PROVIDER_CURRENCY) {
+      throw new Error('Paymob provider currency is not supported');
+    }
+    return {
+      amount: formatMoneyDecimal(paymentAmount, PAYMOB_PROVIDER_CURRENCY),
+      currency: PAYMOB_PROVIDER_CURRENCY,
+    };
+  }
+  throw new Error('Unsupported payment method');
+};
+
+export const resolveExpectedProviderEvidence = (payment) => {
+  const hasAmount = payment?.providerAmount != null;
+  const hasCurrency = payment?.providerCurrency != null;
+  if (hasAmount !== hasCurrency) throw new Error('Incomplete persisted provider evidence');
+
+  if (hasAmount) {
+    const currency = String(payment.providerCurrency).trim().toUpperCase();
+    const allowedCurrency = payment.paymentMethod === 'paypal'
+      ? PAYPAL_PROVIDER_CURRENCY
+      : payment.paymentMethod === 'paymob'
+        ? PAYMOB_PROVIDER_CURRENCY
+        : null;
+    if (!allowedCurrency || currency !== allowedCurrency) {
+      throw new Error('Persisted provider currency is incompatible with payment method');
+    }
+    const amount = formatMoneyDecimal(payment.providerAmount, currency);
+    if (amount !== String(payment.providerAmount)) {
+      throw new Error('Persisted provider amount is not canonical');
+    }
+    return { amount, currency, persisted: true };
+  }
+
+  return {
+    ...getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency),
+    persisted: false,
+  };
+};
+
+const persistVerifiedLegacyProviderEvidence = async (payment, expected) => {
+  if (expected.persisted) return;
+  const updated = await prisma.payment.updateMany({
+    where: { id: payment.id, providerAmount: null, providerCurrency: null },
+    data: { providerAmount: expected.amount, providerCurrency: expected.currency },
+  });
+  if (updated.count === 0) {
+    const current = await prisma.payment.findUnique({ where: { id: payment.id } });
+    const currentExpected = resolveExpectedProviderEvidence(current);
+    if (currentExpected.amount !== expected.amount || currentExpected.currency !== expected.currency) {
+      throw new Error('Provider evidence changed during verification');
+    }
+  }
 };
 
 const assertPayPalMoney = (money, expected, label) => {
@@ -220,7 +279,7 @@ export const verifyPayPalOrderEvidence = (payment, providerOrder, { requireCaptu
   );
   if (!purchaseUnit) throw new Error('PayPal purchase-unit identity mismatch');
 
-  const expected = getExpectedPayPalCharge(payment.amount);
+  const expected = resolveExpectedProviderEvidence(payment);
   assertPayPalMoney(purchaseUnit.amount, expected, 'PayPal order');
 
   if (!requireCapture) return { expected, captureId: null };
@@ -232,9 +291,8 @@ export const verifyPayPalOrderEvidence = (payment, providerOrder, { requireCaptu
   return { expected, captureId: capture.id };
 };
 
-const createPayPalOrder = async (accessToken, amount, orderId, customerData) => {
+const createPayPalOrder = async (accessToken, expectedCharge, orderId, customerData, amount) => {
   try {
-    const expectedCharge = getExpectedPayPalCharge(amount);
     const finalAmount = expectedCharge.amount;
 
     console.log(`💰 Converting EGP ${amount} to ${expectedCharge.currency} ${finalAmount} (legacy rate: 0.033)`);
@@ -776,10 +834,16 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid canonical payment amount' });
     }
 
+    const selectedPaymentMethod = paymentMethod || 'paymob';
+    if (!['paymob', 'paypal'].includes(selectedPaymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Unsupported payment method' });
+    }
+    const providerEvidence = getExpectedProviderCharge(selectedPaymentMethod, amount, 'EGP');
+
     console.log('📤 Creating payment intent:', {
       amount,
       purpose,
-      paymentMethod,
+          paymentMethod: selectedPaymentMethod,
       userEmail,
       jobTitle,
       hireId,
@@ -810,14 +874,27 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 
     if (purpose === PAYMENT_PURPOSES.COMMISSION) {
       // Reuse a pending payment for the same hire across retries.
-      const existingPayment = await prisma.payment.findFirst({
+      let existingPayment = await prisma.payment.findFirst({
         where: {
           hireId: String(hireId),
+          paymentMethod: selectedPaymentMethod,
           status: {
             in: ['pending', 'processing']
           }
         }
       });
+
+      if (existingPayment?.providerAmount != null || existingPayment?.providerCurrency != null) {
+        const existingEvidence = resolveExpectedProviderEvidence(existingPayment);
+        if (
+          existingEvidence.amount !== providerEvidence.amount ||
+          existingEvidence.currency !== providerEvidence.currency
+        ) {
+          // Preserve immutable evidence on the old attempt. A changed expected
+          // charge gets a fresh Payment rather than relabeling provider facts.
+          existingPayment = null;
+        }
+      }
 
       if (existingPayment) {
         console.log('⚠️ Payment already exists for hire:', hireId, 'Updating:', existingPayment.id);
@@ -829,7 +906,13 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             transactionId: transactionId,
             amount: Number(amount),
             currency: 'EGP',
-            paymentMethod: paymentMethod || 'paymob',
+            paymentMethod: selectedPaymentMethod,
+            ...(existingPayment.providerAmount == null && existingPayment.providerCurrency == null
+              ? {
+                  providerAmount: providerEvidence.amount,
+                  providerCurrency: providerEvidence.currency,
+                }
+              : {}),
             purpose: PAYMENT_PURPOSES.COMMISSION,
             userEmail: userEmail || existingPayment.userEmail,
             workerId: workerId || existingPayment.workerId,
@@ -859,7 +942,9 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             transactionId,
             amount: Number(amount),
             currency: 'EGP',
-            paymentMethod: paymentMethod,
+            paymentMethod: selectedPaymentMethod,
+            providerAmount: providerEvidence.amount,
+            providerCurrency: providerEvidence.currency,
             purpose: PAYMENT_PURPOSES.COMMISSION,
             status: 'pending',
             userEmail: userEmail || 'employer@example.com',
@@ -891,7 +976,9 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           transactionId,
           amount: Number(amount),
           currency: 'EGP',
-          paymentMethod: paymentMethod,
+          paymentMethod: selectedPaymentMethod,
+          providerAmount: providerEvidence.amount,
+          providerCurrency: providerEvidence.currency,
           purpose: PAYMENT_PURPOSES.SUBSCRIPTION,
           status: 'pending',
           userEmail: userEmail || 'employer@example.com',
@@ -917,12 +1004,12 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 
     let result;
 
-    if (paymentMethod === 'paymob' || !paymentMethod) {
+    if (selectedPaymentMethod === 'paymob') {
       try {
         const authToken = await getPaymobAuthToken();
-        const paymobOrder = await createPaymobOrder(authToken, payment.amount, orderId, customerData);
+        const paymobOrder = await createPaymobOrder(authToken, payment.providerAmount, orderId, customerData);
         const paymobOrderId = paymobOrder.id;
-        const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, payment.amount, customerData);
+        const paymentKey = await getPaymobPaymentKey(authToken, paymobOrderId, payment.providerAmount, customerData);
 
         await prisma.payment.update({
           where: { id: payment.id },
@@ -964,10 +1051,16 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         });
       }
 
-    } else if (paymentMethod === 'paypal') {
+    } else if (selectedPaymentMethod === 'paypal') {
       try {
         const accessToken = await getPayPalAccessToken();
-        const paypalOrder = await createPayPalOrder(accessToken, payment.amount, orderId, customerData);
+        const paypalOrder = await createPayPalOrder(
+          accessToken,
+          { amount: payment.providerAmount, currency: payment.providerCurrency },
+          orderId,
+          customerData,
+          payment.amount
+        );
         const paypalOrderId = paypalOrder.id;
 
         const approvalLink = paypalOrder.links.find(link => link.rel === 'approve');
@@ -1017,11 +1110,6 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         });
       }
 
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Unsupported payment method'
-      });
     }
 
     res.json(result);
@@ -1164,7 +1252,8 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
         // If order is already completed, update and return
         if (orderCheck.data?.status === 'COMPLETED') {
-          const { captureId } = verifyPayPalOrderEvidence(payment, orderCheck.data, { requireCapture: true });
+          const { captureId, expected } = verifyPayPalOrderEvidence(payment, orderCheck.data, { requireCapture: true });
+          await persistVerifiedLegacyProviderEvidence(payment, expected);
 
           // Atomic, idempotent completion — side effects routed by PURPOSE
           // (SUBSCRIPTION grants Premium; COMMISSION updates the hire).
@@ -1203,7 +1292,8 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
           console.log(`📥 PayPal capture response status: ${captureResponse.data?.status}`);
 
           if (captureResponse.data && captureResponse.data.status === 'COMPLETED') {
-            const { captureId } = verifyPayPalOrderEvidence(payment, captureResponse.data, { requireCapture: true });
+            const { captureId, expected } = verifyPayPalOrderEvidence(payment, captureResponse.data, { requireCapture: true });
+            await persistVerifiedLegacyProviderEvidence(payment, expected);
 
             await completePaymentTransaction(payment, captureId);
 
@@ -1266,11 +1356,12 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
               `${baseUrl}/v2/checkout/orders/${payment.paypalOrderId}`,
               { headers: { 'Authorization': `Bearer ${accessToken}` } }
             );
-            const { captureId } = verifyPayPalOrderEvidence(
+            const { captureId, expected } = verifyPayPalOrderEvidence(
               payment,
               verifiedOrder.data,
               { requireCapture: true }
             );
+            await persistVerifiedLegacyProviderEvidence(payment, expected);
             await completePaymentTransaction(payment, captureId);
 
             console.log("RETURN SUCCESS PATH A");
@@ -1390,11 +1481,12 @@ router.get('/status/:paymentId', async (req, res) => {
         );
 
         if (orderCheck.data?.status === 'COMPLETED') {
-          const { captureId } = verifyPayPalOrderEvidence(
+          const { captureId, expected } = verifyPayPalOrderEvidence(
             payment,
             orderCheck.data,
             { requireCapture: true }
           );
+          await persistVerifiedLegacyProviderEvidence(payment, expected);
           await completePaymentTransaction(payment, captureId);
 
           const refreshedPayment = await prisma.payment.findUnique({
@@ -1676,16 +1768,17 @@ export const verifyPaymobPaymentEvidence = (payment, obj) => {
     throw new Error('Paymob merchant order identity mismatch');
   }
 
-  const expectedAmountMinor = toMinorUnits(payment.amount, payment.currency);
+  const expected = resolveExpectedProviderEvidence(payment);
+  const expectedAmountMinor = toMinorUnits(expected.amount, expected.currency);
   if (!Number.isSafeInteger(Number(obj.amount_cents)) || Number(obj.amount_cents) !== expectedAmountMinor) {
     throw new Error('Paymob amount mismatch');
   }
 
   const callbackCurrency = typeof obj.currency === 'string' ? obj.currency.trim().toUpperCase() : '';
-  const expectedCurrency = typeof payment.currency === 'string' ? payment.currency.trim().toUpperCase() : '';
-  if (!callbackCurrency || callbackCurrency !== expectedCurrency) {
+  if (!callbackCurrency || callbackCurrency !== expected.currency) {
     throw new Error('Paymob currency mismatch');
   }
+  return expected;
 };
 
 /**
@@ -1772,7 +1865,8 @@ router.post('/webhook', async (req, res) => {
     if (success) {
       try {
         if (!isPaymobTransactionCallback) throw new Error('Paymob transaction evidence is missing');
-        verifyPaymobPaymentEvidence(payment, obj);
+        const expected = verifyPaymobPaymentEvidence(payment, obj);
+        await persistVerifiedLegacyProviderEvidence(payment, expected);
       } catch (verificationError) {
         console.error(`❌ Paymob reconciliation rejected for Payment ${payment.id}:`, verificationError.message);
         return res.status(409).json({ success: false, error: verificationError.message });
