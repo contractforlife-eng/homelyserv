@@ -154,6 +154,8 @@ model Payment {
   transactionId       String    @unique @map("transactionId")
   amount              Float
   currency            String    @default("EGP") @map("currency")
+  providerAmount      String?
+  providerCurrency    String?
   paymentMethod       String    @default("paymob") @map("paymentMethod")
   status              String    @default("pending")
   userEmail           String?   @map("userEmail")
