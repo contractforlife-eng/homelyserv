@@ -47,8 +47,6 @@ export const authenticate = async (req, res, next) => {
       });
     }
     
-    // Log token details for debugging (first 20 chars only)
-    
     // Resolve the signing secret first (outside the JWT-error try/catch
     // below) so a missing/weak JWT_SECRET is reported as a 500 server
     // configuration error, not a misleading 401 "invalid token".
@@ -57,8 +55,6 @@ export const authenticate = async (req, res, next) => {
     // Verify the token
     try {
       const decoded = jwt.verify(token, jwtSecret);
-      console.log(`✅ Token verified for user: ${decoded.userId || decoded.email || 'unknown'}`);
-      
       // Attach user info to request
       req.userId = decoded.userId || decoded.id || decoded.email;
       req.userRole = decoded.role || decoded.userRole;

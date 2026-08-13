@@ -25,6 +25,11 @@ import {
   toMinorUnits,
 } from '../utils/money.js';
 import { classifyPayPalCaptureError } from '../utils/paypalCaptureError.js';
+import {
+  PayPalEvidenceError,
+  verifyPayPalApprovalEvidence,
+  verifyPayPalCaptureEvidence,
+} from '../utils/paypalCaptureEvidence.js';
 
 const router = express.Router();
 
@@ -330,35 +335,20 @@ const persistVerifiedLegacyProviderEvidence = async (payment, expected) => {
   }
 };
 
-const assertPayPalMoney = (money, expected, label) => {
-  if (
-    money?.currency_code !== expected.currency ||
-    String(money?.value ?? '') !== expected.amount
-  ) {
-    throw new Error(`${label} amount/currency mismatch`);
-  }
-};
-
 export const verifyPayPalOrderEvidence = (payment, providerOrder, { requireCapture = false } = {}) => {
-  if (!payment?.paypalOrderId || providerOrder?.id !== payment.paypalOrderId) {
-    throw new Error('PayPal order identity mismatch');
-  }
-
-  const purchaseUnit = providerOrder.purchase_units?.find(
-    (unit) => unit.reference_id === payment.orderId
-  );
-  if (!purchaseUnit) throw new Error('PayPal purchase-unit identity mismatch');
-
   const expected = resolveExpectedProviderEvidence(payment);
-  assertPayPalMoney(purchaseUnit.amount, expected, 'PayPal order');
-
-  if (!requireCapture) return { expected, captureId: null };
-  if (providerOrder.status !== 'COMPLETED') throw new Error('PayPal order is not completed');
-
-  const capture = purchaseUnit.payments?.captures?.find((item) => item.status === 'COMPLETED');
-  if (!capture?.id) throw new Error('PayPal completed capture evidence is missing');
-  assertPayPalMoney(capture.amount, expected, 'PayPal capture');
-  return { expected, captureId: capture.id };
+  const query = {
+    providerOrder,
+    orderId: payment?.paypalOrderId,
+    purchaseUnitReference: payment?.orderId,
+    expected,
+  };
+  if (!requireCapture) {
+    verifyPayPalApprovalEvidence(query);
+    return { expected, captureId: null };
+  }
+  const evidence = verifyPayPalCaptureEvidence(query);
+  return { expected, captureId: evidence.captureId, evidence };
 };
 
 const createPayPalOrder = async (accessToken, expectedCharge, orderId, customerData) => {
@@ -1426,6 +1416,20 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
 
       } catch (captureError) {
         console.error('❌ PayPal capture API error:', captureError.response?.data || captureError.message);
+
+        // A deterministic local evidence contradiction is not a provider
+        // outage. Stop this browser flow without altering the immutable
+        // expected evidence or pretending that capture/fulfillment succeeded.
+        if (captureError instanceof PayPalEvidenceError) {
+          return res.status(409).json({
+            success: false,
+            retryable: false,
+            category: 'EVIDENCE_MISMATCH',
+            code: captureError.code,
+            message: 'PayPal payment evidence could not be verified.',
+            reviewRequired: true,
+          });
+        }
 
         const errorData = captureError.response?.data;
 
