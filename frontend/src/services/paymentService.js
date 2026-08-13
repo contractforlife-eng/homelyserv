@@ -93,14 +93,6 @@ export const processPayPalWebhook = async (webhookData) => {
 
 export const saveTransaction = (transaction) => {
   try {
-    api.post('/api/payments/complete-payment', {
-      orderId: transaction.orderId,
-      transactionId: transaction.id,
-      userId: transaction.userId
-    }).catch(err => {
-      console.warn('Backend save failed, using localStorage:', err);
-    });
-
     const user = useAuthStore.getState().user;
     if (user) {
       try {
@@ -272,11 +264,6 @@ export const isPaymentPending = (transaction) => {
          transaction?.status === 'processing' || transaction?.status === 'PROCESSING';
 };
 
-export const completePayment = async (orderId, userId) => {
-  const response = await api.post('/api/payments/complete-payment', { orderId, userId });
-  return response.data;
-};
-
 export const getPaymentStatus = async (paymentId) => {
   const response = await api.get(`/api/payments/status/${paymentId}`);
   return response.data;
@@ -302,7 +289,6 @@ export const verifyPayment = async (transactionId, orderId) => {
 
 const paymentService = {
   createPaymentIntent,
-  completePayment,
   getPaymentStatus,
   getUserPayments,
   verifyPayment,

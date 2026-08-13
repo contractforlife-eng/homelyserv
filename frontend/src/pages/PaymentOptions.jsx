@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, completePayment, fetchSubscriptionStatus } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import {
@@ -243,13 +243,6 @@ const PaymentOptions = () => {
       // HIRE / COMMISSION PAYMENT FLOW (hireId present) — unchanged
       // ============================================================
       paymentProcessedRef.current = true;
-
-      // Notify backend to update Hire & Offer payment status
-      try {
-        await completePayment(paymentData?.orderId || paymentData?.paymentId || paymentData?.transactionId, authUser?.id);
-      } catch (err) {
-        console.warn('Backend complete-payment call failed:', err);
-      }
 
       // NOTE: The backend payment fulfillment already updates Hire/Offer state.
       // Do NOT call updateOfferStatus() here — it is a redundant frontend state
