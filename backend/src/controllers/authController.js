@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { uploadFromBuffer } from '../utils/cloudinary.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
+import { enrichUserResponse } from '../utils/userResponse.js';
 import {
   isSupportedCurrency,
   normalizeCurrencyCode,
@@ -206,7 +207,7 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       token,
-      user: userData
+      user: enrichUserResponse(userData)
     });
 
   } catch (error) {
@@ -370,7 +371,7 @@ export const login = async (req, res) => {
       success: true,
       token,
       mustChangePassword: !!user.mustChangePassword,
-      user: userData
+      user: enrichUserResponse(userData)
     });
 
   } catch (error) {
@@ -403,7 +404,7 @@ export const getMe = async (req, res) => {
 
     res.json({
       success: true,
-      user: userData
+      user: enrichUserResponse(userData)
     });
   } catch (error) {
     console.error('GetMe error:', error);
@@ -454,7 +455,7 @@ export const updateProfile = async (req, res) => {
 
     res.json({
       success: true,
-      user: userData
+      user: enrichUserResponse(userData)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -621,7 +622,7 @@ export const verifyToken = async (req, res) => {
 
     res.json({
       success: true,
-      user: userData
+      user: enrichUserResponse(userData)
     });
 
   } catch (error) {
@@ -824,7 +825,7 @@ export const uploadProfilePhoto = async (req, res) => {
     res.json({
       success: true,
       message: 'Photo uploaded successfully',
-      user: userData
+      user: enrichUserResponse(userData)
     });
 
   } catch (error) {
@@ -890,7 +891,7 @@ export const updateSettings = async (req, res) => {
     res.json({
       success: true,
       message: 'Settings saved successfully',
-      user: userData
+      user: enrichUserResponse(userData)
     });
   } catch (error) {
     console.error('Update settings error:', error);

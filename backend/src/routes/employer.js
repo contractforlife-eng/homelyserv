@@ -1,6 +1,7 @@
 // backend/src/routes/employers.js
 import express from 'express';
 import User from '../models/User.js';
+import { enrichUserResponse } from '../utils/userResponse.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { hasActiveSubscription, recordSearch, getSearchLimitStatus } from '../services/paymentAuthService.js';
@@ -294,7 +295,7 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
     const userObj = user.toObject ? user.toObject() : { ...user };
     userObj.id = userObj._id;
 
-    res.json({ success: true, user: userObj });
+    res.json({ success: true, user: enrichUserResponse(userObj) });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({

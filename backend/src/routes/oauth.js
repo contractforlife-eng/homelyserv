@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getJwtSecret } from '../config/jwtSecret.js';
+import { enrichUserResponse } from '../utils/userResponse.js';
 
 const router = express.Router();
 
@@ -140,7 +141,7 @@ router.post('/social-login', async (req, res) => {
     res.json({
       success: true,
       token,
-      user: userData
+      user: enrichUserResponse(userData)
     });
 
   } catch (error) {
