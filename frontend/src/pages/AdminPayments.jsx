@@ -2,6 +2,7 @@
 // Fetches real payment data from GET /api/admin/payments.
 // No localStorage. No fake data.
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
@@ -28,6 +29,7 @@ import {
 // MAIN ADMIN PAYMENTS COMPONENT
 // ============================================================
 const AdminPayments = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -41,6 +43,7 @@ const AdminPayments = () => {
   const [error, setError] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [completedRevenueByCurrency, setCompletedRevenueByCurrency] = useState([]);
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
@@ -60,6 +63,7 @@ const AdminPayments = () => {
         const fetched = response.data.payments || [];
         setPayments(fetched);
         setFilteredPayments(fetched);
+        setCompletedRevenueByCurrency(response.data.completedRevenueByCurrency || []);
       } else {
         setError(response.data?.message || 'Failed to load payments');
       }
@@ -68,6 +72,7 @@ const AdminPayments = () => {
       setError(err.response?.data?.message || 'Failed to load payments');
       setPayments([]);
       setFilteredPayments([]);
+      setCompletedRevenueByCurrency([]);
     } finally {
       setLoading(false);
     }
@@ -167,7 +172,7 @@ const AdminPayments = () => {
     if (!Number.isFinite(numericAmount)) return '—';
     const currency = typeof payment?.currency === 'string' && /^[A-Z]{3}$/i.test(payment.currency.trim())
       ? payment.currency.trim().toUpperCase()
-      : 'EGP';
+      : 'UNKNOWN';
     return `${numericAmount.toLocaleString()} ${currency}`;
   };
 
@@ -180,13 +185,9 @@ const AdminPayments = () => {
     failed: payments.filter((p) => p.status === 'failed').length,
   };
 
-  const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const paymentCurrencies = new Set(payments.map(payment => (
-    typeof payment.currency === 'string' && /^[A-Z]{3}$/i.test(payment.currency.trim())
-      ? payment.currency.trim().toUpperCase()
-      : 'EGP'
-  )));
-  const totalCurrency = paymentCurrencies.size === 1 ? [...paymentCurrencies][0] : null;
+  const formattedCompletedRevenue = completedRevenueByCurrency.length
+    ? completedRevenueByCurrency.map((entry) => formatCurrency(entry.amount, entry)).join(' · ')
+    : '—';
 
   // ============================================================
   // RENDER
@@ -266,12 +267,12 @@ const AdminPayments = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminFinancial.grossCompletedByCurrency')}</p>
                 <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
                   <DollarSign size={20} className="text-yellow-400" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalCurrency ? formatCurrency(totalAmount, { currency: totalCurrency }) : '—'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{formattedCompletedRevenue}</p>
             </div>
           </div>
         )}
@@ -442,8 +443,17 @@ const AdminPayments = () => {
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Amount</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminFinancial.transactionAmount')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(selectedPayment.amount, selectedPayment)}</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminFinancial.providerCharge')}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    {selectedPayment.providerAmount && selectedPayment.providerCurrency
+                      ? formatCurrency(selectedPayment.providerAmount, { currency: selectedPayment.providerCurrency })
+                      : '—'}
+                  </p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">

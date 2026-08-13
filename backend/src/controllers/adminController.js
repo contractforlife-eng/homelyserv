@@ -10,6 +10,8 @@
 // No fake numbers. All data comes from the database.
 // ============================================================
 import prisma from '../lib/prisma.js';
+import { addMoney } from '../utils/money.js';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 
 // ============================================================
 // HELPERS
@@ -29,19 +31,50 @@ const groupByMonth = (dates) => {
     .sort((a, b) => a.label.localeCompare(b.label));
 };
 
-// Group an array of { amount, createdAt } by month, summing amounts.
-const sumByMonth = (items) => {
-  const map = {};
-  for (const item of items) {
-    const date = new Date(item.createdAt);
-    if (isNaN(date.getTime())) continue;
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    map[key] = (map[key] || 0) + (item.amount || 0);
+const currencyOrder = ['EGP', 'USD', 'EUR', 'GBP'];
+
+export const aggregateAdminMoney = (records, dimensions = []) => {
+  const groups = new Map();
+  let rejectedCount = 0;
+  for (const record of records || []) {
+    const currency = normalizeCurrencyCode(record?.currency);
+    if (!currency || !isSupportedCurrency(currency)) {
+      rejectedCount += 1;
+      continue;
+    }
+    const values = dimensions.map((dimension) => String(record?.[dimension] ?? 'unknown'));
+    const key = JSON.stringify([currency, ...values]);
+    const group = groups.get(key) || { currency, values, amounts: [] };
+    group.amounts.push(record.amount);
+    groups.set(key, group);
   }
-  return Object.entries(map)
-    .map(([label, total]) => ({ label, total }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+  const totals = [...groups.values()].map((group) => {
+    const result = { currency: group.currency, amount: addMoney(group.amounts, group.currency) };
+    dimensions.forEach((dimension, index) => { result[dimension] = group.values[index]; });
+    return result;
+  });
+  totals.sort((a, b) => {
+    for (const dimension of dimensions) {
+      const comparison = String(a[dimension]).localeCompare(String(b[dimension]));
+      if (comparison !== 0) return comparison;
+    }
+    const aIndex = currencyOrder.indexOf(a.currency);
+    const bIndex = currencyOrder.indexOf(b.currency);
+    return (aIndex < 0 ? currencyOrder.length : aIndex) - (bIndex < 0 ? currencyOrder.length : bIndex)
+      || a.currency.localeCompare(b.currency);
+  });
+  return { totals, rejectedCount };
 };
+
+const withPaymentMonth = (payments) => (payments || []).map((payment) => {
+  const date = new Date(payment.createdAt);
+  return {
+    ...payment,
+    month: Number.isNaN(date.getTime())
+      ? 'unknown'
+      : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+  };
+});
 
 // ============================================================
 // GET /api/admin/analytics
@@ -62,9 +95,7 @@ export const getAnalytics = async (req, res) => {
       recentUsers,
       totalUsers,
       // ---- Payments (completed) ----
-      recentCompletedPayments,
-      revenueByMethodAgg,
-      totalRevenueAgg,
+      completedPayments,
       // ---- Hires ----
       totalHires,
       recentHires,
@@ -75,7 +106,6 @@ export const getAnalytics = async (req, res) => {
       complaintsByStatusAgg,
       // ---- Subscriptions ----
       activePremiumUsers,
-      subscriptionRevenueAgg,
       subscriptionGrants,
       legacySubscriptionProjections,
       // ---- Worker categories ----
@@ -88,18 +118,10 @@ export const getAnalytics = async (req, res) => {
       prisma.user.count(),
 
       prisma.payment.findMany({
-        where: { status: 'completed', createdAt: { gte: twelveMonthsAgo } },
-        select: { amount: true, createdAt: true },
-      }),
-      prisma.payment.groupBy({
-        by: ['paymentMethod'],
         where: { status: 'completed' },
-        _sum: { amount: true },
-        _count: { paymentMethod: true },
-      }),
-      prisma.payment.aggregate({
-        where: { status: 'completed' },
-        _sum: { amount: true },
+        select: {
+          amount: true, currency: true, paymentMethod: true, purpose: true, createdAt: true,
+        },
       }),
 
       prisma.hire.count(),
@@ -127,11 +149,6 @@ export const getAnalytics = async (req, res) => {
         select: { userId: true },
         distinct: ['userId'],
       }),
-      prisma.payment.aggregate({
-        where: { purpose: 'SUBSCRIPTION', status: 'completed', currency: 'EGP' },
-        _sum: { amount: true },
-        _count: { id: true },
-      }),
       prisma.subscriptionGrant.groupBy({ by: ['plan'], _count: { _all: true } }),
       prisma.subscription.count({
         where: { plan: { notIn: ['weekly', 'monthly', 'legacy_monthly'] } },
@@ -150,16 +167,26 @@ export const getAnalytics = async (req, res) => {
     // ============================================================
     // REVENUE OVERVIEW
     // ============================================================
-    const revenueByMethod = (revenueByMethodAgg || []).map((item) => ({
-      method: item.paymentMethod || 'unknown',
-      total: item._sum.amount || 0,
-      count: item._count.paymentMethod || 0,
-    }));
+    const revenueByCurrency = aggregateAdminMoney(completedPayments);
+    const revenueByMethod = aggregateAdminMoney(completedPayments, ['paymentMethod']);
+    const recentCompletedPayments = completedPayments.filter((payment) => payment.createdAt >= twelveMonthsAgo);
+    const revenueByMonth = aggregateAdminMoney(withPaymentMonth(recentCompletedPayments), ['month']);
+    const commissionRevenue = aggregateAdminMoney(
+      completedPayments.filter((payment) => payment.purpose === 'COMMISSION')
+    );
+    const completedSubscriptionPayments = completedPayments.filter((payment) => (
+      payment.purpose === 'SUBSCRIPTION' && payment.currency === 'EGP'
+    ));
+    const subscriptionRevenue = aggregateAdminMoney(completedSubscriptionPayments).totals
+      .find((entry) => entry.currency === 'EGP')?.amount || 0;
 
     const revenueOverview = {
-      total: totalRevenueAgg._sum.amount || 0,
-      byMonth: sumByMonth(recentCompletedPayments),
-      byMethod: revenueByMethod,
+      byCurrency: revenueByCurrency.totals,
+      byMonth: revenueByMonth.totals,
+      byMethod: revenueByMethod.totals,
+      commissionByCurrency: commissionRevenue.totals,
+      rejectedCurrencyRecords: revenueByCurrency.rejectedCount,
+      semantic: 'gross_completed_payment_book_revenue_by_currency',
     };
 
     // ============================================================
@@ -203,10 +230,10 @@ export const getAnalytics = async (req, res) => {
     const subscriptionStatistics = {
       activePremiumUsers: activePremiumUsers.length,
       active: activePremiumUsers.length, // Backward-compatible AdminReports contract.
-      completedPurchases: subscriptionRevenueAgg._count.id || 0,
+      completedPurchases: completedSubscriptionPayments.length,
       byPlan: grantsByPlan,
       legacyUntrackedProjections: legacySubscriptionProjections,
-      revenue: subscriptionRevenueAgg._sum.amount || 0,
+      revenue: subscriptionRevenue,
       currency: 'EGP',
       revenueSemantic: 'gross_completed_subscription_book_revenue',
       planBreakdownSemantic: 'subscription_grants_by_plan',

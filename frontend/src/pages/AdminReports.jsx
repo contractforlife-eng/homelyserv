@@ -2,6 +2,7 @@
 // Fetches real data from GET /api/admin/analytics.
 // No fake data. Supports dark/light mode and responsive charts.
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
@@ -30,7 +31,10 @@ import {
 // ============================================================
 // FORMAT HELPERS
 // ============================================================
-const formatCurrency = (amount) => `${Number(amount || 0).toLocaleString()} EGP`;
+const formatCurrency = (amount, currency) => `${Number(amount || 0).toLocaleString()} ${currency || '—'}`;
+const formatCurrencyTotals = (totals) => (totals?.length
+  ? totals.map((item) => formatCurrency(item.amount, item.currency)).join(' · ')
+  : '—');
 
 const colorPalette = [
   'bg-yellow-500',
@@ -47,6 +51,7 @@ const colorPalette = [
 // MAIN ADMIN REPORTS COMPONENT
 // ============================================================
 const AdminReports = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -174,7 +179,7 @@ const AdminReports = () => {
     );
   };
 
-  const renderKeyValueList = (data, valueKey = 'total', labelKey = 'method') => {
+  const renderKeyValueList = (data, valueKey = 'amount', labelKey = 'method') => {
     if (!data || data.length === 0) {
       return <p className="text-sm text-gray-500 dark:text-gray-400">No data</p>;
     }
@@ -182,9 +187,9 @@ const AdminReports = () => {
       <div className="space-y-2">
         {data.map((item, i) => (
           <div key={i} className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-300 capitalize">{item[labelKey]}</span>
+            <span className="text-gray-600 dark:text-gray-300 capitalize">{item[labelKey]} · {item.currency}</span>
             <span className="font-semibold text-gray-900 dark:text-white">
-              {valueKey === 'total' ? formatCurrency(item[valueKey]) : item[valueKey]}
+              {formatCurrency(item[valueKey], item.currency)}
             </span>
           </div>
         ))}
@@ -228,7 +233,7 @@ const AdminReports = () => {
 
   const overviewStats = [
     { label: t.totalUsers, value: a.totalUsers ?? 0, icon: Users, color: 'blue' },
-    { label: t.totalRevenue, value: formatCurrency(a.revenueOverview?.total ?? 0), icon: DollarSign, color: 'yellow' },
+    { label: i18nT('adminFinancial.grossCompletedByCurrency'), value: formatCurrencyTotals(a.revenueOverview?.byCurrency), icon: DollarSign, color: 'yellow' },
     { label: t.totalHires, value: a.hiresStatistics?.total ?? 0, icon: Briefcase, color: 'teal' },
     { label: t.totalComplaints, value: a.complaintsStatistics?.total ?? 0, icon: AlertTriangle, color: 'red' },
     { label: t.activeSubs, value: a.subscriptionStatistics?.active ?? 0, icon: Crown, color: 'purple' },
@@ -339,7 +344,7 @@ const AdminReports = () => {
                   <CreditCard size={18} className="text-green-600" />
                   {t.revenueOverview} — {t.byMethod}
                 </h3>
-                {renderKeyValueList(a.revenueOverview?.byMethod || [], 'total', 'method')}
+                {renderKeyValueList(a.revenueOverview?.byMethod || [], 'amount', 'paymentMethod')}
               </div>
             </div>
           </div>
@@ -394,18 +399,18 @@ const AdminReports = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <DollarSign size={18} className="text-yellow-600" />
-                  {t.totalRevenue}
+                  {i18nT('adminFinancial.grossCompletedByCurrency')}
                 </h3>
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(a.revenueOverview?.total ?? 0)}</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white text-right">{formatCurrencyTotals(a.revenueOverview?.byCurrency)}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMonth} (12 months)</p>
-                  {renderBarChart(a.revenueOverview?.byMonth || [], 'total', 'label')}
+                  {renderKeyValueList(a.revenueOverview?.byMonth || [], 'amount', 'month')}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMethod}</p>
-                  {renderKeyValueList(a.revenueOverview?.byMethod || [], 'total', 'method')}
+                  {renderKeyValueList(a.revenueOverview?.byMethod || [], 'amount', 'paymentMethod')}
                 </div>
               </div>
             </div>

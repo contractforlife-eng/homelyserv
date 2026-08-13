@@ -15,6 +15,7 @@
 // ============================================================
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
+import { aggregateAdminMoney } from './adminController.js';
 
 // Helper: check if a string is a valid MongoDB ObjectId (24 hex chars).
 // Legacy records may contain non-ObjectId IDs (e.g. "user_1784367005840")
@@ -93,7 +94,7 @@ export const getCommandCenter = async (req, res) => {
       totalPayments,
       verifiedPayments,
       pendingPayments,
-      totalRevenueAgg,
+      completedPaymentMoney,
       totalHires,
       activeHires,
       completedHires,
@@ -131,9 +132,9 @@ export const getCommandCenter = async (req, res) => {
       prisma.payment.count({
         where: { status: { in: ['pending', 'processing', 'pending_verification'] } },
       }),
-      prisma.payment.aggregate({
+      prisma.payment.findMany({
         where: { status: 'completed' },
-        _sum: { amount: true },
+        select: { amount: true, currency: true },
       }),
 
       // ---- Hire stats ----
@@ -318,7 +319,8 @@ export const getCommandCenter = async (req, res) => {
         totalPayments,
         verifiedPayments,
         pendingPayments,
-        totalRevenue: totalRevenueAgg._sum.amount || 0,
+        revenueByCurrency: aggregateAdminMoney(completedPaymentMoney).totals,
+        revenueSemantic: 'gross_completed_payment_book_revenue_by_currency',
         // Hires
         totalHires,
         activeHires,

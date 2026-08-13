@@ -1,5 +1,6 @@
 // src/pages/AdminHires.jsx - Admin hiring management dashboard (CRM)
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -82,6 +83,7 @@ const normalizePayment = (paymentStatus) => {
 };
 
 const AdminHires = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -355,6 +357,10 @@ const AdminHires = () => {
     }
 
     const commission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
+    const compareCommissionWithinCurrency = (a, b, direction) => {
+      const currencyComparison = resolveCompensationCurrency(a).localeCompare(resolveCompensationCurrency(b));
+      return currencyComparison || direction * (commission(a) - commission(b));
+    };
     const date = (h) => new Date(h.createdAt || 0).getTime();
 
     switch (sortBy) {
@@ -362,10 +368,10 @@ const AdminHires = () => {
         list.sort((a, b) => date(a) - date(b));
         break;
       case 'highestCommission':
-        list.sort((a, b) => commission(b) - commission(a));
+        list.sort((a, b) => compareCommissionWithinCurrency(a, b, -1));
         break;
       case 'lowestCommission':
-        list.sort((a, b) => commission(a) - commission(b));
+        list.sort((a, b) => compareCommissionWithinCurrency(a, b, 1));
         break;
       case 'newest':
       default:
@@ -380,13 +386,25 @@ const AdminHires = () => {
   // STATISTICS (all from real hire data)
   // ============================================================
   const stats = useMemo(() => {
-    const commission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
     const isPaid = (h) => normalizePayment(h.paymentStatus) === 'paid';
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const singleCurrency = (records) => {
-      const currencies = new Set(records.map(resolveCompensationCurrency));
-      return currencies.size === 1 ? [...currencies][0] : null;
+    const aggregateCommission = (records) => {
+      const totals = new Map();
+      records.forEach((hire) => {
+        const currency = resolveCompensationCurrency(hire);
+        const source = String(hire.commissionAmount ?? hire.totalDue ?? 0);
+        const match = source.match(/^(\d+)(?:\.(\d+))?$/);
+        if (!match) return;
+        const fraction = `${match[2] || ''}000`;
+        let minor = BigInt(match[1]) * 100n + BigInt(fraction.slice(0, 2));
+        if (Number(fraction[2]) >= 5) minor += 1n;
+        totals.set(currency, (totals.get(currency) || 0n) + minor);
+      });
+      return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([currency, minor]) => ({
+        currency,
+        amount: `${minor / 100n}.${(minor % 100n).toString().padStart(2, '0')}`,
+      }));
     };
     const paidHires = hires.filter(isPaid);
     const outstandingHires = hires.filter(h => !isPaid(h));
@@ -396,12 +414,9 @@ const AdminHires = () => {
       active: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.ACTIVE).length,
       awaiting: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.OFFER_SENT).length,
       terminated: hires.filter(h => normalizeStatus(h.status) === HIRE_STATUS.TERMINATED).length,
-      totalCommission: hires.reduce((s, h) => s + commission(h), 0),
-      totalCommissionCurrency: singleCurrency(hires),
-      collected: paidHires.reduce((s, h) => s + commission(h), 0),
-      collectedCurrency: singleCurrency(paidHires),
-      outstanding: outstandingHires.reduce((s, h) => s + commission(h), 0),
-      outstandingCurrency: singleCurrency(outstandingHires),
+      totalCommission: aggregateCommission(hires),
+      collected: aggregateCommission(paidHires),
+      outstanding: aggregateCommission(outstandingHires),
       today: hires.filter(h => new Date(h.createdAt || 0) >= todayStart).length
     };
   }, [hires]);
@@ -436,8 +451,8 @@ const AdminHires = () => {
   };
 
   const formatCurrency = (amount, hire) => formatCompensationAmount(amount, hire);
-  const formatAggregate = (amount, currency) => currency
-    ? formatCompensationAmount(amount, { compensationCurrency: currency })
+  const formatAggregate = (totals) => totals.length
+    ? totals.map(({ amount, currency }) => `${Number(amount).toLocaleString()} ${currency}`).join(' · ')
     : '—';
   const getCommission = (h) => Number(h.commissionAmount ?? h.totalDue ?? 0);
 
@@ -512,9 +527,9 @@ const AdminHires = () => {
     { key: 'active', label: t.stats.active, value: stats.active, icon: CheckCircle, color: 'text-green-400 bg-green-500/15' },
     { key: 'awaiting', label: t.stats.awaiting, value: stats.awaiting, icon: Hourglass, color: 'text-amber-400 bg-amber-500/15' },
     { key: 'terminated', label: t.stats.terminated, value: stats.terminated, icon: XCircle, color: 'text-red-400 bg-red-500/15' },
-    { key: 'totalCommission', label: t.stats.totalCommission, value: formatAggregate(stats.totalCommission, stats.totalCommissionCurrency), icon: Banknote, color: 'text-yellow-400 bg-yellow-500/15' },
-    { key: 'collected', label: t.stats.collected, value: formatAggregate(stats.collected, stats.collectedCurrency), icon: TrendingUp, color: 'text-green-400 bg-green-500/15' },
-    { key: 'outstanding', label: t.stats.outstanding, value: formatAggregate(stats.outstanding, stats.outstandingCurrency), icon: Wallet, color: 'text-orange-400 bg-orange-500/15' },
+    { key: 'totalCommission', label: i18nT('adminFinancial.commissionObligations'), value: formatAggregate(stats.totalCommission), icon: Banknote, color: 'text-yellow-400 bg-yellow-500/15' },
+    { key: 'collected', label: i18nT('adminFinancial.paidCommissionObligations'), value: formatAggregate(stats.collected), icon: TrendingUp, color: 'text-green-400 bg-green-500/15' },
+    { key: 'outstanding', label: i18nT('adminFinancial.outstandingCommissionObligations'), value: formatAggregate(stats.outstanding), icon: Wallet, color: 'text-orange-400 bg-orange-500/15' },
     { key: 'today', label: t.stats.today, value: stats.today, icon: CalendarClock, color: 'text-purple-400 bg-purple-500/15' }
   ];
 

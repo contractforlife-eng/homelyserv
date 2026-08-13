@@ -9,7 +9,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
 import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
-import { getAnalytics } from '../controllers/adminController.js';
+import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { sendRoleChangeNotification } from '../services/emailService.js';
@@ -525,9 +525,9 @@ router.get('/dashboard', async (req, res) => {
     // Get Prisma stats
     const totalHires = await prisma.hire.count();
     const totalOffers = await prisma.offer.count();
-    const totalPayments = await prisma.payment.aggregate({
+    const completedPaymentMoney = await prisma.payment.findMany({
       where: { status: 'completed' },
-      _sum: { amount: true }
+      select: { amount: true, currency: true }
     });
 
     res.json({
@@ -540,7 +540,7 @@ router.get('/dashboard', async (req, res) => {
         suspendedUsers,
         pendingUsers,
         newUsersLast7Days: newUsers,
-        totalPayments: totalPayments._sum.amount || 0,
+        completedPaymentRevenueByCurrency: aggregateAdminMoney(completedPaymentMoney).totals,
         totalComplaints: 0,
         totalHires
       }
@@ -592,9 +592,16 @@ router.get('/payments', async (req, res) => {
       };
     });
 
+    const completedRevenue = aggregateAdminMoney(
+      payments.filter((payment) => payment.status === 'completed')
+    );
+
     res.json({
       success: true,
-      payments: enriched
+      payments: enriched,
+      completedRevenueByCurrency: completedRevenue.totals,
+      rejectedCurrencyRecords: completedRevenue.rejectedCount,
+      revenueSemantic: 'gross_completed_payment_book_revenue_by_currency'
     });
   } catch (error) {
     console.error('Get payments error:', error);

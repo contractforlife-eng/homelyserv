@@ -2,6 +2,7 @@
 // Rebuilt to consume the aggregated GET /api/admin/command-center
 // endpoint (single request). No localStorage, no fake data.
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import useAuthStore from '../store/authStore';
@@ -64,10 +65,17 @@ const ACTIVITY_META = {
 // ============================================================
 // FORMAT HELPERS
 // ============================================================
-const formatCurrency = (amount) => {
+const formatCurrency = (amount, currency) => {
   const num = Number(amount) || 0;
-  return `${num.toLocaleString()} EGP`;
+  const code = typeof currency === 'string' && /^[A-Z]{3}$/i.test(currency.trim())
+    ? currency.trim().toUpperCase()
+    : '—';
+  return `${num.toLocaleString()} ${code}`;
 };
+
+const formatCurrencyTotals = (totals) => (totals?.length
+  ? totals.map(({ amount, currency }) => formatCurrency(amount, currency)).join(' · ')
+  : '—');
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -96,6 +104,7 @@ const formatDateTime = (dateString) => {
 // MAIN ADMIN DASHBOARD COMPONENT
 // ============================================================
 const AdminDashboard = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -177,8 +186,8 @@ const AdminDashboard = () => {
         link: '/admin/users',
       },
       {
-        label: 'Total Revenue',
-        value: formatCurrency(stats.totalRevenue ?? 0),
+        label: i18nT('adminFinancial.grossCompletedByCurrency'),
+        value: formatCurrencyTotals(stats.revenueByCurrency),
         icon: DollarSign,
         color: 'yellow',
         link: '/admin/payments',
@@ -235,7 +244,7 @@ const AdminDashboard = () => {
         link: '/admin/complaints',
       },
     ];
-  }, [stats]);
+  }, [stats, i18nT]);
 
   // ============================================================
   // QUICK ACTIONS
@@ -467,7 +476,7 @@ const AdminDashboard = () => {
               </p>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">{formatCurrency(payment.amount)}</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-sm">{formatCurrency(payment.amount, payment.currency)}</p>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
                 payment.status === 'completed'
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
