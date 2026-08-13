@@ -100,7 +100,7 @@ const EmployerDashboard = () => {
       let allHires = [];
       let employerOffers = [];
       try {
-        const data = await hireService.getOffers();
+        const data = await hireService.getMyHires();
         allHires = data.hires || data.offers || data || [];
       } catch (error) {
         console.error('Error loading hires:', error);
@@ -115,28 +115,6 @@ const EmployerDashboard = () => {
       const employerHires = allHires.filter(
         hire => hire.employerId === employerId || hire.employerEmail === employerEmail
       );
-      const hiredOffers = employerOffers.filter(
-        offer => (offer.status === 'hired' || offer.status === 'accepted' || offer.status === 'active') &&
-                 (offer.employerId === employerId || offer.employerEmail === employerEmail)
-      );
-      
-      // Merge hires from both sources
-      const existingWorkerIds = new Set(employerHires.map(h => h.workerId || h.workerEmail));
-      hiredOffers.forEach(offer => {
-        const workerId = offer.workerId || offer.workerEmail;
-        if (!existingWorkerIds.has(workerId)) {
-          employerHires.push({
-            id: offer.hireId || offer.id,
-            workerId: workerId,
-            workerName: offer.workerName || 'Worker',
-            workerNameIsFallback: !offer.workerName,
-            status: offer.status === 'hired' ? 'active' : offer.status,
-            startDate: offer.hiredAt || offer.createdAt,
-            salary: offer.amount || 0,
-            jobTitle: offer.jobTitle || 'Service Provider'
-          });
-        }
-      });
 
       // 2. Calculate hire stats
       const activeHires = employerHires.filter(h => h.status === 'active' || h.status === 'accepted' || h.status === 'hired').length;
