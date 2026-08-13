@@ -91,9 +91,19 @@ export const createPayPalOrder = async (amount, orderId, customerData, options =
 };
 
 export const capturePayPalOrder = async (orderId) => {
-  const response = await api.post(`/api/payments/capture-paypal/${orderId}`);
-  return response.data;
+  try {
+    const response = await api.post(`/api/payments/capture-paypal/${orderId}`);
+    return response.data;
+  } catch (error) {
+    const classified = error.response?.data;
+    if (classified && typeof classified.retryable === 'boolean') return classified;
+    throw error;
+  }
 };
+
+export const isTerminalPayPalCaptureResult = (result) => (
+  result?.success === false && result?.retryable === false
+);
 
 export const processPayPalWebhook = async (webhookData) => {
   const response = await api.post('/api/payments/paypal-webhook', webhookData);

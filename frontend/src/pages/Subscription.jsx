@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { applyBackendSubscription } from '../utils/subscriptionService';
-import { capturePayPalOrder, fetchSubscriptionStatus } from "../services/paymentService";
+import { capturePayPalOrder, fetchSubscriptionStatus, isTerminalPayPalCaptureResult } from "../services/paymentService";
 import {
   Sparkles,
   AlertCircle,
@@ -387,6 +387,12 @@ const Subscription = () => {
             setPaymentError(t('subscriptionPage.payment.activationRetry'));
             setRetryableStatus(true);
           }
+        } else if (isTerminalPayPalCaptureResult(result)) {
+          stopPolling();
+          subscriptionProcessedRef.current = true;
+          setPaymentError(t('paypalCaptureErrors.terminal'));
+          setRetryableStatus(false);
+          setProcessing(false);
         } else if (attempts >= maxAttempts) {
           stopPolling();
           setPaymentError(t('subscriptionPage.payment.verificationTimeout'));

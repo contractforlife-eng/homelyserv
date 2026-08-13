@@ -48,8 +48,6 @@ export const authenticate = async (req, res, next) => {
     }
     
     // Log token details for debugging (first 20 chars only)
-    console.log(`🔑 Token received: ${token.substring(0, 20)}...`);
-    console.log(`🔑 Token length: ${token.length}`);
     
     // Resolve the signing secret first (outside the JWT-error try/catch
     // below) so a missing/weak JWT_SECRET is reported as a 500 server

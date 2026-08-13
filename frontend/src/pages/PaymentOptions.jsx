@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
@@ -429,6 +429,17 @@ const PaymentOptions = () => {
           processSuccessfulPayment(result.transaction);
           return;
         }
+        if (isTerminalPayPalCaptureResult(result)) {
+          if (pollingInterval) clearInterval(pollingInterval);
+          setPollingInterval(null);
+          setPaypalOrderId(null);
+          localStorage.removeItem('homelyserv_paypal_order_id');
+          setPaymentError(t('paypalCaptureErrors.terminal'));
+          setIsProcessing(false);
+          setPaymentMessage('');
+          return;
+        }
+
       } catch (err) {
         console.warn('Final capture after popup return failed:', err);
       }
@@ -471,6 +482,17 @@ const PaymentOptions = () => {
           setPollingInterval(null);
           setPaymentMessage(t('paymentOptionsPage.paymentCaptured'));
           processSuccessfulPayment(result.transaction);
+          return;
+        }
+
+        if (isTerminalPayPalCaptureResult(result)) {
+          clearInterval(interval);
+          setPollingInterval(null);
+          setPaypalOrderId(null);
+          localStorage.removeItem('homelyserv_paypal_order_id');
+          setPaymentError(t('paypalCaptureErrors.terminal'));
+          setIsProcessing(false);
+          setPaymentMessage('');
           return;
         }
         

@@ -24,6 +24,7 @@ import {
   roundMoney,
   toMinorUnits,
 } from '../utils/money.js';
+import { classifyPayPalCaptureError } from '../utils/paypalCaptureError.js';
 
 const router = express.Router();
 
@@ -1294,9 +1295,16 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
         console.log('✅ PayPal access token obtained');
       } catch (tokenError) {
         console.error('❌ Failed to get PayPal access token:', tokenError.message);
-        return res.status(500).json({
+        const tokenHttpStatus = tokenError.response?.status;
+        const retryable = !tokenError.response || tokenHttpStatus === 408 || tokenHttpStatus === 429 || tokenHttpStatus >= 500;
+        return res.status(retryable ? 503 : 502).json({
           success: false,
-          error: 'Failed to authenticate with PayPal. Please try again.'
+          retryable,
+          category: retryable ? 'TRANSIENT' : 'TERMINAL',
+          code: 'PAYPAL_AUTHENTICATION_FAILED',
+          message: retryable
+            ? 'PayPal is temporarily unavailable. Payment status will be checked again.'
+            : 'PayPal could not process this payment.'
         });
       }
 
@@ -1384,7 +1392,10 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
             // If capture didn't complete, return the status
             return res.json({
               success: false,
-              error: `Order status: ${captureResponse.data?.status || 'unknown'}`,
+              retryable: true,
+              category: 'TRANSIENT',
+              code: 'PAYPAL_CAPTURE_NOT_FINAL',
+              message: 'PayPal capture is still processing.',
               status: captureResponse.data?.status || 'unknown'
             });
           }
@@ -1394,7 +1405,10 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
         if (orderCheck.data?.status === 'CREATED' || orderCheck.data?.status === 'PAYER_ACTION_REQUIRED') {
           return res.json({
             success: false,
-            error: 'Order not approved by user yet. Please complete the PayPal approval process.',
+            retryable: true,
+            category: 'BUYER_ACTION',
+            code: 'ORDER_NOT_APPROVED',
+            message: 'PayPal approval is still required.',
             status: 'PENDING_APPROVAL',
             approvalUrl: payment.approvalUrl
           });
@@ -1403,7 +1417,10 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
         // Any other status
         return res.json({
           success: false,
-          error: `Order status: ${orderCheck.data?.status || 'unknown'}`,
+          retryable: true,
+          category: 'TRANSIENT',
+          code: 'PAYPAL_ORDER_NOT_FINAL',
+          message: 'PayPal payment is still processing.',
           status: orderCheck.data?.status || 'unknown'
         });
 
@@ -1450,36 +1467,65 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
           if (notApproved) {
             return res.json({
               success: false,
-              error: 'Order not approved by user yet.',
+              retryable: true,
+              category: 'BUYER_ACTION',
+              code: 'ORDER_NOT_APPROVED',
+              message: 'PayPal approval is still required.',
               status: 'PENDING_APPROVAL',
               approvalUrl: payment.approvalUrl
             });
           }
-
-          // Compliance failures never fabricate capture evidence. Sandbox
-          // tests must complete a real provider capture.
-          const complianceViolation = details.some(d => d.issue === 'COMPLIANCE_VIOLATION');
-          if (complianceViolation) {
-            console.log('⚠️ COMPLIANCE_VIOLATION detected');
-            return res.json({
-              success: false,
-              error: 'Payment cannot be processed due to compliance restrictions. Please use a different payment method.',
-              status: 'COMPLIANCE_VIOLATION',
-              useAlternative: true
-            });
-          }
         }
 
-        // Generic error
-        const errorMessage = errorData?.message ||
-                            errorData?.error_description ||
-                            captureError.message ||
-                            'PayPal capture failed';
+        const httpStatus = captureError.response?.status;
+        const classification = classifyPayPalCaptureError({
+          errorData,
+          httpStatus,
+          hasResponse: Boolean(captureError.response),
+        });
 
-        return res.status(500).json({
+        if (classification.category === 'TERMINAL') {
+          await prisma.payment.updateMany({
+            where: { id: payment.id, NOT: { status: 'completed' } },
+            data: {
+              status: 'failed',
+              metadata: {
+                ...(payment.metadata || {}),
+                paypalCaptureFailure: {
+                  code: classification.code,
+                  terminal: true,
+                  occurredAt: new Date().toISOString(),
+                },
+              },
+            },
+          });
+          return res.status(422).json({
+            success: false,
+            retryable: false,
+            category: 'TERMINAL',
+            code: classification.code,
+            message: 'PayPal could not process this payment.',
+            newOrderRequired: true,
+          });
+        }
+
+        if (classification.category === 'BUYER_ACTION') {
+          return res.status(409).json({
+            success: false,
+            retryable: false,
+            category: 'BUYER_ACTION',
+            code: classification.code,
+            message: 'PayPal requires the buyer to select another funding source.',
+            newOrderRequired: true,
+          });
+        }
+
+        return res.status(503).json({
           success: false,
-          error: errorMessage,
-          details: errorData || null
+          retryable: true,
+          category: 'TRANSIENT',
+          code: classification.code,
+          message: 'PayPal is temporarily unavailable. Payment status will be checked again.',
         });
       }
     }
@@ -1487,7 +1533,11 @@ router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
     // If payment status is failed or any other status
     return res.status(400).json({
       success: false,
-      error: `Payment cannot be captured. Current status: ${payment.status}`
+      retryable: false,
+      category: 'TERMINAL',
+      code: 'PAYMENT_NOT_CAPTURABLE',
+      message: 'PayPal could not process this payment.',
+      newOrderRequired: true
     });
 
   } catch (error) {
