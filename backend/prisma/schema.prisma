@@ -54,6 +54,7 @@ model Hire {
   workerId         String        @db.ObjectId
   employerId       String        @db.ObjectId
   offerId          String?       @db.ObjectId
+  compensationCurrency String?
   agreedSalary     Float
   commissionAmount Float
   vatAmount        Float
@@ -410,11 +411,14 @@ model Offer {
 
   employerId String @db.ObjectId
   workerId   String @db.ObjectId
+  jobPostId  String? @db.ObjectId
+  applicationId String? @db.ObjectId
 
   jobTitle String
   message  String?
 
   salary Float
+  compensationCurrency String?
   status String @default("pending")
 
   employerName   String?
@@ -448,6 +452,9 @@ model Offer {
 
   Employer User          @relation("EmployerOffers", fields: [employerId], references: [id])
   Worker   WorkerProfile @relation("WorkerOffers", fields: [workerId], references: [id])
+
+  @@index([jobPostId])
+  @@index([applicationId])
 }
 
 // ============================================================
