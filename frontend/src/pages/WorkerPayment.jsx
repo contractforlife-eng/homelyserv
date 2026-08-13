@@ -334,7 +334,26 @@ const WorkerPayment = () => {
     }
   };
 
-  const formatCurrency = (amount) => `EGP ${amount?.toLocaleString() || 0}`;
+  const resolveEarningCurrency = (earning) => {
+    if (earning?.currency == null) return 'EGP';
+    if (typeof earning.currency !== 'string' || !/^[A-Z]{3}$/i.test(earning.currency.trim())) return null;
+    return earning.currency.trim().toUpperCase();
+  };
+
+  const formatEarningAmount = (amount, earning) => {
+    const numericAmount = typeof amount === 'number' ? amount : Number(amount);
+    const currency = resolveEarningCurrency(earning);
+    if (!Number.isFinite(numericAmount) || !currency) return '—';
+    return `${numericAmount.toLocaleString()} ${currency}`;
+  };
+
+  const formatEarningSummary = (amount, statuses) => {
+    const relevantRecords = ledgerRecords.filter(record => statuses.includes(record.status));
+    if (relevantRecords.length === 0) return formatEarningAmount(amount, { currency: 'EGP' });
+    const currencies = new Set(relevantRecords.map(resolveEarningCurrency));
+    if (currencies.has(null) || currencies.size !== 1) return '—';
+    return formatEarningAmount(amount, { currency: [...currencies][0] });
+  };
 
   const stats = {
     pendingContractValue: earningsSummary.pendingContractValue || 0,
@@ -412,9 +431,9 @@ const WorkerPayment = () => {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { label: t('workerPayment.stats.pendingContract'), value: formatCurrency(stats.pendingContractValue), icon: DollarSign, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
-              { label: t('workerPayment.stats.confirmedEarnings'), value: formatCurrency(stats.confirmedEarnings), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
-              { label: t('workerPayment.stats.paidThroughHomelyServ'), value: formatCurrency(stats.paidThroughHomelyServ), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+              { label: t('workerPayment.stats.pendingContract'), value: formatEarningSummary(stats.pendingContractValue, ['PENDING', 'AWAITING_CONFIRMATION']), icon: DollarSign, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/30' },
+              { label: t('workerPayment.stats.confirmedEarnings'), value: formatEarningSummary(stats.confirmedEarnings, ['EARNED']), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+              { label: t('workerPayment.stats.paidThroughHomelyServ'), value: formatEarningSummary(stats.paidThroughHomelyServ, ['PAID']), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
               { label: t('workerPayment.stats.activeHires'), value: stats.activeHires, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
             ].map((stat, idx) => (
               <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
@@ -600,7 +619,7 @@ const WorkerPayment = () => {
                           {record.hireId || '-'}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(record.amount)}
+                          {formatEarningAmount(record.amount, record)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                           {new Date(record.periodStart || record.createdAt || Date.now()).toLocaleDateString(

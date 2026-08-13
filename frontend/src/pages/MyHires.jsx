@@ -396,6 +396,16 @@ const MyHires = () => {
   };
 
   const formatCurrency = (amount) => `${Number(amount || 0).toLocaleString()}`;
+  const formatEarningAmount = (earning) => {
+    const amount = Number(earning?.amount);
+    if (!Number.isFinite(amount)) return '—';
+    const currency = earning?.currency == null
+      ? 'EGP'
+      : (typeof earning.currency === 'string' && /^[A-Z]{3}$/i.test(earning.currency.trim())
+        ? earning.currency.trim().toUpperCase()
+        : null);
+    return currency ? `${amount.toLocaleString()} ${currency}` : '—';
+  };
 
   const getCommission = (hire) => hire.commissionAmount ?? hire.totalDue ?? null;
   const getAgreedSalary = (hire) => hire.agreedSalary ?? hire.salary;
@@ -917,7 +927,7 @@ const MyHires = () => {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-800 dark:text-white text-sm">
-                                  {formatCurrency(earning.amount)} EGP
+                                  {formatEarningAmount(earning)}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
                                   isAwaiting

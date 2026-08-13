@@ -15,6 +15,11 @@
 // completed inside HomelyServ" — never "salary received". The trip to
 // PAID is intentionally not implemented yet.
 import prisma from '../lib/prisma.js';
+import {
+  LEGACY_DEFAULT_CURRENCY,
+  isSupportedCurrency,
+  normalizeCurrencyCode,
+} from '../utils/currencyMetadata.js';
 
 export const WORKER_EARNING_STATUS = {
   PENDING: 'PENDING',
@@ -42,6 +47,22 @@ export const CONFIRMATION_ROLES = {
 export const initialEarningIdempotencyKey = (hireId) =>
   `worker_earning_initial_${hireId}`;
 
+// Hire is the sole currency authority for a contractual earning. Only a
+// genuinely absent legacy value resolves to EGP; malformed or unsupported
+// explicit values are rejected so corrupted contract data is never hidden.
+export const resolveHireEarningCurrency = (hire) => {
+  if (hire?.compensationCurrency === null || hire?.compensationCurrency === undefined) {
+    return LEGACY_DEFAULT_CURRENCY;
+  }
+
+  const currency = normalizeCurrencyCode(hire.compensationCurrency);
+  if (!currency || !isSupportedCurrency(currency)) {
+    throw new Error(`Invalid Hire compensationCurrency for WorkerEarning: ${String(hire.compensationCurrency)}`);
+  }
+
+  return currency;
+};
+
 // Creates ONE PENDING ledger entry for a hire, if none exists.
 // `hire` must be a raw Prisma Hire record (includes workerId, employerId,
 // offerId, agreedSalary, createdAt, employmentStartDate, etc).
@@ -53,6 +74,34 @@ export const ensureInitialWorkerEarning = async (hire) => {
   }
 
   const idempotencyKey = initialEarningIdempotencyKey(hire.id);
+
+  // Preserve the immutable historical record exactly as created. In
+  // particular, never rewrite an existing earning if its linked Hire now has
+  // a different or invalid currency.
+  try {
+    const existing = await prisma.workerEarning.findUnique({
+      where: { idempotencyKey },
+    });
+    if (existing) {
+      return existing;
+    }
+  } catch (readError) {
+    console.warn(
+      `[WorkerEarning] Ledger lookup failed for hire ${hire.id}:`,
+      readError.message
+    );
+  }
+
+  let currency;
+  try {
+    currency = resolveHireEarningCurrency(hire);
+  } catch (currencyError) {
+    console.error(
+      `[WorkerEarning] Refusing ledger creation for hire ${hire.id}:`,
+      currencyError.message
+    );
+    return null;
+  }
 
   // Resolve the authenticated worker identity (User.id).
   // Hire.workerId references WorkerProfile, so we must trace
@@ -81,8 +130,8 @@ export const ensureInitialWorkerEarning = async (hire) => {
     employerId: String(hire.employerId),
     hireId: String(hire.id),
     offerId: hire.offerId ? String(hire.offerId) : null,
-    amount: Number(hire.agreedSalary || 0),
-    currency: 'EGP',
+    amount: Number(hire.agreedSalary ?? 0),
+    currency,
     earningType: WORKER_EARNING_TYPE.MONTHLY_CONTRACT,
     status: WORKER_EARNING_STATUS.PENDING,
     periodStart,
@@ -98,21 +147,6 @@ export const ensureInitialWorkerEarning = async (hire) => {
       createdAt: new Date().toISOString(),
     },
   };
-
-  try {
-    // Fast path: avoid a write when the key already exists.
-    const existing = await prisma.workerEarning.findUnique({
-      where: { idempotencyKey },
-    });
-    if (existing) {
-      return existing;
-    }
-  } catch (readError) {
-    console.warn(
-      `[WorkerEarning] Ledger lookup failed for hire ${hire.id}:`,
-      readError.message
-    );
-  }
 
   try {
     return await prisma.workerEarning.create({ data });
@@ -259,6 +293,7 @@ export default {
   WORKER_EARNING_TYPE,
   CONFIRMATION_ROLES,
   initialEarningIdempotencyKey,
+  resolveHireEarningCurrency,
   ensureInitialWorkerEarning,
   submitWorkerConfirmation,
   approveByEmployer,
