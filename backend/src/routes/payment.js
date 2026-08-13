@@ -21,6 +21,35 @@ import {
 
 const router = express.Router();
 
+const isObjectId = (value) => typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value);
+
+const authenticatedUserOwnsPayment = async (req, payment) => {
+  const authenticatedUserId = req.userId == null ? '' : String(req.userId);
+  if (!authenticatedUserId || !payment) return false;
+
+  if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+    return payment.userId != null && String(payment.userId) === authenticatedUserId;
+  }
+
+  // Commission authority follows the Hire rather than client-supplied
+  // Payment identity fields. Legacy commission Payments without a Hire fall
+  // back only to their server-recorded userId.
+  if (String(req.userRole || '').toUpperCase() !== 'EMPLOYER') return false;
+  if (payment.hireId) {
+    const hire = await prisma.hire.findUnique({
+      where: { id: String(payment.hireId) },
+      select: { employerId: true },
+    });
+    return hire?.employerId != null && String(hire.employerId) === authenticatedUserId;
+  }
+  return payment.userId != null && String(payment.userId) === authenticatedUserId;
+};
+
+const rejectPaymentAccess = (res) => res.status(404).json({
+  success: false,
+  error: 'Payment not found',
+});
+
 // ============================================================
 // HELPER FUNCTIONS
 // ============================================================
@@ -1199,7 +1228,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
  * Get PayPal Approval URL
  * GET /api/payments/paypal-approval/:orderId
  */
-router.get('/paypal-approval/:orderId', async (req, res) => {
+router.get('/paypal-approval/:orderId', authenticate, async (req, res) => {
   try {
     const { orderId } = req.params;
 
@@ -1212,6 +1241,10 @@ router.get('/paypal-approval/:orderId', async (req, res) => {
         success: false,
         error: 'Payment not found'
       });
+    }
+
+    if (!(await authenticatedUserOwnsPayment(req, payment))) {
+      return rejectPaymentAccess(res);
     }
 
     if (!payment.approvalUrl) {
@@ -1241,7 +1274,7 @@ router.get('/paypal-approval/:orderId', async (req, res) => {
  * Capture PayPal Order
  * POST /api/payments/capture-paypal/:orderId
  */
-router.post('/capture-paypal/:orderId', async (req, res) => {
+router.post('/capture-paypal/:orderId', authenticate, async (req, res) => {
   try {
     const { orderId } = req.params;
     console.log(`🔍 Capturing PayPal order: ${orderId}`);
@@ -1258,12 +1291,10 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
       });
     }
 
-    if (!payment) {
-      console.log(`❌ Payment not found for order: ${orderId}`);
-      return res.status(404).json({
-        success: false,
-        error: 'Payment not found'
-      });
+    // Ownership is established before status disclosure, PayPal lookup, or
+    // any canonical fulfillment attempt.
+    if (!(await authenticatedUserOwnsPayment(req, payment))) {
+      return rejectPaymentAccess(res);
     }
 
     console.log(`✅ Found payment for order: ${orderId}, status: ${payment.status}`);
@@ -1508,7 +1539,7 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
  * Get Payment Status
  * GET /api/payments/status/:paymentId
  */
-router.get('/status/:paymentId', async (req, res) => {
+router.get('/status/:paymentId', authenticate, async (req, res) => {
   try {
     const { paymentId } = req.params;
     console.log(`🔍 Checking payment status: ${paymentId}`);
@@ -1528,6 +1559,12 @@ router.get('/status/:paymentId', async (req, res) => {
         success: false,
         error: 'Payment not found'
       });
+    }
+
+    // Do not query PayPal or expose payment metadata until ownership is
+    // proven from the authenticated account and canonical payment context.
+    if (!(await authenticatedUserOwnsPayment(req, payment))) {
+      return rejectPaymentAccess(res);
     }
 
     // Verify PayPal server-to-server whenever capture or fulfillment is not
@@ -1676,21 +1713,31 @@ router.get('/subscription-status', authenticate, async (req, res) => {
  * Get User Payments
  * GET /api/payments/user/:userId
  */
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const authenticatedUserId = req.userId == null ? '' : String(req.userId);
+    if (!authenticatedUserId || String(req.params.userId) !== authenticatedUserId) {
+      return rejectPaymentAccess(res);
+    }
+    const userId = authenticatedUserId;
     console.log(`📂 Getting payments for user: ${userId}`);
 
-    const payments = await prisma.payment.findMany({
-      where: {
-        OR: [
-          { userId: userId },
-          { userEmail: userId },
-          { employerId: userId }
-        ]
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const ownedHireIds = isObjectId(userId) && String(req.userRole || '').toUpperCase() === 'EMPLOYER'
+      ? (await prisma.hire.findMany({
+          where: { employerId: userId },
+          select: { id: true },
+        })).map((hire) => hire.id)
+      : [];
+    const ownershipFilters = [];
+    if (isObjectId(userId)) ownershipFilters.push({ userId });
+    if (ownedHireIds.length > 0) ownershipFilters.push({ hireId: { in: ownedHireIds } });
+
+    const payments = ownershipFilters.length === 0
+      ? []
+      : await prisma.payment.findMany({
+          where: { OR: ownershipFilters },
+          orderBy: { createdAt: 'desc' }
+        });
 
     res.json({
       success: true,
@@ -1724,7 +1771,7 @@ router.get('/user/:userId', async (req, res) => {
  * Verify Payment
  * POST /api/payments/verify
  */
-router.post('/verify', async (req, res) => {
+router.post('/verify', authenticate, async (req, res) => {
   try {
     const { transactionId, orderId } = req.body;
 
@@ -1743,6 +1790,10 @@ router.post('/verify', async (req, res) => {
         success: false,
         error: 'Payment not found'
       });
+    }
+
+    if (!(await authenticatedUserOwnsPayment(req, payment))) {
+      return rejectPaymentAccess(res);
     }
 
     res.json({
