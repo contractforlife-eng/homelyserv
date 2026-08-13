@@ -21,6 +21,7 @@ const PaymentSuccess = () => {
   const [destination, setDestination] = useState('/employer-dashboard');
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authLoading = useAuthStore(state => state.isLoading);
 
   // Determine where to redirect based on payment source
   const determineDestination = () => {
@@ -102,8 +103,16 @@ const PaymentSuccess = () => {
   };
 
   useEffect(() => {
-    // If not authenticated, redirect to login
-    if (!isAuthenticated) {
+    // A cold provider return restores the persisted token/authenticated flag
+    // before checkAuth() restores the User. Wait for that existing auth
+    // lifecycle to resolve so a temporarily-null User cannot freeze the
+    // success destination as /login.
+    if (authLoading) {
+      return;
+    }
+
+    // Redirect only after authentication has definitively resolved.
+    if (!isAuthenticated || !authUser) {
       navigate('/login', { replace: true });
       return;
     }
@@ -174,7 +183,7 @@ const PaymentSuccess = () => {
         }, 10000);
       }
     };
-  }, [location.search, isAuthenticated, navigate]);
+  }, [location.search, isAuthenticated, authLoading, authUser, navigate]);
 
   // Countdown and redirect
   useEffect(() => {
