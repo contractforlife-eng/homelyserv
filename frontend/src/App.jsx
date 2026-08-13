@@ -46,7 +46,6 @@ import EmployerJobApplicants from './pages/EmployerJobApplicants';
 import EmployerPostJob from './pages/EmployerPostJob';
 import PaymentOptions from './pages/PaymentOptions';
 import WorkerProfileView from './pages/WorkerProfileView';
-import PaymentCommission from './pages/PaymentCommission';
 import EmployerCreateOffer from './pages/EmployerCreateOffer';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
@@ -395,14 +394,6 @@ function App() {
         element={
           <ProtectedRoute requiredRole="EMPLOYER">
             <WorkerProfileView />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/payment-commission" 
-        element={
-          <ProtectedRoute>
-            <PaymentCommission />
           </ProtectedRoute>
         } 
       />
