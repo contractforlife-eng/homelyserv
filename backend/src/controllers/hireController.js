@@ -54,6 +54,7 @@ export const sendOffer = async (req, res) => {
       employerEmail,
       hourlyRate,
       amount,
+      compensationCurrency,
       description,
       workingHoursPerDay,
       workingDaysPerWeek,
@@ -67,13 +68,6 @@ export const sendOffer = async (req, res) => {
     if (!jobTitle) {
       return res.status(400).json({ message: 'Job title is required' });
     }
-
-    const salary = parseFloat(agreedSalary);
-    const commission = salary * RECRUITMENT_COMMISSION_RATE;
-    const vat = 0;
-    const total = commission;
-
-    const reference = `HS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     if (!isObjectId(workerId)) {
       return res.status(400).json({ message: 'Invalid worker target' });
@@ -118,7 +112,8 @@ export const sendOffer = async (req, res) => {
       employerId: req.userId,
       workerProfileId: workerProfile.id,
       jobTitle,
-      salary,
+      salary: agreedSalary,
+      compensationCurrency,
       message: message || null,
       workerName: workerName || null,
       workerEmail: workerEmail || null,
@@ -129,8 +124,8 @@ export const sendOffer = async (req, res) => {
       workerImage: workerImage || null,
       employerName: employerName || null,
       employerEmail: employerEmail || null,
-      hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
-      amount: amount ? parseFloat(amount) : null,
+      hourlyRate,
+      amount,
       description: description || null,
       workingHoursPerDay: workingHoursPerDay ? parseFloat(workingHoursPerDay) : null,
       workingDaysPerWeek: workingDaysPerWeek ? parseFloat(workingDaysPerWeek) : null,
@@ -151,6 +146,9 @@ export const sendOffer = async (req, res) => {
     res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
   } catch (error) {
     console.error('Hire error:', error);
+    if (error?.statusCode === 400) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -219,6 +217,7 @@ export const respondToOffer = async (req, res) => {
               workerId: offer.workerId,
               employerId: offer.employerId,
               offerId: offer.id,
+              compensationCurrency: offer.compensationCurrency || 'EGP',
               agreedSalary: salary,
               commissionAmount: commission,
               vatAmount: vat,

@@ -21,7 +21,8 @@ import {
   NOTIFICATION_TYPES,
 } from '../services/notificationService.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
-import { createOffer } from '../services/offerService.js';
+import { createOffer, validateOfferMonetaryInput } from '../services/offerService.js';
+import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 
 const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -494,14 +495,6 @@ export const sendOfferFromApplication = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
-    const agreedSalary = Number(req.body.agreedSalary);
-    if (!Number.isFinite(agreedSalary) || agreedSalary <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'agreedSalary must be a positive number',
-      });
-    }
-
     const application = await prisma.jobApplication.findUnique({
       where: { id: applicationId },
     });
@@ -543,6 +536,24 @@ export const sendOfferFromApplication = async (req, res) => {
     if (String(jobPost.employerId) !== String(req.userId)) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
+
+    // Policy A: the owned Job is the authoritative currency boundary.
+    // Legacy currency-less Jobs resolve to EGP for this new Offer only.
+    const offerCurrency = jobPost.compensationCurrency || 'EGP';
+    if (req.body.compensationCurrency !== undefined
+      && normalizeCurrencyCode(req.body.compensationCurrency) !== offerCurrency) {
+      return res.status(400).json({
+        success: false,
+        message: 'Offer compensationCurrency must match the Job compensation currency',
+      });
+    }
+
+    const monetary = validateOfferMonetaryInput({
+      salary: req.body.agreedSalary,
+      compensationCurrency: offerCurrency,
+    });
+    const agreedSalary = monetary.salary;
+
     if (jobPost.salaryMin != null && agreedSalary < jobPost.salaryMin) {
       return res.status(400).json({
         success: false,
@@ -590,6 +601,9 @@ export const sendOfferFromApplication = async (req, res) => {
       workerProfileId: workerProfile.id,
       jobTitle: jobPost.jobTitle,
       salary: agreedSalary,
+      compensationCurrency: offerCurrency,
+      jobPostId: application.jobPostId,
+      applicationId: application.id,
       message: null, // Employer-side message only; never worker cover text
       workerName: workerUser?.fullName || null,
       workerEmail: null,
@@ -601,7 +615,7 @@ export const sendOfferFromApplication = async (req, res) => {
       employerName: employerUser?.fullName || null,
       employerEmail: null,
       hourlyRate: null,
-      amount: null,
+      amount: agreedSalary,
       description: jobPost.description || null,
       workingHoursPerDay: jobPost.workingHoursPerDay || null,
       workingDaysPerWeek: jobPost.workingDaysPerWeek || null,
@@ -685,6 +699,9 @@ export const sendOfferFromApplication = async (req, res) => {
     });
   } catch (error) {
     console.error('Applications: send offer error:', error);
+    if (error?.statusCode === 400) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     res.status(500).json({ success: false, message: 'Failed to send offer' });
   }
 };

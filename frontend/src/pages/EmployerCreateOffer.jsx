@@ -1,5 +1,5 @@
 // src/pages/EmployerCreateOffer.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
@@ -18,6 +18,15 @@ import {
 } from 'lucide-react';
 import hireService from '../services/hireService';
 
+const OFFER_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+const resolveInitialCurrency = (user) => {
+  const preferred = typeof user?.preferredCurrency === 'string' ? user.preferredCurrency.toUpperCase() : '';
+  const effective = typeof user?.effectiveCurrency === 'string' ? user.effectiveCurrency.toUpperCase() : '';
+  if (OFFER_CURRENCIES.includes(preferred)) return preferred;
+  if (OFFER_CURRENCIES.includes(effective)) return effective;
+  return 'EGP';
+};
+
 const EmployerCreateOffer = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,8 +39,10 @@ const EmployerCreateOffer = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const currencyTouchedRef = useRef(false);
 
   const [formData, setFormData] = useState({
+    compensationCurrency: resolveInitialCurrency(authUser),
     hourlyRate: '',
     monthlySalary: '',
     workingHoursPerDay: '',
@@ -42,6 +53,12 @@ const EmployerCreateOffer = () => {
     employmentStartDate: '',
     additionalNotes: ''
   });
+
+  useEffect(() => {
+    if (!currencyTouchedRef.current && authUser) {
+      setFormData(prev => ({ ...prev, compensationCurrency: resolveInitialCurrency(authUser) }));
+    }
+  }, [authUser]);
 
   // Load worker data from location state
   useEffect(() => {
@@ -57,6 +74,7 @@ const EmployerCreateOffer = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'compensationCurrency') currencyTouchedRef.current = true;
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -117,7 +135,8 @@ const EmployerCreateOffer = () => {
         employerName: authUser.fullName || 'Employer',
         employerEmail: authUser.email,
         jobTitle: worker.desiredJob || 'Service Provider',
-        hourlyRate: parseFloat(formData.hourlyRate),
+        hourlyRate: formData.hourlyRate,
+        compensationCurrency: formData.compensationCurrency,
         monthlySalary: parseFloat(formData.monthlySalary),
         workingHoursPerDay: parseFloat(formData.workingHoursPerDay),
         workingDaysPerWeek: parseFloat(formData.workingDaysPerWeek),
@@ -126,8 +145,7 @@ const EmployerCreateOffer = () => {
         workEndTime: formData.workEndTime,
         employmentStartDate: formData.employmentStartDate,
         additionalNotes: formData.additionalNotes,
-        agreedSalary: parseFloat(formData.monthlySalary),
-        amount: parseFloat(formData.monthlySalary),
+        agreedSalary: formData.monthlySalary,
         description: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
         message: `Job offer for ${worker.fullName} as ${worker.desiredJob || 'Service Provider'}`,
         status: 'pending'
@@ -247,11 +265,27 @@ const EmployerCreateOffer = () => {
             </div>
           )}
 
+          <div className="mb-6 max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('employerCreateOffer.fields.compensationCurrency')}
+            </label>
+            <select
+              name="compensationCurrency"
+              value={formData.compensationCurrency}
+              onChange={handleChange}
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
+            >
+              {OFFER_CURRENCIES.map(currency => (
+                <option key={currency} value={currency}>{currency}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Hourly Rate */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('employerCreateOffer.fields.hourlyRate')} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.hourlyRate', { currency: formData.compensationCurrency })} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <DollarSign size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -261,7 +295,7 @@ const EmployerCreateOffer = () => {
                   value={formData.hourlyRate}
                   onChange={handleChange}
                   required
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
                   placeholder={t('employerCreateOffer.placeholders.hourlyRate')}
@@ -272,7 +306,7 @@ const EmployerCreateOffer = () => {
             {/* Monthly Salary */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('employerCreateOffer.fields.monthlySalary')} <span className="text-red-500">*</span>
+                {t('employerCreateOffer.fields.monthlySalary', { currency: formData.compensationCurrency })} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <DollarSign size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -282,7 +316,7 @@ const EmployerCreateOffer = () => {
                   value={formData.monthlySalary}
                   onChange={handleChange}
                   required
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-gray-800"
                   placeholder={t('employerCreateOffer.placeholders.monthlySalary')}

@@ -14,6 +14,54 @@
 // false on creation; the contact-unlock flow is untouched.
 // ============================================================
 import prisma from '../lib/prisma.js';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
+
+const STRICT_DECIMAL = /^\d+(?:\.\d+)?$/;
+
+export class OfferValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'OfferValidationError';
+    this.statusCode = 400;
+  }
+}
+
+const parseStrictPositiveDecimal = (value, fieldName) => {
+  let numericValue;
+
+  if (typeof value === 'number') {
+    numericValue = value;
+  } else if (typeof value === 'string' && STRICT_DECIMAL.test(value)) {
+    numericValue = Number(value);
+  } else {
+    throw new OfferValidationError(`${fieldName} must be a strict decimal number`);
+  }
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    throw new OfferValidationError(`${fieldName} must be greater than zero`);
+  }
+
+  return numericValue;
+};
+
+export const validateOfferMonetaryInput = ({ salary, hourlyRate = null, compensationCurrency }) => {
+  const normalizedCurrency = normalizeCurrencyCode(compensationCurrency);
+  if (!normalizedCurrency || !isSupportedCurrency(normalizedCurrency)) {
+    throw new OfferValidationError('compensationCurrency must be a supported ISO currency code');
+  }
+
+  const normalizedSalary = parseStrictPositiveDecimal(salary, 'salary');
+  const normalizedHourlyRate = hourlyRate === null || hourlyRate === undefined
+    ? null
+    : parseStrictPositiveDecimal(hourlyRate, 'hourlyRate');
+
+  return {
+    salary: normalizedSalary,
+    hourlyRate: normalizedHourlyRate,
+    amount: normalizedSalary,
+    compensationCurrency: normalizedCurrency,
+  };
+};
 
 /**
  * Create an Offer record.
@@ -50,6 +98,9 @@ export const createOffer = async ({
   workerProfileId,
   jobTitle,
   salary,
+  compensationCurrency,
+  jobPostId = null,
+  applicationId = null,
   message = null,
   workerName = null,
   workerEmail = null,
@@ -61,7 +112,7 @@ export const createOffer = async ({
   employerName = null,
   employerEmail = null,
   hourlyRate = null,
-  amount = null,
+  amount: _ignoredClientAmount = null,
   description = null,
   workingHoursPerDay = null,
   workingDaysPerWeek = null,
@@ -71,13 +122,18 @@ export const createOffer = async ({
   employmentStartDate = null,
   additionalNotes = null,
 }) => {
+  const monetary = validateOfferMonetaryInput({ salary, hourlyRate, compensationCurrency });
+
   return prisma.offer.create({
     data: {
       workerId: workerProfileId,
       employerId: String(employerId),
+      jobPostId,
+      applicationId,
       jobTitle,
       message: message || null,
-      salary,
+      salary: monetary.salary,
+      compensationCurrency: monetary.compensationCurrency,
       status: 'pending',
       workerName: workerName || null,
       workerEmail: workerEmail || null,
@@ -88,8 +144,8 @@ export const createOffer = async ({
       workerImage: workerImage || null,
       employerName: employerName || null,
       employerEmail: employerEmail || null,
-      hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
-      amount: amount ? parseFloat(amount) : null,
+      hourlyRate: monetary.hourlyRate,
+      amount: monetary.amount,
       description: description || null,
       workingHoursPerDay: workingHoursPerDay ? parseFloat(workingHoursPerDay) : null,
       workingDaysPerWeek: workingDaysPerWeek ? parseFloat(workingDaysPerWeek) : null,
@@ -105,4 +161,4 @@ export const createOffer = async ({
   });
 };
 
-export default { createOffer };
+export default { createOffer, validateOfferMonetaryInput };

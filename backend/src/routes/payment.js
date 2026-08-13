@@ -672,7 +672,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       // inflate nor deflate what actually gets charged.
       const commissionHire = await prisma.hire.findUnique({
         where: { id: String(hireId) },
-        select: { id: true, totalDue: true, employerId: true }
+        select: { id: true, totalDue: true, employerId: true, compensationCurrency: true }
       });
       if (!commissionHire) {
         return res.status(400).json({
@@ -686,6 +686,20 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         return res.status(403).json({
           success: false,
           error: 'You are not authorized to pay for this hire'
+        });
+      }
+
+      // Temporary safety boundary: current Payment/provider processing is
+      // EGP-only. Legacy null currency remains compatible as implicit EGP,
+      // while an explicit non-EGP contract is blocked before any Payment row
+      // or provider request can be created.
+      const commissionCurrency = commissionHire.compensationCurrency
+        ? String(commissionHire.compensationCurrency).trim().toUpperCase()
+        : 'EGP';
+      if (commissionCurrency !== 'EGP') {
+        return res.status(422).json({
+          success: false,
+          error: 'Commission payment for this currency is not yet supported'
         });
       }
 
