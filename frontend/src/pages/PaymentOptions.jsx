@@ -10,6 +10,8 @@ import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
+import employerService from '../services/employerService';
+import { formatWorkerRate } from '../utils/workerRateDisplay';
 import {
   ArrowLeft,
   CreditCard,
@@ -693,6 +695,33 @@ const PaymentOptions = () => {
     setLoading(false);
   }, [navigate, isAuthenticated, authUser]);
 
+  // The checkout route state does not carry the advertised profile rate.
+  // Fetch it for this informational display only; it never affects totals,
+  // provider currency, commission, or the pending payment.
+  useEffect(() => {
+    const workerId = workerData?.workerId;
+    if (!workerId || workerData.hourlyRate !== undefined) return;
+
+    let cancelled = false;
+    employerService.getWorkerProfile(workerId)
+      .then((data) => {
+        if (!cancelled && data?.user) {
+          setWorkerData(prev => prev ? {
+            ...prev,
+            hourlyRate: data.user.hourlyRate,
+            hourlyRateCurrency: data.user.hourlyRateCurrency ?? null
+          } : prev);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load informational worker rate:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workerData?.workerId, workerData?.hourlyRate]);
+
   const total = calculateTotal();
 
   // ============================================================
@@ -864,7 +893,7 @@ const PaymentOptions = () => {
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign size={14} className="text-green-500" />
-                      {workerData?.hourlyRate || 30} {t('paymentOptionsPage.hourlyRateUnit')}
+                      {formatWorkerRate(workerData, t, 'workerProfile.notSpecified')}
                     </span>
                   </div>
                 </div>

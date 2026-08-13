@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import employerService from '../services/employerService';
+import { formatWorkerRate } from '../utils/workerRateDisplay';
 
 const EmployerSearch = () => {
   const navigate = useNavigate();
@@ -252,6 +253,8 @@ const EmployerSearch = () => {
           skills: profile.skills || worker.skills || [],
           experience: parseInt(profile.experience) || parseInt(worker.experience) || 0,
           hourlyRate: parseInt(profile.hourlyRate) || parseInt(worker.hourlyRate) || 30,
+          hourlyRateDisplayValue: profile.hourlyRate ?? worker.hourlyRate ?? null,
+          hourlyRateCurrency: profile.hourlyRateCurrency ?? worker.hourlyRateCurrency ?? null,
           desiredJob: profile.desiredJob || worker.desiredJob || '',
           profileImage: isBase64Image(rawProfileImage) ? '' : rawProfileImage,
           rating: profile.rating || worker.rating || 4.5,
@@ -720,9 +723,7 @@ const EmployerSearch = () => {
             <div className="relative">
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {featuredWorkers.map((worker) => {
-                  const hourlyRate = Number(worker.hourlyRate);
-                  const hasValidRate = !isNaN(hourlyRate) && hourlyRate > 0;
-                  const displayRate = hasValidRate ? t('employerSearch.rateValue', { rate: hourlyRate }) : t('employerSearch.rateNotSpecified');
+                  const displayRate = formatWorkerRate(worker, t, 'employerSearch.rateNotSpecified');
 
                   return (
                     <div
@@ -897,7 +898,7 @@ const EmployerSearch = () => {
                             <>
                               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 <DollarSign size={14} />
-                                <span>{t('employerSearch.rateValue', { rate: worker.hourlyRate })}</span>
+                                <span>{formatWorkerRate(worker, t, 'employerSearch.rateNotSpecified')}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 <StarIcon size={14} className="text-yellow-500" />

@@ -8,6 +8,7 @@ import employerService from '../services/employerService';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { formatWorkerRate } from '../utils/workerRateDisplay';
 import {
   ArrowLeft,
   User,
@@ -366,7 +367,7 @@ const WorkerProfileView = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.hourlyRate')}</span>
-                    <span className="font-medium text-teal-600">{t('workerProfile.rateValue', { rate: worker.hourlyRate })}</span>
+                    <span className="font-medium text-teal-600">{formatWorkerRate(worker, t, 'workerProfile.notSpecified')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.availability')}</span>
