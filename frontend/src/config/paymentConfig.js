@@ -1,27 +1,32 @@
 // src/config/paymentConfig.js
-// Complete Payment Configuration with ALL credentials (Sandbox + Live)
+// Public frontend payment configuration (Sandbox + Live)
+
+// Explicit allowlist prevents Vite from bundling unrelated VITE_* variables.
+const frontendEnv = {
+  VITE_PAYMOB_API_KEY: import.meta.env.VITE_PAYMOB_API_KEY,
+  VITE_PAYMOB_HMAC_SECRET: import.meta.env.VITE_PAYMOB_HMAC_SECRET,
+  VITE_PAYMOB_INTEGRATION_ID: import.meta.env.VITE_PAYMOB_INTEGRATION_ID,
+  VITE_PAYMOB_IFRAME_ID: import.meta.env.VITE_PAYMOB_IFRAME_ID,
+  VITE_PAYMOB_BASE_URL: import.meta.env.VITE_PAYMOB_BASE_URL,
+  VITE_PAYMOB_POST_PAY_URL: import.meta.env.VITE_PAYMOB_POST_PAY_URL,
+  VITE_PAYMOB_RESPONSE_URL: import.meta.env.VITE_PAYMOB_RESPONSE_URL,
+  VITE_PAYPAL_LIVE_CLIENT_ID: import.meta.env.VITE_PAYPAL_LIVE_CLIENT_ID,
+  VITE_PAYPAL_SANDBOX_CLIENT_ID: import.meta.env.VITE_PAYPAL_SANDBOX_CLIENT_ID,
+  VITE_PAYPAL_LIVE_BASE_URL: import.meta.env.VITE_PAYPAL_LIVE_BASE_URL,
+  VITE_PAYPAL_SANDBOX_BASE_URL: import.meta.env.VITE_PAYPAL_SANDBOX_BASE_URL,
+  VITE_PAYPAL_APP_NAME: import.meta.env.VITE_PAYPAL_APP_NAME,
+  VITE_PAYPAL_WEBHOOK_URL: import.meta.env.VITE_PAYPAL_WEBHOOK_URL,
+  VITE_PAYPAL_WEBHOOK_ID: import.meta.env.VITE_PAYPAL_WEBHOOK_ID,
+};
 
 // Helper function to safely get environment variables
 // For security, sensitive credentials should not have hardcoded fallbacks
 const getEnv = (key, fallback = '', isSensitive = false) => {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const value = import.meta.env[key];
-    if (isSensitive && !value) {
-      console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
-    }
-    return value || fallback;
-  }
-  if (typeof process !== 'undefined' && process.env) {
-    const value = process.env[key];
-    if (isSensitive && !value) {
-      console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
-    }
-    return value || fallback;
-  }
-  if (isSensitive) {
+  const value = frontendEnv[key];
+  if (isSensitive && !value) {
     console.warn(`⚠️ Missing sensitive environment variable: ${key}`);
   }
-  return fallback;
+  return value || fallback;
 };
 
 // Determine if we're in production mode
@@ -105,10 +110,6 @@ export const PAYMENT_CONFIG = {
       ? getEnv('VITE_PAYPAL_LIVE_CLIENT_ID', '', true)
       : getEnv('VITE_PAYPAL_SANDBOX_CLIENT_ID', '', true),
 
-    clientSecret: isProduction
-      ? getEnv('VITE_PAYPAL_LIVE_SECRET', '', true)
-      : getEnv('VITE_PAYPAL_SANDBOX_SECRET', '', true),
-    
     // PayPal API Base URL
     baseUrl: isProduction
       ? getEnv('VITE_PAYPAL_LIVE_BASE_URL', 'https://api-m.paypal.com')
