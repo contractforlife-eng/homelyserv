@@ -236,6 +236,14 @@ const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency
   throw new Error('Unsupported payment method');
 };
 
+const isHistoricalPayPalEgpCommissionAttempt = (payment) => (
+  payment?.paymentMethod === 'paypal' &&
+  payment?.purpose === PAYMENT_PURPOSES.COMMISSION &&
+  String(payment?.currency || '').trim().toUpperCase() === 'EGP' &&
+  typeof payment?.paypalOrderId === 'string' &&
+  payment.paypalOrderId.trim().length > 0
+);
+
 export const resolveExpectedProviderEvidence = (payment) => {
   const hasAmount = payment?.providerAmount != null;
   const hasCurrency = payment?.providerCurrency != null;
@@ -248,7 +256,13 @@ export const resolveExpectedProviderEvidence = (payment) => {
       purpose: payment.purpose,
       transactionCurrency: payment.currency,
     });
-    const allowedCurrency = capability.enabled ? capability.providerCurrency : null;
+    // New PayPal EGP commission checkout is no longer supported, but an
+    // already-created provider order must retain its verified completion path.
+    // This exception validates immutable historical evidence only; creation
+    // still fails capability enforcement before a Payment/provider call.
+    const allowedCurrency = isHistoricalPayPalEgpCommissionAttempt(payment)
+      ? PAYPAL_PROVIDER_CURRENCY
+      : capability.enabled ? capability.providerCurrency : null;
     if (!allowedCurrency || currency !== allowedCurrency) {
       throw new Error('Persisted provider currency is incompatible with payment method');
     }
@@ -259,10 +273,10 @@ export const resolveExpectedProviderEvidence = (payment) => {
     return { amount, currency, persisted: true };
   }
 
-  return {
-    ...getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency, payment.purpose),
-    persisted: false,
-  };
+  const expected = isHistoricalPayPalEgpCommissionAttempt(payment)
+    ? getExpectedPayPalCharge(payment.amount)
+    : getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency, payment.purpose);
+  return { ...expected, persisted: false };
 };
 
 const persistVerifiedLegacyProviderEvidence = async (payment, expected) => {
@@ -311,11 +325,11 @@ export const verifyPayPalOrderEvidence = (payment, providerOrder, { requireCaptu
   return { expected, captureId: capture.id };
 };
 
-const createPayPalOrder = async (accessToken, expectedCharge, orderId, customerData, amount) => {
+const createPayPalOrder = async (accessToken, expectedCharge, orderId, customerData) => {
   try {
     const finalAmount = expectedCharge.amount;
 
-    console.log(`💰 Converting EGP ${amount} to ${expectedCharge.currency} ${finalAmount} (legacy rate: 0.033)`);
+    console.log(`💰 Creating PayPal provider charge: ${finalAmount} ${expectedCharge.currency}`);
 
     const baseUrl = process.env.PAYPAL_MODE === 'production'
       ? 'https://api-m.paypal.com'
@@ -1117,8 +1131,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           accessToken,
           { amount: payment.providerAmount, currency: payment.providerCurrency },
           orderId,
-          customerData,
-          payment.amount
+          customerData
         );
         const paypalOrderId = paypalOrder.id;
 

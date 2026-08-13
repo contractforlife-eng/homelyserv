@@ -105,6 +105,12 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
   }
 
   const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
+  const isPaymobEgp = isPaymob && normalizedCurrency === 'EGP';
+  const isLegacyPayPalSubscription = (
+    normalizedProvider === PROVIDERS.PAYPAL &&
+    normalizedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION &&
+    normalizedCurrency === 'EGP'
+  );
   const isLivePayPalDirectCommission = (
     normalizedProvider === PROVIDERS.PAYPAL &&
     normalizedPurpose === PAYMENT_PURPOSES.COMMISSION &&
@@ -112,7 +118,7 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
   );
 
-  if (normalizedCurrency !== 'EGP' && !isLivePayPalDirectCommission) {
+  if (!isPaymobEgp && !isLegacyPayPalSubscription && !isLivePayPalDirectCommission) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,
@@ -122,17 +128,16 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     });
   }
 
-  const isLegacyPayPal = normalizedProvider === PROVIDERS.PAYPAL && normalizedCurrency === 'EGP';
   return {
     provider: normalizedProvider,
     purpose: normalizedPurpose,
     transactionCurrency: normalizedCurrency,
-    providerCurrency: isPaymob ? 'EGP' : isLegacyPayPal ? 'USD' : normalizedCurrency,
+    providerCurrency: isPaymobEgp ? 'EGP' : isLegacyPayPalSubscription ? 'USD' : normalizedCurrency,
     supported: true,
     enabled: configuration.configured,
-    mode: isPaymob || isLivePayPalDirectCommission
-      ? PROVIDER_CAPABILITY_MODES.DIRECT
-      : PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED,
+    mode: isLegacyPayPalSubscription
+      ? PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED
+      : PROVIDER_CAPABILITY_MODES.DIRECT,
     verificationStatus: PROVIDER_VERIFICATION_STATUSES.CURRENTLY_IMPLEMENTED,
     externalAccountVerificationRequired: false,
     reason: configuration.configured ? null : 'CONFIGURATION_REQUIRED',
