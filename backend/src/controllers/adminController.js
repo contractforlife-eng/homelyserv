@@ -74,7 +74,10 @@ export const getAnalytics = async (req, res) => {
       recentComplaints,
       complaintsByStatusAgg,
       // ---- Subscriptions ----
-      subscriptions,
+      activePremiumUsers,
+      subscriptionRevenueAgg,
+      subscriptionGrants,
+      legacySubscriptionProjections,
       // ---- Worker categories ----
       workerProfiles,
     ] = await Promise.all([
@@ -120,7 +123,18 @@ export const getAnalytics = async (req, res) => {
       }),
 
       prisma.subscription.findMany({
-        select: { plan: true, amount: true, status: true, createdAt: true },
+        where: { status: 'active', endDate: { gt: now } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      prisma.payment.aggregate({
+        where: { purpose: 'SUBSCRIPTION', status: 'completed', currency: 'EGP' },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      prisma.subscriptionGrant.groupBy({ by: ['plan'], _count: { _all: true } }),
+      prisma.subscription.count({
+        where: { plan: { notIn: ['weekly', 'monthly', 'legacy_monthly'] } },
       }),
 
       prisma.workerProfile.findMany({
@@ -179,18 +193,23 @@ export const getAnalytics = async (req, res) => {
     // ============================================================
     // SUBSCRIPTION STATISTICS
     // ============================================================
-    const subsByPlan = {};
-    subscriptions.forEach((s) => {
-      subsByPlan[s.plan] = (subsByPlan[s.plan] || 0) + 1;
+    const grantsByPlan = { weekly: 0, monthly: 0, legacy: 0 };
+    subscriptionGrants.forEach((grant) => {
+      const count = grant._count._all;
+      if (grant.plan === 'weekly' || grant.plan === 'monthly') grantsByPlan[grant.plan] += count;
+      else grantsByPlan.legacy += count;
     });
-    const activeSubs = subscriptions.filter((s) => s.status === 'active');
-    const subscriptionRevenue = activeSubs.reduce((sum, s) => sum + (s.amount || 0), 0);
 
     const subscriptionStatistics = {
-      total: subscriptions.length,
-      active: activeSubs.length,
-      byPlan: subsByPlan,
-      revenue: subscriptionRevenue,
+      activePremiumUsers: activePremiumUsers.length,
+      active: activePremiumUsers.length, // Backward-compatible AdminReports contract.
+      completedPurchases: subscriptionRevenueAgg._count.id || 0,
+      byPlan: grantsByPlan,
+      legacyUntrackedProjections: legacySubscriptionProjections,
+      revenue: subscriptionRevenueAgg._sum.amount || 0,
+      currency: 'EGP',
+      revenueSemantic: 'gross_completed_subscription_book_revenue',
+      planBreakdownSemantic: 'subscription_grants_by_plan',
     };
 
     // ============================================================

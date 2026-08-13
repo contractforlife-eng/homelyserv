@@ -8,6 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
+import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
@@ -63,13 +64,25 @@ router.get('/users', async (req, res) => {
     const users = await User.find({})
       .select('-password') // Don't send passwords
       .sort({ createdAt: -1 }); // Newest first
+    const summaries = await getSubscriptionSummaries(
+      users.map((user) => String(user._id)).filter(isValidObjectId)
+    );
+    const responseUsers = users.map((user) => {
+      const plain = user.toObject();
+      return {
+        ...plain,
+        subscription: summaries.get(String(user._id)) || {
+          isPremium: false, status: 'inactive', endDate: null, startDate: null, latestPlan: null,
+        },
+      };
+    });
 
     console.log(`✅ Admin route: Found ${users.length} users`);
     
     res.json({
       success: true,
       count: users.length,
-      users: users
+      users: responseUsers
     });
   } catch (error) {
     console.error('Get users error:', error);
@@ -93,9 +106,16 @@ router.get('/users/:id', async (req, res) => {
         message: 'User not found'
       });
     }
+    const subscription = isValidObjectId(String(user._id))
+      ? await getSubscriptionStaffDetail(user._id)
+      : {
+        isPremium: false, status: 'inactive', endDate: null, startDate: null,
+        latestPlan: null, grantCounts: { weekly: 0, monthly: 0, legacy: 0 },
+        grants: [], historyAvailable: false,
+      };
     res.json({
       success: true,
-      user
+      user: { ...user.toObject(), subscription }
     });
   } catch (error) {
     console.error('Get user error:', error);

@@ -340,6 +340,11 @@ const SupportUsers = () => {
                           />
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {user.fullName}
+                            {user.subscription?.isPremium && (
+                              <div className="text-xs font-semibold text-amber-600 mt-0.5">
+                                Premium · {formatDate(user.subscription.endDate)}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

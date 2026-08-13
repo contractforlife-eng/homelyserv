@@ -15,6 +15,7 @@
 // (`profileUser`). It NEVER touches authStore.user.
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { useDashboard } from '../layout/DashboardContext';
@@ -56,6 +57,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
+  const { t: i18nT } = useTranslation();
 
   const isAdmin = variant === 'admin';
 
@@ -471,6 +473,48 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 )}
               </div>
             </div>
+          </div>
+
+          {/* AUTHORITATIVE PREMIUM VISIBILITY (read-only) */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <CreditCard size={18} className="text-amber-500" />
+                {i18nT('staffSubscription.title')}
+              </h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.status')}</p>
+                <p className={`text-sm font-semibold mt-1 ${profileUser.subscription?.isPremium ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>
+                  {profileUser.subscription?.isPremium ? i18nT('staffSubscription.active') : i18nT('staffSubscription.inactive')}
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.expiry')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{profileUser.subscription?.endDate ? formatDate(profileUser.subscription.endDate) : t.notProvided}</p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.latestPlan')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
+                  {profileUser.subscription?.latestPlan
+                    ? i18nT(`staffSubscription.plans.${profileUser.subscription.latestPlan}`, { defaultValue: i18nT('staffSubscription.plans.legacy_unknown') })
+                    : i18nT('staffSubscription.unavailable')}
+                </p>
+              </div>
+            </div>
+            {profileUser.subscription?.grants?.length > 0 && (
+              <div className="px-6 pb-6">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{i18nT('staffSubscription.history')}</p>
+                <div className="space-y-2">
+                  {profileUser.subscription.grants.map((grant, index) => (
+                    <div key={`${grant.createdAt}-${index}`} className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2" dir="ltr">
+                      {i18nT(`staffSubscription.plans.${grant.plan}`, { defaultValue: i18nT('staffSubscription.plans.legacy_unknown') })} · {grant.durationDays} {i18nT('staffSubscription.days')} · {formatDate(grant.startsAt)} → {formatDate(grant.endsAt)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ACCOUNT INFO */}

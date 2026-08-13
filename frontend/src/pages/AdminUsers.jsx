@@ -661,7 +661,6 @@ const AdminUsers = () => {
         language={language}
         onToggleLanguage={toggleLanguage}
         notificationUserId={user?.id || user?.email}
-        isPremium={false}
         variant="admin"
       />
 
@@ -853,6 +852,11 @@ const AdminUsers = () => {
                             <p className="font-medium text-gray-900 dark:text-white">
                               {u.fullName}
                             </p>
+                            {u.subscription?.isPremium && (
+                              <p className="text-xs font-semibold text-amber-600 mt-0.5">
+                                Premium · {new Date(u.subscription.endDate).toLocaleDateString()}
+                              </p>
+                            )}
                             {u.phone && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                                 <Phone size={10} />

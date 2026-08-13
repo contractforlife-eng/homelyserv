@@ -8,6 +8,7 @@ import Message from '../models/Message.js';
 import MongooseUser from '../models/User.js';
 import { enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
+import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 
 const router = express.Router();
 
@@ -86,6 +87,7 @@ router.get('/users', async (req, res) => {
     });
 
     const total = await prisma.user.count({ where });
+    const summaries = await getSubscriptionSummaries(users.map((user) => user.id));
 
     return res.json({
       success: true,
@@ -107,6 +109,7 @@ router.get('/users', async (req, res) => {
         suspensionReason: user.suspensionReason,
         phone: user.phone,
         city: user.city,
+        subscription: summaries.get(String(user.id)),
       })),
     });
   } catch (error) {
@@ -182,11 +185,13 @@ router.get('/users/:id', async (req, res) => {
       console.error('❌ Error fetching lastLogin for user:', e.message);
     }
 
+    const subscription = await getSubscriptionStaffDetail(id);
     return res.json({
       success: true,
       user: {
         ...user,
         lastLogin,
+        subscription,
       },
     });
   } catch (error) {
