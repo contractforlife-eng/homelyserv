@@ -12,6 +12,10 @@ import { getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { sendRoleChangeNotification } from '../services/emailService.js';
+import {
+  getDuplicateRefundEvidence,
+  reconcilePayment,
+} from '../services/paymentReconciliationService.js';
 
 const router = express.Router();
 
@@ -540,6 +544,7 @@ router.get('/payments', async (req, res) => {
     // Fetch base payments WITHOUT relation includes to avoid P2023
     // on records with legacy (non-ObjectId) userId values.
     const payments = await prisma.payment.findMany({
+      include: { Refunds: true },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -557,10 +562,15 @@ router.get('/payments', async (req, res) => {
     const userMap = new Map(users.map(u => [u.id, u]));
 
     // Attach user info only when a valid linked user exists
-    const enriched = payments.map(payment => ({
-      ...payment,
-      User: userMap.get(payment.userId) || null
-    }));
+    const duplicateRefundEvidence = getDuplicateRefundEvidence(payments);
+    const enriched = payments.map(payment => {
+      const { Refunds: _refundEvidence, ...paymentFields } = payment;
+      return {
+        ...paymentFields,
+        User: userMap.get(payment.userId) || null,
+        reconciliation: reconcilePayment(payment, duplicateRefundEvidence),
+      };
+    });
 
     res.json({
       success: true,
