@@ -77,6 +77,19 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: '0'
   },
+  // Currency attached to the saved worker-advertised hourly rate. Nullable
+  // preserves legacy implicit-EGP records without fabricating an explicit
+  // currency or coupling the rate to the account preference.
+  hourlyRateCurrency: {
+    type: String,
+    default: null,
+    validate: {
+      validator: (value) => value === null || (
+        normalizeCurrencyCode(value) === value && isSupportedCurrency(value)
+      ),
+      message: 'Hourly rate currency must be a supported uppercase ISO currency code'
+    }
+  },
   companyName: {
     type: String,
     default: ''

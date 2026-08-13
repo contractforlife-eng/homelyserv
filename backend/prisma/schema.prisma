@@ -250,6 +250,7 @@ model User {
   skills                           String[]         @default([])
   experience                       String           @default("")
   hourlyRate                       String           @default("0")
+  hourlyRateCurrency               String?
   companyName                      String           @default("")
   website                          String           @default("")
   profileComplete                  Boolean          @default(false)
