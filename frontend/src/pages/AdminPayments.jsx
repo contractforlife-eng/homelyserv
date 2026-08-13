@@ -188,6 +188,15 @@ const AdminPayments = () => {
   const formattedCompletedRevenue = completedRevenueByCurrency.length
     ? completedRevenueByCurrency.map((entry) => formatCurrency(entry.amount, entry)).join(' · ')
     : '—';
+  const entitlementImpactLabel = (impact) => ({
+    ACTIVE: i18nT('subscriptionRefundAudit.active'),
+    REVERSED: i18nT('subscriptionRefundAudit.reversed'),
+    REFUND_PENDING: i18nT('subscriptionRefundAudit.refundPending'),
+    REFUNDED_ENTITLEMENT_ACTIVE: i18nT('subscriptionRefundAudit.refundedActive'),
+    REFUNDED_ENTITLEMENT_REVERSED: i18nT('subscriptionRefundAudit.refundedReversed'),
+    REVIEW_REQUIRED: i18nT('subscriptionRefundAudit.review'),
+    NONE: i18nT('subscriptionRefundAudit.none'),
+  }[impact] || i18nT('subscriptionRefundAudit.review'));
 
   // ============================================================
   // RENDER
@@ -462,6 +471,20 @@ const AdminPayments = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">Method: {selectedPayment.paymentMethod || 'N/A'}</p>
                 </div>
               </div>
+
+              {selectedPayment.subscriptionReconciliation && (
+                <div className="mt-6 bg-amber-500/10 border border-amber-500/25 rounded-xl p-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{i18nT('subscriptionRefundAudit.title')}</h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                    {entitlementImpactLabel(selectedPayment.subscriptionReconciliation.entitlementImpact)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {selectedPayment.subscriptionReconciliation.grantPresent
+                      ? `${i18nT('subscriptionRefundAudit.grant')}: ${i18nT(`staffSubscription.plans.${selectedPayment.subscriptionReconciliation.grantPlan}`, { defaultValue: i18nT('staffSubscription.plans.legacy_unknown') })} · ${selectedPayment.subscriptionReconciliation.grantDurationDays} ${i18nT('staffSubscription.days')}`
+                      : i18nT('subscriptionRefundAudit.noGrant')}
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end mt-6">
                 <button

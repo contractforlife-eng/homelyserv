@@ -564,7 +564,7 @@ router.get('/payments', async (req, res) => {
     // Fetch base payments WITHOUT relation includes to avoid P2023
     // on records with legacy (non-ObjectId) userId values.
     const payments = await prisma.payment.findMany({
-      include: { Refunds: true },
+      include: { Refunds: true, SubscriptionGrant: true },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -581,14 +581,44 @@ router.get('/payments', async (req, res) => {
     }
     const userMap = new Map(users.map(u => [u.id, u]));
 
+    // One batched query provides sibling grant context for read-only stacked
+    // entitlement ambiguity checks. No Subscription projection is consulted.
+    const subscriptionUserIds = [...new Set(payments
+      .filter((payment) => payment.purpose === 'SUBSCRIPTION')
+      .map((payment) => payment.userId)
+      .filter(isValidObjectId))];
+    const relatedSubscriptionGrants = subscriptionUserIds.length > 0
+      ? await prisma.subscriptionGrant.findMany({
+        where: { userId: { in: subscriptionUserIds } },
+        select: {
+          paymentId: true, userId: true, plan: true, durationDays: true,
+          startsAt: true, endsAt: true, status: true,
+        },
+      })
+      : [];
+    const grantsByUser = relatedSubscriptionGrants.reduce((map, grant) => {
+      const grants = map.get(grant.userId) || [];
+      grants.push(grant);
+      map.set(grant.userId, grants);
+      return map;
+    }, new Map());
+
     // Attach user info only when a valid linked user exists
     const duplicateRefundEvidence = getDuplicateRefundEvidence(payments);
     const enriched = payments.map(payment => {
-      const { Refunds: _refundEvidence, ...paymentFields } = payment;
+      const reconciliation = reconcilePayment(payment, duplicateRefundEvidence, {
+        relatedGrants: grantsByUser.get(payment.userId) || [],
+      });
+      const {
+        Refunds: _refundEvidence,
+        SubscriptionGrant: _subscriptionGrantEvidence,
+        ...paymentFields
+      } = payment;
       return {
         ...paymentFields,
         User: userMap.get(payment.userId) || null,
-        reconciliation: reconcilePayment(payment, duplicateRefundEvidence),
+        reconciliation,
+        subscriptionReconciliation: reconciliation.subscriptionReconciliation,
       };
     });
 

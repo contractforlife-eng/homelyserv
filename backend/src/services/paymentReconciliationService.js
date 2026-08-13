@@ -1,5 +1,6 @@
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 import { formatMoneyDecimal, getCurrencyMinorUnit, toMinorUnits } from '../utils/money.js';
+import { reconcileSubscriptionRefund } from './subscriptionRefundReconciliationService.js';
 
 export const RECONCILIATION_STATES = Object.freeze({
   MATCHED: 'MATCHED',
@@ -88,7 +89,7 @@ export const getDuplicateRefundEvidence = (payments = []) => {
   };
 };
 
-export const reconcilePayment = (payment, duplicateEvidence = {}) => {
+export const reconcilePayment = (payment, duplicateEvidence = {}, context = {}) => {
   const reasons = [];
   const refunds = payment?.Refunds || [];
   const paymentCurrency = canonicalCurrency(payment?.currency);
@@ -226,9 +227,17 @@ export const reconcilePayment = (payment, duplicateEvidence = {}) => {
   else if (providerAmount && completedRefundMinor === providerAmount.minor && completedRefundMinor > 0n) refundState = REFUND_STATES.FULL;
   else if (completedRefundMinor > 0n) refundState = REFUND_STATES.PARTIAL;
 
-  const state = reasons.some((reason) => reason.severity === 'MISMATCH')
+  const subscriptionReconciliation = reconcileSubscriptionRefund(payment, context);
+  const financialState = reasons.some((reason) => reason.severity === 'MISMATCH')
     ? RECONCILIATION_STATES.MISMATCH
     : reasons.length > 0
+      ? RECONCILIATION_STATES.REVIEW_REQUIRED
+      : RECONCILIATION_STATES.MATCHED;
+  const state = financialState === RECONCILIATION_STATES.MISMATCH
+    || subscriptionReconciliation?.state === RECONCILIATION_STATES.MISMATCH
+    ? RECONCILIATION_STATES.MISMATCH
+    : financialState === RECONCILIATION_STATES.REVIEW_REQUIRED
+      || subscriptionReconciliation?.state === RECONCILIATION_STATES.REVIEW_REQUIRED
       ? RECONCILIATION_STATES.REVIEW_REQUIRED
       : RECONCILIATION_STATES.MATCHED;
 
@@ -254,6 +263,7 @@ export const reconcilePayment = (payment, duplicateEvidence = {}) => {
       refundState,
       refundCount: refunds.length,
     },
+    subscriptionReconciliation,
   };
 };
 
