@@ -21,6 +21,7 @@ import {
   executeSandboxFullPayPalRefund,
   RefundPolicyError,
 } from '../services/paypalRefundService.js';
+import { getFinancialCenterData } from '../services/financialCenterService.js';
 
 const router = express.Router();
 
@@ -58,6 +59,19 @@ router.get('/command-center', getCommandCenter);
 // Real aggregated analytics from Prisma models.
 // ============================================================
 router.get('/analytics', getAnalytics);
+
+// Read-only operational financial truth. All monetary aggregation is computed
+// server-side by book/provider currency; this endpoint performs no mutation or
+// provider call.
+router.get('/financial-center', async (req, res) => {
+  try {
+    return res.json({ success: true, financialCenter: await getFinancialCenterData(req.query) });
+  } catch (error) {
+    const status = error instanceof TypeError ? 400 : 500;
+    console.error('Financial Center read failed:', error.message);
+    return res.status(status).json({ success: false, message: status === 400 ? error.message : 'Failed to load Financial Center' });
+  }
+});
 
 // ============================================================
 // Get All Users (Admin Only) - FIXED: Shows ALL users

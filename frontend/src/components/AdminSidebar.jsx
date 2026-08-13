@@ -19,8 +19,10 @@ import {
   CreditCard,
   FileText,
   BarChart3,
-  Briefcase
+  Briefcase,
+  Landmark
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const AdminSidebar = ({
   language,
@@ -32,6 +34,7 @@ const AdminSidebar = ({
   authUser,
   handleLogout,
 }) => {
+  const { t: i18nT } = useTranslation();
   const location = useLocation();
   // Unified sidebar activity counters (single shared request)
   const counters = useSidebarCounters();
@@ -79,6 +82,7 @@ const AdminSidebar = ({
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
     { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
     { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
+    { id: 'financial-center', label: i18nT('financialCenter.nav'), icon: Landmark, path: '/admin/financial-center' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/admin/complaints' },
     { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },

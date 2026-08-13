@@ -64,6 +64,7 @@ import AdminMessages from './pages/AdminMessages';
 import AdminHires from './pages/AdminHires';
 import AdminProfile from './pages/AdminProfile';
 import AdminUserProfile from './pages/AdminUserProfile';
+import AdminFinancialCenter from './pages/AdminFinancialCenter';
 
 // Support Pages
 import SupportDashboard from './pages/support/SupportDashboard';
@@ -479,6 +480,14 @@ function App() {
             <AdminPayments />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/admin/financial-center"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminFinancialCenter />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/admin/complaints" 
