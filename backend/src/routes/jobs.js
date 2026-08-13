@@ -63,6 +63,94 @@ const parseCompensationAmount = (value, field, errors) => {
   return undefined;
 };
 
+const parseCompensationFilterAmount = (value, field) => {
+  if (typeof value !== 'string' || !STRICT_DECIMAL_PATTERN.test(value)) {
+    return { error: `${field} must be a strict non-negative decimal` };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return { error: `${field} must be a finite non-negative number` };
+  }
+
+  return { value: parsed };
+};
+
+export const buildCompensationFilter = ({ salaryMin, salaryMax, compensationCurrency }) => {
+  const hasSalaryMin = salaryMin !== undefined;
+  const hasSalaryMax = salaryMax !== undefined;
+  const hasNumericFilter = hasSalaryMin || hasSalaryMax;
+  const hasCurrencyFilter = compensationCurrency !== undefined;
+
+  if (!hasNumericFilter) {
+    if (hasCurrencyFilter) {
+      return { error: 'compensationCurrency is only supported with salaryMin or salaryMax' };
+    }
+    return { conditions: [] };
+  }
+
+  const normalizedCurrency = normalizeCurrencyCode(compensationCurrency);
+  if (!normalizedCurrency || !isSupportedCurrency(normalizedCurrency)) {
+    return { error: 'A supported compensationCurrency is required for salary filtering' };
+  }
+
+  const parsedMin = hasSalaryMin
+    ? parseCompensationFilterAmount(salaryMin, 'salaryMin')
+    : { value: null };
+  if (parsedMin.error) return parsedMin;
+
+  const parsedMax = hasSalaryMax
+    ? parseCompensationFilterAmount(salaryMax, 'salaryMax')
+    : { value: null };
+  if (parsedMax.error) return parsedMax;
+
+  if (parsedMin.value !== null && parsedMax.value !== null && parsedMin.value > parsedMax.value) {
+    return { error: 'salaryMin must be less than or equal to salaryMax' };
+  }
+
+  const currencyCondition = normalizedCurrency === 'EGP'
+    ? {
+        OR: [
+          { compensationCurrency: 'EGP' },
+          { compensationCurrency: null },
+          { compensationCurrency: { isSet: false } },
+        ],
+      }
+    : { compensationCurrency: normalizedCurrency };
+
+  const conditions = [
+    currencyCondition,
+    {
+      OR: [
+        { salaryMin: { not: null, isSet: true } },
+        { salaryMax: { not: null, isSet: true } },
+      ],
+    },
+  ];
+
+  if (parsedMin.value !== null) {
+    conditions.push({
+      OR: [
+        { salaryMax: { gte: parsedMin.value } },
+        { salaryMax: null },
+        { salaryMax: { isSet: false } },
+      ],
+    });
+  }
+
+  if (parsedMax.value !== null) {
+    conditions.push({
+      OR: [
+        { salaryMin: { lte: parsedMax.value } },
+        { salaryMin: null },
+        { salaryMin: { isSet: false } },
+      ],
+    });
+  }
+
+  return { conditions, normalizedCurrency };
+};
+
 const validateCompensation = (body, data, errors, { partial, existingJob }) => {
   const touched = COMPENSATION_FIELDS.some((field) => hasOwn(body, field));
   if (partial && !touched) return;
@@ -322,7 +410,7 @@ router.get('/mine', requireEmployer, async (req, res) => {
 // ============================================================
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { query, location, employmentType, salaryMin, salaryMax } = req.query;
+    const { query, location, employmentType, salaryMin, salaryMax, compensationCurrency } = req.query;
 
     const where = { status: 'open' };
 
@@ -342,12 +430,16 @@ router.get('/', authenticate, async (req, res) => {
       where.employmentType = String(employmentType).trim();
     }
 
-    if (salaryMin !== undefined && Number.isFinite(Number(salaryMin))) {
-      where.salaryMax = { gte: Number(salaryMin) };
+    const compensationFilter = buildCompensationFilter({
+      salaryMin,
+      salaryMax,
+      compensationCurrency,
+    });
+    if (compensationFilter.error) {
+      return res.status(400).json({ success: false, message: compensationFilter.error });
     }
-
-    if (salaryMax !== undefined && Number.isFinite(Number(salaryMax))) {
-      where.salaryMin = { lte: Number(salaryMax) };
+    if (compensationFilter.conditions.length > 0) {
+      where.AND = compensationFilter.conditions;
     }
 
     const jobs = await prisma.jobPost.findMany({
