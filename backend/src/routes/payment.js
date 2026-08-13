@@ -1383,68 +1383,17 @@ router.get('/status/:paymentId', async (req, res) => {
  * the payment completed and call updateHireAfterPayment(). There is NO manual
  * "Mark as Paid" UI anymore.
  *
- * This endpoint is retained temporarily for backward compatibility with the
- * current automated frontend flow, which calls it as a redundant no-op after a
- * successful capture. It must NOT be used to manually mark a payment as paid.
- * TODO: remove once the redundant frontend call is cleaned up.
+ * This route remains mounted temporarily for compatibility and monitoring, but
+ * all legacy completion requests are rejected without reading or writing any
+ * financial state. Provider-verified canonical fulfillment is the only path.
  *
  * POST /api/payments/complete-payment
  */
-router.post('/complete-payment', async (req, res) => {
-  try {
-    const { orderId, transactionId, userId } = req.body;
-
-    console.log('✅ Completing payment manually:', { orderId, transactionId, userId });
-
-    const payment = await prisma.payment.findFirst({
-      where: {
-        OR: [
-          { orderId },
-          { transactionId },
-          { paypalOrderId: orderId }
-        ]
-      }
-    });
-
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        error: 'Payment not found'
-      });
-    }
-
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'completed',
-        completedAt: new Date()
-      }
-    });
-
-    // Update hire status
-    if (payment.hireId) {
-      await updateHireAfterPayment(payment.hireId, 'MANUAL_' + Date.now());
-    }
-
-    res.json({
-      success: true,
-      message: 'Payment completed successfully',
-      payment: {
-        id: payment.transactionId,
-        orderId: payment.orderId,
-        amount: payment.amount,
-        status: 'completed',
-        paymentMethod: payment.paymentMethod
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Complete payment error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to complete payment'
-    });
-  }
+router.post('/complete-payment', (_req, res) => {
+  return res.status(410).json({
+    success: false,
+    message: 'Deprecated payment completion endpoint is no longer supported.'
+  });
 });
 
 /**
