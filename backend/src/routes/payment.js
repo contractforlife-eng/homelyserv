@@ -6,7 +6,12 @@ import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
-import { PREMIUM_DURATION_DAYS, PAYMENT_PURPOSES, getPremiumPriceForRole } from '../config/subscription.js';
+import {
+  PAYMENT_PURPOSES,
+  SUBSCRIPTION_CURRENCY,
+  getSubscriptionPlan,
+  getSubscriptionPrice,
+} from '../config/subscription.js';
 import {
   PROVIDER_CAPABILITY_MODES,
   getAvailableProviders,
@@ -537,13 +542,21 @@ const updateHireAfterPayment = async (hireId, captureId) => {
 // SUBSCRIPTION MANAGEMENT
 // ============================================================
 
-const ensureSubscription = async (userId, amount) => {
+const ensureSubscription = async (userId, amount, paymentMetadata = {}) => {
   if (!userId) {
     throw new Error('Cannot activate subscription: userId is required');
   }
 
   const now = new Date();
-  const durationMs = PREMIUM_DURATION_DAYS * 24 * 60 * 60 * 1000;
+  // New Payments snapshot their exact plan duration. Pre-transition Payments
+  // have no snapshot and retain the historical 30-day fulfillment contract.
+  const durationDays = Number.isInteger(paymentMetadata?.durationDays)
+    ? paymentMetadata.durationDays
+    : 30;
+  const durationMs = durationDays * 24 * 60 * 60 * 1000;
+  const projectionPlan = typeof paymentMetadata?.plan === 'string'
+    ? paymentMetadata.plan
+    : 'premium';
 
   const existing = await prisma.subscription.findFirst({
     where: {
@@ -563,7 +576,9 @@ const ensureSubscription = async (userId, amount) => {
 
     const updated = await prisma.subscription.update({
       where: { id: existing.id },
-      data: { endDate: extendedEndDate, amount: Number(amount) }
+      // Projection semantics: these fields describe the latest purchase only;
+      // Payment remains the financial/history authority for stacked plans.
+      data: { endDate: extendedEndDate, amount: Number(amount), plan: projectionPlan }
     });
 
     await createNotification(String(userId), {
@@ -586,7 +601,7 @@ const ensureSubscription = async (userId, amount) => {
   const created = await prisma.subscription.create({
     data: {
       userId: String(userId),
-      plan: 'premium',
+      plan: projectionPlan,
       amount: Number(amount),
       status: 'active',
       startDate,
@@ -731,7 +746,7 @@ const completePaymentTransaction = async (payment, captureRef) => {
   try {
     if (payment.purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       console.log(`👑 SUBSCRIPTION payment ${payment.transactionId} completed — activating Premium ONLY`);
-      await ensureSubscription(payment.userId, payment.amount);
+      await ensureSubscription(payment.userId, payment.amount, payment.metadata || {});
     } else {
       // COMMISSION (default for hire-linked payments) — never grants Premium.
       console.log(`💳 COMMISSION payment ${payment.transactionId} completed — hire update only, NO premium granted`);
@@ -824,7 +839,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       hireId,
       phone,
       offerId,
-      purpose: requestedPurpose
+      purpose: requestedPurpose,
+      plan: requestedPlan
     } = req.body;
 
     // Amount is NEVER taken from the client as authority. It is re-derived
@@ -845,11 +861,16 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Unsupported payment method' });
     }
     let transactionCurrency = 'EGP';
+    let subscriptionSnapshot = null;
 
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
-      // SERVER-SIDE PRICE AUTHORITY: never trust the client-supplied amount
-      // for a subscription. Price is derived from the authenticated user's
-      // role (verified against the DB when possible).
+      // SERVER-SIDE PLAN AUTHORITY: the client selects only a stable plan id.
+      // Price, duration, currency and purchaser role are derived here.
+      const selectedPlan = getSubscriptionPlan(requestedPlan);
+      if (!selectedPlan) {
+        return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
+      }
+
       let role = req.userRole;
       try {
         const dbUser = await prisma.user.findUnique({
@@ -861,7 +882,17 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         console.warn('⚠️ Could not resolve role for subscription pricing:', roleErr.message);
       }
 
-      amount = getPremiumPriceForRole(role);
+      if (!['EMPLOYER', 'WORKER'].includes(role)) {
+        return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
+      }
+
+      amount = getSubscriptionPrice(selectedPlan.id, role);
+      transactionCurrency = SUBSCRIPTION_CURRENCY;
+      subscriptionSnapshot = {
+        plan: selectedPlan.id,
+        purchaserRole: role,
+        durationDays: selectedPlan.durationDays,
+      };
 
       if (!amount || amount <= 0) {
         return res.status(400).json({
@@ -1097,7 +1128,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             createdFrom: 'payment-intent',
             source: 'frontend',
             originalAmount: amount,
-            originalCurrency: transactionCurrency
+            originalCurrency: transactionCurrency,
+            ...subscriptionSnapshot
           }
         }
       });

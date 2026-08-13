@@ -4,9 +4,9 @@
 import useAuthStore from '../store/authStore';
 
 const SUBSCRIPTION_KEY = 'homelyserv_subscriptions';
-const SUBSCRIPTION_PRICES = {
-  EMPLOYER: 200, // EGP per month
-  WORKER: 100   // EGP per month
+const SUBSCRIPTION_PLANS = {
+  weekly: { durationDays: 7, prices: { EMPLOYER: 100, WORKER: 75 } },
+  monthly: { durationDays: 30, prices: { EMPLOYER: 300, WORKER: 200 } }
 };
 
 // Max number of records kept in the localStorage mirror (excluding the current user).
@@ -122,14 +122,13 @@ export const isUserPremium = (userId) => {
 /**
  * Create or renew a subscription
  */
-export const createSubscription = (userId, userEmail, userRole, userFullName) => {
+export const createSubscription = (userId, userEmail, userRole, userFullName, plan = 'monthly') => {
   try {
     const subscriptions = getSubscriptions();
     const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setMonth(expiresAt.getMonth() + 1); // 1 month subscription
-    
-    const price = userRole === 'EMPLOYER' ? SUBSCRIPTION_PRICES.EMPLOYER : SUBSCRIPTION_PRICES.WORKER;
+    const planConfig = SUBSCRIPTION_PLANS[plan] || SUBSCRIPTION_PLANS.monthly;
+    const expiresAt = new Date(now.getTime() + planConfig.durationDays * 24 * 60 * 60 * 1000);
+    const price = planConfig.prices[userRole];
     
     const subscription = {
       userId: userId,
@@ -137,6 +136,7 @@ export const createSubscription = (userId, userEmail, userRole, userFullName) =>
       userRole: userRole,
       userFullName: userFullName,
       active: true,
+      plan,
       startedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
       price: price,
@@ -282,8 +282,8 @@ const updateAllUserData = (userEmail, isPremium, userId, userRole, userFullName)
 /**
  * Get subscription price based on role
  */
-export const getSubscriptionPrice = (role) => {
-  return role === 'EMPLOYER' ? SUBSCRIPTION_PRICES.EMPLOYER : SUBSCRIPTION_PRICES.WORKER;
+export const getSubscriptionPrice = (role, plan = 'monthly') => {
+  return SUBSCRIPTION_PLANS[plan]?.prices?.[role] ?? null;
 };
 
 /**

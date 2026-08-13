@@ -22,7 +22,7 @@ import {
   getSubscriptionStatus
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
-import { PAYMENT_METHODS } from '../config/paymentConfig';
+import { PAYMENT_METHODS, SUBSCRIPTION_PLANS } from '../config/paymentConfig';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -42,6 +42,7 @@ const Subscription = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
@@ -53,7 +54,9 @@ const Subscription = () => {
   // UI refresh/purchase cycles (polling + popup-return can both fire).
   const subscriptionProcessedRef = useRef(false);
 
-  const price = isEmployer ? 200 : 100;
+  const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
+  const selectedPlanConfig = SUBSCRIPTION_PLANS[selectedPlan];
+  const price = selectedPlanConfig.prices[userRole];
 
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
@@ -138,7 +141,8 @@ const Subscription = () => {
         userId,
         authUser.email,
         userRole,
-        authUser.fullName || (isEmployer ? 'Employer' : 'Worker')
+        authUser.fullName || (isEmployer ? 'Employer' : 'Worker'),
+        selectedPlan
       );
 
       if (subscription) {
@@ -188,7 +192,7 @@ const Subscription = () => {
           active: true,
           status: 'active',
           message: 'Active',
-          daysLeft: 30,
+          daysLeft: selectedPlanConfig.durationDays,
           expiresAt: subscription.expiresAt
         });
       }
@@ -296,7 +300,7 @@ const Subscription = () => {
 
       if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
         // Paymob Payment
-        const result = await createPaymobPayment(price, orderId, customerData, { purpose: 'SUBSCRIPTION' });
+        const result = await createPaymobPayment(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
         
         if (result.success) {
           setPaymobIframe(result.iframeUrl);
@@ -307,7 +311,7 @@ const Subscription = () => {
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
         // PayPal Payment
-        const result = await createPayPalOrder(price, orderId, customerData, { purpose: 'SUBSCRIPTION' });
+        const result = await createPayPalOrder(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
         
         if (result.success) {
           // Open PayPal in new window
@@ -528,11 +532,25 @@ const Subscription = () => {
                       <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Crown size={36} className="text-white" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('subscriptionPage.pricing.title')}</h3>
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('subscriptionPlanOptions.choosePlan')}</h3>
                       <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('subscriptionPage.pricing.description')}</p>
-                      <div className="mt-4">
-                        <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">EGP {price}</span>
-                        <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-lg">{t('subscriptionPage.pricing.perMonth')}</span>
+                      <div className="grid grid-cols-2 gap-3 mt-5" dir="ltr">
+                        {Object.values(SUBSCRIPTION_PLANS).map((plan) => (
+                          <button
+                            type="button"
+                            key={plan.id}
+                            disabled={processing}
+                            onClick={() => setSelectedPlan(plan.id)}
+                            className={`rounded-xl border-2 p-3 text-center transition-all ${selectedPlan === plan.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30' : 'border-gray-200 dark:border-gray-700'}`}
+                          >
+                            <span className="block font-semibold text-gray-800 dark:text-white">{t(`subscriptionPlanOptions.plans.${plan.id}`)}</span>
+                            <span className="block text-xl font-bold text-purple-600">{plan.prices[userRole]} EGP</span>
+                            <span className="block text-sm text-gray-500">{t('subscriptionPlanOptions.durationDays', { days: plan.durationDays })}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-5">
+                        <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-purple-600">{price} EGP</span>
                       </div>
                     </div>
 
@@ -553,7 +571,7 @@ const Subscription = () => {
                           <CheckCircle size={18} />
                           <span className="font-semibold">{t('subscriptionPage.status.active')}</span>
                           <span className="text-sm text-green-600">
-                            ({t('subscriptionPage.status.daysLeft', { days: subscriptionStatus.daysLeft || 30 })})
+                            ({t('subscriptionPage.status.daysLeft', { days: subscriptionStatus.daysLeft })})
                           </span>
                         </div>
                         {subscriptionStatus.expiresAt && (

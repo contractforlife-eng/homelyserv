@@ -7,30 +7,59 @@
 // never dictate the charged amount.
 //
 // Official business rules to preserve:
-//   Employer Premium = 200 EGP / 30 days
-//   Worker Premium   = 100 EGP / 30 days
+//   weekly:  Employer 100 EGP, Worker 75 EGP, 7 days
+//   monthly: Employer 300 EGP, Worker 200 EGP, 30 days
 //   Commission rate = 15%  (backend/src/config/monetization.js)
 // ============================================================
 
-export const PREMIUM_PRICES = {
-  EMPLOYER: 200, // EGP
-  WORKER: 100    // EGP
+export const SUBSCRIPTION_CURRENCY = 'EGP';
+export const SUBSCRIPTION_PLANS = {
+  weekly: {
+    durationDays: 7,
+    prices: { EMPLOYER: 100, WORKER: 75 }
+  },
+  monthly: {
+    durationDays: 30,
+    prices: { EMPLOYER: 300, WORKER: 200 }
+  }
 };
-
-export const PREMIUM_DURATION_DAYS = 30;
 
 export const PAYMENT_PURPOSES = {
   SUBSCRIPTION: 'SUBSCRIPTION',
   COMMISSION: 'COMMISSION'
 };
 
-export const getPremiumPriceForRole = (role) => {
-  return role === 'EMPLOYER' ? PREMIUM_PRICES.EMPLOYER : PREMIUM_PRICES.WORKER;
+export const normalizeSubscriptionPlanId = (plan) => (
+  typeof plan === 'string' ? plan.trim().toLowerCase() : ''
+);
+
+export const isSupportedSubscriptionPlan = (plan) => (
+  Object.hasOwn(SUBSCRIPTION_PLANS, normalizeSubscriptionPlanId(plan))
+);
+
+export const getSubscriptionPlan = (plan) => {
+  const normalized = normalizeSubscriptionPlanId(plan);
+  return isSupportedSubscriptionPlan(normalized)
+    ? { id: normalized, ...SUBSCRIPTION_PLANS[normalized] }
+    : null;
+};
+
+export const getSubscriptionPrice = (plan, role) => {
+  const config = getSubscriptionPlan(plan);
+  return config?.prices?.[role] ?? null;
+};
+
+export const getSubscriptionDurationDays = (plan) => {
+  return getSubscriptionPlan(plan)?.durationDays ?? null;
 };
 
 export default {
-  PREMIUM_PRICES,
-  PREMIUM_DURATION_DAYS,
+  SUBSCRIPTION_CURRENCY,
+  SUBSCRIPTION_PLANS,
   PAYMENT_PURPOSES,
-  getPremiumPriceForRole
+  normalizeSubscriptionPlanId,
+  isSupportedSubscriptionPlan,
+  getSubscriptionPlan,
+  getSubscriptionPrice,
+  getSubscriptionDurationDays
 };

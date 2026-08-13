@@ -3854,6 +3854,13 @@ ru.translation.myHiresPage.fallbacks = { unknownWorker: 'Неизвестный 
 tr.translation.myHiresPage.fallbacks = { unknownWorker: 'Bilinmeyen çalışan', serviceProvider: 'Hizmet sağlayıcı' };
 de.translation.myHiresPage.fallbacks = { unknownWorker: 'Unbekannte Arbeitskraft', serviceProvider: 'Dienstleister' };
 
+en.translation.subscriptionPlanOptions = { choosePlan: 'Choose plan', plans: { weekly: 'Weekly Premium', monthly: 'Monthly Premium' }, durationDays: '{{days}} days' };
+ar.translation.subscriptionPlanOptions = { choosePlan: 'اختر الخطة', plans: { weekly: 'Premium أسبوعي', monthly: 'Premium شهري' }, durationDays: '{{days}} أيام' };
+fr.translation.subscriptionPlanOptions = { choosePlan: 'Choisir une formule', plans: { weekly: 'Premium hebdomadaire', monthly: 'Premium mensuel' }, durationDays: '{{days}} jours' };
+ru.translation.subscriptionPlanOptions = { choosePlan: 'Выберите план', plans: { weekly: 'Недельный Premium', monthly: 'Месячный Premium' }, durationDays: '{{days}} дней' };
+tr.translation.subscriptionPlanOptions = { choosePlan: 'Plan seçin', plans: { weekly: 'Haftalık Premium', monthly: 'Aylık Premium' }, durationDays: '{{days}} gün' };
+de.translation.subscriptionPlanOptions = { choosePlan: 'Tarif wählen', plans: { weekly: 'Wöchentliches Premium', monthly: 'Monatliches Premium' }, durationDays: '{{days}} Tage' };
+
 const resources = {
   en,
   ar,

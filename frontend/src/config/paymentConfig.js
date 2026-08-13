@@ -163,10 +163,10 @@ export const PAYMENT_CONFIG = {
     // Quick hire premium fee
     quickHirePremiumFee: 299,
     
-    // Premium subscription prices
+    // Display-only subscription prices; backend/src/config/subscription.js is authoritative.
     premium: {
-      employer: 200, // EGP per month
-      worker: 100    // EGP per month
+      weekly: { employer: 100, worker: 75 },
+      monthly: { employer: 300, worker: 200 }
     },
     
     // Withdrawal fees
@@ -266,35 +266,17 @@ export const PAYMENT_METHOD_DETAILS = {
 // SUBSCRIPTION PLANS
 // ============================================================
 export const SUBSCRIPTION_PLANS = {
-  EMPLOYER: {
-    id: 'employer_premium',
-    name: 'Employer Premium',
-    price: 200,
+  weekly: {
+    id: 'weekly',
+    durationDays: 7,
     currency: 'EGP',
-    interval: 'monthly',
-    features: [
-      'Verified badge on profile',
-      'Priority in search results',
-      'Access to premium workers',
-      'Priority support',
-      'Advanced analytics',
-      'Unlimited job postings'
-    ]
+    prices: { EMPLOYER: 100, WORKER: 75 }
   },
-  WORKER: {
-    id: 'worker_premium',
-    name: 'Worker Premium',
-    price: 100,
+  monthly: {
+    id: 'monthly',
+    durationDays: 30,
     currency: 'EGP',
-    interval: 'monthly',
-    features: [
-      'Verified badge on profile',
-      'Priority in search results',
-      'Access to premium offers',
-      'Priority support',
-      'Advanced analytics',
-      'Higher visibility'
-    ]
+    prices: { EMPLOYER: 300, WORKER: 200 }
   }
 };
 
