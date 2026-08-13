@@ -85,6 +85,37 @@ export const supportedCountryCurrencyMetadata = Object.freeze(
   }))
 );
 
+const countriesByNormalizedName = supportedCountryCurrencyMetadata.reduce((index, country) => {
+  const normalizedName = country.name.trim().toLocaleLowerCase('en');
+  const existing = index.get(normalizedName);
+  index.set(normalizedName, existing ? null : country);
+  return index;
+}, new Map());
+
+/**
+ * Resolve a non-financial account default without mutating the account.
+ * Priority: valid explicit preference, country code, unambiguous controlled
+ * country name, then the explicit legacy EGP fallback. Language, IP, and all
+ * marketplace/financial records are intentionally outside this resolver.
+ */
+export const resolveAccountDefaultCurrency = (account = {}) => {
+  const normalizedPreference = normalizeCurrencyCode(account?.preferredCurrency);
+  if (normalizedPreference && isSupportedCurrency(normalizedPreference)) {
+    return normalizedPreference;
+  }
+
+  const countryCodeCurrency = getDefaultCurrencyForCountry(account?.countryCode);
+  if (countryCodeCurrency) return countryCodeCurrency;
+
+  if (typeof account?.countryName === 'string') {
+    const normalizedName = account.countryName.trim().toLocaleLowerCase('en');
+    const country = countriesByNormalizedName.get(normalizedName);
+    if (country?.defaultCurrency) return country.defaultCurrency;
+  }
+
+  return LEGACY_DEFAULT_CURRENCY;
+};
+
 // Fail fast during development if the curated mapping drifts from the existing
 // supported-country source or introduces duplicate/empty canonical metadata.
 const normalizedCountryCodes = supportedCountryCurrencyMetadata.map(({ code }) => code);
@@ -95,4 +126,3 @@ if (
 ) {
   throw new Error('Invalid or incomplete supported country currency metadata');
 }
-

@@ -225,6 +225,7 @@ model User {
   city                             String?
   countryCode                      String?
   countryName                      String?
+  preferredCurrency                String?
   // TODO: isVerified is retained for backward compatibility.
   // It is still referenced by workerController.js, adminCommandCenterController.js
   // and routes/support.js. Phase 3 email verification uses emailVerified.

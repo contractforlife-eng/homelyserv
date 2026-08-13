@@ -1,5 +1,6 @@
 // backend/src/models/User.js
 import mongoose from 'mongoose';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 
 const UserSchema = new mongoose.Schema({
   fullName: {
@@ -40,6 +41,18 @@ const UserSchema = new mongoose.Schema({
   countryName: {
     type: String,
     default: ''
+  },
+  // Explicit account preference only. It remains nullable so country-derived
+  // defaults and legacy fallback are distinguishable from a user choice.
+  preferredCurrency: {
+    type: String,
+    default: null,
+    validate: {
+      validator: (value) => value === null || (
+        normalizeCurrencyCode(value) === value && isSupportedCurrency(value)
+      ),
+      message: 'Preferred currency must be a supported uppercase ISO currency code'
+    }
   },
   location: {
     type: String,
