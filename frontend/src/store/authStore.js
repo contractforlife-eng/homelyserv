@@ -387,6 +387,30 @@ const useAuthStore = create(
         }
       },
 
+      updatePreferredCurrency: async (preferredCurrency) => {
+        try {
+          const response = await api.patch('/api/auth/preferences/currency', {
+            preferredCurrency
+          });
+
+          set((state) => ({
+            user: state.user
+              ? { ...state.user, preferredCurrency: response.data.preferredCurrency }
+              : state.user,
+            error: null
+          }));
+
+          return {
+            success: true,
+            preferredCurrency: response.data.preferredCurrency,
+            effectiveCurrency: response.data.effectiveCurrency
+          };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Currency preference update failed.';
+          return { success: false, error: errorMessage };
+        }
+      },
+
       getProfileCompletion: () => {
         const { user } = get();
         if (!user) return 0;

@@ -63,6 +63,7 @@ const EmployerSettings = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const logout = useAuthStore(state => state.logout);
   const updateSettings = useAuthStore(state => state.updateSettings);
+  const updatePreferredCurrency = useAuthStore(state => state.updatePreferredCurrency);
   const theme = useThemeStore(state => state.theme);
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const isDark = theme === 'dark';
@@ -72,6 +73,9 @@ const EmployerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState('EGP');
+  const [currencyDirty, setCurrencyDirty] = useState(false);
+  const currencyDirtyRef = useRef(false);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -117,6 +121,14 @@ const EmployerSettings = () => {
         const response = await api.get('/api/auth/settings');
         if (response.data.success) {
           setSettings(prev => ({ ...prev, ...response.data.settings }));
+          if (!currencyDirtyRef.current) {
+            setSelectedCurrency(
+              authUser?.preferredCurrency ||
+                authUser?.effectiveCurrency ||
+                response.data.settings?.currency ||
+                'EGP'
+            );
+          }
         }
       } catch (error) {
         console.error('Error loading settings from backend:', error);
@@ -126,6 +138,14 @@ const EmployerSettings = () => {
           try {
             const parsedSettings = JSON.parse(savedSettings);
             setSettings(prev => ({ ...prev, ...parsedSettings }));
+            if (!currencyDirtyRef.current) {
+              setSelectedCurrency(
+                authUser?.preferredCurrency ||
+                  authUser?.effectiveCurrency ||
+                  parsedSettings.currency ||
+                  'EGP'
+              );
+            }
           } catch (e) {
             console.error('Error parsing settings:', e);
           }
@@ -135,6 +155,12 @@ const EmployerSettings = () => {
 
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    if (!currencyDirtyRef.current && authUser?.preferredCurrency) {
+      setSelectedCurrency(authUser.preferredCurrency);
+    }
+  }, [authUser?.preferredCurrency]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -161,6 +187,12 @@ const EmployerSettings = () => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleCurrencyChange = (value) => {
+    setSelectedCurrency(value);
+    setCurrencyDirty(true);
+    currencyDirtyRef.current = true;
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
@@ -172,6 +204,15 @@ const EmployerSettings = () => {
       const result = await updateSettings(settingsToSave);
 
       if (result.success) {
+        if (currencyDirty) {
+          const currencyResult = await updatePreferredCurrency(selectedCurrency);
+          if (!currencyResult.success) {
+            throw new Error(currencyResult.error || t('employerSettings.errorSaving'));
+          }
+          setCurrencyDirty(false);
+          currencyDirtyRef.current = false;
+        }
+
         // Only mirror to localStorage after a confirmed backend save
         localStorage.setItem('employer_settings', JSON.stringify(settingsToSave));
         setSaveSuccess(true);
@@ -470,8 +511,8 @@ const EmployerSettings = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.currencyDesc')}</p>
                   </div>
                   <select
-                    value={settings.currency}
-                    onChange={(e) => handleSettingChange('currency', e.target.value)}
+                    value={selectedCurrency}
+                    onChange={(e) => handleCurrencyChange(e.target.value)}
                     className="px-4 py-2 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="EGP">{t('employerSettings.currencyOptions.egp')}</option>
