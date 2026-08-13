@@ -1032,8 +1032,8 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
 
     console.log(`✅ Found payment for order: ${orderId}, status: ${payment.status}`);
 
-    // If already completed, return success
-    if (payment.status === 'completed') {
+    // Only short-circuit when both capture and canonical fulfillment finished.
+    if (payment.status === 'completed' && payment.fulfillmentStatus === FULFILLMENT_STATUS.FULFILLED) {
       console.log(`✅ Payment already completed: ${orderId}`);
       console.log("RETURN SUCCESS PATH A");
       return res.json({
@@ -1049,8 +1049,13 @@ router.post('/capture-paypal/:orderId', async (req, res) => {
       });
     }
 
-    // Check if payment is still pending approval
-    if (payment.status === 'pending' || payment.status === 'processing') {
+    // Completed-but-unfulfilled payments must re-verify with PayPal below and
+    // retry through the same idempotent fulfillment path.
+    if (
+      payment.status === 'pending' ||
+      payment.status === 'processing' ||
+      (payment.status === 'completed' && payment.fulfillmentStatus !== FULFILLMENT_STATUS.FULFILLED)
+    ) {
       // Get PayPal access token
       let accessToken;
       try {
@@ -1303,8 +1308,13 @@ router.get('/status/:paymentId', async (req, res) => {
       });
     }
 
-    // If PayPal payment, check status from PayPal
-    if (payment.paymentMethod === 'paypal' && payment.paypalOrderId && payment.status !== 'completed') {
+    // Verify PayPal server-to-server whenever capture or fulfillment is not
+    // complete; internal Payment.status alone is not provider proof.
+    if (
+      payment.paymentMethod === 'paypal' &&
+      payment.paypalOrderId &&
+      (payment.status !== 'completed' || payment.fulfillmentStatus !== FULFILLMENT_STATUS.FULFILLED)
+    ) {
       try {
         const accessToken = await getPayPalAccessToken();
         const baseUrl = process.env.PAYPAL_MODE === 'production'
@@ -1321,15 +1331,15 @@ router.get('/status/:paymentId', async (req, res) => {
         );
 
         if (orderCheck.data?.status === 'COMPLETED') {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'completed',
-              completedAt: new Date()
-            }
+          const captureId = orderCheck.data?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+          await completePaymentTransaction(payment, captureId || payment.paypalOrderId);
+
+          const refreshedPayment = await prisma.payment.findUnique({
+            where: { id: payment.id }
           });
-          payment.status = 'completed';
-          payment.completedAt = new Date();
+          if (refreshedPayment) {
+            Object.assign(payment, refreshedPayment);
+          }
         }
       } catch (error) {
         console.log('⚠️ Could not check PayPal status:', error.message);
