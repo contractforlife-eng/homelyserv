@@ -104,9 +104,15 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     });
   }
 
-  // Both current purposes share the existing EGP transaction path, but are
-  // represented independently so either policy can diverge safely later.
-  if (normalizedCurrency !== 'EGP') {
+  const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
+  const isLivePayPalDirectCommission = (
+    normalizedProvider === PROVIDERS.PAYPAL &&
+    normalizedPurpose === PAYMENT_PURPOSES.COMMISSION &&
+    configuration.environment === 'production' &&
+    ['USD', 'EUR', 'GBP'].includes(normalizedCurrency)
+  );
+
+  if (normalizedCurrency !== 'EGP' && !isLivePayPalDirectCommission) {
     return unsupportedCapability({
       provider: normalizedProvider,
       purpose: normalizedPurpose,
@@ -116,15 +122,15 @@ export const getProviderCapability = ({ provider, purpose, transactionCurrency }
     });
   }
 
-  const isPaymob = normalizedProvider === PROVIDERS.PAYMOB;
+  const isLegacyPayPal = normalizedProvider === PROVIDERS.PAYPAL && normalizedCurrency === 'EGP';
   return {
     provider: normalizedProvider,
     purpose: normalizedPurpose,
     transactionCurrency: normalizedCurrency,
-    providerCurrency: isPaymob ? 'EGP' : 'USD',
+    providerCurrency: isPaymob ? 'EGP' : isLegacyPayPal ? 'USD' : normalizedCurrency,
     supported: true,
     enabled: configuration.configured,
-    mode: isPaymob
+    mode: isPaymob || isLivePayPalDirectCommission
       ? PROVIDER_CAPABILITY_MODES.DIRECT
       : PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED,
     verificationStatus: PROVIDER_VERIFICATION_STATUSES.CURRENTLY_IMPLEMENTED,

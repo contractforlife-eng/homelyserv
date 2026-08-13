@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchSubscriptionStatus } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
@@ -65,6 +65,8 @@ const PaymentOptions = () => {
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
+  const [paymentCurrency, setPaymentCurrency] = useState('EGP');
+  const [availableProviderIds, setAvailableProviderIds] = useState(null);
 
   const displayWorkerName = workerData?.workerNameIsFallback
     ? t('sharedUserDisplay.roles.worker')
@@ -85,7 +87,7 @@ const PaymentOptions = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
-  const paymentMethods = [
+  const allPaymentMethods = [
     {
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
@@ -105,6 +107,9 @@ const PaymentOptions = () => {
       badgeColor: null
     }
   ];
+  const paymentMethods = availableProviderIds === null
+    ? allPaymentMethods
+    : allPaymentMethods.filter(method => availableProviderIds.includes(method.id));
 
 
   // ============================================================
@@ -267,6 +272,7 @@ const PaymentOptions = () => {
         employerName: authUser?.fullName || 'Employer',
 
         amount: total,
+        currency: paymentData?.currency || paymentCurrency,
         status: 'completed',
 
         paymentMethod: selectedMethod,
@@ -695,6 +701,32 @@ const PaymentOptions = () => {
     setLoading(false);
   }, [navigate, isAuthenticated, authUser]);
 
+  useEffect(() => {
+    const hireId = pendingPayment?.hireId;
+    if (!hireId) {
+      setPaymentCurrency('EGP');
+      setAvailableProviderIds(null);
+      return;
+    }
+
+    let cancelled = false;
+    setAvailableProviderIds([]);
+    setSelectedMethod(null);
+    fetchCommissionProviders(hireId)
+      .then((result) => {
+        if (cancelled) return;
+        setPaymentCurrency(result?.currency || 'EGP');
+        setAvailableProviderIds((result?.providers || []).map(item => item.provider));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to load payment provider capabilities:', error);
+        setAvailableProviderIds([]);
+        setPaymentError(t('paymentCapabilityMessages.unsupportedCurrency'));
+      });
+    return () => { cancelled = true; };
+  }, [pendingPayment?.hireId, t]);
+
   // The checkout route state does not carry the advertised profile rate.
   // Fetch it for this informational display only; it never affects totals,
   // provider currency, commission, or the pending payment.
@@ -900,7 +932,7 @@ const PaymentOptions = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('paymentOptionsPage.totalAmount')}</p>
-                <p className="text-2xl font-bold text-teal-600">EGP {total.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-teal-600">{total.toFixed(2)} {paymentCurrency}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {pendingPayment?.paymentType === 'quick_hire_premium'
                     ? t('paymentOptionsPage.quickHireFee')
@@ -966,6 +998,11 @@ const PaymentOptions = () => {
                 );
               })}
             </div>
+            {availableProviderIds?.length === 0 && pendingPayment?.hireId && (
+              <p className="mt-4 text-sm text-amber-700 dark:text-amber-300">
+                {t('paymentCapabilityMessages.unsupportedCurrency')}
+              </p>
+            )}
           </div>
 
           {/* Action Buttons */}

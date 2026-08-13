@@ -6,6 +6,13 @@ export const createPaymentIntent = async (paymentData) => {
   return response.data;
 };
 
+export const fetchCommissionProviders = async (hireId) => {
+  const response = await api.get('/api/payments/providers', {
+    params: { purpose: 'COMMISSION', hireId },
+  });
+  return response.data;
+};
+
 // PURPOSE is the backend's explicit discriminator (PAYMENT_PURPOSES in
 // backend/src/config/subscription.js): SUBSCRIPTION or COMMISSION. The
 // backend is authoritative for amounts — a SUBSCRIPTION intent is priced by

@@ -8,6 +8,11 @@ import { createNotification, NOTIFICATION_TYPES } from '../services/notification
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { PREMIUM_DURATION_DAYS, PAYMENT_PURPOSES, getPremiumPriceForRole } from '../config/subscription.js';
 import {
+  PROVIDER_CAPABILITY_MODES,
+  getAvailableProviders,
+  getProviderCapability,
+} from '../config/providerCapabilities.js';
+import {
   formatMoneyDecimal,
   multiplyMoneyByRatio,
   roundMoney,
@@ -202,8 +207,22 @@ export const getExpectedPayPalCharge = (paymentAmount) => {
   };
 };
 
-const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency = 'EGP') => {
-  if (paymentMethod === 'paypal') return getExpectedPayPalCharge(paymentAmount);
+const getExpectedProviderCharge = (paymentMethod, paymentAmount, paymentCurrency, purpose) => {
+  const capability = getProviderCapability({
+    provider: paymentMethod,
+    purpose,
+    transactionCurrency: paymentCurrency,
+  });
+  if (!capability.enabled) throw new Error('Provider does not support this payment currency');
+  if (paymentMethod === 'paypal') {
+    if (capability.mode === PROVIDER_CAPABILITY_MODES.LEGACY_CONVERTED) {
+      return getExpectedPayPalCharge(paymentAmount);
+    }
+    return {
+      amount: formatMoneyDecimal(paymentAmount, paymentCurrency),
+      currency: capability.providerCurrency,
+    };
+  }
   if (paymentMethod === 'paymob') {
     const currency = String(paymentCurrency || '').trim().toUpperCase();
     if (currency !== PAYMOB_PROVIDER_CURRENCY) {
@@ -224,11 +243,12 @@ export const resolveExpectedProviderEvidence = (payment) => {
 
   if (hasAmount) {
     const currency = String(payment.providerCurrency).trim().toUpperCase();
-    const allowedCurrency = payment.paymentMethod === 'paypal'
-      ? PAYPAL_PROVIDER_CURRENCY
-      : payment.paymentMethod === 'paymob'
-        ? PAYMOB_PROVIDER_CURRENCY
-        : null;
+    const capability = getProviderCapability({
+      provider: payment.paymentMethod,
+      purpose: payment.purpose,
+      transactionCurrency: payment.currency,
+    });
+    const allowedCurrency = capability.enabled ? capability.providerCurrency : null;
     if (!allowedCurrency || currency !== allowedCurrency) {
       throw new Error('Persisted provider currency is incompatible with payment method');
     }
@@ -240,7 +260,7 @@ export const resolveExpectedProviderEvidence = (payment) => {
   }
 
   return {
-    ...getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency),
+    ...getExpectedProviderCharge(payment.paymentMethod, payment.amount, payment.currency, payment.purpose),
     persisted: false,
   };
 };
@@ -436,7 +456,7 @@ const updateHireAfterPayment = async (hireId, captureId) => {
       await createNotification(String(hire.employerId), {
         type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
         title: 'Payment Successful',
-        message: `Your payment of ${updatedHire.totalDue ?? ''} EGP was completed successfully. Reference: ${updatedHire.paymentReference || captureId || 'N/A'}`,
+        message: `Your payment of ${updatedHire.totalDue ?? ''} ${updatedHire.compensationCurrency || 'EGP'} was completed successfully. Reference: ${updatedHire.paymentReference || captureId || 'N/A'}`,
         entityType: 'PAYMENT',
         entityId: String(hire.id),
         link: '/employer-payments',
@@ -711,6 +731,39 @@ const completePaymentTransaction = async (payment, captureRef) => {
 // ROUTES
 // ============================================================
 
+router.get('/providers', authenticate, async (req, res) => {
+  try {
+    const purpose = typeof req.query.purpose === 'string'
+      ? req.query.purpose.trim().toUpperCase()
+      : '';
+    if (purpose !== PAYMENT_PURPOSES.COMMISSION) {
+      return res.status(400).json({ success: false, error: 'Unsupported capability purpose' });
+    }
+    if (!req.query.hireId) {
+      return res.status(400).json({ success: false, error: 'hireId is required' });
+    }
+
+    const hire = await prisma.hire.findUnique({
+      where: { id: String(req.query.hireId) },
+      select: { employerId: true, compensationCurrency: true },
+    });
+    if (!hire) return res.status(404).json({ success: false, error: 'Hire not found' });
+    if (!req.userId || String(hire.employerId) !== String(req.userId)) {
+      return res.status(403).json({ success: false, error: 'You are not authorized for this hire' });
+    }
+
+    const currency = hire.compensationCurrency
+      ? String(hire.compensationCurrency).trim().toUpperCase()
+      : 'EGP';
+    const providers = getAvailableProviders({ purpose, transactionCurrency: currency })
+      .map(({ provider, mode, providerCurrency }) => ({ provider, mode, providerCurrency }));
+    return res.json({ success: true, purpose, currency, providers });
+  } catch (error) {
+    console.error('Provider capability lookup failed:', error.message);
+    return res.status(500).json({ success: false, error: 'Unable to load payment providers' });
+  }
+});
+
 /**
  * Create Payment Intent
  * POST /api/payments/create-payment-intent
@@ -744,6 +797,11 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     const purpose = requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION
       ? PAYMENT_PURPOSES.SUBSCRIPTION
       : PAYMENT_PURPOSES.COMMISSION;
+    const selectedPaymentMethod = paymentMethod || 'paymob';
+    if (!['paymob', 'paypal'].includes(selectedPaymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Unsupported payment method' });
+    }
+    let transactionCurrency = 'EGP';
 
     if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
       // SERVER-SIDE PRICE AUTHORITY: never trust the client-supplied amount
@@ -800,17 +858,18 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         });
       }
 
-      // Temporary safety boundary: current Payment/provider processing is
-      // EGP-only. Legacy null currency remains compatible as implicit EGP,
-      // while an explicit non-EGP contract is blocked before any Payment row
-      // or provider request can be created.
-      const commissionCurrency = commissionHire.compensationCurrency
+      transactionCurrency = commissionHire.compensationCurrency
         ? String(commissionHire.compensationCurrency).trim().toUpperCase()
         : 'EGP';
-      if (commissionCurrency !== 'EGP') {
+      const capability = getProviderCapability({
+        provider: selectedPaymentMethod,
+        purpose,
+        transactionCurrency,
+      });
+      if (!capability.enabled) {
         return res.status(422).json({
           success: false,
-          error: 'Commission payment for this currency is not yet supported'
+          error: 'Commission payment is not currently available for this provider and currency'
         });
       }
 
@@ -826,19 +885,17 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       }
     }
 
-    // Current transaction currency remains EGP. Canonicalize historical Hire
-    // obligations at the checkout boundary without mutating the Hire so the
-    // Payment row and provider receive the exact same two-decimal amount.
-    amount = roundMoney(amount, 'EGP');
+    amount = roundMoney(amount, transactionCurrency);
     if (!Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ success: false, error: 'Invalid canonical payment amount' });
     }
 
-    const selectedPaymentMethod = paymentMethod || 'paymob';
-    if (!['paymob', 'paypal'].includes(selectedPaymentMethod)) {
-      return res.status(400).json({ success: false, error: 'Unsupported payment method' });
-    }
-    const providerEvidence = getExpectedProviderCharge(selectedPaymentMethod, amount, 'EGP');
+    const providerEvidence = getExpectedProviderCharge(
+      selectedPaymentMethod,
+      amount,
+      transactionCurrency,
+      purpose
+    );
 
     console.log('📤 Creating payment intent:', {
       amount,
@@ -878,6 +935,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
         where: {
           hireId: String(hireId),
           paymentMethod: selectedPaymentMethod,
+          currency: transactionCurrency,
+          purpose: PAYMENT_PURPOSES.COMMISSION,
           status: {
             in: ['pending', 'processing']
           }
@@ -905,7 +964,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             orderId: orderId,
             transactionId: transactionId,
             amount: Number(amount),
-            currency: 'EGP',
+            currency: transactionCurrency,
             paymentMethod: selectedPaymentMethod,
             ...(existingPayment.providerAmount == null && existingPayment.providerCurrency == null
               ? {
@@ -928,7 +987,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
               createdFrom: 'payment-intent',
               source: 'frontend',
               originalAmount: amount,
-              originalCurrency: 'EGP',
+              originalCurrency: transactionCurrency,
               updatedAt: new Date().toISOString()
             }
           }
@@ -941,7 +1000,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             orderId,
             transactionId,
             amount: Number(amount),
-            currency: 'EGP',
+            currency: transactionCurrency,
             paymentMethod: selectedPaymentMethod,
             providerAmount: providerEvidence.amount,
             providerCurrency: providerEvidence.currency,
@@ -961,7 +1020,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
               createdFrom: 'payment-intent',
               source: 'frontend',
               originalAmount: amount,
-              originalCurrency: 'EGP'
+              originalCurrency: transactionCurrency
             }
           }
         });
@@ -975,7 +1034,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           orderId,
           transactionId,
           amount: Number(amount),
-          currency: 'EGP',
+          currency: transactionCurrency,
           paymentMethod: selectedPaymentMethod,
           providerAmount: providerEvidence.amount,
           providerCurrency: providerEvidence.currency,
@@ -995,7 +1054,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
             createdFrom: 'payment-intent',
             source: 'frontend',
             originalAmount: amount,
-            originalCurrency: 'EGP'
+            originalCurrency: transactionCurrency
           }
         }
       });
@@ -1029,7 +1088,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           iframeUrl: iframeUrl,
           status: 'processing',
           amount: payment.amount,
-          currency: 'EGP',
+          currency: payment.currency,
           paymentMethod: 'paymob'
         };
 
@@ -1090,7 +1149,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
           paypalOrderId: paypalOrderId,
           status: 'processing',
           amount: payment.amount,
-          currency: 'EGP',
+          currency: payment.currency,
           paymentMethod: 'paypal'
         };
 
