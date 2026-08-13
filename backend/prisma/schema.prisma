@@ -193,6 +193,7 @@ model Payment {
 
   User User? @relation(fields: [userId], references: [id])
   Hire Hire? @relation(fields: [hireId], references: [id])
+  Refunds PaymentRefund[]
 
   @@index([userId])
   @@index([workerId])
@@ -201,6 +202,36 @@ model Payment {
   @@index([hireId])
   @@index([hireId, status])
   @@map("payments")
+}
+
+model PaymentRefund {
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId               String    @db.ObjectId
+  type                    String
+  bookAmount              String
+  bookCurrency            String
+  requestedProviderAmount String
+  providerAmount          String?
+  providerCurrency        String
+  providerRefundId        String?
+  status                  String    @default("pending")
+  reason                  String?
+  requestedBy             String?   @db.ObjectId
+  requestedByRole         String?
+  idempotencyKey          String    @unique
+  metadata                Json?     @default("{}")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  completedAt             DateTime?
+  failedAt                DateTime?
+
+  Payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId, status])
+  @@index([status])
+  @@index([providerRefundId])
+  @@index([createdAt])
+  @@map("payment_refunds")
 }
 
 model Review {
