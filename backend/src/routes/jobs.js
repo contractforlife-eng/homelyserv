@@ -9,6 +9,7 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
+import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
 
 const router = express.Router();
 
@@ -37,7 +38,97 @@ const cleanString = (value, maxLength) => {
   return str;
 };
 
-const validateJobPayload = (body, { partial = false } = {}) => {
+const STRICT_DECIMAL_PATTERN = /^\d+(?:\.\d+)?$/;
+const COMPENSATION_FIELDS = ['salaryMin', 'salaryMax', 'compensationCurrency'];
+
+const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+
+const parseCompensationAmount = (value, field, errors) => {
+  if (value === null) return null;
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value < 0) {
+      errors.push(`${field} must be a finite non-negative number`);
+      return undefined;
+    }
+    return value;
+  }
+
+  if (typeof value === 'string' && STRICT_DECIMAL_PATTERN.test(value)) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  errors.push(`${field} must be a strict finite non-negative decimal`);
+  return undefined;
+};
+
+const validateCompensation = (body, data, errors, { partial, existingJob }) => {
+  const touched = COMPENSATION_FIELDS.some((field) => hasOwn(body, field));
+  if (partial && !touched) return;
+
+  for (const field of ['salaryMin', 'salaryMax']) {
+    if (hasOwn(body, field)) {
+      const parsed = parseCompensationAmount(body[field], field, errors);
+      if (parsed !== undefined) data[field] = parsed;
+    }
+  }
+
+  if (hasOwn(body, 'compensationCurrency')) {
+    if (body.compensationCurrency === null) {
+      data.compensationCurrency = null;
+    } else {
+      const normalized = normalizeCurrencyCode(body.compensationCurrency);
+      if (!normalized || !isSupportedCurrency(normalized)) {
+        errors.push('compensationCurrency must be a supported ISO currency code');
+      } else {
+        data.compensationCurrency = normalized;
+      }
+    }
+  }
+
+  if (errors.length > 0) return;
+
+  const existingSalaryMin = existingJob?.salaryMin ?? null;
+  const existingSalaryMax = existingJob?.salaryMax ?? null;
+  const existingCurrency = existingJob?.compensationCurrency ?? null;
+  const resultingSalaryMin = hasOwn(body, 'salaryMin') ? data.salaryMin : existingSalaryMin;
+  const resultingSalaryMax = hasOwn(body, 'salaryMax') ? data.salaryMax : existingSalaryMax;
+  const resultingCurrency = hasOwn(body, 'compensationCurrency')
+    ? data.compensationCurrency
+    : existingCurrency;
+  const hasCompensation = resultingSalaryMin !== null || resultingSalaryMax !== null;
+
+  if (hasCompensation && resultingCurrency === null) {
+    errors.push('compensationCurrency is required when salaryMin or salaryMax is provided');
+  }
+
+  if (!hasCompensation && resultingCurrency !== null) {
+    errors.push('compensationCurrency must be null when no compensation amount is provided');
+  }
+
+  if (
+    resultingSalaryMin !== null &&
+    resultingSalaryMax !== null &&
+    resultingSalaryMax < resultingSalaryMin
+  ) {
+    errors.push('salaryMax must be greater than or equal to salaryMin');
+  }
+
+  const currencyChanged = partial && resultingCurrency !== existingCurrency;
+  if (currencyChanged && hasCompensation) {
+    const retainedMinWasReentered = resultingSalaryMin === null ||
+      (hasOwn(body, 'salaryMin') && data.salaryMin !== null);
+    const retainedMaxWasReentered = resultingSalaryMax === null ||
+      (hasOwn(body, 'salaryMax') && data.salaryMax !== null);
+
+    if (!retainedMinWasReentered || !retainedMaxWasReentered) {
+      errors.push('Changing compensationCurrency requires re-entering every retained salary bound');
+    }
+  }
+};
+
+const validateJobPayload = (body, { partial = false, existingJob = null } = {}) => {
   const errors = [];
   const data = {};
 
@@ -66,25 +157,7 @@ const validateJobPayload = (body, { partial = false } = {}) => {
   }
 
   // Salary — must be >= 0; salaryMax >= salaryMin when both present
-  if (isProvided('salaryMin')) {
-    const salaryMin = Number(body.salaryMin);
-    if (!Number.isFinite(salaryMin) || salaryMin < 0) errors.push('salaryMin must be a non-negative number');
-    else data.salaryMin = salaryMin;
-  }
-
-  if (isProvided('salaryMax')) {
-    const salaryMax = Number(body.salaryMax);
-    if (!Number.isFinite(salaryMax) || salaryMax < 0) errors.push('salaryMax must be a non-negative number');
-    else data.salaryMax = salaryMax;
-  }
-
-  if (
-    data.salaryMin !== undefined &&
-    data.salaryMax !== undefined &&
-    data.salaryMax < data.salaryMin
-  ) {
-    errors.push('salaryMax must be greater than or equal to salaryMin');
-  }
+  validateCompensation(body, data, errors, { partial, existingJob });
 
   if (isProvided('employmentType')) {
     const type = cleanString(body.employmentType, 30);
@@ -350,7 +423,7 @@ router.patch('/:id', requireEmployer, async (req, res) => {
     }
 
     // Allow owners to also update status via the same edit endpoint.
-    const { errors, data } = validateJobPayload(req.body, { partial: true });
+    const { errors, data } = validateJobPayload(req.body, { partial: true, existingJob: job });
     if (errors.length > 0) {
       return res.status(400).json({ success: false, message: errors[0], errors });
     }

@@ -12,6 +12,7 @@ import {
   Clock, Building
 } from 'lucide-react';
 import jobService from '../services/jobService';
+import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -187,16 +188,7 @@ const EmployerJobApplicants = () => {
     return t('employerJobApplicants.salaryValue', { amount: Math.round(value).toLocaleString() });
   };
 
-  const formatSalaryRange = (jobPost) => {
-    if (!jobPost) return '—';
-    const min = jobPost.salaryMin !== null && jobPost.salaryMin !== undefined ? jobPost.salaryMin : null;
-    const max = jobPost.salaryMax !== null && jobPost.salaryMax !== undefined ? jobPost.salaryMax : null;
-    if (min === null && max === null) return '—';
-    if (min !== null && max !== null && min === max) return t('employerJobApplicants.salaryValue', { amount: Math.round(min).toLocaleString() });
-    if (min !== null && max !== null) return t('employerJobApplicants.salaryRangeValue', { min: Math.round(min).toLocaleString(), max: Math.round(max).toLocaleString() });
-    if (min !== null) return t('employerJobApplicants.salaryFrom', { amount: Math.round(min).toLocaleString() });
-    return t('employerJobApplicants.salaryUpTo', { amount: Math.round(max).toLocaleString() });
-  };
+  const formatSalaryRange = (jobPost) => formatJobCompensation(jobPost, t, i18n.resolvedLanguage);
 
   const renderActions = (app) => {
     const status = app.status;

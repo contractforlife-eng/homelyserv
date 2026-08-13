@@ -9,6 +9,31 @@ import RolePageHeader from '../components/common/RolePageHeader';
 import jobService from '../services/jobService';
 
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance'];
+const JOB_COMPENSATION_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
+const STRICT_DECIMAL_PATTERN = /^\d+(?:\.\d+)?$/;
+
+const normalizeCurrency = (value) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : null;
+};
+
+const resolveNewJobCurrency = (user) => {
+  const preferred = normalizeCurrency(user?.preferredCurrency);
+  if (preferred && JOB_COMPENSATION_CURRENCIES.includes(preferred)) return preferred;
+
+  const effective = normalizeCurrency(user?.effectiveCurrency);
+  if (effective && JOB_COMPENSATION_CURRENCIES.includes(effective)) return effective;
+
+  return 'EGP';
+};
+
+const parseSalaryInput = (value) => {
+  if (value === '') return null;
+  if (typeof value !== 'string' || !STRICT_DECIMAL_PATTERN.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
 
 const EmployerPostJob = () => {
   const navigate = useNavigate();
@@ -25,6 +50,7 @@ const EmployerPostJob = () => {
     location: '',
     salaryMin: '',
     salaryMax: '',
+    compensationCurrency: 'EGP',
     type: 'full-time',
     description: '',
     requirements: [],
@@ -40,6 +66,8 @@ const EmployerPostJob = () => {
   const [benefit, setBenefit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [compensationDirty, setCompensationDirty] = useState(false);
+  const [currencyChangeRequiresAmount, setCurrencyChangeRequiresAmount] = useState(false);
 
   const handleLogout = () => {
     useAuthStore.getState().logout();
@@ -49,11 +77,15 @@ const EmployerPostJob = () => {
   // Prefill form when editing an existing job
   useEffect(() => {
     if (editJob) {
+      const hasLegacyCompensation = editJob.salaryMin !== null && editJob.salaryMin !== undefined ||
+        editJob.salaryMax !== null && editJob.salaryMax !== undefined;
+      const storedCurrency = normalizeCurrency(editJob.compensationCurrency);
       setFormData({
         title: editJob.jobTitle || '',
         location: editJob.location || '',
         salaryMin: editJob.salaryMin !== null && editJob.salaryMin !== undefined ? String(editJob.salaryMin) : '',
         salaryMax: editJob.salaryMax !== null && editJob.salaryMax !== undefined ? String(editJob.salaryMax) : '',
+        compensationCurrency: storedCurrency || (hasLegacyCompensation ? 'EGP' : resolveNewJobCurrency(authUser)),
         type: editJob.employmentType || 'full-time',
         description: editJob.description || '',
         requirements: editJob.requirements || [],
@@ -65,8 +97,15 @@ const EmployerPostJob = () => {
         isUrgent: Boolean(editJob.isUrgent),
         isFeatured: Boolean(editJob.isFeatured)
       });
+      setCompensationDirty(false);
+      setCurrencyChangeRequiresAmount(false);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        compensationCurrency: resolveNewJobCurrency(authUser)
+      }));
     }
-  }, [editJob]);
+  }, [authUser, editJob]);
 
   // Check authentication and redirect if needed
   useEffect(() => {
@@ -83,12 +122,10 @@ const EmployerPostJob = () => {
     }
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  const buildPayload = () => {
+  const buildPayload = (salaryMin, salaryMax) => {
     const payload = {
       jobTitle: formData.title,
       location: formData.location || null,
-      salaryMin: formData.salaryMin !== '' ? parseFloat(formData.salaryMin) : null,
-      salaryMax: formData.salaryMax !== '' ? parseFloat(formData.salaryMax) : null,
       employmentType: EMPLOYMENT_TYPES.includes(formData.type) ? formData.type : 'full-time',
       contractType: formData.contractType || null,
       description: formData.description || null,
@@ -100,6 +137,14 @@ const EmployerPostJob = () => {
       isUrgent: Boolean(formData.isUrgent),
       isFeatured: Boolean(formData.isFeatured)
     };
+
+    if (!editJob || compensationDirty) {
+      const hasCompensation = salaryMin !== null || salaryMax !== null;
+      payload.salaryMin = salaryMin;
+      payload.salaryMax = salaryMax;
+      payload.compensationCurrency = hasCompensation ? formData.compensationCurrency : null;
+    }
+
     return payload;
   };
 
@@ -107,8 +152,13 @@ const EmployerPostJob = () => {
     e.preventDefault();
     setError('');
 
-    const salaryMin = formData.salaryMin !== '' ? parseFloat(formData.salaryMin) : null;
-    const salaryMax = formData.salaryMax !== '' ? parseFloat(formData.salaryMax) : null;
+    const salaryMin = parseSalaryInput(formData.salaryMin);
+    const salaryMax = parseSalaryInput(formData.salaryMax);
+
+    if (salaryMin === undefined || salaryMax === undefined) {
+      setError(t('employerPostJob.validateSalaryNumber'));
+      return;
+    }
 
     if (salaryMin !== null && salaryMin < 0) {
       setError(t('employerPostJob.validateMinSalary'));
@@ -122,11 +172,19 @@ const EmployerPostJob = () => {
       setError(t('employerPostJob.validateSalaryRange'));
       return;
     }
+    if ((salaryMin !== null || salaryMax !== null) && !formData.compensationCurrency) {
+      setError(t('employerPostJob.validateCompensationCurrency'));
+      return;
+    }
+    if (currencyChangeRequiresAmount && salaryMin === null && salaryMax === null) {
+      setError(t('employerPostJob.validateCurrencyReentry'));
+      return;
+    }
 
     setSubmitting(true);
 
     try {
-      const payload = buildPayload();
+      const payload = buildPayload(salaryMin, salaryMax);
 
       if (editJob) {
         await jobService.updateJob(editJob.id, payload);
@@ -148,10 +206,32 @@ const EmployerPostJob = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === 'salaryMin' || name === 'salaryMax') {
+      setCompensationDirty(true);
+    }
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleCurrencyChange = (e) => {
+    const nextCurrency = e.target.value;
+    setCompensationDirty(true);
+    setFormData(prev => {
+      if (editJob && nextCurrency !== prev.compensationCurrency) {
+        const hadCompensation = prev.salaryMin !== '' || prev.salaryMax !== '';
+        setCurrencyChangeRequiresAmount(hadCompensation);
+        return {
+          ...prev,
+          salaryMin: '',
+          salaryMax: '',
+          compensationCurrency: nextCurrency
+        };
+      }
+
+      return { ...prev, compensationCurrency: nextCurrency };
+    });
   };
 
   const addRequirement = () => {
@@ -271,6 +351,7 @@ const EmployerPostJob = () => {
                 value={formData.salaryMin}
                 onChange={handleChange}
                 min="0"
+                step="any"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
                 placeholder={t('employerPostJob.salaryMinPlaceholder')}
               />
@@ -284,9 +365,29 @@ const EmployerPostJob = () => {
                 value={formData.salaryMax}
                 onChange={handleChange}
                 min="0"
+                step="any"
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
                 placeholder={t('employerPostJob.salaryMaxPlaceholder')}
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('employerPostJob.compensationCurrency')}</label>
+              <select
+                name="compensationCurrency"
+                value={formData.compensationCurrency}
+                onChange={handleCurrencyChange}
+                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500"
+              >
+                {JOB_COMPENSATION_CURRENCIES.map(currency => (
+                  <option key={currency} value={currency}>{currency}</option>
+                ))}
+              </select>
+              {currencyChangeRequiresAmount && formData.salaryMin === '' && formData.salaryMax === '' && (
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                  {t('employerPostJob.currencyChangeRequiresAmount')}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">

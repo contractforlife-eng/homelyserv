@@ -222,6 +222,7 @@ export const getMyApplications = async (req, res) => {
               location: jobPost.location,
               salaryMin: jobPost.salaryMin,
               salaryMax: jobPost.salaryMax,
+              compensationCurrency: jobPost.compensationCurrency,
               employmentType: jobPost.employmentType,
               contractType: jobPost.contractType,
               status: jobPost.status,
@@ -293,7 +294,13 @@ export const getJobApplications = async (req, res) => {
 
     const jobPost = await prisma.jobPost.findUnique({
       where: { id: jobPostId },
-      select: { id: true, employerId: true },
+      select: {
+        id: true,
+        employerId: true,
+        salaryMin: true,
+        salaryMax: true,
+        compensationCurrency: true,
+      },
     });
     if (!jobPost) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -368,6 +375,12 @@ export const getJobApplications = async (req, res) => {
         offerId: app.offerId || null,
         createdAt: app.createdAt,
         updatedAt: app.updatedAt,
+        jobPost: {
+          id: jobPost.id,
+          salaryMin: jobPost.salaryMin,
+          salaryMax: jobPost.salaryMax,
+          compensationCurrency: jobPost.compensationCurrency,
+        },
         worker: {
           id: user?.id || String(app.workerId),
           workerProfileId: profile?.id || String(app.workerProfileId),

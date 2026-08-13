@@ -8,6 +8,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import { Search, MapPin, Calendar, Loader2, Briefcase, Building } from 'lucide-react';
 import jobService from '../services/jobService';
+import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const TYPE_LABELS = {
   'full-time': 'workerJobs.fullTime',
@@ -81,15 +82,7 @@ const WorkerJobs = () => {
     navigate('/login');
   };
 
-  const formatSalary = (job) => {
-    const min = job.salaryMin !== null && job.salaryMin !== undefined ? job.salaryMin : null;
-    const max = job.salaryMax !== null && job.salaryMax !== undefined ? job.salaryMax : null;
-    if (min === null && max === null) return '—';
-    if (min !== null && max !== null && min === max) return `${Math.round(min).toLocaleString()} EGP`;
-    if (min !== null && max !== null) return `${Math.round(min).toLocaleString()} - ${Math.round(max).toLocaleString()} EGP`;
-    if (min !== null) return `${Math.round(min).toLocaleString()}+ EGP`;
-    return `${Math.round(max).toLocaleString()} EGP`;
-  };
+  const formatSalary = (job) => formatJobCompensation(job, t, i18n.resolvedLanguage);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';

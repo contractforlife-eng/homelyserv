@@ -11,6 +11,7 @@ import jobService from '../services/jobService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
+import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 
 const TYPE_LABELS = {
@@ -115,15 +116,7 @@ function JobDetails() {
 
   const backPath = authUser?.role === 'EMPLOYER' ? '/employer-jobs' : '/worker-jobs';
 
-  const formatSalary = () => {
-    const min = job.salaryMin !== null && job.salaryMin !== undefined ? job.salaryMin : null;
-    const max = job.salaryMax !== null && job.salaryMax !== undefined ? job.salaryMax : null;
-    if (min === null && max === null) return '—';
-    if (min !== null && max !== null && min === max) return `${Math.round(min).toLocaleString()} EGP`;
-    if (min !== null && max !== null) return `${Math.round(min).toLocaleString()} - ${Math.round(max).toLocaleString()} EGP`;
-    if (min !== null) return `${Math.round(min).toLocaleString()}+ EGP`;
-    return `${Math.round(max).toLocaleString()} EGP`;
-  };
+  const formatSalary = () => formatJobCompensation(job, t, i18n.resolvedLanguage);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';

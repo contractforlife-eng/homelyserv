@@ -11,6 +11,7 @@ import {
   FileText, CheckCircle
 } from 'lucide-react';
 import jobService from '../services/jobService';
+import { formatJobCompensation } from '../utils/jobCompensationDisplay';
 
 const TYPE_LABELS = {
   'full-time': 'workerApplications.types.fullTime',
@@ -105,16 +106,7 @@ const WorkerApplications = () => {
     }
   };
 
-  const formatSalary = (jobPost) => {
-    if (!jobPost) return '—';
-    const min = jobPost.salaryMin !== null && jobPost.salaryMin !== undefined ? jobPost.salaryMin : null;
-    const max = jobPost.salaryMax !== null && jobPost.salaryMax !== undefined ? jobPost.salaryMax : null;
-    if (min === null && max === null) return '—';
-    if (min !== null && max !== null && min === max) return `${Math.round(min).toLocaleString()} EGP`;
-    if (min !== null && max !== null) return `${Math.round(min).toLocaleString()} - ${Math.round(max).toLocaleString()} EGP`;
-    if (min !== null) return `${Math.round(min).toLocaleString()}+ EGP`;
-    return `${Math.round(max).toLocaleString()} EGP`;
-  };
+  const formatSalary = (jobPost) => formatJobCompensation(jobPost, t, i18n.resolvedLanguage);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
