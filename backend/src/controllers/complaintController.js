@@ -740,6 +740,7 @@ export const supportGetComplaint = async (req, res) => {
     if (serializedComplaint.User) {
       serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
     }
+    serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
 
     return res.json({
       success: true,
@@ -1489,9 +1490,16 @@ export const adminGetComplaint = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
+    const activePremiumIds = await getActivePremiumUserIds([complaint.userId]);
+    const serializedComplaint = serializeComplaint(complaint, { includeInternal: true });
+    if (serializedComplaint.User) {
+      serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
+    }
+    serializedComplaint.replies = await enrichAuthorIdentities(serializedComplaint.replies);
+
     return res.json({
       success: true,
-      complaint: serializeComplaint(complaint, { includeInternal: true }),
+      complaint: serializedComplaint,
       notes: (complaint.Notes || []).map(serializeAuthorRecord),
       timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
@@ -2385,6 +2393,15 @@ export const supportDashboard = async (req, res) => {
     } catch (e) {
       console.error('❌ Error fetching recent conversations:', e.message);
     }
+
+    const recentConversationPremiumIds = await getActivePremiumUserIds(
+      recentConversations.map((conversation) => conversation.userId).filter(Boolean)
+    );
+    recentConversations.forEach((conversation) => {
+      if (conversation.user) {
+        conversation.user.isPremium = recentConversationPremiumIds.has(String(conversation.userId));
+      }
+    });
 
     return res.json({
       success: true,

@@ -16,6 +16,7 @@
 import prisma from '../lib/prisma.js';
 import Message from '../models/Message.js';
 import { aggregateAdminMoney } from './adminController.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 // Helper: check if a string is a valid MongoDB ObjectId (24 hex chars).
 // Legacy records may contain non-ObjectId IDs (e.g. "user_1784367005840")
@@ -207,6 +208,8 @@ export const getCommandCenter = async (req, res) => {
       }),
     ]);
 
+    const recentPremiumUserIds = await getActivePremiumUserIds(recentUsers.map((user) => user.id));
+
     // ============================================================
     // ENRICH RECENT PAYMENTS (safe relation resolution)
     // ============================================================
@@ -338,6 +341,7 @@ export const getCommandCenter = async (req, res) => {
       recentUsers: recentUsers.map(u => ({
         ...u,
         image: u.profileImage || null,
+        isPremium: recentPremiumUserIds.has(String(u.id)),
       })),
       recentPayments: enrichedRecentPayments.map(p => ({
         ...p,

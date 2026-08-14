@@ -25,8 +25,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
-import { getDisplayName } from '../../utils/userDisplay';
-import { UserAvatar } from '../../components/users';
+import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportDashboard = () => {
   const { t: i18nT, i18n } = useTranslation();
@@ -412,9 +411,7 @@ const SupportDashboard = () => {
                             size="sm"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {getDisplayName(conv.user)}
-                            </p>
+                            <UserDisplayName user={conv.user} size="sm" />
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {conv.lastMessage}
                             </p>

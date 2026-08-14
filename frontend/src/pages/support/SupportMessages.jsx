@@ -438,6 +438,7 @@ const SupportMessages = () => {
                         <UserDisplayName
                           name={getConversationDisplayName(conversations.find(c => c.id === selectedConversationId))}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
+                          isPremium={conversations.find(c => c.id === selectedConversationId)?.isPremium}
                           size="sm"
                           className="text-gray-800 dark:text-white"
                         />

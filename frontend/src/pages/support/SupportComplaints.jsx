@@ -318,6 +318,7 @@ const SupportComplaints = () => {
         id: reply.id,
         authorName: reply.authorName,
         authorRole: reply.authorRole,
+        authorIsPremium: reply.authorIsPremium || reply.author?.isPremium,
         message: reply.message,
         attachments: reply.attachments || [],
         createdAt: reply.createdAt,

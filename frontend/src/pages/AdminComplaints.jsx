@@ -401,6 +401,7 @@ const AdminComplaints = () => {
         authorName: reply.authorName || reply.author?.name,
         authorRole: reply.authorRole || reply.author?.role,
         authorImage: reply.author?.image || null,
+        authorIsPremium: reply.authorIsPremium || reply.author?.isPremium,
         message: reply.message,
         attachments: reply.attachments || [],
         createdAt: reply.createdAt,
