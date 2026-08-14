@@ -46,6 +46,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import api from '../../utils/api';
+import { formatExperienceDisplay } from '../../utils/experienceDisplay';
 import { ensureConversationExists } from '../../utils/chatService';
 import {
   UserAvatar,
@@ -734,7 +735,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.experience}</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                     {profileUser.WorkerProfile.experienceYears != null ? t.experienceYears.replace('{{count}}', profileUser.WorkerProfile.experienceYears) : t.notProvided}
+                     {formatExperienceDisplay(profileUser.WorkerProfile.experienceYears) || t.notProvided}
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">

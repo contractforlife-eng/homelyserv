@@ -9,6 +9,7 @@ import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import api from '../utils/api';
+import { formatExperienceDisplay } from '../utils/experienceDisplay';
 
 const RATE_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED'];
 
@@ -596,7 +597,7 @@ const WorkerProfile = () => {
                   <input
                     type="text"
                     name="experience"
-                    value={formData.experience}
+                    value={isEditing ? formData.experience : formatExperienceDisplay(formData.experience)}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${

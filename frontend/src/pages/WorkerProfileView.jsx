@@ -9,6 +9,7 @@ import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
+import { formatExperienceDisplay } from '../utils/experienceDisplay';
 import {
   ArrowLeft,
   User,
@@ -363,7 +364,7 @@ const WorkerProfileView = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.experience')}</span>
-                    <span className="font-medium">{t('workerProfile.yearsExperience', { count: worker.experience || 0 })}</span>
+                    <span className="font-medium">{formatExperienceDisplay(worker.experience) || '0'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">{t('workerProfile.hourlyRate')}</span>
