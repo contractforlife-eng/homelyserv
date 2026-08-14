@@ -1,4 +1,71 @@
-import { matchFaqIntent } from './publicSupportFaqMatcher.js';
+import { answerConversation } from './publicSupportConversationService.js';
+import { matchExplicitSupportIntent, matchFaqIntent } from './publicSupportFaqMatcher.js';
+
+const conversationalCopy = {
+  en:{
+    greeting:['Hello! Welcome to HomelyServ. How can I help you today? You can ask about accounts, workers, Premium, or payments.','Hi there! How can I help with HomelyServ? I can answer questions about creating an account, finding a worker, Premium, and payments.','Hi! Welcome to HomelyServ. How can I help you today? You can ask me about creating an account, finding a worker, Premium, payments, or anything else about HomelyServ.'],
+    capability:'I can help with HomelyServ registration, Employer and Worker accounts, finding workers, Premium, payments, login or password issues, and email verification. You can also ask to speak with Support.',
+    identity:'I’m the HomelyServ automated assistant. I can answer common questions, and if you need a person, I can connect you with our Support team.',
+    wellbeing:'I’m doing well, thank you! How can I help you with HomelyServ?',
+    thanks:'You’re welcome! Is there anything else I can help you with?',
+    acknowledgement:'Got it. What else can I help you with?',
+    farewell:'Goodbye! Feel free to come back if you need help with HomelyServ.',
+  },
+  ar:{
+    greeting:['مرحبًا! أنا مساعد HomelyServ. أقدر أساعدك في التسجيل، البحث عن عامل، Premium، والمدفوعات. تحب تسأل عن إيه؟','أهلًا بيك! إزاي أقدر أساعدك في HomelyServ؟ ممكن تسألني عن الحسابات، العمال، Premium، أو المدفوعات.','أهلاً بيك! أنا مساعد HomelyServ. أقدر أساعدك في التسجيل، البحث عن عامل، Premium، المدفوعات، أو أي سؤال عن HomelyServ. تحب تسأل عن إيه؟'],
+    capability:'أقدر أساعدك في التسجيل في HomelyServ، حسابات أصحاب العمل والعمال، البحث عن عامل، Premium، المدفوعات، مشاكل تسجيل الدخول أو كلمة المرور، وتأكيد البريد الإلكتروني. وتقدر كمان تطلب التحدث مع الدعم.',
+    identity:'أنا مساعد HomelyServ الآلي، مش إنسان. أقدر أجاوب عن الأسئلة الشائعة عن HomelyServ، وتقدر تطلب التحدث مع الدعم لو محتاج شخص يساعدك.',
+    wellbeing:'أنا بخير، شكرًا لك! كيف يمكنني مساعدتك في HomelyServ؟',
+    thanks:'العفو! هل يمكنني مساعدتك في شيء آخر؟',
+    acknowledgement:'حسنًا. كيف يمكنني مساعدتك أيضًا؟',
+    farewell:'مع السلامة! يمكنك العودة في أي وقت إذا احتجت إلى مساعدة في HomelyServ.',
+  },
+  fr:{
+    greeting:['Bonjour ! Bienvenue sur HomelyServ. Je peux vous aider à créer un compte, trouver un travailleur, comprendre Premium ou effectuer un paiement. Quelle est votre question ?','Salut ! Je suis l’assistant HomelyServ. Posez-moi vos questions sur les comptes, la recherche de travailleurs, Premium ou les paiements.','Bienvenue ! Comment puis-je vous aider aujourd’hui ? Vous pouvez me poser toute question sur HomelyServ, notamment sur l’inscription, les travailleurs, Premium et les paiements.'],
+    capability:'Je peux vous aider avec l’inscription à HomelyServ, les comptes Employeur et Travailleur, la recherche de travailleurs, Premium, les paiements, la connexion ou le mot de passe et la vérification de l’e-mail. Vous pouvez aussi demander à parler à l’assistance.',
+    identity:'Je suis l’assistant automatisé HomelyServ, pas une personne. Je peux répondre aux questions courantes sur HomelyServ, et vous pouvez demander à parler à l’assistance humaine.',
+    wellbeing:'Je vais bien, merci ! Comment puis-je vous aider avec HomelyServ ?',
+    thanks:'Avec plaisir ! Puis-je vous aider avec autre chose ?',
+    acknowledgement:'D’accord. Puis-je vous aider avec autre chose ?',
+    farewell:'Au revoir ! Revenez quand vous voulez si vous avez besoin d’aide avec HomelyServ.',
+  },
+  ru:{
+    greeting:['Здравствуйте! Добро пожаловать в HomelyServ. Я помогу с регистрацией, поиском работника, Premium и платежами. Что вас интересует?','Привет! Я помощник HomelyServ. Можете спросить меня об аккаунтах, поиске работников, Premium или платежах.','Добро пожаловать! Чем я могу помочь сегодня? Задайте любой вопрос о HomelyServ, включая регистрацию, работников, Premium и платежи.'],
+    capability:'Я могу помочь с регистрацией в HomelyServ, аккаунтами работодателей и работников, поиском работников, Premium, платежами, входом или паролем и подтверждением электронной почты. Вы также можете попросить связать вас с поддержкой.',
+    identity:'Я автоматический помощник HomelyServ, а не человек. Я отвечаю на распространённые вопросы о HomelyServ, а при необходимости вы можете попросить связать вас с поддержкой.',
+    wellbeing:'У меня всё хорошо, спасибо! Чем я могу помочь вам с HomelyServ?',
+    thanks:'Пожалуйста! Могу ли я помочь ещё чем-нибудь?',
+    acknowledgement:'Понятно. Чем ещё я могу помочь?',
+    farewell:'До свидания! Возвращайтесь, если вам понадобится помощь с HomelyServ.',
+  },
+  tr:{
+    greeting:['Merhaba! HomelyServ’e hoş geldiniz. Kayıt, çalışan bulma, Premium ve ödemeler konusunda yardımcı olabilirim. Ne sormak istersiniz?','Selam! Ben HomelyServ Asistanıyım. Hesaplar, çalışan arama, Premium veya ödemeler hakkında bana soru sorabilirsiniz.','Hoş geldiniz! Bugün size nasıl yardımcı olabilirim? Kayıt, çalışanlar, Premium, ödemeler veya HomelyServ ile ilgili başka bir şey sorabilirsiniz.'],
+    capability:'HomelyServ kaydı, İşveren ve Çalışan hesapları, çalışan bulma, Premium, ödemeler, giriş veya şifre sorunları ve e-posta doğrulama konularında yardımcı olabilirim. Ayrıca Destek ekibiyle görüşmek isteyebilirsiniz.',
+    identity:'Ben otomatik HomelyServ Asistanıyım, insan değilim. HomelyServ hakkındaki yaygın soruları yanıtlayabilirim; isterseniz Destek ekibiyle görüşmeyi de talep edebilirsiniz.',
+    wellbeing:'İyiyim, teşekkür ederim! HomelyServ konusunda size nasıl yardımcı olabilirim?',
+    thanks:'Rica ederim! Başka bir konuda yardımcı olabilir miyim?',
+    acknowledgement:'Anladım. Başka nasıl yardımcı olabilirim?',
+    farewell:'Hoşça kalın! HomelyServ ile ilgili yardıma ihtiyacınız olursa tekrar bekleriz.',
+  },
+  de:{
+    greeting:['Hallo! Willkommen bei HomelyServ. Ich helfe Ihnen bei der Kontoerstellung, der Arbeitnehmersuche, Premium und Zahlungen. Was möchten Sie wissen?','Guten Tag! Ich bin der HomelyServ-Assistent. Fragen Sie mich gern zu Konten, zur Arbeitnehmersuche, zu Premium oder zu Zahlungen.','Willkommen! Wie kann ich Ihnen heute helfen? Sie können alles über HomelyServ fragen, zum Beispiel zu Registrierung, Arbeitnehmern, Premium und Zahlungen.'],
+    capability:'Ich helfe bei der HomelyServ-Registrierung, Arbeitgeber- und Arbeitnehmerkonten, der Arbeitnehmersuche, Premium, Zahlungen, Anmeldung oder Passwort und der E-Mail-Bestätigung. Sie können auch darum bitten, mit dem Support zu sprechen.',
+    identity:'Ich bin der automatisierte HomelyServ-Assistent, kein Mensch. Ich beantworte häufige Fragen zu HomelyServ; bei Bedarf können Sie darum bitten, mit dem Support zu sprechen.',
+    wellbeing:'Mir geht es gut, danke! Wie kann ich Ihnen bei HomelyServ helfen?',
+    thanks:'Gern geschehen! Kann ich Ihnen noch bei etwas anderem helfen?',
+    acknowledgement:'Verstanden. Wobei kann ich Ihnen noch helfen?',
+    farewell:'Auf Wiedersehen! Kommen Sie gern wieder, wenn Sie Hilfe mit HomelyServ benötigen.',
+  },
+};
+
+const conversationalAliases = {
+  en:{greeting:['hi','hello','hey','hi there','hello there','good morning','good afternoon','good evening'],capability:['can you help me','help','what can you help me with','what can i ask you','what do you do'],identity:['who are you','are you a bot','are you human',"what's your name",'what is your name'],wellbeing:['how are you','how are you doing','how is it going',"how's it going",'how are things'],thanks:['thanks','thank you','thx','appreciate it','thanks a lot','thank you so much'],acknowledgement:['ok','okay','got it','understood','yes','no','alright','great'],farewell:['bye','goodbye','see you','see you later','good night','thanks bye','thank you bye','thanks goodbye']},
+  ar:{greeting:['مرحبا','مرحبًا','اهلا','أهلا','سلام','السلام عليكم','صباح الخير','مساء الخير'],capability:['ممكن تساعدني','ساعدني','بتساعد في ايه','بتعرف تعمل ايه','انت بتعمل ايه','ممكن اسألك عن ايه'],identity:['انت مين','إنت مين','اسمك ايه','انت بوت','إنت بوت','انت روبوت','إنت روبوت','انت انسان','إنت إنسان'],wellbeing:['كيف حالك','عامل ايه','اخبارك ايه','ازيك','إزيك'],thanks:['شكرا','شكرًا','شكرا ليك','متشكر','تسلم'],acknowledgement:['اوك','حسنا','حسنًا','تمام','فهمت','نعم','لا','ماشي'],farewell:['باي','مع السلامة','وداعا','وداعًا','اشوفك بعدين','تصبح على خير']},
+  fr:{greeting:['bonjour','salut','bonsoir','coucou'],capability:['pouvez vous m aider','aidez moi','comment pouvez vous m aider','que puis je vous demander','que faites vous'],identity:['qui etes vous','etes vous un bot','etes vous humain','comment vous appelez vous'],wellbeing:['comment allez vous','comment vas tu','comment ca va','ca va','ca roule'],thanks:['merci','merci beaucoup','merci bien','je vous remercie'],acknowledgement:['ok','d accord','compris','oui','non','tres bien'],farewell:['au revoir','a bientot','salut','bonne nuit']},
+  ru:{greeting:['привет','здравствуйте','добрый день','доброе утро','добрый вечер'],capability:['можете мне помочь','помогите','чем вы можете помочь','что я могу спросить','что вы умеете'],identity:['кто вы','ты кто','вы бот','вы человек','как вас зовут'],wellbeing:['как дела','как твои дела','как вы','как ты','как поживаете'],thanks:['спасибо','большое спасибо','благодарю','благодарю вас'],acknowledgement:['хорошо','понятно','ладно','да','нет','ясно'],farewell:['пока','до свидания','до встречи','спокойной ночи']},
+  tr:{greeting:['merhaba','selam','gunaydin','günaydın','iyi aksamlar','iyi akşamlar'],capability:['bana yardim edebilir misin','bana yardım edebilir misin','yardim et','yardım et','ne konuda yardim edebilirsin','ne konuda yardım edebilirsin','sana ne sorabilirim','ne yapiyorsun','ne yapıyorsun'],identity:['sen kimsin','siz kimsiniz','bot musun','insan misin','insan mısın','adin ne','adın ne'],wellbeing:['nasilsin','nasılsın','nasilsiniz','nasılsınız','nasil gidiyor','nasıl gidiyor'],thanks:['tesekkurler','teşekkürler','cok tesekkurler','çok teşekkürler','tesekkur ederim','teşekkür ederim','sag ol','sağ ol','sag olun','sağ olun'],acknowledgement:['tamam','anladim','anladım','peki','evet','hayir','hayır'],farewell:['hosca kal','hoşça kal','gorusuruz','görüşürüz','gule gule','güle güle','iyi geceler']},
+  de:{greeting:['hallo','hi','guten morgen','guten tag','guten abend'],capability:['konnen sie mir helfen','können sie mir helfen','hilf mir','wobei konnen sie helfen','wobei können sie helfen','was kann ich sie fragen','was machen sie'],identity:['wer sind sie','wer bist du','sind sie ein bot','sind sie ein mensch','wie heissen sie','wie heißen sie'],wellbeing:['wie geht es dir','wie geht es ihnen','wie gehts',"wie geht's"],thanks:['danke','vielen dank','danke schon','danke sehr','herzlichen dank'],acknowledgement:['ok','okay','verstanden','alles klar','ja','nein','gut'],farewell:['tschuss','auf wiedersehen','bis bald','gute nacht']},
+};
 
 const faq = {
   en:{
@@ -103,9 +170,13 @@ const escalationPattern = /customer support|human|agent|admin|support|speak to s
 
 export function answerFaq(text, language = 'en') {
   const copy = faq[language] || faq.en;
-  const intent = matchFaqIntent(text, language);
-  if (intent === 'escalation') return { escalate:true, answer:copy.fallback, matched:intent };
-  return intent ? { escalate:false, answer:copy[intent], matched:intent } : { escalate:true, answer:copy.fallback, matched:null };
+  const supportIntent = matchExplicitSupportIntent(text, language);
+  if (supportIntent) return { escalate:true, answer:copy.fallback, matched:supportIntent };
+  const conversationResult = answerConversation(text, language, conversationalCopy, conversationalAliases);
+  if (conversationResult) return { escalate:false, answer:conversationResult.answer, matched:conversationResult.intent };
+  const faqIntent = matchFaqIntent(text, language);
+  if (faqIntent) return { escalate:false, answer:copy[faqIntent], matched:faqIntent };
+  return { escalate:false, answer:copy.fallback, matched:null };
 }
 
 export function welcomeFaq(language = 'en') { return (faq[language] || faq.en).welcome; }

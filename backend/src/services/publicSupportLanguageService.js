@@ -11,10 +11,17 @@ const wordSets = {
 
 const normalizeWords = (text) => String(text || '').toLocaleLowerCase().match(/[\p{L}]+/gu) || [];
 
+const strongGreetingLanguages = new Map([
+  ['hello','en'], ['bonjour','fr'], ['مرحبا','ar'], ['مرحباً','ar'],
+  ['привет','ru'], ['здравствуйте','ru'], ['merhaba','tr'], ['hallo','de'],
+]);
+
 export function detectSupportedLanguage(text, fallbackLanguage = 'en') {
   const fallback = SUPPORTED_PUBLIC_SUPPORT_LANGUAGES.includes(fallbackLanguage) ? fallbackLanguage : 'en';
   const value = String(text || '').trim();
   const words = normalizeWords(value);
+  const greetingLanguage = strongGreetingLanguages.get(words.join(' '));
+  if (greetingLanguage) return { language:greetingLanguage, confident:true };
   if (value.length < 4 || words.length < 2) return { language:fallback, confident:false };
 
   if (/\p{Script=Arabic}/u.test(value)) return { language:'ar', confident:true };

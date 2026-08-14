@@ -99,7 +99,7 @@ const keywordGroups = {
 };
 
 const escalationAliases = {
-  en:['customer support','human support','human','agent','admin','speak to someone','support person'],
+  en:['customer support','human support','agent','admin','speak to someone','support person'],
   ar:['دعم العملاء','موظف دعم','عايز اكلم حد','عاوز اكلم حد','اكلم انسان','خدمه العملاء','مسوول','ادمن','دعم'],
   fr:['service client','assistance humaine','parler a un humain','parler a quelqu un','conseiller','agent humain'],
   ru:['служба поддержки','нужна поддержка','живой оператор','поговорить с человеком','сотрудник поддержки','администратор'],
@@ -124,13 +124,19 @@ function keywordScore(text, keywords = []) {
   return keywords.reduce((score, keyword) => score + (tokens.has(keyword) ? 1 : 0), 0);
 }
 
-export function matchFaqIntent(text, language = 'en') {
+export function matchExplicitSupportIntent(text, language = 'en') {
   const selectedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'en';
   const normalized = normalizeFaqText(text, selectedLanguage);
   if (!normalized) return null;
 
   const escalationScore = phraseScore(normalized, normalizedAliases(selectedLanguage, escalationAliases[selectedLanguage]));
-  if (escalationScore >= 4) return 'escalation';
+  return escalationScore >= 4 ? 'escalation' : null;
+}
+
+export function matchFaqIntent(text, language = 'en') {
+  const selectedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'en';
+  const normalized = normalizeFaqText(text, selectedLanguage);
+  if (!normalized) return null;
 
   const candidates = Object.entries(intentAliases[selectedLanguage]).map(([intent, aliases]) => {
     const phrases = normalizedAliases(selectedLanguage, aliases);
