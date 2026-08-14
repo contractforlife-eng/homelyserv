@@ -75,6 +75,13 @@ const getTransporter = () => {
   return transporter;
 };
 
+const getSMTPFromAddress = () => process.env.EMAIL_FROM || process.env.EMAIL_USER;
+
+const addSMTPReplyTo = (mailOptions) => {
+  if (process.env.EMAIL_REPLY_TO) mailOptions.replyTo = process.env.EMAIL_REPLY_TO;
+  return mailOptions;
+};
+
 // ============================================================
 // EMAIL SERVICE FUNCTIONS
 // ============================================================
@@ -153,13 +160,13 @@ const sendViaSMTP = async ({ to, subject, html, text }) => {
 
     const mailTransporter = getTransporter();
 
-    const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
+    const mailOptions = addSMTPReplyTo({
+      from: `"HomelyServ" <${getSMTPFromAddress()}>`,
       to: to,
       subject: subject,
       text: text,
       html: html,
-    };
+    });
 
     const info = await mailTransporter.sendMail(mailOptions);
 
@@ -208,19 +215,19 @@ const buildSenderIdentity = () => {
 export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text = 'This is a test email from HomelyServ.', html = null) => {
   try {
     console.log(`\n📤 Attempting to send test email...`);
-    console.log(`   From: ${process.env.EMAIL_USER}`);
+    console.log(`   From: ${getSMTPFromAddress()}`);
     console.log(`   To: ${to}`);
     console.log(`   Subject: ${subject}`);
 
     const mailTransporter = getTransporter();
 
-    const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
+    const mailOptions = addSMTPReplyTo({
+      from: `"HomelyServ" <${getSMTPFromAddress()}>`,
       to: to,
       subject: subject,
       text: text,
       html: html || `<p>${text}</p><p><small>Sent from HomelyServ SMTP Service</small></p>`,
-    };
+    });
 
     const info = await mailTransporter.sendMail(mailOptions);
     
@@ -233,7 +240,7 @@ export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text =
       message: 'Email sent successfully',
       messageId: info.messageId,
       response: info.response,
-      from: process.env.EMAIL_USER,
+      from: getSMTPFromAddress(),
       to: to,
     };
   } catch (error) {
@@ -244,7 +251,7 @@ export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text =
       message: 'Failed to send email',
       error: error.message,
       code: error.code,
-      from: process.env.EMAIL_USER,
+      from: getSMTPFromAddress(),
       to: to,
     };
   }

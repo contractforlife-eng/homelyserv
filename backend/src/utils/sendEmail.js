@@ -13,7 +13,7 @@ export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
     });
 
     const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_USER}>`,
+      from: `"HomelyServ" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: toEmail,
       subject: 'Welcome to HomelyServ - Activate Your Account',
       html: `
@@ -34,6 +34,7 @@ export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
         </div>
       `,
     };
+    if (process.env.EMAIL_REPLY_TO) mailOptions.replyTo = process.env.EMAIL_REPLY_TO;
 
     await transporter.sendMail(mailOptions);
     console.log(`✉️ Activation code email sent successfully to: ${toEmail}`);
