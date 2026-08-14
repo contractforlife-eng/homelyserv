@@ -22,6 +22,7 @@ import {
   RefundPolicyError,
 } from '../services/paypalRefundService.js';
 import { getFinancialCenterData } from '../services/financialCenterService.js';
+import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 
 const router = express.Router();
 
@@ -109,6 +110,30 @@ router.get('/users', async (req, res) => {
       message: 'Failed to get users',
       error: error.message
     });
+  }
+});
+
+// Read-only user payment history. No provider operation or payment mutation is
+// reachable from this endpoint.
+router.get('/users/:id/payment-history', async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    const userExists = await User.exists({ _id: req.params.id });
+    if (!userExists) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const history = await getUserPaymentHistory({
+      userId: req.params.id,
+      page: req.query.page,
+      limit: req.query.limit,
+      audience: 'admin',
+    });
+    return res.json({ success: true, ...history });
+  } catch (error) {
+    console.error('Get user payment history error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get payment history' });
   }
 });
 

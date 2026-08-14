@@ -9,6 +9,7 @@ import MongooseUser from '../models/User.js';
 import { enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
+import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 
 const router = express.Router();
 
@@ -115,6 +116,31 @@ router.get('/users', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching users for support:', error);
     return res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Support-safe, read-only payment history. The DTO intentionally excludes
+// provider identifiers, reconciliation reasons, metadata, and mutation data.
+router.get('/users/:id/payment-history', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const history = await getUserPaymentHistory({
+      userId: id,
+      page: req.query.page,
+      limit: req.query.limit,
+      audience: 'support',
+    });
+    return res.json({ success: true, ...history });
+  } catch (error) {
+    console.error('Error fetching support-safe payment history:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get payment history' });
   }
 });
 

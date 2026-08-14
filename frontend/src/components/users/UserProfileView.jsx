@@ -42,7 +42,8 @@ import {
   X,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown
 } from 'lucide-react';
 import api from '../../utils/api';
 import { ensureConversationExists } from '../../utils/chatService';
@@ -55,8 +56,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
-  const { t: i18nT } = useTranslation();
+  const { t: i18nT, i18n } = useTranslation();
   const t = i18nT('userProfileView', { returnObjects: true });
+  const paymentT = i18nT('paymentHistory', { returnObjects: true });
 
   const isAdmin = variant === 'admin';
 
@@ -70,6 +72,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   // The VIEWED profile — completely separate from the authenticated session.
   const [profileUser, setProfileUser] = useState(null);
   const [stats, setStats] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentPagination, setPaymentPagination] = useState({ page: 1, hasMore: false });
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
+  const [paymentHistoryError, setPaymentHistoryError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -108,6 +114,36 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  // ============================================================
+  // LOAD PAYMENT HISTORY (read-only, role-shaped by the backend)
+  // ============================================================
+  const loadPaymentHistory = useCallback(async (page = 1, append = false) => {
+    if (!userId) return;
+    setPaymentHistoryLoading(true);
+    setPaymentHistoryError(false);
+    try {
+      const response = await api.get(`${apiBase}/users/${userId}/payment-history`, {
+        params: { page, limit: 20 },
+      });
+      if (response.data?.success) {
+        const items = response.data.items || [];
+        setPaymentHistory((current) => append ? [...current, ...items] : items);
+        setPaymentPagination(response.data.pagination || { page, hasMore: false });
+      }
+    } catch (error) {
+      console.error('Error loading user payment history:', error);
+      setPaymentHistoryError(true);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  }, [apiBase, userId]);
+
+  useEffect(() => {
+    setPaymentHistory([]);
+    setPaymentPagination({ page: 1, hasMore: false });
+    loadPaymentHistory();
+  }, [loadPaymentHistory]);
 
   // ============================================================
   // SUSPEND / ACTIVATE
@@ -290,6 +326,112 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
 
   const formatSuspensionReason = (reason) => t.suspensionReasons[reason] || reason;
 
+  const formatMoney = (amount, currency) => {
+    if (amount == null || !currency) return paymentT.unavailable;
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount)) return `${amount} ${currency}`;
+    return `${new Intl.NumberFormat(i18n.language || 'en', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numericAmount)} ${currency}`;
+  };
+
+  const purposeLabel = (purpose) => paymentT.purposes[purpose] || paymentT.purposes.LEGACY;
+  const statusLabel = (status) => paymentT.statuses[status] || paymentT.statuses.unknown;
+  const refundStatusLabel = (status) => paymentT.refundStatuses[status] || paymentT.refundStatuses.unknown;
+  const reconciliationLabel = (state) => paymentT.reconciliation[state] || paymentT.reconciliation.REVIEW_REQUIRED;
+
+  const paidForLabel = (payment) => {
+    const context = payment.paidFor || {};
+    if (context.type === 'SUBSCRIPTION') {
+      const plan = paymentT.plans[context.plan] || paymentT.plans.legacy;
+      const role = context.purchaserRole ? paymentT.roles[context.purchaserRole] : null;
+      return role ? `${plan} · ${role}` : plan;
+    }
+    if (context.type === 'COMMISSION') {
+      return context.jobTitle || paymentT.hireCommission;
+    }
+    return paymentT.historicalPayment;
+  };
+
+  const refundSummaryLabel = (payment) => {
+    if (!payment.refunds?.length) return paymentT.noRefund;
+    const latest = payment.refunds[0];
+    const suffix = payment.refunds.length > 1 ? ` · ${payment.refunds.length} ${paymentT.refunds}` : '';
+    return `${refundStatusLabel(latest.status)}${suffix}`;
+  };
+
+  const statusTone = (status) => {
+    if (['completed', 'PAYMENT_VERIFIED', 'REFUND_COMPLETED', 'MATCHED'].includes(status)) return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+    if (['failed', 'MISMATCH'].includes(status)) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+    return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+  };
+
+  const renderAdminReconciliation = (payment) => isAdmin ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(payment.reconciliation?.state)}`}>
+        {reconciliationLabel(payment.reconciliation?.state)}
+      </span>
+      {payment.reconciliation?.state === 'REVIEW_REQUIRED' && (
+        <Link
+          to={`/admin/financial-center?tab=reconciliation&paymentId=${encodeURIComponent(payment.id)}`}
+          className="inline-flex rounded-md border border-amber-500 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-amber-300 dark:hover:bg-amber-900/20"
+        >
+          {paymentT.reviewInFinancialCenter}
+        </Link>
+      )}
+    </div>
+  ) : null;
+
+  const renderPaymentDetails = (payment) => (
+    <div className="space-y-4 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {payment.paidFor?.type === 'SUBSCRIPTION' && (
+          <>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.plan}:</span> <span className="text-gray-900 dark:text-white">{paymentT.plans[payment.paidFor.plan] || paymentT.plans.legacy}</span></div>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.entitlement}:</span> <span className="text-gray-900 dark:text-white">{paymentT.entitlements[payment.paidFor.entitlementStatus] || paymentT.entitlements.unavailable}</span></div>
+            {payment.paidFor.durationDays && <div><span className="text-gray-500 dark:text-gray-400">{paymentT.duration}:</span> <span className="text-gray-900 dark:text-white">{payment.paidFor.durationDays} {paymentT.days}</span></div>}
+            {(payment.paidFor.startsAt || payment.paidFor.endsAt) && <div><span className="text-gray-500 dark:text-gray-400">{paymentT.entitlementPeriod}:</span> <span className="text-gray-900 dark:text-white">{formatDate(payment.paidFor.startsAt)} → {formatDate(payment.paidFor.endsAt)}</span></div>}
+          </>
+        )}
+        {payment.paidFor?.type === 'COMMISSION' && (
+          <>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.hireReference}:</span> <span className="font-mono text-gray-900 dark:text-white">{payment.paidFor.hireId || paymentT.unavailable}</span></div>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.parties}:</span> <span className="text-gray-900 dark:text-white">{[payment.paidFor.employerName, payment.paidFor.workerName].filter(Boolean).join(' · ') || paymentT.unavailable}</span></div>
+          </>
+        )}
+        {isAdmin && (
+          <>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.transactionId}:</span> <span className="font-mono text-gray-900 dark:text-white">{payment.references?.transactionId || paymentT.unavailable}</span></div>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.providerReference}:</span> <span className="font-mono text-gray-900 dark:text-white">{payment.references?.captureId || payment.references?.paymobTransactionId || paymentT.unavailable}</span></div>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.fulfillmentStatus}:</span> <span className="text-gray-900 dark:text-white">{paymentT.fulfillment[payment.fulfillmentStatus] || paymentT.fulfillment.unknown}</span></div>
+            <div><span className="text-gray-500 dark:text-gray-400">{paymentT.reconciliationLabel}:</span> <div className="mt-1">{renderAdminReconciliation(payment)}</div></div>
+          </>
+        )}
+        {!isAdmin && (
+          <div><span className="text-gray-500 dark:text-gray-400">{paymentT.verification}:</span> <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(payment.verificationState)}`}>{paymentT.verificationStates[payment.verificationState] || paymentT.verificationStates.PAYMENT_PENDING}</span></div>
+        )}
+      </div>
+      <div>
+        <p className="font-medium text-gray-900 dark:text-white mb-2">{paymentT.refundHistory}</p>
+        {payment.refunds?.length ? (
+          <div className="space-y-2">
+            {payment.refunds.map((refund, index) => (
+              <div key={refund.id || `${payment.id}-refund-${index}`} className="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div><span className="text-gray-500 dark:text-gray-400">{paymentT.refundStatus}:</span> {refundStatusLabel(refund.status)}</div>
+                <div><span className="text-gray-500 dark:text-gray-400">{paymentT.bookRefund}:</span> {formatMoney(refund.bookAmount, refund.bookCurrency)}</div>
+                <div><span className="text-gray-500 dark:text-gray-400">{paymentT.providerRefund}:</span> {refund.providerAmount == null ? paymentT.providerEvidenceUnavailable : formatMoney(refund.providerAmount, refund.providerCurrency)}</div>
+                <div><span className="text-gray-500 dark:text-gray-400">{paymentT.refundDate}:</span> {formatDate(refund.completedAt || refund.createdAt)}</div>
+                <div><span className="text-gray-500 dark:text-gray-400">{paymentT.refundType}:</span> {paymentT.refundTypes[refund.type] || paymentT.refundTypes.unknown}</div>
+                {isAdmin && refund.providerRefundId && <div><span className="text-gray-500 dark:text-gray-400">{paymentT.providerRefundId}:</span> <span className="font-mono">{refund.providerRefundId}</span></div>}
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-gray-500 dark:text-gray-400">{paymentT.noRefund}</p>}
+      </div>
+    </div>
+  );
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setNotification({ type: 'success', text: t.copied });
@@ -416,6 +558,128 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               )}
             </div>
           </div>
+
+          {/* READ-ONLY PAYMENT / TRANSACTION HISTORY */}
+          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <CreditCard size={18} className="text-teal-600" />
+                {paymentT.title}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {isAdmin ? paymentT.adminDescription : paymentT.supportDescription}
+              </p>
+            </div>
+
+            {paymentHistoryLoading && paymentHistory.length === 0 ? (
+              <div className="p-10 text-center">
+                <Loader2 size={28} className="animate-spin mx-auto text-teal-600" />
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{paymentT.loading}</p>
+              </div>
+            ) : paymentHistoryError && paymentHistory.length === 0 ? (
+              <div className="p-10 text-center">
+                <AlertTriangle size={28} className="mx-auto text-red-500" />
+                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{paymentT.loadFailed}</p>
+                <button type="button" onClick={() => loadPaymentHistory()} className="mt-3 text-sm font-medium text-teal-600 hover:text-teal-700">
+                  {paymentT.retry}
+                </button>
+              </div>
+            ) : paymentHistory.length === 0 ? (
+              <div className="p-10 text-center">
+                <CreditCard size={32} className="mx-auto text-gray-300 dark:text-gray-600" />
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{paymentT.empty}</p>
+              </div>
+            ) : (
+              <>
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-700/60 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-300">
+                      <tr>
+                        <th className="px-4 py-3">{paymentT.date}</th>
+                        <th className="px-4 py-3">{paymentT.purpose}</th>
+                        <th className="px-4 py-3">{paymentT.paidFor}</th>
+                        <th className="px-4 py-3">{paymentT.bookAmount}</th>
+                        <th className="px-4 py-3">{paymentT.provider}</th>
+                        <th className="px-4 py-3">{paymentT.providerCharge}</th>
+                        <th className="px-4 py-3">{paymentT.status}</th>
+                        <th className="px-4 py-3">{paymentT.refund}</th>
+                        {isAdmin && <th className="px-4 py-3">{paymentT.reconciliationLabel}</th>}
+                      </tr>
+                    </thead>
+                    {paymentHistory.map((payment) => (
+                      <tbody key={payment.id} className="border-t border-gray-100 dark:border-gray-700">
+                        <tr className="text-gray-700 dark:text-gray-200 align-top">
+                          <td className="px-4 py-3 whitespace-nowrap">{formatDate(payment.completedAt || payment.createdAt)}</td>
+                          <td className="px-4 py-3">{purposeLabel(payment.purpose)}</td>
+                          <td className="px-4 py-3 min-w-40">{paidForLabel(payment)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap font-medium">{formatMoney(payment.bookAmount, payment.bookCurrency)}</td>
+                          <td className="px-4 py-3">{payment.provider?.name || paymentT.unknownProvider}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">{payment.provider?.evidenceAvailable ? formatMoney(payment.provider.amount, payment.provider.currency) : paymentT.providerEvidenceUnavailable}</td>
+                          <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(payment.status)}`}>{statusLabel(payment.status)}</span></td>
+                          <td className="px-4 py-3 min-w-32">{refundSummaryLabel(payment)}</td>
+                          {isAdmin && <td className="px-4 py-3">{renderAdminReconciliation(payment)}</td>}
+                        </tr>
+                        <tr>
+                          <td colSpan={isAdmin ? 9 : 8} className="px-4 pb-3">
+                            <details className="group rounded-lg bg-gray-50 dark:bg-gray-700/50 px-3 py-2">
+                              <summary className="cursor-pointer list-none flex items-center gap-2 text-sm font-medium text-teal-700 dark:text-teal-300">
+                                <ChevronDown size={15} className="transition group-open:rotate-180" />
+                                {paymentT.viewDetails}
+                              </summary>
+                              <div className="pt-3">{renderPaymentDetails(payment)}</div>
+                            </details>
+                          </td>
+                        </tr>
+                      </tbody>
+                    ))}
+                  </table>
+                </div>
+
+                <div className="md:hidden p-4 space-y-4">
+                  {paymentHistory.map((payment) => (
+                    <article key={payment.id} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white">{purposeLabel(payment.purpose)}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{paidForLabel(payment)}</p>
+                        </div>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(payment.status)}`}>{statusLabel(payment.status)}</span>
+                      </div>
+                      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div><dt className="text-gray-500 dark:text-gray-400">{paymentT.date}</dt><dd className="text-gray-900 dark:text-white">{formatDate(payment.completedAt || payment.createdAt)}</dd></div>
+                        <div><dt className="text-gray-500 dark:text-gray-400">{paymentT.bookAmount}</dt><dd className="font-medium text-gray-900 dark:text-white">{formatMoney(payment.bookAmount, payment.bookCurrency)}</dd></div>
+                        <div><dt className="text-gray-500 dark:text-gray-400">{paymentT.provider}</dt><dd className="text-gray-900 dark:text-white">{payment.provider?.name || paymentT.unknownProvider}</dd></div>
+                        <div><dt className="text-gray-500 dark:text-gray-400">{paymentT.providerCharge}</dt><dd className="text-gray-900 dark:text-white">{payment.provider?.evidenceAvailable ? formatMoney(payment.provider.amount, payment.provider.currency) : paymentT.providerEvidenceUnavailable}</dd></div>
+                        <div className="col-span-2"><dt className="text-gray-500 dark:text-gray-400">{paymentT.refund}</dt><dd className="text-gray-900 dark:text-white">{refundSummaryLabel(payment)}</dd></div>
+                        {isAdmin && <div className="col-span-2"><dt className="text-gray-500 dark:text-gray-400">{paymentT.reconciliationLabel}</dt><dd className="mt-1">{renderAdminReconciliation(payment)}</dd></div>}
+                      </dl>
+                      <details className="group mt-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 px-3 py-2">
+                        <summary className="cursor-pointer list-none flex items-center gap-2 text-sm font-medium text-teal-700 dark:text-teal-300">
+                          <ChevronDown size={15} className="transition group-open:rotate-180" />
+                          {paymentT.viewDetails}
+                        </summary>
+                        <div className="pt-3">{renderPaymentDetails(payment)}</div>
+                      </details>
+                    </article>
+                  ))}
+                </div>
+
+                {paymentPagination.hasMore && (
+                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-center">
+                    <button
+                      type="button"
+                      onClick={() => loadPaymentHistory(paymentPagination.nextPage, true)}
+                      disabled={paymentHistoryLoading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
+                    >
+                      {paymentHistoryLoading && <Loader2 size={15} className="animate-spin" />}
+                      {paymentT.loadMore}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
 
           {/* ACCOUNT INFO */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
