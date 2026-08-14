@@ -1,9 +1,9 @@
 // src/pages/AdminUsers.jsx - MODERNIZED ADMIN USER MANAGEMENT
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
-import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
@@ -59,7 +59,7 @@ const StatCard = ({ icon: Icon, label, value, color, bgColor }) => (
   </div>
 );
 
-const RoleBadge = ({ role }) => {
+const RoleBadge = ({ role, label }) => {
   const colors = {
     ADMIN: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700',
     SUPPORT: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700',
@@ -80,17 +80,17 @@ const RoleBadge = ({ role }) => {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${colorClass}`}>
       <Icon size={12} />
-      {getRoleLabel(role)}
+      {label}
     </span>
   );
 };
 
-const StatusBadge = ({ isSuspended, isVerified }) => {
+const StatusBadge = ({ isSuspended, isVerified, labels }) => {
   if (isSuspended) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700">
         <UserX size={12} />
-        Suspended
+        {labels.suspended}
       </span>
     );
   }
@@ -99,19 +99,19 @@ const StatusBadge = ({ isSuspended, isVerified }) => {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700">
         <CheckCircle size={12} />
-        Verified
+        {labels.verified}
       </span>
     );
   }
 
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
-      Active
+      {labels.active}
     </span>
   );
 };
 
-const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate }) => {
+const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate, labels }) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
 
@@ -127,7 +127,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        title="Actions"
+        title={labels.actions}
         aria-haspopup="menu"
         aria-expanded={isOpen}
       >
@@ -149,7 +149,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
           role="menuitem"
         >
           <Eye size={14} />
-          View Profile
+          {labels.viewProfile}
         </button>
         {canChangeRole && (
           <button
@@ -158,7 +158,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
             role="menuitem"
           >
             <UserCog size={14} />
-            Change Role
+            {labels.changeRole}
           </button>
         )}
         <button
@@ -167,7 +167,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
           role="menuitem"
         >
           <Key size={14} />
-          Reset Password
+          {labels.resetPassword}
         </button>
         {user.isSuspended ? (
           <button
@@ -176,7 +176,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
             role="menuitem"
           >
             <Play size={14} />
-            Activate Account
+            {labels.activateAccount}
           </button>
         ) : (
           <button
@@ -185,7 +185,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
             role="menuitem"
           >
             <Pause size={14} />
-            Suspend Account
+            {labels.suspendAccount}
           </button>
         )}
       </ActionMenuPortal>
@@ -198,7 +198,8 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
 // ============================================================
 const AdminUsers = () => {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
+  const { t: i18nT, i18n } = useTranslation();
+  const t = i18nT('adminUsersPage', { returnObjects: true });
   const [user, setUser] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -223,144 +224,6 @@ const AdminUsers = () => {
   const [roleChangeError, setRoleChangeError] = useState('');
   const [roleChangeSuccess, setRoleChangeSuccess] = useState('');
 
-  const translations = {
-    en: {
-      title: 'User Management',
-      subtitle: 'Manage users, roles, account status and security actions',
-      stats: {
-        total: 'Total Users',
-        workers: 'Workers',
-        employers: 'Employers',
-        support: 'Support',
-        admins: 'Admins',
-        active: 'Active',
-        suspended: 'Suspended'
-      },
-      table: {
-        user: 'User',
-        email: 'Email',
-        role: 'Role',
-        status: 'Status',
-        joined: 'Joined',
-        actions: 'Actions',
-        noResults: 'No users found',
-        searchPlaceholder: 'Search users by name or email...',
-        clearFilters: 'Clear Filters'
-      },
-      filters: {
-        all: 'All Users',
-        worker: 'Workers',
-        employer: 'Employers',
-        admin: 'Admins',
-        support: 'Support',
-        allStatus: 'All Status',
-        active: 'Active',
-        suspended: 'Suspended'
-      },
-      actions: {
-        resetPassword: 'Reset Password',
-        generatePassword: 'Generate Password',
-        password: 'Password',
-        tempPassword: 'Temporary Password',
-        copyPassword: 'Copy Password',
-        resetSuccess: 'Password reset successfully',
-        resetError: 'Failed to reset password',
-        changeRole: 'Change Role'
-      },
-      modal: {
-        resetPassword: 'Reset Password',
-        resettingFor: 'Resetting password for',
-        password: 'Password',
-        generatePassword: 'Generate Password',
-        cancel: 'Cancel',
-        resetPasswordBtn: 'Reset Password',
-        resetting: 'Resetting...',
-        securityNote: 'This password is temporary. The user will receive it by email and must change it after signing in.',
-        done: 'Done'
-      },
-      changeRole: {
-        title: 'Change Role',
-        changingFor: 'Changing role for',
-        currentRole: 'Current Role',
-        newRole: 'New Role',
-        confirm: 'Change Role',
-        changing: 'Changing...',
-        warning: 'Changing this user\'s role will change their account permissions and sign them out of existing sessions.',
-        workerNote: 'If selecting WORKER, the user may need to complete their Worker profile setup.',
-        error: 'Failed to change role',
-        success: 'Role updated to'
-      }
-    },
-    ar: {
-      title: 'إدارة المستخدمين',
-      subtitle: 'إدارة المستخدمين والأدوار وحالة الحسابات وإجراءات الأمان',
-      stats: {
-        total: 'إجمالي المستخدمين',
-        workers: 'عمال',
-        employers: 'أصحاب عمل',
-        support: 'دعم',
-        admins: 'مشرفين',
-        active: 'نشط',
-        suspended: 'موقوف'
-      },
-      table: {
-        user: 'المستخدم',
-        email: 'البريد الإلكتروني',
-        role: 'الدور',
-        status: 'الحالة',
-        joined: 'تاريخ الانضمام',
-        actions: 'الإجراءات',
-        noResults: 'لا يوجد مستخدمين',
-        searchPlaceholder: 'البحث عن مستخدمين...',
-        clearFilters: 'مسح الفلاتر'
-      },
-      filters: {
-        all: 'جميع المستخدمين',
-        worker: 'عمال',
-        employer: 'أصحاب عمل',
-        admin: 'مشرفين',
-        support: 'دعم',
-        allStatus: 'جميع الحالات',
-        active: 'نشط',
-        suspended: 'موقوف'
-      },
-      actions: {
-        resetPassword: 'إعادة تعيين كلمة المرور',
-        generatePassword: 'توليد كلمة مرور',
-        password: 'كلمة المرور',
-        tempPassword: 'كلمة المرور المؤقتة',
-        copyPassword: 'نسخ كلمة المرور',
-        resetSuccess: 'تم إعادة تعيين كلمة المرور بنجاح',
-        resetError: 'فشل إعادة تعيين كلمة المرور',
-        changeRole: 'تغيير الدور'
-      },
-      modal: {
-        resetPassword: 'إعادة تعيين كلمة المرور',
-        resettingFor: 'إعادة تعيين كلمة المرور لـ',
-        password: 'كلمة المرور',
-        generatePassword: 'توليد كلمة مرور',
-        cancel: 'إلغاء',
-        resetPasswordBtn: 'إعادة تعيين',
-        resetting: 'جاري الإعادة...',
-        securityNote: 'كلمة المرور هذه مؤقتة. سيتم إرسالها إلى المستخدم عبر البريد الإلكتروني ويجب تغييرها بعد تسجيل الدخول.',
-        done: 'تم'
-      },
-      changeRole: {
-        title: 'تغيير الدور',
-        changingFor: 'تغيير الدور لـ',
-        currentRole: 'الدور الحالي',
-        newRole: 'الدور الجديد',
-        confirm: 'تغيير الدور',
-        changing: 'جاري التغيير...',
-        warning: 'سيؤدي تغيير دور هذا المستخدم إلى تغيير صلاحيات حسابه وتسجيل خروجه من جميع الجلسات الحالية.',
-        workerNote: 'عند اختيار عامل (WORKER)، قد يحتاج المستخدم إلى إكمال إعداد ملفه الشخصي كعامل.',
-        error: 'فشل تغيير الدور',
-        success: 'تم تغيير الدور إلى'
-      }
-    }
-  };
-
-  const t = translations[language] || translations.en;
 
   // Use authStore as single source of truth
   const authUser = useAuthStore(state => state.user);
@@ -368,11 +231,6 @@ const AdminUsers = () => {
   const authLoading = useAuthStore(state => state.isLoading);
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-
     const sidebarState = localStorage.getItem('sidebar_collapsed');
     if (sidebarState) {
       setSidebarCollapsed(JSON.parse(sidebarState));
@@ -410,11 +268,6 @@ const AdminUsers = () => {
     }
   };
 
-  useEffect(() => {
-    document.documentElement.dir = 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
   // Filter users
   useEffect(() => {
     let filtered = users;
@@ -442,12 +295,6 @@ const AdminUsers = () => {
 
     setFilteredUsers(filtered);
   }, [users, roleFilter, statusFilter, searchTerm]);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'ar' : 'en';
-    setLanguage(newLang);
-    localStorage.setItem('homelyserv_language', newLang);
-  };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -537,7 +384,7 @@ const AdminUsers = () => {
     const userId = selectedUserForRole._id || selectedUserForRole.id;
 
     if (!selectedRole) {
-      setRoleChangeError('Please select a new role');
+      setRoleChangeError(t.changeRole.selectRoleError);
       return;
     }
 
@@ -550,7 +397,7 @@ const AdminUsers = () => {
         const changedName = selectedUserForRole.fullName || 'User';
         updateUserRole(userId, newRole);
         closeRoleChangeModal();
-        setRoleChangeSuccess(`${t.changeRole.success} ${getRoleLabel(newRole)} (${changedName})`);
+        setRoleChangeSuccess(`${t.changeRole.success} ${t.roles[newRole]} (${changedName})`);
         setTimeout(() => setRoleChangeSuccess(''), 5000);
       }
     } catch (error) {
@@ -577,7 +424,7 @@ const AdminUsers = () => {
     const userId = selectedUserForReset._id || selectedUserForReset.id;
     
     if (!passwordToUse || passwordToUse.length < 6) {
-      setPasswordError('Please enter or generate a password (minimum 6 characters)');
+      setPasswordError(t.actions.passwordRequired);
       return;
     }
 
@@ -598,10 +445,10 @@ const AdminUsers = () => {
         setNewPassword('');
         setResetReason('');
       } else {
-        setPasswordError(response.data.message || 'Failed to reset password');
+        setPasswordError(response.data.message || t.actions.resetError);
       }
     } catch (error) {
-      setPasswordError(error.response?.data?.message || 'Failed to reset password');
+      setPasswordError(error.response?.data?.message || t.actions.resetError);
     } finally {
       setIsResettingPassword(false);
     }
@@ -658,8 +505,6 @@ const AdminUsers = () => {
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={toggleLanguage}
         notificationUserId={user?.id || user?.email}
         variant="admin"
       />
@@ -808,7 +653,7 @@ const AdminUsers = () => {
                 {t.table.noResults}
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {hasActiveFilters ? 'Try adjusting your search or filters' : 'No users in the system yet'}
+                {hasActiveFilters ? t.table.adjustSearch : t.table.emptySystem}
               </p>
             </div>
           ) : (
@@ -854,7 +699,7 @@ const AdminUsers = () => {
                             </p>
                             {u.subscription?.isPremium && (
                               <p className="text-xs font-semibold text-amber-600 mt-0.5">
-                                Premium · {new Date(u.subscription.endDate).toLocaleDateString()}
+                                {t.premiumActive} · {new Date(u.subscription.endDate).toLocaleDateString(i18n.resolvedLanguage || 'en')}
                               </p>
                             )}
                             {u.phone && (
@@ -873,13 +718,13 @@ const AdminUsers = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <RoleBadge role={u.role} />
+                        <RoleBadge role={u.role} label={t.roles[u.role] || t.roles.USER} />
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge isSuspended={u.isSuspended || u.status === 'suspended'} isVerified={u.emailVerified === true} />
+                        <StatusBadge isSuspended={u.isSuspended || u.status === 'suspended'} isVerified={u.emailVerified === true} labels={t.status} />
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString(i18n.resolvedLanguage || 'en') : t.notAvailable}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <UserActionsMenu
@@ -890,6 +735,7 @@ const AdminUsers = () => {
                           onResetPassword={openPasswordModal}
                           onSuspend={handleSuspend}
                           onActivate={handleActivate}
+                          labels={t.menu}
                         />
                       </td>
                     </tr>
@@ -939,7 +785,7 @@ const AdminUsers = () => {
                       <button
                         onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
                         className="p-2 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors text-gray-600 dark:text-gray-400"
-                        title={showGeneratedPassword ? 'Hide' : 'Show'}
+                        title={showGeneratedPassword ? t.actions.hidePassword : t.actions.showPassword}
                       >
                         {showGeneratedPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -952,7 +798,7 @@ const AdminUsers = () => {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Share this password with the user securely. They will be required to change it on next login.
+                      {t.modal.sharePassword}
                     </p>
                   </div>
                 </div>
@@ -984,14 +830,14 @@ const AdminUsers = () => {
                         type={showGeneratedPassword ? 'text' : 'password'}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Enter new password"
+                        placeholder={t.modal.passwordPlaceholder}
                         className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white placeholder-gray-500"
                       />
                       <button
                         type="button"
                         onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
                         className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-                        title={showGeneratedPassword ? 'Hide' : 'Show'}
+                        title={showGeneratedPassword ? t.actions.hidePassword : t.actions.showPassword}
                       >
                         {showGeneratedPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -1103,7 +949,7 @@ const AdminUsers = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold mb-1">
                   {t.changeRole.currentRole}
                 </p>
-                <RoleBadge role={selectedUserForRole.role} />
+                <RoleBadge role={selectedUserForRole.role} label={t.roles[selectedUserForRole.role] || t.roles.USER} />
               </div>
 
               {/* New role selector */}
@@ -1132,7 +978,7 @@ const AdminUsers = () => {
                               : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
                         }`}
                       >
-                        {getRoleLabel(roleOption)}
+                        {t.roles[roleOption]}
                       </button>
                     );
                   })}

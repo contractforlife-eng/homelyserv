@@ -68,11 +68,11 @@ const AdminPayments = () => {
         setCompletedRevenueByCurrency(response.data.completedRevenueByCurrency || []);
         setPaypalSandboxRefundsEnabled(response.data.paypalSandboxRefundsEnabled === true);
       } else {
-        setError(response.data?.message || 'Failed to load payments');
+        setError(response.data?.message || i18nT('adminPayments.loadFailed'));
       }
     } catch (err) {
       console.error('❌ Error loading payments:', err);
-      setError(err.response?.data?.message || 'Failed to load payments');
+      setError(err.response?.data?.message || i18nT('adminPayments.loadFailed'));
       setPayments([]);
       setFilteredPayments([]);
       setCompletedRevenueByCurrency([]);
@@ -80,7 +80,7 @@ const AdminPayments = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [i18nT]);
 
   const canRefund = (payment) => (
     paypalSandboxRefundsEnabled
@@ -96,8 +96,8 @@ const AdminPayments = () => {
   const requestFullRefund = async (payment) => {
     const book = formatCurrency(payment.amount, payment);
     const provider = formatCurrency(payment.providerAmount, { currency: payment.providerCurrency });
-    if (!window.confirm(`Refund the full provider charge of ${provider}?\n\nBook payment: ${book}\nProvider refund: ${provider}\n\nThis does not reverse Hire or Premium entitlement.`)) return;
-    const reason = window.prompt('Required Admin refund reason:')?.trim();
+    if (!window.confirm(i18nT('adminPayments.refundConfirm', { provider, book }))) return;
+    const reason = window.prompt(i18nT('adminPayments.refundReasonPrompt'))?.trim();
     if (!reason) return;
     setRefunding(true);
     setError(null);
@@ -107,7 +107,7 @@ const AdminPayments = () => {
       setSelectedPayment(null);
       await loadPayments();
     } catch (err) {
-      setError(err.response?.data?.message || 'Refund could not be processed safely');
+      setError(err.response?.data?.message || i18nT('adminPayments.refundFailed'));
     } finally {
       setRefunding(false);
     }
@@ -179,14 +179,7 @@ const AdminPayments = () => {
   };
 
   const getStatusLabel = (status) => {
-    const labels = {
-      completed: 'Completed',
-      pending: 'Pending',
-      processing: 'Processing',
-      pending_verification: 'Pending Verification',
-      failed: 'Failed',
-    };
-    return labels[status] || status || 'Unknown';
+    return i18nT(`adminPayments.status.${status || 'unknown'}`, { defaultValue: i18nT('adminPayments.status.unknown') });
   };
 
   const formatDate = (dateString) => {
@@ -211,7 +204,7 @@ const AdminPayments = () => {
     return `${numericAmount.toLocaleString()} ${currency}`;
   };
 
-  const getPayerName = (p) => p.User?.fullName || p.employerName || p.userEmail || 'Unknown';
+  const getPayerName = (p) => p.User?.fullName || p.employerName || p.userEmail || i18nT('adminPayments.unknown');
 
   const stats = {
     total: payments.length,
@@ -239,7 +232,7 @@ const AdminPayments = () => {
   // Only block during initial unresolved authentication
   // After auth resolves, render the page shell immediately
   if (authLoading && !authUser) {
-    return <PageLoader text="Loading..." fullScreen />;
+    return <PageLoader text={i18nT('adminPayments.loading')} fullScreen />;
   }
 
   if (!authUser) return null;
@@ -247,7 +240,7 @@ const AdminPayments = () => {
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
-        title="Payments"
+        title={i18nT('adminPayments.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"
@@ -257,15 +250,15 @@ const AdminPayments = () => {
         <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-black">Payments</h1>
-              <p className="text-black/70 mt-1">Manage and verify all payments and transactions</p>
+              <h1 className="text-2xl font-bold text-black">{i18nT('adminPayments.title')}</h1>
+              <p className="text-black/70 mt-1">{i18nT('adminPayments.subtitle')}</p>
             </div>
             <button
               onClick={loadPayments}
               className="bg-black/20 hover:bg-black/30 text-black px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
             >
               <RefreshCw size={16} />
-              Refresh
+              {i18nT('adminPayments.refresh')}
             </button>
           </div>
         </div>
@@ -284,7 +277,7 @@ const AdminPayments = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Payments</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminPayments.total')}</p>
                 <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
                   <CreditCard size={20} className="text-blue-400" />
                 </div>
@@ -293,7 +286,7 @@ const AdminPayments = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminPayments.status.completed')}</p>
                 <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
                   <CheckCircle size={20} className="text-green-400" />
                 </div>
@@ -302,7 +295,7 @@ const AdminPayments = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-yellow-500/20">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminPayments.status.pending')}</p>
                 <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
                   <Clock size={20} className="text-yellow-400" />
                 </div>
@@ -328,7 +321,7 @@ const AdminPayments = () => {
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search payments..."
+                placeholder={i18nT('adminPayments.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
@@ -340,11 +333,11 @@ const AdminPayments = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
               >
-                <option value="all">All Payments</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="failed">Failed</option>
+                <option value="all">{i18nT('adminPayments.all')}</option>
+                <option value="completed">{i18nT('adminPayments.status.completed')}</option>
+                <option value="pending">{i18nT('adminPayments.status.pending')}</option>
+                <option value="processing">{i18nT('adminPayments.status.processing')}</option>
+                <option value="failed">{i18nT('adminPayments.status.failed')}</option>
               </select>
             </div>
           </div>
@@ -353,7 +346,7 @@ const AdminPayments = () => {
         {/* Results Count */}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredPayments.length}</span> payments
+            {i18nT('adminPayments.showing', { count: filteredPayments.length })}
           </p>
         </div>
 
@@ -362,27 +355,27 @@ const AdminPayments = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
             <div className="flex flex-col items-center justify-center py-16">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-500 mb-4"></div>
-              <p className="text-gray-500 dark:text-gray-400">Loading payments...</p>
+              <p className="text-gray-500 dark:text-gray-400">{i18nT('adminPayments.loading')}</p>
             </div>
           </div>
         ) : error ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-red-500/20">
             <AlertCircle size={40} className="mx-auto text-red-500 mb-3" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to load payments</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{i18nT('adminPayments.loadFailed')}</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
             <button
               onClick={loadPayments}
               className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition inline-flex items-center gap-2 font-medium"
             >
               <RefreshCw size={16} />
-              Retry
+              {i18nT('adminPayments.retry')}
             </button>
           </div>
         ) : filteredPayments.length === 0 ? (
           <EmptyState
             icon={CreditCard}
-            title="No payments found"
-            description="No payments match the current search or filters"
+            title={i18nT('adminPayments.emptyTitle')}
+            description={i18nT('adminPayments.emptyDescription')}
           />
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
@@ -390,12 +383,7 @@ const AdminPayments = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b border-yellow-500/20">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payer</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    {['payer','amount','type','statusLabel','date','actions'].map((key) => <th key={key} className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{i18nT(`adminPayments.${key}`)}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-yellow-500/10">
@@ -428,7 +416,7 @@ const AdminPayments = () => {
                           className="px-2 py-1 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded text-xs hover:bg-yellow-500/30 transition flex items-center gap-1"
                         >
                           <Eye size={12} />
-                          View
+                          {i18nT('adminPayments.view')}
                         </button>
                       </td>
                     </tr>
@@ -445,7 +433,7 @@ const AdminPayments = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-yellow-500/20">
             <div className="flex items-center justify-between p-6 border-b border-yellow-500/20">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Payment Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{i18nT('adminPayments.details')}</h2>
               <button
                 onClick={() => setShowDetailsModal(false)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400"
@@ -457,7 +445,7 @@ const AdminPayments = () => {
               <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center gap-2 flex-wrap">
                   <div className="min-w-0">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Transaction ID</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminPayments.transactionId')}</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-white break-all">{selectedPayment.transactionId || selectedPayment.id}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 flex-shrink-0 ${getStatusColor(selectedPayment.status)}`}>
@@ -471,7 +459,7 @@ const AdminPayments = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
                     <UserCheck size={16} className="text-yellow-500" />
-                    Payer
+                    {i18nT('adminPayments.payer')}
                   </h3>
                   <p className="font-medium text-gray-900 dark:text-white">{getPayerName(selectedPayment)}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedPayment.userEmail || 'N/A'}</p>
@@ -480,7 +468,7 @@ const AdminPayments = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
                     <UserIcon size={16} className="text-yellow-500" />
-                    Worker
+                    {i18nT('adminPayments.worker')}
                   </h3>
                   <p className="font-medium text-gray-900 dark:text-white">{selectedPayment.workerName || 'N/A'}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedPayment.jobTitle || 'N/A'}</p>
@@ -501,9 +489,9 @@ const AdminPayments = () => {
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{i18nT('adminPayments.date')}</p>
                   <p className="font-medium text-gray-900 dark:text-white">{formatDate(selectedPayment.createdAt)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">Method: {selectedPayment.paymentMethod || 'N/A'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">{i18nT('adminPayments.method')}: {selectedPayment.paymentMethod || i18nT('adminPayments.notAvailable')}</p>
                 </div>
               </div>
 
@@ -523,16 +511,16 @@ const AdminPayments = () => {
 
               {(selectedPayment.refunds || []).length > 0 && (
                 <div className="mt-6 bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Refund history</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{i18nT('adminPayments.refundHistory')}</h3>
                   <div className="mt-3 space-y-3">
                     {selectedPayment.refunds.map((refund) => (
                       <div key={refund.id} className="text-sm border-t border-gray-200 dark:border-gray-600 pt-3 first:border-0 first:pt-0">
                         <p className="font-medium text-gray-900 dark:text-white capitalize">{refund.type?.toLowerCase()} · {refund.status}</p>
-                        <p className="text-gray-600 dark:text-gray-300">Book: {formatCurrency(refund.bookAmount, { currency: refund.bookCurrency })}</p>
+                        <p className="text-gray-600 dark:text-gray-300">{i18nT('adminPayments.book')}: {formatCurrency(refund.bookAmount, { currency: refund.bookCurrency })}</p>
                         <p className="text-gray-600 dark:text-gray-300">
-                          Provider: {formatCurrency(refund.providerAmount || refund.requestedProviderAmount, { currency: refund.providerCurrency })}
+                          {i18nT('adminPayments.provider')}: {formatCurrency(refund.providerAmount || refund.requestedProviderAmount, { currency: refund.providerCurrency })}
                         </p>
-                        {refund.reason && <p className="text-gray-500 dark:text-gray-400">Reason: {refund.reason}</p>}
+                        {refund.reason && <p className="text-gray-500 dark:text-gray-400">{i18nT('adminPayments.reason')}: {refund.reason}</p>}
                       </div>
                     ))}
                   </div>
@@ -546,14 +534,14 @@ const AdminPayments = () => {
                     disabled={refunding}
                     className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
                   >
-                    {refunding ? 'Refunding…' : 'Sandbox full refund'}
+                    {refunding ? i18nT('adminPayments.refunding') : i18nT('adminPayments.sandboxRefund')}
                   </button>
                 )}
                 <button
                   onClick={() => setShowDetailsModal(false)}
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
                 >
-                  Close
+                  {i18nT('adminPayments.close')}
                 </button>
               </div>
             </div>

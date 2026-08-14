@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
@@ -7,6 +8,7 @@ import Logo from './Logo';
 import NotificationBell from './NotificationBell'; // 👈 ADD THIS
 
 export default function AdminLayout({ children }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -28,11 +30,11 @@ export default function AdminLayout({ children }) {
   };
 
   const menuItems = [
-    { key: 'dashboard', icon: '📊', label: 'Dashboard', path: '/admin' },
-    { key: 'users', icon: '👥', label: 'Users', path: '/admin/users' },
-    { key: 'hires', icon: '📋', label: 'Hires', path: '/admin/hires' },
-    { key: 'payments', icon: '💰', label: 'Payments', path: '/admin/payments' },
-    { key: 'settings', icon: '⚙️', label: 'Settings', path: '/admin/settings' },
+    { key: 'dashboard', icon: '📊', label: t('dashboard'), path: '/admin' },
+    { key: 'users', icon: '👥', label: t('users'), path: '/admin/users' },
+    { key: 'hires', icon: '📋', label: t('hires'), path: '/admin/hires' },
+    { key: 'payments', icon: '💰', label: t('payments'), path: '/admin/payments' },
+    { key: 'settings', icon: '⚙️', label: t('settings'), path: '/admin/settings' },
     { key: 'reports', icon: '📈', label: 'Reports', path: '/admin/reports' },
   ];
 
@@ -86,7 +88,7 @@ export default function AdminLayout({ children }) {
           {!isMobile && (
             <div>
               <div style={{ color: '#fff', fontSize: '18px', fontWeight: '700' }}>Homely</div>
-              <div style={{ color: '#6a8bb0', fontSize: '12px', fontWeight: '400' }}>Control Panel</div>
+              <div style={{ color: '#6a8bb0', fontSize: '12px', fontWeight: '400' }}>{t('controlPanel')}</div>
             </div>
           )}
         </div>

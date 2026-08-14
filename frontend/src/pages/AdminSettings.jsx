@@ -92,7 +92,7 @@ const ToggleSwitch = ({ value, onChange, disabled = false }) => {
 // ============================================================
 const AdminSettings = () => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t: i18nT, i18n } = useTranslation();
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en');
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const langTriggerRef = useRef(null);
@@ -159,178 +159,7 @@ const AdminSettings = () => {
     backupSchedule: 'daily'
   });
 
-  const translations = {
-    en: {
-      title: 'Settings',
-      subtitle: 'Manage your admin preferences',
-      tabs: {
-        general: 'General',
-        appearance: 'Appearance',
-        notifications: 'Notifications',
-        security: 'Security',
-        payment: 'Payment',
-        users: 'Users',
-        system: 'System'
-      },
-      general: {
-        title: 'General Settings',
-        siteName: 'Site Name',
-        siteDescription: 'Site Description',
-        contactEmail: 'Contact Email',
-        contactPhone: 'Contact Phone',
-        address: 'Address'
-      },
-      appearance: {
-        title: 'Appearance Settings',
-        darkMode: 'Dark Mode',
-        primaryColor: 'Primary Color',
-        secondaryColor: 'Secondary Color',
-        language: 'Language'
-      },
-      notifications: {
-        title: 'Notification Settings',
-        systemNotifications: 'System Notifications',
-        emailNotifications: 'Email Notifications',
-        pushNotifications: 'Push Notifications',
-        complaintNotifications: 'Complaint Notifications',
-        paymentNotifications: 'Payment Notifications'
-      },
-      security: {
-        title: 'Security Settings',
-        twoFactorAuth: 'Two-Factor Authentication',
-        sessionTimeout: 'Session Timeout (minutes)',
-        maxLoginAttempts: 'Max Login Attempts',
-        requireEmailVerification: 'Require Email Verification',
-        requirePhoneVerification: 'Require Phone Verification',
-        changePassword: 'Change Password'
-      },
-      payment: {
-        title: 'Payment Settings',
-        currency: 'Currency',
-        minWithdrawal: 'Minimum Withdrawal',
-        maxWithdrawal: 'Maximum Withdrawal',
-        paymentMethods: 'Payment Methods'
-      },
-      users: {
-        title: 'User Management',
-        allowRegistration: 'Allow New Registrations',
-        requireApproval: 'Require Admin Approval',
-        maxUsersPerIp: 'Max Users per IP',
-        autoSuspendAfter: 'Auto-Suspend After (days)'
-      },
-      system: {
-        title: 'System Settings',
-        debugMode: 'Debug Mode',
-        maintenanceMode: 'Maintenance Mode',
-        cacheEnabled: 'Enable Cache',
-        backupSchedule: 'Backup Schedule',
-        clearCache: 'Clear Cache',
-        backupData: 'Backup Data',
-        restoreData: 'Restore Data'
-      },
-      actions: {
-        save: 'Save Changes',
-        saving: 'Saving...',
-        saved: 'Settings saved successfully!',
-        cancel: 'Cancel',
-        confirm: 'Confirm',
-        changePassword: 'Change Password',
-        currentPassword: 'Current Password',
-        newPassword: 'New Password',
-        confirmPassword: 'Confirm Password',
-        passwordMismatch: 'Passwords do not match',
-        passwordLength: 'Password must be at least 8 characters',
-        passwordChanged: 'Password changed successfully!'
-      },
-      languageToggle: 'العربية'
-    },
-    ar: {
-      title: 'الإعدادات',
-      subtitle: 'إدارة تفضيلات المشرف',
-      tabs: {
-        general: 'عام',
-        appearance: 'المظهر',
-        notifications: 'الإشعارات',
-        security: 'الأمان',
-        payment: 'الدفع',
-        users: 'المستخدمين',
-        system: 'النظام'
-      },
-      general: {
-        title: 'الإعدادات العامة',
-        siteName: 'اسم الموقع',
-        siteDescription: 'وصف الموقع',
-        contactEmail: 'البريد الإلكتروني للتواصل',
-        contactPhone: 'هاتف التواصل',
-        address: 'العنوان'
-      },
-      appearance: {
-        title: 'إعدادات المظهر',
-        darkMode: 'الوضع الداكن',
-        primaryColor: 'اللون الأساسي',
-        secondaryColor: 'اللون الثانوي',
-        language: 'اللغة'
-      },
-      notifications: {
-        title: 'إعدادات الإشعارات',
-        systemNotifications: 'إشعارات النظام',
-        emailNotifications: 'الإشعارات البريدية',
-        pushNotifications: 'إشعارات الدفع',
-        complaintNotifications: 'إشعارات الشكاوى',
-        paymentNotifications: 'إشعارات الدفع'
-      },
-      security: {
-        title: 'إعدادات الأمان',
-        twoFactorAuth: 'المصادقة الثنائية',
-        sessionTimeout: 'انتهاء الجلسة (دقائق)',
-        maxLoginAttempts: 'الحد الأقصى لمحاولات تسجيل الدخول',
-        requireEmailVerification: 'طلب التحقق من البريد الإلكتروني',
-        requirePhoneVerification: 'طلب التحقق من الهاتف',
-        changePassword: 'تغيير كلمة المرور'
-      },
-      payment: {
-        title: 'إعدادات الدفع',
-        currency: 'العملة',
-        minWithdrawal: 'الحد الأدنى للسحب',
-        maxWithdrawal: 'الحد الأقصى للسحب',
-        paymentMethods: 'طرق الدفع'
-      },
-      users: {
-        title: 'إدارة المستخدمين',
-        allowRegistration: 'السماح بالتسجيل الجديد',
-        requireApproval: 'طلب موافقة المشرف',
-        maxUsersPerIp: 'الحد الأقصى للمستخدمين لكل IP',
-        autoSuspendAfter: 'التعليق التلقائي بعد (أيام)'
-      },
-      system: {
-        title: 'إعدادات النظام',
-        debugMode: 'وضع التصحيح',
-        maintenanceMode: 'وضع الصيانة',
-        cacheEnabled: 'تفعيل التخزين المؤقت',
-        backupSchedule: 'جدول النسخ الاحتياطي',
-        clearCache: 'مسح التخزين المؤقت',
-        backupData: 'نسخ احتياطي للبيانات',
-        restoreData: 'استعادة البيانات'
-      },
-      actions: {
-        save: 'حفظ التغييرات',
-        saving: 'جاري الحفظ...',
-        saved: 'تم حفظ الإعدادات بنجاح!',
-        cancel: 'إلغاء',
-        confirm: 'تأكيد',
-        changePassword: 'تغيير كلمة المرور',
-        currentPassword: 'كلمة المرور الحالية',
-        newPassword: 'كلمة المرور الجديدة',
-        confirmPassword: 'تأكيد كلمة المرور',
-        passwordMismatch: 'كلمات المرور غير متطابقة',
-        passwordLength: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
-        passwordChanged: 'تم تغيير كلمة المرور بنجاح!'
-      },
-      languageToggle: 'English'
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const t = i18nT('adminSettingsPage', { returnObjects: true });
 
   // Use authStore as single source of truth
   const authUser = useAuthStore(state => state.user);
@@ -443,12 +272,12 @@ const AdminSettings = () => {
         setSaveMessage(t.actions.saved);
         setTimeout(() => setSaveMessage(null), 3000);
       } else {
-        throw new Error(response.data.message || 'Failed to save settings');
+        throw new Error(response.data.message || t.actions.saveFailed);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
       setSaving(false);
-      setSaveMessage('Failed to save settings. Please try again.');
+      setSaveMessage(t.actions.saveFailed);
       setTimeout(() => setSaveMessage(null), 3000);
     }
   };
@@ -473,11 +302,11 @@ const AdminSettings = () => {
         setShowPasswordModal(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        throw new Error(response.data.message || 'Failed to change password');
+        throw new Error(response.data.message || t.actions.passwordChangeFailed);
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      setNotificationMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+      setNotificationMessage({ type: 'error', text: error.response?.data?.message || t.actions.passwordChangeFailed });
     }
   };
 
@@ -505,14 +334,14 @@ const AdminSettings = () => {
       URL.revokeObjectURL(url);
       
       setBackupInProgress(false);
-      setNotificationMessage({ type: 'success', text: 'Backup completed successfully!' });
+      setNotificationMessage({ type: 'success', text: t.system.backupCompleted });
     }, 1500);
   };
 
   const handleClearCache = () => {
-    if (window.confirm('Are you sure you want to clear all cache? This action cannot be undone.')) {
+    if (window.confirm(t.system.clearCacheConfirm)) {
       localStorage.removeItem('homelyserv_cached_data');
-      setNotificationMessage({ type: 'success', text: 'Cache cleared successfully!' });
+      setNotificationMessage({ type: 'success', text: t.system.cacheCleared });
     }
   };
 
@@ -524,23 +353,12 @@ const AdminSettings = () => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const getPaymentMethodLabel = (method) => {
-    const labels = {
-      credit_card: 'Credit Card',
-      bank_transfer: 'Bank Transfer',
-      cash: 'Cash',
-      paypal: 'PayPal',
-      stripe: 'Stripe'
-    };
-    return labels[method] || method;
-  };
-
   if (!user) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -659,7 +477,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300 dark:text-gray-300">{t.appearance.darkMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable dark mode theme</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.darkMode}</p>
                   </div>
                   <button
                     onClick={toggleTheme}
@@ -686,7 +504,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.systemNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive system notifications</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.systemNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.systemNotifications}
@@ -696,7 +514,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.emailNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive email notifications</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.emailNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.emailNotifications}
@@ -706,7 +524,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.pushNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Receive push notifications</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.pushNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.pushNotifications}
@@ -716,7 +534,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Get notified about new complaints</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.complaintNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.complaintNotifications}
@@ -726,7 +544,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Get notified about payments</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.paymentNotifications}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.paymentNotifications}
@@ -744,7 +562,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.security.twoFactorAuth}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable two-factor authentication</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.twoFactorAuth}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.twoFactorAuth}
@@ -754,7 +572,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.security.requireEmailVerification}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Require email verification for new users</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.requireEmailVerification}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.requireEmailVerification}
@@ -803,9 +621,9 @@ const AdminSettings = () => {
                     onChange={(e) => handleSettingChange('currency', e.target.value)}
                     className="w-full px-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
                   >
-                    <option value="EGP">EGP - Egyptian Pound</option>
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
+                    <option value="EGP">{t.currencyOptions.egp}</option>
+                    <option value="USD">{t.currencyOptions.usd}</option>
+                    <option value="EUR">{t.currencyOptions.eur}</option>
                   </select>
                 </div>
                 <div>
@@ -837,7 +655,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.users.allowRegistration}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Allow new user registrations</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.allowRegistration}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.allowRegistration}
@@ -847,7 +665,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.users.requireApproval}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Require admin approval for new users</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.requireApproval}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.requireApproval}
@@ -883,7 +701,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.system.debugMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable debug mode</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.debugMode}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.debugMode}
@@ -893,7 +711,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.system.maintenanceMode}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable maintenance mode</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.maintenanceMode}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.maintenanceMode}
@@ -903,7 +721,7 @@ const AdminSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.system.cacheEnabled}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Enable system cache</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.cacheEnabled}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.cacheEnabled}
@@ -925,7 +743,7 @@ const AdminSettings = () => {
                       className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50"
                     >
                       <Download size={16} />
-                      {backupInProgress ? 'Backing up...' : t.system.backupData}
+                      {backupInProgress ? t.system.backingUp : t.system.backupData}
                     </button>
                   </div>
                 </div>

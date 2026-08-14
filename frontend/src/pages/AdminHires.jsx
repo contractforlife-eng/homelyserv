@@ -83,13 +83,12 @@ const normalizePayment = (paymentStatus) => {
 };
 
 const AdminHires = () => {
-  const { t: i18nT } = useTranslation();
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
 
-  const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const [hires, setHires] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,198 +97,7 @@ const AdminHires = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedHire, setSelectedHire] = useState(null);
 
-  const translations = {
-    en: {
-      title: 'Hire Management',
-      subtitle: 'Every employer-to-worker hire across the platform',
-      stats: {
-        total: 'Total Hires',
-        active: 'Active Hires',
-        awaiting: 'Awaiting Payment',
-        terminated: 'Terminated',
-        totalCommission: 'Total Commission',
-        collected: 'Commission Collected',
-        outstanding: 'Outstanding Commission',
-        today: "Today's Hires"
-      },
-      filters: {
-        all: 'All Statuses',
-        allPayments: 'All Payments',
-        offer_sent: 'Awaiting Payment',
-        active: 'Active',
-        terminated: 'Terminated',
-        paid: 'Paid',
-        unpaid: 'Unpaid',
-        processing: 'Processing',
-        refunded: 'Refunded',
-        newest: 'Newest',
-        oldest: 'Oldest',
-        highestCommission: 'Highest Commission',
-        lowestCommission: 'Lowest Commission'
-      },
-      status: {
-        offer_sent: 'Awaiting Payment',
-        active: 'Active',
-        terminated: 'Terminated'
-      },
-      payment: {
-        paid: 'Paid',
-        unpaid: 'Unpaid',
-        processing: 'Processing',
-        refunded: 'Refunded'
-      },
-      table: {
-        employer: 'Employer',
-        worker: 'Worker',
-        salary: 'Salary',
-        commission: 'Commission',
-        payment: 'Payment',
-        status: 'Hire Status',
-        hiredOn: 'Hire Date',
-        actions: 'Actions'
-      },
-      hired: 'HIRED',
-      searchPlaceholder: 'Search employer, worker, email, phone, or hire ID...',
-      showing: 'Showing',
-      hiresWord: 'hires',
-      noHires: 'No hires found',
-      noHiresDesc: 'No hires match your current search or filters.',
-      clearFilters: 'Clear filters',
-      refresh: 'Refresh',
-      perMonth: '/mo',
-      actions: {
-        view: 'View Details',
-        employerProfile: 'Open Employer Profile',
-        workerProfile: 'Open Worker Profile',
-        messageEmployer: 'Message Employer',
-        messageWorker: 'Message Worker',
-        terminate: 'Terminate Hire'
-      },
-      modal: {
-        title: 'Hire Details',
-        employerInfo: 'Employer Information',
-        workerInfo: 'Worker Information',
-        financial: 'Financial Information',
-        timeline: 'Timeline',
-        notes: 'Notes',
-        currentStatus: 'Current Status',
-        salary: 'Monthly Salary',
-        commission: 'Commission',
-        vat: 'VAT',
-        totalDue: 'Total Due',
-        paymentRef: 'Payment Reference',
-        paymentStatus: 'Payment Status',
-        hireStatus: 'Hire Status',
-        hireDate: 'Hire Date',
-        lastUpdated: 'Last Updated',
-        offerSent: 'Offer Sent / Accepted',
-        paymentCompleted: 'Payment Completed',
-        hireActivated: 'Hire Activated',
-        rating: 'Rating',
-        location: 'Location',
-        category: 'Job Title',
-        close: 'Close',
-        notProvided: 'Not provided'
-      },
-      loading: 'Loading hires...'
-    },
-    ar: {
-      title: 'إدارة التوظيفات',
-      subtitle: 'كل عمليات التوظيف بين أصحاب العمل والعمال',
-      stats: {
-        total: 'إجمالي التوظيفات',
-        active: 'التوظيفات النشطة',
-        awaiting: 'في انتظار الدفع',
-        terminated: 'المنتهية',
-        totalCommission: 'إجمالي العمولة',
-        collected: 'العمولة المحصلة',
-        outstanding: 'العمولة المستحقة',
-        today: 'توظيفات اليوم'
-      },
-      filters: {
-        all: 'كل الحالات',
-        allPayments: 'كل المدفوعات',
-        offer_sent: 'في انتظار الدفع',
-        active: 'نشط',
-        terminated: 'منتهي',
-        paid: 'مدفوع',
-        unpaid: 'غير مدفوع',
-        processing: 'قيد المعالجة',
-        refunded: 'مسترد',
-        newest: 'الأحدث',
-        oldest: 'الأقدم',
-        highestCommission: 'أعلى عمولة',
-        lowestCommission: 'أقل عمولة'
-      },
-      status: {
-        offer_sent: 'في انتظار الدفع',
-        active: 'نشط',
-        terminated: 'منتهي'
-      },
-      payment: {
-        paid: 'مدفوع',
-        unpaid: 'غير مدفوع',
-        processing: 'قيد المعالجة',
-        refunded: 'مسترد'
-      },
-      table: {
-        employer: 'صاحب العمل',
-        worker: 'العامل',
-        salary: 'الراتب',
-        commission: 'العمولة',
-        payment: 'الدفع',
-        status: 'حالة التوظيف',
-        hiredOn: 'تاريخ التوظيف',
-        actions: 'الإجراءات'
-      },
-      hired: 'وظّف',
-      searchPlaceholder: 'ابحث بصاحب العمل أو العامل أو البريد أو الهاتف أو رقم التوظيف...',
-      showing: 'عرض',
-      hiresWord: 'توظيف',
-      noHires: 'لا توجد توظيفات',
-      noHiresDesc: 'لا توجد توظيفات تطابق بحثك أو عوامل التصفية الحالية.',
-      clearFilters: 'مسح التصفيات',
-      refresh: 'تحديث',
-      perMonth: '/شهر',
-      actions: {
-        view: 'عرض التفاصيل',
-        employerProfile: 'فتح ملف صاحب العمل',
-        workerProfile: 'فتح ملف العامل',
-        messageEmployer: 'مراسلة صاحب العمل',
-        messageWorker: 'مراسلة العامل',
-        terminate: 'إنهاء التوظيف'
-      },
-      modal: {
-        title: 'تفاصيل التوظيف',
-        employerInfo: 'معلومات صاحب العمل',
-        workerInfo: 'معلومات العامل',
-        financial: 'المعلومات المالية',
-        timeline: 'الجدول الزمني',
-        notes: 'ملاحظات',
-        currentStatus: 'الحالة الحالية',
-        salary: 'الراتب الشهري',
-        commission: 'العمولة',
-        vat: 'ضريبة القيمة المضافة',
-        totalDue: 'الإجمالي المستحق',
-        paymentRef: 'مرجع الدفع',
-        paymentStatus: 'حالة الدفع',
-        hireStatus: 'حالة التوظيف',
-        hireDate: 'تاريخ التوظيف',
-        lastUpdated: 'آخر تحديث',
-        offerSent: 'إرسال / قبول العرض',
-        paymentCompleted: 'اكتمال الدفع',
-        hireActivated: 'تفعيل التوظيف',
-        rating: 'التقييم',
-        location: 'الموقع',
-        category: 'المسمى الوظيفي',
-        close: 'إغلاق',
-        notProvided: 'غير متوفر'
-      },
-      loading: 'جاري تحميل التوظيفات...'
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const t = i18nT('adminHiresPage', { returnObjects: true });
 
   // ============================================================
   // LOAD HIRES
@@ -307,11 +115,6 @@ const AdminHires = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const savedLang = localStorage.getItem('homelyserv_language');
-    if (savedLang) setLanguage(savedLang);
   }, []);
 
   useEffect(() => {
@@ -431,7 +234,7 @@ const AdminHires = () => {
       [HIRE_STATUS.OFFER_SENT]: { cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30', icon: <Clock size={12} />, label: t.status.offer_sent },
       [HIRE_STATUS.TERMINATED]: { cls: 'bg-red-500/15 text-red-400 border border-red-500/30', icon: <XCircle size={12} />, label: t.status.terminated }
     };
-    return map[c] || { cls: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', icon: <AlertTriangle size={12} />, label: c };
+    return map[c] || { cls: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', icon: <AlertTriangle size={12} />, label: t.status.unknown };
   };
 
   const getPaymentBadge = (paymentStatus) => {
@@ -447,7 +250,7 @@ const AdminHires = () => {
 
   const formatDate = (d) => {
     if (!d) return '-';
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(d).toLocaleDateString(i18n.resolvedLanguage || 'en', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const formatCurrency = (amount, hire) => formatCompensationAmount(amount, hire);
@@ -481,12 +284,12 @@ const AdminHires = () => {
   };
   const messageEmployer = (hire) => {
     navigate('/admin/messages', {
-      state: { targetUserId: hire.employerId, targetUserName: hire.employerName || 'Employer', targetUserRole: 'EMPLOYER' }
+      state: { targetUserId: hire.employerId, targetUserName: hire.employerName || t.table.employer, targetUserRole: 'EMPLOYER' }
     });
   };
   const messageWorker = (hire) => {
     navigate('/admin/messages', {
-      state: { targetUserId: hire.workerId, targetUserName: hire.workerName || 'Worker', targetUserRole: 'WORKER' }
+      state: { targetUserId: hire.workerId, targetUserName: hire.workerName || t.table.worker, targetUserRole: 'WORKER' }
     });
   };
 
@@ -494,13 +297,13 @@ const AdminHires = () => {
   const terminateHire = async (hire) => {
     const id = hire.id || hire.hireId;
     if (!id) return;
-    if (!window.confirm('Terminate this hire?')) return;
+    if (!window.confirm(t.terminateConfirm)) return;
     try {
       await hireService.updateHireStatus(id, HIRE_STATUS.TERMINATED);
       setHires(prev => prev.map(h => (h.id === id || h.hireId === id) ? { ...h, status: HIRE_STATUS.TERMINATED } : h));
     } catch (error) {
       console.error('Error terminating hire:', error);
-      alert('Failed to terminate hire.');
+      alert(t.terminateError);
     }
   };
 
@@ -537,12 +340,6 @@ const AdminHires = () => {
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
         title={t.title}
-        language={language}
-        onToggleLanguage={() => {
-          const nl = language === 'en' ? 'ar' : 'en';
-          setLanguage(nl);
-          localStorage.setItem('homelyserv_language', nl);
-        }}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"
@@ -691,7 +488,7 @@ const AdminHires = () => {
                               <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
-                                  {hire.employerName || 'Unknown'}
+                                  {hire.employerName || t.unknown}
                                   {hire.employerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
                                 <p className="text-[11px] text-gray-500 truncate">{hire.employerEmail || ''}</p>
@@ -711,11 +508,11 @@ const AdminHires = () => {
                               <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
-                                  {hire.workerName || 'Unknown'}
+                                  {hire.workerName || t.unknown}
                                   {hire.workerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
                                 <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
-                                  {hire.jobTitle || 'Service Provider'}
+                                  {hire.jobTitle || t.serviceProvider}
                                   {hire.workerRating ? (
                                     <span className="inline-flex items-center gap-0.5 text-yellow-400">
                                       <Star size={10} className="fill-yellow-400" />{hire.workerRating}
@@ -790,7 +587,7 @@ const AdminHires = () => {
                         <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                         <div className="min-w-0">
                           <p className="text-xs text-gray-500">{t.table.employer}</p>
-                          <p className="text-sm font-semibold text-white truncate">{hire.employerName || 'Unknown'}</p>
+                          <p className="text-sm font-semibold text-white truncate">{hire.employerName || t.unknown}</p>
                         </div>
                       </div>
                       <div className="flex flex-col items-center text-yellow-500/70 flex-shrink-0">
@@ -800,7 +597,7 @@ const AdminHires = () => {
                       <div className="flex items-center gap-2 min-w-0 justify-end">
                         <div className="min-w-0 text-right">
                           <p className="text-xs text-gray-500">{t.table.worker}</p>
-                          <p className="text-sm font-semibold text-white truncate">{hire.workerName || 'Unknown'}</p>
+                          <p className="text-sm font-semibold text-white truncate">{hire.workerName || t.unknown}</p>
                         </div>
                         <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                       </div>
@@ -986,7 +783,7 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.employer}</p>
                 <p className="font-semibold text-white truncate flex items-center gap-1">
-                  {hire.employerName || 'Unknown'}
+                  {hire.employerName || t.unknown}
                   {hire.employerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
                 <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Mail size={11} />{hire.employerEmail || t.modal.notProvided}</p>
@@ -1003,10 +800,10 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
               <div className="min-w-0 md:text-right">
                 <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.worker}</p>
                 <p className="font-semibold text-white truncate flex items-center gap-1 md:justify-end">
-                  {hire.workerName || 'Unknown'}
+                  {hire.workerName || t.unknown}
                   {hire.workerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
-                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || 'Service Provider'}</p>
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || t.serviceProvider}</p>
                 <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end">
                   <Star size={11} className="text-yellow-400" />{hire.workerRating ?? t.modal.notProvided}
                 </p>

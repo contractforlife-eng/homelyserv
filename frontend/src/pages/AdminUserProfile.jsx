@@ -8,6 +8,7 @@
 // profile is owned entirely by UserProfileView's local state.
 // ============================================================
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -16,12 +17,13 @@ import UserProfileView from '../components/users/UserProfileView';
 
 const AdminUserProfile = () => {
   const { id } = useParams();
+  const { t } = useTranslation();
   const authUser = useAuthStore(state => state.user);
 
   return (
     <DashboardLayout requiredRole="ADMIN">
       <DashboardHeader
-        title="User Profile"
+        title={t('adminUserProfilePage.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"

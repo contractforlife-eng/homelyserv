@@ -1,9 +1,9 @@
 // src/pages/AdminProfile.jsx - MIGRATED TO DASHBOARD LAYOUT
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
-import { getRoleLabel } from '../utils/userDisplay';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -32,6 +32,7 @@ import {
 
 // Main AdminProfile Component
 const AdminProfile = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
@@ -65,64 +66,7 @@ const AdminProfile = () => {
   const [pendingImageFile, setPendingImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const translations = {
-    en: {
-      title: 'My Profile',
-      subtitle: 'Manage your administrator account',
-      personalInfo: 'Personal Information',
-      fullName: 'Full Name',
-      email: 'Email Address',
-      phone: 'Phone Number',
-      language: 'Language',
-      adminBadge: 'Administrator',
-      memberSince: 'Member Since',
-      lastLogin: 'Last Login',
-      editProfile: 'Edit Profile',
-      saveChanges: 'Save Changes',
-      cancel: 'Cancel',
-      profilePhoto: 'Profile Photo',
-      changePhoto: 'Click to change photo',
-      saved: '✅ Profile updated successfully!',
-      errorSaving: 'Failed to save profile. Please try again.',
-      stats: {
-        totalUsers: 'Total Users',
-        totalWorkers: 'Total Workers',
-        totalEmployers: 'Total Employers',
-        totalHires: 'Total Hires',
-        totalPayments: 'Total Payments',
-        totalComplaints: 'Total Complaints'
-      }
-    },
-    ar: {
-      title: 'ملفي الشخصي',
-      subtitle: 'إدارة حساب المشرف',
-      personalInfo: 'المعلومات الشخصية',
-      fullName: 'الاسم الكامل',
-      email: 'البريد الإلكتروني',
-      phone: 'رقم الهاتف',
-      language: 'اللغة',
-      adminBadge: 'مشرف',
-      memberSince: 'عضو منذ',
-      lastLogin: 'آخر تسجيل دخول',
-      editProfile: 'تعديل الملف',
-      saveChanges: 'حفظ التغييرات',
-      cancel: 'إلغاء',
-      profilePhoto: 'الصورة الشخصية',
-      changePhoto: 'انقر لتغيير الصورة',
-      saved: '✅ تم تحديث الملف الشخصي بنجاح!',
-      errorSaving: 'فشل حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.',
-      stats: {
-        totalUsers: 'إجمالي المستخدمين',
-        totalWorkers: 'إجمالي العمال',
-        totalEmployers: 'إجمالي أصحاب العمل',
-        totalHires: 'إجمالي التوظيفات',
-        totalPayments: 'إجمالي المدفوعات',
-        totalComplaints: 'إجمالي الشكاوى'
-      }
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const t = i18nT('adminProfilePage', { returnObjects: true, lng: language });
 
   useEffect(() => {
     const savedLang = localStorage.getItem('homelyserv_language');
@@ -213,7 +157,7 @@ const AdminProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        alert(t.imageTooLarge);
         return;
       }
 
@@ -233,7 +177,7 @@ const AdminProfile = () => {
     try {
       const userId = authUser?.id || authUser?._id;
       if (!userId) {
-        alert('User ID not found. Please log in again.');
+        alert(t.userIdMissing);
         setSaving(false);
         return;
       }
@@ -245,7 +189,7 @@ const AdminProfile = () => {
         if (uploadResult.success && uploadResult.user) {
           profileImageUrl = uploadResult.user.profileImage;
         } else {
-          throw new Error(uploadResult.error || 'Photo upload failed');
+          throw new Error(uploadResult.error || t.photoUploadFailed);
         }
       }
 
@@ -264,7 +208,7 @@ const AdminProfile = () => {
         alert(t.saved);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        throw new Error(response.data.message || 'Failed to update profile');
+        throw new Error(response.data.message || t.updateFailed);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -307,8 +251,9 @@ const AdminProfile = () => {
   }, [authUser, isAuthenticated, authLoading]);
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return t.notAvailable;
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return new Date(dateString).toLocaleDateString(locales[language] || locales.en, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -320,7 +265,7 @@ const AdminProfile = () => {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{i18nT('loading')}</p>
         </div>
       </div>
     );
@@ -349,7 +294,7 @@ const AdminProfile = () => {
                 <h1 className="text-2xl font-bold text-black">{t.title}</h1>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/20 border border-black/10 rounded-full text-xs font-medium text-black">
                   <Crown size={12} />
-                  {getRoleLabel('ADMIN')}
+                  {t.adminBadge}
                 </span>
               </div>
               <p className="text-black/70 mt-1">{t.subtitle}</p>
@@ -449,7 +394,7 @@ const AdminProfile = () => {
                     {imagePreview ? (
                       <img
                         src={imagePreview}
-                        alt="Profile"
+                        alt={t.profilePhoto}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -540,6 +485,10 @@ const AdminProfile = () => {
                 >
                   <option value="en">English</option>
                   <option value="ar">العربية</option>
+                  <option value="fr">Français</option>
+                  <option value="ru">Русский</option>
+                  <option value="tr">Türkçe</option>
+                  <option value="de">Deutsch</option>
                 </select>
               </div>
             </div>
@@ -579,7 +528,7 @@ const AdminProfile = () => {
                 className="px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 disabled:opacity-50 font-medium"
               >
                 {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                {saving ? 'Saving...' : t.saveChanges}
+                {saving ? t.saving : t.saveChanges}
               </button>
               <button
                 onClick={handleEditToggle}

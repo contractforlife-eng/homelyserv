@@ -9,6 +9,7 @@
 //   4. System Notifications
 // ============================================================
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -38,7 +39,7 @@ import {
   startAdminConversation,
   closeConversation
 } from '../utils/chatService';
-import { getRoleLabel, getRoleColor } from '../utils/userDisplay';
+import { getRoleColor } from '../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import api from '../utils/api';
 import PageLoader from '../components/common/PageLoader';
@@ -55,6 +56,7 @@ const SECTIONS = {
 // START CONVERSATION MODAL
 // ============================================================
 const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
+  const { t } = useTranslation();
   const [allUsers, setAllUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,10 +137,10 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
           <div>
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Plus size={18} className="text-yellow-500" />
-              Start Conversation
+              {t('adminMessagesPage.startConversation')}
             </h2>
             <p className="text-xs text-gray-400 mt-1">
-              Official HomelyServ administrative conversation
+              {t('adminMessagesPage.officialDescription')}
             </p>
           </div>
           <button
@@ -155,7 +157,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
             <Search size={18} className="absolute left-3 top-3 text-gray-500" />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder={t('adminMessagesExtra.searchUsers')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-[#0a0a0a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
@@ -176,7 +178,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                 }`}
               >
                 {role === 'ALL' ? <Users size={12} /> : getRoleIcon(role)}
-                {role === 'ALL' ? 'All' : getRoleLabel(role)}
+                {role === 'ALL' ? t('adminMessagesPage.all') : t(`userProfileView.roles.${role}`)}
               </button>
             ))}
           </div>
@@ -191,7 +193,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
           ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-4xl mb-3">👥</div>
-              <p className="text-gray-400">No users found</p>
+              <p className="text-gray-400">{t('adminMessagesExtra.noUsers')}</p>
             </div>
           ) : (
             filteredUsers.map((user) => {
@@ -203,7 +205,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                   className="w-full p-4 flex items-center gap-3 hover:bg-yellow-500/5 transition border-b border-yellow-500/10 text-left"
                 >
                   <UserAvatar
-                    name={user.fullName || user.name || 'User'}
+                    name={user.fullName || user.name || t('adminMessagesPage.user')}
                     image={user.profileImage || user.image || null}
                     role={user.role}
                     size="md"
@@ -214,7 +216,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                     <p className="text-sm text-gray-400 truncate">{user.email}</p>
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColorClass(user.role)}`}>
                       {getRoleIcon(user.role)}
-                      {getRoleLabel(user.role)}
+                      {t(`userProfileView.roles.${user.role}`, { defaultValue: t('adminMessagesPage.user') })}
                     </span>
                   </div>
                   <ChevronRight size={16} className="text-gray-500 flex-shrink-0" />
@@ -228,7 +230,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
         <div className="p-3 border-t border-yellow-500/20 bg-[#0a0a0a]">
           <p className="text-xs text-gray-500 flex items-center gap-1.5">
             <Shield size={12} className="text-yellow-500" />
-            Conversations are created as official HomelyServ administrative chats (SUPPORT or INTERNAL). Private user chats remain isolated.
+          {t('adminMessagesPage.modalDescription')}
           </p>
         </div>
       </div>
@@ -240,6 +242,7 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
 // MAIN ADMIN MESSAGES COMPONENT
 // ============================================================
 const AdminMessages = () => {
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore(state => state.user);
@@ -266,76 +269,8 @@ const AdminMessages = () => {
   const autoOpenDoneRef = useRef(false);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  const translations = {
-    en: {
-      title: 'Messages',
-      subtitle: 'Secure messaging center',
-      searchPlaceholder: 'Search conversations...',
-      typeMessage: 'Type a message...',
-      send: 'Send',
-      noConversations: 'No conversations yet',
-      noMessages: 'No messages yet',
-      loading: 'Loading messages...',
-      refresh: 'Refresh',
-      escalated: 'Escalated Conversations',
-      escalatedDesc: 'Conversations escalated to Admin by Support',
-      support: 'Support Conversations',
-      supportDesc: 'User support conversations (supervision)',
-      internal: 'Internal Staff Messages',
-      internalDesc: 'Support <-> Admin internal communication',
-      notifications: 'System Notifications',
-      notificationsDesc: 'Platform system notifications',
-      escalatedBy: 'Escalated by',
-      reason: 'Reason',
-      complaint: 'Complaint',
-      selectConversation: 'Select a conversation to view messages',
-      back: 'Back',
-      noEscalated: 'No escalated conversations',
-      noSupport: 'No support conversations',
-      noInternal: 'No internal messages',
-      noNotifications: 'No system notifications',
-      viewConversation: 'View Conversation',
-      user: 'User',
-      supportAgent: 'Support Agent',
-      staff: 'Staff',
-      empty: 'Nothing here yet'
-    },
-    ar: {
-      title: 'الرسائل',
-      subtitle: 'مركز الرسائل الآمن',
-      searchPlaceholder: 'ابحث عن محادثات...',
-      typeMessage: 'اكتب رسالة...',
-      send: 'إرسال',
-      noConversations: 'لا توجد محادثات بعد',
-      noMessages: 'لا توجد رسائل بعد',
-      loading: 'جاري تحميل الرسائل...',
-      refresh: 'تحديث',
-      escalated: 'المحادثات المرفوعة',
-      escalatedDesc: 'المحادثات المرفوعة إلى الأدمن بواسطة الدعم',
-      support: 'محادثات الدعم',
-      supportDesc: 'محادثات دعم المستخدمين (إشراف)',
-      internal: 'رسائل الموظفين الداخلية',
-      internalDesc: 'تواصل داخلي بين الدعم والأدمن',
-      notifications: 'إشعارات النظام',
-      notificationsDesc: 'إشعارات منصة النظام',
-      escalatedBy: 'تم الرفع بواسطة',
-      reason: 'السبب',
-      complaint: 'شكوى',
-      selectConversation: 'اختر محادثة لعرض الرسائل',
-      back: 'رجوع',
-      noEscalated: 'لا توجد محادثات مرفوعة',
-      noSupport: 'لا توجد محادثات دعم',
-      noInternal: 'لا توجد رسائل داخلية',
-      noNotifications: 'لا توجد إشعارات نظام',
-      viewConversation: 'عرض المحادثة',
-      user: 'المستخدم',
-      supportAgent: 'وكيل الدعم',
-      staff: 'الموظف',
-      empty: 'لا يوجد شيء هنا بعد'
-    }
-  };
+  const t = i18nT('adminMessagesPage', { returnObjects: true });
 
-  const t = translations['en'];
 
   // ============================================================
   // LOAD DATA
@@ -487,7 +422,7 @@ const AdminMessages = () => {
     try {
       const result = await startAdminConversation(userId);
       if (!result?.conversationId) {
-        alert('Failed to start conversation');
+        alert(t.errors.start);
         return;
       }
 
@@ -503,11 +438,11 @@ const AdminMessages = () => {
         supportAgentId: conv.supportAgentId || null,
         user: targetUser ? {
           id: targetUser._id || targetUser.id,
-          fullName: targetUser.fullName || 'User',
+          fullName: targetUser.fullName || t.user,
           role: targetUser.role || 'USER',
           image: targetUser.profileImage || targetUser.image || null
         } : null,
-        lastMessage: result.existing ? 'Existing conversation' : 'Official HomelyServ administrative conversation',
+        lastMessage: result.existing ? t.existingConversation : t.officialConversation,
         lastMessageTime: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -527,7 +462,7 @@ const AdminMessages = () => {
       await loadConversationMessages(conversation);
     } catch (error) {
       console.error('Error starting conversation:', error);
-      alert('Failed to start conversation. Please try again.');
+      alert(t.errors.startRetry);
     }
   };
 
@@ -576,7 +511,7 @@ const AdminMessages = () => {
       }
 
       if (!recipientId) {
-        alert('Cannot determine recipient for this conversation');
+        alert(t.errors.recipient);
         return;
       }
 
@@ -596,7 +531,7 @@ const AdminMessages = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      alert(t.errors.send);
     } finally {
       setSendingMessage(false);
     }
@@ -624,14 +559,15 @@ const AdminMessages = () => {
       }
     } catch (error) {
       console.error('Error closing conversation:', error);
-      alert('Failed to close conversation. Please try again.');
+      alert(t.errors.close);
     }
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return date.toLocaleTimeString(locales[i18n.resolvedLanguage] || locales.en, {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -704,20 +640,20 @@ const AdminMessages = () => {
   const renderConversationItem = (conv, type) => {
     let title = '';
     let subtitle = '';
-    let avatarName = 'User';
+    let avatarName = t.user;
     let avatarRole = 'USER';
     let avatarImage = null;
 
     if (type === 'SUPPORT') {
-      title = conv.user?.fullName || 'User';
+      title = conv.user?.fullName || t.user;
       subtitle = conv.lastMessage || '';
-      avatarName = conv.user?.fullName || 'User';
+      avatarName = conv.user?.fullName || t.user;
       avatarRole = conv.user?.role || 'USER';
       avatarImage = getUserImage(conv.user);
     } else if (type === 'INTERNAL') {
-      title = conv.otherStaff?.fullName || 'Staff';
+      title = conv.otherStaff?.fullName || t.staff;
       subtitle = conv.lastMessage || '';
-      avatarName = conv.otherStaff?.fullName || 'Staff';
+      avatarName = conv.otherStaff?.fullName || t.staff;
       avatarRole = conv.otherStaff?.role || 'SUPPORT';
       avatarImage = getUserImage(conv.otherStaff);
     }
@@ -819,7 +755,7 @@ const AdminMessages = () => {
               <MessageSquare size={32} className="text-yellow-500" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2">{t.selectConversation}</h3>
-            <p className="text-sm text-gray-400">Choose a conversation from the list to view messages</p>
+            <p className="text-sm text-gray-400">{t.selectConversation}</p>
           </div>
         </div>
       );
@@ -828,22 +764,22 @@ const AdminMessages = () => {
     // Determine chat header info
     let chatTitle = 'Conversation';
     let chatSubtitle = '';
-    let chatAvatarName = 'User';
+    let chatAvatarName = t.user;
     let chatAvatarRole = 'USER';
     let chatAvatarImage = null;
 
     if (selectedConversation.type === 'SUPPORT') {
-      chatTitle = selectedConversation.user?.fullName || 'User';
+      chatTitle = selectedConversation.user?.fullName || t.user;
       chatSubtitle = selectedConversation.supportAgent?.fullName
         ? `${t.supportAgent}: ${selectedConversation.supportAgent.fullName}`
         : t.support;
-      chatAvatarName = selectedConversation.user?.fullName || 'User';
+      chatAvatarName = selectedConversation.user?.fullName || t.user;
       chatAvatarRole = selectedConversation.user?.role || 'USER';
       chatAvatarImage = getUserImage(selectedConversation.user);
     } else if (selectedConversation.type === 'INTERNAL') {
-      chatTitle = selectedConversation.otherStaff?.fullName || 'Staff';
+      chatTitle = selectedConversation.otherStaff?.fullName || t.staff;
       chatSubtitle = t.internal;
-      chatAvatarName = selectedConversation.otherStaff?.fullName || 'Staff';
+      chatAvatarName = selectedConversation.otherStaff?.fullName || t.staff;
       chatAvatarRole = selectedConversation.otherStaff?.role || 'SUPPORT';
       chatAvatarImage = getUserImage(selectedConversation.otherStaff);
     }
@@ -869,7 +805,7 @@ const AdminMessages = () => {
           <button
             onClick={() => setShowCloseConfirm(true)}
             className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-gray-400 hover:text-white transition"
-            title="More actions"
+            title={t.moreActions}
           >
             <MoreVertical size={18} />
           </button>
@@ -892,7 +828,7 @@ const AdminMessages = () => {
               const prev = messages[idx - 1];
               const isFirstInGroup = idx === 0 || prev?.senderId !== msg.senderId;
               const senderImage = msg.sender?.image || msg.sender?.profileImage || null;
-              const senderName = msg.senderName || msg.sender?.name || 'User';
+              const senderName = msg.senderName || msg.sender?.name || t.user;
               const senderRole = msg.senderRole || msg.sender?.role || 'USER';
 
               return (
@@ -921,7 +857,7 @@ const AdminMessages = () => {
                     <div className="mb-1">
                       {isSelf ? (
                         <span className="text-xs font-medium text-black/70">
-                          You
+                          {t.you}
                         </span>
                       ) : (
                         <UserDisplayName
@@ -942,7 +878,7 @@ const AdminMessages = () => {
                   {isSelf && (
                     isFirstInGroup ? (
                       <UserAvatar
-                        name={authUser?.fullName || 'You'}
+                        name={authUser?.fullName || t.you}
                         image={authUser?.profileImage || authUser?.image || null}
                         role="ADMIN"
                         size="sm"
@@ -1018,7 +954,7 @@ const AdminMessages = () => {
                 className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition flex items-center gap-2 text-sm font-medium"
               >
                 <Plus size={16} />
-                Start Conversation
+                {t.startConversation}
               </button>
               <button
                 onClick={handleRefresh}
@@ -1026,7 +962,7 @@ const AdminMessages = () => {
                 className="px-4 py-2 bg-[#1a1a1a] border border-yellow-500/30 text-white rounded-lg hover:bg-yellow-500/10 transition flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                {refreshing ? 'Refreshing...' : t.refresh}
+                {refreshing ? t.refreshing : t.refresh}
               </button>
             </div>
           </div>
@@ -1097,7 +1033,7 @@ const AdminMessages = () => {
                 className="md:hidden p-3 border-b border-yellow-500/20 flex items-center gap-2 text-gray-400 hover:text-white"
               >
                 <ChevronRight size={16} className="rotate-180" />
-                <span className="text-sm">Back to conversations</span>
+                <span className="text-sm">{t.back}</span>
               </button>
             )}
             {renderChatPanel()}
@@ -1117,23 +1053,22 @@ const AdminMessages = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowCloseConfirm(false)} />
           <div className="relative w-full max-w-md bg-[#1a1a1a] border border-yellow-500/20 rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-3">Close Conversation</h3>
+            <h3 className="text-lg font-semibold text-white mb-3">{t.closeConversation}</h3>
             <p className="text-sm text-gray-400 mb-5">
-              Closing this conversation will remove it from the active Admin Messages list.
-              Message history will be preserved.
+              {t.closeDescription}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowCloseConfirm(false)}
                 className="px-4 py-2 bg-[#0a0a0a] border border-gray-700 text-white rounded-lg hover:bg-yellow-500/10 transition text-sm"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={handleCloseConversation}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition text-sm font-medium"
               >
-                Close Conversation
+                {t.closeConversation}
               </button>
             </div>
           </div>

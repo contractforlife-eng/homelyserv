@@ -34,7 +34,7 @@ const AdminSidebar = ({
   authUser,
   handleLogout,
 }) => {
-  const { t: i18nT } = useTranslation();
+  const { t } = useTranslation();
   const location = useLocation();
   // Unified sidebar activity counters (single shared request)
   const counters = useSidebarCounters();
@@ -47,48 +47,17 @@ const AdminSidebar = ({
     hires: 'hires',
   };
 
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      profile: 'My Profile',
-      users: 'Users',
-      payments: 'Payments',
-      complaints: 'Complaints',
-      reports: 'Reports',
-      messages: 'Messages',
-      hires: 'Hires',
-      settings: 'Settings',
-      logout: 'Logout',
-      overview: 'Overview'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      profile: 'ملفي الشخصي',
-      users: 'المستخدمين',
-      payments: 'المدفوعات',
-      complaints: 'الشكاوى',
-      reports: 'التقارير',
-      messages: 'الرسائل',
-      hires: 'التوظيف',
-      settings: 'الإعدادات',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
-    }
-  };
-
-  const t = translations[language] || translations.en;
-
   const menuItems = [
-    { id: 'dashboard', label: t.dashboard, icon: Home, path: '/admin' },
-    { id: 'users', label: t.users, icon: Users, path: '/admin/users' },
-    { id: 'payments', label: t.payments, icon: CreditCard, path: '/admin/payments' },
-    { id: 'financial-center', label: i18nT('financialCenter.nav'), icon: Landmark, path: '/admin/financial-center' },
-    { id: 'complaints', label: t.complaints, icon: FileText, path: '/admin/complaints' },
-    { id: 'reports', label: t.reports, icon: BarChart3, path: '/admin/reports' },
-    { id: 'messages', label: t.messages, icon: MessageCircle, path: '/admin/messages' },
-    { id: 'hires', label: t.hires, icon: Briefcase, path: '/admin/hires' },
-    { id: 'profile', label: t.profile, icon: UserIcon, path: '/admin/profile' },
-    { id: 'settings', label: t.settings, icon: Settings, path: '/admin/settings' },
+    { id: 'dashboard', label: t('adminSidebar.dashboard'), icon: Home, path: '/admin' },
+    { id: 'users', label: t('adminSidebar.users'), icon: Users, path: '/admin/users' },
+    { id: 'payments', label: t('adminSidebar.payments'), icon: CreditCard, path: '/admin/payments' },
+    { id: 'financial-center', label: t('adminSidebar.financialCenter'), icon: Landmark, path: '/admin/financial-center' },
+    { id: 'complaints', label: t('adminSidebar.complaints'), icon: FileText, path: '/admin/complaints' },
+    { id: 'reports', label: t('adminSidebar.reports'), icon: BarChart3, path: '/admin/reports' },
+    { id: 'messages', label: t('adminSidebar.messages'), icon: MessageCircle, path: '/admin/messages' },
+    { id: 'hires', label: t('adminSidebar.hires'), icon: Briefcase, path: '/admin/hires' },
+    { id: 'profile', label: t('adminSidebar.profile'), icon: UserIcon, path: '/admin/profile' },
+    { id: 'settings', label: t('adminSidebar.settings'), icon: Settings, path: '/admin/settings' },
   ];
 
   const activeUser = authUser || user;
@@ -125,7 +94,7 @@ const AdminSidebar = ({
                 <Shield size={28} className="text-yellow-500" />
                 <Home size={14} className="text-yellow-300 absolute -bottom-1 -right-1" />
               </div>
-              <span className="font-bold text-gray-900 dark:text-white text-lg">Admin</span>
+              <span className="font-bold text-gray-900 dark:text-white text-lg">{t('adminSidebar.admin')}</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -154,7 +123,7 @@ const AdminSidebar = ({
               {getProfileImage() ? (
                 <img
                   src={getProfileImage()}
-                  alt={activeUser?.fullName || 'Admin'}
+                  alt={activeUser?.fullName || t('adminSidebar.admin')}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -163,7 +132,7 @@ const AdminSidebar = ({
             </div>
             {!sidebarCollapsed && activeUser && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || 'Admin'}</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || t('adminSidebar.admin')}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activeUser.email || 'admin@homelyserv.com'}</p>
               </div>
             )}
@@ -173,7 +142,7 @@ const AdminSidebar = ({
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100dvh-180px)]">
           {!sidebarCollapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              {t.overview}
+              {t('adminSidebar.overview')}
             </div>
           )}
           {sidebarCollapsed && (
@@ -228,10 +197,10 @@ const AdminSidebar = ({
             }`}
           >
             <LogOut size={20} />
-            {!sidebarCollapsed && <span className="text-sm font-medium">{t.logout}</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">{t('adminSidebar.logout')}</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {t.logout}
+                {t('adminSidebar.logout')}
               </div>
             )}
           </button>

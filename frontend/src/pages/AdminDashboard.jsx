@@ -48,18 +48,18 @@ import {
 // ACTIVITY META - Icons & labels for recent activity timeline
 // ============================================================
 const ACTIVITY_META = {
-  CREATED: { icon: FileText, label: 'Created', color: 'bg-blue-500' },
-  ASSIGNED: { icon: UserCheck, label: 'Assigned', color: 'bg-green-500' },
-  USER_REPLIED: { icon: MessageSquare, label: 'User Replied', color: 'bg-purple-500' },
-  SUPPORT_REPLIED: { icon: MessageSquare, label: 'Support Replied', color: 'bg-teal-500' },
-  ADMIN_REPLIED: { icon: MessageSquare, label: 'Admin Replied', color: 'bg-yellow-500' },
-  ESCALATED: { icon: ArrowUpRight, label: 'Escalated', color: 'bg-red-500' },
-  RESOLVED: { icon: CheckCircle, label: 'Resolved', color: 'bg-green-500' },
-  CLOSED: { icon: XCircle, label: 'Closed', color: 'bg-gray-500' },
-  NOTE_ADDED: { icon: StickyNote, label: 'Note Added', color: 'bg-slate-500' },
-  STATUS_CHANGED: { icon: RefreshCw, label: 'Status Changed', color: 'bg-cyan-500' },
-  REASSIGNED: { icon: ArrowLeftRight, label: 'Reassigned', color: 'bg-indigo-500' },
-  RETURNED_TO_SUPPORT: { icon: Undo2, label: 'Returned to Support', color: 'bg-orange-500' },
+  CREATED: { icon: FileText, label: 'created', color: 'bg-blue-500' },
+  ASSIGNED: { icon: UserCheck, label: 'assigned', color: 'bg-green-500' },
+  USER_REPLIED: { icon: MessageSquare, label: 'userReplied', color: 'bg-purple-500' },
+  SUPPORT_REPLIED: { icon: MessageSquare, label: 'supportReplied', color: 'bg-teal-500' },
+  ADMIN_REPLIED: { icon: MessageSquare, label: 'adminReplied', color: 'bg-yellow-500' },
+  ESCALATED: { icon: ArrowUpRight, label: 'escalated', color: 'bg-red-500' },
+  RESOLVED: { icon: CheckCircle, label: 'resolved', color: 'bg-green-500' },
+  CLOSED: { icon: XCircle, label: 'closed', color: 'bg-gray-500' },
+  NOTE_ADDED: { icon: StickyNote, label: 'noteAdded', color: 'bg-slate-500' },
+  STATUS_CHANGED: { icon: RefreshCw, label: 'statusChanged', color: 'bg-cyan-500' },
+  REASSIGNED: { icon: ArrowLeftRight, label: 'reassigned', color: 'bg-indigo-500' },
+  RETURNED_TO_SUPPORT: { icon: Undo2, label: 'returnedToSupport', color: 'bg-orange-500' },
 };
 
 // ============================================================
@@ -157,29 +157,29 @@ const AdminDashboard = () => {
     if (!stats) return [];
     return [
       {
-        label: 'Total Users',
+        label: i18nT('adminCommand.totalUsers'),
         value: stats.totalUsers ?? 0,
         icon: Users,
         color: 'blue',
         link: '/admin/users',
-        sub: `${stats.totalWorkers ?? 0} workers · ${stats.totalEmployers ?? 0} employers`,
+        sub: i18nT('adminCommand.workerEmployerCounts',{workers:stats.totalWorkers ?? 0,employers:stats.totalEmployers ?? 0}),
       },
       {
-        label: 'Workers',
+        label: i18nT('adminCommand.workers'),
         value: stats.totalWorkers ?? 0,
         icon: UserCheck,
         color: 'orange',
         link: '/admin/users',
       },
       {
-        label: 'Employers',
+        label: i18nT('adminCommand.employers'),
         value: stats.totalEmployers ?? 0,
         icon: Briefcase,
         color: 'purple',
         link: '/admin/users',
       },
       {
-        label: 'Support Team',
+        label: i18nT('adminCommand.supportTeam'),
         value: stats.totalSupport ?? 0,
         icon: Shield,
         color: 'green',
@@ -193,51 +193,51 @@ const AdminDashboard = () => {
         link: '/admin/payments',
       },
       {
-        label: 'Payments',
+        label: i18nT('adminCommand.payments'),
         value: stats.totalPayments ?? 0,
         icon: CreditCard,
         color: 'green',
         link: '/admin/payments',
-        sub: `${stats.verifiedPayments ?? 0} verified · ${stats.pendingPayments ?? 0} pending`,
+        sub: i18nT('adminCommand.paymentCounts',{verified:stats.verifiedPayments ?? 0,pending:stats.pendingPayments ?? 0}),
       },
       {
-        label: 'Active Hires',
+        label: i18nT('adminCommand.activeHires'),
         value: stats.activeHires ?? 0,
         icon: Briefcase,
         color: 'teal',
         link: '/admin/hires',
-        sub: `${stats.completedHires ?? 0} completed`,
+        sub: i18nT('adminCommand.completedCount',{count:stats.completedHires ?? 0}),
       },
       {
-        label: 'Open Complaints',
+        label: i18nT('adminCommand.openComplaints'),
         value: stats.openComplaints ?? 0,
         icon: AlertCircle,
         color: 'red',
         link: '/admin/complaints',
       },
       {
-        label: 'Escalated Complaints',
+        label: i18nT('adminCommand.escalatedComplaints'),
         value: stats.escalatedComplaints ?? 0,
         icon: ArrowUpRight,
         color: 'orange',
         link: '/admin/complaints',
       },
       {
-        label: 'Suspended Users',
+        label: i18nT('adminCommand.suspendedUsers'),
         value: stats.suspendedUsers ?? 0,
         icon: UserX,
         color: 'red',
         link: '/admin/users',
       },
       {
-        label: 'New Users (7 days)',
+        label: i18nT('adminCommand.newUsers7'),
         value: stats.newUsers7d ?? 0,
         icon: UserPlus,
         color: 'blue',
         link: '/admin/users',
       },
       {
-        label: 'Resolved Today',
+        label: i18nT('adminCommand.resolvedToday'),
         value: stats.resolvedToday ?? 0,
         icon: CheckCircle,
         color: 'green',
@@ -251,14 +251,14 @@ const AdminDashboard = () => {
   // ============================================================
   const quickActions = useMemo(
     () => [
-      { label: 'Users', icon: Users, path: '/admin/users', color: 'blue' },
-      { label: 'Payments', icon: CreditCard, path: '/admin/payments', color: 'green' },
-      { label: 'Complaints', icon: AlertTriangle, path: '/admin/complaints', color: 'red' },
-      { label: 'Messages', icon: MessageSquare, path: '/admin/messages', color: 'purple' },
-      { label: 'Reports', icon: BarChart3, path: '/admin/reports', color: 'orange' },
-      { label: 'Settings', icon: Settings, path: '/admin/settings', color: 'yellow' },
+      { label: i18nT('adminCommand.users'), icon: Users, path: '/admin/users', color: 'blue' },
+      { label: i18nT('adminCommand.payments'), icon: CreditCard, path: '/admin/payments', color: 'green' },
+      { label: i18nT('adminCommand.complaints'), icon: AlertTriangle, path: '/admin/complaints', color: 'red' },
+      { label: i18nT('adminCommand.messages'), icon: MessageSquare, path: '/admin/messages', color: 'purple' },
+      { label: i18nT('adminCommand.reports'), icon: BarChart3, path: '/admin/reports', color: 'orange' },
+      { label: i18nT('adminCommand.settings'), icon: Settings, path: '/admin/settings', color: 'yellow' },
     ],
-    []
+    [i18nT]
   );
 
   const quickActionColors = {
@@ -276,8 +276,8 @@ const AdminDashboard = () => {
   const renderLoading = () => (
     <div className="p-4 md:p-6 space-y-6">
       <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 mb-2">
-        <h1 className="text-2xl font-bold text-black">Admin Command Center</h1>
-        <p className="text-black/70 mt-1">Loading platform overview...</p>
+        <h1 className="text-2xl font-bold text-black">{i18nT('adminCommand.title')}</h1>
+        <p className="text-black/70 mt-1">{i18nT('adminCommand.loadingOverview')}</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 12 }).map((_, i) => (
@@ -290,7 +290,7 @@ const AdminDashboard = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-yellow-500/20">
         <div className="flex items-center justify-center py-8">
           <Loader2 size={28} className="animate-spin text-yellow-500" />
-          <span className="ml-3 text-gray-500 dark:text-gray-400">Loading dashboard...</span>
+          <span className="ml-3 text-gray-500 dark:text-gray-400">{i18nT('adminCommand.loading')}</span>
         </div>
       </div>
     </div>
@@ -300,14 +300,14 @@ const AdminDashboard = () => {
     <div className="p-4 md:p-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-red-500/20">
         <AlertCircle size={40} className="mx-auto text-red-500 mb-3" />
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to load dashboard</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{i18nT('adminCommand.loadFailed')}</h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
         <button
           onClick={fetchData}
           className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition inline-flex items-center gap-2 font-medium"
         >
           <RefreshCw size={16} />
-          Retry
+          {i18nT('adminCommand.retry')}
         </button>
       </div>
     </div>
@@ -322,7 +322,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-yellow-500/20">
           <CheckCircle size={28} className="mx-auto text-green-500 mb-2" />
-          <p className="text-gray-500 dark:text-gray-400">No complaints need attention</p>
+          <p className="text-gray-500 dark:text-gray-400">{i18nT('adminCommand.noAttention')}</p>
         </div>
       );
     }
@@ -379,7 +379,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-yellow-500/20">
           <History size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-          <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
+          <p className="text-gray-500 dark:text-gray-400">{i18nT('adminCommand.noActivity')}</p>
         </div>
       );
     }
@@ -400,17 +400,17 @@ const AdminDashboard = () => {
               </div>
               <div className="flex-1 pb-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{meta.label}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{i18nT(`adminCommand.activity.${meta.label}`, { defaultValue: i18nT('adminCommand.activity.activity') })}</p>
                   <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(event.createdAt)}</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
-                  {event.Complaint?.subject || event.description || 'Activity'}
+                  {event.Complaint?.subject || event.description || i18nT('adminCommand.activity.activity')}
                   {event.Complaint?.ticketNumber && ` — ${event.Complaint.ticketNumber}`}
                 </p>
                  {event.authorName && (
                    <div className="flex items-center gap-1 mt-0.5">
                      <UserAvatar name={event.authorName} image={event.Author?.image} role={event.Author?.role || 'USER'} size="sm" />
-                     <span className="text-xs text-gray-400 dark:text-gray-500">by {event.authorName}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{i18nT('adminCommand.byAuthor', { name: event.authorName })}</span>
                    </div>
                  )}
               </div>
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-yellow-500/20">
           <Users size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-          <p className="text-gray-500 dark:text-gray-400">No recent users</p>
+          <p className="text-gray-500 dark:text-gray-400">{i18nT('adminCommand.noUsers')}</p>
         </div>
       );
     }
@@ -458,7 +458,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-yellow-500/20">
           <Wallet size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-          <p className="text-gray-500 dark:text-gray-400">No recent payments</p>
+          <p className="text-gray-500 dark:text-gray-400">{i18nT('adminCommand.noPayments')}</p>
         </div>
       );
     }
@@ -502,7 +502,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-yellow-500/20">
           <Briefcase size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-          <p className="text-gray-500 dark:text-gray-400">No recent hires</p>
+          <p className="text-gray-500 dark:text-gray-400">{i18nT('adminCommand.noHires')}</p>
         </div>
       );
     }
@@ -510,13 +510,13 @@ const AdminDashboard = () => {
       <div className="space-y-3">
         {hires.map((hire) => (
           <div key={hire.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-yellow-500/10 hover:border-yellow-500/30 transition">
-            <UserAvatar name={hire.WorkerProfile?.User?.fullName || 'Worker'} image={hire.WorkerProfile?.User?.image} role={hire.WorkerProfile?.User?.role || 'WORKER'} size="md" />
+            <UserAvatar name={hire.WorkerProfile?.User?.fullName || i18nT('adminCommand.worker')} image={hire.WorkerProfile?.User?.image} role={hire.WorkerProfile?.User?.role || 'WORKER'} size="md" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-900 dark:text-white truncate text-sm">
-                {hire.WorkerProfile?.User?.fullName || 'Worker'}
+                {hire.WorkerProfile?.User?.fullName || i18nT('adminCommand.worker')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                Employer: {hire.User?.fullName || 'Unknown'}
+                {i18nT('adminCommand.employerName', { name: hire.User?.fullName || i18nT('adminCommand.unknown') })}
               </p>
             </div>
             <div className="text-right flex-shrink-0">
@@ -549,7 +549,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{i18nT('adminCommand.loading')}</p>
         </div>
       </div>
     );
@@ -560,7 +560,7 @@ const AdminDashboard = () => {
   return (
     <DashboardLayout requiredRole="ADMIN" variant="admin">
       <DashboardHeader
-        title="Admin Command Center"
+        title={i18nT('adminCommand.title')}
         notificationUserId={authUser?.id || authUser?.email}
         isPremium={false}
         variant="admin"
@@ -576,15 +576,15 @@ const AdminDashboard = () => {
           <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-black">Admin Command Center</h1>
-                <p className="text-black/70 mt-1">Platform overview and management</p>
+                <h1 className="text-2xl font-bold text-black">{i18nT('adminCommand.title')}</h1>
+                <p className="text-black/70 mt-1">{i18nT('adminCommand.subtitle')}</p>
               </div>
               <button
                 onClick={fetchData}
                 className="bg-black/20 hover:bg-black/30 text-black px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
               >
                 <RefreshCw size={16} />
-                Refresh
+                {i18nT('adminCommand.refresh')}
               </button>
             </div>
           </div>
@@ -595,7 +595,7 @@ const AdminDashboard = () => {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-yellow-500" />
-              Platform Overview
+              {i18nT('adminCommand.platformOverview')}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {kpiCards.map((card, i) => (
@@ -620,13 +620,13 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <AlertCircle size={18} className="text-red-600" />
-                  Needs Attention
+                  {i18nT('adminCommand.needsAttention')}
                 </h2>
                 <Link
                   to="/admin/complaints"
                   className="text-sm text-yellow-500 hover:text-yellow-400 flex items-center gap-1"
                 >
-                  View All
+                  {i18nT('adminCommand.viewAll')}
                   <ChevronRight size={14} />
                 </Link>
               </div>
@@ -637,7 +637,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <History size={18} className="text-blue-600" />
-                  Recent Activity
+                  {i18nT('adminCommand.recentActivity')}
                 </h2>
               </div>
               {renderRecentActivity()}
@@ -652,10 +652,10 @@ const AdminDashboard = () => {
               <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Users size={16} className="text-blue-600" />
-                  Recent Users
+                  {i18nT('adminCommand.recentUsers')}
                 </h2>
                 <Link to="/admin/users" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  View All <ChevronRight size={12} />
+                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
                 </Link>
               </div>
               <div className="p-4">{renderRecentUsers()}</div>
@@ -665,10 +665,10 @@ const AdminDashboard = () => {
               <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <CreditCard size={16} className="text-green-600" />
-                  Recent Payments
+                  {i18nT('adminCommand.recentPayments')}
                 </h2>
                 <Link to="/admin/payments" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  View All <ChevronRight size={12} />
+                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
                 </Link>
               </div>
               <div className="p-4">{renderRecentPayments()}</div>
@@ -678,10 +678,10 @@ const AdminDashboard = () => {
               <div className="px-4 py-3 border-b border-yellow-500/20 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Briefcase size={16} className="text-teal-600" />
-                  Recent Hires
+                  {i18nT('adminCommand.recentHires')}
                 </h2>
                 <Link to="/admin/hires" className="text-xs text-yellow-500 hover:text-yellow-400 flex items-center gap-0.5">
-                  View All <ChevronRight size={12} />
+                  {i18nT('adminCommand.viewAll')} <ChevronRight size={12} />
                 </Link>
               </div>
               <div className="p-4">{renderRecentHires()}</div>
@@ -694,7 +694,7 @@ const AdminDashboard = () => {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Activity size={18} className="text-yellow-500" />
-              Quick Actions
+              {i18nT('adminCommand.quickActions')}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {quickActions.map((action) => {

@@ -99,32 +99,7 @@ const AdminReports = () => {
     fetchAnalytics();
   }, [authUser, isAuthenticated, authLoading, navigate, fetchAnalytics]);
 
-  const t = {
-    title: 'Reports & Analytics',
-    subtitle: 'Real platform insights and analytics',
-    usersGrowth: 'User Growth',
-    revenueOverview: 'Revenue Overview',
-    hiresStatistics: 'Hires Statistics',
-    complaintsStatistics: 'Complaints Statistics',
-    subscriptions: 'Subscriptions',
-    categories: 'Category Distribution',
-    totalRevenue: 'Total Revenue',
-    totalHires: 'Total Hires',
-    totalComplaints: 'Total Complaints',
-    totalUsers: 'Total Users',
-    activeSubs: 'Active Subscriptions',
-    byMonth: 'By Month',
-    byStatus: 'By Status',
-    byMethod: 'By Payment Method',
-    overview: 'Overview',
-    users: 'Users',
-    hires: 'Hires',
-    revenue: 'Revenue',
-    reports: 'Reports',
-    noData: 'No analytics data available',
-    refresh: 'Refresh',
-    loading: 'Loading analytics...',
-  };
+  const t = i18nT('adminReportsPage', { returnObjects: true });
 
   // ============================================================
   // CHART HELPERS
@@ -134,8 +109,8 @@ const AdminReports = () => {
       return (
         <EmptyState
           icon={BarChart3}
-          title="No data"
-          description="No data available for this chart"
+          title={t.noDataShort}
+          description={t.noChartData}
         />
       );
     }
@@ -165,7 +140,7 @@ const AdminReports = () => {
   const renderStatusList = (statusObj) => {
     const entries = Object.entries(statusObj || {});
     if (entries.length === 0) {
-      return <p className="text-sm text-gray-500 dark:text-gray-400">No status data</p>;
+      return <p className="text-sm text-gray-500 dark:text-gray-400">{t.noStatusData}</p>;
     }
     return (
       <div className="space-y-2">
@@ -181,7 +156,7 @@ const AdminReports = () => {
 
   const renderKeyValueList = (data, valueKey = 'amount', labelKey = 'method') => {
     if (!data || data.length === 0) {
-      return <p className="text-sm text-gray-500 dark:text-gray-400">No data</p>;
+      return <p className="text-sm text-gray-500 dark:text-gray-400">{t.noDataShort}</p>;
     }
     return (
       <div className="space-y-2">
@@ -215,14 +190,14 @@ const AdminReports = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-red-500/20 max-w-md w-full">
           <AlertCircle size={40} className="mx-auto text-red-500 mb-3" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Failed to load analytics</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t.loadFailed}</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
           <button
             onClick={fetchAnalytics}
             className="px-6 py-2.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition inline-flex items-center gap-2 font-medium"
           >
             <RefreshCw size={16} />
-            Retry
+            {t.retry}
           </button>
         </div>
       </div>
@@ -305,7 +280,7 @@ const AdminReports = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <TrendingUp size={18} className="text-blue-600" />
-                {t.usersGrowth} (12 months)
+                {t.usersGrowth} ({t.months12})
               </h3>
               {renderBarChart(a.usersGrowth || [], 'count', 'label')}
             </div>
@@ -334,7 +309,7 @@ const AdminReports = () => {
                     );
                   })}
                   {(a.categoryDistribution || []).length === 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No category data</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.noCategoryData}</p>
                   )}
                 </div>
               </div>
@@ -357,7 +332,7 @@ const AdminReports = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Users size={18} className="text-blue-600" />
-              {t.usersGrowth} (12 months)
+              {t.usersGrowth} ({t.months12})
             </h3>
             {renderBarChart(a.usersGrowth || [], 'count', 'label')}
           </div>
@@ -382,7 +357,7 @@ const AdminReports = () => {
                   {renderStatusList(a.hiresStatistics?.byStatus)}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMonth} (12 months)</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMonth} ({t.months12})</p>
                   {renderBarChart(a.hiresStatistics?.byMonth || [], 'count', 'label')}
                 </div>
               </div>
@@ -405,7 +380,7 @@ const AdminReports = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMonth} (12 months)</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.byMonth} ({t.months12})</p>
                   {renderKeyValueList(a.revenueOverview?.byMonth || [], 'amount', 'month')}
                 </div>
                 <div>
@@ -427,7 +402,7 @@ const AdminReports = () => {
               {t.reports}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Analytics data is now sourced from the database. Use the Overview, Users, Hires, and Revenue tabs to explore the data.
+              {t.dataSourceInfo}
             </p>
           </div>
         )}

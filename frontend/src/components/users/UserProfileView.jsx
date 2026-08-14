@@ -48,8 +48,6 @@ import api from '../../utils/api';
 import { ensureConversationExists } from '../../utils/chatService';
 import {
   UserAvatar,
-  UserRoleBadge,
-  UserStatusBadge,
   UserStatsCard
 } from './index';
 
@@ -58,6 +56,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const authUser = useAuthStore(state => state.user);
   const dashboard = useDashboard();
   const { t: i18nT } = useTranslation();
+  const t = i18nT('userProfileView', { returnObjects: true });
 
   const isAdmin = variant === 'admin';
 
@@ -100,7 +99,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-      setNotification({ type: 'error', text: 'Failed to load user profile' });
+      setNotification({ type: 'error', text: t.errors.loadProfile });
     } finally {
       setLoading(false);
     }
@@ -132,7 +131,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           }));
           setNotification({
             type: 'success',
-            text: suspend ? 'User suspended successfully' : 'User activated successfully'
+            text: suspend ? t.feedback.suspended : t.feedback.activated
           });
         }
       } else {
@@ -150,18 +149,17 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           }));
           setNotification({
             type: 'success',
-            text: suspend ? 'User suspended successfully' : 'User activated successfully'
+            text: suspend ? t.feedback.suspended : t.feedback.activated
           });
         }
       }
     } catch (error) {
       console.error('Error updating user status:', error);
-      setNotification({ type: 'error', text: 'Failed to update user status' });
+      setNotification({ type: 'error', text: t.errors.updateStatus });
     } finally {
       setActionLoading(false);
     }
   };
-
   // ============================================================
   // RESET PASSWORD
   // ============================================================
@@ -189,7 +187,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       if (isAdmin) {
         const passwordToUse = tempPassword || newPasswordInput;
         if (!passwordToUse || passwordToUse.length < 6) {
-          setNotification({ type: 'error', text: 'Please enter or generate a password (minimum 6 characters)' });
+          setNotification({ type: 'error', text: t.errors.passwordRequired });
           setActionLoading(false);
           return;
         }
@@ -204,9 +202,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
           setShowPassword(false);
           setNewPasswordInput('');
           setResetReason('');
-          setNotification({ type: 'success', text: 'Password reset successfully' });
+          setNotification({ type: 'success', text: t.feedback.passwordReset });
         } else {
-          setNotification({ type: 'error', text: response.data?.message || 'Failed to reset password' });
+          setNotification({ type: 'error', text: response.data?.message || t.errors.resetPassword });
         }
       } else {
         const response = await api.post(`${apiBase}/users/${profileUser.id}/reset-password`, {
@@ -214,7 +212,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         });
 
         if (response.data?.success) {
-          setNotification({ type: 'success', text: 'Password reset link sent successfully' });
+          setNotification({ type: 'success', text: t.resetLinkSent });
           setShowResetModal(false);
           setResetReason('');
         }
@@ -222,9 +220,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
     } catch (error) {
       console.error('Error resetting password:', error);
       if (isAdmin) {
-        setNotification({ type: 'error', text: error.response?.data?.message || 'Failed to reset password' });
+        setNotification({ type: 'error', text: error.response?.data?.message || t.errors.resetPassword });
       } else {
-        setNotification({ type: 'error', text: 'Failed to send reset link' });
+        setNotification({ type: 'error', text: t.errors.sendResetLink });
       }
     } finally {
       setActionLoading(false);
@@ -251,7 +249,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
         
         if (!targetUserId) {
           console.error('[ADMIN-START-CONVERSATION] Missing target user ID');
-          setNotification({ type: 'error', text: 'Failed to start conversation: Missing user ID' });
+          setNotification({ type: 'error', text: t.errors.missingUserId });
           setActionLoading(false);
           return;
         }
@@ -270,7 +268,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       }
     } catch (error) {
       console.error('Error starting conversation:', error);
-      setNotification({ type: 'error', text: 'Failed to start conversation' });
+      setNotification({ type: 'error', text: t.errors.startConversation });
     } finally {
       setActionLoading(false);
     }
@@ -279,116 +277,9 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   // ============================================================
   // TRANSLATIONS
   // ============================================================
-  const translations = {
-    en: {
-      back: 'Back',
-      notFound: 'User not found',
-      loading: 'Loading user profile...',
-      accountInfo: 'Account Information',
-      statistics: 'Statistics',
-      quickActions: 'Quick Actions',
-      email: 'Email',
-      phone: 'Phone',
-      country: 'Country',
-      language: 'Preferred Language',
-      registered: 'Registration Date',
-      lastLogin: 'Last Login',
-      never: 'Never',
-      notProvided: 'Not provided',
-      complaints: 'Complaints',
-      messages: 'Messages',
-      hires: 'Hires',
-      offers: 'Offers',
-      payments: 'Payments',
-      resetPassword: 'Reset Password',
-      suspendAccount: 'Suspend Account',
-      activateAccount: 'Activate Account',
-      startConversation: 'Start Conversation',
-      openComplaints: 'Open User Complaints',
-      resetReason: 'Reason (optional)',
-      cancel: 'Cancel',
-      confirmReset: 'Reset Password',
-      tempPasswordLabel: 'Temporary Password',
-      copyTempPassword: 'Copy temporary password',
-      copied: 'Copied!',
-      done: 'Done',
-      adminProtected: 'Admin accounts cannot be modified',
-      workerProfile: 'Worker Profile',
-      employerProfile: 'Employer Profile',
-      category: 'Category',
-      experience: 'Experience',
-      skills: 'Skills',
-      company: 'Company',
-      industry: 'Industry',
-      noSkills: 'No skills listed',
-      generatePassword: 'Generate Password',
-      showPassword: 'Show password',
-      hidePassword: 'Hide password',
-      passwordPlaceholder: 'Enter or generate a temporary password',
-      minPasswordLength: 'Minimum 6 characters',
-      sendResetLink: 'Send Reset Link',
-      resetLinkSent: 'Password reset link sent successfully',
-      resetLinkInfo: 'A secure password reset link has been sent to',
-      userWillChoose: 'The user will choose their own new password through the reset page.'
-    },
-    ar: {
-      back: 'رجوع',
-      notFound: 'المستخدم غير موجود',
-      loading: 'جاري تحميل ملف المستخدم...',
-      accountInfo: 'معلومات الحساب',
-      statistics: 'الإحصائيات',
-      quickActions: 'إجراءات سريعة',
-      email: 'البريد الإلكتروني',
-      phone: 'الهاتف',
-      country: 'البلد',
-      language: 'اللغة المفضلة',
-      registered: 'تاريخ التسجيل',
-      lastLogin: 'آخر تسجيل دخول',
-      never: 'أبداً',
-      notProvided: 'غير متوفر',
-      complaints: 'الشكاوى',
-      messages: 'الرسائل',
-      hires: 'التوظيفات',
-      offers: 'العروض',
-      payments: 'المدفوعات',
-      resetPassword: 'إعادة تعيين كلمة المرور',
-      suspendAccount: 'إيقاف الحساب',
-      activateAccount: 'تفعيل الحساب',
-      startConversation: 'بدء محادثة',
-      openComplaints: 'عرض شكاوى المستخدم',
-      resetReason: 'السبب (اختياري)',
-      cancel: 'إلغاء',
-      confirmReset: 'إعادة تعيين',
-      tempPasswordLabel: 'كلمة المرور المؤقتة',
-      copyTempPassword: 'نسخ كلمة المرور المؤقتة',
-      copied: 'تم النسخ!',
-      done: 'تم',
-      adminProtected: 'لا يمكن تعديل حسابات المديرين',
-      workerProfile: 'ملف العامل',
-      employerProfile: 'ملف صاحب العمل',
-      category: 'الفئة',
-      experience: 'الخبرة',
-      skills: 'المهارات',
-      company: 'الشركة',
-      industry: 'المجال',
-      noSkills: 'لا توجد مهارات',
-      generatePassword: 'توليد كلمة مرور',
-      showPassword: 'إظهار كلمة المرور',
-      hidePassword: 'إخفاء كلمة المرور',
-      passwordPlaceholder: 'أدخل أو ولّد كلمة مرور مؤقتة',
-      minPasswordLength: 'الحد الأدنى 6 أحرف',
-      sendResetLink: 'إرسال رابط إعادة التعيين',
-      resetLinkSent: 'تم إرسال رابط إعادة تعيين كلمة المرور',
-      resetLinkInfo: 'تم إرسال رابط إعادة تعيين آمن إلى',
-      userWillChoose: 'سوف يختار المستخدم كلمة المرور الجديدة بنفسه من خلال صفحة إعادة التعيين.'
-    }
-  };
-
-  const t = translations[dashboard?.language] || translations.en;
-
   const formatDate = (dateString) => {
     if (!dateString) return t.never;
-    return new Date(dateString).toLocaleDateString(dashboard?.language === 'ar' ? 'ar-EG' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(dashboard?.language || 'en', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -396,6 +287,8 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       minute: '2-digit'
     });
   };
+
+  const formatSuspensionReason = (reason) => t.suspensionReasons[reason] || reason;
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -461,14 +354,19 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl font-bold">{profileUser.fullName}</h1>
-                  <UserRoleBadge role={profileUser.role} />
-                  <UserStatusBadge isVerified={profileUser.isVerified} isSuspended={profileUser.isSuspended} />
+                   <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium">
+                     <Shield size={12} />
+                     {t.roles[profileUser.role] || t.roles.user}
+                   </span>
+                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${profileUser.isSuspended ? 'bg-red-900/30 text-red-100' : profileUser.isVerified ? 'bg-green-900/30 text-green-100' : 'bg-white/20 text-white'}`}>
+                     {profileUser.isSuspended ? t.status.suspended : profileUser.isVerified ? t.status.verified : t.status.active}
+                   </span>
                 </div>
                 <p className="text-white/80 mt-1">{profileUser.email}</p>
                 {profileUser.isSuspended && profileUser.suspensionReason && (
                   <p className="text-red-200 text-sm mt-2 flex items-center gap-1">
                     <AlertTriangle size={14} />
-                    {profileUser.suspensionReason}
+                    {formatSuspensionReason(profileUser.suspensionReason)}
                   </p>
                 )}
               </div>
@@ -480,41 +378,43 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <CreditCard size={18} className="text-amber-500" />
-                {i18nT('staffSubscription.title')}
+                 {t.subscription.title}
               </h3>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.status')}</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{t.subscription.status}</p>
                 <p className={`text-sm font-semibold mt-1 ${profileUser.subscription?.isPremium ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>
-                  {profileUser.subscription?.isPremium ? i18nT('staffSubscription.active') : i18nT('staffSubscription.inactive')}
+                   {profileUser.subscription?.isPremium ? t.subscription.active : t.subscription.inactive}
                 </p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.expiry')}</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{t.subscription.expiry}</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{profileUser.subscription?.endDate ? formatDate(profileUser.subscription.endDate) : t.notProvided}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{i18nT('staffSubscription.latestPlan')}</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{t.subscription.latestPlan}</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                   {profileUser.subscription?.latestPlan
-                    ? i18nT(`staffSubscription.plans.${profileUser.subscription.latestPlan}`, { defaultValue: i18nT('staffSubscription.plans.legacy_unknown') })
-                    : i18nT('staffSubscription.unavailable')}
+                     ? t.subscription.plans[profileUser.subscription.latestPlan] || t.subscription.plans.legacy_unknown
+                     : t.subscription.unavailable}
                 </p>
               </div>
             </div>
-            {profileUser.subscription?.grants?.length > 0 && (
-              <div className="px-6 pb-6">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{i18nT('staffSubscription.history')}</p>
+            <div className="px-6 pb-6">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{t.subscription.history}</p>
+              {profileUser.subscription?.grants?.length > 0 ? (
                 <div className="space-y-2">
                   {profileUser.subscription.grants.map((grant, index) => (
                     <div key={`${grant.createdAt}-${index}`} className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2" dir="ltr">
-                      {i18nT(`staffSubscription.plans.${grant.plan}`, { defaultValue: i18nT('staffSubscription.plans.legacy_unknown') })} · {grant.durationDays} {i18nT('staffSubscription.days')} · {formatDate(grant.startsAt)} → {formatDate(grant.endsAt)}
+                      {t.subscription.plans[grant.plan] || t.subscription.plans.legacy_unknown} · {grant.durationDays} {t.subscription.days} · {formatDate(grant.startsAt)} → {formatDate(grant.endsAt)}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.subscription.noGrants}</p>
+              )}
+            </div>
           </div>
 
           {/* ACCOUNT INFO */}
@@ -540,7 +440,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Globe size={12} />{t.language}</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1 uppercase">{profileUser.language || 'en'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{t.languages[profileUser.language] || t.languages.en}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Calendar size={12} />{t.registered}</p>
@@ -570,7 +470,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.experience}</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                    {profileUser.WorkerProfile.experienceYears != null ? `${profileUser.WorkerProfile.experienceYears} years` : t.notProvided}
+                     {profileUser.WorkerProfile.experienceYears != null ? t.experienceYears.replace('{{count}}', profileUser.WorkerProfile.experienceYears) : t.notProvided}
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -651,7 +551,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                   <div className="text-left">
                     <p className="font-medium text-gray-900 dark:text-white">{t.resetPassword}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {isAdmin ? 'Set a temporary password' : 'Generate a temporary password'}
+                       {isAdmin ? t.setTemporaryPasswordDescription : t.generateTemporaryPasswordDescription}
                     </p>
                   </div>
                 </button>
@@ -669,7 +569,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     </div>
                     <div className="text-left">
                       <p className="font-medium text-gray-900 dark:text-white">{t.activateAccount}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Reactivate this user's account</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t.activateAccount}</p>
                     </div>
                   </button>
                 ) : (
@@ -683,7 +583,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     </div>
                     <div className="text-left">
                       <p className="font-medium text-gray-900 dark:text-white">{t.suspendAccount}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Temporarily suspend this account</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t.suspendAccount}</p>
                     </div>
                   </button>
                 )
@@ -699,7 +599,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </div>
                 <div className="text-left">
                   <p className="font-medium text-gray-900 dark:text-white">{t.startConversation}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Open a chat with this user</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.startConversation}</p>
                 </div>
               </button>
 
@@ -712,7 +612,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </div>
                 <div className="text-left">
                   <p className="font-medium text-gray-900 dark:text-white">{t.openComplaints}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">View this user's complaints</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.openComplaints}</p>
                 </div>
               </Link>
             </div>
@@ -734,7 +634,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Key size={20} className="text-yellow-500" />
-                {isAdmin ? 'Set Temporary Password' : 'Send Password Reset Link'}
+                 {isAdmin ? t.setTemporaryPassword : t.sendResetLink}
               </h3>
               <button
                 onClick={closeResetModal}
@@ -752,12 +652,12 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                       <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                         <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
                           <CheckCircle2 size={16} />
-                          Password reset successfully
+                          {t.feedback.passwordReset}
                         </p>
                       </div>
                       <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                         <p className="text-sm text-gray-300">
-                          Temporary password for <span className="font-semibold text-white">{profileUser.email}</span>:
+                          {t.temporaryPasswordFor} <span className="font-semibold text-white">{profileUser.email}</span>:
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <input
@@ -783,7 +683,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                         </div>
                       </div>
                       <p className="text-sm text-gray-300">
-                        Share this password with the user. They will be required to change it on next login.
+                        {t.shareTemporaryPassword}
                       </p>
                       <button
                         onClick={closeResetModal}
@@ -796,10 +696,10 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     <div className="space-y-4">
                       <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                         <p className="text-sm text-gray-300">
-                          Set a temporary password for <span className="font-semibold text-white">{profileUser.email}</span>.
+                          {t.setTemporaryPasswordFor} <span className="font-semibold text-white">{profileUser.email}</span>.
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          The user will be required to change this password on next login.
+                          {t.changeOnNextLogin}
                         </p>
                       </div>
 
@@ -849,7 +749,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                           type="text"
                           value={resetReason}
                           onChange={(e) => setResetReason(e.target.value)}
-                          placeholder="Enter reason for password reset..."
+                          placeholder={t.resetReasonPlaceholder}
                           className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                         />
                       </div>
@@ -874,7 +774,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </>
               ) : (
                 <>
-                  {notification?.type === 'success' && notification?.text?.includes('link sent') ? (
+                  {notification?.type === 'success' && notification?.text === t.resetLinkSent ? (
                     <div className="space-y-4">
                       <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                         <p className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center gap-2">
@@ -896,7 +796,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                     <div className="space-y-4">
                       <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                         <p className="text-sm text-gray-300">
-                          This will send a secure password reset link to: <span className="font-semibold text-white">{profileUser.email}</span>.
+                          {t.sendSecureResetLinkTo} <span className="font-semibold text-white">{profileUser.email}</span>.
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                           {t.userWillChoose}
@@ -918,7 +818,7 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                           type="text"
                           value={resetReason}
                           onChange={(e) => setResetReason(e.target.value)}
-                          placeholder="Enter reason for password reset..."
+                          placeholder={t.resetReasonPlaceholder}
                           className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white"
                         />
                       </div>

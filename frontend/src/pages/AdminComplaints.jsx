@@ -1,6 +1,7 @@
 // src/pages/AdminComplaints.jsx - PRODUCTION COMPLAINT MANAGEMENT
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
@@ -27,13 +28,14 @@ import {
   Undo2
 } from 'lucide-react';
 import complaintsService from '../services/complaintService';
-import { getDisplayName, getRoleLabel } from '../utils/userDisplay';
+import { getDisplayName } from '../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 
 const AdminComplaints = () => {
   const navigate = useNavigate();
+  const { t: i18nT, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const complaintIdFromUrl = searchParams.get('id');
   const userIdFilterParam = searchParams.get('userId');
@@ -63,176 +65,16 @@ const AdminComplaints = () => {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [stats, setStats] = useState(null);
 
-  const translations = {
-    en: {
-      title: 'Complaints Management',
-      subtitle: 'View and manage all complaints from workers and employers',
-      stats: {
-        total: 'Total Complaints',
-        escalated: 'Escalated',
-        critical: 'Critical',
-        waiting: 'Waiting',
-        solvedToday: 'Solved Today',
-        avgResolution: 'Avg Resolution'
-      },
-      filters: {
-        all: 'All Complaints',
-        new: 'New',
-        open: 'Open',
-        inProgress: 'In Progress',
-        waiting: 'Waiting for User',
-        escalated: 'Escalated',
-        resolved: 'Resolved',
-        closed: 'Closed',
-        allPriorities: 'All Priorities',
-        allCategories: 'All Categories'
-      },
-      table: {
-        title: 'Title',
-        from: 'From',
-        assignedSupport: 'Assigned Support',
-        status: 'Status',
-        priority: 'Priority',
-        date: 'Date',
-        updated: 'Updated',
-        unassigned: 'Unassigned',
-        actions: 'Actions',
-        noResults: 'No complaints found',
-        searchPlaceholder: 'Search complaints...'
-      },
-      actions: {
-        view: 'View Details',
-        refresh: 'Refresh',
-        resolve: 'Resolve',
-        close: 'Close',
-        reassign: 'Reassign',
-        return: 'Return to Support',
-        reply: 'Reply',
-        addNote: 'Add Note'
-      },
-      modal: {
-        title: 'Complaint Details',
-        complaintId: 'Complaint ID',
-        from: 'Submitted By',
-        status: 'Status',
-        priority: 'Priority',
-        category: 'Category',
-        date: 'Submitted',
-        description: 'Description',
-        timeline: 'Timeline',
-        reply: 'Admin Reply',
-        replyPlaceholder: 'Type your reply...',
-        notes: 'Internal Notes',
-        notePlaceholder: 'Add internal note...',
-        attachments: 'Attachments',
-        noAttachments: 'No attachments',
-        close: 'Close',
-        sendReply: 'Send Reply',
-        reassignTo: 'Reassign To',
-        reassignBtn: 'Reassign',
-        returnToSupport: 'Return to Support',
-        returnNote: 'Note for support (optional)',
-        assigned: 'Assigned Support',
-        confirmResolve: 'Are you sure you want to resolve this complaint?',
-        confirmClose: 'Are you sure you want to close this complaint?',
-        confirmReturn: 'Are you sure you want to return this complaint to support?',
-        confirm: 'Confirm',
-        cancel: 'Cancel',
-        noSupportUsers: 'No support agents available'
-      },
-      loading: 'Loading complaints...',
-      noComplaints: 'No complaints found',
-      resolved: 'Resolved',
-      closed: 'Closed',
-      escalated: 'Escalated',
-      hours: 'hrs'
-    },
-    ar: {
-      title: 'إدارة الشكاوى',
-      subtitle: 'عرض وإدارة جميع الشكاوى من العمال وأصحاب العمل',
-      stats: {
-        total: 'إجمالي الشكاوى',
-        escalated: 'مرفوعة',
-        critical: 'حرجة',
-        waiting: 'بانتظار',
-        solvedToday: 'تم حلها اليوم',
-        avgResolution: 'متوسط الحل'
-      },
-      filters: {
-        all: 'جميع الشكاوى',
-        new: 'جديدة',
-        open: 'مفتوحة',
-        inProgress: 'قيد المعالجة',
-        waiting: 'بانتظار المستخدم',
-        escalated: 'مرفوعة',
-        resolved: 'تم الحل',
-        closed: 'مغلقة',
-        allPriorities: 'جميع الأولويات',
-        allCategories: 'جميع الفئات'
-      },
-      table: {
-        title: 'العنوان',
-        from: 'من',
-        assignedSupport: 'مسؤول الدعم المعين',
-        status: 'الحالة',
-        priority: 'الأولوية',
-        date: 'التاريخ',
-        updated: 'آخر تحديث',
-        unassigned: 'غير معين',
-        actions: 'الإجراءات',
-        noResults: 'لا توجد شكاوى',
-        searchPlaceholder: 'ابحث عن شكاوى...'
-      },
-      actions: {
-        view: 'عرض التفاصيل',
-        refresh: 'تحديث',
-        resolve: 'حل',
-        close: 'إغلاق',
-        reassign: 'إعادة تعيين',
-        return: 'إعادة للدعم',
-        reply: 'رد',
-        addNote: 'إضافة ملاحظة'
-      },
-      modal: {
-        title: 'تفاصيل الشكوى',
-        complaintId: 'رقم الشكوى',
-        from: 'مقدم من',
-        status: 'الحالة',
-        priority: 'الأولوية',
-        category: 'الفئة',
-        date: 'تاريخ التقديم',
-        description: 'الوصف',
-        timeline: 'الخط الزمني',
-        reply: 'رد المشرف',
-        replyPlaceholder: 'اكتب ردك...',
-        notes: 'ملاحظات داخلية',
-        notePlaceholder: 'أضف ملاحظة داخلية...',
-        attachments: 'المرفقات',
-        noAttachments: 'لا توجد مرفقات',
-        close: 'إغلاق',
-        sendReply: 'إرسال الرد',
-        reassignTo: 'إعادة تعيين إلى',
-        reassignBtn: 'إعادة تعيين',
-        returnToSupport: 'إعادة للدعم',
-        returnNote: 'ملاحظة للدعم (اختياري)',
-        assigned: 'مسؤول الدعم المعين',
-        confirmResolve: 'هل أنت متأكد من حل هذه الشكوى؟',
-        confirmClose: 'هل أنت متأكد من إغلاق هذه الشكوى؟',
-        confirmReturn: 'هل أنت متأكد من إعادة هذه الشكوى للدعم؟',
-        confirm: 'تأكيد',
-        cancel: 'إلغاء',
-        noSupportUsers: 'لا يوجد وكلاء دعم متاحون'
-      },
-      loading: 'جاري تحميل الشكاوى...',
-      noComplaints: 'لا توجد شكاوى',
-      resolved: 'تم الحل',
-      closed: 'مغلقة',
-      escalated: 'مرفوعة',
-      hours: 'ساعة'
-    }
-  };
-
-  const t = translations[localStorage.getItem('homelyserv_language') === 'ar' ? 'ar' : 'en'];
+  /* Admin complaint copy lives in the central six-language i18n catalogue. */
+  const t = i18nT('adminComplaintsPage', { returnObjects: true });
+  const statusLabel = (value) => t.status[value] || t.unknown;
+  const priorityLabel = (value) => t.priority[String(value || 'Medium').toLowerCase()] || t.unknown;
+  const categoryLabel = (value) => t.category[String(value || 'Other').toLowerCase().replace(/\s+/g, '_')] || t.category.other;
+  const timelineLabel = (value) => t.timelineActions[value] || statusLabel(value);
+  const roleLabel = (value) => t.roles[value] || t.roles.user;
+  const formatDate = (value) => value
+    ? new Intl.DateTimeFormat(i18n.resolvedLanguage || 'en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+    : t.notAvailable;
 
   // ============================================================
   // AUTH CHECK
@@ -382,7 +224,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.adminReplyToComplaint(selectedComplaint.id, replyText);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Reply sent' });
+        setNotification({ type: 'success', text: t.notifications.replySent });
         setReplyText('');
         setSelectedComplaint(data.complaint);
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
@@ -394,7 +236,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error sending reply:', error);
-      setNotification({ type: 'error', text: 'Failed to send reply' });
+      setNotification({ type: 'error', text: t.notifications.replyFailed });
     } finally {
       setProcessing(false);
     }
@@ -409,7 +251,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.addComplaintNote(selectedComplaint.id, noteText);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Note added' });
+        setNotification({ type: 'success', text: t.notifications.noteAdded });
         setNoteText('');
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -419,7 +261,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error adding note:', error);
-      setNotification({ type: 'error', text: 'Failed to add note' });
+      setNotification({ type: 'error', text: t.notifications.noteFailed });
     } finally {
       setProcessing(false);
     }
@@ -434,7 +276,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.adminReassignComplaint(selectedComplaint.id, reassignSupportId);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Complaint reassigned' });
+        setNotification({ type: 'success', text: t.notifications.reassigned });
         setSelectedComplaint(data.complaint);
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -444,7 +286,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error reassigning:', error);
-      setNotification({ type: 'error', text: 'Failed to reassign' });
+      setNotification({ type: 'error', text: t.notifications.reassignFailed });
     } finally {
       setProcessing(false);
     }
@@ -459,7 +301,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.adminResolveComplaint(selectedComplaint.id);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Complaint resolved' });
+        setNotification({ type: 'success', text: t.notifications.resolved });
         setSelectedComplaint(data.complaint);
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -470,7 +312,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error resolving:', error);
-      setNotification({ type: 'error', text: 'Failed to resolve' });
+      setNotification({ type: 'error', text: t.notifications.resolveFailed });
     } finally {
       setProcessing(false);
     }
@@ -485,7 +327,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.adminCloseComplaint(selectedComplaint.id);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Complaint closed' });
+        setNotification({ type: 'success', text: t.notifications.closed });
         setSelectedComplaint(data.complaint);
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -496,7 +338,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error closing:', error);
-      setNotification({ type: 'error', text: 'Failed to close' });
+      setNotification({ type: 'error', text: t.notifications.closeFailed });
     } finally {
       setProcessing(false);
     }
@@ -511,7 +353,7 @@ const AdminComplaints = () => {
     try {
       const data = await complaintsService.adminReturnComplaint(selectedComplaint.id, reassignSupportId || undefined, returnNote);
       if (data?.success) {
-        setNotification({ type: 'success', text: 'Complaint returned to support' });
+        setNotification({ type: 'success', text: t.notifications.returned });
         setSelectedComplaint(data.complaint);
         const detail = await complaintsService.getAdminComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -521,7 +363,7 @@ const AdminComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error returning:', error);
-      setNotification({ type: 'error', text: 'Failed to return' });
+      setNotification({ type: 'error', text: t.notifications.returnFailed });
     } finally {
       setProcessing(false);
     }
@@ -546,7 +388,7 @@ const AdminComplaints = () => {
     const messages = [
       {
         id: 'original',
-        authorName: selectedComplaint?.User?.fullName || 'User',
+        authorName: selectedComplaint?.User?.fullName || t.roles.user,
         authorRole: selectedComplaint?.User?.role || 'USER',
         authorImage: selectedComplaint?.User?.image || null,
         message: selectedComplaint?.description || '',
@@ -592,7 +434,7 @@ const AdminComplaints = () => {
                     className={isUser ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-200'}
                   />
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                    {complaintsService.formatComplaintDate(msg.createdAt)}
+                    {formatDate(msg.createdAt)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
@@ -608,7 +450,7 @@ const AdminComplaints = () => {
                         rel="noopener noreferrer"
                         className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
                       >
-                        <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={t.attachmentAlt.replace('{{number}}', i + 1)} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -626,7 +468,7 @@ const AdminComplaints = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 dark:text-gray-500">Loading...</p>
+          <p className="mt-4 text-gray-400 dark:text-gray-500">{t.loading}</p>
         </div>
       </div>
     );
@@ -728,7 +570,7 @@ const AdminComplaints = () => {
                 className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
               >
                 <option value="all">{t.filters.allPriorities}</option>
-                {complaintsService.COMPLAINT_PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                {complaintsService.COMPLAINT_PRIORITIES.map(p => <option key={p} value={p}>{priorityLabel(p)}</option>)}
               </select>
               <select
                 value={categoryFilter}
@@ -736,7 +578,7 @@ const AdminComplaints = () => {
                 className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
               >
                 <option value="all">{t.filters.allCategories}</option>
-                {complaintsService.COMPLAINT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {complaintsService.COMPLAINT_CATEGORIES.map(c => <option key={c} value={c}>{categoryLabel(c)}</option>)}
               </select>
             </div>
           </div>
@@ -745,17 +587,17 @@ const AdminComplaints = () => {
         {/* Results Count */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredComplaints.length}</span> complaints
+            {t.resultsShowing} <span className="font-semibold text-gray-700 dark:text-gray-300">{filteredComplaints.length}</span> {t.resultsComplaints}
             {userIdFilterParam && (
               <span className="inline-flex items-center gap-2 ml-2">
                 <span className="text-yellow-600 dark:text-yellow-400">
-                  (filtered by user)
+                  ({t.filteredByUser})
                 </span>
                 <button
                   onClick={handleClearUserFilter}
                   className="px-2.5 py-1 rounded-lg bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/25 transition text-xs font-medium"
                 >
-                  View all complaints
+                  {t.viewAllComplaints}
                 </button>
               </span>
             )}
@@ -769,7 +611,7 @@ const AdminComplaints = () => {
           <EmptyState
             icon={FileText}
             title={t.noComplaints}
-            description="No complaints are currently available"
+            description={t.noComplaintsDescription}
           />
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-yellow-500/20 overflow-hidden">
@@ -860,17 +702,17 @@ const AdminComplaints = () => {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
-                          {complaintsService.getStatusLabel(complaint.status)}
+                          {statusLabel(complaint.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(complaint.priority)}`}>
                           <Flag size={12} />
-                          {complaintsService.getPriorityLabel(complaint.priority)}
+                          {priorityLabel(complaint.priority)}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {complaintsService.formatComplaintDate(complaint.updatedAt || complaint.createdAt)}
+                        {formatDate(complaint.updatedAt || complaint.createdAt)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right">
                         <button
@@ -915,23 +757,23 @@ const AdminComplaints = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.modal.status}</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getStatusBadgeClass(selectedComplaint.status)}`}>
-                    {complaintsService.getStatusLabel(selectedComplaint.status)}
+                    {statusLabel(selectedComplaint.status)}
                   </span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.modal.priority}</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selectedComplaint.priority)}`}>
                     <Flag size={12} />
-                    {complaintsService.getPriorityLabel(selectedComplaint.priority)}
+                    {priorityLabel(selectedComplaint.priority)}
                   </span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.modal.category}</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{selectedComplaint.category}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{categoryLabel(selectedComplaint.category)}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.modal.date}</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{complaintsService.formatComplaintDate(selectedComplaint.createdAt)}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{formatDate(selectedComplaint.createdAt)}</p>
                 </div>
               </div>
 
@@ -954,7 +796,7 @@ const AdminComplaints = () => {
                       {getDisplayName(selectedComplaint.User)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {selectedComplaint.User?.email} • {getRoleLabel(selectedComplaint.User?.role)}
+                      {selectedComplaint.User?.email} • {roleLabel(selectedComplaint.User?.role)}
                     </p>
                   </div>
                 </div>
@@ -1008,7 +850,7 @@ const AdminComplaints = () => {
                     {selectedComplaint.attachments.map((url, index) => (
                       <a key={index} href={url} target="_blank" rel="noopener noreferrer"
                         className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition">
-                        <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={t.attachmentAlt.replace('{{number}}', index + 1)} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -1027,7 +869,7 @@ const AdminComplaints = () => {
                   <p className="text-sm text-red-600 dark:text-red-400">{selectedComplaint.escalationReason}</p>
                   {selectedComplaint.escalatedAt && (
                     <p className="text-xs text-red-500 mt-1">
-                      {complaintsService.formatComplaintDate(selectedComplaint.escalatedAt)}
+                       {formatDate(selectedComplaint.escalatedAt)}
                     </p>
                   )}
                 </div>
@@ -1037,7 +879,7 @@ const AdminComplaints = () => {
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   <MessageSquare size={14} />
-                  Conversation
+                   {t.conversation}
                 </h4>
                 {renderThread()}
               </div>
@@ -1071,15 +913,15 @@ const AdminComplaints = () => {
                                 <div className="w-2 flex-shrink-0" />
                               )}
                               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {complaintsService.getStatusLabel(event.action) || event.action}
+                                 {timelineLabel(event.action)}
                               </p>
                             </div>
                             <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                              {complaintsService.formatComplaintDate(event.createdAt)}
+                               {formatDate(event.createdAt)}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {event.description}
+                            {timelineLabel(event.action)}
                             {event.authorName && ` — ${event.authorName}`}
                           </p>
                         </div>
@@ -1087,7 +929,7 @@ const AdminComplaints = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No timeline events</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.noTimeline}</p>
                 )}
               </div>
 
@@ -1113,14 +955,14 @@ const AdminComplaints = () => {
                             />
                           ) : null}
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {note.authorName || note.author?.name || 'Staff'} • {complaintsService.formatComplaintDate(note.createdAt)}
+                            {note.authorName || note.author?.name || t.roles.staff} • {formatDate(note.createdAt)}
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No internal notes</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.noNotes}</p>
                 )}
                 <div className="flex gap-2 mt-2">
                   <input
@@ -1232,7 +1074,7 @@ const AdminComplaints = () => {
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex items-center gap-2">
                   <CheckCircle size={18} className="text-green-600" />
                   <p className="text-sm text-green-700 dark:text-green-300">
-                    {t.resolved} — {complaintsService.formatComplaintDate(selectedComplaint.resolvedAt)}
+                    {t.resolved} — {formatDate(selectedComplaint.resolvedAt)}
                   </p>
                 </div>
               )}
@@ -1240,7 +1082,7 @@ const AdminComplaints = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex items-center gap-2">
                   <Lock size={18} className="text-gray-500" />
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {t.closed} — {complaintsService.formatComplaintDate(selectedComplaint.closedAt)}
+                    {t.closed} — {formatDate(selectedComplaint.closedAt)}
                   </p>
                 </div>
               )}
