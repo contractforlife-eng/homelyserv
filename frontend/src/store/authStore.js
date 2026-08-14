@@ -324,7 +324,7 @@ const useAuthStore = create(
             isLoading: false,
             error: errorMessage
           });
-          return { success: false, error: errorMessage };
+          return { success: false, error: errorMessage, status: error.response?.status };
         }
       },
 

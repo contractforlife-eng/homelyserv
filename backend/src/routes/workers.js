@@ -9,6 +9,7 @@ import { canContactWorker } from '../services/paymentAuthService.js';
 import { isUserPremium } from '../services/premiumService.js';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/jwtSecret.js';
+import { buildWorkerProfileUpdate, profileUpdateErrorResponse } from '../services/userProfileUpdateService.js';
 
 const router = express.Router();
 
@@ -180,9 +181,9 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 
     console.log('[WorkerProfile] req.params.userId:', targetUserId);
     console.log('[WorkerProfile] req.userId:', authenticatedUserId);
-    console.log('[WorkerProfile] req.body:', req.body);
+    console.log('[WorkerProfile] submitted fields:', Object.keys(req.body || {}));
 
-    if (targetUserId !== authenticatedUserId) {
+    if (String(targetUserId) !== String(authenticatedUserId)) {
       return res.status(403).json({
         success: false,
         message: 'You can only update your own profile'
@@ -191,11 +192,14 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 
     // Monetary fields are intentionally ignored here. Stale clients may still
     // send them, but PATCH /hourly-rate is the only active rate write path.
-    const { fullName, phone, location, bio, skills, experience, profileImage, desiredJob } = req.body;
+    const updates = buildWorkerProfileUpdate(req.body);
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'No updatable profile fields provided' });
+    }
     
     const user = await User.findByIdAndUpdate(
       authenticatedUserId,
-      { fullName, phone, location, bio, skills, experience, profileImage, desiredJob },
+      { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -211,11 +215,9 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 
     res.json({ success: true, user: enrichUserResponse(userObj) });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update profile'
-    });
+    console.error('Update profile error:', { name: error.name, message: error.message });
+    const response = profileUpdateErrorResponse(error);
+    res.status(response.status).json(response.body);
   }
 });
 

@@ -268,7 +268,7 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
 
     console.log('[EmployerProfile] req.params.userId:', targetUserId);
     console.log('[EmployerProfile] req.userId:', authenticatedUserId);
-    console.log('[EmployerProfile] req.body:', req.body);
+    console.log('[EmployerProfile] submitted fields:', Object.keys(req.body || {}));
 
     if (targetUserId !== authenticatedUserId) {
       return res.status(403).json({

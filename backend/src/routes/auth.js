@@ -6,6 +6,16 @@ import * as authController from '../controllers/authController.js';
 
 const router = express.Router();
 
+const receiveProfilePhoto = (req, res, next) => {
+  upload.single('photo')(req, res, (error) => {
+    if (!error) return next();
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Profile photo must be 5 MB or smaller' });
+    }
+    return res.status(400).json({ success: false, message: 'Profile photo must be a valid JPEG, PNG, GIF, or WebP image' });
+  });
+};
+
 // ============================================================
 // Register - Delegates to controller
 // ============================================================
@@ -81,7 +91,7 @@ router.post('/reset-password', authController.resetPassword);
 router.post(
   '/upload-photo',
   authenticate,
-  upload.single('photo'),
+  receiveProfilePhoto,
   authController.uploadProfilePhoto
 );
 

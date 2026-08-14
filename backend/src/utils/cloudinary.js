@@ -3,24 +3,39 @@ import multer from 'multer';
 import { Readable } from 'stream';
 
 const REQUIRED_ENV_VARS = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+let cloudinaryConfigured = false;
 
 const getMissingEnvVars = () => REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
 
-if (getMissingEnvVars().length === 0) {
+const configureCloudinary = () => {
+  const missing = getMissingEnvVars();
+  if (missing.length > 0) return false;
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
-} else {
+  cloudinaryConfigured = true;
+  return true;
+};
+
+if (!configureCloudinary()) {
   console.warn(`[CLOUDINARY] Not configured. Missing env vars: ${getMissingEnvVars().join(', ')}`);
 }
 
-const assertCloudinaryConfigured = () => {
-  const missing = getMissingEnvVars();
-  if (missing.length > 0) {
-    throw new Error(`Cloudinary is not configured. Missing environment variables: ${missing.join(', ')}`);
+class CloudinaryConfigurationError extends Error {
+  constructor() {
+    super('Profile photo storage is not configured');
+    this.name = 'CloudinaryConfigurationError';
+    this.code = 'CLOUDINARY_NOT_CONFIGURED';
   }
+}
+
+const assertCloudinaryConfigured = () => {
+  // Environment loading may happen after ESM dependency evaluation. Configure
+  // lazily at upload time as well as eagerly above so local .env startup order
+  // cannot leave the Cloudinary SDK in an unconfigured state.
+  if (!cloudinaryConfigured && !configureCloudinary()) throw new CloudinaryConfigurationError();
 };
 
 const storage = multer.memoryStorage();
@@ -82,5 +97,5 @@ const deleteImage = async (publicId) => {
   }
 };
 
-export { cloudinary, upload, uploadFromBuffer, uploadImage, deleteImage };
+export { cloudinary, upload, uploadFromBuffer, uploadImage, deleteImage, CloudinaryConfigurationError };
 export default { cloudinary, upload, uploadFromBuffer, uploadImage, deleteImage };

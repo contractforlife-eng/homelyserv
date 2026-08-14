@@ -65,6 +65,7 @@ import AdminHires from './pages/AdminHires';
 import AdminProfile from './pages/AdminProfile';
 import AdminUserProfile from './pages/AdminUserProfile';
 import AdminFinancialCenter from './pages/AdminFinancialCenter';
+import AdminRegistrationGeography from './pages/AdminRegistrationGeography';
 
 // Support Pages
 import SupportDashboard from './pages/support/SupportDashboard';
@@ -487,6 +488,14 @@ function App() {
             <AdminPayments />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/admin/registration-geography"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminRegistrationGeography />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/admin/financial-center"

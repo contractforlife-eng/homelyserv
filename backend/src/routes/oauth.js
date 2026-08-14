@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
+import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 
 const router = express.Router();
 
@@ -116,13 +117,13 @@ router.post('/social-login', async (req, res) => {
       const randomPassword = generateRandomPassword();
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-      user = new User({
+      user = new User(withRegistrationGeography(req, {
         fullName,
         email,
         password: hashedPassword,
         role: 'WORKER',
         profileImage
-      });
+      }));
 
       await user.save();
     }
@@ -137,6 +138,10 @@ router.post('/social-login', async (req, res) => {
     // Return user without password
     const userData = user.toObject();
     delete userData.password;
+    delete userData.registrationIp;
+    delete userData.registrationCountryCode;
+    delete userData.registrationCountryName;
+    delete userData.registrationLocationCapturedAt;
 
     res.json({
       success: true,

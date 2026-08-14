@@ -293,7 +293,7 @@ const WorkerProfile = () => {
 
       let profileImageUrl = formData.profileImage;
 
-      if (pendingImageFile) {
+      if (pendingImageFile instanceof File) {
         const uploadResult = await uploadProfilePhoto(pendingImageFile);
         if (uploadResult.success && uploadResult.user) {
           profileImageUrl = uploadResult.user.profileImage;
@@ -352,8 +352,11 @@ const WorkerProfile = () => {
         throw new Error(response.data.message || t('workerOwnProfile.updateFailed'));
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      alert(t('workerOwnProfile.updateFailedRetry'));
+      const status = error.response?.status;
+      const backendMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+      console.error('Error updating profile:', { status, backendMessage, endpoint: error.config?.url });
+      setSaving(false);
+      setTimeout(() => alert(backendMessage || t('workerOwnProfile.updateFailedRetry')), 0);
     } finally {
       setSaving(false);
     }

@@ -51,6 +51,7 @@ const AdminSidebar = ({
   const menuItems = [
     { id: 'dashboard', label: t('adminSidebar.dashboard'), icon: Home, path: '/admin' },
     { id: 'users', label: t('adminSidebar.users'), icon: Users, path: '/admin/users' },
+    { id: 'registration-geography', label: t('adminSidebar.registrationGeography'), icon: Globe, path: '/admin/registration-geography' },
     { id: 'payments', label: t('adminSidebar.payments'), icon: CreditCard, path: '/admin/payments' },
     { id: 'financial-center', label: t('adminSidebar.financialCenter'), icon: Landmark, path: '/admin/financial-center' },
     { id: 'complaints', label: t('adminSidebar.complaints'), icon: FileText, path: '/admin/complaints' },

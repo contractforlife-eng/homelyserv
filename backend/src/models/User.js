@@ -42,6 +42,33 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Immutable registration-time administrative metadata. Optional fields keep
+  // legacy users valid; select:false prevents accidental profile/API exposure.
+  registrationIp: {
+    type: String,
+    default: null,
+    immutable: true,
+    select: false
+  },
+  registrationCountryCode: {
+    type: String,
+    default: null,
+    immutable: true,
+    select: false,
+    index: true
+  },
+  registrationCountryName: {
+    type: String,
+    default: null,
+    immutable: true,
+    select: false
+  },
+  registrationLocationCapturedAt: {
+    type: Date,
+    default: null,
+    immutable: true,
+    select: false
+  },
   // Explicit account preference only. It remains nullable so country-derived
   // defaults and legacy fallback are distinguishable from a user choice.
   preferredCurrency: {

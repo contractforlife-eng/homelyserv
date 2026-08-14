@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
-import { uploadFromBuffer } from '../utils/cloudinary.js';
+import { CloudinaryConfigurationError, uploadFromBuffer } from '../utils/cloudinary.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
 import { enrichUserResponse } from '../utils/userResponse.js';
+import { withRegistrationGeography } from '../services/registrationGeographyService.js';
 import {
   isSupportedCurrency,
   normalizeCurrencyCode,
@@ -158,7 +159,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const user = new User({
+    const user = new User(withRegistrationGeography(req, {
       fullName,
       email,
       password: hashedPassword,
@@ -167,7 +168,7 @@ export const register = async (req, res) => {
       countryCode: matchedCountry.code,
       countryName: matchedCountry.name,
       location: location || ''
-    });
+    }));
 
     console.log('[DEBUG-REGISTER] User creation attempt:', { email: user.email, role: user.role });
     await user.save();
@@ -203,6 +204,10 @@ export const register = async (req, res) => {
     userData.id = userData._id;
     delete userData.password;
     delete userData._id;
+    delete userData.registrationIp;
+    delete userData.registrationCountryCode;
+    delete userData.registrationCountryName;
+    delete userData.registrationLocationCapturedAt;
 
     res.status(201).json({
       success: true,
@@ -829,11 +834,13 @@ export const uploadProfilePhoto = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Upload photo error:', error);
-    res.status(500).json({
+    const configurationFailure = error instanceof CloudinaryConfigurationError || error?.code === 'CLOUDINARY_NOT_CONFIGURED';
+    console.error('Upload photo error:', { name: error?.name, code: error?.code, httpCode: error?.http_code });
+    res.status(configurationFailure ? 503 : 502).json({
       success: false,
-      message: 'Upload failed',
-      error: error.message
+      message: configurationFailure
+        ? 'Profile photo upload is temporarily unavailable because storage is not configured'
+        : 'Profile photo provider could not complete the upload. Please try again.'
     });
   }
 };
