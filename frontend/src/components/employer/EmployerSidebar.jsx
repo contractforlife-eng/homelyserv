@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { isUserPremium } from '../../utils/subscriptionService';
 import SidebarBadge from '../SidebarBadge';
 import useSidebarCounters from '../../hooks/useSidebarCounters';
+import { UserDisplayName } from '../users';
 
 import {
   Home,
@@ -156,7 +157,11 @@ const EmployerSidebar = ({
             {!sidebarCollapsed && authUser && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800 dark:text-white truncate">{authUser.fullName || t('employerSidebar.employer')}</p>
+                  <UserDisplayName
+                    user={authUser}
+                    name={t('employerSidebar.employer')}
+                    isPremium={isPremium}
+                  />
                   {isPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />

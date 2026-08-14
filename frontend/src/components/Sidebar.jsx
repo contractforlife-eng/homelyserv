@@ -188,7 +188,7 @@ const Sidebar = ({
             {!collapsed && user && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <UserDisplayName user={user} />
+                  <UserDisplayName user={user} isPremium={userIsPremium} />
                   {userIsPremium && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700 whitespace-nowrap">
                       <Crown size={10} className="text-yellow-500" />
