@@ -1,9 +1,9 @@
 // Support Dashboard Page - Production-ready support workspace
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { useDashboard } from '../../components/layout/DashboardContext';
 import {
   Users,
   MessageCircle,
@@ -29,9 +29,9 @@ import { getDisplayName } from '../../utils/userDisplay';
 import { UserAvatar } from '../../components/users';
 
 const SupportDashboard = () => {
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-  const dashboard = useDashboard();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,108 +59,32 @@ const SupportDashboard = () => {
   // ============================================================
   // TRANSLATIONS
   // ============================================================
-  const translations = {
-    en: {
-      title: 'Support Dashboard',
-      welcome: 'Welcome',
-      subtitle: 'Monitor and manage user support',
-      loading: 'Loading...',
-      noData: 'No data available',
-      openTickets: 'Open Tickets',
-      assignedToMe: 'Assigned To Me',
-      waitingForUser: 'Waiting For User',
-      criticalTickets: 'Critical Tickets',
-      escalatedTickets: 'Escalated Tickets',
-      resolvedToday: 'Resolved Today',
-      avgFirstResponse: 'Avg First Response',
-      avgResolution: 'Avg Resolution',
-      hours: 'hrs',
-      needsAttention: 'Needs Attention',
-      myAssignedTickets: 'My Assigned Tickets',
-      waitingTickets: 'Waiting For User',
-      recentActivity: 'Recent Activity',
-      recentConversations: 'Recent Conversations',
-      quickActions: 'Quick Actions',
-      users: 'Users',
-      complaints: 'Complaints',
-      messages: 'Messages',
-      startConversation: 'Start Conversation',
-      viewAll: 'View All',
-      noTickets: 'No tickets',
-      noActivity: 'No recent activity',
-      noConversations: 'No conversations',
-      ticket: 'Ticket',
-      priority: 'Priority',
-      status: 'Status',
-      time: 'Time',
-      activityLabels: {
-        CREATED: 'Created',
-        ASSIGNED: 'Assigned',
-        USER_REPLIED: 'User Replied',
-        SUPPORT_REPLIED: 'Support Replied',
-        ADMIN_REPLIED: 'Admin Replied',
-        ESCALATED: 'Escalated',
-        RESOLVED: 'Resolved',
-        CLOSED: 'Closed'
-      }
-    },
-    ar: {
-      title: 'لوحة تحكم الدعم',
-      welcome: 'مرحباً',
-      subtitle: 'مراقبة وإدارة دعم المستخدمين',
-      loading: 'جاري التحميل...',
-      noData: 'لا توجد بيانات',
-      openTickets: 'التذاكر المفتوحة',
-      assignedToMe: 'المعينة لي',
-      waitingForUser: 'بانتظار المستخدم',
-      criticalTickets: 'تذاكر حرجة',
-      escalatedTickets: 'تذاكر مرفوعة',
-      resolvedToday: 'تم حلها اليوم',
-      avgFirstResponse: 'متوسط أول استجابة',
-      avgResolution: 'متوسط وقت الحل',
-      hours: 'ساعة',
-      needsAttention: 'يحتاج إلى اهتمام',
-      myAssignedTickets: 'تذاكري المعينة',
-      waitingTickets: 'بانتظار المستخدم',
-      recentActivity: 'النشاط الأخير',
-      recentConversations: 'المحادثات الأخيرة',
-      quickActions: 'إجراءات سريعة',
-      users: 'المستخدمين',
-      complaints: 'الشكاوى',
-      messages: 'الرسائل',
-      startConversation: 'بدء محادثة',
-      viewAll: 'عرض الكل',
-      noTickets: 'لا توجد تذاكر',
-      noActivity: 'لا يوجد نشاط',
-      noConversations: 'لا توجد محادثات',
-      ticket: 'تذكرة',
-      priority: 'الأولوية',
-      status: 'الحالة',
-      time: 'الوقت',
-      activityLabels: {
-        CREATED: 'تم الإنشاء',
-        ASSIGNED: 'تم التعيين',
-        USER_REPLIED: 'رد المستخدم',
-        SUPPORT_REPLIED: 'رد الدعم',
-        ADMIN_REPLIED: 'رد المشرف',
-        ESCALATED: 'تم الرفع',
-        RESOLVED: 'تم الحل',
-        CLOSED: 'مغلقة'
-      }
-    }
-  };
+  const t = i18nT('supportDashboardPage', { returnObjects: true });
 
-  const t = translations[dashboard.language] || translations.en;
 
   const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString(dashboard.language === 'ar' ? 'ar-EG' : 'en-US', {
+    if (!dateString) return t.notAvailable;
+    const locales = {
+      en: 'en-US',
+      ar: 'ar-EG',
+      fr: 'fr-FR',
+      ru: 'ru-RU',
+      tr: 'tr-TR',
+      de: 'de-DE'
+    };
+    return new Date(dateString).toLocaleDateString(locales[i18n.resolvedLanguage] || locales.en, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
+
+  const getPriorityLabel = (priority) =>
+    t.priorityLabels[String(priority || '').toLowerCase()] || t.unknownPriority;
+
+  const getStatusLabel = (status) =>
+    t.statusLabels[String(status || '').toUpperCase()] || t.unknownStatus;
 
   const getTicketNumber = (ticket) => {
     if (ticket?.ticketNumber) return ticket.ticketNumber;
@@ -255,13 +179,13 @@ const SupportDashboard = () => {
         </span>
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(ticket.priority)}`}>
           <Flag size={10} />
-          {complaintsService.getPriorityLabel(ticket.priority)}
+          {getPriorityLabel(ticket.priority)}
         </span>
       </div>
       <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{ticket.subject}</p>
       <div className="flex items-center justify-between mt-2">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(ticket.status)}`}>
-          {complaintsService.getStatusLabel(ticket.status)}
+          {getStatusLabel(ticket.status)}
         </span>
         <span className="text-xs text-gray-400 dark:text-gray-500">{formatTime(ticket.updatedAt || ticket.createdAt)}</span>
       </div>
@@ -282,7 +206,7 @@ const SupportDashboard = () => {
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-bold">
-                {t.welcome} {authUser?.fullName || 'Support Agent'}
+                {t.welcome} {authUser?.fullName || t.supportAgent}
               </h1>
               <p className="text-white/80 mt-1">{t.subtitle}</p>
             </div>
@@ -444,7 +368,7 @@ const SupportDashboard = () => {
                           <div className="flex-1 pb-2">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {t.activityLabels[event.action] || event.action}
+                                {t.activityLabels[event.action] || t.unknownActivity}
                               </p>
                               <span className="text-xs text-gray-400 dark:text-gray-500">
                                 {formatTime(event.createdAt)}
@@ -482,7 +406,7 @@ const SupportDashboard = () => {
                           className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition text-left"
                         >
                           <UserAvatar
-                            name={conv.user?.fullName || 'User'}
+                            name={conv.user?.fullName || t.user}
                             image={conv.user?.image || null}
                             role={conv.user?.role || 'USER'}
                             size="sm"
@@ -526,7 +450,7 @@ const SupportDashboard = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">{t.users}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Manage user accounts</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.manageUsers}</p>
                   </div>
                 </Link>
                 <Link
@@ -538,7 +462,7 @@ const SupportDashboard = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">{t.complaints}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Manage complaint workflow</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.manageComplaints}</p>
                   </div>
                 </Link>
                 <Link
@@ -550,7 +474,7 @@ const SupportDashboard = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">{t.messages}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Respond to user inquiries</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.respondInquiries}</p>
                   </div>
                 </Link>
                 <Link
@@ -562,7 +486,7 @@ const SupportDashboard = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">{t.startConversation}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Open a new support chat</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.openSupportChat}</p>
                   </div>
                 </Link>
               </div>

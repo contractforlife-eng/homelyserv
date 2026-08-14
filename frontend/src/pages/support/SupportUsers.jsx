@@ -1,9 +1,9 @@
 // Support Users Page - View users, suspend/reactivate, reset passwords
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { useDashboard } from '../../components/layout/DashboardContext';
 import {
   Search,
   UserCheck,
@@ -19,13 +19,13 @@ import {
   X
 } from 'lucide-react';
 import api from '../../utils/api';
-import { getRoleLabel, getRoleBadgeClasses } from '../../utils/userDisplay';
+import { getRoleBadgeClasses } from '../../utils/userDisplay';
 import { UserAvatar } from '../../components/users';
 
 const SupportUsers = () => {
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
-  const dashboard = useDashboard();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,14 +78,14 @@ const SupportUsers = () => {
         ));
         setNotification({
           type: 'success',
-          text: suspend ? 'User suspended successfully' : 'User reactivated successfully'
+          text: suspend ? t.userSuspendedSuccess : t.userReactivatedSuccess
         });
       }
     } catch (error) {
       console.error('❌ Error updating user:', error);
       setNotification({
         type: 'error',
-        text: 'Failed to update user status'
+        text: t.updateStatusError
       });
     } finally {
       setActionLoading(null);
@@ -111,7 +111,7 @@ const SupportUsers = () => {
       if (response.data?.success) {
         setNotification({
           type: 'success',
-          text: 'Password reset link sent successfully'
+          text: t.resetLinkSuccess
         });
         setShowResetModal(null);
         setResetReason('');
@@ -120,79 +120,19 @@ const SupportUsers = () => {
       console.error('❌ Error sending reset link:', error);
       setNotification({
         type: 'error',
-        text: 'Failed to send reset link'
+        text: t.resetLinkError
       });
     } finally {
       setActionLoading(null);
     }
   };
 
-  const translations = {
-    en: {
-      title: 'Users',
-      subtitle: 'View and search users',
-      searchPlaceholder: 'Search users...',
-      filterByRole: 'Filter by role',
-      allRoles: 'All Roles',
-      workers: 'Workers',
-      employers: 'Employers',
-      support: 'Support',
-      admin: 'Admin',
-      name: 'Name',
-      email: 'Email',
-      role: 'Role',
-      status: 'Status',
-      joined: 'Joined',
-      verified: 'Verified',
-      suspended: 'Suspended',
-      active: 'Active',
-      loading: 'Loading...',
-      noUsers: 'No users found',
-      totalUsers: 'Total Users',
-      suspend: 'Suspend',
-      reactivate: 'Reactivate',
-      resetPassword: 'Reset Password',
-      viewProfile: 'View Profile',
-      resetReason: 'Reason (optional)',
-      confirmReset: 'Reset Password',
-      cancel: 'Cancel',
-      adminOnly: 'Admin accounts cannot be modified by support'
-    },
-    ar: {
-      title: 'المستخدمين',
-      subtitle: 'عرض والبحث عن المستخدمين',
-      searchPlaceholder: 'البحث عن المستخدمين...',
-      filterByRole: 'تصفية حسب الدور',
-      allRoles: 'جميع الأدوار',
-      workers: 'العمال',
-      employers: 'أصحاب العمل',
-      support: 'الدعم',
-      admin: 'المديرين',
-      name: 'الاسم',
-      email: 'البريد الإلكتروني',
-      role: 'الدور',
-      status: 'الحالة',
-      joined: 'تاريخ الانضمام',
-      verified: 'موثق',
-      suspended: 'موقوف',
-      active: 'نشط',
-      loading: 'جاري التحميل...',
-      noUsers: 'لم يتم العثور على مستخدمين',
-      totalUsers: 'إجمالي المستخدمين',
-      suspend: 'إيقاف',
-      reactivate: 'إعادة تفعيل',
-      resetPassword: 'إعادة تعيين كلمة المرور',
-      viewProfile: 'عرض الملف',
-      resetReason: 'السبب (اختياري)',
-      confirmReset: 'إعادة تعيين',
-      cancel: 'إلغاء',
-      adminOnly: 'لا يمكن تعديل حسابات المديرين بواسطة الدعم'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
+  const t = i18nT('supportUsersPage', { returnObjects: true });
 
   const getRoleBadgeColor = (role) => getRoleBadgeClasses(role);
+
+  const getRoleLabel = (role) =>
+    t.roleLabels[String(role || '').toUpperCase()] || t.roleLabels.USER;
 
   const getStatusBadge = (isVerified, isSuspended) => {
     if (isSuspended) {
@@ -219,8 +159,9 @@ const SupportUsers = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString(dashboard.language === 'ar' ? 'ar-EG' : 'en-US', {
+    if (!dateString) return t.notAvailable;
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return new Date(dateString).toLocaleDateString(locales[i18n.resolvedLanguage] || locales.en, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -322,7 +263,7 @@ const SupportUsers = () => {
                       {t.joined}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t.actions || 'Actions'}
+                      {t.actions}
                     </th>
                   </tr>
                 </thead>
@@ -342,7 +283,7 @@ const SupportUsers = () => {
                             {user.fullName}
                             {user.subscription?.isPremium && (
                               <div className="text-xs font-semibold text-amber-600 mt-0.5">
-                                Premium · {formatDate(user.subscription.endDate)}
+                                {t.premium} · {formatDate(user.subscription.endDate)}
                               </div>
                             )}
                           </div>
@@ -440,7 +381,7 @@ const SupportUsers = () => {
                   type="text"
                   value={resetReason}
                   onChange={(e) => setResetReason(e.target.value)}
-                  placeholder="Enter reason for password reset..."
+                  placeholder={t.resetReasonPlaceholder}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                 />
               </div>

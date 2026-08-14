@@ -12,7 +12,7 @@ import LegalFooter from '../components/common/LegalFooter';
 const SupportLayout = ({ 
   children, 
   requiredRole = 'SUPPORT',
-  headerTitle = 'Support Dashboard'
+  headerTitle
 }) => {
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
@@ -20,7 +20,7 @@ const SupportLayout = ({
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const { logout: authLogout } = useAuthStore();
 
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Language is synced with the global i18n instance (single source of truth).
   // i18n initializes from the same localStorage key via its language detector.
   const [language, setLanguage] = useState(() => i18n.language || localStorage.getItem('homelyserv_language') || 'en');
@@ -83,7 +83,7 @@ const SupportLayout = ({
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('supportNavigation.loading')}</p>
         </div>
       </div>
     );
@@ -119,7 +119,7 @@ const SupportLayout = ({
         } ml-0`}>
           <VerificationBanner />
           <DashboardHeader
-            title={headerTitle}
+            title={headerTitle || t('supportNavigation.supportDashboard')}
             notificationUserId={authUser?.id || authUser?.email}
           />
           {children}

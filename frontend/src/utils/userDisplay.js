@@ -51,6 +51,12 @@ const ROLE_BADGE_CLASSES = {
 // ============================================================
 const STAFF_ROLES = ['ADMIN', 'SUPPORT', 'SUP_ADMIN'];
 
+const STAFF_IDENTITY_TITLES = {
+  ADMIN: 'Co-Admin',
+  SUPPORT: 'Sup-Admin',
+  SUP_ADMIN: 'Sup-Admin'
+};
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -72,7 +78,7 @@ export const getDisplayName = (user) => {
   const role = (user.role || '').toUpperCase();
 
   if (STAFF_ROLES.includes(role)) {
-    return `${name} (${getRoleLabel(role)})`;
+    return `${name} (${getStaffIdentityTitle(role)})`;
   }
   return name;
 };
@@ -117,6 +123,15 @@ export const getRoleLabel = (role) => {
   const normalized = (role || '').toUpperCase();
   const labelKey = ROLE_LABEL_KEYS[normalized];
   return labelKey ? i18n.t(labelKey) : (normalized || getUserFallback());
+};
+
+/**
+ * Get the language-invariant title used only as part of a staff identity.
+ * Normal role fields and badges must continue to use getRoleLabel().
+ */
+export const getStaffIdentityTitle = (role) => {
+  const normalized = (role || '').toUpperCase();
+  return STAFF_IDENTITY_TITLES[normalized] || '';
 };
 
 /**
@@ -193,6 +208,7 @@ export default {
   getDisplayName,
   formatStaffIdentity,
   getRoleLabel,
+  getStaffIdentityTitle,
   getRoleColor,
   getRoleBadgeClasses,
   isStaffRole,

@@ -20,11 +20,10 @@ import {
   X
 } from 'lucide-react';
 import api from '../../utils/api';
-import { getRoleLabel } from '../../utils/userDisplay';
 
 const SupportSettings = () => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t: i18nT, i18n } = useTranslation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -42,61 +41,10 @@ const SupportSettings = () => {
   });
   const [notification, setNotification] = useState(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const t = i18nT('supportSettingsPage', { returnObjects: true });
 
-  const translations = {
-    en: {
-      title: 'Settings',
-      subtitle: 'Manage your account preferences',
-      accountInfo: 'Account Information',
-      name: 'Name',
-      email: 'Email',
-      role: 'Role',
-      preferences: 'Account Preferences',
-      language: 'Language',
-      darkMode: 'Dark Mode',
-      darkModeDesc: 'Toggle between light and dark theme',
-      security: 'Security',
-      changePassword: 'Change Password',
-      changePasswordDesc: 'Update your account password',
-      currentPassword: 'Current Password',
-      newPassword: 'New Password',
-      confirmPassword: 'Confirm Password',
-      passwordMismatch: 'Passwords do not match',
-      passwordLength: 'Password must be at least 6 characters',
-      passwordChanged: 'Password changed successfully!',
-      cancel: 'Cancel',
-      confirm: 'Confirm',
-      changing: 'Changing...',
-      supportRole: 'Support Agent'
-    },
-    ar: {
-      title: 'الإعدادات',
-      subtitle: 'إدارة تفضيلات حسابك',
-      accountInfo: 'معلومات الحساب',
-      name: 'الاسم',
-      email: 'البريد الإلكتروني',
-      role: 'الدور',
-      preferences: 'تفضيلات الحساب',
-      language: 'اللغة',
-      darkMode: 'الوضع الداكن',
-      darkModeDesc: 'التبديل بين الوضع الفاتح والداكن',
-      security: 'الأمان',
-      changePassword: 'تغيير كلمة المرور',
-      changePasswordDesc: 'تحديث كلمة مرور حسابك',
-      currentPassword: 'كلمة المرور الحالية',
-      newPassword: 'كلمة المرور الجديدة',
-      confirmPassword: 'تأكيد كلمة المرور',
-      passwordMismatch: 'كلمات المرور غير متطابقة',
-      passwordLength: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
-      passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
-      cancel: 'إلغاء',
-      confirm: 'تأكيد',
-      changing: 'جاري التغيير...',
-      supportRole: 'وكيل الدعم'
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const getRoleLabel = (role) =>
+    t.roleLabels[String(role || '').toUpperCase()] || t.roleLabels.USER;
 
   // Auth check
   useEffect(() => {
@@ -162,10 +110,10 @@ const SupportSettings = () => {
         setShowPasswordModal(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        setNotification({ type: 'error', text: response.data?.message || 'Failed to change password' });
+        setNotification({ type: 'error', text: response.data?.message || t.passwordChangeFailed });
       }
     } catch (error) {
-      setNotification({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+      setNotification({ type: 'error', text: error.response?.data?.message || t.passwordChangeFailed });
     } finally {
       setPasswordLoading(false);
     }
@@ -223,7 +171,7 @@ const SupportSettings = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t.name}</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{authUser?.fullName || 'Support Agent'}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{authUser?.fullName || t.supportRole}</p>
                 </div>
               </div>
 
@@ -267,6 +215,8 @@ const SupportSettings = () => {
                 </div>
                 <button
                   onClick={toggleDarkMode}
+                  aria-label={isDark ? t.darkModeEnabled : t.darkModeDisabled}
+                  aria-pressed={isDark}
                   className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
                     isDark ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
@@ -319,6 +269,7 @@ const SupportSettings = () => {
               </h3>
               <button
                 onClick={() => setShowPasswordModal(false)}
+                aria-label={t.close}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />

@@ -1,11 +1,11 @@
 // Support Profile Page - Manage support staff account
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { useDashboard } from '../../components/layout/DashboardContext';
+import { SUPPORTED_LANGUAGES } from '../../i18n';
 import api from '../../utils/api';
-import { getRoleLabel } from '../../utils/userDisplay';
 import {
   User as UserIcon,
   Mail,
@@ -24,12 +24,12 @@ import {
 } from 'lucide-react';
 
 const SupportProfile = () => {
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.isLoading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const uploadProfilePhoto = useAuthStore(state => state.uploadProfilePhoto);
-  const dashboard = useDashboard();
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -45,59 +45,15 @@ const SupportProfile = () => {
     language: 'en',
     profileImage: ''
   });
+  const t = i18nT('supportProfilePage', { returnObjects: true });
 
-  const translations = {
-    en: {
-      title: 'My Profile',
-      subtitle: 'Manage your support account',
-      personalInfo: 'Personal Information',
-      fullName: 'Full Name',
-      email: 'Email Address',
-      phone: 'Phone Number',
-      language: 'Language',
-      role: 'Role',
-      memberSince: 'Member Since',
-      lastLogin: 'Last Login',
-      editProfile: 'Edit Profile',
-      saveChanges: 'Save Changes',
-      cancel: 'Cancel',
-      saving: 'Saving...',
-      profilePhoto: 'Profile Photo',
-      changePhoto: 'Click to change photo',
-      saveSuccess: 'Profile updated successfully',
-      saveError: 'Failed to update profile',
-      supportBadge: 'Support Staff',
-      adminBadge: 'Administrator'
-    },
-    ar: {
-      title: 'ملفي الشخصي',
-      subtitle: 'إدارة حساب الدعم الخاص بك',
-      personalInfo: 'المعلومات الشخصية',
-      fullName: 'الاسم الكامل',
-      email: 'البريد الإلكتروني',
-      phone: 'رقم الهاتف',
-      language: 'اللغة',
-      role: 'الدور',
-      memberSince: 'عضو منذ',
-      lastLogin: 'آخر تسجيل دخول',
-      editProfile: 'تعديل الملف',
-      saveChanges: 'حفظ التغييرات',
-      cancel: 'إلغاء',
-      saving: 'جاري الحفظ...',
-      profilePhoto: 'صورة الملف الشخصي',
-      changePhoto: 'انقر لتغيير الصورة',
-      saveSuccess: 'تم تحديث الملف بنجاح',
-      saveError: 'فشل تحديث الملف',
-      supportBadge: 'فريق الدعم',
-      adminBadge: 'مدير'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
+  const getRoleLabel = (role) =>
+    t.roleLabels[String(role || '').toUpperCase()] || t.roleLabels.USER;
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString(dashboard.language === 'ar' ? 'ar-EG' : 'en-US', {
+    if (!dateString) return t.notAvailable;
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return new Date(dateString).toLocaleDateString(locales[i18n.resolvedLanguage] || locales.en, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -201,7 +157,7 @@ const SupportProfile = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={32} className="animate-spin mx-auto text-green-600" />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">{t.loading}</p>
         </div>
       </div>
     );
@@ -225,14 +181,14 @@ const SupportProfile = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30 overflow-hidden flex-shrink-0">
               {imagePreview ? (
-                <img src={imagePreview} alt={authUser.fullName || 'Support'} className="w-full h-full object-cover" />
+                <img src={imagePreview} alt={authUser.fullName || t.supportBadge} className="w-full h-full object-cover" />
               ) : (
                 <UserIcon size={36} className="text-white" />
               )}
             </div>
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold">{authUser.fullName || 'Support Agent'}</h1>
+                <h1 className="text-2xl font-bold">{authUser.fullName || t.supportAgent}</h1>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${roleBadgeColor}`}>
                   <Shield size={12} />
                   {roleBadge}
@@ -292,7 +248,7 @@ const SupportProfile = () => {
                 <div className="relative">
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-500/30 bg-gray-100 dark:bg-gray-700">
                     {imagePreview ? (
-                      <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={imagePreview} alt={t.profilePhotoAlt} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-green-500/10">
                         <UserIcon size={48} className="text-green-500/50" />
@@ -388,8 +344,9 @@ const SupportProfile = () => {
                       : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-300'
                   }`}
                 >
-                  <option value="en">English</option>
-                  <option value="ar">العربية</option>
+                  {SUPPORTED_LANGUAGES.map(({ code, nativeName }) => (
+                    <option key={code} value={code}>{nativeName}</option>
+                  ))}
                 </select>
               </div>
             </div>

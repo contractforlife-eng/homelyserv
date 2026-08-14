@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  getRoleLabel,
+  getStaffIdentityTitle,
   isStaffRole,
 } from '../../utils/userDisplay';
 
@@ -24,7 +24,7 @@ const UserDisplayName = ({
 
   // Base name (without role suffix)
   const baseName = user ? (user.fullName || user.name || t('sharedUserDisplay.fallbacks.user')) : (name || t('sharedUserDisplay.fallbacks.user'));
-  const roleLabel = getRoleLabel(roleValue);
+  const staffIdentityTitle = getStaffIdentityTitle(roleValue);
 
   const sizeClasses = {
     sm: 'text-xs',
@@ -45,7 +45,7 @@ const UserDisplayName = ({
         {baseName}
         {staff && (
           <span className="text-red-500 dark:text-red-300">
-            {' '}({roleLabel})
+            {' '}({staffIdentityTitle})
           </span>
         )}
       </span>

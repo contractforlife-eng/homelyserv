@@ -14,6 +14,7 @@
 //               Access system settings
 // ============================================================
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
@@ -21,6 +22,7 @@ import UserProfileView from '../../components/users/UserProfileView';
 import { Loader2 } from 'lucide-react';
 
 const SupportUserProfile = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const authUser = useAuthStore(state => state.user);
@@ -47,7 +49,7 @@ const SupportUserProfile = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={32} className="animate-spin mx-auto text-green-600" />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading...</p>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">{t('supportUserProfilePage.loading')}</p>
         </div>
       </div>
     );

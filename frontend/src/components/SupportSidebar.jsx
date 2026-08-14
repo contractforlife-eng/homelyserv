@@ -1,5 +1,6 @@
 // src/components/SupportSidebar.jsx - SUPPORT SIDEBAR
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import SidebarBadge from './SidebarBadge';
 import useSidebarCounters from '../hooks/useSidebarCounters';
@@ -29,6 +30,7 @@ const SupportSidebar = ({
   authUser,
   handleLogout,
 }) => {
+  const { t: i18nT } = useTranslation();
   const location = useLocation();
   // Unified sidebar activity counters (single shared request)
   const counters = useSidebarCounters();
@@ -39,30 +41,7 @@ const SupportSidebar = ({
     messages: 'messages',
   };
 
-  const translations = {
-    en: {
-      dashboard: 'Dashboard',
-      profile: 'My Profile',
-      users: 'Users',
-      complaints: 'Complaints',
-      messages: 'Messages',
-      settings: 'Settings',
-      logout: 'Logout',
-      overview: 'Overview'
-    },
-    ar: {
-      dashboard: 'لوحة التحكم',
-      profile: 'ملفي الشخصي',
-      users: 'المستخدمين',
-      complaints: 'الشكاوى',
-      messages: 'الرسائل',
-      settings: 'الإعدادات',
-      logout: 'تسجيل الخروج',
-      overview: 'نظرة عامة'
-    }
-  };
-
-  const t = translations[language] || translations.en;
+  const t = i18nT('supportNavigation', { returnObjects: true });
 
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: Home, path: '/support-dashboard' },
@@ -107,7 +86,7 @@ const SupportSidebar = ({
                 <Shield size={28} className="text-green-500" />
                 <Home size={14} className="text-green-300 absolute -bottom-1 -right-1" />
               </div>
-              <span className="font-bold text-gray-900 dark:text-white text-lg">Support</span>
+              <span className="font-bold text-gray-900 dark:text-white text-lg">{t.support}</span>
             </Link>
           )}
           {sidebarCollapsed && (
@@ -118,12 +97,14 @@ const SupportSidebar = ({
           )}
           <button
             onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? t.expandSidebar : t.collapseSidebar}
             className="p-1.5 rounded-lg hover:bg-green-500/10 transition-colors hidden lg:block text-gray-400 hover:text-green-500"
           >
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
           <button
             onClick={toggleMobileMenu}
+            aria-label={t.closeMenu}
             className="p-1.5 rounded-lg hover:bg-green-500/10 transition-colors lg:hidden text-gray-400 hover:text-green-500"
           >
             <X size={18} />
@@ -136,7 +117,7 @@ const SupportSidebar = ({
               {getProfileImage() ? (
                 <img
                   src={getProfileImage()}
-                  alt={activeUser?.fullName || 'Support'}
+                  alt={activeUser?.fullName || t.support}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -145,7 +126,7 @@ const SupportSidebar = ({
             </div>
             {!sidebarCollapsed && activeUser && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || 'Support'}</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{activeUser.fullName || t.support}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activeUser.email || 'support@homelyserv.com'}</p>
               </div>
             )}
@@ -205,6 +186,7 @@ const SupportSidebar = ({
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-green-500/20">
           <button
             onClick={handleLogout}
+            aria-label={t.logout}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-400 hover:bg-red-500/10 hover:text-red-500 group ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}

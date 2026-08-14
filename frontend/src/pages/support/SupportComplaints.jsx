@@ -1,9 +1,9 @@
 // Support Complaints Page - Production complaint workflow management
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { useDashboard } from '../../components/layout/DashboardContext';
 import {
   Search,
   Filter,
@@ -24,14 +24,13 @@ import {
   Paperclip
 } from 'lucide-react';
 import complaintsService from '../../services/complaintService';
-import { getDisplayName, getRoleLabel } from '../../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportComplaints = () => {
+  const { t: i18nT, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const authUser = useAuthStore(state => state.user);
-  const dashboard = useDashboard();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +49,29 @@ const SupportComplaints = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const t = i18nT('supportComplaintsPage', { returnObjects: true });
+
+  const getStatusLabel = (status) =>
+    t.statusLabels[String(status || '').toUpperCase()] || t.unknownStatus;
+
+  const getPriorityLabel = (priority) =>
+    t.priorityLabels[String(priority || '').toLowerCase()] || t.unknownPriority;
+
+  const getCategoryLabel = (category) =>
+    t.categoryLabels[String(category || '').toLowerCase().replaceAll(' ', '_')] || t.unknownCategory;
+
+  const getTimelineActionLabel = (action) =>
+    t.timelineActions[String(action || '').toUpperCase()] || t.unknownActivity;
+
+  const getTimelineDescription = (event) => {
+    if (event?.action === 'STATUS_CHANGED') {
+      return i18nT('supportComplaintsPage.statusChangeDescription', {
+        oldStatus: getStatusLabel(event.oldValue),
+        newStatus: getStatusLabel(event.newValue)
+      });
+    }
+    return getTimelineActionLabel(event?.action);
+  };
 
   const fetchComplaints = useCallback(async () => {
     try {
@@ -109,7 +131,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.assignComplaint(selectedComplaint.id);
       if (response?.success) {
-        setNotification({ type: 'success', text: 'Complaint assigned to you' });
+        setNotification({ type: 'success', text: t.notifications.assigned });
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -119,7 +141,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error assigning:', error);
-      setNotification({ type: 'error', text: 'Failed to assign complaint' });
+      setNotification({ type: 'error', text: t.notifications.assignFailed });
     } finally {
       setActionLoading(false);
     }
@@ -134,7 +156,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.supportReplyToComplaint(selectedComplaint.id, replyText);
       if (response?.success) {
-        setNotification({ type: 'success', text: 'Reply sent successfully' });
+        setNotification({ type: 'success', text: t.notifications.replySent });
         setReplyText('');
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
@@ -146,7 +168,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error replying:', error);
-      setNotification({ type: 'error', text: 'Failed to send reply' });
+      setNotification({ type: 'error', text: t.notifications.replyFailed });
     } finally {
       setActionLoading(false);
     }
@@ -161,7 +183,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.addComplaintNote(selectedComplaint.id, noteText);
       if (response?.success) {
-        setNotification({ type: 'success', text: 'Internal note added' });
+        setNotification({ type: 'success', text: t.notifications.noteAdded });
         setNoteText('');
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -171,7 +193,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error adding note:', error);
-      setNotification({ type: 'error', text: 'Failed to add note' });
+      setNotification({ type: 'error', text: t.notifications.noteFailed });
     } finally {
       setActionLoading(false);
     }
@@ -186,7 +208,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.changeComplaintStatus(selectedComplaint.id, status);
       if (response?.success) {
-        setNotification({ type: 'success', text: `Status changed to ${complaintsService.getStatusLabel(status)}` });
+        setNotification({ type: 'success', text: i18nT('supportComplaintsPage.notifications.statusChanged', { status: getStatusLabel(status) }) });
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -196,7 +218,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error changing status:', error);
-      setNotification({ type: 'error', text: 'Failed to change status' });
+      setNotification({ type: 'error', text: t.notifications.statusFailed });
     } finally {
       setActionLoading(false);
     }
@@ -211,7 +233,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.escalateComplaint(selectedComplaint.id, escalationReason);
       if (response?.success) {
-        setNotification({ type: 'success', text: 'Complaint escalated to admin' });
+        setNotification({ type: 'success', text: t.notifications.escalated });
         setShowEscalateModal(false);
         setEscalationReason('');
         setSelectedComplaint(response.complaint);
@@ -223,7 +245,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error escalating:', error);
-      setNotification({ type: 'error', text: 'Failed to escalate complaint' });
+      setNotification({ type: 'error', text: t.notifications.escalateFailed });
     } finally {
       setActionLoading(false);
     }
@@ -238,7 +260,7 @@ const SupportComplaints = () => {
     try {
       const response = await complaintsService.closeComplaint(selectedComplaint.id);
       if (response?.success) {
-        setNotification({ type: 'success', text: 'Complaint closed' });
+        setNotification({ type: 'success', text: t.notifications.closed });
         setSelectedComplaint(response.complaint);
         const detail = await complaintsService.getSupportComplaint(selectedComplaint.id);
         if (detail?.success) {
@@ -248,7 +270,7 @@ const SupportComplaints = () => {
       }
     } catch (error) {
       console.error('❌ Error closing:', error);
-      setNotification({ type: 'error', text: 'Failed to close complaint' });
+      setNotification({ type: 'error', text: t.notifications.closeFailed });
     } finally {
       setActionLoading(false);
     }
@@ -264,108 +286,10 @@ const SupportComplaints = () => {
     setConfirmDialog(null);
   };
 
-  const translations = {
-    en: {
-      title: 'Complaints',
-      subtitle: 'Manage complaint workflow',
-      searchPlaceholder: 'Search complaints...',
-      filterByStatus: 'Filter by status',
-      filterByPriority: 'Filter by priority',
-      filterByCategory: 'Filter by category',
-      allStatuses: 'All Statuses',
-      allPriorities: 'All Priorities',
-      allCategories: 'All Categories',
-      subject: 'Subject',
-      user: 'User',
-      status: 'Status',
-      priority: 'Priority',
-      date: 'Date',
-      noComplaints: 'No complaints found',
-      loading: 'Loading...',
-      reply: 'Reply',
-      addNote: 'Add Internal Note',
-      escalate: 'Escalate to Admin',
-      escalateReason: 'Escalation Reason',
-      confirmEscalate: 'Confirm Escalation',
-      cancel: 'Cancel',
-      send: 'Send',
-      internalNotes: 'Internal Notes',
-      description: 'Description',
-      category: 'Category',
-      escalatedBy: 'Escalated By',
-      escalatedAt: 'Escalated At',
-      changeStatus: 'Change Status',
-      actions: 'Actions',
-      assign: 'Assign to Me',
-      close: 'Close Complaint',
-      timeline: 'Timeline',
-      attachments: 'Attachments',
-      noAttachments: 'No attachments',
-      confirmClose: 'Are you sure you want to close this complaint?',
-      confirm: 'Confirm',
-      assigned: 'Assigned',
-      new: 'New',
-      open: 'Open',
-      inProgress: 'In Progress',
-      waitingForUser: 'Waiting for User',
-      escalated: 'Escalated',
-      resolved: 'Resolved',
-      closed: 'Closed'
-    },
-    ar: {
-      title: 'الشكاوى',
-      subtitle: 'إدارة سير عمل الشكاوى',
-      searchPlaceholder: 'البحث في الشكاوى...',
-      filterByStatus: 'تصفية حسب الحالة',
-      filterByPriority: 'تصفية حسب الأولوية',
-      filterByCategory: 'تصفية حسب الفئة',
-      allStatuses: 'جميع الحالات',
-      allPriorities: 'جميع الأولويات',
-      allCategories: 'جميع الفئات',
-      subject: 'الموضوع',
-      user: 'المستخدم',
-      status: 'الحالة',
-      priority: 'الأولوية',
-      date: 'التاريخ',
-      noComplaints: 'لا توجد شكاوى',
-      loading: 'جاري التحميل...',
-      reply: 'رد',
-      addNote: 'إضافة ملاحظة داخلية',
-      escalate: 'رفع للمشرف',
-      escalateReason: 'سبب الرفع',
-      confirmEscalate: 'تأكيد الرفع',
-      cancel: 'إلغاء',
-      send: 'إرسال',
-      internalNotes: 'ملاحظات داخلية',
-      description: 'الوصف',
-      category: 'الفئة',
-      escalatedBy: 'رفع بواسطة',
-      escalatedAt: 'وقت الرفع',
-      changeStatus: 'تغيير الحالة',
-      actions: 'إجراءات',
-      assign: 'تعيين لي',
-      close: 'إغلاق الشكوى',
-      timeline: 'الخط الزمني',
-      attachments: 'المرفقات',
-      noAttachments: 'لا توجد مرفقات',
-      confirmClose: 'هل أنت متأكد من إغلاق هذه الشكوى؟',
-      confirm: 'تأكيد',
-      assigned: 'معين',
-      new: 'جديدة',
-      open: 'مفتوحة',
-      inProgress: 'قيد المعالجة',
-      waitingForUser: 'بانتظار المستخدم',
-      escalated: 'مرفوعة',
-      resolved: 'تم الحل',
-      closed: 'مغلقة'
-    }
-  };
-
-  const t = translations[dashboard.language] || translations.en;
-
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString(dashboard.language === 'ar' ? 'ar-EG' : 'en-US', {
+    if (!dateString) return t.notAvailable;
+    const locales = { en: 'en-US', ar: 'ar-EG', fr: 'fr-FR', ru: 'ru-RU', tr: 'tr-TR', de: 'de-DE' };
+    return new Date(dateString).toLocaleDateString(locales[i18n.resolvedLanguage] || locales.en, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -383,7 +307,7 @@ const SupportComplaints = () => {
     const messages = [
       {
         id: 'original',
-        authorName: selectedComplaint?.User?.fullName || 'User',
+        authorName: selectedComplaint?.User?.fullName || t.user,
         authorRole: selectedComplaint?.User?.role || 'USER',
         message: selectedComplaint?.description || '',
         attachments: selectedComplaint?.attachments || [],
@@ -438,7 +362,7 @@ const SupportComplaints = () => {
                         rel="noopener noreferrer"
                         className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition"
                       >
-                        <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={i18nT('supportComplaintsPage.attachmentAlt', { number: i + 1 })} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -512,7 +436,7 @@ const SupportComplaints = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white appearance-none"
               >
                 <option value="">{t.allPriorities}</option>
-                {complaintsService.COMPLAINT_PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                {complaintsService.COMPLAINT_PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p)}</option>)}
               </select>
             </div>
             <div className="relative">
@@ -523,7 +447,7 @@ const SupportComplaints = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white appearance-none"
               >
                 <option value="">{t.allCategories}</option>
-                {complaintsService.COMPLAINT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {complaintsService.COMPLAINT_CATEGORIES.map(c => <option key={c} value={c}>{getCategoryLabel(c)}</option>)}
               </select>
             </div>
           </div>
@@ -583,7 +507,7 @@ const SupportComplaints = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <UserAvatar
-                            name={complaint.User?.fullName || 'Unknown'}
+                            name={complaint.User?.fullName || t.unknownUser}
                             image={complaint.User?.profileImage || complaint.User?.image || null}
                             role={complaint.User?.role}
                             size="sm"
@@ -591,7 +515,7 @@ const SupportComplaints = () => {
                           />
                           <div className="min-w-0">
                             <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                              {complaint.User?.fullName || 'Unknown'}
+                              {complaint.User?.fullName || t.unknownUser}
                             </div>
                             <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
                               {complaint.User?.email || ''}
@@ -601,13 +525,13 @@ const SupportComplaints = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(complaint.status)}`}>
-                          {complaintsService.getStatusLabel(complaint.status)}
+                          {getStatusLabel(complaint.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getPriorityBadgeClass(complaint.priority)}`}>
                           <Flag size={12} />
-                          {complaintsService.getPriorityLabel(complaint.priority)}
+                          {getPriorityLabel(complaint.priority)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
@@ -641,7 +565,7 @@ const SupportComplaints = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <UserAvatar
-                  name={selectedComplaint.User?.fullName || 'Unknown'}
+                  name={selectedComplaint.User?.fullName || t.unknownUser}
                   image={selectedComplaint.User?.profileImage || selectedComplaint.User?.image || null}
                   role={selectedComplaint.User?.role}
                   size="md"
@@ -659,7 +583,7 @@ const SupportComplaints = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${complaintsService.getStatusBadgeClass(selectedComplaint.status)}`}>
-                  {complaintsService.getStatusLabel(selectedComplaint.status)}
+                  {getStatusLabel(selectedComplaint.status)}
                 </span>
                 <button
                   onClick={() => setSelectedComplaint(null)}
@@ -677,12 +601,12 @@ const SupportComplaints = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.priority}</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${complaintsService.getPriorityBadgeClass(selectedComplaint.priority)}`}>
                     <Flag size={12} />
-                    {complaintsService.getPriorityLabel(selectedComplaint.priority)}
+                    {getPriorityLabel(selectedComplaint.priority)}
                   </span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.category}</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{selectedComplaint.category}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{getCategoryLabel(selectedComplaint.category)}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.date}</p>
@@ -691,7 +615,7 @@ const SupportComplaints = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t.assigned}</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                    {selectedComplaint.assignedSupport ? 'Yes' : 'No'}
+                    {selectedComplaint.assignedSupport ? t.yes : t.no}
                   </p>
                 </div>
               </div>
@@ -715,7 +639,7 @@ const SupportComplaints = () => {
                     {selectedComplaint.attachments.map((url, index) => (
                       <a key={index} href={url} target="_blank" rel="noopener noreferrer"
                         className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:opacity-80 transition">
-                        <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={i18nT('supportComplaintsPage.attachmentAlt', { number: index + 1 })} className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -753,7 +677,7 @@ const SupportComplaints = () => {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-green-500/10 hover:text-green-600'
                       }`}
                     >
-                      {complaintsService.getStatusLabel(status)}
+                      {getStatusLabel(status)}
                     </button>
                   ))}
                 </div>
@@ -763,7 +687,7 @@ const SupportComplaints = () => {
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   <MessageSquare size={14} />
-                  Conversation
+                  {t.conversation}
                 </h4>
                 {renderThread()}
               </div>
@@ -777,7 +701,7 @@ const SupportComplaints = () => {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
-                    placeholder="Type your reply..."
+                    placeholder={t.replyPlaceholder}
                     className="flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   />
                   <button
@@ -799,7 +723,7 @@ const SupportComplaints = () => {
                     type="text"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Add internal note..."
+                    placeholder={t.notePlaceholder}
                     className="flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   />
                   <button
@@ -847,14 +771,14 @@ const SupportComplaints = () => {
                         <div className="flex-1 pb-3">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {event.action}
+                              {getTimelineActionLabel(event.action)}
                             </p>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {formatDate(event.createdAt)}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {event.description}
+                            {getTimelineDescription(event)}
                             {event.authorName && ` — ${event.authorName}`}
                           </p>
                         </div>
@@ -862,7 +786,7 @@ const SupportComplaints = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No timeline events</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t.noTimelineEvents}</p>
                 )}
               </div>
 
@@ -944,7 +868,7 @@ const SupportComplaints = () => {
                   value={escalationReason}
                   onChange={(e) => setEscalationReason(e.target.value)}
                   rows="3"
-                  placeholder="Explain why this complaint needs admin attention..."
+                  placeholder={t.escalationPlaceholder}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white"
                 />
               </div>

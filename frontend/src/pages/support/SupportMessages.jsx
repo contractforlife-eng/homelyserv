@@ -1,9 +1,9 @@
 // Support Messages Page - Reuses existing chat system
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import SupportLayout from '../../layouts/SupportLayout';
-import { useDashboard } from '../../components/layout/DashboardContext';
 import {
   Search,
   Send,
@@ -30,11 +30,11 @@ import api from '../../utils/api';
 import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportMessages = () => {
+  const { t: i18nT } = useTranslation();
   const navigate = useNavigate();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
-  const dashboard = useDashboard();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [message, setMessage] = useState('');
@@ -49,6 +49,7 @@ const SupportMessages = () => {
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
+  const t = i18nT('supportMessagesPage', { returnObjects: true });
 
   // ============================================================
   // loadConversations - SECURE: only assigned support conversations
@@ -67,6 +68,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
@@ -129,6 +131,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
@@ -243,6 +246,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
         lastMessage: conv.lastMessage,
@@ -284,7 +288,9 @@ const SupportMessages = () => {
       id: conversationId,
       otherUserId: String(userId),
       otherUserName: userName || 'User',
+      usesFallbackUserName: !userName,
       lastMessage: 'Start your conversation here',
+      isNewConversation: true,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       unread: 0,
       role: userRole || 'USER',
@@ -306,42 +312,11 @@ const SupportMessages = () => {
     setShowNewConversationModal(false);
   };
 
-  const translations = {
-    en: {
-      title: 'Messages',
-      subtitle: 'Respond to user inquiries',
-      searchPlaceholder: 'Search conversations...',
-      typeMessage: 'Type a message...',
-      send: 'Send',
-      noConversations: 'No conversations yet',
-      noConversationsDesc: 'Start helping users by creating a new conversation',
-      online: 'Online',
-      loading: 'Loading messages...',
-      noMessages: 'No messages yet',
-      startConversation: 'Start the conversation!',
-      refresh: 'Refresh',
-      newConversation: 'New Conversation',
-      selectUser: 'Select a user to start a conversation'
-    },
-    ar: {
-      title: 'الرسائل',
-      subtitle: 'الرد على استفسارات المستخدمين',
-      searchPlaceholder: 'البحث في المحادثات...',
-      typeMessage: 'اكتب رسالة...',
-      send: 'إرسال',
-      noConversations: 'لا توجد محادثات بعد',
-      noConversationsDesc: 'ابدأ في مساعدة المستخدمين بإنشاء محادثة جديدة',
-      online: 'متصل',
-      loading: 'جاري تحميل الرسائل...',
-      noMessages: 'لا توجد رسائل بعد',
-      startConversation: 'ابدأ المحادثة!',
-      refresh: 'تحديث',
-      newConversation: 'محادثة جديدة',
-      selectUser: 'اختر مستخدم لبدء محادثة'
-    }
-  };
+  const getConversationDisplayName = (conversation) =>
+    conversation?.usesFallbackUserName ? t.user : (conversation?.otherUserName || t.user);
 
-  const t = translations[dashboard.language] || translations.en;
+  const getConversationPreview = (conversation) =>
+    conversation?.isNewConversation ? t.startConversationHere : conversation?.lastMessage;
 
   return (
     <SupportLayout>
@@ -386,7 +361,11 @@ const SupportMessages = () => {
                 </div>
               </div>
               <div className="overflow-y-auto h-[calc(600px-73px)]">
-                {filteredConversations.length === 0 ? (
+                {loading ? (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    {t.loadingConversations}
+                  </div>
+                ) : filteredConversations.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="text-4xl mb-3">💬</div>
                     <p className="text-gray-500 dark:text-gray-400">{t.noConversations}</p>
@@ -402,7 +381,7 @@ const SupportMessages = () => {
                       }`}
                     >
                       <UserAvatar
-                        name={conv.otherUserName}
+                        name={getConversationDisplayName(conv)}
                         image={conv.otherUserImage || null}
                         role={conv.role}
                         size="md"
@@ -412,7 +391,7 @@ const SupportMessages = () => {
                         <div className="flex justify-between items-start">
                           <div className="truncate">
                             <UserDisplayName
-                              name={conv.otherUserName}
+                              name={getConversationDisplayName(conv)}
                               role={conv.role}
                               size="sm"
                               className="text-gray-800 dark:text-white"
@@ -420,7 +399,7 @@ const SupportMessages = () => {
                           </div>
                           <span className="text-xs text-gray-400 flex-shrink-0">{conv.time}</span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{getConversationPreview(conv)}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-green-500">{t.online}</span>
                           {conv.unread > 0 && (
@@ -444,7 +423,7 @@ const SupportMessages = () => {
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/30">
                     <div className="flex items-center gap-3">
                       <UserAvatar
-                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                          name={getConversationDisplayName(conversations.find(c => c.id === selectedConversationId))}
                           image={conversations.find(c => c.id === selectedConversationId)?.otherUserImage || null}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
                           size="md"
@@ -452,7 +431,7 @@ const SupportMessages = () => {
                         />
                       <div>
                         <UserDisplayName
-                          name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
+                          name={getConversationDisplayName(conversations.find(c => c.id === selectedConversationId))}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
                           size="sm"
                           className="text-gray-800 dark:text-white"
@@ -464,12 +443,14 @@ const SupportMessages = () => {
                       <button
                         onClick={handleManualRefresh}
                         disabled={isRefreshing}
+                        title={t.refresh}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition"
                       >
                         <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
                       </button>
                       <button
                         onClick={() => setDropdownOpen(!dropdownOpen)}
+                        title={t.conversationOptions}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition"
                       >
                         <MoreVertical size={18} />
@@ -490,7 +471,7 @@ const SupportMessages = () => {
                             }}
                             className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
                           >
-                            Delete Conversation
+                            {t.deleteConversation}
                           </button>
                         </div>
                       )}
@@ -517,7 +498,7 @@ const SupportMessages = () => {
                           >
                             {!isSupport && showAvatar && (
                               <UserAvatar
-                                name={msg.senderName || 'User'}
+                                name={msg.senderName || t.user}
                                 image={msg.sender?.image || msg.sender?.profileImage || conversations.find(c => c.id === selectedConversationId)?.otherUserImage || null}
                                 role={msg.senderRole}
                                 size="sm"
@@ -550,13 +531,17 @@ const SupportMessages = () => {
                               }`}>
                                 {msg.time}
                                 {isSupport && (
-                                  <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-green-200'} />
+                                  <CheckCheck
+                                    size={14}
+                                    className={msg.read ? 'text-green-300' : 'text-green-200'}
+                                    aria-label={msg.read ? t.read : t.sent}
+                                  />
                                 )}
                               </p>
                             </div>
                             {isSupport && showAvatar && (
                               <UserAvatar
-                                name={authUser?.fullName || 'Support'}
+                                name={authUser?.fullName || t.supportAgent}
                                 image={authUser?.profileImage || null}
                                 role="SUPPORT"
                                 size="sm"
@@ -598,8 +583,8 @@ const SupportMessages = () => {
                 <div className="flex-1 flex items-center justify-center text-center p-8">
                   <div>
                     <div className="text-6xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">Select a conversation</h3>
-                    <p className="text-gray-500 dark:text-gray-400">Choose a conversation from the list to start messaging</p>
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">{t.selectConversation}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{t.selectConversationDescription}</p>
                   </div>
                 </div>
               )}
@@ -654,7 +639,7 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{t.newConversation}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label={t.close}>
             ✕
           </button>
         </div>
@@ -674,6 +659,7 @@ const NewConversationModal = ({ users, onSelectUser, onClose, t }) => {
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{t.loadingUsers}</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <p className="text-gray-500 text-center py-8">{t.noUsers}</p>
