@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { buildEmailSenderIdentity } from './emailSender.js';
 
 export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
   try {
@@ -13,7 +14,7 @@ export const sendRegistrationEmail = async (toEmail, name, activationCode) => {
     });
 
     const mailOptions = {
-      from: `"HomelyServ" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      from: buildEmailSenderIdentity(),
       to: toEmail,
       subject: 'Welcome to HomelyServ - Activate Your Account',
       html: `

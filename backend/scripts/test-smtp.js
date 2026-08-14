@@ -18,12 +18,13 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Import the email service
 import { sendTestEmail, verifySMTPConnection } from '../src/services/emailService.js';
+import { buildEmailSenderIdentity, getEmailFromAddress } from '../src/utils/emailSender.js';
 
 // ============================================================
 // TEST CONFIGURATION
 // ============================================================
 const TEST_CONFIG = {
-  from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+  from: getEmailFromAddress(),
   to: 'emad@homelyserv.com',
   subject: 'HomelyServ SMTP Test - Phase 1',
   text: 'This is a test email to verify Zoho SMTP integration for HomelyServ.\n\nIf you receive this email, the SMTP configuration is working correctly.',
@@ -31,7 +32,7 @@ const TEST_CONFIG = {
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #2563eb;">HomelyServ SMTP Test</h2>
       <p>This is a test email to verify Zoho SMTP integration for HomelyServ.</p>
-      <p><strong>From:</strong> ${process.env.EMAIL_FROM || process.env.EMAIL_USER}</p>
+      <p><strong>From:</strong> ${buildEmailSenderIdentity()}</p>
       <p><strong>To:</strong> emad@homelyserv.com</p>
       <p><strong>Status:</strong> ✅ SMTP Configuration Working</p>
       <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">

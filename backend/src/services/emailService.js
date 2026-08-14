@@ -4,6 +4,7 @@
 // ============================================================
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import { buildEmailSenderIdentity, getEmailFromAddress } from '../utils/emailSender.js';
 
 // ============================================================
 // PROVIDER SELECTION & CONFIGURATION
@@ -75,8 +76,6 @@ const getTransporter = () => {
   return transporter;
 };
 
-const getSMTPFromAddress = () => process.env.EMAIL_FROM || process.env.EMAIL_USER;
-
 const addSMTPReplyTo = (mailOptions) => {
   if (process.env.EMAIL_REPLY_TO) mailOptions.replyTo = process.env.EMAIL_REPLY_TO;
   return mailOptions;
@@ -101,7 +100,7 @@ const sendViaResend = async ({ to, subject, html, text, replyTo }) => {
     console.log('[EMAIL] Sending via Resend to:', to);
 
     const emailData = {
-      from: buildSenderIdentity(),
+      from: buildEmailSenderIdentity(),
       to: to,
       subject: subject,
       html: html,
@@ -161,7 +160,7 @@ const sendViaSMTP = async ({ to, subject, html, text }) => {
     const mailTransporter = getTransporter();
 
     const mailOptions = addSMTPReplyTo({
-      from: `"HomelyServ" <${getSMTPFromAddress()}>`,
+      from: buildEmailSenderIdentity(),
       to: to,
       subject: subject,
       text: text,
@@ -197,13 +196,6 @@ import { buildPasswordResetEmail } from '../templates/passwordResetEmail.js';
 // ============================================================
 // SENDER IDENTITY
 // ============================================================
-// Construct the sender safely as: HomelyServ Security <noreply@homelyserv.com>
-// EMAIL_FROM contains the bare address (e.g. noreply@homelyserv.com).
-const buildSenderIdentity = () => {
-  const fromAddress = process.env.EMAIL_FROM || 'noreply@homelyserv.com';
-  return `HomelyServ Security <${fromAddress}>`;
-};
-
 /**
  * Send a test email to verify SMTP configuration
  * @param {string} to - Recipient email address
@@ -215,14 +207,14 @@ const buildSenderIdentity = () => {
 export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text = 'This is a test email from HomelyServ.', html = null) => {
   try {
     console.log(`\n📤 Attempting to send test email...`);
-    console.log(`   From: ${getSMTPFromAddress()}`);
+    console.log(`   From: ${getEmailFromAddress()}`);
     console.log(`   To: ${to}`);
     console.log(`   Subject: ${subject}`);
 
     const mailTransporter = getTransporter();
 
     const mailOptions = addSMTPReplyTo({
-      from: `"HomelyServ" <${getSMTPFromAddress()}>`,
+      from: buildEmailSenderIdentity(),
       to: to,
       subject: subject,
       text: text,
@@ -240,7 +232,7 @@ export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text =
       message: 'Email sent successfully',
       messageId: info.messageId,
       response: info.response,
-      from: getSMTPFromAddress(),
+      from: getEmailFromAddress(),
       to: to,
     };
   } catch (error) {
@@ -251,7 +243,7 @@ export const sendTestEmail = async (to, subject = 'HomelyServ SMTP Test', text =
       message: 'Failed to send email',
       error: error.message,
       code: error.code,
-      from: getSMTPFromAddress(),
+      from: getEmailFromAddress(),
       to: to,
     };
   }
