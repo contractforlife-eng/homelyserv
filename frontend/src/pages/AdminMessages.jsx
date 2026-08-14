@@ -27,7 +27,8 @@ import {
   Wrench,
   Headphones,
   MessageSquare,
-  MoreVertical
+  MoreVertical,
+  AlertTriangle
 } from 'lucide-react';
 import {
   getAdminSupportConversations,
@@ -37,7 +38,10 @@ import {
   markMessagesAsRead,
   formatDisplayName,
   startAdminConversation,
-  closeConversation
+  closeConversation,
+  createOptimisticMessage,
+  reconcileOptimisticMessage,
+  markOptimisticMessageFailed
 } from '../utils/chatService';
 import { getRoleColor } from '../utils/userDisplay';
 import { UserAvatar, UserDisplayName } from '../components/users';
@@ -313,11 +317,10 @@ const AdminMessages = () => {
       const result = await getAdminConversationMessages(conversation.id);
       setMessages(result.messages || []);
 
-      // Mark as read
+      // Mark as read without keeping the message panel behind its loading state.
       if (authUser?.id) {
-        const marked = await markMessagesAsRead(conversation.id, authUser.id);
-        if (marked) {
-          // Immediately update local unread state without waiting for polling
+        markMessagesAsRead(conversation.id, authUser.id).then((marked) => {
+          if (!marked) return;
           if (conversation.type === 'SUPPORT') {
             setSupportConversations(prev =>
               prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
@@ -327,7 +330,7 @@ const AdminMessages = () => {
               prev.map(c => c.id === conversation.id ? { ...c, unread: 0 } : c)
             );
           }
-        }
+        }).catch((error) => console.error('Error marking messages as read:', error));
       }
     } catch (error) {
       console.error('Error loading conversation messages:', error);
@@ -495,7 +498,8 @@ const AdminMessages = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !authUser) return;
 
-    setSendingMessage(true);
+    const draft = newMessage.trim();
+    let optimistic = null;
 
     try {
       // Determine recipient from conversation
@@ -519,22 +523,44 @@ const AdminMessages = () => {
         return;
       }
 
+      optimistic = createOptimisticMessage({
+        conversationId: selectedConversation.id,
+        senderId: authUser.id,
+        senderName: authUser.fullName || 'Admin',
+        senderRole: 'ADMIN',
+        recipientId,
+        recipientName,
+        text: draft,
+      });
+      setMessages((current) => [
+        ...current.filter((item) => !(item.sendFailed && item.senderId === String(authUser.id) && item.text === draft)),
+        optimistic,
+      ]);
+      setNewMessage('');
+      setSendingMessage(true);
+
       const result = await sendMessage(
         authUser.id,
         authUser.fullName || 'Admin',
         'ADMIN',
         recipientId,
         recipientName,
-        newMessage
+        draft
       );
 
       if (result) {
-        setNewMessage('');
-        await loadConversationMessages(selectedConversation);
+        setMessages((current) => reconcileOptimisticMessage(current, optimistic.id, result));
         loadAllData();
+      } else {
+        setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+        setNewMessage((current) => current || draft);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      if (optimistic) {
+        setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+        setNewMessage((current) => current || draft);
+      }
       alert(t.errors.send);
     } finally {
       setSendingMessage(false);
@@ -890,6 +916,9 @@ const AdminMessages = () => {
                       isSelf ? 'text-black/60' : 'text-gray-500'
                     }`}>
                       {formatDate(msg.timestamp)}
+                      {msg.sendFailed && (
+                        <AlertTriangle size={13} className="inline ml-1 text-red-500" title={t.errors.send} />
+                      )}
                     </p>
                   </div>
                   {isSelf && (

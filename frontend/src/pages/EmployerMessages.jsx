@@ -58,7 +58,10 @@ import {
   ensureConversationExists,
   deleteConversation,
   formatDisplayName,
-  getSupportUsers
+  getSupportUsers,
+  createOptimisticMessage,
+  reconcileOptimisticMessage,
+  markOptimisticMessageFailed
 } from '../utils/chatService';
 
 // ============================================================
@@ -88,6 +91,7 @@ const EmployerMessages = () => {
   const intervalRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
   const dropdownRef = useRef(null);
+  const refreshEffectReadyRef = useRef(false);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
 
   const isPremium = () => {
@@ -135,6 +139,10 @@ const EmployerMessages = () => {
 
   // Refresh conversations when refreshKey changes
   useEffect(() => {
+    if (!refreshEffectReadyRef.current) {
+      refreshEffectReadyRef.current = true;
+      return;
+    }
     if (!authUser) return;
     
     const userId = authUser.id;
@@ -291,7 +299,8 @@ const EmployerMessages = () => {
     
     const userId = authUser?.id;
     if (userId) {
-      await markMessagesAsRead(conversationId, userId);
+      markMessagesAsRead(conversationId, userId)
+        .catch((error) => console.error('Error marking messages as read:', error));
     }
   };
 
@@ -363,23 +372,45 @@ const EmployerMessages = () => {
     console.log('typeof selectedConv.otherUserId:', typeof selectedConv.otherUserId);
     console.log('=== END DEBUG ===');
 
-    const result = await sendMessage(
-      authUser.id,
-      authUser.fullName || 'Employer',
-      'EMPLOYER',
-      selectedConv.otherUserId,
-      selectedConv.otherUserName,
-      message
-    );
+    const draft = message.trim();
+    const optimistic = createOptimisticMessage({
+      conversationId: selectedConversationId,
+      senderId: authUser.id,
+      senderName: authUser.fullName || 'Employer',
+      senderRole: 'EMPLOYER',
+      recipientId: selectedConv.otherUserId,
+      recipientName: selectedConv.otherUserName,
+      text: draft,
+    });
+    setMessages((current) => [
+      ...current.filter((item) => !(item.sendFailed && item.senderId === String(authUser.id) && item.text === draft)),
+      optimistic,
+    ]);
+    setMessage('');
+
+    let result = null;
+    try {
+      result = await sendMessage(
+        authUser.id,
+        authUser.fullName || 'Employer',
+        'EMPLOYER',
+        selectedConv.otherUserId,
+        selectedConv.otherUserName,
+        draft
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
 
     console.log('📥 [Employer] sendMessage response:', result);
 
     if (result) {
       console.log('✅ Message sent successfully, reloading messages...');
-      await loadMessagesForConversation(selectedConversationId);
+      setMessages((current) => reconcileOptimisticMessage(current, optimistic.id, result));
       setRefreshKey(prev => prev + 1);
-      setMessage('');
     } else {
+      setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+      setMessage((current) => current || draft);
       console.log('❌ Failed to send message');
     }
   };
@@ -401,9 +432,7 @@ const EmployerMessages = () => {
       }
     }
     
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 500);
+    setIsRefreshing(false);
   };
 
   const userProfileImage = authUser?.profileImage || null;
@@ -705,6 +734,9 @@ const EmployerMessages = () => {
                                   isEmployer ? 'text-teal-200' : 'text-gray-400 dark:text-gray-500'
                                 }`}>
                                   {msg.time}
+                                  {msg.sendFailed && (
+                                    <AlertTriangle size={13} className="text-red-500" title={t('adminMessagesPage.errors.send')} />
+                                  )}
                                   {isEmployer && (
                                     <CheckCheck size={14} className={msg.read ? 'text-green-300' : 'text-teal-200'} />
                                   )}

@@ -22,6 +22,53 @@ export const getConversationMessages = async (conversationId) => {
 
 export const getMessages = (conversationId) => getConversationMessages(conversationId);
 
+export const createOptimisticMessage = ({
+  conversationId,
+  senderId,
+  senderName,
+  senderRole,
+  recipientId,
+  recipientName,
+  text,
+}) => {
+  const timestamp = new Date();
+  const id = `pending_${timestamp.getTime()}_${Math.random().toString(36).slice(2)}`;
+  return {
+    id,
+    conversationId,
+    senderId: String(senderId),
+    senderName,
+    senderRole,
+    recipientId: String(recipientId),
+    recipientName,
+    text: text.trim(),
+    time: timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    timestamp: timestamp.toISOString(),
+    read: false,
+    delivered: false,
+    pending: true,
+    sendFailed: false,
+  };
+};
+
+export const reconcileOptimisticMessage = (messages, optimisticId, persistedMessage) => {
+  const withoutOptimistic = messages.filter((item) => item.id !== optimisticId);
+  if (!persistedMessage?.id || withoutOptimistic.some((item) => String(item.id) === String(persistedMessage.id))) {
+    return withoutOptimistic;
+  }
+  const optimisticIndex = messages.findIndex((item) => item.id === optimisticId);
+  if (optimisticIndex < 0) return [...withoutOptimistic, persistedMessage];
+  const next = [...withoutOptimistic];
+  next.splice(Math.min(optimisticIndex, next.length), 0, persistedMessage);
+  return next;
+};
+
+export const markOptimisticMessageFailed = (messages, optimisticId) => messages.map((item) =>
+  item.id === optimisticId
+    ? { ...item, pending: false, sendFailed: true, delivered: false }
+    : item
+);
+
 export const sendMessage = async (senderId, senderName, senderRole, recipientId, recipientName, text) => {
   if (!senderId || !recipientId || !text || !text.trim()) {
     console.log('Missing required fields');

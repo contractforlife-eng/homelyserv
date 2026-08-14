@@ -261,7 +261,16 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     // from the database (via the authenticated req.userId). Client
     // -supplied senderName/senderRole are NEVER trusted.
     // ============================================================
-    const senderIdentity = await getUserIdentity(senderId);
+    const [senderIdentity, recipientUser] = await Promise.all([
+      getUserIdentity(senderId),
+      prisma.user.findUnique({
+        where: { id: String(recipientId) },
+        select: { role: true, fullName: true }
+      }).catch((error) => {
+        console.error('Error looking up recipient:', error.message);
+        return null;
+      })
+    ]);
     const senderName = senderIdentity?.name || req.body.senderName || 'User';
     const senderRole = senderIdentity?.role || req.userRole || req.body.senderRole || 'USER';
 
@@ -272,19 +281,11 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     // name shown is always the real one.
     let recipientRole = resolveRecipientRole(senderRole);
     let recipientName = req.body.recipientName || 'User';
-    try {
-      const recipientUser = await prisma.user.findUnique({
-        where: { id: String(recipientId) },
-        select: { role: true, fullName: true }
-      });
-      if (recipientUser?.role) {
-        recipientRole = recipientUser.role;
-      }
-      if (recipientUser?.fullName) {
-        recipientName = recipientUser.fullName;
-      }
-    } catch (e) {
-      console.error('Error looking up recipient:', e.message);
+    if (recipientUser?.role) {
+      recipientRole = recipientUser.role;
+    }
+    if (recipientUser?.fullName) {
+      recipientName = recipientUser.fullName;
     }
 
     // Determine conversation type based on roles.
@@ -335,26 +336,26 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
       delivered: true
     });
 
-    await touchConversation(conversationId, text);
-
-    // Notify the recipient about the new message.
-    // All notifications go through NotificationService (single source of
-    // truth). The service never throws - it logs and returns null on
-    // failure - so the message response is never affected.
+    // Update conversation metadata and create the notification concurrently.
+    // Both remain completed before the response, while message persistence above
+    // remains the authoritative success boundary.
     const trimmedText = text.trim();
-    await createNotification(String(recipientId), {
-      type: NOTIFICATION_TYPES.NEW_MESSAGE,
-      title: `New message from ${senderName || 'User'}`,
-      message: trimmedText.length > 120 ? `${trimmedText.slice(0, 117)}...` : trimmedText,
-      entityType: 'MESSAGE',
-      entityId: conversationId,
-      link: '/messages',
-      data: {
-        conversationId,
-        senderId: String(senderId),
-        senderName: senderName || 'User',
-      },
-    });
+    await Promise.all([
+      touchConversation(conversationId, text),
+      createNotification(String(recipientId), {
+        type: NOTIFICATION_TYPES.NEW_MESSAGE,
+        title: `New message from ${senderName || 'User'}`,
+        message: trimmedText.length > 120 ? `${trimmedText.slice(0, 117)}...` : trimmedText,
+        entityType: 'MESSAGE',
+        entityId: conversationId,
+        link: '/messages',
+        data: {
+          conversationId,
+          senderId: String(senderId),
+          senderName: senderName || 'User',
+        },
+      })
+    ]);
 
     const formatted = formatMessage(message);
 
@@ -417,9 +418,13 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
       ]
     });
 
-    for (const convId of (legacyConversationIds || []).filter(Boolean)) {
-      const existing = await Conversation.findOne({ conversationId: convId });
-      if (!existing) {
+    const normalizedLegacyIds = (legacyConversationIds || []).filter(Boolean);
+    const existingConversationIds = new Set(
+      await Conversation.find({ conversationId: { $in: normalizedLegacyIds } }).distinct('conversationId')
+    );
+
+    for (const convId of normalizedLegacyIds) {
+      if (!existingConversationIds.has(convId)) {
         // Determine participants from the conversationId pattern
         const parts = convId.replace('conv_', '').split('_');
         if (parts.length === 2) {
@@ -479,11 +484,27 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
       ]
     }).sort({ lastMessageAt: -1 });
 
-    // For each conversation, get the last message
+    const conversationIds = conversationsMeta.map((conv) => conv.conversationId);
+    const [lastMessageRows, unreadRows] = conversationIds.length > 0
+      ? await Promise.all([
+          Message.aggregate([
+            { $match: { conversationId: { $in: conversationIds } } },
+            { $sort: { createdAt: -1 } },
+            { $group: { _id: '$conversationId', message: { $first: '$$ROOT' } } }
+          ]),
+          Message.aggregate([
+            { $match: { conversationId: { $in: conversationIds }, recipientId: userId, read: false } },
+            { $group: { _id: '$conversationId', count: { $sum: 1 } } }
+          ])
+        ])
+      : [[], []];
+    const lastMessageMap = new Map(lastMessageRows.map((row) => [row._id, row.message]));
+    const unreadMap = new Map(unreadRows.map((row) => [row._id, row.count]));
+
+    // Build every conversation from the two batched message queries above.
     const conversations = [];
     for (const conv of conversationsMeta) {
-      const lastMsg = await Message.findOne({ conversationId: conv.conversationId })
-        .sort({ createdAt: -1 });
+      const lastMsg = lastMessageMap.get(conv.conversationId);
 
       if (!lastMsg) continue;
 
@@ -494,11 +515,7 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
         ? { id: lastMsg.recipientId, name: lastMsg.recipientName, role: lastMsg.recipientRole || 'USER' }
         : { id: lastMsg.senderId, name: lastMsg.senderName, role: lastMsg.senderRole };
 
-      const unread = await Message.countDocuments({
-        conversationId: conv.conversationId,
-        recipientId: userId,
-        read: false
-      });
+      const unread = unreadMap.get(conv.conversationId) || 0;
 
       conversations.push({
         id: conv.conversationId,

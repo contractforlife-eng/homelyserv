@@ -12,7 +12,8 @@ import {
   MoreVertical,
   CheckCheck,
   RefreshCw,
-  Shield
+  Shield,
+  AlertTriangle
 } from 'lucide-react';
 import {
   getUserConversations,
@@ -24,7 +25,10 @@ import {
   deleteConversation,
   getSupportConversations,
   getSupportConversationMessages,
-  escalateConversation
+  escalateConversation,
+  createOptimisticMessage,
+  reconcileOptimisticMessage,
+  markOptimisticMessageFailed
 } from '../../utils/chatService';
 import api from '../../utils/api';
 import { UserAvatar, UserDisplayName } from '../../components/users';
@@ -112,16 +116,9 @@ const SupportMessages = () => {
     });
   }, [authUser, isAuthenticated, authLoading, navigate]);
 
-  // Polling for conversations (silent, no loading state)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadConversations();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [authUser]);
-
-  // Auto-refresh - uses secure support conversations endpoint
+  // One polling loop refreshes both the secure conversation list and the
+  // selected conversation. A second overlapping loop previously duplicated
+  // conversation requests on this page.
   useEffect(() => {
     if (!authUser) return;
 
@@ -163,7 +160,7 @@ const SupportMessages = () => {
           return prevMessages;
         });
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
       if (intervalRef.current) {
@@ -185,7 +182,8 @@ const SupportMessages = () => {
     
     const userId = authUser?.id;
     if (userId) {
-      await markMessagesAsRead(conversationId, userId);
+      markMessagesAsRead(conversationId, userId)
+        .catch((error) => console.error('Error marking messages as read:', error));
     }
   };
 
@@ -220,19 +218,42 @@ const SupportMessages = () => {
       return;
     }
 
-    const result = await sendMessage(
-      authUser.id,
-      authUser.fullName || 'Support',
-      'SUPPORT',
-      selectedConv.otherUserId,
-      selectedConv.otherUserName,
-      message
-    );
+    const draft = message.trim();
+    const optimistic = createOptimisticMessage({
+      conversationId: selectedConversationId,
+      senderId: authUser.id,
+      senderName: authUser.fullName || 'Support',
+      senderRole: 'SUPPORT',
+      recipientId: selectedConv.otherUserId,
+      recipientName: selectedConv.otherUserName,
+      text: draft,
+    });
+    setMessages((current) => [
+      ...current.filter((item) => !(item.sendFailed && item.senderId === String(authUser.id) && item.text === draft)),
+      optimistic,
+    ]);
+    setMessage('');
+
+    let result = null;
+    try {
+      result = await sendMessage(
+        authUser.id,
+        authUser.fullName || 'Support',
+        'SUPPORT',
+        selectedConv.otherUserId,
+        selectedConv.otherUserName,
+        draft
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
 
     if (result) {
-      await loadMessagesForConversation(selectedConversationId);
+      setMessages((current) => reconcileOptimisticMessage(current, optimistic.id, result));
       setRefreshKey(prev => prev + 1);
-      setMessage('');
+    } else {
+      setMessages((current) => markOptimisticMessageFailed(current, optimistic.id));
+      setMessage((current) => current || draft);
     }
   };
 
@@ -270,9 +291,7 @@ const SupportMessages = () => {
       }
     }
     
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 500);
+    setIsRefreshing(false);
   };
 
   const handleStartNewConversation = async (userId, userName, userRole) => {
@@ -537,6 +556,9 @@ const SupportMessages = () => {
                                 isSupport ? 'text-green-200' : 'text-gray-400'
                               }`}>
                                 {msg.time}
+                                {msg.sendFailed && (
+                                  <AlertTriangle size={13} className="text-red-500" title={i18nT('adminMessagesPage.errors.send')} />
+                                )}
                                 {isSupport && (
                                   <CheckCheck
                                     size={14}
