@@ -379,9 +379,12 @@ io.on('connection', (socket) => {
     console.log(`📤 User ${socket.id} left room: ${roomId}`);
   });
   
-  socket.on('send_message', (data) => {
-    io.to(data.roomId).emit('receive_message', data);
-    console.log(`💬 Message sent to room ${data.roomId}:`, data.message);
+  // Persisted chat sends are accepted only through authenticated
+  // POST /api/chat/send, where the paid Employer/Worker relationship is
+  // enforced. Keep the former unauthenticated client relay disabled so it
+  // cannot bypass authorization. No active frontend emits this event.
+  socket.on('send_message', () => {
+    socket.emit('message_error', { error: 'Use the authenticated chat API.' });
   });
   
   socket.on('typing', (data) => {

@@ -15,7 +15,7 @@ import express from 'express';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import { authenticate } from '../middleware/auth.js';
-import { canContactWorker } from '../services/paymentAuthService.js';
+import { authorizePaidChatRelationship } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import {
@@ -31,26 +31,21 @@ const getConversationId = (user1Id, user2Id) => {
   return `conv_${ids.join('_')}`;
 };
 
-const checkEmployerPayment = async (req, res, next) => {
+const checkPaidChatRelationship = async (req, res, next) => {
   try {
-    const employerId = req.userId;
-    const employerRole = req.userRole;
+    const senderId = req.userId;
+    const senderRole = req.userRole;
 
-    if (!employerId) {
+    if (!senderId) {
       return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Skip payment check for ADMIN, WORKER, and SUPPORT roles
-    if (employerRole !== 'EMPLOYER') {
-      return next();
     }
 
     let recipientId = req.body?.recipientId || req.query?.recipientId;
 
     if (!recipientId && req.body) {
-      if (String(req.body.user1Id) === String(employerId)) {
+      if (String(req.body.user1Id) === String(senderId)) {
         recipientId = req.body.user2Id;
-      } else if (String(req.body.user2Id) === String(employerId)) {
+      } else if (String(req.body.user2Id) === String(senderId)) {
         recipientId = req.body.user1Id;
       }
     }
@@ -59,24 +54,19 @@ const checkEmployerPayment = async (req, res, next) => {
       return res.status(400).json({ error: 'Missing recipient' });
     }
 
-    // Convert User._id to WorkerProfile._id for payment check
-    const workerProfile = await prisma.workerProfile.findUnique({
-      where: { userId: String(recipientId) }
+    const authorization = await authorizePaidChatRelationship({
+      senderId,
+      senderRole,
+      recipientId
     });
 
-    const workerProfileId = workerProfile?.id || recipientId;
-
-    const canContact = await canContactWorker(employerId, workerProfileId);
-
-    // TEMPORARY: Allow employers to contact workers without payment check
-    // TODO: Re-enable payment check when payment system is fully operational
-    // if (!canContact) {
-    //   return res.status(403).json({ error: 'Payment required to contact this worker.' });
-    // }
+    if (authorization.required && !authorization.allowed) {
+      return res.status(403).json({ error: 'Payment required to contact this worker.' });
+    }
 
     next();
   } catch (error) {
-    console.error('Payment check error:', error);
+    console.error('Paid chat relationship check error:', error);
     return res.status(500).json({ error: 'Failed to verify payment status' });
   }
 };
@@ -255,7 +245,7 @@ const touchConversation = async (conversationId, text) => {
 // ============================================================
 // SEND MESSAGE
 // ============================================================
-router.post('/send', authenticate, checkEmployerPayment, async (req, res) => {
+router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) => {
   try {
     const { recipientId, text } = req.body;
     const senderId = req.userId;
@@ -613,7 +603,7 @@ router.get('/unread/:userId', authenticate, async (req, res) => {
 // ============================================================
 // ENSURE CONVERSATION
 // ============================================================
-router.post('/ensure-conversation', authenticate, checkEmployerPayment, async (req, res) => {
+router.post('/ensure-conversation', authenticate, checkPaidChatRelationship, async (req, res) => {
   try {
     const { 
       user1Id, 
