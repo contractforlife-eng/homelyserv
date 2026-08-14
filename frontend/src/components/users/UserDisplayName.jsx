@@ -8,6 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   getStaffIdentityTitle,
+  isActivePremiumCustomer,
   isStaffRole,
 } from '../../utils/userDisplay';
 
@@ -17,10 +18,13 @@ const UserDisplayName = ({
   role = 'USER',
   size = 'md',
   className = '',
+  isPremium = undefined,
+  defaultNameClassName = 'font-medium text-gray-900 dark:text-white',
 }) => {
   const { t } = useTranslation();
   const roleValue = user?.role || role;
   const staff = isStaffRole(roleValue);
+  const premiumCustomer = isActivePremiumCustomer(user || { role: roleValue }, isPremium);
 
   // Base name (without role suffix)
   const baseName = user ? (user.fullName || user.name || t('sharedUserDisplay.fallbacks.user')) : (name || t('sharedUserDisplay.fallbacks.user'));
@@ -39,7 +43,9 @@ const UserDisplayName = ({
         className={`truncate ${sizeClasses[size] || sizeClasses.md} ${
           staff
             ? 'font-semibold tracking-normal leading-tight text-red-600 dark:text-red-400'
-            : 'font-medium text-gray-900 dark:text-white'
+            : premiumCustomer
+              ? 'font-bold text-purple-600 dark:text-purple-400'
+            : defaultNameClassName
         }`}
       >
         {baseName}

@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell'; // 👈 ADD THIS
 import VerificationBanner from './VerificationBanner';
+import { UserDisplayName } from './users';
 
 export default function Layout({ children, activeTab }) {
   const navigate = useNavigate();
@@ -158,7 +159,7 @@ export default function Layout({ children, activeTab }) {
                 </div>
                 <div>
                   <div className="nav-username" style={{ fontSize: '13px', fontWeight: '500', color: '#1a3a1a' }}>
-                    {getDisplayName(user)}
+                    <UserDisplayName user={user} size="sm" />
                   </div>
                   <div className="nav-user-role" style={{ fontSize: '10px', color: '#8aaa8a', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {getRoleLabel(user?.role)}

@@ -539,6 +539,7 @@ router.get('/conversations/:userId', authenticate, async (req, res) => {
       if (live) {
         conv.otherUserName = live.name;
         conv.otherUserRole = live.role;
+        conv.isPremium = live.isPremium === true;
         conv.role = live.role;
         conv.avatar = live.image || null;
       }
@@ -810,7 +811,7 @@ router.get('/support/conversations', authenticate, async (req, res) => {
       const userIdentity = conv.userId ? identityMap.get(String(conv.userId)) : null;
       const agentIdentity = conv.supportAgentId ? identityMap.get(String(conv.supportAgentId)) : null;
       conv.user = userIdentity
-        ? { id: userIdentity.id, fullName: userIdentity.name, role: userIdentity.role, image: userIdentity.image, email: userIdentity.email }
+        ? { id: userIdentity.id, fullName: userIdentity.name, role: userIdentity.role, image: userIdentity.image, email: userIdentity.email, isPremium: userIdentity.isPremium }
         : null;
       conv.supportAgent = agentIdentity
         ? { id: agentIdentity.id, fullName: agentIdentity.name, role: agentIdentity.role, image: agentIdentity.image, email: agentIdentity.email }

@@ -392,6 +392,7 @@ const WorkerMessages = () => {
                               <UserDisplayName
                                 name={conv.otherUserName}
                                 role={conv.role}
+                                isPremium={conv.isPremium}
                                 size="sm"
                                 className="text-gray-800 dark:text-white"
                               />
@@ -430,6 +431,7 @@ const WorkerMessages = () => {
                           <UserDisplayName
                             name={conversations.find(c => c.id === selectedConversationId)?.otherUserName}
                             role={conversations.find(c => c.id === selectedConversationId)?.role}
+                            isPremium={conversations.find(c => c.id === selectedConversationId)?.isPremium}
                             size="sm"
                             className="text-gray-800 dark:text-white"
                           />
@@ -533,6 +535,7 @@ const WorkerMessages = () => {
                                     <UserDisplayName
                                       name={msg.senderName}
                                       role={msg.senderRole}
+                                      isPremium={msg.senderIsPremium || msg.sender?.isPremium}
                                       size="sm"
                                       className="text-red-600"
                                     />

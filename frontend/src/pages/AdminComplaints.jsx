@@ -430,6 +430,7 @@ const AdminComplaints = () => {
                   <UserDisplayName
                     name={msg.authorName}
                     role={msg.authorRole}
+                    isPremium={msg.authorIsPremium || msg.author?.isPremium || (msg.isOriginal && selectedComplaint?.User?.isPremium)}
                     size="sm"
                     className={isUser ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-200'}
                   />
@@ -672,7 +673,7 @@ const AdminComplaints = () => {
                           />
                           <div>
                             <div className="text-sm text-gray-700 dark:text-gray-200">
-                              {getDisplayName(complaint.User)}
+                              <UserDisplayName user={complaint.User} />
                             </div>
                             <div className="text-xs text-gray-400 dark:text-gray-500">
                               {complaint.User?.email}
@@ -792,9 +793,7 @@ const AdminComplaints = () => {
                     className="flex-shrink-0"
                   />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {getDisplayName(selectedComplaint.User)}
-                    </p>
+                    <UserDisplayName user={selectedComplaint.User} />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedComplaint.User?.email} • {roleLabel(selectedComplaint.User?.role)}
                     </p>

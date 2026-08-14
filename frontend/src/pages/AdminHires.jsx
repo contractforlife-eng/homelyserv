@@ -6,7 +6,7 @@ import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import hireService from '../services/hireService';
-import { UserAvatar } from '../components/users';
+import { UserAvatar, UserDisplayName } from '../components/users';
 import { formatCompensationAmount, resolveCompensationCurrency } from '../utils/compensationDisplay';
 import {
   Users,
@@ -488,7 +488,7 @@ const AdminHires = () => {
                               <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
-                                  {hire.employerName || t.unknown}
+                                  <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} />
                                   {hire.employerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
                                 <p className="text-[11px] text-gray-500 truncate">{hire.employerEmail || ''}</p>
@@ -508,7 +508,7 @@ const AdminHires = () => {
                               <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                               <div className="min-w-0">
                                 <p className="font-semibold text-white text-sm truncate flex items-center gap-1">
-                                  {hire.workerName || t.unknown}
+                                  <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} />
                                   {hire.workerIsPremium && <Crown size={11} className="text-yellow-400" />}
                                 </p>
                                 <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
@@ -587,7 +587,7 @@ const AdminHires = () => {
                         <UserAvatar name={hire.employerName} image={hire.employerImage || null} role="EMPLOYER" size="sm" className="border border-yellow-500/30" />
                         <div className="min-w-0">
                           <p className="text-xs text-gray-500">{t.table.employer}</p>
-                          <p className="text-sm font-semibold text-white truncate">{hire.employerName || t.unknown}</p>
+                          <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} defaultNameClassName="font-semibold text-white" />
                         </div>
                       </div>
                       <div className="flex flex-col items-center text-yellow-500/70 flex-shrink-0">
@@ -597,7 +597,7 @@ const AdminHires = () => {
                       <div className="flex items-center gap-2 min-w-0 justify-end">
                         <div className="min-w-0 text-right">
                           <p className="text-xs text-gray-500">{t.table.worker}</p>
-                          <p className="text-sm font-semibold text-white truncate">{hire.workerName || t.unknown}</p>
+                          <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} defaultNameClassName="font-semibold text-white" />
                         </div>
                         <UserAvatar name={hire.workerName} image={hire.workerImage || null} role="WORKER" size="sm" className="border border-red-500/30" />
                       </div>
@@ -783,7 +783,7 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.employer}</p>
                 <p className="font-semibold text-white truncate flex items-center gap-1">
-                  {hire.employerName || t.unknown}
+                  <UserDisplayName name={hire.employerName || t.unknown} role="EMPLOYER" isPremium={hire.employerIsPremium} size="lg" />
                   {hire.employerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
                 <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Mail size={11} />{hire.employerEmail || t.modal.notProvided}</p>
@@ -800,7 +800,7 @@ const HireDetailsModal = ({ hire, t, onClose, getStatusBadge, getPaymentBadge, f
               <div className="min-w-0 md:text-right">
                 <p className="text-[11px] uppercase tracking-wide text-gray-500">{t.table.worker}</p>
                 <p className="font-semibold text-white truncate flex items-center gap-1 md:justify-end">
-                  {hire.workerName || t.unknown}
+                  <UserDisplayName name={hire.workerName || t.unknown} role="WORKER" isPremium={hire.workerIsPremium} size="lg" />
                   {hire.workerIsPremium && <Crown size={12} className="text-yellow-400" />}
                 </p>
                 <p className="text-xs text-gray-400 truncate flex items-center gap-1 md:justify-end"><Briefcase size={11} />{hire.jobTitle || t.serviceProvider}</p>

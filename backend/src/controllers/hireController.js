@@ -7,6 +7,7 @@ import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { createOffer } from '../services/offerService.js';
 import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -358,6 +359,11 @@ export const getMyHires = async (req, res) => {
       });
     }
 
+    const activePremiumIds = await getActivePremiumUserIds([
+      ...hires.map((hire) => hire.employerId),
+      ...Object.values(workerProfilesMap).map((profile) => profile.User?.id),
+    ]);
+
     // Step 4: Merge all data into enriched hire objects
     const enrichedHires = hires.map(hire => {
       const offer = offersMap[hire.offerId] || null;
@@ -378,6 +384,9 @@ export const getMyHires = async (req, res) => {
         hireId: hire.id,
         offerId: hire.offerId,
         workerId: workerProfile?.userId || workerUser?.id || hire.workerId,
+        workerIsPremium: activePremiumIds.has(String(workerUser?.id || workerProfile?.userId || '')),
+        employerIsPremium: activePremiumIds.has(String(hire.employerId)),
+        isPremium: activePremiumIds.has(String(workerUser?.id || workerProfile?.userId || '')),
         workerProfileId: hire.workerId,
         // Work details from Hire (copied from Offer at acceptance)
         hourlyRate: hire.hourlyRate || offer?.hourlyRate || null,
@@ -541,6 +550,11 @@ export const getAllHires = async (req, res) => {
       employers.forEach(u => { employerUsersMap[u.id] = u; });
     }
 
+    const activePremiumIds = await getActivePremiumUserIds([
+      ...employerIds,
+      ...Object.values(workerProfilesMap).map((profile) => profile.User?.id),
+    ]);
+
     // Enrich hires with all data
     const enrichedHires = hires.map(hire => {
       const offer = offersMap[hire.offerId] || null;
@@ -565,6 +579,8 @@ export const getAllHires = async (req, res) => {
         offerId: hire.offerId,
         workerId: workerProfile?.userId || workerUser?.id || hire.workerId,
         workerProfileId: hire.workerId,
+        workerIsPremium: activePremiumIds.has(String(workerUser?.id || workerProfile?.userId || '')),
+        employerIsPremium: activePremiumIds.has(String(hire.employerId)),
         // Work details from Hire (copied from Offer at acceptance)
         hourlyRate: hire.hourlyRate || offer?.hourlyRate || null,
         workingHoursPerDay: hire.workingHoursPerDay || offer?.workingHoursPerDay || null,

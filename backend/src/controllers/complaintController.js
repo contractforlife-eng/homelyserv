@@ -23,6 +23,7 @@ import {
   resolveRequestIdentity,
   enrichAuthorIdentities,
 } from '../utils/staffIdentity.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 // ============================================================
 // CONSTANTS
@@ -686,13 +687,19 @@ export const supportListComplaints = async (req, res) => {
 
     const total = await prisma.complaint.count({ where });
 
+    const activePremiumIds = await getActivePremiumUserIds(complaints.map((c) => c.userId));
+    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: true }));
+    serializedComplaints.forEach((item) => {
+      if (item.User) item.User.isPremium = activePremiumIds.has(String(item.userId));
+    });
+
     return res.json({
       success: true,
       count: complaints.length,
       total,
       page: parseInt(page),
       limit: take,
-      complaints: complaints.map((c) => serializeComplaint(c, { includeInternal: true })),
+      complaints: serializedComplaints,
     });
   } catch (error) {
     console.error('❌ Error listing complaints for support:', error);
@@ -728,9 +735,15 @@ export const supportGetComplaint = async (req, res) => {
     }
 
     // SUPPORT and ADMIN both view all complaints.
+    const activePremiumIds = await getActivePremiumUserIds([complaint.userId]);
+    const serializedComplaint = serializeComplaint(complaint, { includeInternal: true });
+    if (serializedComplaint.User) {
+      serializedComplaint.User.isPremium = activePremiumIds.has(String(complaint.userId));
+    }
+
     return res.json({
       success: true,
-      complaint: serializeComplaint(complaint, { includeInternal: true }),
+      complaint: serializedComplaint,
       notes: (complaint.Notes || []).map(serializeAuthorRecord),
       timeline: (complaint.Timeline || []).map(serializeAuthorRecord),
     });
@@ -1429,13 +1442,19 @@ export const adminListComplaints = async (req, res) => {
 
     const total = await prisma.complaint.count({ where });
 
+    const activePremiumIds = await getActivePremiumUserIds(complaints.map((c) => c.userId));
+    const serializedComplaints = complaints.map((c) => serializeComplaint(c, { includeInternal: true }));
+    serializedComplaints.forEach((item) => {
+      if (item.User) item.User.isPremium = activePremiumIds.has(String(item.userId));
+    });
+
     return res.json({
       success: true,
       count: complaints.length,
       total,
       page: parseInt(page),
       limit: take,
-      complaints: complaints.map((c) => serializeComplaint(c, { includeInternal: true })),
+      complaints: serializedComplaints,
     });
   } catch (error) {
     console.error('❌ Error listing complaints for admin:', error);

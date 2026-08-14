@@ -68,6 +68,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        isPremium: conv.user?.isPremium === true,
         usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
@@ -131,6 +132,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        isPremium: conv.user?.isPremium === true,
         usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
@@ -246,6 +248,7 @@ const SupportMessages = () => {
         type: conv.type,
         otherUserId: conv.userId,
         otherUserName: conv.user?.fullName || 'User',
+        isPremium: conv.user?.isPremium === true,
         usesFallbackUserName: !conv.user?.fullName,
         otherUserRole: conv.user?.role || 'USER',
         otherUserImage: conv.user?.profileImage || conv.user?.image || null,
@@ -393,6 +396,7 @@ const SupportMessages = () => {
                             <UserDisplayName
                               name={getConversationDisplayName(conv)}
                               role={conv.role}
+                              isPremium={conv.isPremium}
                               size="sm"
                               className="text-gray-800 dark:text-white"
                             />
@@ -426,6 +430,7 @@ const SupportMessages = () => {
                           name={getConversationDisplayName(conversations.find(c => c.id === selectedConversationId))}
                           image={conversations.find(c => c.id === selectedConversationId)?.otherUserImage || null}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
+                          isPremium={conversations.find(c => c.id === selectedConversationId)?.isPremium}
                           size="md"
                           className="border-2 border-green-200"
                         />
@@ -520,6 +525,7 @@ const SupportMessages = () => {
                                   <UserDisplayName
                                     name={msg.senderName}
                                     role={msg.senderRole}
+                                    isPremium={msg.senderIsPremium || msg.sender?.isPremium}
                                     size="sm"
                                     className="text-green-600"
                                   />

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
+import { UserDisplayName } from '../components/users';
 
 const STATUS_STYLES = {
   applied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -322,7 +323,7 @@ const EmployerJobApplicants = () => {
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold text-gray-800 dark:text-white break-words">{worker.fullName || t('employerJobApplicants.applicant')}</h3>
+                            <UserDisplayName user={worker} name={t('employerJobApplicants.applicant')} size="lg" />
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle}`}>
                               {statusLabel}
                             </span>
@@ -424,7 +425,7 @@ const EmployerJobApplicants = () => {
             <div className="space-y-3 mb-5">
               <div>
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.applicant')}</p>
-                <p className="font-medium text-gray-800 dark:text-white">{offerModalApp.worker?.fullName || t('employerJobApplicants.applicant')}</p>
+                <UserDisplayName user={offerModalApp.worker} name={t('employerJobApplicants.applicant')} size="lg" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('employerJobApplicants.jobTitle')}</p>

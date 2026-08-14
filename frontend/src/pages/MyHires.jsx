@@ -9,6 +9,7 @@ import employerEarningService from '../services/employerEarningService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
+import { UserDisplayName } from '../components/users';
 import {
   User,
   Briefcase,
@@ -614,7 +615,7 @@ const MyHires = () => {
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || t('myHiresPage.fallbacks.unknownWorker')}</p>
+                              <UserDisplayName name={hire.workerName || t('myHiresPage.fallbacks.unknownWorker')} role="WORKER" isPremium={hire.workerIsPremium} size="lg" />
                               <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
                                 <Briefcase size={11} />
                                 {hire.jobTitle || t('myHiresPage.fallbacks.serviceProvider')}
@@ -723,7 +724,7 @@ const MyHires = () => {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-800 dark:text-white truncate">{hire.workerName || t('myHiresPage.fallbacks.unknownWorker')}</p>
+                          <UserDisplayName name={hire.workerName || t('myHiresPage.fallbacks.unknownWorker')} role="WORKER" isPremium={hire.workerIsPremium} size="lg" />
                           <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
                             <Briefcase size={11} />
                             {hire.jobTitle || t('myHiresPage.fallbacks.serviceProvider')}
@@ -829,7 +830,7 @@ const MyHires = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">{selectedHire.workerName}</h3>
+                    <UserDisplayName name={selectedHire.workerName} role="WORKER" isPremium={selectedHire.workerIsPremium} size="xl" />
                     {selectedHire.isPremium && (
                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-50 border border-yellow-200 rounded-full text-[10px] font-medium text-yellow-700">
                         <Crown size={10} className="text-yellow-500" />

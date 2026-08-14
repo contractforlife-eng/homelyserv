@@ -8,7 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
-import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
@@ -1179,6 +1179,8 @@ router.get('/escalated-conversations', async (req, res) => {
           select: { id: true, fullName: true, email: true, role: true, profileImage: true }
         })
       : [];
+    const activePremiumIds = await getActivePremiumUserIds(users.map((user) => user.id));
+    users.forEach((user) => { user.isPremium = activePremiumIds.has(String(user.id)); });
     const userMap = new Map(users.map(u => [u.id, u]));
 
     let complaints = [];
@@ -1325,6 +1327,8 @@ router.get('/support-conversations', async (req, res) => {
           select: { id: true, fullName: true, email: true, role: true, profileImage: true }
         })
       : [];
+    const activePremiumIds = await getActivePremiumUserIds(users.map((user) => user.id));
+    users.forEach((user) => { user.isPremium = activePremiumIds.has(String(user.id)); });
     const userMap = new Map(users.map(u => [u.id, u]));
 
     const conversations = [];

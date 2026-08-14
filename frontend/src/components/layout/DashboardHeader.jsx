@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { isUserPremium } from '../../utils/subscriptionService';
 import { getDisplayName } from '../../utils/userDisplay';
+import { UserDisplayName } from '../users';
 import NotificationBell from '../NotificationBell';
 import { useDashboard } from './DashboardContext';
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -136,11 +137,13 @@ const DashboardHeader = ({
               )}
             </div>
             <div className="flex items-center gap-1 hidden sm:flex">
-              <span className={`text-sm font-medium ${
-                isAdmin ? 'text-gray-300' : 'text-gray-700 dark:text-gray-200'
-              }`}>
-                {displayName}
-              </span>
+              <UserDisplayName
+                user={authUser}
+                name={displayName}
+                isPremium={isPremium}
+                size="md"
+                defaultNameClassName={isAdmin ? 'font-medium text-gray-300' : 'font-medium text-gray-700 dark:text-gray-200'}
+              />
               {isPremium && (
                 <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
                   isAdmin

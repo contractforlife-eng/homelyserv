@@ -9,6 +9,7 @@ import DashboardHeader from '../components/layout/DashboardHeader';
 import EmptyState from '../components/common/EmptyState';
 import PageLoader from '../components/common/PageLoader';
 import ActionMenuPortal from '../components/common/ActionMenuPortal';
+import { UserDisplayName } from '../components/users';
 import {
   Search,
   Shield,
@@ -694,9 +695,7 @@ const AdminUsers = () => {
                             )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {u.fullName}
-                            </p>
+                            <UserDisplayName user={u} size="lg" />
                             {u.subscription?.isPremium && (
                               <p className="text-xs font-semibold text-amber-600 mt-0.5">
                                 {t.premiumActive} · {new Date(u.subscription.endDate).toLocaleDateString(i18n.resolvedLanguage || 'en')}
@@ -934,9 +933,7 @@ const AdminUsers = () => {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">
-                    {selectedUserForRole.fullName}
-                  </p>
+                  <UserDisplayName user={selectedUserForRole} />
                   <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 break-all">
                     <Mail size={10} />
                     {selectedUserForRole.email}

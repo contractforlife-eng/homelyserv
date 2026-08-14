@@ -8,7 +8,7 @@ import Message from '../models/Message.js';
 import MongooseUser from '../models/User.js';
 import { enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
-import { getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
 
 const router = express.Router();
@@ -516,6 +516,11 @@ router.get('/conversations', async (req, res) => {
         updatedAt: conv.lastMessageAt || lastMsg.createdAt
       });
     }
+
+    const activePremiumIds = await getActivePremiumUserIds(conversations.map((conv) => conv.userId));
+    conversations.forEach((conv) => {
+      if (conv.user) conv.user.isPremium = activePremiumIds.has(String(conv.userId));
+    });
 
     return res.json({
       success: true,

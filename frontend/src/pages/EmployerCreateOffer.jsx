@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import { UserDisplayName } from '../components/users';
 import {
   ArrowLeft,
   User,
@@ -247,7 +248,11 @@ const EmployerCreateOffer = () => {
               )}
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{worker.fullName}</h3>
+              <UserDisplayName
+                user={worker}
+                size="xl"
+                defaultNameClassName="font-semibold text-white"
+              />
               <p className="text-teal-100">{worker.desiredJob || t('employerCreateOffer.serviceProvider')}</p>
               <p className="text-sm text-teal-100">{worker.location || t('employerCreateOffer.notSpecified')}</p>
             </div>

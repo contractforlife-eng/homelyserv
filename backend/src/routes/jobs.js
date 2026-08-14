@@ -10,6 +10,7 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireEmployer } from '../middleware/auth.js';
 import { isSupportedCurrency, normalizeCurrencyCode } from '../utils/currencyMetadata.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 const router = express.Router();
 
@@ -449,9 +450,12 @@ router.get('/', authenticate, async (req, res) => {
 
     // Attach safe employer display data (no private contact info).
     const employerIds = [...new Set(jobs.map((job) => String(job.employerId)))];
+    const activePremiumIds = await getActivePremiumUserIds(employerIds);
     const employersMap = new Map();
     for (const employerId of employerIds) {
-      employersMap.set(employerId, await safeEmployerInfo(employerId));
+      const employer = await safeEmployerInfo(employerId);
+      employer.isPremium = activePremiumIds.has(employerId);
+      employersMap.set(employerId, employer);
     }
 
     const enriched = jobs.map((job) => ({
@@ -488,6 +492,8 @@ router.get('/:id', authenticate, async (req, res) => {
     }
 
     const employer = await safeEmployerInfo(job.employerId);
+    const activePremiumIds = await getActivePremiumUserIds([job.employerId]);
+    employer.isPremium = activePremiumIds.has(String(job.employerId));
 
     res.json({ success: true, job: { ...job, employer } });
   } catch (error) {

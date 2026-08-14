@@ -212,7 +212,11 @@ const StartConversationModal = ({ isOpen, onClose, onSelectUser }) => {
                     className="border-2 border-yellow-500/30 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">{user.fullName || user.name}</p>
+                    <UserDisplayName
+                      user={user}
+                      size="sm"
+                      defaultNameClassName="font-semibold text-white"
+                    />
                     <p className="text-sm text-gray-400 truncate">{user.email}</p>
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mt-1 ${getRoleColorClass(user.role)}`}>
                       {getRoleIcon(user.role)}
@@ -680,7 +684,13 @@ const AdminMessages = () => {
         />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
-            <p className="font-medium text-white text-sm truncate">{formatDisplayName(title, avatarRole)}</p>
+            <UserDisplayName
+              user={type === 'SUPPORT' ? conv.user : conv.otherStaff}
+              name={title}
+              role={avatarRole}
+              size="sm"
+              defaultNameClassName="font-medium text-white"
+            />
             <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(conv.lastMessageTime || conv.updatedAt)}</span>
           </div>
           <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
@@ -797,7 +807,13 @@ const AdminMessages = () => {
               className="border-2 border-yellow-500/30 flex-shrink-0"
             />
             <div>
-              <p className="font-medium text-white text-sm">{formatDisplayName(chatTitle, chatAvatarRole)}</p>
+              <UserDisplayName
+                user={selectedConversation.type === 'SUPPORT' ? selectedConversation.user : selectedConversation.otherStaff}
+                name={chatTitle}
+                role={chatAvatarRole}
+                size="sm"
+                defaultNameClassName="font-medium text-white"
+              />
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
             </div>
           </div>
@@ -863,6 +879,7 @@ const AdminMessages = () => {
                         <UserDisplayName
                           name={senderName}
                           role={senderRole}
+                          isPremium={msg.senderIsPremium || msg.sender?.isPremium}
                           size="sm"
                           className="text-white"
                         />

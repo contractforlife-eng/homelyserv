@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import jobService from '../services/jobService';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
+import { UserDisplayName } from '../components/users';
 
 const TYPE_LABELS = {
   'full-time': 'workerApplications.types.fullTime',
@@ -193,7 +194,7 @@ const WorkerApplications = () => {
                         {employerName && (
                           <p className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                             <Building size={15} className="text-gray-400 dark:text-gray-500" />
-                            {employerName}
+                            <UserDisplayName user={{ ...app.employer, role: 'EMPLOYER' }} name={employerName} />
                           </p>
                         )}
 

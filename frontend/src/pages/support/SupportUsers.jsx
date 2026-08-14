@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../../utils/api';
 import { getRoleBadgeClasses } from '../../utils/userDisplay';
-import { UserAvatar } from '../../components/users';
+import { UserAvatar, UserDisplayName } from '../../components/users';
 
 const SupportUsers = () => {
   const { t: i18nT, i18n } = useTranslation();
@@ -280,7 +280,7 @@ const SupportUsers = () => {
                             className="border border-green-500/30"
                           />
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {user.fullName}
+                            <UserDisplayName user={user} />
                             {user.subscription?.isPremium && (
                               <div className="text-xs font-semibold text-amber-600 mt-0.5">
                                 {t.premium} · {formatDate(user.subscription.endDate)}

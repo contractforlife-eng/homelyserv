@@ -341,6 +341,7 @@ const SupportComplaints = () => {
                     <UserDisplayName
                       name={msg.authorName}
                       role={msg.authorRole}
+                      isPremium={msg.authorIsPremium || msg.author?.isPremium || (msg.isOriginal && selectedComplaint?.User?.isPremium)}
                       size="sm"
                       className={isUser ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-200'}
                     />
@@ -514,9 +515,7 @@ const SupportComplaints = () => {
                             className="border border-green-500/30"
                           />
                           <div className="min-w-0">
-                            <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                              {complaint.User?.fullName || t.unknownUser}
-                            </div>
+                            <UserDisplayName user={complaint.User} name={t.unknownUser} />
                             <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
                               {complaint.User?.email || ''}
                             </div>
@@ -576,9 +575,10 @@ const SupportComplaints = () => {
                     <FileText size={20} className="text-green-500 flex-shrink-0" />
                     <span className="truncate">{selectedComplaint.subject}</span>
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
-                    {selectedComplaint.User?.fullName} ({selectedComplaint.User?.email})
-                  </p>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center gap-1">
+                    <UserDisplayName user={selectedComplaint.User} name={t.unknownUser} />
+                    <span>({selectedComplaint.User?.email})</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">

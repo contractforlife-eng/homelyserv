@@ -172,6 +172,19 @@ export const isStaffRole = (role) => {
 };
 
 /**
+ * Whether an identity should receive the active-Premium name treatment.
+ * The boolean must come from the server's current entitlement check; this
+ * helper deliberately does not infer entitlement from payments or plans.
+ */
+export const isActivePremiumCustomer = (user, explicitPremium = undefined) => {
+  const role = (user?.role || '').toUpperCase();
+  if (!['EMPLOYER', 'WORKER'].includes(role)) return false;
+
+  const premium = explicitPremium ?? user?.isPremium ?? user?.subscription?.isPremium;
+  return premium === true;
+};
+
+/**
  * Get the Tailwind text color for a user's displayed name.
  * ADMIN and SUPPORT are always red (official staff).
  * Other roles return an empty string (use default color).
@@ -212,6 +225,7 @@ export default {
   getRoleColor,
   getRoleBadgeClasses,
   isStaffRole,
+  isActivePremiumCustomer,
   getRoleNameColor,
   getOfficialBadgeClass
 };

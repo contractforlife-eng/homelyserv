@@ -61,6 +61,7 @@ const buildSafeEmployerMap = async (employerIds) => {
 
     const userMap = new Map(users.map((u) => [String(u.id), u]));
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
+    const activePremiumIds = await getActivePremiumUserIds(uniqueIds);
 
     for (const id of uniqueIds) {
       const user = userMap.get(id);
@@ -71,6 +72,7 @@ const buildSafeEmployerMap = async (employerIds) => {
         city: user?.city || null,
         companyName: profile?.companyName || null,
         industry: profile?.industry || null,
+        isPremium: activePremiumIds.has(id),
       });
     }
   } catch (error) {

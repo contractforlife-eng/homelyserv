@@ -12,6 +12,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
 import { formatJobCompensation } from '../utils/jobCompensationDisplay';
+import { UserDisplayName } from '../components/users';
 
 
 const TYPE_LABELS = {
@@ -333,7 +334,8 @@ function JobDetails() {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                 {employerName && (
                   <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                    <Building size={18} className="text-gray-400 dark:text-gray-500" /> {employerName}
+                    <Building size={18} className="text-gray-400 dark:text-gray-500" />
+                    <UserDisplayName user={{ ...job.employer, role: 'EMPLOYER' }} name={employerName} />
                   </span>
                 )}
                 {job.location && (

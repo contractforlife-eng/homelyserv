@@ -6,6 +6,7 @@ import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import employerService from '../services/employerService';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
+import { UserDisplayName } from '../components/users';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
@@ -291,7 +292,7 @@ const WorkerProfileView = () => {
                 )}
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-2xl font-bold">{worker.fullName}</h1>
+                <UserDisplayName user={worker} size="xl" />
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-1">
                   {worker.isPremium && <PremiumBadge label={t('workerProfile.premiumLabel')} size="md" />}
                   {worker.activelyLooking && <ActivelyLookingBadge label={t('workerProfile.activelyLooking')} size="md" />}

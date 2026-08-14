@@ -15,6 +15,7 @@
 //      with zero code changes.
 // ============================================================
 import prisma from '../lib/prisma.js';
+import { getActivePremiumUserIds } from '../services/premiumService.js';
 
 // Roles considered "staff" (support / admin family).
 export const STAFF_ROLES = ['SUPPORT', 'ADMIN', 'SUP_ADMIN'];
@@ -29,7 +30,7 @@ export const isValidObjectId = (id) =>
  * shape used across every API response:
  *   { id, name, fullName, role, image, email }
  */
-export const toIdentityObject = (user) => {
+export const toIdentityObject = (user, isPremium = false) => {
   if (!user) return null;
   return {
     id: String(user.id),
@@ -38,6 +39,7 @@ export const toIdentityObject = (user) => {
     role: user.role || 'USER',
     image: user.profileImage || user.image || null,
     email: user.email || null,
+    isPremium: ['EMPLOYER', 'WORKER'].includes(user.role) && isPremium === true,
   };
 };
 
@@ -53,7 +55,9 @@ export const getUserIdentity = async (userId) => {
       where: { id: String(userId) },
       select: { id: true, fullName: true, role: true, profileImage: true, email: true },
     });
-    return toIdentityObject(user);
+    if (!user) return null;
+    const activePremiumIds = await getActivePremiumUserIds([String(user.id)]);
+    return toIdentityObject(user, activePremiumIds.has(String(user.id)));
   } catch (error) {
     console.error('❌ staffIdentity: failed to resolve user identity:', error.message);
     return null;
@@ -75,8 +79,11 @@ export const getUserIdentities = async (userIds = []) => {
       where: { id: { in: uniqueIds } },
       select: { id: true, fullName: true, role: true, profileImage: true, email: true },
     });
+    const activePremiumIds = await getActivePremiumUserIds(
+      users.filter((user) => ['EMPLOYER', 'WORKER'].includes(user.role)).map((user) => String(user.id))
+    );
     for (const user of users) {
-      map.set(String(user.id), toIdentityObject(user));
+      map.set(String(user.id), toIdentityObject(user, activePremiumIds.has(String(user.id))));
     }
   } catch (error) {
     console.error('❌ staffIdentity: failed to batch-resolve identities:', error.message);
@@ -139,9 +146,10 @@ export const enrichMessageIdentities = async (messages = []) => {
       ...msg,
       senderName: sender?.name || msg.senderName || 'User',
       senderRole: sender?.role || msg.senderRole || 'USER',
+      senderIsPremium: sender?.isPremium === true,
       recipientName: recipient?.name || msg.recipientName || 'User',
       sender: sender
-        ? { id: sender.id, name: sender.name, role: sender.role, image: sender.image }
+        ? { id: sender.id, name: sender.name, role: sender.role, image: sender.image, isPremium: sender.isPremium }
         : msg.senderId
           ? { id: String(msg.senderId), name: msg.senderName || 'User', role: msg.senderRole || 'USER' }
           : undefined,
@@ -174,8 +182,9 @@ export const enrichAuthorIdentities = async (items = []) => {
       ...item,
       authorName: author?.name || item.authorName || 'User',
       authorRole: author?.role || item.authorRole || 'USER',
+      authorIsPremium: author?.isPremium === true,
       author: author
-        ? { id: author.id, name: author.name, role: author.role, image: author.image }
+        ? { id: author.id, name: author.name, role: author.role, image: author.image, isPremium: author.isPremium }
         : item?.authorId
           ? { id: String(item.authorId), name: item.authorName || 'User', role: item.authorRole || 'USER' }
           : null,

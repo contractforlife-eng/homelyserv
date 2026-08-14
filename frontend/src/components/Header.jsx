@@ -7,6 +7,7 @@ import Logo from './Logo';
 import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
 import api from '../utils/api';
+import { UserDisplayName } from './users';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -97,7 +98,7 @@ export default function Header() {
                     user.fullName?.charAt(0) || 'U'
                   )}
                 </span>
-                <span className="user-name hide-mobile">{user.fullName}</span>
+                <UserDisplayName user={user} className="user-name hide-mobile" />
               </div>
               <button onClick={handleLogout} className="btn-logout">
                 {t('logout')}

@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
 import { QUICK_HIRE_PREMIUM_FEE } from '../config/monetization';
 import { PremiumBadge, ActivelyLookingBadge } from '../components/PremiumBadge';
+import { UserDisplayName } from '../components/users';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import {
@@ -827,7 +828,7 @@ const EmployerSearch = () => {
                       <div className="p-3 flex flex-col flex-1">
                         {/* Worker Name */}
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-1 truncate">
-                          {worker.fullName || t('employerSearch.worker')}
+                          <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" />
                         </h3>
 
                         {/* Worker Job / Service */}
@@ -940,7 +941,7 @@ const EmployerSearch = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
-                                {worker.fullName}
+                                <UserDisplayName user={worker} size="xl" />
                               </h4>
                               <div className="flex flex-wrap items-center gap-1">
                                 {worker.isPremium && <PremiumBadge label={t('employerSearch.premium')} size="sm" />}

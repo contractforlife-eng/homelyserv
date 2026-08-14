@@ -50,6 +50,7 @@ import { formatExperienceDisplay } from '../../utils/experienceDisplay';
 import { ensureConversationExists } from '../../utils/chatService';
 import {
   UserAvatar,
+  UserDisplayName,
   UserStatsCard
 } from './index';
 
@@ -496,7 +497,11 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
               />
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold">{profileUser.fullName}</h1>
+                  <UserDisplayName
+                    user={profileUser}
+                    size="xl"
+                    defaultNameClassName="font-bold text-white"
+                  />
                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium">
                      <Shield size={12} />
                      {t.roles[profileUser.role] || t.roles.user}
