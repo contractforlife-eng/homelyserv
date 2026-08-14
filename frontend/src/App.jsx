@@ -1,6 +1,6 @@
 // src/App.jsx - FULLY UPDATED WITH PROPER MESSAGE ROUTING
 import React from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 // Public Pages
 import Login from './pages/Login';
@@ -74,6 +74,8 @@ import SupportMessages from './pages/support/SupportMessages';
 import SupportSettings from './pages/support/SupportSettings';
 import SupportComplaints from './pages/support/SupportComplaints';
 import SupportProfile from './pages/support/SupportProfile';
+import PublicLiveSupport from './pages/PublicLiveSupport';
+import PublicSupportWidget from './components/public-support/PublicSupportWidget';
 
 import { useAuth } from './context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -174,7 +176,12 @@ if (!isAuthenticated) {
 };
 
 function App() {
+  const location = useLocation();
+  const { isAuthenticated, loading } = useAuth();
+  const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
+  const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
   return (
+    <>
     <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
       <Route path="/" element={<Navigate to="/login" replace />} />
@@ -537,6 +544,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/live-support"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <PublicLiveSupport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== SUPPORT ROUTES ========== */}
       <Route 
@@ -595,10 +610,20 @@ function App() {
           </ProtectedRoute>
         } 
       />
+      <Route
+        path="/support-live-support"
+        element={
+          <ProtectedRoute requiredRole="SUPPORT">
+            <PublicLiveSupport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== FALLBACK ========== */}
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
+    {showPublicSupport && <PublicSupportWidget />}
+    </>
   );
 }
 

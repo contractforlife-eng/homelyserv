@@ -18,6 +18,7 @@ import {
   X,
   Shield,
   FileText
+  ,Headphones
 } from 'lucide-react';
 
 const SupportSidebar = ({
@@ -48,6 +49,7 @@ const SupportSidebar = ({
     { id: 'users', label: t.users, icon: Users, path: '/support-users' },
     { id: 'complaints', label: t.complaints, icon: FileText, path: '/support-complaints' },
     { id: 'messages', label: t.messages, icon: MessageCircle, path: '/support-messages' },
+    { id: 'live-support', label: i18nT('publicSupport.liveSupport'), icon: Headphones, path: '/support-live-support' },
     { id: 'profile', label: t.profile, icon: UserIcon, path: '/support-profile' },
     { id: 'settings', label: t.settings, icon: Settings, path: '/support-settings' },
   ];

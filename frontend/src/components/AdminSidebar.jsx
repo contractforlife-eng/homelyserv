@@ -21,6 +21,7 @@ import {
   BarChart3,
   Briefcase,
   Landmark
+  ,Headphones
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,6 +56,7 @@ const AdminSidebar = ({
     { id: 'complaints', label: t('adminSidebar.complaints'), icon: FileText, path: '/admin/complaints' },
     { id: 'reports', label: t('adminSidebar.reports'), icon: BarChart3, path: '/admin/reports' },
     { id: 'messages', label: t('adminSidebar.messages'), icon: MessageCircle, path: '/admin/messages' },
+    { id: 'live-support', label: t('publicSupport.liveSupport'), icon: Headphones, path: '/admin/live-support' },
     { id: 'hires', label: t('adminSidebar.hires'), icon: Briefcase, path: '/admin/hires' },
     { id: 'profile', label: t('adminSidebar.profile'), icon: UserIcon, path: '/admin/profile' },
     { id: 'settings', label: t('adminSidebar.settings'), icon: Settings, path: '/admin/settings' },

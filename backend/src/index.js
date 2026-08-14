@@ -31,8 +31,11 @@ import oauthRoutes from './routes/oauth.js';
 import supportRoutes from './routes/support.js';
 import complaintRoutes from './routes/complaints.js';
 import sidebarRoutes from './routes/sidebar.js';
+import publicSupportRoutes from './routes/publicSupport.js';
 import { requireAdmin } from './middleware/auth.js';
 import { setIo } from './lib/socket.js';
+import { verifyGuestConversation, verifyStaffToken } from './services/publicSupportAccessService.js';
+import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -113,6 +116,7 @@ const corsOptions = {
     'Content-Type',
     'Authorization',
     'X-Requested-With',
+    'X-Guest-Token',
     'Accept',
     'Origin',
     'Access-Control-Allow-Origin',
@@ -146,7 +150,7 @@ app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Guest-Token, Accept, Origin');
     }
   }
   
@@ -214,6 +218,7 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB connected successfully');
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
+    startPublicSupportExpiryWorker();
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
@@ -351,6 +356,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/sidebar', sidebarRoutes);
+app.use('/api/public-support', publicSupportRoutes);
 app.use('/api', complaintRoutes);
 // ============================================================
 // Socket.IO Event Handlers
@@ -385,6 +391,27 @@ io.on('connection', (socket) => {
   // cannot bypass authorization. No active frontend emits this event.
   socket.on('send_message', () => {
     socket.emit('message_error', { error: 'Use the authenticated chat API.' });
+  });
+
+  // Public live-support rooms require possession of the conversation's
+  // unguessable access token. Staff queue access requires a current JWT and
+  // an ADMIN/SUPPORT role. Neither room trusts a role or user id from clients.
+  socket.on('public-support:join-guest', async ({ publicId, token } = {}, acknowledge = () => {}) => {
+    try {
+      const conversation = await verifyGuestConversation(publicId, token);
+      if (!conversation) return acknowledge({ ok: false });
+      socket.join(`public-support:${conversation.publicId}`);
+      acknowledge({ ok: true });
+    } catch {
+      acknowledge({ ok: false });
+    }
+  });
+
+  socket.on('public-support:join-staff', async ({ token } = {}, acknowledge = () => {}) => {
+    const staff = await verifyStaffToken(token);
+    if (!staff) return acknowledge({ ok: false });
+    socket.join('public-support:staff');
+    acknowledge({ ok: true });
   });
   
   socket.on('typing', (data) => {

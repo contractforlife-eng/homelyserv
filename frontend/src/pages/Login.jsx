@@ -90,7 +90,12 @@ const redirectUser = (user) => {
 
       user.role = user.role?.toUpperCase();
 
-      useAuthStore.getState().setAuth(user, token);
+      const authResult = useAuthStore.getState().setAuth(user, token);
+      if (!authResult.success) {
+        setError(authResult.error || t('loginFailed'));
+        setLoading(false);
+        return;
+      }
 
       console.log('✅ Login successful:', user.fullName);
       console.log('✅ User role:', user.role);

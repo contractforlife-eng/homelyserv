@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import api from '../utils/api';
 import { disconnectSocket } from '../utils/socket';
 import { changeLanguageGlobal } from '../i18n';
+import { persistAuthToken } from '../utils/storageMaintenance';
+
+const storedAuthToken = localStorage.getItem('homelyserv_token');
 
 const normalizeUser = (userData) => {
   if (!userData) return null;
@@ -20,8 +23,8 @@ const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
-      token: null,
-      isAuthenticated: false,
+      token: storedAuthToken,
+      isAuthenticated: Boolean(storedAuthToken),
       isLoading: true,
       error: null,
       language: localStorage.getItem('homelyserv_language') || 'en',
@@ -37,6 +40,9 @@ const useAuthStore = create(
           const { user, token } = response.data;
           const normalizedUser = normalizeUser(user);
 
+          const persisted = persistAuthToken(token);
+          if (!persisted.success) throw new Error(persisted.error);
+
           set({
             user: normalizedUser,
             token,
@@ -45,11 +51,9 @@ const useAuthStore = create(
             error: null
           });
 
-          localStorage.setItem('homelyserv_token', token);
-
           return { success: true, user: normalizedUser };
         } catch (error) {
-          const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+          const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
           set({
             isLoading: false,
             error: errorMessage
@@ -70,6 +74,9 @@ const useAuthStore = create(
           const { user, token } = response.data;
           const normalizedUser = normalizeUser(user);
 
+          const persisted = persistAuthToken(token);
+          if (!persisted.success) throw new Error(persisted.error);
+
           set({
             user: normalizedUser,
             token,
@@ -78,11 +85,9 @@ const useAuthStore = create(
             error: null
           });
 
-          localStorage.setItem('homelyserv_token', token);
-
           return { success: true, user: normalizedUser };
         } catch (error) {
-          const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+          const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please check your credentials.';
           set({
             isLoading: false,
             error: errorMessage
@@ -111,6 +116,11 @@ const useAuthStore = create(
 
       setAuth: (user, token) => {
         const normalizedUser = normalizeUser(user);
+        const persisted = persistAuthToken(token);
+        if (!persisted.success) {
+          set({ user:null, token:null, isAuthenticated:false, isLoading:false, error:persisted.error });
+          return { success:false, error:persisted.error };
+        }
         set({
           user: normalizedUser,
           token,
@@ -118,7 +128,6 @@ const useAuthStore = create(
           isLoading: false,
           error: null
         });
-        localStorage.setItem('homelyserv_token', token);
         return { success: true, user: normalizedUser };
       },
 
@@ -447,10 +456,17 @@ const useAuthStore = create(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
         language: state.language
-      })
+      }),
+      merge: (persistedState, currentState) => {
+        const token = localStorage.getItem('homelyserv_token');
+        return {
+          ...currentState,
+          language: persistedState?.language || currentState.language,
+          token,
+          isAuthenticated: Boolean(token),
+        };
+      }
     }
   )
 );
