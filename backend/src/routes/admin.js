@@ -179,6 +179,7 @@ router.post('/users/:id/suspend', async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { 
+        isSuspended: true,
         status: 'SUSPENDED',
         suspensionReason: reason || 'No reason provided',
         suspendedAt: new Date()
@@ -218,6 +219,7 @@ router.post('/users/:id/activate', async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { 
+        isSuspended: false,
         status: 'ACTIVE',
         suspensionReason: null,
         suspendedAt: null

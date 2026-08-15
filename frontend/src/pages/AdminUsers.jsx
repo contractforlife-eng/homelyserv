@@ -87,7 +87,9 @@ const RoleBadge = ({ role, label }) => {
 };
 
 const StatusBadge = ({ isSuspended, isVerified, labels }) => {
-  if (isSuspended) {
+  const suspended = isSuspended === true || String(isSuspended || '').toUpperCase() === 'SUSPENDED';
+
+  if (suspended) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700">
         <UserX size={12} />
@@ -111,6 +113,10 @@ const StatusBadge = ({ isSuspended, isVerified, labels }) => {
     </span>
   );
 };
+
+const isSuspendedAccount = (user) => (
+  user?.isSuspended === true || String(user?.status || '').toUpperCase() === 'SUSPENDED'
+);
 
 const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, onResetPassword, onSuspend, onActivate, labels }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -170,9 +176,9 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
           <Key size={14} />
           {labels.resetPassword}
         </button>
-        {user.isSuspended ? (
+        {isSuspendedAccount(user) ? (
           <button
-            onClick={() => { onActivate(user.id); closeMenu(); }}
+            onClick={() => { onActivate(user.id || user._id); closeMenu(); }}
             className="w-full text-left px-4 py-2 text-sm text-green-700 dark:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
             role="menuitem"
           >
@@ -181,7 +187,7 @@ const UserActionsMenu = ({ user, currentAdminId, onViewProfile, onChangeRole, on
           </button>
         ) : (
           <button
-            onClick={() => { onSuspend(user.id, true); closeMenu(); }}
+            onClick={() => { onSuspend(user.id || user._id, true); closeMenu(); }}
             className="w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
             role="menuitem"
           >
@@ -278,9 +284,9 @@ const AdminUsers = () => {
     }
 
     if (statusFilter === 'suspended') {
-      filtered = filtered.filter(u => u.isSuspended === true || u.status === 'suspended');
+      filtered = filtered.filter(isSuspendedAccount);
     } else if (statusFilter === 'active') {
-      filtered = filtered.filter(u => u.isSuspended !== true && u.status !== 'suspended');
+      filtered = filtered.filter(u => !isSuspendedAccount(u));
     }
 
     if (searchTerm) {
@@ -321,10 +327,16 @@ const AdminUsers = () => {
     setUsers(updatedUsers);
   };
 
-  const updateUserStatus = (userId, newStatus) => {
+  const updateUserStatus = (userId, suspended, reason = null) => {
     const updatedUsers = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, status: newStatus };
+      if (String(u.id || u._id) === String(userId)) {
+        return {
+          ...u,
+          isSuspended: suspended,
+          status: suspended ? 'SUSPENDED' : 'ACTIVE',
+          suspendedAt: suspended ? new Date().toISOString() : null,
+          suspensionReason: suspended ? reason : null
+        };
       }
       return u;
     });
@@ -462,17 +474,23 @@ const AdminUsers = () => {
 
   const handleSuspend = async (userId, suspend) => {
     try {
+      const reason = suspend ? 'Violation of terms of service' : 'Account reactivated';
       await api.post(`/api/admin/users/${userId}/suspend`, {
-        reason: suspend ? 'Violation of terms of service' : 'Account reactivated'
+        reason
       });
-      updateUserStatus(userId, suspend ? 'suspended' : 'active');
+      updateUserStatus(userId, suspend, reason);
     } catch (error) {
       console.error('Error updating user status:', error);
     }
   };
 
   const handleActivate = async (userId) => {
-    await handleSuspend(userId, false);
+    try {
+      await api.post(`/api/admin/users/${userId}/activate`);
+      updateUserStatus(userId, false);
+    } catch (error) {
+      console.error('Error activating user:', error);
+    }
   };
 
   const clearFilters = () => {
@@ -490,8 +508,8 @@ const AdminUsers = () => {
     employers: users.filter(u => u.role === 'EMPLOYER').length,
     support: users.filter(u => u.role === 'SUPPORT').length,
     admins: users.filter(u => u.role === 'ADMIN').length,
-    active: users.filter(u => u.isSuspended !== true && u.status !== 'suspended').length,
-    suspended: users.filter(u => u.isSuspended === true || u.status === 'suspended').length,
+    active: users.filter(u => !isSuspendedAccount(u)).length,
+    suspended: users.filter(isSuspendedAccount).length,
   };
 
   if (authLoading) {
@@ -720,7 +738,7 @@ const AdminUsers = () => {
                         <RoleBadge role={u.role} label={t.roles[u.role] || t.roles.USER} />
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge isSuspended={u.isSuspended || u.status === 'suspended'} isVerified={u.emailVerified === true} labels={t.status} />
+                        <StatusBadge isSuspended={isSuspendedAccount(u)} isVerified={u.emailVerified === true} labels={t.status} />
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString(i18n.resolvedLanguage || 'en') : t.notAvailable}

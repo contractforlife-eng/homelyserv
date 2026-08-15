@@ -21,6 +21,23 @@ const UserSchema = new mongoose.Schema({
     enum: ['ADMIN', 'EMPLOYER', 'WORKER', 'SUPPORT'],
     default: 'WORKER'
   },
+  isSuspended: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'SUSPENDED'],
+    default: 'ACTIVE'
+  },
+  suspendedAt: {
+    type: Date,
+    default: null
+  },
+  suspensionReason: {
+    type: String,
+    default: null
+  },
   // Session/token version. Bumped whenever an admin changes a user's role,
   // which invalidates all previously issued JWTs for that user.
   tokenVersion: {
