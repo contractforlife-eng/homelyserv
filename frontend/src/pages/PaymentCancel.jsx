@@ -16,7 +16,10 @@ const PaymentCancel = () => {
   useEffect(() => {
     try {
       if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: 'PAYPAL_RETURN', success: false }, '*');
+        window.opener.postMessage(
+          { type: 'PAYPAL_RETURN', success: false },
+          window.location.origin
+        );
         setTimeout(() => window.close(), 500);
       }
     } catch (e) {

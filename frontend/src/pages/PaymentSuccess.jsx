@@ -54,7 +54,10 @@ const PaymentSuccess = () => {
       // Only close if this window was opened as a popup (has an opener)
       if (window.opener && !window.opener.closed) {
         // Notify the opener that payment is complete
-        window.opener.postMessage({ type: 'PAYPAL_RETURN', success: true }, '*');
+        window.opener.postMessage(
+          { type: 'PAYPAL_RETURN', success: true },
+          window.location.origin
+        );
         // Close the popup after a short delay to let the message send
         setTimeout(() => window.close(), 500);
         return true;
