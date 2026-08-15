@@ -4,7 +4,7 @@
 // The existing polling mechanism (PaymentOptions.jsx / Subscription.jsx)
 // captures the payment, updates status, and activates Premium.
 // This page only verifies the result and provides a clean UX after PayPal redirects back.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Loader2, AlertCircle, X } from 'lucide-react';
@@ -22,6 +22,9 @@ const PaymentSuccess = () => {
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
+  const verificationRunRef = useRef(0);
+  const closeTimeoutRef = useRef(null);
+  const captureRequestedRef = useRef(false);
 
   // Determine where to redirect based on payment source
   const determineDestination = () => {
@@ -59,7 +62,7 @@ const PaymentSuccess = () => {
           window.location.origin
         );
         // Close the popup after a short delay to let the message send
-        setTimeout(() => window.close(), 500);
+        closeTimeoutRef.current = setTimeout(() => window.close(), 500);
         return true;
       }
     } catch (e) {
@@ -75,21 +78,38 @@ const PaymentSuccess = () => {
       const statusResult = await getPaymentStatus(orderId);
       
       if (statusResult.success && statusResult.payment) {
-        if (statusResult.payment.status === 'completed') {
+        if (
+          statusResult.payment.status === 'completed' &&
+          statusResult.payment.fulfillmentStatus === 'fulfilled'
+        ) {
           setStatus('success');
           setMessage(t('paymentSuccess.messages.confirmed'));
           return true;
         }
       }
 
-      // If not completed yet, try capture (idempotent - returns success if already completed)
-      // This is safe because the capture endpoint checks status first
+      // Capture only after the read-only server status check observes a
+      // provider-approved/final order. The capture endpoint re-verifies it.
+      if (!['APPROVED', 'COMPLETED'].includes(statusResult?.payment?.providerState)) {
+        setStatus('verifying');
+        setMessage(t('paymentSuccess.messages.processing'));
+        return false;
+      }
+
+      if (captureRequestedRef.current) return false;
+      captureRequestedRef.current = true;
       const captureResult = await capturePayPalOrder(orderId);
       
       if (captureResult.success) {
-        setStatus('success');
-        setMessage(t('paymentSuccess.messages.confirmed'));
-        return true;
+        const completedResult = await getPaymentStatus(orderId);
+        if (
+          completedResult?.payment?.status === 'completed' &&
+          completedResult?.payment?.fulfillmentStatus === 'fulfilled'
+        ) {
+          setStatus('success');
+          setMessage(t('paymentSuccess.messages.confirmed'));
+          return true;
+        }
       }
 
       // Payment still pending - wait and retry
@@ -137,8 +157,10 @@ const PaymentSuccess = () => {
     // Determine destination
     setDestination(determineDestination());
 
-    // Try to close popup if this is one
-    const isPopup = tryClosePopup();
+    const isPopup = Boolean(window.opener && !window.opener.closed);
+    captureRequestedRef.current = false;
+    const runId = ++verificationRunRef.current;
+    let retryTimeout = null;
 
     // Verify payment status
     let attempts = 0;
@@ -147,43 +169,38 @@ const PaymentSuccess = () => {
     const checkPayment = async () => {
       attempts++;
       const verified = await verifyPayment(orderId);
+
+      if (verificationRunRef.current !== runId) return;
       
       if (verified) {
+        if (isPopup) tryClosePopup();
         // Success - redirect after countdown
         setCountdown(3);
         return;
       }
       
       if (attempts >= maxAttempts) {
-        // After max attempts, show success anyway if we have a token
-        // (the polling in the main tab will complete the capture)
-        if (token || storedOrderId) {
-          setStatus('success');
-          setMessage(t('paymentSuccess.messages.finalizing'));
-        } else {
-          setStatus('error');
-          setMessage(t('paymentSuccess.messages.unableToVerify'));
-        }
+        setStatus('error');
+        setMessage(t('paymentSuccess.messages.unableToVerify'));
         return;
       }
       
       // Retry after 2 seconds
-      setTimeout(checkPayment, 2000);
+      retryTimeout = setTimeout(checkPayment, 2000);
     };
 
     checkPayment();
 
     // Cleanup
     return () => {
+      verificationRunRef.current++;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
       // Clear the stored order ID after verification
       // (but keep it if popup is still open - the main tab needs it)
       if (!isPopup) {
-        // Don't clear immediately - the main tab polling may still need it
-        // Clear after a delay
-        setTimeout(() => {
-          localStorage.removeItem('homelyserv_paypal_order_id');
-          localStorage.removeItem('homelyserv_paypal_approval_url');
-        }, 10000);
+        localStorage.removeItem('homelyserv_paypal_order_id');
+        localStorage.removeItem('homelyserv_paypal_approval_url');
       }
     };
   }, [location.search, isAuthenticated, authLoading, authUser, navigate]);

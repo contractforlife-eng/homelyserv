@@ -7,7 +7,7 @@ import useAuthStore from '../store/authStore';
 import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionService';
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
@@ -80,6 +80,7 @@ const PaymentOptions = () => {
 
   // Guard against double-processing (polling + popup-return can both fire).
   const paymentProcessedRef = useRef(false);
+  const paypalCaptureRequestedRef = useRef(false);
 
   // Get authenticated user from authStore
   const authUser = useAuthStore(state => state.user);
@@ -424,6 +425,13 @@ const PaymentOptions = () => {
 
     if (orderId && !paymentProcessedRef.current) {
       try {
+        const statusResult = await getPaymentStatus(orderId);
+        if (!['APPROVED', 'COMPLETED'].includes(statusResult?.payment?.providerState)) {
+          setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
+          return;
+        }
+        if (paypalCaptureRequestedRef.current) return;
+        paypalCaptureRequestedRef.current = true;
         const result = await capturePayPalOrder(orderId);
         if (result.success) {
           processSuccessfulPayment(result.transaction);
@@ -473,19 +481,10 @@ const PaymentOptions = () => {
       console.log(`🔄 Checking PayPal order ${orderId} (attempt ${attempts}/${maxAttempts})`);
       
       try {
-        const result = await capturePayPalOrder(orderId);
-        console.log('📥 PayPal capture result:', result);
-        
-        // Check if payment was successful
-        if (result.success) {
-          clearInterval(interval);
-          setPollingInterval(null);
-          setPaymentMessage(t('paymentOptionsPage.paymentCaptured'));
-          processSuccessfulPayment(result.transaction);
-          return;
-        }
+        const statusResult = await getPaymentStatus(orderId);
+        const providerState = statusResult?.payment?.providerState;
 
-        if (isTerminalPayPalCaptureResult(result)) {
+        if (providerState === 'TERMINAL') {
           clearInterval(interval);
           setPollingInterval(null);
           setPaypalOrderId(null);
@@ -495,47 +494,35 @@ const PaymentOptions = () => {
           setPaymentMessage('');
           return;
         }
-        
-        // Check if order is approved but not yet captured
-        if (result.status === 'APPROVED') {
-          console.log('⏳ Order approved, attempting to capture...');
-          setPaymentMessage(t('paymentOptionsPage.paymentApproved'));
-          // Continue polling - next attempt will try to capture again
-          return;
-        }
-        
-        // Check if order is still pending approval
-        if (result.status === 'PENDING_APPROVAL' || result.status === 'CREATED') {
-          console.log('⏳ Waiting for user approval...');
+
+        if (!['APPROVED', 'COMPLETED'].includes(providerState)) {
           setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
-          // Continue polling
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setPollingInterval(null);
+            setPaymentError(t('paymentOptionsPage.errors.verificationTimeout'));
+            setIsProcessing(false);
+            setPaymentMessage('');
+          }
           return;
         }
-        
-        // Check for ORDER_NOT_APPROVED error
-        if (result.error && (result.error.includes('ORDER_NOT_APPROVED') || result.error.includes('not approved'))) {
-          console.log('⏳ Order not approved yet, waiting...');
-          setPaymentMessage(t('paymentOptionsPage.waitingApproval'));
-          // Continue polling - this is expected until user approves
+
+        clearInterval(interval);
+        setPollingInterval(null);
+        if (paypalCaptureRequestedRef.current) return;
+        paypalCaptureRequestedRef.current = true;
+        setPaymentMessage(t('paymentOptionsPage.paymentApproved'));
+        const result = await capturePayPalOrder(orderId);
+        if (result.success) {
+          setPaymentMessage(t('paymentOptionsPage.paymentCaptured'));
+          processSuccessfulPayment(result.transaction);
           return;
         }
-        
-        // Check if we've reached max attempts
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPollingInterval(null);
-          setPaymentError(t('paymentOptionsPage.errors.verificationTimeout'));
-          setIsProcessing(false);
-          setPaymentMessage('');
-          return;
-        }
-        
-        // Any other error - log and continue polling
-        if (result.error) {
-          console.log('⚠️ PayPal error (continuing polling):', result.error);
-          // Continue polling for temporary errors
-        }
-        
+        setPaymentError(isTerminalPayPalCaptureResult(result)
+          ? t('paypalCaptureErrors.terminal')
+          : t('paymentOptionsPage.errors.verificationFailed'));
+        setIsProcessing(false);
+        setPaymentMessage('');
       } catch (error) {
         console.error('❌ PayPal polling error:', error);
         if (attempts >= maxAttempts) {
@@ -563,6 +550,7 @@ const PaymentOptions = () => {
     setIsProcessing(true);
     setPaymentError(null);
     setPaymentMessage('');
+    paypalCaptureRequestedRef.current = false;
 
     try {
       const total = calculateTotal();

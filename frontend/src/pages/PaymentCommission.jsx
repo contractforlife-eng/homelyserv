@@ -1,5 +1,5 @@
 // src/pages/PaymentCommission.jsx - FIXED: Only commission is charged
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
-import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../services/paymentService';
+import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
 import { PAYMENT_METHODS } from '../config/paymentConfig';
 import useAuthStore from '../store/authStore';
 
@@ -34,6 +34,8 @@ const PaymentCommission = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymobIframe, setPaymobIframe] = useState(null);
+  const paypalPollingRef = useRef(null);
+  const paypalCaptureRequestedRef = useRef(false);
 
   // Get authenticated user from authStore
   const authUser = useAuthStore(state => state.user);
@@ -198,6 +200,7 @@ const PaymentCommission = () => {
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
+        paypalCaptureRequestedRef.current = false;
         const result = await createPayPalOrder(commissionData.commissionAmount, orderId, customerData);
         
         if (result.success) {
@@ -218,28 +221,49 @@ const PaymentCommission = () => {
   const startPollingPayPalOrder = (orderId) => {
     let attempts = 0;
     const maxAttempts = 30;
-    
-    const interval = setInterval(async () => {
+
+    if (paypalPollingRef.current) clearInterval(paypalPollingRef.current);
+    paypalPollingRef.current = setInterval(async () => {
       attempts++;
       
       try {
+        const statusResult = await getPaymentStatus(orderId);
+        const providerState = statusResult?.payment?.providerState;
+        if (providerState === 'TERMINAL') {
+          clearInterval(paypalPollingRef.current);
+          paypalPollingRef.current = null;
+          setPaymentError(t('paymentCommission.errors.verificationFailed'));
+          setProcessing(false);
+          return;
+        }
+        if (!['APPROVED', 'COMPLETED'].includes(providerState)) {
+          if (attempts >= maxAttempts) {
+            clearInterval(paypalPollingRef.current);
+            paypalPollingRef.current = null;
+            setPaymentError(t('paymentCommission.errors.verificationTimeout'));
+            setProcessing(false);
+          }
+          return;
+        }
+
+        clearInterval(paypalPollingRef.current);
+        paypalPollingRef.current = null;
+        if (paypalCaptureRequestedRef.current) return;
+        paypalCaptureRequestedRef.current = true;
         const result = await capturePayPalOrder(orderId);
         
         if (result.success) {
-          clearInterval(interval);
           processSuccessfulPayment(result.transaction);
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPaymentError(t('paymentCommission.errors.verificationTimeout'));
+        } else {
+          setPaymentError(t('paymentCommission.errors.verificationFailed'));
           setProcessing(false);
         }
       } catch (error) {
         console.error('PayPal polling error:', error);
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPaymentError(t('paymentCommission.errors.verificationFailed'));
-          setProcessing(false);
-        }
+        if (paypalPollingRef.current) clearInterval(paypalPollingRef.current);
+        paypalPollingRef.current = null;
+        setPaymentError(t('paymentCommission.errors.verificationFailed'));
+        setProcessing(false);
       }
     }, 3000);
   };
@@ -275,6 +299,10 @@ const PaymentCommission = () => {
   // Cleanup
   useEffect(() => {
     return () => {
+      if (paypalPollingRef.current) {
+        clearInterval(paypalPollingRef.current);
+        paypalPollingRef.current = null;
+      }
       window.removeEventListener('message', handlePaymobMessage);
     };
   }, []);

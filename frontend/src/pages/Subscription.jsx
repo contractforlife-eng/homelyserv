@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 import { applyBackendSubscription } from '../utils/subscriptionService';
-import { capturePayPalOrder, fetchSubscriptionStatus, isTerminalPayPalCaptureResult } from "../services/paymentService";
+import { capturePayPalOrder, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from "../services/paymentService";
 import {
   Sparkles,
   AlertCircle,
@@ -53,6 +53,7 @@ const Subscription = () => {
   // Guard against duplicate PayPal capture responses triggering duplicate
   // UI refresh/purchase cycles (polling + popup-return can both fire).
   const subscriptionProcessedRef = useRef(false);
+  const paypalPollingRef = useRef(null);
 
   const userRole = isEmployer ? 'EMPLOYER' : 'WORKER';
   const selectedPlanConfig = SUBSCRIPTION_PLANS[selectedPlan];
@@ -339,6 +340,15 @@ const Subscription = () => {
   const handlePayPalReturnMessage = (event) => {
     if (event.data?.type === 'PAYPAL_RETURN') {
       console.log('✅ PayPal popup returned:', event.data);
+      if (!event.data.success) {
+        if (paypalPollingRef.current) {
+          clearInterval(paypalPollingRef.current);
+          paypalPollingRef.current = null;
+        }
+        setProcessing(false);
+        setPaymentError(t('paymentCancel.cancelled'));
+        return;
+      }
       // The popup is closing - the polling will capture the payment
       if (event.data.success) {
         setPaymentError(null);
@@ -349,13 +359,16 @@ const Subscription = () => {
   const startPollingPayPalOrder = (orderId) => {
     let attempts = 0;
     const maxAttempts = 30;
-    let interval;
 
     const stopPolling = () => {
-      if (interval) clearInterval(interval);
+      if (paypalPollingRef.current) {
+        clearInterval(paypalPollingRef.current);
+        paypalPollingRef.current = null;
+      }
     };
 
-    interval = setInterval(async () => {
+    stopPolling();
+    paypalPollingRef.current = setInterval(async () => {
       attempts++;
 
       // A duplicate capture response after this order was already processed
@@ -366,16 +379,37 @@ const Subscription = () => {
       }
 
       try {
+        const statusResult = await getPaymentStatus(orderId);
+        const providerState = statusResult?.payment?.providerState;
+
+        if (providerState === 'TERMINAL') {
+          stopPolling();
+          subscriptionProcessedRef.current = true;
+          setPaymentError(t('paypalCaptureErrors.terminal'));
+          setRetryableStatus(false);
+          setProcessing(false);
+          return;
+        }
+
+        if (!['APPROVED', 'COMPLETED'].includes(providerState)) {
+          if (attempts >= maxAttempts) {
+            stopPolling();
+            setPaymentError(t('subscriptionPage.payment.verificationTimeout'));
+            setProcessing(false);
+          }
+          return;
+        }
+
+        // The status came from a server-to-server PayPal lookup. The capture
+        // endpoint re-verifies it before capture and canonical fulfillment.
+        stopPolling();
+        subscriptionProcessedRef.current = true;
         const result = await capturePayPalOrder(orderId);
 
         if (result.success) {
-          stopPolling();
-
           // Backend already captured AND fulfilled (SUBSCRIPTION -> Premium
           // activated via ensureSubscription). Do NOT wait for the PayPal order
           // to reach COMPLETED — read our authoritative backend status instead.
-          subscriptionProcessedRef.current = true;
-
           // Brief bounded refresh (4 tries x 1.5s — never infinite) so the
           // backend commit is fully visible before declaring success.
           const active = await refreshSubscriptionStatus({ attempts: 4, intervalMs: 1500 });
@@ -388,23 +422,18 @@ const Subscription = () => {
             setRetryableStatus(true);
           }
         } else if (isTerminalPayPalCaptureResult(result)) {
-          stopPolling();
-          subscriptionProcessedRef.current = true;
           setPaymentError(t('paypalCaptureErrors.terminal'));
           setRetryableStatus(false);
           setProcessing(false);
-        } else if (attempts >= maxAttempts) {
-          stopPolling();
-          setPaymentError(t('subscriptionPage.payment.verificationTimeout'));
+        } else {
+          setPaymentError(t('subscriptionPage.payment.verificationFailed'));
           setProcessing(false);
         }
       } catch (error) {
         console.error('PayPal polling error:', error);
-        if (attempts >= maxAttempts) {
-          stopPolling();
-          setPaymentError(t('subscriptionPage.payment.verificationFailed'));
-          setProcessing(false);
-        }
+        stopPolling();
+        setPaymentError(t('subscriptionPage.payment.verificationFailed'));
+        setProcessing(false);
       }
     }, 3000);
   };
@@ -431,6 +460,10 @@ const Subscription = () => {
     // Listen for PayPal popup return messages
     window.addEventListener('message', handlePayPalReturnMessage);
     return () => {
+      if (paypalPollingRef.current) {
+        clearInterval(paypalPollingRef.current);
+        paypalPollingRef.current = null;
+      }
       window.removeEventListener('message', handlePaymobMessage);
       window.removeEventListener('message', handlePayPalReturnMessage);
     };

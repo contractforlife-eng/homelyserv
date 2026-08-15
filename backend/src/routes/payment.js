@@ -555,6 +555,15 @@ const FULFILLMENT_STATUS = {
   FAILED: 'failed'
 };
 
+export const normalizePayPalOrderStatus = (status) => {
+  const normalized = String(status || '').toUpperCase();
+  if (normalized === 'APPROVED') return 'APPROVED';
+  if (normalized === 'COMPLETED') return 'COMPLETED';
+  if (['CREATED', 'SAVED', 'PAYER_ACTION_REQUIRED'].includes(normalized)) return 'AWAITING_APPROVAL';
+  if (['VOIDED', 'FAILED', 'CANCELLED', 'CANCELED', 'DECLINED'].includes(normalized)) return 'TERMINAL';
+  return 'UNKNOWN';
+};
+
 const FULFILLMENT_STALE_MS = 10 * 60 * 1000; // reclaim a stuck 'processing' claim after 10 min
 const MAX_FULFILLMENT_ATTEMPTS = 5;          // eventually disables endless retry loops
 
@@ -1585,8 +1594,13 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
       return rejectPaymentAccess(res);
     }
 
-    // Verify PayPal server-to-server whenever capture or fulfillment is not
-    // complete; internal Payment.status alone is not provider proof.
+    let providerState = payment.status === 'completed'
+      && payment.fulfillmentStatus === FULFILLMENT_STATUS.FULFILLED
+      ? 'COMPLETED'
+      : null;
+
+    // Read-only provider observation. Polling this endpoint must never
+    // capture, complete, fulfill, or mutate a Payment.
     if (
       payment.paymentMethod === 'paypal' &&
       payment.paypalOrderId &&
@@ -1607,24 +1621,10 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
           }
         );
 
-        if (orderCheck.data?.status === 'COMPLETED') {
-          const { captureId, expected } = verifyPayPalOrderEvidence(
-            payment,
-            orderCheck.data,
-            { requireCapture: true }
-          );
-          await persistVerifiedLegacyProviderEvidence(payment, expected);
-          await completePaymentTransaction(payment, captureId);
-
-          const refreshedPayment = await prisma.payment.findUnique({
-            where: { id: payment.id }
-          });
-          if (refreshedPayment) {
-            Object.assign(payment, refreshedPayment);
-          }
-        }
+        providerState = normalizePayPalOrderStatus(orderCheck.data?.status);
       } catch (error) {
         console.log('⚠️ Could not check PayPal status:', error.message);
+        providerState = 'UNKNOWN';
       }
     }
 
@@ -1645,7 +1645,9 @@ router.get('/status/:paymentId', authenticate, async (req, res) => {
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
         completedAt: payment.completedAt,
-        approvalUrl: payment.approvalUrl
+        approvalUrl: payment.approvalUrl,
+        fulfillmentStatus: payment.fulfillmentStatus,
+        providerState
       }
     });
 
