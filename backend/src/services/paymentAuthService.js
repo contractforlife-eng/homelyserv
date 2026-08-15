@@ -19,9 +19,9 @@ const hasLegacyCommissionEvidence = (payment, employerId) => {
 };
 
 /**
- * A completed commission capture unlocks contact immediately. Fulfillment is
- * deliberately not required: payment completion records captured money, while
- * fulfillment updates the Hire asynchronously and may be retried independently.
+ * A captured payment is not sufficient to unlock contact. Modern commission
+ * access requires the payment entitlement and its Hire fulfillment to have
+ * completed successfully.
  */
 export const canContactWorker = async (employerId, workerProfileId, db = prisma) => {
   if (!employerId || !workerProfileId) return false;
@@ -47,7 +47,8 @@ export const canContactWorker = async (employerId, workerProfileId, db = prisma)
       userId: true,
       offerId: true,
       jobTitle: true,
-      metadata: true
+      metadata: true,
+      fulfillmentStatus: true
     }
   });
 
@@ -57,7 +58,9 @@ export const canContactWorker = async (employerId, workerProfileId, db = prisma)
   if (qualifyingCandidates.length === 0) return false;
 
   const modernHireIds = [...new Set(qualifyingCandidates
-    .filter((payment) => String(payment.purpose || '').toUpperCase() === 'COMMISSION' && payment.hireId)
+    .filter((payment) => String(payment.purpose || '').toUpperCase() === 'COMMISSION'
+      && String(payment.fulfillmentStatus || '').toLowerCase() === 'fulfilled'
+      && payment.hireId)
     .map((payment) => String(payment.hireId)))];
 
   if (modernHireIds.length > 0) {
@@ -65,7 +68,9 @@ export const canContactWorker = async (employerId, workerProfileId, db = prisma)
       where: {
         id: { in: modernHireIds },
         employerId: String(employerId),
-        workerId: String(workerProfile.id)
+        workerId: String(workerProfile.id),
+        paymentStatus: 'completed',
+        status: 'active'
       },
       select: { id: true }
     });
