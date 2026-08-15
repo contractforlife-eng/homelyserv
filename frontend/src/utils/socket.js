@@ -40,6 +40,7 @@ export const getSocket = (userId) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   socket = io(API_URL, {
+    auth: { token: localStorage.getItem('homelyserv_token') },
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

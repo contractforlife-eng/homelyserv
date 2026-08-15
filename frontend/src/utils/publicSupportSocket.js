@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 import { API_BASE } from '../config/api';
 
 export function connectGuestSupportSocket(session, handlers = {}) {
-  const socket = io(API_BASE, { transports:['websocket','polling'], reconnection:true });
+  const socket = io(API_BASE, { auth:{ publicSupport:true }, transports:['websocket','polling'], reconnection:true });
   let connectedOnce = false;
   const join = () => socket.emit('public-support:join-guest', session, ({ ok } = {}) => {
     if (ok && connectedOnce) handlers.onReconnect?.();
@@ -16,7 +16,7 @@ export function connectGuestSupportSocket(session, handlers = {}) {
 }
 
 export function connectStaffSupportSocket(handlers = {}) {
-  const socket = io(API_BASE, { transports:['websocket','polling'], reconnection:true });
+  const socket = io(API_BASE, { auth:{ token:localStorage.getItem('homelyserv_token') }, transports:['websocket','polling'], reconnection:true });
   let connectedOnce = false;
   const join = () => socket.emit('public-support:join-staff', { token:localStorage.getItem('homelyserv_token') }, ({ ok } = {}) => {
     if (ok && connectedOnce) handlers.onReconnect?.();

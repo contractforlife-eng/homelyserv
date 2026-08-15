@@ -37,6 +37,7 @@ import { requireAdmin } from './middleware/auth.js';
 import { setIo } from './lib/socket.js';
 import { verifyGuestConversation, verifyStaffToken } from './services/publicSupportAccessService.js';
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
+import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
 import './config.js'; // Running your base configuration routines
 
 // Get the directory where index.js is located
@@ -209,6 +210,7 @@ const io = new Server(server, {
     credentials: true
   }
 });
+io.use(createSocketAuthMiddleware());
 
 // ============================================================
 // MongoDB Connection
@@ -369,15 +371,23 @@ setIo(io);
 io.on('connection', (socket) => {
   console.log('🔌 User connected:', socket.id);
   
+  joinAuthenticatedUserRoom(socket);
+
   socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`📥 User ${socket.id} joined room: ${roomId}`);
+    // Generic room joining is restricted to authenticated sockets with a
+    // server-derived socket.user.userId. Unauthenticated public-support guest
+    // sockets cannot use generic join_room; their only room access goes
+    // through the dedicated verified public-support:* flow.
+    if (joinGenericRoom(socket, roomId)) {
+      console.log(`📥 User ${socket.id} joined room: ${roomId}`);
+    }
   });
 
   // Join the user's personal notification room
-  socket.on('join_user_room', (userId) => {
-    if (userId) {
-      socket.join(`user_${userId}`);
+  socket.on('join_user_room', (_requestedUserId) => {
+    const userId = socket.user?.userId;
+    if (socket.user?.userId) {
+      socket.join(privateUserRoom(socket.user.userId));
       console.log(`🔔 User ${socket.id} joined notification room: user_${userId}`);
     }
   });
