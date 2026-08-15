@@ -25,6 +25,7 @@ import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
 import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
+import { trackCompleteRegistration } from '../utils/metaPixel';
 
 function Register() {
   const navigate = useNavigate();
@@ -202,6 +203,8 @@ function Register() {
       }
 
       console.log("✅ User registered in MongoDB:", response.data.user);
+
+      trackCompleteRegistration();
 
       setSuccess(true);
 
