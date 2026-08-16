@@ -12,6 +12,7 @@ import {
   normalizeCurrencyCode,
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
+import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
@@ -110,7 +111,7 @@ const validatePhone = (phone) => {
 export const register = async (req, res) => {
   console.log('📝 Registration request received:', req.body);
   try {
-    const { fullName, email, password, role, phone, countryCode, countryName, location } = req.body;
+    const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate } = req.body;
 
     // ----------------------------------------------------------
     // PHONE - required for all new email/password registrations
@@ -145,6 +146,42 @@ export const register = async (req, res) => {
       });
     }
 
+    // ----------------------------------------------------------
+    // WORKER-SPECIFIC: desiredJob + hourlyRate
+    // Canonical validation applies only to new WORKER registrations.
+    // EMPLOYER registrations skip these checks entirely.
+    // ----------------------------------------------------------
+    const normalizedRole = (role || 'WORKER').toUpperCase();
+    let canonicalDesiredJob = '';
+    let normalizedHourlyRate = '';
+
+    if (normalizedRole === 'WORKER') {
+      if (!desiredJob || typeof desiredJob !== 'string' || !isCanonicalWorkerJob(desiredJob)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please select a valid job type'
+        });
+      }
+      canonicalDesiredJob = desiredJob;
+
+      const rateValue = hourlyRate;
+      if (rateValue === undefined || rateValue === null || String(rateValue).trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter your hourly rate'
+        });
+      }
+
+      const rate = Number(rateValue);
+      if (!Number.isFinite(rate) || rate <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Hourly rate must be a positive number'
+        });
+      }
+      normalizedHourlyRate = String(rate);
+    }
+
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -163,11 +200,19 @@ export const register = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      role: role || 'WORKER',
+      role: normalizedRole,
       phone: trimmedPhone,
       countryCode: matchedCountry.code,
       countryName: matchedCountry.name,
-      location: location || ''
+      location: location || '',
+      ...(normalizedRole === 'WORKER' ? {
+        desiredJob: canonicalDesiredJob,
+        hourlyRate: normalizedHourlyRate,
+        hourlyRateCurrency: resolveAccountDefaultCurrency({
+          countryCode: matchedCountry.code,
+          countryName: matchedCountry.name
+        })
+      } : {})
     }));
 
     console.log('[DEBUG-REGISTER] User creation attempt:', { email: user.email, role: user.role });

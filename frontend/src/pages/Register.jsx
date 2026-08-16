@@ -19,13 +19,16 @@ import {
   Phone,
   Shield,
   Home,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  DollarSign
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
 import CountrySelect from '../components/CountrySelect';
 import { getCountryByCode } from '../utils/countries';
 import { trackCompleteRegistration } from '../utils/metaPixel';
+import { JOB_OPTIONS } from '../constants/jobOptions';
 
 function Register() {
   const navigate = useNavigate();
@@ -44,7 +47,9 @@ function Register() {
     phone: '',
     countryCode: '',
     countryName: '',
-    role: 'WORKER'
+    role: 'WORKER',
+    desiredJob: '',
+    hourlyRate: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -168,6 +173,24 @@ function Register() {
       newErrors.role = t('roleRequired');
     }
 
+    if (formData.role === 'WORKER') {
+      if (!formData.desiredJob) {
+        newErrors.desiredJob = t('register.jobRequired');
+      } else if (!JOB_OPTIONS.some(job => job.value === formData.desiredJob)) {
+        newErrors.desiredJob = t('register.jobInvalid');
+      }
+
+      const trimmedRate = String(formData.hourlyRate || '').trim();
+      if (!trimmedRate) {
+        newErrors.hourlyRate = t('register.hourlyRateRequired');
+      } else {
+        const rate = Number(trimmedRate);
+        if (!Number.isFinite(rate) || rate <= 0) {
+          newErrors.hourlyRate = t('register.hourlyRateInvalid');
+        }
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -188,7 +211,7 @@ function Register() {
     setErrors({});
 
     try {
-      const response = await api.post("/api/auth/register", {
+      const payload = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -196,7 +219,14 @@ function Register() {
         phone: String(formData.phone || "").trim(),
         countryCode: formData.countryCode,
         countryName: formData.countryName
-      });
+      };
+
+      if (formData.role === 'WORKER') {
+        payload.desiredJob = formData.desiredJob;
+        payload.hourlyRate = formData.hourlyRate;
+      }
+
+      const response = await api.post("/api/auth/register", payload);
 
       if (!response.data.success) {
         throw new Error(response.data.message || t('registrationFailed'));
@@ -216,7 +246,9 @@ function Register() {
         phone: "",
         countryCode: "",
         countryName: "",
-        role: "WORKER"
+        role: "WORKER",
+        desiredJob: "",
+        hourlyRate: ""
       });
 
       setTimeout(() => {
@@ -428,6 +460,60 @@ function Register() {
                 <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.role}</p>
               )}
             </div>
+
+            {formData.role === 'WORKER' && (
+              <>
+                {/* Desired Job */}
+                <div className="mb-3 sm:mb-4">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('workerOwnProfile.desiredJob')}</label>
+                  <div className="relative group">
+                    <Briefcase size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                    <select
+                      name="desiredJob"
+                      value={formData.desiredJob}
+                      onChange={handleChange}
+                      className={`w-full pl-11 pr-10 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                        errors.desiredJob ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 appearance-none`}
+                    >
+                      <option value="">{t('workerOwnProfile.selectJob')}</option>
+                      {JOB_OPTIONS.map((job) => (
+                        <option key={job.value} value={job.value}>
+                          {t(`employerSearch.jobs.${job.value}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3.5 top-3.5 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                  </div>
+                  {errors.desiredJob && (
+                    <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.desiredJob}</p>
+                  )}
+                </div>
+
+                {/* Hourly Rate */}
+                <div className="mb-3 sm:mb-4">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('workerProfile.hourlyRate')}</label>
+                  <div className="relative group">
+                    <DollarSign size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                    <input
+                      type="number"
+                      name="hourlyRate"
+                      value={formData.hourlyRate}
+                      onChange={handleChange}
+                      min="0.01"
+                      step="0.01"
+                      className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                        errors.hourlyRate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
+                      placeholder={t('register.hourlyRatePlaceholder')}
+                    />
+                  </div>
+                  {errors.hourlyRate && (
+                    <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.hourlyRate}</p>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Password */}
             <div className="mb-3 sm:mb-4">
