@@ -8,7 +8,7 @@ import Conversation from '../models/Conversation.js';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { getCommandCenter } from '../controllers/adminCommandCenterController.js';
-import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries } from '../services/premiumService.js';
+import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSummaries, activateManualPremium, deactivateManualPremium, getManualPremiumState } from '../services/premiumService.js';
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
@@ -1642,6 +1642,72 @@ router.post('/conversations/:conversationId/close', async (req, res) => {
   } catch (error) {
     console.error('Error closing conversation:', error);
     return res.status(500).json({ error: 'Failed to close conversation' });
+  }
+});
+
+// ============================================================
+// Admin Manual Premium Control
+// ============================================================
+router.patch('/users/:userId/premium', async (req, res) => {
+  try {
+    const adminId = req.userId;
+    const targetUserId = String(req.params.userId || '').trim();
+    const { action, endDate } = req.body || {};
+
+    if (!targetUserId) {
+      return res.status(400).json({ success: false, message: 'userId is required' });
+    }
+
+    if (!isValidObjectId(targetUserId)) {
+      return res.status(400).json({ success: false, message: 'Invalid userId' });
+    }
+
+    if (String(adminId) === targetUserId) {
+      return res.status(403).json({ success: false, message: 'Cannot modify your own premium status' });
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (targetUser.role === 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Cannot modify premium for admin accounts' });
+    }
+
+    if (action === 'activate') {
+      try {
+        await activateManualPremium(targetUserId, endDate, adminId);
+      } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    } else if (action === 'deactivate') {
+      await deactivateManualPremium(targetUserId);
+    } else {
+      return res.status(400).json({ success: false, message: "action must be 'activate' or 'deactivate'" });
+    }
+
+    const detail = await getSubscriptionStaffDetail(targetUserId);
+    const manualState = await getManualPremiumState(targetUserId);
+    return res.json({
+      success: true,
+      subscription: {
+        isPremium: detail.isPremium,
+        status: detail.status,
+        startDate: detail.startDate,
+        endDate: detail.endDate,
+        latestPlan: detail.latestPlan,
+        hasActiveManualPremium: manualState.hasActiveManualPremium,
+        manualPremiumEndDate: manualState.manualPremiumEndDate,
+      },
+    });
+  } catch (error) {
+    console.error('Admin premium mutation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update premium status',
+      error: error.message,
+    });
   }
 });
 

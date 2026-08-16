@@ -126,3 +126,69 @@ export const getSubscriptionStaffDetail = async (userId, grantLimit = 20) => {
   }
   return { ...summaries.get(id), grantCounts, grants, historyAvailable: grants.length > 0 };
 };
+
+// ============================================================
+// Admin manual Premium helpers
+// ============================================================
+
+const MANUAL_PLAN = 'manual';
+const MANUAL_DEFAULT_DURATION_DAYS = 30;
+
+export const getManualPremiumState = async (userId) => {
+  if (!userId) return { hasActiveManualPremium: false, manualPremiumEndDate: null };
+  const row = await prisma.subscription.findFirst({
+    where: { userId: String(userId), plan: MANUAL_PLAN, status: 'active', endDate: { gte: new Date() } },
+    orderBy: { endDate: 'desc' },
+    select: { endDate: true },
+  });
+  return {
+    hasActiveManualPremium: !!row && new Date(row.endDate) >= new Date(),
+    manualPremiumEndDate: row?.endDate || null,
+  };
+};
+
+export const activateManualPremium = async (userId, endDate, adminId) => {
+  const id = String(userId);
+  const now = new Date();
+  const targetEndDate = endDate ? new Date(endDate) : new Date(now.getTime() + MANUAL_DEFAULT_DURATION_DAYS * 24 * 60 * 60 * 1000);
+
+  if (!(targetEndDate instanceof Date) || isNaN(targetEndDate.getTime())) {
+    throw new Error('Invalid endDate');
+  }
+  if (targetEndDate <= now) {
+    throw new Error('endDate must be in the future');
+  }
+
+  const existing = await prisma.subscription.findFirst({
+    where: { userId: id, plan: MANUAL_PLAN, status: 'active', endDate: { gte: new Date() } },
+    orderBy: { endDate: 'desc' },
+  });
+
+  if (existing) {
+    await prisma.subscription.update({
+      where: { id: existing.id },
+      data: { endDate: targetEndDate },
+    });
+    return { action: 'updated', subscriptionId: existing.id };
+  }
+
+  await prisma.subscription.create({
+    data: {
+      userId: id,
+      plan: MANUAL_PLAN,
+      amount: 0,
+      status: 'active',
+      startDate: now,
+      endDate: targetEndDate,
+    },
+  });
+  return { action: 'created' };
+};
+
+export const deactivateManualPremium = async (userId) => {
+  const result = await prisma.subscription.updateMany({
+    where: { userId: String(userId), plan: MANUAL_PLAN, status: 'active' },
+    data: { status: 'inactive' },
+  });
+  return { deactivatedCount: result.count };
+};

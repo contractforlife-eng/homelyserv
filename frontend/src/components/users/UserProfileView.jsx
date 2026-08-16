@@ -86,6 +86,8 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
   const [tempPassword, setTempPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [premiumEndDate, setPremiumEndDate] = useState('');
+  const [premiumActionLoading, setPremiumActionLoading] = useState(false);
 
   // ============================================================
   // LOAD PROFILE + STATS (read-only; never mutates auth state)
@@ -196,6 +198,50 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
       setNotification({ type: 'error', text: t.errors.updateStatus });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // ============================================================
+  // ADMIN MANUAL PREMIUM
+  // ============================================================
+  const handleActivatePremium = async () => {
+    if (!profileUser || !isAdmin) return;
+    setPremiumActionLoading(true);
+    try {
+      const payload = { action: 'activate' };
+      if (premiumEndDate.trim()) {
+        payload.endDate = new Date(premiumEndDate.trim()).toISOString();
+      }
+      const response = await api.patch(`${apiBase}/users/${userId}/premium`, payload);
+      if (response.data?.success) {
+        setNotification({ type: 'success', text: t.feedback?.premiumActivated || 'Premium activated successfully' });
+        setPremiumEndDate('');
+        loadUser();
+      } else {
+        setNotification({ type: 'error', text: response.data?.message || t.errors?.updateStatus || 'Failed to activate premium' });
+      }
+    } catch (error) {
+      setNotification({ type: 'error', text: error.response?.data?.message || t.errors?.updateStatus || 'Failed to activate premium' });
+    } finally {
+      setPremiumActionLoading(false);
+    }
+  };
+
+  const handleDeactivatePremium = async () => {
+    if (!profileUser || !isAdmin) return;
+    setPremiumActionLoading(true);
+    try {
+      const response = await api.patch(`${apiBase}/users/${userId}/premium`, { action: 'deactivate' });
+      if (response.data?.success) {
+        setNotification({ type: 'success', text: t.feedback?.premiumDeactivated || 'Manual premium deactivated' });
+        loadUser();
+      } else {
+        setNotification({ type: 'error', text: response.data?.message || t.errors?.updateStatus || 'Failed to deactivate premium' });
+      }
+    } catch (error) {
+      setNotification({ type: 'error', text: error.response?.data?.message || t.errors?.updateStatus || 'Failed to deactivate premium' });
+    } finally {
+      setPremiumActionLoading(false);
     }
   };
   // ============================================================
@@ -561,6 +607,42 @@ const UserProfileView = ({ userId, backTarget, messageTarget = '/support-message
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t.subscription.noGrants}</p>
+              )}
+              {isAdmin && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{t.subscription.adminControls || 'Admin Premium Control'}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="datetime-local"
+                      value={premiumEndDate}
+                      onChange={(e) => setPremiumEndDate(e.target.value)}
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleActivatePremium}
+                      disabled={premiumActionLoading}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {premiumActionLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+                      {t.subscription.activatePremium || 'Activate Premium'}
+                    </button>
+                    {profileUser.subscription?.hasActiveManualPremium && (
+                      <button
+                        type="button"
+                        onClick={handleDeactivatePremium}
+                        disabled={premiumActionLoading}
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {premiumActionLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+                        {t.subscription.deactivateManualPremium || 'Deactivate Manual Premium'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    {t.subscription.manualPremiumNote || 'Manual activation does not create a payment record. Paid subscriptions are never affected.'}
+                  </p>
+                </div>
               )}
             </div>
           </div>
