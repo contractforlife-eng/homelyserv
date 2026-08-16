@@ -13,6 +13,8 @@ import { aggregateAdminMoney, getAnalytics } from '../controllers/adminControlle
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
 import { sendRoleChangeNotification } from '../services/emailService.js';
+import { sendTransactionConfirmationEmail } from '../services/emailService.js';
+import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import {
   getDuplicateRefundEvidence,
   reconcilePayment,
@@ -1677,7 +1679,42 @@ router.patch('/users/:userId/premium', async (req, res) => {
 
     if (action === 'activate') {
       try {
-        await activateManualPremium(targetUserId, endDate, adminId);
+        const result = await activateManualPremium(targetUserId, endDate, adminId);
+        await createNotification(String(targetUserId), {
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Premium Granted by Administration',
+          message: `Manual Premium Activation\nAmount: 0\nSource: Admin / Manual Activation\nActivation Date: ${result.startDate.toLocaleDateString()}\nExpiration Date: ${result.endDate.toLocaleDateString()}\nStatus: Activated`,
+          entityType: 'SUBSCRIPTION',
+          entityId: result.subscriptionId,
+          icon: '👑',
+          link: '/subscription',
+          data: {
+            purpose: 'SUBSCRIPTION',
+            source: 'ADMIN',
+            amount: 0,
+            paymentMethod: 'admin',
+            startDate: result.startDate,
+            endDate: result.endDate,
+          },
+        });
+
+        try {
+          if (targetUser?.email) {
+            await sendTransactionConfirmationEmail({
+              to: targetUser.email,
+              userName: targetUser.fullName,
+              eventType: 'SUBSCRIPTION',
+              operation: 'Manual Premium Activation',
+              amount: 0,
+              source: 'ADMIN',
+              startDate: result.startDate,
+              endDate: result.endDate,
+              status: 'Activated',
+            });
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send manual premium confirmation email:', emailError);
+        }
       } catch (error) {
         return res.status(400).json({ success: false, message: error.message });
       }

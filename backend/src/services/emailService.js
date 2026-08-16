@@ -5,6 +5,7 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { buildEmailSenderIdentity, getEmailFromAddress } from '../utils/emailSender.js';
+import { escapeHtml } from '../templates/baseTemplate.js';
 
 // ============================================================
 // PROVIDER SELECTION & CONFIGURATION
@@ -664,6 +665,153 @@ This is an automated notification from HomelyServ.`;
 };
 
 /**
+ * Send transaction confirmation email for successful payments and premium activations.
+ * Non-blocking: email failure must never roll back the financial operation.
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} [options.userName] - Recipient name
+ * @param {string} [options.eventType] - SUBSCRIPTION or COMMISSION
+ * @param {string} [options.operation] - Human-readable operation name
+ * @param {number} [options.amount] - Transaction amount
+ * @param {string} [options.currency] - Currency code
+ * @param {string} [options.paymentMethod] - Payment method identifier
+ * @param {string} [options.reference] - Transaction reference
+ * @param {string} [options.plan] - Subscription plan identifier
+ * @param {Date|string} [options.completedAt] - Completion timestamp
+ * @param {Date|string} [options.endDate] - Expiration or end date
+ * @param {string} [options.source] - Activation source (e.g. ADMIN)
+ * @returns {Promise<Object>} - Result object with success status
+ */
+export const sendTransactionConfirmationEmail = async ({
+  to,
+  userName = '',
+  eventType = 'SUBSCRIPTION',
+  operation = 'Transaction',
+  amount = 0,
+  currency = '',
+  paymentMethod = '',
+  reference = '',
+  plan = '',
+  completedAt,
+  endDate,
+  source = '',
+  status = 'Activated',
+}) => {
+  try {
+    if (!to) {
+      console.error('[EMAIL] Missing recipient email for transaction confirmation');
+      return { success: false, message: 'Missing recipient email' };
+    }
+
+    const formatMethod = (m) => {
+      if (!m) return 'N/A';
+      const lower = String(m).toLowerCase();
+      if (lower === 'paymob') return 'Paymob';
+      if (lower === 'paypal') return 'PayPal';
+      if (lower === 'admin') return 'Admin / Manual Activation';
+      return lower.replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
+    const methodLabel = formatMethod(paymentMethod || source);
+    const planLabel = plan ? String(plan).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Premium';
+    const isManual = source === 'ADMIN' || paymentMethod === 'admin';
+
+    const formatDate = (d) => {
+      if (!d) return 'N/A';
+      return d instanceof Date ? d.toLocaleDateString() : String(d);
+    };
+
+    const greeting = userName ? `Dear ${userName},` : 'Dear HomelyServ user,';
+
+    const text = [
+      'HomelyServ - Transaction Confirmation',
+      '',
+      greeting,
+      '',
+      `Your ${operation} has been completed successfully.`,
+      '',
+      `Operation: ${operation}`,
+      eventType === 'SUBSCRIPTION' && planLabel ? `Plan: ${planLabel}` : null,
+      isManual ? 'Amount: 0' : `Amount Paid: ${amount} ${currency || ''}`,
+      isManual ? 'Source: Admin / Manual Activation' : `Payment Method: ${methodLabel}`,
+      reference ? `Reference: ${reference}` : null,
+      completedAt ? `Date: ${formatDate(completedAt)}` : null,
+      endDate ? `Expiration Date: ${formatDate(endDate)}` : null,
+      `Status: ${status}`,
+      '',
+      'If you have any questions, please contact our support team at support@homelyserv.com.',
+      '',
+      'This is an automated notification from HomelyServ.',
+    ].filter(Boolean).join('\n');
+
+    const buildDetailRow = (label, value) =>
+      `<p style="margin: 0 0 8px; color: #374151; font-size: 15px; line-height: 1.5; font-family: Arial, sans-serif;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`;
+
+    let detailsHtml = buildDetailRow('Operation', operation);
+    if (eventType === 'SUBSCRIPTION' && planLabel) {
+      detailsHtml += buildDetailRow('Plan', planLabel);
+    }
+    if (isManual) {
+      detailsHtml += buildDetailRow('Amount', '0');
+      detailsHtml += buildDetailRow('Source', 'Admin / Manual Activation');
+    } else {
+      detailsHtml += buildDetailRow('Amount Paid', `${amount} ${currency || ''}`);
+      detailsHtml += buildDetailRow('Payment Method', methodLabel);
+    }
+    if (reference) {
+      detailsHtml += buildDetailRow('Reference', reference);
+    }
+    if (completedAt) {
+      detailsHtml += buildDetailRow('Date', formatDate(completedAt));
+    }
+    if (endDate) {
+      detailsHtml += buildDetailRow('Expiration Date', formatDate(endDate));
+    }
+    detailsHtml += buildDetailRow('Status', status);
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <h2 style="color: #dc2626; margin: 0 0 16px; font-size: 24px; font-weight: 700; font-family: Arial, sans-serif;">${escapeHtml(operation)}</h2>
+        <p style="margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6; font-family: Arial, sans-serif;">${escapeHtml(greeting)}</p>
+        <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6; font-family: Arial, sans-serif;">Your ${escapeHtml(operation.toLowerCase())} has been completed successfully.</p>
+        <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          ${detailsHtml}
+        </div>
+        <p style="margin: 20px 0 0; color: #374151; font-size: 16px; line-height: 1.6; font-family: Arial, sans-serif;">If you have any questions, please contact our support team at <a href="mailto:support@homelyserv.com" style="color: #dc2626; text-decoration: none;">support@homelyserv.com</a>.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 14px; font-family: Arial, sans-serif;">This is an automated notification from HomelyServ.</p>
+      </div>
+    `;
+
+    const subject = `HomelyServ: ${operation} Confirmation`;
+
+    if (EMAIL_PROVIDER === 'resend') {
+      return await sendViaResend({
+        to,
+        subject,
+        html,
+        text,
+        replyTo: process.env.EMAIL_REPLY_TO || 'support@homelyserv.com'
+      });
+    }
+
+    return await sendViaSMTP({
+      to,
+      subject,
+      html,
+      text
+    });
+  } catch (error) {
+    console.error('[EMAIL] Failed to send transaction confirmation email:', error);
+    return {
+      success: false,
+      message: 'Failed to send transaction confirmation email',
+      error: error.message
+    };
+  }
+};
+
+/**
  * Verify SMTP connection
  * @returns {Promise<Object>} - Result object with verification status
  */
@@ -701,5 +849,6 @@ export default {
   sendPasswordResetEmail,
   sendSecurityNotificationEmail,
   sendRoleChangeNotification,
+  sendTransactionConfirmationEmail,
   verifySMTPConnection,
 };

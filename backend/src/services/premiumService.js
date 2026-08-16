@@ -169,10 +169,10 @@ export const activateManualPremium = async (userId, endDate, adminId) => {
       where: { id: existing.id },
       data: { endDate: targetEndDate },
     });
-    return { action: 'updated', subscriptionId: existing.id };
+    return { action: 'updated', subscriptionId: existing.id, startDate: existing.startDate, endDate: targetEndDate };
   }
 
-  await prisma.subscription.create({
+  const created = await prisma.subscription.create({
     data: {
       userId: id,
       plan: MANUAL_PLAN,
@@ -182,7 +182,7 @@ export const activateManualPremium = async (userId, endDate, adminId) => {
       endDate: targetEndDate,
     },
   });
-  return { action: 'created' };
+  return { action: 'created', subscriptionId: created.id, startDate: created.startDate, endDate: created.endDate };
 };
 
 export const deactivateManualPremium = async (userId) => {

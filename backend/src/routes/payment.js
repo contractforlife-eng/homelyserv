@@ -5,8 +5,10 @@ import axios from 'axios';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/auth.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
+import User from '../models/User.js';
 import {
   PAYMENT_PURPOSES,
   SUBSCRIPTION_CURRENCY,
@@ -415,7 +417,7 @@ const createPayPalOrder = async (accessToken, expectedCharge, orderId, customerD
 // ============================================================
 // UPDATE HIRE AFTER PAYMENT - Single source of truth
 // ============================================================
-const updateHireAfterPayment = async (hireId, captureId) => {
+const updateHireAfterPayment = async (hireId, captureId, payment) => {
   try {
     if (!hireId) {
       console.log('⚠️ No hireId provided, skipping hire update');
@@ -493,14 +495,44 @@ const updateHireAfterPayment = async (hireId, captureId) => {
     // Notify both parties that the payment completed.
     // NotificationService never throws, so payment processing is unaffected.
     if (hire.employerId) {
+      const method = formatPaymentMethod(payment.paymentMethod);
+      const dateLabel = payment.completedAt ? payment.completedAt.toLocaleDateString() : 'N/A';
       await createNotification(String(hire.employerId), {
         type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
         title: 'Payment Successful',
-        message: `Your payment of ${updatedHire.totalDue ?? ''} ${updatedHire.compensationCurrency || 'EGP'} was completed successfully. Reference: ${updatedHire.paymentReference || captureId || 'N/A'}`,
+        message: `Commission Payment Completed\nAmount Paid: ${payment.amount} ${payment.currency}\nPayment Method: ${method}\nReference: ${updatedHire.paymentReference || captureId || 'N/A'}\nCompletion Date: ${dateLabel}\nStatus: Completed`,
         entityType: 'PAYMENT',
         entityId: String(hire.id),
         link: '/employer-payments',
+        data: {
+          purpose: 'COMMISSION',
+          amount: payment.amount,
+          currency: payment.currency,
+          paymentMethod: payment.paymentMethod,
+          reference: updatedHire.paymentReference || captureId,
+          completedAt: payment.completedAt,
+        },
       });
+
+      try {
+        const employer = await User.findById(hire.employerId).select('email fullName language');
+        if (employer?.email) {
+          await sendTransactionConfirmationEmail({
+            to: employer.email,
+            userName: employer.fullName,
+            eventType: 'COMMISSION',
+            operation: 'Commission Payment',
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentMethod: payment.paymentMethod,
+            reference: updatedHire.paymentReference || captureId,
+            completedAt: payment.completedAt,
+            status: 'Completed',
+          });
+        }
+      } catch (emailError) {
+        console.error('[EMAIL] Failed to send commission confirmation email:', emailError);
+      }
     }
 
     try {
@@ -665,17 +697,56 @@ const completePaymentTransaction = async (payment, captureRef) => {
       console.log(`👑 SUBSCRIPTION payment ${payment.transactionId} completed — activating Premium ONLY`);
       const fulfillment = await fulfillSubscriptionPayment(payment.id);
       if (!fulfillment.reused && fulfillment.subscription) {
+        const method = formatPaymentMethod(payment.paymentMethod);
+        const planLabel = fulfillment.subscription.plan
+          ? fulfillment.subscription.plan.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+          : 'Premium';
+        const activationDate = payment.completedAt
+          ? payment.completedAt.toLocaleDateString()
+          : new Date().toLocaleDateString();
         await createNotification(String(payment.userId), {
           type: NOTIFICATION_TYPES.SYSTEM,
           title: fulfillment.wasRenewal ? 'Premium Subscription Renewed' : 'Premium Subscription Activated',
           message: fulfillment.wasRenewal
-            ? `Your premium subscription has been extended until ${fulfillment.subscription.endDate.toLocaleDateString()}.`
-            : `Your premium subscription is now active until ${fulfillment.subscription.endDate.toLocaleDateString()}. Enjoy unlimited access!`,
+            ? `Premium Subscription Renewed\nPlan: ${planLabel}\nAmount Paid: ${payment.amount} ${payment.currency}\nPayment Method: ${method}\nReference: ${payment.transactionId || 'N/A'}\nNew Expiration Date: ${fulfillment.subscription.endDate.toLocaleDateString()}\nStatus: Activated`
+            : `Premium Subscription Activated\nPlan: ${planLabel}\nAmount Paid: ${payment.amount} ${payment.currency}\nPayment Method: ${method}\nReference: ${payment.transactionId || 'N/A'}\nActivation Date: ${activationDate}\nExpiration Date: ${fulfillment.subscription.endDate.toLocaleDateString()}\nStatus: Activated`,
           entityType: 'SUBSCRIPTION',
           entityId: String(fulfillment.subscription.id),
           icon: '👑',
           link: '/subscription',
+          data: {
+            purpose: 'SUBSCRIPTION',
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentMethod: payment.paymentMethod,
+            reference: payment.transactionId,
+            plan: fulfillment.subscription.plan,
+            completedAt: payment.completedAt,
+            endDate: fulfillment.subscription.endDate,
+          },
         });
+
+        try {
+          const user = await User.findById(payment.userId).select('email fullName language');
+          if (user?.email) {
+            await sendTransactionConfirmationEmail({
+              to: user.email,
+              userName: user.fullName,
+              eventType: 'SUBSCRIPTION',
+              operation: fulfillment.wasRenewal ? 'Premium Subscription Renewed' : 'Premium Subscription Activated',
+              amount: payment.amount,
+              currency: payment.currency,
+              paymentMethod: payment.paymentMethod,
+              reference: payment.transactionId,
+              plan: fulfillment.subscription.plan,
+              completedAt: payment.completedAt,
+              endDate: fulfillment.subscription.endDate,
+              status: fulfillment.wasRenewal ? 'Renewed' : 'Activated',
+            });
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send premium confirmation email:', emailError);
+        }
       }
     } else {
       // COMMISSION (default for hire-linked payments) — never grants Premium.
@@ -683,7 +754,7 @@ const completePaymentTransaction = async (payment, captureRef) => {
       if (!payment.hireId) {
         throw new Error('COMMISSION payment completed without hireId — nothing to fulfill');
       }
-      const hireOk = await updateHireAfterPayment(payment.hireId, captureRef);
+      const hireOk = await updateHireAfterPayment(payment.hireId, captureRef, payment);
       if (!hireOk) {
         throw new Error('updateHireAfterPayment did not complete successfully');
       }
@@ -2050,5 +2121,13 @@ router.post('/webhook', async (req, res) => {
     });
   }
 });
+
+const formatPaymentMethod = (method) => {
+  if (!method) return 'N/A';
+  const lower = String(method).toLowerCase();
+  if (lower === 'paymob') return 'Paymob';
+  if (lower === 'paypal') return 'PayPal';
+  return lower.replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 export default router;
