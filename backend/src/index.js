@@ -78,6 +78,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:5174',
+  'https://localhost',
   'https://homelyserv-nznn.vercel.app',
   'https://gas-clapped-copper.ngrok-free.dev',
   'http://192.168.100.12:5173',
