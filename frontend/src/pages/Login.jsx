@@ -516,7 +516,7 @@ const redirectUser = (user) => {
           {/* Register Link */}
           <p className="text-center text-gray-600 dark:text-gray-300 mt-4 sm:mt-6 text-xs sm:text-sm">
             {t('noAccount')}{' '}
-            <Link to="/register" className="text-red-600 font-bold hover:text-red-700 transition-colors hover:underline hover:underline-offset-2">
+            <Link to="/register" className="text-red-600 font-bold inline-flex items-center px-2 py-1 hover:text-red-700 transition-colors hover:underline hover:underline-offset-2">
               {t('createOne')}
             </Link>
           </p>
