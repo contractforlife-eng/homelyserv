@@ -535,7 +535,7 @@ const EmployerMessages = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-[600px]">
               {/* Conversations List */}
-              <div className="border-r border-gray-200 dark:border-gray-700">
+              <div className={`border-r border-gray-200 dark:border-gray-700 ${selectedConversationId ? 'hidden md:block' : ''}`}>
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="relative">
                     <Search size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
@@ -601,13 +601,19 @@ const EmployerMessages = () => {
               </div>
 
               {/* Messages Area */}
-              <div className="col-span-2 flex flex-col h-[600px]">
-                {selectedConversationId ? (
+               <div className={`md:col-span-2 flex flex-col h-[600px] ${!selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
+                 {selectedConversationId ? (
                   <>
                     {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/30">
-                      <div className="flex items-center gap-3">
-                        <UserAvatar
+                       <div className="flex items-center gap-3">
+                         <button
+                           onClick={() => setSelectedConversationId(null)}
+                           className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition"
+                         >
+                           <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+                         </button>
+                         <UserAvatar
                           name={conversations.find(c => c.id === selectedConversationId)?.otherUserName || t('employerMessages.worker')}
                           image={conversations.find(c => c.id === selectedConversationId)?.avatar || null}
                           role={conversations.find(c => c.id === selectedConversationId)?.role}
