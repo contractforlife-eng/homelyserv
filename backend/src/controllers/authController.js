@@ -111,7 +111,7 @@ const validatePhone = (phone) => {
 export const register = async (req, res) => {
   console.log('📝 Registration request received:', req.body);
   try {
-    const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate } = req.body;
+    const { fullName, email, password, role, phone, countryCode, countryName, location, desiredJob, hourlyRate, tutorSpecialization } = req.body;
 
     // ----------------------------------------------------------
     // PHONE - required for all new email/password registrations
@@ -154,6 +154,7 @@ export const register = async (req, res) => {
     const normalizedRole = (role || 'WORKER').toUpperCase();
     let canonicalDesiredJob = '';
     let normalizedHourlyRate = '';
+    let normalizedTutorSpecialization = '';
 
     if (normalizedRole === 'WORKER') {
       if (!desiredJob || typeof desiredJob !== 'string' || !isCanonicalWorkerJob(desiredJob)) {
@@ -163,6 +164,17 @@ export const register = async (req, res) => {
         });
       }
       canonicalDesiredJob = desiredJob;
+
+      if (canonicalDesiredJob === 'tutor') {
+        const trimmedSpecialization = String(tutorSpecialization || '').trim();
+        if (!trimmedSpecialization || trimmedSpecialization.length > 100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Specialization is required for tutors and must be 100 characters or fewer'
+          });
+        }
+        normalizedTutorSpecialization = trimmedSpecialization;
+      }
 
       const rateValue = hourlyRate;
       if (rateValue === undefined || rateValue === null || String(rateValue).trim() === '') {
@@ -211,7 +223,8 @@ export const register = async (req, res) => {
         hourlyRateCurrency: resolveAccountDefaultCurrency({
           countryCode: matchedCountry.code,
           countryName: matchedCountry.name
-        })
+        }),
+        ...(canonicalDesiredJob === 'tutor' ? { tutorSpecialization: normalizedTutorSpecialization } : {})
       } : {})
     }));
 

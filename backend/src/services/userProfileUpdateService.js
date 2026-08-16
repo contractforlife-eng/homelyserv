@@ -6,7 +6,7 @@ export const REGISTRATION_GEOGRAPHY_FIELDS = Object.freeze([
 ]);
 
 const WORKER_PROFILE_FIELDS = Object.freeze([
-  'fullName', 'phone', 'location', 'bio', 'skills', 'experience', 'profileImage', 'desiredJob',
+  'fullName', 'phone', 'location', 'bio', 'skills', 'experience', 'profileImage', 'desiredJob', 'tutorSpecialization',
 ]);
 
 export const buildWorkerProfileUpdate = (body = {}) => Object.fromEntries(

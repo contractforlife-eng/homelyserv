@@ -196,6 +196,45 @@ router.put('/profile/:userId', authenticate, async (req, res) => {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ success: false, message: 'No updatable profile fields provided' });
     }
+
+    const existingUser = await User.findById(authenticatedUserId).select('desiredJob tutorSpecialization');
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const finalDesiredJob = Object.prototype.hasOwnProperty.call(req.body, 'desiredJob')
+      ? String(req.body.desiredJob || '')
+      : String(existingUser.desiredJob || '');
+
+    const tutorSpecializationProvided = Object.prototype.hasOwnProperty.call(req.body, 'tutorSpecialization');
+    const finalTutorSpecialization = tutorSpecializationProvided
+      ? String(req.body.tutorSpecialization || '')
+      : String(existingUser.tutorSpecialization || '');
+
+    if (finalDesiredJob === 'tutor') {
+      const trimmedSpecialization = finalTutorSpecialization.trim();
+      if (!trimmedSpecialization || trimmedSpecialization.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialization is required for tutors and must be 100 characters or fewer'
+        });
+      }
+      if (tutorSpecializationProvided) {
+        updates.tutorSpecialization = trimmedSpecialization;
+      }
+    } else if (tutorSpecializationProvided) {
+      const trimmedSpecialization = String(req.body.tutorSpecialization || '').trim();
+      if (trimmedSpecialization.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialization must be 100 characters or fewer'
+        });
+      }
+      updates.tutorSpecialization = trimmedSpecialization;
+    }
     
     const user = await User.findByIdAndUpdate(
       authenticatedUserId,

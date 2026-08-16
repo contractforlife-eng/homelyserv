@@ -150,6 +150,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  tutorSpecialization: {
+    type: String,
+    default: ''
+  },
   language: {
     type: String,
     default: 'en'

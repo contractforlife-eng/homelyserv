@@ -76,7 +76,8 @@ const WorkerProfile = () => {
     hourlyRate: '',
     hourlyRateCurrency: 'EGP',
     profileImage: '',
-    desiredJob: ''
+    desiredJob: '',
+    tutorSpecialization: ''
   });
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -205,7 +206,8 @@ const WorkerProfile = () => {
       hourlyRate: authUser.hourlyRate ?? '',
       hourlyRateCurrency: getInitialRateCurrency(authUser),
       profileImage: authUser.profileImage || '',
-      desiredJob: authUser.desiredJob || ''
+      desiredJob: authUser.desiredJob || '',
+      tutorSpecialization: authUser.tutorSpecialization || ''
     });
     setRateDirty(false);
     initializedUserIdRef.current = userId;
@@ -226,7 +228,8 @@ const WorkerProfile = () => {
         hourlyRate: authUser.hourlyRate ?? '',
         hourlyRateCurrency: getInitialRateCurrency(authUser),
         profileImage: authUser.profileImage || '',
-        desiredJob: authUser.desiredJob || ''
+        desiredJob: authUser.desiredJob || '',
+        tutorSpecialization: authUser.tutorSpecialization || ''
       });
       setImagePreview(authUser.profileImage || '');
       setPendingImageFile(null);
@@ -338,7 +341,8 @@ const WorkerProfile = () => {
         skills: formData.skills,
         experience: formData.experience,
         profileImage: profileImageUrl,
-        desiredJob: formData.desiredJob
+        desiredJob: formData.desiredJob,
+        tutorSpecialization: formData.tutorSpecialization
       });
 
       if (response.data.success) {
@@ -679,10 +683,27 @@ const WorkerProfile = () => {
                 {!isEditing && !formData.desiredJob && (
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('workerOwnProfile.noJobSelected')}</p>
                 )}
-              </div>
+               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.bio')}</label>
+               {formData.desiredJob === 'tutor' && (
+                 <div className="md:col-span-2">
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.tutorSpecialization')}</label>
+                   <input
+                     type="text"
+                     name="tutorSpecialization"
+                     value={formData.tutorSpecialization}
+                     onChange={handleInputChange}
+                     disabled={!isEditing}
+                     maxLength={100}
+                     className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                       isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                     }`}
+                   />
+                 </div>
+               )}
+
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.bio')}</label>
                 <textarea
                   name="bio"
                   value={formData.bio}

@@ -21,7 +21,8 @@ import {
   Home,
   Sparkles,
   ChevronDown,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
 import LegalFooter from '../components/common/LegalFooter';
@@ -49,7 +50,8 @@ function Register() {
     countryName: '',
     role: 'WORKER',
     desiredJob: '',
-    hourlyRate: ''
+    hourlyRate: '',
+    tutorSpecialization: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -180,6 +182,15 @@ function Register() {
         newErrors.desiredJob = t('register.jobInvalid');
       }
 
+      if (formData.desiredJob === 'tutor') {
+        const trimmedSpecialization = String(formData.tutorSpecialization || '').trim();
+        if (!trimmedSpecialization) {
+          newErrors.tutorSpecialization = t('tutorSpecializationRequired');
+        } else if (trimmedSpecialization.length > 100) {
+          newErrors.tutorSpecialization = t('tutorSpecializationInvalid');
+        }
+      }
+
       const trimmedRate = String(formData.hourlyRate || '').trim();
       if (!trimmedRate) {
         newErrors.hourlyRate = t('register.hourlyRateRequired');
@@ -224,6 +235,9 @@ function Register() {
       if (formData.role === 'WORKER') {
         payload.desiredJob = formData.desiredJob;
         payload.hourlyRate = formData.hourlyRate;
+        if (formData.desiredJob === 'tutor') {
+          payload.tutorSpecialization = String(formData.tutorSpecialization || '').trim();
+        }
       }
 
       const response = await api.post("/api/auth/register", payload);
@@ -248,7 +262,8 @@ function Register() {
         countryName: "",
         role: "WORKER",
         desiredJob: "",
-        hourlyRate: ""
+        hourlyRate: "",
+        tutorSpecialization: ""
       });
 
       setTimeout(() => {
@@ -489,6 +504,29 @@ function Register() {
                     <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.desiredJob}</p>
                   )}
                 </div>
+
+                {formData.role === 'WORKER' && formData.desiredJob === 'tutor' && (
+                  <div className="mb-3 sm:mb-4">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('tutorSpecialization')}</label>
+                    <div className="relative group">
+                      <BookOpen size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
+                      <input
+                        type="text"
+                        name="tutorSpecialization"
+                        value={formData.tutorSpecialization}
+                        onChange={handleChange}
+                        maxLength={100}
+                        className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                          errors.tutorSpecialization ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                        } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
+                        placeholder={t('tutorSpecializationPlaceholder')}
+                      />
+                    </div>
+                    {errors.tutorSpecialization && (
+                      <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.tutorSpecialization}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Hourly Rate */}
                 <div className="mb-3 sm:mb-4">

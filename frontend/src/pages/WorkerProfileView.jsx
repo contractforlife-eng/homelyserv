@@ -314,7 +314,12 @@ const WorkerProfileView = () => {
                   {worker.isPremium && <PremiumBadge label={t('workerProfile.premiumLabel')} size="md" />}
                   {worker.activelyLooking && <ActivelyLookingBadge label={t('workerProfile.activelyLooking')} size="md" />}
                 </div>
-                <p className="text-teal-100">{getJobLabel(worker.desiredJob)}</p>
+                <p className="text-teal-100">
+                  {getJobLabel(worker.desiredJob)}
+                  {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
+                    <> — {worker.tutorSpecialization}</>
+                  ) : null}
+                </p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-teal-100">
                   <span className="flex items-center gap-1">
                     <MapPin size={16} />
