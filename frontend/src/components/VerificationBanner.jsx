@@ -41,25 +41,32 @@ function VerificationBanner() {
   };
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <MailWarning size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          <p className="text-sm text-amber-800 dark:text-amber-200 font-medium truncate">
-            {t('sharedChrome.verification.notVerified')}
-          </p>
+    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl max-w-[1200px] mx-auto mt-3 px-4 py-3 sm:px-5 sm:py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="bg-red-100 dark:bg-red-800/40 rounded-full p-2 text-red-600 dark:text-red-300 flex-shrink-0">
+            <MailWarning size={18} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-red-900 dark:text-red-100">
+              {t('sharedChrome.verification.notVerified')}
+            </p>
+            <p className="text-xs text-red-700/80 dark:text-red-300 mt-0.5">
+              {t('sharedChrome.verification.verificationDescription')}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:flex-shrink-0">
           <button
             onClick={() => navigate('/verify-email')}
-            className="px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+            className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
             {t('sharedChrome.verification.verifyNow')}
           </button>
           <button
             onClick={handleResend}
             disabled={resending}
-            className="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 text-xs font-semibold bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             {resending ? (
               <>
@@ -75,7 +82,7 @@ function VerificationBanner() {
           </button>
           <button
             onClick={() => setDismissed(true)}
-            className="p-1.5 text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+            className="p-2 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors self-end sm:self-auto"
             aria-label={t('sharedChrome.verification.dismiss')}
           >
             <X size={16} />
