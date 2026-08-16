@@ -21,7 +21,6 @@ import {
   Home,
   Sparkles,
   ChevronDown,
-  DollarSign,
   BookOpen
 } from 'lucide-react';
 import SocialLogin from '../components/SocialLogin';
@@ -532,7 +531,6 @@ function Register() {
                 <div className="mb-3 sm:mb-4">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('workerProfile.hourlyRate')}</label>
                   <div className="relative group">
-                    <DollarSign size={16} sm:size={18} className="absolute left-3.5 top-3.5 text-gray-400 dark:text-gray-500 group-focus-within:text-red-500 transition-colors" />
                     <input
                       type="number"
                       name="hourlyRate"
@@ -540,11 +538,18 @@ function Register() {
                       onChange={handleChange}
                       min="0.01"
                       step="0.01"
-                      className={`w-full pl-11 pr-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
+                      className={`w-full pl-4 py-3 sm:py-3.5 bg-gray-50 dark:bg-gray-900/80 border ${
                         errors.hourlyRate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                      } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500`}
-                      placeholder={t('register.hourlyRatePlaceholder')}
+                      } rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 ${
+                        formData.countryCode ? 'pr-16' : 'pr-4'
+                      }`}
+                      placeholder={t('hourlyRatePlaceholder')}
                     />
+                    {formData.countryCode && getCountryByCode(formData.countryCode)?.currency && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                        {getCountryByCode(formData.countryCode).currency}
+                      </span>
+                    )}
                   </div>
                   {errors.hourlyRate && (
                     <p className="mt-1 text-xs sm:text-sm text-red-500">{errors.hourlyRate}</p>
