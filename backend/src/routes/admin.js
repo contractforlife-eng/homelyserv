@@ -154,10 +154,17 @@ router.get('/users/:id', async (req, res) => {
     const subscription = isValidObjectId(String(user._id))
       ? await getSubscriptionStaffDetail(user._id)
       : {
-        isPremium: false, status: 'inactive', endDate: null, startDate: null,
-        latestPlan: null, grantCounts: { weekly: 0, monthly: 0, legacy: 0 },
-        grants: [], historyAvailable: false,
-      };
+          isPremium: false, status: 'inactive', endDate: null, startDate: null,
+          latestPlan: null, grantCounts: { weekly: 0, monthly: 0, legacy: 0 },
+          grants: [], historyAvailable: false,
+        };
+
+    if (isValidObjectId(String(user._id))) {
+      const manualState = await getManualPremiumState(String(user._id));
+      subscription.hasActiveManualPremium = manualState.hasActiveManualPremium;
+      subscription.manualPremiumEndDate = manualState.manualPremiumEndDate;
+    }
+
     res.json({
       success: true,
       user: { ...user.toObject(), subscription }

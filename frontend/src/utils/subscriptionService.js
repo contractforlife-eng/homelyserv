@@ -172,7 +172,22 @@ export const createSubscription = (userId, userEmail, userRole, userFullName, pl
  */
 export const applyBackendSubscription = (userId, userEmail, backendSubscription) => {
   try {
-    if (!userId || !backendSubscription) return false;
+    if (!userId) return false;
+
+    if (!backendSubscription) {
+      const subscriptions = getSubscriptions();
+      if (subscriptions[userId]) {
+        subscriptions[userId].active = false;
+        persistSubscriptions(subscriptions);
+      }
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.setState({
+          user: { ...currentUser, isPremium: false, subscriptionActive: false }
+        });
+      }
+      return false;
+    }
 
     const isActive =
       backendSubscription.status === 'active' &&

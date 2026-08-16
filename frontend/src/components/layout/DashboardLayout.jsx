@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
+import { applyBackendSubscription } from '../../utils/subscriptionService';
+import { fetchSubscriptionStatus } from '../../services/paymentService';
 import EmployerSidebar from '../employer/EmployerSidebar';
 import WorkerSidebar from '../worker/WorkerSidebar';
 import AdminSidebar from '../AdminSidebar';
@@ -56,6 +58,30 @@ const DashboardLayout = ({
       return;
     }
   }, [authUser, isAuthenticated, authLoading, navigate, requiredRole]);
+
+  // Central Premium state synchronization.
+  // Backend Subscription is the single source of truth. This effect reflects
+  // the authoritative subscription status into localStorage and authStore so
+  // that Sidebar, DashboardHeader, and all dashboard pages agree.
+  useEffect(() => {
+    if (!authUser?.id) return;
+    const role = (authUser.role || '').toUpperCase();
+    if (role !== 'WORKER' && role !== 'EMPLOYER') return;
+
+    let cancelled = false;
+    const syncSubscription = async () => {
+      try {
+        const data = await fetchSubscriptionStatus();
+        if (cancelled || !data?.success) return;
+        applyBackendSubscription(authUser.id, authUser.email, data.subscription);
+      } catch (error) {
+        console.warn('Could not sync subscription status from backend:', error);
+      }
+    };
+
+    syncSubscription();
+    return () => { cancelled = true; };
+  }, [authUser?.id, authUser?.email, authUser?.role]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
