@@ -181,7 +181,8 @@ if (!isAuthenticated) {
 
 function App() {
   const location = useLocation();
-  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, loading, user } = useAuth();
   const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
 
