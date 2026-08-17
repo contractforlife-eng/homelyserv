@@ -42,9 +42,9 @@ function VerificationBanner() {
 
   return (
     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl max-w-[1200px] mx-auto mt-3 px-4 py-3 sm:px-5 sm:py-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="bg-red-100 dark:bg-red-800/40 rounded-full p-2 text-red-600 dark:text-red-300 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="bg-red-100 dark:bg-red-800/40 rounded-full p-1.5 sm:p-2 text-red-600 dark:text-red-300 flex-shrink-0">
             <MailWarning size={18} />
           </div>
           <div className="min-w-0">
@@ -56,7 +56,7 @@ function VerificationBanner() {
             </p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:flex-shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 sm:flex-shrink-0 relative pr-8 sm:pr-0">
           <button
             onClick={() => navigate('/verify-email')}
             className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
@@ -82,7 +82,7 @@ function VerificationBanner() {
           </button>
           <button
             onClick={() => setDismissed(true)}
-            className="p-2 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors self-end sm:self-auto"
+            className="p-2 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors absolute top-0 right-0 sm:static sm:self-auto"
             aria-label={t('sharedChrome.verification.dismiss')}
           >
             <X size={16} />
