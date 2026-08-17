@@ -495,6 +495,7 @@ const en = {
     online: 'Online',
     offline: 'Offline',
     adminResponse: 'Admin Response',
+    typingIndicator: 'Typing...',
 
     // Complaints
     submitComplaint: 'Submit Complaint',
@@ -1146,6 +1147,7 @@ const ar = {
     online: 'متصل',
     offline: 'غير متصل',
     adminResponse: 'رد المشرف',
+    typingIndicator: 'يكتب الآن...',
 
     // Complaints
     submitComplaint: 'إرسال شكوى',
@@ -1786,6 +1788,7 @@ const fr = {
     online: 'En ligne',
     offline: 'Hors ligne',
     adminResponse: "Réponse de l'administrateur",
+    typingIndicator: 'Écriture...',
 
     submitComplaint: 'Soumettre une plainte',
     complaintText: 'Texte de la plainte',
@@ -2419,6 +2422,7 @@ const ru = {
     online: 'В сети',
     offline: 'Не в сети',
     adminResponse: 'Ответ администратора',
+    typingIndicator: 'Печатает...',
 
     submitComplaint: 'Подать жалобу',
     complaintText: 'Текст жалобы',
@@ -3052,6 +3056,7 @@ const tr = {
     online: 'Çevrimiçi',
     offline: 'Çevrimdışı',
     adminResponse: 'Yönetici yanıtı',
+    typingIndicator: 'Yazıyor...',
 
     submitComplaint: 'Şikayet gönder',
     complaintText: 'Şikayet metni',
@@ -3685,6 +3690,7 @@ const de = {
     online: 'Online',
     offline: 'Offline',
     adminResponse: 'Administrator-Antwort',
+    typingIndicator: 'Tippt...',
 
     submitComplaint: 'Beschwerde einreichen',
     complaintText: 'Beschwerdetext',

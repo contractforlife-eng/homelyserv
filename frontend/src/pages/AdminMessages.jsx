@@ -44,6 +44,7 @@ import {
   markOptimisticMessageFailed
 } from '../utils/chatService';
 import { getRoleColor } from '../utils/userDisplay';
+import { onSocketEvent, getSocket } from '../utils/socket';
 import { UserAvatar, UserDisplayName } from '../components/users';
 import api from '../utils/api';
 import PageLoader from '../components/common/PageLoader';
@@ -276,6 +277,17 @@ const AdminMessages = () => {
   const messagesEndRef = useRef(null);
   const autoOpenDoneRef = useRef(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const typingStartTimerRef = useRef(null);
+  const typingStaleTimerRef = useRef(null);
+  const typingStartEmittedRef = useRef(false);
+  const typingContextRef = useRef(null);
+  const authUserIdRef = useRef(authUser?.id);
+
+  // Keep authUserIdRef in sync with the latest authUser id
+  useEffect(() => {
+    authUserIdRef.current = authUser?.id;
+  });
 
   const t = i18nT('adminMessagesPage', { returnObjects: true });
 
@@ -340,6 +352,47 @@ const AdminMessages = () => {
     }
   };
 
+  const getOtherUserId = () => {
+    if (!selectedConversation) return null;
+    if (selectedConversation.type === 'INTERNAL') {
+      return selectedConversation.otherStaffId || null;
+    }
+    const userParticipant = (selectedConversation.participantIds || [])
+      .find(id => id !== String(authUser?.id));
+    return userParticipant || selectedConversation.user?.id || null;
+  };
+
+  const emitTypingEvent = (isTyping) => {
+    const recipientId = getOtherUserId();
+    if (!recipientId || !selectedConversation?.id || !authUser?.id) return;
+    const socket = getSocket(authUser.id);
+    if (!socket) return;
+    if (isTyping) {
+      typingContextRef.current = { conversationId: selectedConversation.id, recipientId };
+    } else {
+      typingContextRef.current = null;
+    }
+    socket.emit(isTyping ? 'typing:start' : 'typing:stop', {
+      conversationId: selectedConversation.id,
+      recipientId
+    });
+  };
+
+  const handleNewMessageChange = (e) => {
+    setNewMessage(e.target.value);
+
+    if (!typingStartEmittedRef.current && e.target.value.trim()) {
+      typingStartEmittedRef.current = true;
+      emitTypingEvent(true);
+    }
+
+    if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
+    typingStartTimerRef.current = setTimeout(() => {
+      typingStartEmittedRef.current = false;
+      emitTypingEvent(false);
+    }, 3000);
+  };
+
   // ============================================================
   // USE EFFECTS
   // ============================================================
@@ -378,6 +431,82 @@ const AdminMessages = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    const userId = authUser?.id;
+    if (!userId || !selectedConversation?.id) return;
+
+    const unsubscribe = onSocketEvent(userId, 'message:new', (payload) => {
+      if (String(payload.conversationId) !== String(selectedConversation.id)) return;
+      setMessages(prev => {
+        if (prev.some(msg => String(msg.id) === String(payload.id))) return prev;
+        return [...prev, payload];
+      });
+    });
+
+    return unsubscribe;
+  }, [authUser?.id, selectedConversation?.id]);
+
+  useEffect(() => {
+    const userId = authUser?.id;
+    if (!userId || !selectedConversation?.id) return;
+
+    const unsubscribe = onSocketEvent(userId, 'typing:update', (payload) => {
+      if (String(payload.conversationId) !== String(selectedConversation.id)) return;
+      if (String(payload.userId) === String(userId)) return;
+
+      if (payload.isTyping) {
+        setOtherUserTyping(true);
+        if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+        typingStaleTimerRef.current = setTimeout(() => {
+          setOtherUserTyping(false);
+        }, 4500);
+      } else {
+        setOtherUserTyping(false);
+        if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+    };
+  }, [authUser?.id, selectedConversation?.id]);
+
+  useEffect(() => {
+    // Emit typing:stop for the OLD conversation before switching
+    if (typingStartEmittedRef.current && typingContextRef.current) {
+      const socket = getSocket(authUserIdRef.current);
+      if (socket) {
+        socket.emit('typing:stop', {
+          conversationId: typingContextRef.current.conversationId,
+          recipientId: typingContextRef.current.recipientId
+        });
+      }
+      typingContextRef.current = null;
+    }
+    setOtherUserTyping(false);
+    if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
+    if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+    typingStartEmittedRef.current = false;
+  }, [selectedConversation?.id]);
+
+  // On unmount: emit typing:stop if currently typing, then clear timers
+  useEffect(() => {
+    return () => {
+      if (typingStartEmittedRef.current && typingContextRef.current) {
+        const socket = getSocket(authUserIdRef.current);
+        if (socket) {
+          socket.emit('typing:stop', {
+            conversationId: typingContextRef.current.conversationId,
+            recipientId: typingContextRef.current.recipientId
+          });
+        }
+      }
+      if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
+      if (typingStaleTimerRef.current) clearTimeout(typingStaleTimerRef.current);
+    };
+  }, []);
 
   // ============================================================
   // HANDLERS
@@ -537,6 +666,9 @@ const AdminMessages = () => {
         optimistic,
       ]);
       setNewMessage('');
+      if (typingStartTimerRef.current) clearTimeout(typingStartTimerRef.current);
+      typingStartEmittedRef.current = false;
+      emitTypingEvent(false);
       setSendingMessage(true);
 
       const result = await sendMessage(
@@ -841,6 +973,9 @@ const AdminMessages = () => {
                 defaultNameClassName="font-medium text-white"
               />
               <p className="text-xs text-gray-400">{chatSubtitle}</p>
+              {otherUserTyping && (
+                <p className="text-xs font-medium text-yellow-500">{i18nT('typingIndicator')}</p>
+              )}
             </div>
           </div>
           {/* Three-dot menu: Close Conversation */}
@@ -948,7 +1083,7 @@ const AdminMessages = () => {
               type="text"
               placeholder={t.typeMessage}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleNewMessageChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               className="flex-1 min-w-0 px-4 py-2.5 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500 text-sm"
             />

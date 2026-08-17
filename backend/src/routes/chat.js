@@ -18,6 +18,7 @@ import { authenticate } from '../middleware/auth.js';
 import { authorizePaidChatRelationship } from '../services/paymentAuthService.js';
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import { emitToUser } from '../lib/socket.js';
 import {
   getUserIdentity,
   getUserIdentities,
@@ -109,7 +110,7 @@ function formatMessage(msg) {
  *   INTERNAL - only staff members (SUPPORT/ADMIN) listed in staffIds
  *   ESCALATED - user participant OR assigned support OR admin (after escalation)
  */
-const canAccessConversation = async (conversationId, userId, userRole) => {
+export const canAccessConversation = async (conversationId, userId, userRole) => {
   const conversation = await Conversation.findOne({ conversationId });
   if (!conversation) {
     // Fallback: if no metadata exists, only allow if user is a participant
@@ -358,6 +359,8 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
     ]);
 
     const formatted = formatMessage(message);
+
+    emitToUser(recipientId, 'message:new', formatted);
 
     return res.status(201).json(formatted);
   } catch (error) {

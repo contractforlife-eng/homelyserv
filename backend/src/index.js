@@ -35,6 +35,9 @@ import publicSupportRoutes from './routes/publicSupport.js';
 import registrationGeographyRoutes from './routes/registrationGeography.js';
 import { requireAdmin } from './middleware/auth.js';
 import { setIo } from './lib/socket.js';
+import { emitToUser } from './lib/socket.js';
+import { canAccessConversation } from './routes/chat.js';
+import Conversation from './models/Conversation.js';
 import { verifyGuestConversation, verifyStaffToken } from './services/publicSupportAccessService.js';
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
 import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
@@ -427,11 +430,66 @@ io.on('connection', (socket) => {
     acknowledge({ ok: true });
   });
   
-  socket.on('typing', (data) => {
-    socket.to(data.roomId).emit('user_typing', { 
-      userId: data.userId, 
-      isTyping: data.isTyping 
-    });
+  socket.on('typing:start', async ({ conversationId, recipientId }) => {
+    const senderId = socket.user?.userId;
+    if (!senderId || !conversationId || !recipientId) return;
+
+    try {
+      const senderAllowed = await canAccessConversation(conversationId, senderId, socket.user?.role);
+      if (!senderAllowed) return;
+
+      const conversation = await Conversation.findOne({ conversationId });
+      if (!conversation) {
+        const parts = String(conversationId).replace('conv_', '').split('_');
+        if (parts.length !== 2) return;
+        if (!(parts[0] === String(recipientId) || parts[1] === String(recipientId))) return;
+      } else {
+        const recipientOk =
+          conversation.participantIds.includes(String(recipientId)) ||
+          conversation.supportAgentId === String(recipientId) ||
+          conversation.staffIds.includes(String(recipientId));
+        if (!recipientOk) return;
+      }
+
+      emitToUser(recipientId, 'typing:update', {
+        conversationId: String(conversationId),
+        userId: String(senderId),
+        isTyping: true
+      });
+    } catch {
+      return;
+    }
+  });
+
+  socket.on('typing:stop', async ({ conversationId, recipientId }) => {
+    const senderId = socket.user?.userId;
+    if (!senderId || !conversationId || !recipientId) return;
+
+    try {
+      const senderAllowed = await canAccessConversation(conversationId, senderId, socket.user?.role);
+      if (!senderAllowed) return;
+
+      const conversation = await Conversation.findOne({ conversationId });
+      if (!conversation) {
+        const parts = String(conversationId).replace('conv_', '').split('_');
+        if (parts.length !== 2) return;
+        if (!(parts[0] === String(recipientId) || parts[1] === String(recipientId))) return;
+      } else {
+        const recipientOk =
+          conversation.participantIds.includes(String(recipientId)) ||
+          conversation.supportAgentId === String(recipientId) ||
+          conversation.staffIds.includes(String(recipientId));
+        if (!recipientOk) return;
+      }
+
+      emitToUser(recipientId, 'typing:update', {
+        conversationId: String(conversationId),
+        userId: String(senderId),
+        isTyping: false
+      });
+    } catch {
+      return;
+    }
   });
   
   socket.on('disconnect', () => {
