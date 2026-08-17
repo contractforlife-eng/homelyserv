@@ -148,6 +148,23 @@ model NotificationSettings {
   updatedAt           DateTime @updatedAt
 }
 
+model PushDevice {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @db.ObjectId
+  platform       String
+  tokenType      String
+  token          String    @unique
+  appVersion     String?
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  revokedReason  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("push_devices")
+}
+
 model Payment {
   id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   orderId             String    @unique @map("orderId")

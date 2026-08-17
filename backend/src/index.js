@@ -42,6 +42,7 @@ import { verifyGuestConversation, verifyStaffToken } from './services/publicSupp
 import { startPublicSupportExpiryWorker } from './services/publicSupportExpiryService.js';
 import { createSocketAuthMiddleware, joinAuthenticatedUserRoom, joinGenericRoom, privateUserRoom } from './services/socketAuthService.js';
 import './config.js'; // Running your base configuration routines
+import { initializeFcm } from './services/fcmInit.js';
 
 // Get the directory where index.js is located
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,9 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from the backend root directory (one level up from src)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Initialize Firebase Admin for FCM (best-effort; missing credentials do not crash startup)
+initializeFcm().catch(() => {});
 
 // ============================================================
 // UNIFIED INTEGRATION GATEWAY CONNECTIONS DIAGNOSTIC
