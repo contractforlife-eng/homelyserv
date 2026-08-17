@@ -1,7 +1,7 @@
 // src/pages/WorkerMessages.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { isUserPremium } from '../utils/subscriptionService';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -47,6 +47,7 @@ import { onSocketEvent, getSocket } from '../utils/socket';
 // Main WorkerMessages Component - RED THEME WITH WORKING NOTIFICATIONS
 const WorkerMessages = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const authUser = useAuthStore(state => state.user);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authLoading = useAuthStore(state => state.isLoading);
@@ -64,6 +65,8 @@ const WorkerMessages = () => {
   const intervalRef = useRef(null);
   const dropdownRef = useRef(null);
   const refreshEffectReadyRef = useRef(false);
+  const autoOpenDoneRef = useRef(false);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const typingStartTimerRef = useRef(null);
   const typingStaleTimerRef = useRef(null);
@@ -114,12 +117,32 @@ const WorkerMessages = () => {
         const userConversations = await getUserConversations(userId);
         console.log('📋 Initial load - worker conversations:', userConversations);
         setConversations(userConversations);
+        setConversationsLoaded(true);
       };
 
       loadInitialData();
     }, [authUser, isAuthenticated, authLoading]);
 
-  // Refresh conversations when refreshKey changes
+   // ============================================================
+   // AUTO-OPEN CONVERSATION FROM PUSH NOTIFICATION
+   // ============================================================
+   useEffect(() => {
+     if (!authUser || !conversationsLoaded || autoOpenDoneRef.current) return;
+
+     const stateConvId = location.state?.conversationId;
+     if (!stateConvId) return;
+
+     autoOpenDoneRef.current = true;
+
+     const target = conversations.find(c => String(c.id) === String(stateConvId));
+     if (target) {
+       console.log('✅ Auto-opening existing conversation:', target.id);
+       setSelectedConversationId(target.id);
+       loadMessagesForConversation(target.id);
+     }
+   }, [authUser, conversationsLoaded]);
+
+   // Refresh conversations when refreshKey changes
   useEffect(() => {
     if (!refreshEffectReadyRef.current) {
       refreshEffectReadyRef.current = true;

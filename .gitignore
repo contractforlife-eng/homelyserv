@@ -188,3 +188,4 @@ sourcemaps/
 .terraform/
 .kube/
 .helm/
+frontend/android/app/google-services.json

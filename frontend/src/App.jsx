@@ -82,6 +82,7 @@ import PublicSupportWidget from './components/public-support/PublicSupportWidget
 
 import { useAuth } from './context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { initializePushNotifications, setupPushListeners, getPendingPushAction, clearPendingPushAction } from './utils/pushNotifications';
 
 // Messages Redirect Component
 const MessagesRedirect = () => {
@@ -191,6 +192,75 @@ function App() {
     const timer = setTimeout(() => setShowIntro(false), 2500);
     return () => clearTimeout(timer);
   }, [showIntro]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    if (!isAuthenticated || loading) return;
+    initializePushNotifications().catch((err) =>
+      console.warn('[Push] Init skipped:', err.message)
+    );
+    setupPushListeners();
+  }, [isAuthenticated, loading]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const navigatePushAction = () => {
+      const action = getPendingPushAction();
+      if (!action) return;
+      if (!isAuthenticated || loading || !user) return;
+
+      const role = user.role?.toUpperCase();
+
+      if (action.conversationId) {
+        if (role === 'WORKER') {
+          navigate('/worker-messages', { state: { conversationId: action.conversationId } });
+        } else if (role === 'EMPLOYER') {
+          navigate('/employer-messages', { state: { conversationId: action.conversationId } });
+        } else if (role === 'ADMIN') {
+          navigate('/admin/messages', { state: { conversationId: action.conversationId } });
+        } else if (role === 'SUPPORT') {
+          navigate('/support-dashboard', { state: { conversationId: action.conversationId } });
+        }
+      } else if (action.type === 'NEW_OFFER') {
+        if (role === 'WORKER') {
+          navigate('/worker/offers');
+        } else if (role === 'EMPLOYER') {
+          navigate('/employer-jobs');
+        }
+      } else if (action.type === 'NEW_APPLICATION') {
+        if (role === 'EMPLOYER') {
+          navigate('/employer-jobs');
+        }
+      } else if (action.type === 'APPLICATION_STATUS_UPDATE') {
+        if (role === 'WORKER') {
+          navigate('/worker-jobs');
+        }
+      } else if (action.type === 'OFFER_ACCEPTED' || action.type === 'OFFER_REJECTED' || action.type === 'OFFER_STATUS_UPDATE') {
+        if (role === 'WORKER') {
+          navigate('/worker/offers');
+        } else if (role === 'EMPLOYER') {
+          navigate('/employer-jobs');
+        }
+      } else if (action.type === 'HIRE_STATUS_UPDATE') {
+        navigate('/my-hires');
+      } else if (action.type === 'PAYMENT_SUCCESS') {
+        if (role === 'EMPLOYER') {
+          navigate('/employer-payments');
+        } else {
+          navigate('/my-hires');
+        }
+      }
+
+      clearPendingPushAction();
+    };
+
+    navigatePushAction();
+
+    const handler = () => navigatePushAction();
+    window.addEventListener('push-action', handler);
+    return () => window.removeEventListener('push-action', handler);
+  }, [isAuthenticated, loading, user, navigate]);
 
   return (
     <>

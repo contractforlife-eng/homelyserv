@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { disconnectSocket } from '../utils/socket';
 import { changeLanguageGlobal } from '../i18n';
 import { persistAuthToken } from '../utils/storageMaintenance';
+import { revokeCurrentDeviceToken } from '../utils/pushNotifications';
 
 const storedAuthToken = localStorage.getItem('homelyserv_token');
 
@@ -96,9 +97,15 @@ const useAuthStore = create(
         }
       },
 
-      logout: () => {
-        // Disconnect the realtime socket to stop receiving notifications
+      logout: async () => {
         disconnectSocket();
+
+        const token = localStorage.getItem('homelyserv_token');
+        if (token) {
+          revokeCurrentDeviceToken().catch((err) =>
+            console.warn('[Push] Logout revocation failed:', err)
+          );
+        }
 
         set({
           user: null,
