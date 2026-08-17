@@ -11,6 +11,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
 import { formatExperienceDisplay } from '../utils/experienceDisplay';
+import { getTutorSpecializationLabel } from '../constants/tutorSpecializations';
 import {
   ArrowLeft,
   User,
@@ -321,7 +322,7 @@ const WorkerProfileView = () => {
                 <p className="text-teal-100">
                   {getJobLabel(worker.desiredJob)}
                   {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
-                    <> — {worker.tutorSpecialization}</>
+                    <> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</>
                   ) : null}
                 </p>
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-teal-100">

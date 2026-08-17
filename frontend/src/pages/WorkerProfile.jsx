@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { JOB_OPTIONS } from '../constants/jobOptions';
+import { TUTOR_SPECIALIZATIONS, getTutorSpecializationLabel } from '../constants/tutorSpecializations';
 import { fetchSubscriptionStatus } from '../services/paymentService';
 import WorkerPremiumCard from '../components/worker/WorkerPremiumCard';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -685,22 +686,55 @@ const WorkerProfile = () => {
                 )}
                </div>
 
-               {formData.desiredJob === 'tutor' && (
-                 <div className="md:col-span-2">
-                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.tutorSpecialization')}</label>
-                   <input
-                     type="text"
-                     name="tutorSpecialization"
-                     value={formData.tutorSpecialization}
-                     onChange={handleInputChange}
-                     disabled={!isEditing}
-                     maxLength={100}
-                     className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                       isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
-                     }`}
-                   />
-                 </div>
-               )}
+                {formData.desiredJob === 'tutor' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.tutorSpecialization')}</label>
+                    {(() => {
+                      const rawSpecialization = formData.tutorSpecialization;
+                      const resolvedSpecialization = getTutorSpecializationLabel(rawSpecialization, t);
+                      const isCanonical = TUTOR_SPECIALIZATIONS.some(opt => opt.value === rawSpecialization);
+                      const isKnownLegacy = !isCanonical && rawSpecialization && resolveTutorSpecialization(rawSpecialization) !== null;
+                      const isUnknownLegacy = !isCanonical && !isKnownLegacy && rawSpecialization;
+                      const selectValue = isCanonical ? rawSpecialization : (isKnownLegacy ? resolveTutorSpecialization(rawSpecialization) : rawSpecialization);
+                      return (
+                        <>
+                          <div className="relative">
+                            <select
+                              name="tutorSpecialization"
+                              value={selectValue}
+                              onChange={handleInputChange}
+                              disabled={!isEditing}
+                              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                                isEditing ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                              }`}
+                            >
+                              <option value="">{t('selectTutorSpecialization')}</option>
+                              {TUTOR_SPECIALIZATIONS.map((spec) => (
+                                <option key={spec.value} value={spec.value}>
+                                  {t(spec.labelKey)}
+                                </option>
+                              ))}
+                              {isUnknownLegacy && (
+                                <option value={rawSpecialization}>
+                                  {rawSpecialization}
+                                </option>
+                              )}
+                            </select>
+                            <ChevronDown size={18} className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                          </div>
+                          {!isEditing && rawSpecialization && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              <span className="font-medium">{t('workerOwnProfile.selected')}:</span> {resolvedSpecialization}
+                            </p>
+                          )}
+                          {!isEditing && !rawSpecialization && (
+                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('workerOwnProfile.notSpecified')}</p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
 
                <div className="md:col-span-2">
                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('workerOwnProfile.bio')}</label>

@@ -30,6 +30,7 @@ import {
 
 import employerService from '../services/employerService';
 import { resolveArabicJobAlias } from '../utils/arabicJobSearchAliases';
+import { getTutorSpecializationLabel } from '../constants/tutorSpecializations';
 import {
   compareWorkerRates,
   formatWorkerRate,
@@ -832,13 +833,13 @@ const EmployerSearch = () => {
                           <UserDisplayName user={worker} name={t('employerSearch.worker')} size="lg" />
                         </h3>
 
-                         {/* Worker Job / Service */}
-                         <div className="text-xs text-teal-700 dark:text-teal-400 font-medium mb-1 truncate">
-                           {getJobLabel(worker.desiredJob) || (worker.skills && worker.skills.length > 0 ? worker.skills[0] : t('employerSearch.serviceNotSpecified'))}
-                           {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
-                             <span className="text-teal-600"> — {worker.tutorSpecialization}</span>
-                           ) : null}
-                         </div>
+                          {/* Worker Job / Service */}
+                          <div className="text-xs text-teal-700 dark:text-teal-400 font-medium mb-1 truncate">
+                            {getJobLabel(worker.desiredJob) || (worker.skills && worker.skills.length > 0 ? worker.skills[0] : t('employerSearch.serviceNotSpecified'))}
+                            {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
+                              <span className="text-teal-600"> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</span>
+                            ) : null}
+                          </div>
 
                         {/* Location */}
                         <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
@@ -967,12 +968,12 @@ const EmployerSearch = () => {
                           </div>
                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                              <Briefcase size={viewMode === 'compact' ? 12 : 14} />
-                             <span>
-                               {getJobLabel(worker.desiredJob)}
-                               {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
-                                 <> — {worker.tutorSpecialization}</>
-                               ) : null}
-                             </span>
+                              <span>
+                                {getJobLabel(worker.desiredJob)}
+                                {worker.desiredJob === 'tutor' && worker.tutorSpecialization ? (
+                                  <> — {getTutorSpecializationLabel(worker.tutorSpecialization, t)}</>
+                                ) : null}
+                              </span>
                            </div>
                           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             <MapPin size={viewMode === 'compact' ? 12 : 14} />
