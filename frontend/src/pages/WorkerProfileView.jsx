@@ -309,7 +309,11 @@ const WorkerProfileView = () => {
                 )}
               </div>
               <div className="flex-1 text-center md:text-left">
-                <UserDisplayName user={worker} size="xl" />
+                  <span className={`inline-flex items-baseline min-w-0 ${worker?.isPremium ? 'text-purple-900 dark:text-purple-200' : ''}`}>
+                  <span className={`truncate text-lg ${worker?.isPremium ? 'font-bold' : 'font-medium text-gray-900 dark:text-white'}`}>
+                    {worker?.fullName || worker?.name || t('sharedUserDisplay.fallbacks.user')}
+                  </span>
+                </span>
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mt-1">
                   {worker.isPremium && <PremiumBadge label={t('workerProfile.premiumLabel')} size="md" />}
                   {worker.activelyLooking && <ActivelyLookingBadge label={t('workerProfile.activelyLooking')} size="md" />}
