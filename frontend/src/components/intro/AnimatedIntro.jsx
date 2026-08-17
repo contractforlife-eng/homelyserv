@@ -6,8 +6,8 @@ const AnimatedIntro = () => {
     <>
       <style>{`
         @keyframes introOverlayOut {
-          0% { opacity: 1; }
-          60% { opacity: 1; }
+           0% { opacity: 1; }
+           70% { opacity: 1; }
           100% { opacity: 0; pointer-events: none; }
         }
         @keyframes introLogoIn {
@@ -19,7 +19,7 @@ const AnimatedIntro = () => {
           100% { opacity: 1; transform: translateY(0); }
         }
         .intro-overlay {
-          animation: introOverlayOut 2.5s ease-in-out forwards;
+           animation: introOverlayOut 3.5s ease-in-out forwards;
         }
         .intro-logo {
           animation: introLogoIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;

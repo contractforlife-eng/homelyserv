@@ -190,7 +190,7 @@ function App() {
 
   useEffect(() => {
     if (!showIntro) return;
-    const timer = setTimeout(() => setShowIntro(false), 2500);
+    const timer = setTimeout(() => setShowIntro(false), 3500);
     return () => clearTimeout(timer);
   }, [showIntro]);
 

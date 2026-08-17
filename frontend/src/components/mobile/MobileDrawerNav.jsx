@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../layout/DashboardContext';
 import { getDisplayName, getRoleLabel } from '../../utils/userDisplay';
+import { UserDisplayName } from '../users';
 import {
   X,
   LogOut,
@@ -107,7 +108,7 @@ const MobileDrawerNav = () => {
               )}
             </div>
             <div>
-              <p className="font-semibold text-gray-800 dark:text-white text-sm">{getDisplayName(authUser)}</p>
+              <UserDisplayName user={authUser} />
               <p className="text-xs text-gray-500 dark:text-gray-400">{getRoleLabel(authUser?.role)}</p>
             </div>
           </div>

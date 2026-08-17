@@ -45,7 +45,7 @@ const MobileBottomNav = () => {
               key={item.to}
               to={item.to}
               className={`flex flex-col items-center py-2 px-2 min-h-[44px] min-w-[44px] transition-colors ${
-                active ? activeColor : 'text-gray-400 dark:text-gray-500'
+                 active ? activeColor : 'text-gray-400 dark:text-gray-300'
               }`}
             >
               <Icon size={22} />
