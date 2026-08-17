@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import employerService from '../services/employerService';
+import { resolveArabicJobAlias } from '../utils/arabicJobSearchAliases';
 import {
   compareWorkerRates,
   formatWorkerRate,
@@ -415,13 +416,15 @@ const EmployerSearch = () => {
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
+        const arabicCanonical = resolveArabicJobAlias(query);
         results = results.filter(worker => {
           const nameMatch = worker.fullName?.toLowerCase().includes(query);
           const skillMatch = worker.skills?.some(skill => skill.toLowerCase().includes(query));
           const jobMatch = worker.desiredJob?.toLowerCase().includes(query) ||
                           worker.jobTitle?.toLowerCase().includes(query);
           const bioMatch = worker.bio?.toLowerCase().includes(query);
-          return nameMatch || skillMatch || jobMatch || bioMatch;
+          const arabicCanonicalJobMatch = arabicCanonical && worker.desiredJob === arabicCanonical;
+          return nameMatch || skillMatch || jobMatch || bioMatch || arabicCanonicalJobMatch;
         });
         console.log(`📌 After text search: ${results.length} results`);
       }
