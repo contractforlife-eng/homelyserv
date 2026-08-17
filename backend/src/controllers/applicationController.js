@@ -23,6 +23,7 @@ import {
 import { getActivePremiumUserIds } from '../services/premiumService.js';
 import { createOffer, validateOfferMonetaryInput } from '../services/offerService.js';
 import { normalizeCurrencyCode } from '../utils/currencyMetadata.js';
+import { sendPushToUser } from '../services/fcmService.js';
 
 const isValidObjectId = (id) => {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -175,6 +176,20 @@ export const applyToJob = async (req, res) => {
       message: 'Application submitted successfully',
       application,
     });
+
+    if (String(req.userId) !== String(jobPost.employerId)) {
+      sendPushToUser(jobPost.employerId, {
+        title: 'New application',
+        body: 'You have a new job application on HomelyServ',
+        data: {
+          type: 'NEW_APPLICATION',
+          entityType: 'JOB_APPLICATION',
+          applicationId: String(application.id),
+          jobPostId: String(jobPost.id),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     // Duplicate application — rely on @@unique([jobPostId, workerId])
     if (error.code === 'P2002') {
@@ -471,6 +486,20 @@ export const updateApplicationStatus = async (req, res) => {
     }
 
     res.json({ success: true, message: `Application ${status}`, application: updated });
+
+    if (String(req.userId) !== String(application.workerId)) {
+      sendPushToUser(application.workerId, {
+        title: 'Application update',
+        body: 'There is an update to your job application',
+        data: {
+          type: 'APPLICATION_STATUS_UPDATE',
+          entityType: 'JOB_APPLICATION',
+          applicationId: String(application.id),
+          jobPostId: String(application.jobPostId),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Applications: status error:', error);
     res.status(500).json({ success: false, message: 'Failed to update application status' });
@@ -699,6 +728,19 @@ export const sendOfferFromApplication = async (req, res) => {
       application: updatedApplication,
       offerId: offer.id,
     });
+
+    if (String(req.userId) !== String(workerProfile.userId)) {
+      sendPushToUser(workerProfile.userId, {
+        title: 'New job offer',
+        body: 'You have received a new offer on HomelyServ',
+        data: {
+          type: 'NEW_OFFER',
+          entityType: 'OFFER',
+          offerId: String(offer.id),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Applications: send offer error:', error);
     if (error?.statusCode === 400) {

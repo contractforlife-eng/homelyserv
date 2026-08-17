@@ -8,6 +8,7 @@ import { createNotification, NOTIFICATION_TYPES } from '../services/notification
 import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { ensureInitialWorkerEarning } from '../services/workerEarningService.js';
 import { fulfillSubscriptionPayment } from '../services/subscriptionGrantService.js';
+import { sendPushToUser } from '../services/fcmService.js';
 import User from '../models/User.js';
 import {
   PAYMENT_PURPOSES,
@@ -535,8 +536,9 @@ const updateHireAfterPayment = async (hireId, captureId, payment) => {
       }
     }
 
+    let workerProfile = null;
     try {
-      const workerProfile = await prisma.workerProfile.findUnique({
+      workerProfile = await prisma.workerProfile.findUnique({
         where: { id: String(hire.workerId) },
         select: { userId: true }
       });
@@ -552,6 +554,34 @@ const updateHireAfterPayment = async (hireId, captureId, payment) => {
       }
     } catch (workerLookupError) {
       console.error('⚠️ Could not resolve worker for payment notification:', workerLookupError.message);
+    }
+
+    if (hire.employerId) {
+      sendPushToUser(hire.employerId, {
+        title: 'Payment confirmed',
+        body: 'Your HomelyServ payment has been confirmed',
+        data: {
+          type: 'PAYMENT_SUCCESS',
+          entityType: 'PAYMENT',
+          hireId: String(hire.id),
+          purpose: 'COMMISSION',
+        },
+        channelId: 'payments',
+      }).catch(() => {});
+    }
+
+    if (workerProfile?.userId) {
+      sendPushToUser(workerProfile.userId, {
+        title: 'Payment confirmed',
+        body: 'Payment has been confirmed for your HomelyServ hire',
+        data: {
+          type: 'PAYMENT_SUCCESS',
+          entityType: 'HIRE',
+          hireId: String(hire.id),
+          purpose: 'COMMISSION',
+        },
+        channelId: 'payments',
+      }).catch(() => {});
     }
 
     return true;

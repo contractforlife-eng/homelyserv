@@ -19,6 +19,7 @@ import { authorizePaidChatRelationship } from '../services/paymentAuthService.js
 import prisma from '../lib/prisma.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import { emitToUser } from '../lib/socket.js';
+import { sendPushToUser } from '../services/fcmService.js';
 import {
   getUserIdentity,
   getUserIdentities,
@@ -362,7 +363,23 @@ router.post('/send', authenticate, checkPaidChatRelationship, async (req, res) =
 
     emitToUser(recipientId, 'message:new', formatted);
 
-    return res.status(201).json(formatted);
+    res.status(201).json(formatted);
+
+    if (String(senderId) !== String(recipientId)) {
+      sendPushToUser(String(recipientId), {
+        title: 'New message',
+        body: 'You have a new message on HomelyServ',
+        data: {
+          type: 'NEW_MESSAGE',
+          entityType: 'MESSAGE',
+          conversationId,
+          senderId: String(senderId),
+        },
+        channelId: 'messages',
+      }).catch(() => {});
+    }
+
+    return;
   } catch (error) {
     console.error('Error sending message:', error);
     return res.status(500).json({ error: 'Failed to send message' });

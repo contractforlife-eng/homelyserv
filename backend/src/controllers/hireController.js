@@ -8,6 +8,7 @@ import { ensureInitialWorkerEarning } from '../services/workerEarningService.js'
 import { createOffer } from '../services/offerService.js';
 import { addMoney, multiplyMoneyByDecimal, roundMoney } from '../utils/money.js';
 import { getActivePremiumUserIds } from '../services/premiumService.js';
+import { sendPushToUser } from '../services/fcmService.js';
 
 const createNotification = async (userId, type, title, message) => {
   try {
@@ -146,6 +147,19 @@ export const sendOffer = async (req, res) => {
     );
 
     res.status(201).json({ success: true, message: 'Offer sent successfully', offer });
+
+    if (String(req.userId) !== String(workerProfile.userId)) {
+      sendPushToUser(workerProfile.userId, {
+        title: 'New job offer',
+        body: 'You have received a new offer on HomelyServ',
+        data: {
+          type: 'NEW_OFFER',
+          entityType: 'OFFER',
+          offerId: String(offer.id),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Hire error:', error);
     if (error?.statusCode === 400) {
@@ -265,7 +279,20 @@ export const respondToOffer = async (req, res) => {
         `You accepted the offer from ${offer.employerName || 'Employer'} for ${offer.jobTitle}`
       );
 
-      return res.json({ message: 'Offer accepted, Hire created', offer: acceptance.offer, hire: acceptance.hire });
+      res.json({ message: 'Offer accepted, Hire created', offer: acceptance.offer, hire: acceptance.hire });
+
+      if (String(req.userId) !== String(offer.employerId)) {
+        sendPushToUser(offer.employerId, {
+          title: 'Offer accepted',
+          body: 'Your offer has been accepted on HomelyServ',
+          data: {
+            type: 'OFFER_ACCEPTED',
+            entityType: 'OFFER',
+            offerId: String(offer.id),
+          },
+          channelId: 'jobs_offers',
+        }).catch(() => {});
+      }
     }
 
     const rejection = await prisma.offer.updateMany({
@@ -289,6 +316,19 @@ export const respondToOffer = async (req, res) => {
     );
 
     res.json({ message: 'Offer rejected', offer: updatedOffer });
+
+    if (String(req.userId) !== String(offer.employerId)) {
+      sendPushToUser(offer.employerId, {
+        title: 'Offer update',
+        body: 'Your offer has been declined on HomelyServ',
+        data: {
+          type: 'OFFER_REJECTED',
+          entityType: 'OFFER',
+          offerId: String(offer.id),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Respond to offer error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -487,6 +527,19 @@ export const updateHireStatus = async (req, res) => {
       data: { status },
     });
     res.json({ message: 'Hire status updated successfully', hire: updatedHire });
+
+    if (String(req.userId) !== String(hire.workerId)) {
+      sendPushToUser(hire.workerId, {
+        title: 'Hire update',
+        body: 'There is an update to your HomelyServ hire',
+        data: {
+          type: 'HIRE_STATUS_UPDATE',
+          entityType: 'HIRE',
+          hireId: String(hire.id),
+        },
+        channelId: 'hire',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Update hire status error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -655,6 +708,19 @@ export const updateOfferStatus = async (req, res) => {
     );
 
     res.json({ message: 'Offer status updated', offer: updatedOffer });
+
+    if (String(req.userId) !== String(offer.employerId)) {
+      sendPushToUser(offer.employerId, {
+        title: 'Offer update',
+        body: 'There is an update to your job offer',
+        data: {
+          type: 'OFFER_STATUS_UPDATE',
+          entityType: 'OFFER',
+          offerId: String(offer.id),
+        },
+        channelId: 'jobs_offers',
+      }).catch(() => {});
+    }
   } catch (error) {
     console.error('Update offer status error:', error);
     res.status(500).json({ message: 'Server error' });
