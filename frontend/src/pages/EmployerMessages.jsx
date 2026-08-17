@@ -615,11 +615,6 @@ const EmployerMessages = () => {
                   ) : (
                     <User size={24} className="text-white m-3" />
                   )}
-                  {userIsPremium && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-yellow-400 rounded-full p-0.5 border-2 border-white/50">
-                      <Crown size={10} className="text-white" />
-                    </div>
-                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
