@@ -19,6 +19,9 @@
     }
   },
   "plugins": {
+    "GoogleAuth": {
+      "serverClientId": "165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com"
+    },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
     }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Capacitor } from '@capacitor/core';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import api from '../utils/api';
 import { useTranslation } from 'react-i18next';
+import NativeGoogleLogin from './mobile/NativeGoogleLogin';
 
 const FACEBOOK_APP_ID = '1813816306257010';
 
@@ -103,40 +105,52 @@ export default function SocialLogin({ onLoginSuccess }) {
   };
 
   // Google Login Handler
+  const processGoogleCredential = async (credential) => {
+    const response = await api.post('/api/oauth/social-login', {
+      credential
+    });
+
+    const data = response.data;
+
+    if (data.success) {
+      useAuthStore.getState().setAuth(data.user, data.token);
+
+      toast.success(`${t('welcome')} ${data.user.fullName}!`);
+
+      if (onLoginSuccess) {
+        onLoginSuccess(data.user);
+      }
+
+      const role = data.user.role?.toUpperCase();
+      if (role === 'EMPLOYER') {
+        navigate('/employer-dashboard');
+      } else if (role === 'WORKER') {
+        navigate('/worker-dashboard');
+      } else if (role === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate('/employer-dashboard');
+      }
+    } else {
+      toast.error(data.message || t('socialLoginError'));
+    }
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
     console.log('Google login success:', credentialResponse);
     try {
-      const response = await api.post('/api/oauth/social-login', {
-        credential: credentialResponse.credential
-      });
-
-      const data = response.data;
-      
-      if (data.success) {
-        useAuthStore.getState().setAuth(data.user, data.token);
-
-        toast.success(`${t('welcome')} ${data.user.fullName}!`);
-        
-        if (onLoginSuccess) {
-          onLoginSuccess(data.user);
-        }
-        
-        const role = data.user.role?.toUpperCase();
-        if (role === 'EMPLOYER') {
-          navigate('/employer-dashboard');
-        } else if (role === 'WORKER') {
-          navigate('/worker-dashboard');
-        } else if (role === 'ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/employer-dashboard');
-        }
-      } else {
-        toast.error(data.message || t('socialLoginError'));
-      }
+      await processGoogleCredential(credentialResponse.credential);
     } catch (error) {
       console.error('Error decoding Google token:', error);
       toast.error(t('socialLoginError'));
+    }
+  };
+
+  const handleNativeGoogleSuccess = async (credentialResponse) => {
+    try {
+      await processGoogleCredential(credentialResponse.credential);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Google login failed');
     }
   };
 
@@ -186,18 +200,25 @@ export default function SocialLogin({ onLoginSuccess }) {
 
       <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
         {/* Google Login */}
-        <div className="w-full sm:w-auto min-w-[200px] google-btn-wrapper">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
+        {Capacitor.isNativePlatform() ? (
+          <NativeGoogleLogin
+            onSuccess={handleNativeGoogleSuccess}
             onError={handleGoogleError}
-            theme="outline"
-            size="large"
-            shape="pill"
-            text="signin_with"
-            width="200"
-            logo_alignment="center"
           />
-        </div>
+        ) : (
+          <div className="w-full sm:w-auto min-w-[200px] google-btn-wrapper">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme="outline"
+              size="large"
+              shape="pill"
+              text="signin_with"
+              width="200"
+              logo_alignment="center"
+            />
+          </div>
+        )}
 
         {/* Facebook Login */}
         <button
