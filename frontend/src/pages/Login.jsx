@@ -26,6 +26,13 @@ function Login() {
   const [changePasswordLoading, setChangePasswordLoading] = useState(false);
   const [changePasswordError, setChangePasswordError] = useState('');
   const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
 // Check if user is already logged in — redirect based on Zustand auth state
   useEffect(() => {
@@ -330,23 +337,23 @@ const redirectUser = (user) => {
                     }
                   }}
                   className={`w-full pl-11 pr-4 py-3.5 bg-white dark:bg-gray-800/90 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-gray-400 focus:ring-0 focus:outline-none focus:shadow-[0_0_0_3px_rgba(15,23,42,0.06)] transition-all duration-200 placeholder:text-gray-400 dark:text-gray-500 shadow-sm hover:shadow-md ${
-                    showPasswordField ? 'opacity-50 pointer-events-none' : ''
+                    showPasswordField && !isMobile ? 'lg:opacity-50 lg:pointer-events-none' : ''
                   }`}
                   placeholder={t('emailPlaceholder')}
-                  disabled={showPasswordField}
+                  disabled={showPasswordField && !isMobile}
                   required
                 />
                 {!showPasswordField && (
                   <button
                     type="button"
                     onClick={handleEmailSubmit}
-                    className="absolute right-2 top-2 p-1.5 bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-lg transition-all shadow-md hover:shadow-red-400"
+                    className="absolute right-2 top-2 p-1.5 bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-lg transition-all shadow-md hover:shadow-red-400 hidden lg:flex"
                   >
                     <ArrowRight size={18} />
                   </button>
                 )}
                 {showPasswordField && (
-                  <div className="absolute right-3 top-3.5 text-red-500">
+                  <div className="absolute right-3 top-3.5 text-red-500 hidden lg:block">
                     <CheckCircle size={18} className="drop-shadow-sm" />
                   </div>
                 )}
@@ -354,8 +361,8 @@ const redirectUser = (user) => {
             </div>
 
             {/* Password Field - Appears After Email */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showPasswordField ? 'max-h-40 opacity-100 mb-2' : 'max-h-0 opacity-0'
+            <div className={`mb-2 lg:overflow-hidden lg:transition-all lg:duration-150 lg:ease-in-out ${
+              showPasswordField ? 'lg:max-h-40 lg:opacity-100' : 'lg:max-h-0 lg:opacity-0 lg:mb-0'
             }`}>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('password')}</label>
               <div className="relative group">
@@ -380,8 +387,8 @@ const redirectUser = (user) => {
             </div>
 
             {/* Forgot Password - Appears After Email */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showPasswordField ? 'max-h-20 opacity-100 mb-4 sm:mb-6' : 'max-h-0 opacity-0'
+            <div className={`mb-4 sm:mb-6 lg:overflow-hidden lg:transition-all lg:duration-150 lg:ease-in-out ${
+              showPasswordField ? 'lg:max-h-20 lg:opacity-100' : 'lg:max-h-0 lg:opacity-0 lg:mb-0'
             }`}>
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
@@ -395,8 +402,8 @@ const redirectUser = (user) => {
             </div>
 
             {/* Login Button - Appears After Email - Radiant Red to Black gradient */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showPasswordField ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+            <div className={`lg:overflow-hidden lg:transition-all lg:duration-150 lg:ease-in-out ${
+              showPasswordField ? 'lg:max-h-20 lg:opacity-100' : 'lg:max-h-0 lg:opacity-0'
             }`}>
               <button
                 type="submit"
@@ -418,8 +425,8 @@ const redirectUser = (user) => {
             </div>
 
             {/* Back to Email Button - Appears After Email */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showPasswordField ? 'max-h-20 opacity-100 mt-3' : 'max-h-0 opacity-0'
+            <div className={`hidden lg:block lg:overflow-hidden lg:transition-all lg:duration-150 lg:ease-in-out ${
+              showPasswordField ? 'lg:max-h-20 lg:opacity-100 mt-3' : 'lg:max-h-0 lg:opacity-0'
             }`}>
               <button
                 type="button"
