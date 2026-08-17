@@ -76,6 +76,8 @@ const DashboardHeader = ({
   const isAdmin = effectiveVariant === 'admin';
   const isEmployer = effectiveVariant === 'employer';
   const isWorker = effectiveVariant === 'worker';
+
+  const headerVisibility = !isAdmin ? 'hidden lg:block' : '';
   
   // Use centralized display name formatter
   const displayName = authUser?.fullName || authUser?.name
@@ -83,7 +85,7 @@ const DashboardHeader = ({
     : t('sharedChrome.header.user');
 
   return (
-    <header className={`sticky top-0 z-30 ${
+    <header className={`sticky top-0 z-30 ${headerVisibility} ${
       isAdmin
         ? 'bg-[#1a1a1a] border-b border-yellow-500/20'
         : 'bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'

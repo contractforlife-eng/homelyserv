@@ -11,6 +11,9 @@ import AdminSidebar from '../AdminSidebar';
 import DashboardContext from './DashboardContext';
 import VerificationBanner from '../VerificationBanner';
 import LegalFooter from '../common/LegalFooter';
+import MobileHeader from '../mobile/MobileHeader';
+import MobileDrawerNav from '../mobile/MobileDrawerNav';
+import MobileBottomNav from '../mobile/MobileBottomNav';
 
 const DashboardLayout = ({ 
   children, 
@@ -102,6 +105,7 @@ const DashboardLayout = ({
 
   // Determine which sidebar to render based on user role
   const SidebarComponent = authUser?.role === 'EMPLOYER' ? EmployerSidebar : authUser?.role === 'ADMIN' ? AdminSidebar : WorkerSidebar;
+  const isWorkerEmployer = authUser?.role === 'WORKER' || authUser?.role === 'EMPLOYER';
 
   // Provide layout state to children (DashboardHeader and page content).
   // All hooks must be called unconditionally BEFORE any conditional return so
@@ -120,7 +124,7 @@ const DashboardLayout = ({
   // Once user is loaded, never show full-page loader during SPA navigation
   if (authLoading && !authUser) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+       <div className="min-h-dvh bg-gray-50 dark:bg-[#182235] lg:dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-300">{t('loading')}</p>
@@ -135,7 +139,7 @@ const DashboardLayout = ({
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className="min-h-dvh flex bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-dvh flex bg-gray-50 dark:bg-[#182235] lg:dark:bg-gray-900">
         <SidebarComponent
           language={language}
           sidebarCollapsed={sidebarCollapsed}
@@ -147,9 +151,13 @@ const DashboardLayout = ({
           handleLogout={handleLogout}
         />
 
+        {isWorkerEmployer && <MobileHeader />}
+        {isWorkerEmployer && <MobileDrawerNav />}
+        {isWorkerEmployer && <MobileBottomNav />}
+
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
+        } ml-0 ${isWorkerEmployer ? 'lg:pt-0 pt-14 lg:pb-0 pb-16' : ''}`}>
           <VerificationBanner />
           {children}
           <LegalFooter className="px-4 md:px-6" />

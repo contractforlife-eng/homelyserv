@@ -1,6 +1,8 @@
 // src/App.jsx - FULLY UPDATED WITH PROPER MESSAGE ROUTING
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import AnimatedIntro from './components/intro/AnimatedIntro';
 
 // Public Pages
 import Login from './pages/Login';
@@ -181,9 +183,19 @@ function App() {
   const { isAuthenticated, loading } = useAuth();
   const publicWidgetPaths = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/contact', '/terms', '/refund-policy', '/privacy', '/help']);
   const showPublicSupport = !loading && !isAuthenticated && publicWidgetPaths.has(location.pathname);
+
+  const [showIntro, setShowIntro] = useState(() => Capacitor.isNativePlatform());
+
+  useEffect(() => {
+    if (!showIntro) return;
+    const timer = setTimeout(() => setShowIntro(false), 2500);
+    return () => clearTimeout(timer);
+  }, [showIntro]);
+
   return (
     <>
-    <Routes>
+      {showIntro && <AnimatedIntro />}
+      <Routes>
       {/* ========== PUBLIC ROUTES ========== */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
