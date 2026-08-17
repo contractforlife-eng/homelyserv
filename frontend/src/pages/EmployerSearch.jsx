@@ -20,7 +20,6 @@ import {
   UserPlus,
   Eye,
   Lock as LockIcon,
-  Crown,
   SlidersHorizontal,
   LayoutGrid,
   List,
@@ -799,30 +798,29 @@ const EmployerSearch = () => {
                 {featuredWorkers.map((worker) => {
                   const displayRate = formatWorkerRate(worker, t, 'employerSearch.rateNotSpecified');
 
-                  return (
-                    <div
-                      key={worker.id || worker.email}
-                      className="flex-shrink-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
-                    >
-                      {/* Worker Photo */}
-                      <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                        {worker.profileImage ? (
-                          <img
-                            src={worker.profileImage}
-                            alt={worker.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User size={48} className="text-gray-400 dark:text-gray-500" />
-                          </div>
-                        )}
-                        {worker.isPremium && (
-                          <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
-                            <Crown size={14} className="text-white" />
-                          </div>
-                        )}
-                      </div>
+                   return (
+                     <div
+                       key={worker.id || worker.email}
+                      className={`flex-shrink-0 w-48 rounded-xl overflow-hidden hover:shadow-md transition-shadow flex flex-col border ${
+                        worker.isPremium
+                          ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)] hover:shadow-[0_0_22px_rgba(168,85,247,0.50)]'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm'
+                      }`}
+                     >
+                       {/* Worker Photo */}
+                       <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                         {worker.profileImage ? (
+                           <img
+                             src={worker.profileImage}
+                             alt={worker.fullName}
+                             className="w-full h-full object-cover"
+                           />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center">
+                             <User size={48} className="text-gray-400 dark:text-gray-500" />
+                           </div>
+                         )}
+                       </div>
 
                       {/* Worker Info */}
                       <div className="p-3 flex flex-col flex-1">
@@ -916,13 +914,17 @@ const EmployerSearch = () => {
                 {searchResults.map((worker) => (
                   <div
                     key={worker.id || worker.email}
-                    className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition ${
+                    className={`border rounded-lg p-4 transition ${
                       viewMode === 'compact' ? 'p-3' : ''
-                    } ${worker.isPremium ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/30/10' : ''}`}
+                    } ${
+                      worker.isPremium
+                        ? 'border-purple-400 dark:border-purple-500 bg-purple-100/80 dark:bg-purple-900/30 shadow-[0_0_16px_rgba(168,85,247,0.40)] hover:shadow-[0_0_22px_rgba(168,85,247,0.50)]'
+                        : 'border-gray-200 dark:border-gray-700 hover:shadow-md'
+                    }`}
                   >
                     <div className={`flex ${viewMode === 'list' ? 'flex-row' : 'flex-col'} gap-4`}>
                       <div className={`flex items-start gap-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                        <div className={`rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 relative ${
+                        <div className={`rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 ${
                           viewMode === 'compact' ? 'w-12 h-12' : 'w-16 h-16'
                         }`}>
                           {worker.profileImage ? (
@@ -934,11 +936,6 @@ const EmployerSearch = () => {
                           ) : (
                             <User size={viewMode === 'compact' ? 20 : 28} className="text-teal-600" />
                           )}
-                          {worker.isPremium && (
-                            <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-white">
-                              <Crown size={viewMode === 'compact' ? 10 : 14} className="text-white" />
-                            </div>
-                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -946,7 +943,9 @@ const EmployerSearch = () => {
                               <h4 className={`font-semibold text-gray-800 dark:text-white ${viewMode === 'compact' ? 'text-sm' : ''}`}>
                                 <UserDisplayName user={worker} size="xl" />
                               </h4>
-                              <div className="flex flex-wrap items-center gap-1">
+                              <div className={`flex flex-wrap items-center gap-1 ${
+                                worker.isPremium ? 'rounded-md bg-orange-50 border border-orange-200 text-orange-600 dark:bg-orange-900/25 dark:border-orange-700/50 dark:text-orange-300 px-2 py-1' : ''
+                              }`}>
                                 {worker.isPremium && <PremiumBadge label={t('employerSearch.premium')} size="sm" />}
                                 {worker.activelyLooking && <ActivelyLookingBadge label={t('employerSearch.activelyLooking')} size="sm" />}
                               </div>
