@@ -708,20 +708,24 @@ const AdminSettings = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.users.allowRegistration}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.allowRegistration}</p>
+                    <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.allowRegistration}
                     onChange={(value) => handleToggleChange('allowRegistration')}
+                    disabled={true}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.users.requireApproval}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.requireApproval}</p>
+                    <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.requireApproval}
                     onChange={(value) => handleToggleChange('requireApproval')}
+                    disabled={true}
                   />
                 </div>
                 <div>
