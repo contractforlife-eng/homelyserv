@@ -6,6 +6,7 @@
 // ============================================================
 import prisma from '../lib/prisma.js';
 import { emitToUser } from '../lib/socket.js';
+import User from '../models/User.js';
 
 // ============================================================
 // NOTIFICATION TYPES
@@ -59,6 +60,22 @@ const TYPE_DEFAULTS = {
 // CREATE NOTIFICATION
 // ============================================================
 /**
+ * Determine whether a user should receive realtime notification delivery.
+ * In-app notification records are always created regardless of this value.
+ */
+const shouldNotifyUser = async (userId) => {
+  try {
+    const user = await User.findById(userId).select('settings');
+    if (!user) {
+      return true;
+    }
+    return user.settings?.notifications !== false;
+  } catch {
+    return true;
+  }
+};
+
+/**
  * Create a notification for a user.
  * All notification creation must go through this service.
  */
@@ -99,19 +116,22 @@ export const createNotification = async (userId, {
     });
 
     // Emit realtime event to the user's socket room
-    emitToUser(userId, 'notification:new', {
-      id: notification.id,
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-      entityType: notification.entityType,
-      entityId: notification.entityId,
-      priority: notification.priority,
-      isRead: notification.isRead,
-      icon: notification.icon,
-      link: notification.link,
-      createdAt: notification.createdAt,
-    });
+    const shouldDeliver = await shouldNotifyUser(userId);
+    if (shouldDeliver) {
+      emitToUser(userId, 'notification:new', {
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        entityType: notification.entityType,
+        entityId: notification.entityId,
+        priority: notification.priority,
+        isRead: notification.isRead,
+        icon: notification.icon,
+        link: notification.link,
+        createdAt: notification.createdAt,
+      });
+    }
 
     return notification;
   } catch (error) {

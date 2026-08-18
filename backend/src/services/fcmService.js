@@ -51,6 +51,10 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
     // Preference lookup failure must not break delivery; default to sending.
   }
 
+  if (settings.notifications === false) {
+    return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
+  }
+
   if (settings.pushNotifications === false) {
     return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
   }

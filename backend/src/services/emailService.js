@@ -848,6 +848,10 @@ export const shouldSendOptionalEmail = async (userId) => {
       return true;
     }
 
+    if (user.settings?.notifications === false) {
+      return false;
+    }
+
     return user.settings?.emailNotifications !== false;
   } catch {
     return true;
