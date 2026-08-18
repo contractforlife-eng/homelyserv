@@ -7,7 +7,10 @@ const NativeGoogleLogin = ({ onSuccess, onError }) => {
     setLoading(true);
     try {
       const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-      await GoogleAuth.initialize();
+      await GoogleAuth.initialize({
+        clientId: '165930731307-gsnppmt9p23ftdr8872kvf9ohr4p9ars.apps.googleusercontent.com',
+        scopes: ['profile', 'email']
+      });
       const response = await GoogleAuth.signIn();
 
       if (response.authentication?.idToken) {
