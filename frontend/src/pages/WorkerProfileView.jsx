@@ -282,7 +282,6 @@ const WorkerProfileView = () => {
       <DashboardHeader
         title={t('workerProfile.title')}
         notificationUserId={authUser?.id || authUser?.email}
-        isPremium={false}
       />
 
         <div className="p-4 md:p-6">
