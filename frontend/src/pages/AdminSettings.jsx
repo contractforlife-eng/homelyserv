@@ -179,9 +179,25 @@ const AdminSettings = () => {
     // Load saved settings from backend
     const loadSettings = async () => {
       try {
-        const response = await api.get('/api/admin/settings');
-        if (response.data.success) {
-          setSettings(prev => ({ ...prev, ...response.data.settings }));
+        const [adminResponse, authResponse] = await Promise.all([
+          api.get('/api/admin/settings').catch(() => ({ data: { success: false } })),
+          api.get('/api/auth/settings').catch(() => ({ data: { success: false } }))
+        ]);
+
+        if (adminResponse.data.success) {
+          setSettings(prev => ({ ...prev, ...adminResponse.data.settings }));
+        }
+
+        if (authResponse.data.success && authResponse.data.settings) {
+          const personal = authResponse.data.settings;
+          setSettings(prev => ({
+            ...prev,
+            systemNotifications: personal.notifications ?? prev.systemNotifications,
+            emailNotifications: personal.emailNotifications ?? prev.emailNotifications,
+            pushNotifications: personal.pushNotifications ?? prev.pushNotifications,
+            complaintNotifications: personal.complaintNotifications ?? prev.complaintNotifications,
+            paymentNotifications: personal.paymentNotifications ?? prev.paymentNotifications,
+          }));
         }
       } catch (error) {
         console.error('Error loading settings from backend:', error);
@@ -262,17 +278,47 @@ const AdminSettings = () => {
     setSaving(true);
     setSaveMessage(null);
     try {
-      const response = await api.put('/api/admin/settings', {
-        settings: settings
-      });
+      const personalKeys = [
+        'systemNotifications',
+        'emailNotifications',
+        'pushNotifications',
+        'complaintNotifications',
+        'paymentNotifications'
+      ];
 
-      if (response.data.success) {
+      const platformSettings = { ...settings };
+      const personalSettings = {};
+      for (const key of personalKeys) {
+        personalSettings[key] = platformSettings[key];
+        delete platformSettings[key];
+      }
+
+      const authResponse = await api.get('/api/auth/settings');
+      const existingPersonalSettings = authResponse.data?.success && authResponse.data.settings
+        ? authResponse.data.settings
+        : {};
+
+      const mergedPersonalSettings = {
+        ...existingPersonalSettings,
+        notifications: personalSettings.systemNotifications,
+        emailNotifications: personalSettings.emailNotifications,
+        pushNotifications: personalSettings.pushNotifications,
+        complaintNotifications: personalSettings.complaintNotifications,
+        paymentNotifications: personalSettings.paymentNotifications,
+      };
+
+      const [adminResponse, authPutResponse] = await Promise.all([
+        api.put('/api/admin/settings', { settings: platformSettings }),
+        api.put('/api/auth/settings', { settings: mergedPersonalSettings })
+      ]);
+
+      if (adminResponse.data.success && authPutResponse.data.success) {
         localStorage.setItem('admin_settings', JSON.stringify(settings));
         setSaving(false);
         setSaveMessage(t.actions.saved);
         setTimeout(() => setSaveMessage(null), 3000);
       } else {
-        throw new Error(response.data.message || t.actions.saveFailed);
+        throw new Error(t.actions.saveFailed);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
