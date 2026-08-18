@@ -184,6 +184,8 @@ export const PAYMENT_CONFIG = {
 export const PAYMENT_METHODS = {
   PAYMOB: 'paymob',
   PAYPAL: 'paypal',
+  VODAFONE_CASH: 'vodafone_cash',
+  INSTAPAY: 'instapay',
   WALLET: 'wallet'  // For future use
 };
 

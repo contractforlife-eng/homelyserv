@@ -9,6 +9,7 @@ import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
+import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
@@ -40,7 +41,9 @@ import {
   Briefcase,
   Crown,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Smartphone,
+  Building2
 } from 'lucide-react';
 
 // ============================================================
@@ -67,6 +70,7 @@ const PaymentOptions = () => {
   const [paypalApprovalUrl, setPaypalApprovalUrl] = useState(null);
   const [paymentCurrency, setPaymentCurrency] = useState('EGP');
   const [availableProviderIds, setAvailableProviderIds] = useState(null);
+  const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
 
   const displayWorkerName = workerData?.workerNameIsFallback
     ? t('sharedUserDisplay.roles.worker')
@@ -87,17 +91,8 @@ const PaymentOptions = () => {
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  // Payment Methods - ONLY PAYMOB & PAYPAL
+  // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const allPaymentMethods = [
-    ...(PAYMOB_ENABLED ? [{
-      id: PAYMENT_METHODS.PAYMOB,
-      name: 'Paymob',
-      icon: CreditCard,
-      description: t('paymentOptionsPage.methods.paymobDescription'),
-      color: 'teal',
-      badge: t('paymentOptionsPage.recommended'),
-      badgeColor: 'bg-green-100 text-green-700'
-    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
@@ -106,6 +101,24 @@ const PaymentOptions = () => {
       color: 'blue',
       badge: null,
       badgeColor: null
+    },
+    {
+      id: PAYMENT_METHODS.VODAFONE_CASH,
+      name: t('manualPayment.vodafoneCash'),
+      icon: Smartphone,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'red',
+      badge: t('manualPayment.manualVerification'),
+      badgeColor: 'bg-amber-100 text-amber-700'
+    },
+    {
+      id: PAYMENT_METHODS.INSTAPAY,
+      name: t('manualPayment.instapay'),
+      icon: Building2,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'blue',
+      badge: t('manualPayment.manualVerification'),
+      badgeColor: 'bg-amber-100 text-amber-700'
     }
   ];
   const normalizedAvailableProviderIds = availableProviderIds === null
@@ -550,6 +563,10 @@ const PaymentOptions = () => {
       return;
     }
 
+    if (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) {
+      return;
+    }
+
     setIsProcessing(true);
     setPaymentError(null);
     setPaymentMessage('');
@@ -585,7 +602,6 @@ const PaymentOptions = () => {
       console.log('💳 Payment Method:', selectedMethod);
 
       if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        // Paymob Payment
         console.log('🔄 Processing Paymob payment...');
         const result = await createPaymobPayment(total, orderId, customerData);
         console.log('📥 Paymob result:', result);
@@ -598,7 +614,6 @@ const PaymentOptions = () => {
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
-        // PayPal Payment
         console.log('🔄 Processing PayPal payment...');
         const result = await createPayPalOrder(total, orderId, customerData);
         console.log('📥 PayPal result:', result);
@@ -606,22 +621,17 @@ const PaymentOptions = () => {
         if (result.success && result.approvalUrl) {
           console.log('🔗 Opening PayPal:', result.approvalUrl);
           
-          // Store the approval URL for manual reopening
           setPaypalApprovalUrl(result.approvalUrl);
           localStorage.setItem('homelyserv_paypal_approval_url', result.approvalUrl);
           localStorage.setItem('homelyserv_paypal_order_id', result.paypalOrderId || result.orderId);
           
-          // Open PayPal in new window
           const paypalWindow = window.open(result.approvalUrl, '_blank', 'width=800,height=600');
           
           if (!paypalWindow || paypalWindow.closed || typeof paypalWindow.closed === 'undefined') {
-            // Popup was blocked or closed
             setPaymentMessage(t('paymentOptionsPage.paypalDidNotOpen'));
-            // Still start polling and show the reopen button
             startPollingPayPalOrder(result.paypalOrderId || result.orderId);
           } else {
             setPaymentMessage(t('paymentOptionsPage.paypalOpened'));
-            // Start polling for payment completion
             startPollingPayPalOrder(result.paypalOrderId || result.orderId);
           }
         } else {
@@ -661,6 +671,12 @@ const PaymentOptions = () => {
 
   const handleBack = () => {
     navigate('/employer-payments');
+  };
+
+  const handleManualProofSubmitted = () => {
+    setManualPaymentSubmitted(true);
+    setIsProcessing(false);
+    setSelectedMethod(null);
   };
 
   // ============================================================
@@ -1019,32 +1035,42 @@ const PaymentOptions = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handlePayment}
-              disabled={isProcessing || !selectedMethod || paymentSuccess}
-              className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  {t('paymentOptionsPage.processing')}
-                </>
-              ) : (
-                <>
-                  <Shield size={18} />
-                  {t('paymentOptionsPage.payNow')}
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleBack}
-              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-2"
-            >
-              <ArrowLeft size={18} />
-              {t('paymentOptionsPage.back')}
-            </button>
-          </div>
+          {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+            <ManualPaymentFlow
+              paymentMethod={selectedMethod}
+              purpose="COMMISSION"
+              hireId={pendingPayment?.hireId}
+              onSubmitted={handleManualProofSubmitted}
+              onCancel={() => setSelectedMethod(null)}
+            />
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handlePayment}
+                disabled={isProcessing || !selectedMethod || paymentSuccess}
+                className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    {t('paymentOptionsPage.processing')}
+                  </>
+                ) : (
+                  <>
+                    <Shield size={18} />
+                    {t('paymentOptionsPage.payNow')}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleBack}
+                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={18} />
+                {t('paymentOptionsPage.back')}
+              </button>
+            </div>
+          )}
 
           {!selectedMethod && !paymentSuccess && !isProcessing && (
             <p className="text-sm text-red-500 mt-3 text-center">{t('paymentOptionsPage.selectMethod')}</p>

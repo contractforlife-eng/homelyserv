@@ -306,6 +306,33 @@ export const verifyPayment = async (transactionId, orderId) => {
   return response.data;
 };
 
+export const createManualPayment = async (paymentData) => {
+  const response = await api.post('/api/payments/manual', paymentData);
+  return response.data;
+};
+
+export const submitManualPaymentProof = async (paymentId, formData) => {
+  const response = await api.post(`/api/payments/manual/${paymentId}/proof`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const getManualPaymentProof = async (paymentId) => {
+  const response = await api.get(`/api/payments/manual/${paymentId}/proof`);
+  return response.data;
+};
+
+export const confirmManualPayment = async (paymentId) => {
+  const response = await api.post(`/api/admin/manual-payments/${paymentId}/confirm`);
+  return response.data;
+};
+
+export const rejectManualPayment = async (paymentId, rejectionReason) => {
+  const response = await api.post(`/api/admin/manual-payments/${paymentId}/reject`, { rejectionReason });
+  return response.data;
+};
+
 const paymentService = {
   createPaymentIntent,
   getPaymentStatus,
@@ -317,6 +344,11 @@ const paymentService = {
   createPayPalOrder,
   capturePayPalOrder,
   processPayPalWebhook,
+  createManualPayment,
+  submitManualPaymentProof,
+  getManualPaymentProof,
+  confirmManualPayment,
+  rejectManualPayment,
   saveTransaction,
   getTransaction,
   getTransactionsByUser,

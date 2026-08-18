@@ -14,7 +14,9 @@ import {
   CreditCard,
   Wallet,
   ArrowLeft,
-  X
+  X,
+  Smartphone,
+  Building2
 } from 'lucide-react';
 import {
   createSubscription,
@@ -23,6 +25,7 @@ import {
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED, SUBSCRIPTION_PLANS } from '../config/paymentConfig';
+import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -49,6 +52,7 @@ const Subscription = () => {
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [paymobIframe, setPaymobIframe] = useState(null);
   const [retryableStatus, setRetryableStatus] = useState(false);
+  const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
 
   // Guard against duplicate PayPal capture responses triggering duplicate
   // UI refresh/purchase cycles (polling + popup-return can both fire).
@@ -60,17 +64,8 @@ const Subscription = () => {
   const price = selectedPlanConfig.prices[userRole];
 
 
-  // Payment Methods - ONLY PAYMOB & PAYPAL
+  // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const paymentMethods = [
-    ...(PAYMOB_ENABLED ? [{
-      id: PAYMENT_METHODS.PAYMOB,
-      name: t('subscriptionPage.methods.paymob'),
-      icon: CreditCard,
-      description: t('subscriptionPage.methods.paymobDesc'),
-      color: 'from-blue-500 to-blue-600',
-      badge: t('subscriptionPage.recommended'),
-      badgeColor: 'bg-green-100 text-green-700'
-    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: t('subscriptionPage.methods.paypal'),
@@ -79,6 +74,24 @@ const Subscription = () => {
       color: 'from-blue-700 to-blue-800',
       badge: null,
       badgeColor: null
+    },
+    {
+      id: PAYMENT_METHODS.VODAFONE_CASH,
+      name: t('manualPayment.vodafoneCash'),
+      icon: Smartphone,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'from-red-500 to-red-600',
+      badge: t('manualPayment.manualVerification'),
+      badgeColor: 'bg-amber-100 text-amber-700'
+    },
+    {
+      id: PAYMENT_METHODS.INSTAPAY,
+      name: t('manualPayment.instapay'),
+      icon: Building2,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'from-blue-500 to-blue-600',
+      badge: t('manualPayment.manualVerification'),
+      badgeColor: 'bg-amber-100 text-amber-700'
     }
   ];
 
@@ -276,6 +289,10 @@ const Subscription = () => {
       return;
     }
 
+    if (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) {
+      return;
+    }
+
     setProcessing(true);
     setPaymentError(null);
     setRetryableStatus(false);
@@ -300,7 +317,6 @@ const Subscription = () => {
       };
 
       if (selectedMethod === PAYMENT_METHODS.PAYMOB) {
-        // Paymob Payment
         const result = await createPaymobPayment(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
         
         if (result.success) {
@@ -311,14 +327,10 @@ const Subscription = () => {
         }
         
       } else if (selectedMethod === PAYMENT_METHODS.PAYPAL) {
-        // PayPal Payment
         const result = await createPayPalOrder(price, orderId, customerData, { purpose: 'SUBSCRIPTION', plan: selectedPlan });
         
         if (result.success) {
-          // Open PayPal in new window
           window.open(result.approvalUrl, '_blank');
-          
-          // Start polling for payment completion
           startPollingPayPalOrder(result.paypalOrderId);
         } else {
           throw new Error(result.error || t('subscriptionPaymentErrors.paypalFailed'));
@@ -449,6 +461,12 @@ const Subscription = () => {
       setPaymentError(t('subscriptionPage.payment.activationRetry'));
       setRetryableStatus(true);
     }
+  };
+
+  const handleManualProofSubmitted = () => {
+    setManualPaymentSubmitted(true);
+    setProcessing(false);
+    setSelectedMethod(null);
   };
 
   const handleGoBack = () => {
@@ -652,6 +670,7 @@ const Subscription = () => {
                       {paymentMethods.map((method) => {
                         const isSelected = selectedMethod === method.id;
                         const Icon = method.icon;
+                        const isManual = method.id === PAYMENT_METHODS.VODAFONE_CASH || method.id === PAYMENT_METHODS.INSTAPAY;
                         return (
                           <div
                             key={method.id}
@@ -690,27 +709,37 @@ const Subscription = () => {
                       })}
                     </div>
 
-                    <button
-                      onClick={handleSubscribe}
-                      disabled={processing || !selectedMethod}
-                      className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
-                        processing || !selectedMethod
-                          ? 'bg-gray-300 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
-                      )}`}
-                    >
-                      {processing ? (
-                        <>
-                          <Loader2 size={22} className="animate-spin" />
-                          {t('subscriptionPage.payment.processing')}
-                        </>
-                      ) : (
-                        <>
-                          <Crown size={22} />
-                          {t('subscriptionPage.payNow')}
-                        </>
-                      )}
-                    </button>
+                    {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+                      <ManualPaymentFlow
+                        paymentMethod={selectedMethod}
+                        purpose="SUBSCRIPTION"
+                        plan={selectedPlan}
+                        onSubmitted={handleManualProofSubmitted}
+                        onCancel={() => setSelectedMethod(null)}
+                      />
+                    ) : (
+                      <button
+                        onClick={handleSubscribe}
+                        disabled={processing || !selectedMethod}
+                        className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${(
+                          processing || !selectedMethod
+                            ? 'bg-gray-300 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:shadow-xl hover:scale-[1.02] transform transition-all'
+                        )}`}
+                      >
+                        {processing ? (
+                          <>
+                            <Loader2 size={22} className="animate-spin" />
+                            {t('subscriptionPage.payment.processing')}
+                          </>
+                        ) : (
+                          <>
+                            <Crown size={22} />
+                            {t('subscriptionPage.payNow')}
+                          </>
+                        )}
+                      </button>
+                    )}
 
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center mt-4">
                       {t('subscriptionPage.securePayment')}

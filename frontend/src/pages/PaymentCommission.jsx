@@ -17,12 +17,14 @@ import {
   Loader2,
   Crown,
   Info,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
 import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
+import ManualPaymentFlow from '../components/Payment/ManualPaymentFlow';
 import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
@@ -36,22 +38,15 @@ const PaymentCommission = () => {
   const [paymobIframe, setPaymobIframe] = useState(null);
   const paypalPollingRef = useRef(null);
   const paypalCaptureRequestedRef = useRef(false);
+  const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
 
   // Get authenticated user from authStore
   const authUser = useAuthStore(state => state.user);
   const authLoading = useAuthStore(state => state.loading);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  // Payment Methods - ONLY PAYMOB & PAYPAL
+  // Payment Methods - PAYMOB disabled, PAYPAL + MANUAL
   const paymentMethods = [
-    ...(PAYMOB_ENABLED ? [{
-      id: PAYMENT_METHODS.PAYMOB,
-      name: 'Paymob',
-      icon: CreditCard,
-      description: t('paymentCommission.methods.paymobDescription'),
-      color: 'from-blue-500 to-blue-600',
-      badge: t('paymentCommission.recommended')
-    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
@@ -59,6 +54,22 @@ const PaymentCommission = () => {
       description: t('paymentCommission.methods.paypalDescription'),
       color: 'from-blue-700 to-blue-800',
       badge: null
+    },
+    {
+      id: PAYMENT_METHODS.VODAFONE_CASH,
+      name: t('manualPayment.vodafoneCash'),
+      icon: Smartphone,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'from-red-500 to-red-600',
+      badge: t('manualPayment.manualVerification')
+    },
+    {
+      id: PAYMENT_METHODS.INSTAPAY,
+      name: t('manualPayment.instapay'),
+      icon: Building2,
+      description: t('manualPayment.egyptOnly') + ' - ' + t('manualPayment.pendingWarning'),
+      color: 'from-blue-500 to-blue-600',
+      badge: t('manualPayment.manualVerification')
     }
   ];
 
@@ -161,6 +172,10 @@ const PaymentCommission = () => {
       return;
     }
 
+    if (selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY) {
+      return;
+    }
+
     // Check if user is authenticated
     if (!isAuthenticated || !authUser) {
       setPaymentError(t('paymentCommission.errors.loginRequired'));
@@ -183,7 +198,7 @@ const PaymentCommission = () => {
         items: [
           {
             name: `Commission for ${commissionData.offerTitle || 'Offer'}`,
-            amount: commissionData.commissionAmount, // ← Only commission
+            amount: commissionData.commissionAmount,
             quantity: 1
           }
         ]
@@ -294,6 +309,12 @@ const PaymentCommission = () => {
     } catch (error) {
       console.error('Error saving receipt:', error);
     }
+  };
+
+  const handleManualProofSubmitted = () => {
+    setManualPaymentSubmitted(true);
+    setProcessing(false);
+    setSelectedMethod(null);
   };
 
   // Cleanup
@@ -456,24 +477,34 @@ const PaymentCommission = () => {
             })}
           </div>
 
-          <button
-            onClick={handlePayment}
-            disabled={processing || !selectedMethod}
-            className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
-              processing || !selectedMethod
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-xl hover:scale-[1.02] transform transition-all'
-            }`}
-          >
-            {processing ? (
-              <>
-                <Loader2 size={22} className="animate-spin" />
-                {t('paymentCommission.processing')}
-              </>
-            ) : (
-              t('paymentCommission.payToUnlock', { amount: commissionData.commissionAmount?.toLocaleString() })
-            )}
-          </button>
+          {selectedMethod === PAYMENT_METHODS.VODAFONE_CASH || selectedMethod === PAYMENT_METHODS.INSTAPAY ? (
+            <ManualPaymentFlow
+              paymentMethod={selectedMethod}
+              purpose="COMMISSION"
+              hireId={commissionData.hireId}
+              onSubmitted={handleManualProofSubmitted}
+              onCancel={() => setSelectedMethod(null)}
+            />
+          ) : (
+            <button
+              onClick={handlePayment}
+              disabled={processing || !selectedMethod}
+              className={`w-full py-4 rounded-2xl text-white font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+                processing || !selectedMethod
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-xl hover:scale-[1.02] transform transition-all'
+              }`}
+            >
+              {processing ? (
+                <>
+                  <Loader2 size={22} className="animate-spin" />
+                  {t('paymentCommission.processing')}
+                </>
+              ) : (
+                t('paymentCommission.payToUnlock', { amount: commissionData.commissionAmount?.toLocaleString() })
+              )}
+            </button>
+          )}
 
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <Shield size={16} />
