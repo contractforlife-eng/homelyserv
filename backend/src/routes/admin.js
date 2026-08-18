@@ -12,7 +12,7 @@ import { getActivePremiumUserIds, getSubscriptionStaffDetail, getSubscriptionSum
 import { aggregateAdminMoney, getAnalytics } from '../controllers/adminController.js';
 import { getUserIdentity, enrichMessageIdentities } from '../utils/staffIdentity.js';
 import { createAndSendPasswordReset } from '../services/passwordResetTokenService.js';
-import { sendRoleChangeNotification } from '../services/emailService.js';
+import { sendRoleChangeNotification, shouldSendOptionalEmail } from '../services/emailService.js';
 import { sendTransactionConfirmationEmail } from '../services/emailService.js';
 import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 import {
@@ -479,14 +479,17 @@ router.put('/users/:id/role', async (req, res) => {
     await user.save();
 
     // Email notification (non-blocking - must never roll back the change)
-    sendRoleChangeNotification({
-      to: user.email,
-      fullName: user.fullName,
-      oldRole,
-      newRole: normalizedRole
-    }).catch((emailError) => {
-      console.error('[ROLE_EMAIL] Failed to send role change notification:', emailError);
-    });
+    const shouldSendRoleChange = await shouldSendOptionalEmail(user._id);
+    if (shouldSendRoleChange) {
+      sendRoleChangeNotification({
+        to: user.email,
+        fullName: user.fullName,
+        oldRole,
+        newRole: normalizedRole
+      }).catch((emailError) => {
+        console.error('[ROLE_EMAIL] Failed to send role change notification:', emailError);
+      });
+    }
 
     // Structured audit log (no password/token data)
     console.log('[AUDIT_ROLE_CHANGE]', JSON.stringify({

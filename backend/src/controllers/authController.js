@@ -13,7 +13,7 @@ import {
   resolveAccountDefaultCurrency
 } from '../utils/currencyMetadata.js';
 import { isCanonicalWorkerJob } from '../constants/jobOptions.js';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { sendWelcomeEmail, sendPasswordResetEmail, shouldSendOptionalEmail } from '../services/emailService.js';
 import {
   verifyEmailWithToken,
   resendVerificationEmail,
@@ -235,15 +235,18 @@ export const register = async (req, res) => {
     // Send welcome email (non-blocking, fire-and-forget)
     // Email sending must never block registration or cause rollback
     const firstName = fullName.split(' ')[0]; // Extract first name
-    sendWelcomeEmail({
-      firstName,
-      role: user.role,
-      email: user.email,
-      language: user.language
-    }).catch(error => {
-      // Log error but don't throw - registration must succeed
-      console.error('[EMAIL] Failed to send welcome email during registration:', error);
-    });
+    const shouldSendWelcome = await shouldSendOptionalEmail(user._id);
+    if (shouldSendWelcome) {
+      sendWelcomeEmail({
+        firstName,
+        role: user.role,
+        email: user.email,
+        language: user.language
+      }).catch(error => {
+        // Log error but don't throw - registration must succeed
+        console.error('[EMAIL] Failed to send welcome email during registration:', error);
+      });
+    }
 
     // Send verification email (non-blocking, fire-and-forget)
     // Registration must NEVER fail because of email delivery.

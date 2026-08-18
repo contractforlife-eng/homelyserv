@@ -6,6 +6,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { buildEmailSenderIdentity, getEmailFromAddress } from '../utils/emailSender.js';
 import { escapeHtml } from '../templates/baseTemplate.js';
+import User from '../models/User.js';
 
 // ============================================================
 // PROVIDER SELECTION & CONFIGURATION
@@ -839,6 +840,20 @@ export const verifySMTPConnection = async () => {
   }
 };
 
+export const shouldSendOptionalEmail = async (userId) => {
+  try {
+    const user = await User.findById(userId).select('settings');
+
+    if (!user) {
+      return true;
+    }
+
+    return user.settings?.emailNotifications !== false;
+  } catch {
+    return true;
+  }
+};
+
 // ============================================================
 // EXPORT DEFAULT
 // ============================================================
@@ -851,4 +866,5 @@ export default {
   sendRoleChangeNotification,
   sendTransactionConfirmationEmail,
   verifySMTPConnection,
+  shouldSendOptionalEmail,
 };
