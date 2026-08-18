@@ -581,20 +581,24 @@ const AdminSettings = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.complaintNotifications}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.complaintNotifications}</p>
+                    <p className="text-xs text-yellow-500">{t.notices.complaintNotificationsRequired}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.complaintNotifications}
                     onChange={(value) => handleToggleChange('complaintNotifications')}
+                    disabled={true}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.notifications.paymentNotifications}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.paymentNotifications}</p>
+                    <p className="text-xs text-yellow-500">{t.notices.paymentNotificationsComingSoon}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.paymentNotifications}
                     onChange={(value) => handleToggleChange('paymentNotifications')}
+                    disabled={true}
                   />
                 </div>
               </div>
