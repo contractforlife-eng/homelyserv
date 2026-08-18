@@ -111,6 +111,10 @@ export const sendOffer = async (req, res) => {
       });
     }
 
+    if (workerProfile.availability === 'unavailable') {
+      return res.status(403).json({ message: 'Worker is currently unavailable for new hire opportunities' });
+    }
+
     const offer = await createOffer({
       employerId: req.userId,
       workerProfileId: workerProfile.id,

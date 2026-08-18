@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
+import prisma from '../lib/prisma.js';
 import { getJwtSecret } from '../config/jwtSecret.js';
 import { CloudinaryConfigurationError, uploadFromBuffer } from '../utils/cloudinary.js';
 import { getSupportedCountryByCode } from '../utils/supportedCountries.js';
@@ -939,6 +940,9 @@ export const updateSettings = async (req, res) => {
   try {
     const settings = req.body.settings || req.body;
 
+    const previousUser = await User.findById(req.userId).select('settings');
+    const previousSettings = previousUser?.settings || {};
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: { settings: settings } },
@@ -956,6 +960,44 @@ export const updateSettings = async (req, res) => {
     userData.id = userData._id;
     delete userData._id;
 
+    if (req.userRole === 'WORKER' && typeof settings.availableForHire === 'boolean') {
+      try {
+        const availability = settings.availableForHire === true ? 'available' : 'unavailable';
+        const workerProfile = await prisma.workerProfile.findUnique({
+          where: { userId: String(req.userId) },
+          select: { id: true }
+        });
+
+        if (!workerProfile) {
+          await rollbackUserSettings(req.userId, previousSettings);
+          return res.status(500).json({
+            success: false,
+            message: 'Worker profile not found — availability could not be synced'
+          });
+        }
+
+        await prisma.workerProfile.update({
+          where: { userId: String(req.userId) },
+          data: { availability }
+        });
+      } catch (syncError) {
+        console.error('Availability sync error:', syncError);
+        try {
+          await rollbackUserSettings(req.userId, previousSettings);
+        } catch (rollbackError) {
+          console.error('Availability rollback error:', rollbackError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to sync availability and rollback settings'
+          });
+        }
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to sync availability'
+        });
+      }
+    }
+
     res.json({
       success: true,
       message: 'Settings saved successfully',
@@ -967,6 +1009,26 @@ export const updateSettings = async (req, res) => {
       success: false,
       message: 'Failed to update settings'
     });
+  }
+};
+
+const rollbackUserSettings = async (userId, previousSettings) => {
+  const attempt = async () => User.findByIdAndUpdate(
+    userId,
+    { $set: { settings: previousSettings } },
+    { new: true }
+  );
+
+  try {
+    await attempt();
+  } catch (firstError) {
+    console.error('Availability rollback first attempt failed:', firstError);
+    try {
+      await attempt();
+    } catch (secondError) {
+      console.error('Availability rollback second attempt failed:', secondError);
+      throw new Error(`Rollback failed after 2 attempts: first=${firstError.message}, second=${secondError.message}`);
+    }
   }
 };
 
