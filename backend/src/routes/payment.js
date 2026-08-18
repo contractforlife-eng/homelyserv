@@ -2619,4 +2619,5 @@ const formatPaymentMethod = (method) => {
   return lower.replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+export { completePaymentTransaction, claimFulfillment, updateHireAfterPayment };
 export default router;

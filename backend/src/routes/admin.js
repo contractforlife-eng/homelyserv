@@ -25,6 +25,7 @@ import {
 } from '../services/paypalRefundService.js';
 import { getFinancialCenterData } from '../services/financialCenterService.js';
 import { getUserPaymentHistory } from '../services/userPaymentHistoryService.js';
+import { completePaymentTransaction } from '../routes/payment.js';
 
 const router = express.Router();
 
@@ -1836,6 +1837,264 @@ router.post('/migrate/offer-worker-ids', async (req, res) => {
       message: 'Migration failed',
       error: error.message
     });
+  }
+});
+
+// ============================================================
+// ADMIN MANUAL PAYMENT REVIEW
+// ============================================================
+const MANUAL_PROVIDERS = new Set(['vodafone_cash', 'instapay']);
+
+router.post('/manual-payments/:paymentId/confirm', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const adminId = String(req.userId);
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        paymentMethod: true,
+        manualReviewState: true,
+        status: true,
+        fulfillmentStatus: true,
+        purpose: true,
+        currency: true,
+        externalTransactionReference: true,
+        proofStorageKey: true,
+        reviewedBy: true,
+        reviewedAt: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+
+    if (!MANUAL_PROVIDERS.has(payment.paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Only manual payments can be confirmed through this endpoint' });
+    }
+
+    if (payment.manualReviewState === 'rejected') {
+      return res.status(400).json({ success: false, error: 'Rejected payment cannot be confirmed' });
+    }
+
+    const now = new Date();
+
+    if (payment.manualReviewState === 'verified') {
+      const isRetryable = payment.status === 'completed' && payment.fulfillmentStatus === 'failed';
+      if (!isRetryable) {
+        return res.json({
+          success: true,
+          message: 'Payment already verified and fulfilled',
+          payment: {
+            id: payment.id,
+            manualReviewState: payment.manualReviewState,
+            status: payment.status,
+            fulfillmentStatus: payment.fulfillmentStatus,
+            reviewedBy: payment.reviewedBy,
+            reviewedAt: payment.reviewedAt,
+          },
+        });
+      }
+
+      const retryPayment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: { id: true, purpose: true, amount: true, currency: true, userId: true, hireId: true, paymentMethod: true },
+      });
+
+      try {
+        await completePaymentTransaction(
+          { ...retryPayment, transactionId: retryPayment.id, completedAt: payment.updatedAt },
+          payment.externalTransactionReference
+        );
+      } catch (retryError) {
+        console.error('❌ Manual payment fulfillment retry error:', retryError);
+      }
+
+      const retried = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true, reviewedBy: true, reviewedAt: true },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Retrying failed fulfillment for verified manual payment',
+        payment: {
+          id: retried.id,
+          manualReviewState: retried.manualReviewState,
+          status: retried.status,
+          fulfillmentStatus: retried.fulfillmentStatus,
+          reviewedBy: retried.reviewedBy,
+          reviewedAt: retried.reviewedAt,
+        },
+      });
+    }
+
+    if (payment.manualReviewState !== 'pending_verification') {
+      return res.status(400).json({ success: false, error: 'Payment is not in a reviewable state' });
+    }
+
+    if (!payment.externalTransactionReference || !payment.proofStorageKey) {
+      return res.status(400).json({ success: false, error: 'Proof and transaction reference are required before confirmation' });
+    }
+
+    const claimed = await prisma.payment.updateMany({
+      where: {
+        id: paymentId,
+        manualReviewState: 'pending_verification',
+        status: 'pending',
+        fulfillmentStatus: 'pending',
+      },
+      data: {
+        manualReviewState: 'verified',
+        reviewedBy: adminId,
+        reviewedAt: now,
+      },
+    });
+
+    if (claimed.count === 0) {
+      const current = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true, reviewedBy: true, reviewedAt: true },
+      });
+      return res.json({
+        success: true,
+        message: 'Payment state changed during confirmation',
+        payment: {
+          id: current.id,
+          manualReviewState: current.manualReviewState,
+          status: current.status,
+          fulfillmentStatus: current.fulfillmentStatus,
+          reviewedBy: current.reviewedBy,
+          reviewedAt: current.reviewedAt,
+        },
+      });
+    }
+
+    const updated = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true, reviewedBy: true, reviewedAt: true },
+    });
+
+    try {
+      await completePaymentTransaction({ ...updated, purpose: payment.purpose, amount: payment.amount, currency: payment.currency, transactionId: payment.id, userId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { userId: true } }))?.userId, hireId: (await prisma.payment.findUnique({ where: { id: paymentId }, select: { hireId: true } }))?.hireId, paymentMethod: payment.paymentMethod, completedAt: now }, payment.externalTransactionReference);
+    } catch (fulfillmentError) {
+      console.error('❌ Manual payment fulfillment error:', fulfillmentError);
+    }
+
+    const final = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true, reviewedBy: true, reviewedAt: true },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Manual payment verified and fulfillment attempted',
+      payment: {
+        id: final.id,
+        manualReviewState: final.manualReviewState,
+        status: final.status,
+        fulfillmentStatus: final.fulfillmentStatus,
+        reviewedBy: final.reviewedBy,
+        reviewedAt: final.reviewedAt,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Admin manual payment confirm error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to confirm manual payment' });
+  }
+});
+
+router.post('/manual-payments/:paymentId/reject', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { rejectionReason } = req.body;
+    const adminId = String(req.userId);
+
+    const trimmedReason = String(rejectionReason || '').trim();
+    if (!trimmedReason || trimmedReason.length < 3 || trimmedReason.length > 500) {
+      return res.status(400).json({ success: false, error: 'rejectionReason is required (3-500 characters)' });
+    }
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        paymentMethod: true,
+        manualReviewState: true,
+        status: true,
+        fulfillmentStatus: true,
+        proofStorageKey: true,
+        externalTransactionReference: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+
+    if (!MANUAL_PROVIDERS.has(payment.paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Only manual payments can be rejected through this endpoint' });
+    }
+
+    if (payment.manualReviewState !== 'pending_verification') {
+      return res.status(400).json({ success: false, error: 'Only payments pending verification can be rejected' });
+    }
+
+    const updated = await prisma.payment.updateMany({
+      where: {
+        id: paymentId,
+        manualReviewState: 'pending_verification',
+      },
+      data: {
+        manualReviewState: 'rejected',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        rejectionReason: trimmedReason,
+      },
+    });
+
+    if (updated.count === 0) {
+      const current = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true },
+      });
+      return res.json({
+        success: true,
+        message: 'Payment state changed during rejection',
+        payment: {
+          id: current.id,
+          manualReviewState: current.manualReviewState,
+          status: current.status,
+          fulfillmentStatus: current.fulfillmentStatus,
+        },
+      });
+    }
+
+    const final = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true, proofStorageKey: true, externalTransactionReference: true, rejectionReason: true, reviewedBy: true, reviewedAt: true },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Manual payment rejected',
+      payment: {
+        id: final.id,
+        manualReviewState: final.manualReviewState,
+        status: final.status,
+        fulfillmentStatus: final.fulfillmentStatus,
+        proofStorageKey: final.proofStorageKey,
+        externalTransactionReference: final.externalTransactionReference,
+        rejectionReason: final.rejectionReason,
+        reviewedBy: final.reviewedBy,
+        reviewedAt: final.reviewedAt,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Admin manual payment reject error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to reject manual payment' });
   }
 });
 
