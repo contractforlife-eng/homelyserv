@@ -205,6 +205,15 @@ model Payment {
   fulfillmentStartedAt   DateTime? @map("fulfillmentStartedAt")
   fulfillmentCompletedAt DateTime? @map("fulfillmentCompletedAt")
 
+  manualPaymentReference       String?   @map("manualPaymentReference")
+  manualReviewState            String?   @map("manualReviewState")
+  externalTransactionReference String?   @map("externalTransactionReference")
+  proofStorageKey              String?   @map("proofStorageKey")
+  submittedAt                  DateTime? @map("submittedAt")
+  reviewedBy                   String?   @db.ObjectId @map("reviewedBy")
+  reviewedAt                   DateTime? @map("reviewedAt")
+  rejectionReason              String?   @map("rejectionReason")
+
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
