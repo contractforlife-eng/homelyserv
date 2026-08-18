@@ -32,6 +32,12 @@ import {
   MANUAL_REVIEW_STATES,
   getManualPaymentConfig,
 } from '../config/manualPayments.js';
+import {
+  proofUpload,
+  uploadProof,
+  generateSignedProofUrl,
+  deleteProof,
+} from '../utils/manualPaymentProofUpload.js';
 import { classifyPayPalCaptureError } from '../utils/paypalCaptureError.js';
 import {
   PayPalEvidenceError,
@@ -2413,6 +2419,195 @@ router.post('/manual', authenticate, async (req, res) => {
       success: false,
       error: error.message || 'Failed to create manual payment',
     });
+  }
+});
+
+// ============================================================
+// MANUAL PAYMENT PROOF SUBMISSION AND RETRIEVAL
+// ============================================================
+
+router.post('/manual/:paymentId/proof', authenticate, proofUpload.single('proof'), async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { externalTransactionReference } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Proof file is required' });
+    }
+
+    const trimmedReference = String(externalTransactionReference || '').trim();
+    if (!trimmedReference || trimmedReference.length < 3 || trimmedReference.length > 100) {
+      return res.status(400).json({ success: false, error: 'External transaction reference is required (3-100 characters)' });
+    }
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        userId: true,
+        paymentMethod: true,
+        manualReviewState: true,
+        status: true,
+        fulfillmentStatus: true,
+        proofStorageKey: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+
+    if (String(payment.userId) !== String(req.userId)) {
+      return res.status(403).json({ success: false, error: 'Not authorized to submit proof for this payment' });
+    }
+
+    if (!Object.values(MANUAL_PROVIDERS).includes(payment.paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Proof submission is only allowed for manual payments' });
+    }
+
+    if (payment.manualReviewState !== MANUAL_REVIEW_STATES.AWAITING_TRANSFER) {
+      return res.json({
+        success: true,
+        message: 'Proof already submitted or payment is not in a reviewable state',
+        payment: {
+          id: payment.id,
+          manualReviewState: payment.manualReviewState,
+          status: payment.status,
+          fulfillmentStatus: payment.fulfillmentStatus,
+        },
+      });
+    }
+
+    let uploaded;
+    try {
+      uploaded = await uploadProof(req.file.buffer);
+    } catch (uploadError) {
+      console.error('❌ Proof upload failed:', uploadError);
+      return res.status(500).json({ success: false, error: 'Failed to upload proof' });
+    }
+
+    try {
+      const updated = await prisma.payment.updateMany({
+        where: {
+          id: paymentId,
+          userId: req.userId,
+          manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
+          status: 'pending',
+          fulfillmentStatus: 'pending',
+        },
+        data: {
+          externalTransactionReference: trimmedReference,
+          proofStorageKey: uploaded.public_id,
+          submittedAt: new Date(),
+          manualReviewState: MANUAL_REVIEW_STATES.PENDING_VERIFICATION,
+        },
+      });
+
+      if (updated.count === 0) {
+        await deleteProof(uploaded.public_id);
+
+        const current = await prisma.payment.findUnique({
+          where: { id: paymentId },
+          select: { id: true, manualReviewState: true, status: true, fulfillmentStatus: true },
+        });
+
+        return res.json({
+          success: true,
+          message: 'Payment state changed during submission',
+          payment: {
+            id: current.id,
+            manualReviewState: current.manualReviewState,
+            status: current.status,
+            fulfillmentStatus: current.fulfillmentStatus,
+          },
+        });
+      }
+
+      const finalPayment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: {
+          id: true,
+          manualReviewState: true,
+          status: true,
+          fulfillmentStatus: true,
+          externalTransactionReference: true,
+          proofStorageKey: true,
+          submittedAt: true,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Proof submitted for verification',
+        payment: {
+          id: finalPayment.id,
+          manualReviewState: finalPayment.manualReviewState,
+          status: finalPayment.status,
+          fulfillmentStatus: finalPayment.fulfillmentStatus,
+          externalTransactionReference: finalPayment.externalTransactionReference,
+          proofStorageKey: finalPayment.proofStorageKey,
+          submittedAt: finalPayment.submittedAt,
+        },
+      });
+    } catch (dbError) {
+      console.error('❌ Payment update failed after upload:', dbError);
+      await deleteProof(uploaded.public_id);
+      return res.status(500).json({ success: false, error: 'Failed to record proof submission' });
+    }
+  } catch (error) {
+    console.error('❌ Manual proof submission error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to submit proof' });
+  }
+});
+
+router.get('/manual/:paymentId/proof', authenticate, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        userId: true,
+        paymentMethod: true,
+        proofStorageKey: true,
+        manualReviewState: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+
+    const isOwner = String(payment.userId) === String(req.userId);
+    const isAdmin = req.userRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, error: 'Not authorized to view this proof' });
+    }
+
+    if (!Object.values(MANUAL_PROVIDERS).includes(payment.paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Proof viewing is only allowed for manual payments' });
+    }
+
+    if (!payment.proofStorageKey) {
+      return res.status(404).json({ success: false, error: 'Proof not submitted yet' });
+    }
+
+    const signedUrl = generateSignedProofUrl(payment.proofStorageKey, 3600);
+
+    return res.json({
+      success: true,
+      proof: {
+        paymentId: payment.id,
+        storageKey: payment.proofStorageKey,
+        signedUrl,
+        expiresIn: 3600,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Manual proof retrieval error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to retrieve proof' });
   }
 });
 
