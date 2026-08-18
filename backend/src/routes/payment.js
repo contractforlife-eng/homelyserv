@@ -27,6 +27,11 @@ import {
   roundMoney,
   toMinorUnits,
 } from '../utils/money.js';
+import {
+  MANUAL_PROVIDERS,
+  MANUAL_REVIEW_STATES,
+  getManualPaymentConfig,
+} from '../config/manualPayments.js';
 import { classifyPayPalCaptureError } from '../utils/paypalCaptureError.js';
 import {
   PayPalEvidenceError,
@@ -2142,12 +2147,271 @@ router.post('/webhook', async (req, res) => {
       success: true,
       message: 'Webhook processed successfully'
     });
-
   } catch (error) {
     console.error('❌ Webhook error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to process webhook'
+    });
+  }
+});
+
+// ============================================================
+// MANUAL PAYMENT CREATION
+// ============================================================
+const MANUAL_REFERENCE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const MAX_MANUAL_REFERENCE_ATTEMPTS = 5;
+
+const generateManualPaymentReference = async (tx) => {
+  const year = new Date().getFullYear();
+  for (let attempt = 0; attempt < MAX_MANUAL_REFERENCE_ATTEMPTS; attempt++) {
+    const suffix = Array.from({ length: 6 }, () => MANUAL_REFERENCE_CHARS[Math.floor(Math.random() * MANUAL_REFERENCE_CHARS.length)]).join('');
+    const reference = `HS-${year}-${suffix}`;
+    const existing = await tx.payment.findFirst({
+      where: { manualPaymentReference: reference },
+      select: { id: true },
+    });
+    if (!existing) {
+      return reference;
+    }
+  }
+  throw new Error('MANUAL_REFERENCE_COLLISION');
+};
+
+const buildManualTransferInstructions = (paymentMethod, amount, reference, config) => {
+  if (paymentMethod === MANUAL_PROVIDERS.VODAFONE_CASH) {
+    return {
+      method: MANUAL_PROVIDERS.VODAFONE_CASH,
+      amount,
+      currency: 'EGP',
+      reference,
+      destination: config.vodafoneCash.number,
+    };
+  }
+  return {
+    method: MANUAL_PROVIDERS.INSTAPAY,
+    amount,
+    currency: 'EGP',
+    reference,
+    phone: config.instapay.phone,
+    ipa: config.instapay.ipa,
+    paymentLink: config.instapay.paymentLink,
+  };
+};
+
+router.post('/manual', authenticate, async (req, res) => {
+  try {
+    const {
+      paymentMethod,
+      purpose: requestedPurpose,
+      plan: requestedPlan,
+      hireId,
+      workerId,
+      workerName,
+      jobTitle,
+      employerId,
+      employerName,
+      phone,
+      offerId,
+    } = req.body;
+
+    const purpose = requestedPurpose === PAYMENT_PURPOSES.SUBSCRIPTION
+      ? PAYMENT_PURPOSES.SUBSCRIPTION
+      : PAYMENT_PURPOSES.COMMISSION;
+
+    const selectedPaymentMethod = String(paymentMethod || '').trim().toLowerCase();
+
+    if (!Object.values(MANUAL_PROVIDERS).includes(selectedPaymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Unsupported manual payment method' });
+    }
+
+    const manualConfig = getManualPaymentConfig();
+    const isVodafone = selectedPaymentMethod === MANUAL_PROVIDERS.VODAFONE_CASH;
+    const providerConfigured = isVodafone ? manualConfig.vodafoneCash.configured : manualConfig.instapay.configured;
+
+    if (!providerConfigured) {
+      return res.status(503).json({ success: false, error: 'Manual payment method is not currently configured' });
+    }
+
+    let amount;
+    let transactionCurrency = 'EGP';
+    let subscriptionSnapshot = null;
+
+    if (purpose === PAYMENT_PURPOSES.SUBSCRIPTION) {
+      const selectedPlan = getSubscriptionPlan(requestedPlan);
+      if (!selectedPlan) {
+        return res.status(400).json({ success: false, error: 'Unsupported subscription plan' });
+      }
+
+      let role = req.userRole;
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: String(req.userId) },
+          select: { role: true },
+        });
+        if (dbUser?.role) role = dbUser.role;
+      } catch (roleErr) {
+        console.warn('⚠️ Could not resolve role for manual subscription pricing:', roleErr.message);
+      }
+
+      if (!['EMPLOYER', 'WORKER'].includes(role)) {
+        return res.status(403).json({ success: false, error: 'Role is not eligible for Premium' });
+      }
+
+      amount = getSubscriptionPrice(selectedPlan.id, role);
+      transactionCurrency = SUBSCRIPTION_CURRENCY;
+      subscriptionSnapshot = {
+        plan: selectedPlan.id,
+        purchaserRole: role,
+        durationDays: selectedPlan.durationDays,
+      };
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ success: false, error: 'Invalid amount' });
+      }
+    } else {
+      if (!hireId) {
+        return res.status(400).json({ success: false, error: 'hireId is required for commission payments' });
+      }
+
+      const commissionHire = await prisma.hire.findUnique({
+        where: { id: String(hireId) },
+        select: { id: true, totalDue: true, employerId: true, compensationCurrency: true },
+      });
+      if (!commissionHire) {
+        return res.status(400).json({ success: false, error: 'Hire not found for commission payment' });
+      }
+
+      if (!req.userId || String(commissionHire.employerId) !== String(req.userId)) {
+        return res.status(403).json({ success: false, error: 'You are not authorized to pay for this hire' });
+      }
+
+      transactionCurrency = commissionHire.compensationCurrency
+        ? String(commissionHire.compensationCurrency).trim().toUpperCase()
+        : 'EGP';
+
+      if (transactionCurrency !== 'EGP') {
+        return res.status(400).json({ success: false, error: 'Manual payments are EGP-only' });
+      }
+
+      amount = Number(commissionHire.totalDue);
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ success: false, error: 'Invalid amount' });
+      }
+
+      const existingPayment = await prisma.payment.findFirst({
+        where: {
+          hireId: String(hireId),
+          paymentMethod: selectedPaymentMethod,
+          currency: transactionCurrency,
+          purpose: PAYMENT_PURPOSES.COMMISSION,
+          status: { in: ['pending', 'processing'] },
+          manualReviewState: { in: ['awaiting_transfer', 'proof_submitted', 'pending_verification'] },
+        },
+      });
+
+      if (existingPayment) {
+        return res.json({
+          success: true,
+          payment: {
+            id: existingPayment.id,
+            orderId: existingPayment.orderId,
+            transactionId: existingPayment.transactionId,
+            manualPaymentReference: existingPayment.manualPaymentReference,
+            paymentMethod: existingPayment.paymentMethod,
+            status: existingPayment.status,
+            fulfillmentStatus: existingPayment.fulfillmentStatus,
+            manualReviewState: existingPayment.manualReviewState,
+            purpose: existingPayment.purpose,
+            amount: existingPayment.amount,
+            currency: existingPayment.currency,
+          },
+          transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, existingPayment.amount, existingPayment.manualPaymentReference, manualConfig),
+        });
+      }
+    }
+
+    amount = roundMoney(amount, transactionCurrency);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid canonical payment amount' });
+    }
+
+    const orderId = generateOrderId();
+    const transactionId = generateId();
+    const manualPaymentReference = await generateManualPaymentReference(prisma);
+
+    const customerData = {
+      firstName: employerName?.split(' ')[0] || 'Employer',
+      lastName: employerName?.split(' ').slice(1).join(' ') || 'User',
+      email: req.user?.email || 'employer@example.com',
+      phone: phone || '+201234567890',
+      userId: req.userId,
+      workerId,
+      workerName,
+      jobTitle,
+      employerId,
+      employerName,
+      hireId,
+      offerId,
+      transactionId,
+      description: `Payment for ${jobTitle || 'service'} - ${workerName || 'worker'}`,
+    };
+
+    const payment = await prisma.payment.create({
+      data: {
+        orderId,
+        transactionId,
+        amount: Number(amount),
+        currency: transactionCurrency,
+        paymentMethod: selectedPaymentMethod,
+        purpose,
+        status: 'pending',
+        fulfillmentStatus: 'pending',
+        manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
+        manualPaymentReference,
+        userEmail: req.user?.email || null,
+        userId: req.userId || null,
+        workerId: workerId || null,
+        workerName: workerName || null,
+        jobTitle: jobTitle || null,
+        employerId: employerId || null,
+        employerName: employerName || null,
+        hireId: purpose === PAYMENT_PURPOSES.COMMISSION ? hireId : null,
+        offerId: offerId || null,
+        phone: phone || null,
+        metadata: {
+          createdFrom: 'manual-payment',
+          source: 'backend',
+          originalAmount: amount,
+          originalCurrency: transactionCurrency,
+          ...subscriptionSnapshot,
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      payment: {
+        id: payment.id,
+        orderId: payment.orderId,
+        transactionId: payment.transactionId,
+        manualPaymentReference: payment.manualPaymentReference,
+        paymentMethod: payment.paymentMethod,
+        status: payment.status,
+        fulfillmentStatus: payment.fulfillmentStatus,
+        manualReviewState: payment.manualReviewState,
+        purpose: payment.purpose,
+        amount: payment.amount,
+        currency: payment.currency,
+      },
+      transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, payment.amount, payment.manualPaymentReference, manualConfig),
+    });
+  } catch (error) {
+    console.error('❌ Manual payment creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create manual payment',
     });
   }
 });
