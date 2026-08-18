@@ -333,7 +333,7 @@ const EmployerDashboard = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{t('employerDashboard.welcome', { name: authUser.fullName || t('employerDashboard.employer') })}</h1>
+                    <h1 className={`text-2xl font-bold ${isPremium ? 'text-amber-300' : ''}`}>{t('employerDashboard.welcome', { name: authUser.fullName || t('employerDashboard.employer') })}</h1>
                     {isPremium && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-400/30 border border-yellow-300/50 rounded-full text-xs font-medium text-white">
                         <Crown size={12} className="text-yellow-300" />
