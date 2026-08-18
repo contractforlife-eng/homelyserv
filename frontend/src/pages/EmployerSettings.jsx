@@ -708,10 +708,11 @@ const EmployerSettings = () => {
                   <div>
                     <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.twoFactorAuth')}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.twoFactorAuthDesc')}</p>
+                    <p className="text-xs text-yellow-600">{t('comingSoon')}</p>
                   </div>
                   <button
-                    onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
-                    className={`relative w-12 h-6 rounded-full transition ${
+                    disabled
+                    className={`relative w-12 h-6 rounded-full transition opacity-50 cursor-not-allowed ${
                       settings.twoFactorAuth ? 'bg-teal-600' : 'bg-gray-300'
                     }`}
                   >
