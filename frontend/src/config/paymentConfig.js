@@ -187,6 +187,8 @@ export const PAYMENT_METHODS = {
   WALLET: 'wallet'  // For future use
 };
 
+export const PAYMOB_ENABLED = false;
+
 // ============================================================
 // PAYMENT STATUS
 // ============================================================

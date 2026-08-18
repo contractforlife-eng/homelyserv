@@ -8,7 +8,7 @@ import { isUserPremium, applyBackendSubscription } from '../utils/subscriptionSe
 import EmployerSidebar from '../components/employer/EmployerSidebar';
 import PaymentOptionsPage from './PaymentOptions';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, fetchCommissionProviders, fetchSubscriptionStatus, getPaymentStatus, isTerminalPayPalCaptureResult } from '../services/paymentService';
-import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
+import { PAYMENT_METHODS, PAYMOB_ENABLED, PAYMENT_STATUS, TRANSACTION_TYPES } from '../config/paymentConfig';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import employerService from '../services/employerService';
 import { formatWorkerRate } from '../utils/workerRateDisplay';
@@ -89,7 +89,7 @@ const PaymentOptions = () => {
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const allPaymentMethods = [
-    {
+    ...(PAYMOB_ENABLED ? [{
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
       icon: CreditCard,
@@ -97,7 +97,7 @@ const PaymentOptions = () => {
       color: 'teal',
       badge: t('paymentOptionsPage.recommended'),
       badgeColor: 'bg-green-100 text-green-700'
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',
@@ -108,9 +108,12 @@ const PaymentOptions = () => {
       badgeColor: null
     }
   ];
-  const paymentMethods = availableProviderIds === null
+  const normalizedAvailableProviderIds = availableProviderIds === null
+    ? null
+    : availableProviderIds.filter(id => id !== PAYMENT_METHODS.PAYMOB);
+  const paymentMethods = normalizedAvailableProviderIds === null
     ? allPaymentMethods
-    : allPaymentMethods.filter(method => availableProviderIds.includes(method.id));
+    : allPaymentMethods.filter(method => normalizedAvailableProviderIds.includes(method.id));
 
 
   // ============================================================

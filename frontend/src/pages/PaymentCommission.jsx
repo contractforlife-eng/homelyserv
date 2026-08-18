@@ -22,7 +22,7 @@ import {
 import { markCommissionPaid, verifyPayment } from '../utils/commissionManager';
 import { RECRUITMENT_COMMISSION_RATE } from '../config/monetization';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder, getPaymentStatus } from '../services/paymentService';
-import { PAYMENT_METHODS } from '../config/paymentConfig';
+import { PAYMENT_METHODS, PAYMOB_ENABLED } from '../config/paymentConfig';
 import useAuthStore from '../store/authStore';
 
 const PaymentCommission = () => {
@@ -44,14 +44,14 @@ const PaymentCommission = () => {
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
-    {
+    ...(PAYMOB_ENABLED ? [{
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
       icon: CreditCard,
       description: t('paymentCommission.methods.paymobDescription'),
       color: 'from-blue-500 to-blue-600',
       badge: t('paymentCommission.recommended')
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',

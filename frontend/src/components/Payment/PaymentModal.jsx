@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Wallet, Building2, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { createPaymobPayment, createPayPalOrder, capturePayPalOrder } from '../../services/paymentService';
-import { PAYMENT_METHODS, PAYMENT_STATUS, TRANSACTION_TYPES } from '../../config/paymentConfig';
+import { PAYMENT_METHODS, PAYMOB_ENABLED, PAYMENT_STATUS, TRANSACTION_TYPES } from '../../config/paymentConfig';
 
 const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transactionType, onSuccess, onError }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -12,13 +12,13 @@ const PaymentModal = ({ isOpen, onClose, amount, orderId, customerData, transact
   const [success, setSuccess] = useState(false);
 
   const paymentMethods = [
-    {
+    ...(PAYMOB_ENABLED ? [{
       id: PAYMENT_METHODS.PAYMOB,
       name: 'Paymob',
       icon: CreditCard,
       description: 'Credit cards, debit cards, and online banking',
       colors: 'from-blue-500 to-blue-600'
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: 'PayPal',

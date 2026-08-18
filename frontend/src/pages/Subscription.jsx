@@ -22,7 +22,7 @@ import {
   getSubscriptionStatus
 } from '../utils/subscriptionService';
 import { createPaymobPayment, createPayPalOrder } from '../services/paymentService';
-import { PAYMENT_METHODS, SUBSCRIPTION_PLANS } from '../config/paymentConfig';
+import { PAYMENT_METHODS, PAYMOB_ENABLED, SUBSCRIPTION_PLANS } from '../config/paymentConfig';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardHeader from '../components/layout/DashboardHeader';
 import RolePageHeader from '../components/common/RolePageHeader';
@@ -62,7 +62,7 @@ const Subscription = () => {
 
   // Payment Methods - ONLY PAYMOB & PAYPAL
   const paymentMethods = [
-    {
+    ...(PAYMOB_ENABLED ? [{
       id: PAYMENT_METHODS.PAYMOB,
       name: t('subscriptionPage.methods.paymob'),
       icon: CreditCard,
@@ -70,7 +70,7 @@ const Subscription = () => {
       color: 'from-blue-500 to-blue-600',
       badge: t('subscriptionPage.recommended'),
       badgeColor: 'bg-green-100 text-green-700'
-    },
+    }] : []),
     {
       id: PAYMENT_METHODS.PAYPAL,
       name: t('subscriptionPage.methods.paypal'),
