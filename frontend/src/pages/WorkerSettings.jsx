@@ -656,10 +656,11 @@ useEffect(() => {
                 <div>
                   <p className="font-medium text-gray-700 dark:text-gray-300">{t('employerSettings.smsNotifications')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t('employerSettings.smsNotificationsDesc')}</p>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">{t('employerSettings.smsNotificationsComingSoon')}</span>
                 </div>
                 <button
-                  onClick={() => handleSettingChange('smsNotifications', !settings.smsNotifications)}
-                  className={`relative w-12 h-6 rounded-full transition ${
+                  disabled
+                  className={`relative w-12 h-6 rounded-full transition opacity-50 cursor-not-allowed ${
                     settings.smsNotifications ? 'bg-red-600' : 'bg-gray-300'
                   }`}
                 >
