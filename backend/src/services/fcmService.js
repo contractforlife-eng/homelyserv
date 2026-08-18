@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import User from '../models/User.js';
 import { getMessaging, isFcmDisabled } from './fcmInit.js';
 
 const VALID_CHANNEL_IDS = new Set([
@@ -38,6 +39,20 @@ export async function sendPushToUser(userId, { title, body, data = {}, channelId
   const messaging = getMessaging();
   if (!messaging) {
     return { disabled: true, attempted: 0, successCount: 0, failureCount: 0 };
+  }
+
+  let settings = {};
+  try {
+    const user = await User.findById(userId).select('settings');
+    if (user) {
+      settings = user.settings || {};
+    }
+  } catch {
+    // Preference lookup failure must not break delivery; default to sending.
+  }
+
+  if (settings.pushNotifications === false) {
+    return { disabled: false, attempted: 0, successCount: 0, failureCount: 0 };
   }
 
   try {
