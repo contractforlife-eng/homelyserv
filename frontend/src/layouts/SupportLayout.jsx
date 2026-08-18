@@ -6,6 +6,8 @@ import useAuthStore from '../store/authStore';
 import SupportSidebar from '../components/SupportSidebar';
 import DashboardContext from '../components/layout/DashboardContext';
 import DashboardHeader from '../components/layout/DashboardHeader';
+import MobileHeader from '../components/mobile/MobileHeader';
+import MobileDrawerNav from '../components/mobile/MobileDrawerNav';
 import VerificationBanner from '../components/VerificationBanner';
 import LegalFooter from '../components/common/LegalFooter';
 
@@ -114,9 +116,12 @@ const SupportLayout = ({
           handleLogout={handleLogout}
         />
 
+        <MobileHeader />
+        <MobileDrawerNav />
+
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0`}>
+        } ml-0 pt-14 lg:pt-0`}>
           <VerificationBanner />
           <DashboardHeader
             title={headerTitle || t('supportNavigation.supportDashboard')}

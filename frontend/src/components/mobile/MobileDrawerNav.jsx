@@ -18,7 +18,8 @@ import {
   HelpCircle,
   PlusCircle,
   Briefcase,
-  Users
+  Users,
+  Headphones
 } from 'lucide-react';
 
 const MobileDrawerNav = () => {
@@ -30,6 +31,7 @@ const MobileDrawerNav = () => {
   const role = (authUser?.role || '').toUpperCase();
   const isWorker = role === 'WORKER';
   const isEmployer = role === 'EMPLOYER';
+  const isSupport = role === 'SUPPORT';
 
   const getProfileImage = () => {
     if (authUser?.profileImage) {
@@ -67,7 +69,17 @@ const MobileDrawerNav = () => {
     { to: '/help', icon: HelpCircle, label: t('employerSidebar.help') },
   ];
 
-  const items = isWorker ? workerItems : isEmployer ? employerItems : [];
+  const supportItems = [
+    { to: '/support-dashboard', icon: Home, label: t('supportNavigation.dashboard') },
+    { to: '/support-users', icon: Users, label: t('supportNavigation.users') },
+    { to: '/support-complaints', icon: FileText, label: t('supportNavigation.complaints') },
+    { to: '/support-messages', icon: MessageCircle, label: t('supportNavigation.messages') },
+    { to: '/support-live-support', icon: Headphones, label: t('publicSupport.liveSupport') },
+    { to: '/support-profile', icon: User, label: t('supportNavigation.profile') },
+    { to: '/support-settings', icon: Settings, label: t('supportNavigation.settings') },
+  ];
+
+  const items = isWorker ? workerItems : isEmployer ? employerItems : isSupport ? supportItems : [];
 
   const isActive = (path) => {
     if (location.pathname === path) return true;
@@ -76,9 +88,9 @@ const MobileDrawerNav = () => {
     return false;
   };
 
-  const activeBg = isWorker ? 'bg-red-50 dark:bg-red-900/20' : isEmployer ? 'bg-teal-50 dark:bg-teal-900/20' : 'bg-gray-100 dark:bg-gray-700';
-  const activeText = isWorker ? 'text-red-600 dark:text-red-400' : isEmployer ? 'text-teal-600 dark:text-teal-400' : 'text-gray-800 dark:text-white';
-  const hoverBg = isWorker ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : isEmployer ? 'hover:bg-teal-50 dark:hover:bg-teal-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700';
+  const activeBg = isWorker ? 'bg-red-50 dark:bg-red-900/20' : isEmployer ? 'bg-teal-50 dark:bg-teal-900/20' : isSupport ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-700';
+  const activeText = isWorker ? 'text-red-600 dark:text-red-400' : isEmployer ? 'text-teal-600 dark:text-teal-400' : isSupport ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-white';
+  const hoverBg = isWorker ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : isEmployer ? 'hover:bg-teal-50 dark:hover:bg-teal-900/20' : isSupport ? 'hover:bg-green-50 dark:hover:bg-green-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700';
 
   return (
     <>
@@ -95,7 +107,7 @@ const MobileDrawerNav = () => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden ${
-              isWorker ? 'bg-gradient-to-br from-red-500 to-red-600' : isEmployer ? 'bg-gradient-to-br from-teal-500 to-teal-600' : 'bg-gray-500'
+              isWorker ? 'bg-gradient-to-br from-red-500 to-red-600' : isEmployer ? 'bg-gradient-to-br from-teal-500 to-teal-600' : isSupport ? 'bg-gradient-to-br from-green-500 to-green-600' : 'bg-gray-500'
             }`}>
               {getProfileImage() ? (
                 <img 
@@ -145,11 +157,11 @@ const MobileDrawerNav = () => {
               handleLogout();
             }}
             className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg transition ${
-              isWorker ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+              isWorker ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' : isEmployer ? 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' : isSupport ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <LogOut size={20} />
-            <span className="text-base font-medium">{t('workerSidebar.logout')}</span>
+            <span className="text-base font-medium">{isSupport ? t('supportNavigation.logout') : t('workerSidebar.logout')}</span>
           </button>
         </div>
       </div>
