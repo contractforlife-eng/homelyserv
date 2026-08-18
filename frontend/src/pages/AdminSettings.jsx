@@ -764,10 +764,12 @@ const AdminSettings = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-300">{t.system.maintenanceMode}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">{t.descriptions.maintenanceMode}</p>
+                    <p className="text-xs text-yellow-500">{i18nT('comingSoon')}</p>
                   </div>
                   <ToggleSwitch
                     value={settings.maintenanceMode}
                     onChange={(value) => handleToggleChange('maintenanceMode')}
+                    disabled={true}
                   />
                 </div>
                 <div className="flex items-center justify-between">
