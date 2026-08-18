@@ -98,29 +98,56 @@ const NotificationBell = ({ userId: userIdProp, className = '' }) => {
   }, [userId]);
 
   // Handle marking as read
-  const handleMarkAsRead = (notificationId) => {
-    markAsRead(notificationId);
-    loadNotifications();
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true, isRead: true } : n)
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
   // Handle marking all as read
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
-    loadNotifications();
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, read: true, isRead: true }))
+      );
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
   // Handle deleting a notification
-  const handleDelete = (notificationId, e) => {
+  const handleDelete = async (notificationId, e) => {
     e.stopPropagation();
-    deleteNotification(notificationId);
-    loadNotifications();
+    try {
+      const target = notifications.find(n => n.id === notificationId);
+      const wasUnread = target && !target.read;
+      await deleteNotification(notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      if (wasUnread) {
+        setUnreadCount(count => Math.max(0, count - 1));
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
   };
 
   // Handle clearing all
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (window.confirm(t('sharedChrome.notifications.clearConfirm'))) {
-      clearAllNotifications();
-      loadNotifications();
+      try {
+        await clearAllNotifications();
+        setNotifications([]);
+        setUnreadCount(0);
+      } catch (err) {
+        console.error('Error clearing notifications:', err);
+      }
     }
   };
 
