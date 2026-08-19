@@ -106,6 +106,7 @@ const DashboardLayout = ({
   // Determine which sidebar to render based on user role
   const SidebarComponent = authUser?.role === 'EMPLOYER' ? EmployerSidebar : authUser?.role === 'ADMIN' ? AdminSidebar : WorkerSidebar;
   const isWorkerEmployer = authUser?.role === 'WORKER' || authUser?.role === 'EMPLOYER';
+  const isAdmin = authUser?.role === 'ADMIN';
 
   // Provide layout state to children (DashboardHeader and page content).
   // All hooks must be called unconditionally BEFORE any conditional return so
@@ -151,13 +152,13 @@ const DashboardLayout = ({
           handleLogout={handleLogout}
         />
 
-        {isWorkerEmployer && <MobileHeader />}
+        {isWorkerEmployer || isAdmin ? <MobileHeader /> : null}
         {isWorkerEmployer && <MobileDrawerNav />}
         {isWorkerEmployer && <MobileBottomNav />}
 
         <main className={`flex-1 transition-all duration-300 w-full max-w-full min-w-0 overflow-x-clip ${
           sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        } ml-0 ${isWorkerEmployer ? 'lg:pt-0 pt-14 lg:pb-0 pb-16' : ''}`}>
+        } ml-0 ${isWorkerEmployer ? 'lg:pt-0 pt-14 lg:pb-0 pb-16' : isAdmin ? 'lg:pt-0 pt-14' : ''}`}>
           <VerificationBanner />
           {children}
           <LegalFooter className="px-4 md:px-6" />
