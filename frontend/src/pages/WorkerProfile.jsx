@@ -1,5 +1,5 @@
 // src/pages/worker/WorkerProfile.jsx - WITH WORKING NOTIFICATIONS AND FIXED TOGGLES
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
@@ -90,9 +90,21 @@ const WorkerProfile = () => {
   const [realStats, setRealStats] = useState({
     memberSince: '',
     rating: 0,
-    jobsCompleted: 0,
-    profileComplete: 0
+    jobsCompleted: 0
   });
+
+  const profileComplete = useMemo(() => {
+    let completedFields = 0;
+    const totalFields = 7;
+    if (formData.fullName) completedFields++;
+    if (formData.phone) completedFields++;
+    if (formData.location) completedFields++;
+    if (formData.bio && formData.bio.length > 10) completedFields++;
+    if (formData.skills && formData.skills.length > 0) completedFields++;
+    if (formData.experience) completedFields++;
+    if (formData.hourlyRate) completedFields++;
+    return Math.round((completedFields / totalFields) * 100) || 0;
+  }, [formData]);
   const [subscriptionStatus, setSubscriptionStatus] = useState({ isPremium: false, subscription: null });
 
   const jobOptions = JOB_OPTIONS;
@@ -143,18 +155,6 @@ const WorkerProfile = () => {
         ? workerRatings.reduce((sum, r) => sum + r.rating, 0) / workerRatings.length 
         : 0;
       
-      let completedFields = 0;
-      const totalFields = 7;
-      if (formData.fullName) completedFields++;
-      if (formData.phone) completedFields++;
-      if (formData.location) completedFields++;
-      if (formData.bio && formData.bio.length > 10) completedFields++;
-      if (formData.skills && formData.skills.length > 0) completedFields++;
-      if (formData.experience) completedFields++;
-      if (formData.hourlyRate) completedFields++;
-      
-      const completionPercent = Math.round((completedFields / totalFields) * 100);
-      
       const memberSince = authUser?.createdAt || new Date().toISOString();
       
       setRealStats({
@@ -163,8 +163,7 @@ const WorkerProfile = () => {
           year: 'numeric'
         }),
         rating: avgRating || 4.8,
-        jobsCompleted: completedJobs || 0,
-        profileComplete: completionPercent || 0
+        jobsCompleted: completedJobs || 0
       });
       
     } catch (error) {
@@ -172,8 +171,7 @@ const WorkerProfile = () => {
       setRealStats({
         memberSince: t('workerProfile.memberSinceValue'),
         rating: 4.8,
-        jobsCompleted: 0,
-        profileComplete: 0
+        jobsCompleted: 0
       });
     }
   };
@@ -516,10 +514,10 @@ const WorkerProfile = () => {
                 <div className="w-full h-2 bg-gray-200 rounded-full">
                   <div 
                     className="h-2 bg-gradient-to-r from-red-600 to-red-700 rounded-full transition-all duration-500" 
-                    style={{ width: `${realStats.profileComplete}%` }}
+                    style={{ width: `${profileComplete}%` }}
                   ></div>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{realStats.profileComplete}%</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{profileComplete}%</span>
               </div>
             </div>
           </div>
