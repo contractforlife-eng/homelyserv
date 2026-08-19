@@ -466,7 +466,6 @@ const Subscription = () => {
   const handleManualProofSubmitted = () => {
     setManualPaymentSubmitted(true);
     setProcessing(false);
-    setSelectedMethod(null);
   };
 
   const handleGoBack = () => {
@@ -675,7 +674,7 @@ const Subscription = () => {
                           <div
                             key={method.id}
                             onClick={() => {
-                              if (processing) return;
+                              if (processing || manualPaymentSubmitted) return;
                               setSelectedMethod(method.id);
                               setPaymentError(null);
                             }}
@@ -683,7 +682,7 @@ const Subscription = () => {
                               isSelected
                                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-md'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                            )} ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            )} ${processing || manualPaymentSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <div className="flex items-center gap-4">
                               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>

@@ -33,12 +33,14 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
   const [proofPreview, setProofPreview] = useState(null);
   const [externalRef, setExternalRef] = useState('');
   const fileInputRef = useRef(null);
+  const createInFlightRef = useRef(false);
 
   const isVodafone = paymentMethod === 'vodafone_cash';
   const isInstapay = paymentMethod === 'instapay';
 
   const handleCreate = async () => {
-    if (!paymentMethod || creating) return;
+    if (!paymentMethod || createInFlightRef.current) return;
+    createInFlightRef.current = true;
     setCreating(true);
     setCreationError(null);
 
@@ -62,6 +64,7 @@ const ManualPaymentFlow = ({ paymentMethod, purpose, plan, hireId, onSubmitted, 
     } catch (error) {
       setCreationError(error.message || t('manualPayment.errors.creationFailed'));
     } finally {
+      createInFlightRef.current = false;
       setCreating(false);
     }
   };

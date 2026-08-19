@@ -314,7 +314,6 @@ const PaymentCommission = () => {
   const handleManualProofSubmitted = () => {
     setManualPaymentSubmitted(true);
     setProcessing(false);
-    setSelectedMethod(null);
   };
 
   // Cleanup
@@ -443,7 +442,7 @@ const PaymentCommission = () => {
                 <div
                   key={method.id}
                   onClick={() => {
-                    if (processing) return;
+                    if (processing || manualPaymentSubmitted) return;
                     setSelectedMethod(method.id);
                     setPaymentError(null);
                   }}
@@ -451,7 +450,7 @@ const PaymentCommission = () => {
                     isSelected
                       ? 'border-amber-500 bg-amber-50 shadow-md'
                       : 'border-gray-200 dark:border-gray-700 hover:border-amber-200 hover:bg-amber-50/30'
-                  } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${processing || manualPaymentSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>

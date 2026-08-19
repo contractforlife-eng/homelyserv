@@ -2205,6 +2205,43 @@ const buildManualTransferInstructions = (paymentMethod, amount, reference, confi
   };
 };
 
+const MANUAL_REVIEW_STATE_PRIORITY = {
+  pending_verification: 3,
+  proof_submitted: 2,
+  awaiting_transfer: 1,
+};
+
+const findBestExistingManualPayment = async (baseWhere) => {
+  const matches = await prisma.payment.findMany({
+    where: {
+      ...baseWhere,
+      status: { in: ['pending', 'processing'] },
+      manualReviewState: { in: ['awaiting_transfer', 'proof_submitted', 'pending_verification'] },
+    },
+  });
+
+  if (matches.length === 0) return null;
+
+  return matches.sort((a, b) =>
+    (MANUAL_REVIEW_STATE_PRIORITY[b.manualReviewState] || 0) -
+    (MANUAL_REVIEW_STATE_PRIORITY[a.manualReviewState] || 0)
+  )[0];
+};
+
+const serializeManualPayment = (payment) => ({
+  id: payment.id,
+  orderId: payment.orderId,
+  transactionId: payment.transactionId,
+  manualPaymentReference: payment.manualPaymentReference,
+  paymentMethod: payment.paymentMethod,
+  status: payment.status,
+  fulfillmentStatus: payment.fulfillmentStatus,
+  manualReviewState: payment.manualReviewState,
+  purpose: payment.purpose,
+  amount: payment.amount,
+  currency: payment.currency,
+});
+
 router.post('/manual', authenticate, async (req, res) => {
   try {
     const {
@@ -2275,6 +2312,92 @@ router.post('/manual', authenticate, async (req, res) => {
       if (!amount || amount <= 0) {
         return res.status(400).json({ success: false, error: 'Invalid amount' });
       }
+
+      let existingPayment = await findBestExistingManualPayment({
+        userId: String(req.userId),
+        paymentMethod: selectedPaymentMethod,
+        currency: transactionCurrency,
+        purpose: PAYMENT_PURPOSES.SUBSCRIPTION,
+      });
+
+      let payment = null;
+
+      if (!existingPayment) {
+        const orderId = generateOrderId();
+        const transactionId = generateId();
+        const manualPaymentReference = await generateManualPaymentReference(prisma);
+
+        const customerData = {
+          firstName: (employerName?.split(' ')[0]) || 'User',
+          lastName: (employerName?.split(' ').slice(1).join(' ')) || 'Premium',
+          email: req.user?.email || 'user@example.com',
+          phone: phone || '+201234567890',
+          userId: req.userId,
+          workerName: workerName || null,
+          jobTitle: jobTitle || null,
+          employerId: employerId || null,
+          employerName: employerName || null,
+          transactionId,
+          description: `Premium subscription - ${requestedPlan || 'premium'}`,
+        };
+
+        payment = await prisma.payment.create({
+          data: {
+            orderId,
+            transactionId,
+            amount: Number(amount),
+            currency: transactionCurrency,
+            paymentMethod: selectedPaymentMethod,
+            purpose,
+            status: 'pending',
+            fulfillmentStatus: 'pending',
+            manualReviewState: MANUAL_REVIEW_STATES.AWAITING_TRANSFER,
+            manualPaymentReference,
+            userEmail: req.user?.email || null,
+            userId: req.userId || null,
+            workerId: workerId || null,
+            workerName: workerName || null,
+            jobTitle: jobTitle || null,
+            employerId: employerId || null,
+            employerName: employerName || null,
+            hireId: null,
+            offerId: offerId || null,
+            phone: phone || null,
+            metadata: {
+              createdFrom: 'manual-payment',
+              source: 'backend',
+              originalAmount: amount,
+              originalCurrency: transactionCurrency,
+              ...subscriptionSnapshot,
+            },
+          },
+        });
+
+        const concurrentPayment = await findBestExistingManualPayment({
+          userId: String(req.userId),
+          paymentMethod: selectedPaymentMethod,
+          currency: transactionCurrency,
+          purpose: PAYMENT_PURPOSES.SUBSCRIPTION,
+        });
+
+        if (concurrentPayment && concurrentPayment.id !== payment.id) {
+          existingPayment = concurrentPayment;
+        }
+      }
+
+      if (existingPayment) {
+        return res.json({
+          success: true,
+          payment: serializeManualPayment(existingPayment),
+          transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, existingPayment.amount, existingPayment.manualPaymentReference, manualConfig),
+        });
+      }
+
+      return res.json({
+        success: true,
+        payment: serializeManualPayment(payment),
+        transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, payment.amount, payment.manualPaymentReference, manualConfig),
+      });
     } else {
       if (!hireId) {
         return res.status(400).json({ success: false, error: 'hireId is required for commission payments' });
@@ -2306,33 +2429,17 @@ router.post('/manual', authenticate, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Invalid amount' });
       }
 
-      const existingPayment = await prisma.payment.findFirst({
-        where: {
-          hireId: String(hireId),
-          paymentMethod: selectedPaymentMethod,
-          currency: transactionCurrency,
-          purpose: PAYMENT_PURPOSES.COMMISSION,
-          status: { in: ['pending', 'processing'] },
-          manualReviewState: { in: ['awaiting_transfer', 'proof_submitted', 'pending_verification'] },
-        },
+      const existingPayment = await findBestExistingManualPayment({
+        hireId: String(hireId),
+        paymentMethod: selectedPaymentMethod,
+        currency: transactionCurrency,
+        purpose: PAYMENT_PURPOSES.COMMISSION,
       });
 
       if (existingPayment) {
         return res.json({
           success: true,
-          payment: {
-            id: existingPayment.id,
-            orderId: existingPayment.orderId,
-            transactionId: existingPayment.transactionId,
-            manualPaymentReference: existingPayment.manualPaymentReference,
-            paymentMethod: existingPayment.paymentMethod,
-            status: existingPayment.status,
-            fulfillmentStatus: existingPayment.fulfillmentStatus,
-            manualReviewState: existingPayment.manualReviewState,
-            purpose: existingPayment.purpose,
-            amount: existingPayment.amount,
-            currency: existingPayment.currency,
-          },
+          payment: serializeManualPayment(existingPayment),
           transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, existingPayment.amount, existingPayment.manualPaymentReference, manualConfig),
         });
       }
@@ -2395,6 +2502,22 @@ router.post('/manual', authenticate, async (req, res) => {
         },
       },
     });
+
+    const concurrentPayment = await findBestExistingManualPayment({
+      ...(purpose === PAYMENT_PURPOSES.COMMISSION ? { hireId: String(hireId) } : {}),
+      userId: String(req.userId),
+      paymentMethod: selectedPaymentMethod,
+      currency: transactionCurrency,
+      purpose,
+    });
+
+    if (concurrentPayment && concurrentPayment.id !== payment.id) {
+      return res.json({
+        success: true,
+        payment: serializeManualPayment(concurrentPayment),
+        transferInstructions: buildManualTransferInstructions(selectedPaymentMethod, concurrentPayment.amount, concurrentPayment.manualPaymentReference, manualConfig),
+      });
+    }
 
     return res.json({
       success: true,

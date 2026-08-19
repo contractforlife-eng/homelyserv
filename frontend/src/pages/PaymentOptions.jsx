@@ -676,7 +676,6 @@ const PaymentOptions = () => {
   const handleManualProofSubmitted = () => {
     setManualPaymentSubmitted(true);
     setIsProcessing(false);
-    setSelectedMethod(null);
   };
 
   // ============================================================
@@ -992,7 +991,7 @@ const PaymentOptions = () => {
                   <button
                     key={method.id}
                     onClick={() => {
-                      if (isProcessing) return;
+                      if (isProcessing || manualPaymentSubmitted) return;
                       setSelectedMethod(method.id);
                       setPaymentError(null);
                       setPaymentMessage('');
@@ -1001,8 +1000,8 @@ const PaymentOptions = () => {
                       isSelected 
                         ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 ring-2 ring-teal-500 ring-opacity-30'
                         : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 hover:bg-teal-50 dark:bg-teal-900/30'
-                    } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isProcessing}
+                    } ${isProcessing || manualPaymentSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isProcessing || manualPaymentSubmitted}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`w-12 h-12 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0`}>
