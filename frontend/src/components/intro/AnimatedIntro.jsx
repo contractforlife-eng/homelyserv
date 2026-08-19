@@ -22,16 +22,18 @@ const AnimatedIntro = () => {
            animation: introOverlayOut 3.5s ease-in-out forwards;
         }
         .intro-logo {
-          animation: introLogoIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+           animation: introLogoIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
         }
         .intro-brand {
-          animation: introBrandIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+           animation: introBrandIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
         }
       `}</style>
       <div className="intro-overlay fixed inset-0 z-[9999] flex items-center justify-center bg-white">
         <div className="intro-logo flex flex-col items-center gap-4">
-          <img src={appIcon} alt="HomelyServ" className="w-24 h-24 object-contain" />
-          <h1 className="intro-brand text-3xl font-bold text-gray-800">HomelyServ</h1>
+          <img src={appIcon} alt="HomelyServ" className="w-24 h-24 object-contain drop-shadow-sm" />
+          <h1 className="intro-brand text-3xl font-bold text-gray-800">
+            <span className="text-red-600">Homely</span><span className="text-green-600">Serv</span>
+          </h1>
         </div>
       </div>
     </>
